@@ -43,11 +43,13 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         prompt,
         negative_prompt: negativePrompt,
-        image_size: "landscape_4_3",
-        num_inference_steps: 28,
-        guidance_scale: 3.5,
+        guidance_scale: 4.0,
+        num_inference_steps: 35,
+        safety_tolerance: "2",
         num_images: 1,
-        enable_safety_checker: true,
+        output_format: "jpeg",
+        image_size: "landscape_4_3",
+        enhance_prompt: false,
       }),
     });
 

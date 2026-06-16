@@ -162,7 +162,7 @@ export const PACKAGES: Package[] = [
       backdropShape: "mixed_panels",
       balloonStyle: "premium",
       plinths: 3,
-      plinthSizes: ["large", "medium", "medium"],
+      plinthSizes: ["large", "medium", "medium"] as PlinthSize[],
       cutouts: { size: "medium", position: "floor" },
       backdropPrint: { type: "none" },
       backdropText: { enabled: true, type: "birthday", name: "", customText: "", fontStyle: "elegant", color: "gold" },
@@ -185,7 +185,7 @@ export type BackdropShapeId =
 
 export type BalloonStyleId = "none" | "half" | "full" | "premium";
 
-export type PlinthSize = "small" | "medium" | "large" | "xl";
+export type PlinthSize = "small" | "medium" | "large";
 export type CutoutSize = "none" | "small" | "medium" | "premium";
 export type CutoutPosition = "floor" | "backdrop";
 export type BackdropTextType = "birthday" | "custom";
@@ -266,10 +266,9 @@ export const BALLOON_STYLES: Option<BalloonStyleId>[] = [
 ];
 
 export const PLINTH_SIZES: Option<PlinthSize>[] = [
-  { id: "small", label: "Small", price: 60 },
-  { id: "medium", label: "Medium", price: 80 },
-  { id: "large", label: "Large", price: 110 },
-  { id: "xl", label: "XL", price: 150 },
+  { id: "small", label: "S — 90cm", price: 60 },
+  { id: "medium", label: "M — 100cm", price: 80 },
+  { id: "large", label: "L — 110cm", price: 110 },
 ];
 
 /** Cutout sets — shown as cards in the Add-ons step. */

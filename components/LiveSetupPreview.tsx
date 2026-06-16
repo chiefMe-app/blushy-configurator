@@ -442,7 +442,6 @@ const PLINTH_HEIGHT: Record<PlinthSize, number> = {
   small: 0.1,
   medium: 0.14,
   large: 0.18,
-  xl: 0.22,
 };
 
 function drawPlinths(

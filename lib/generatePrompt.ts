@@ -131,10 +131,9 @@ const THEME_PRINT_DESC: Record<string, string> = {
 
 /** Size labels for plinth prompt descriptions. */
 const PLINTH_SIZE_DESC: Record<PlinthSize, string> = {
-  small: "short small",
-  medium: "medium height",
-  large: "tall",
-  xl: "extra tall oversized",
+  small: "short cylindrical plinth pedestal, 40cm diameter, 90cm tall",
+  medium: "medium cylindrical plinth pedestal, 40cm diameter, 100cm tall",
+  large: "tall cylindrical plinth pedestal, 40cm diameter, 110cm tall",
 };
 
 /** BALLOON_DESCRIPTION — keyed by balloon style ("none" → omitted). */
@@ -163,7 +162,8 @@ const FONT_DESC: Record<string, string> = {
 export const NEGATIVE_PROMPT =
   "floating balloons, strings, cartoon, drawing, illustration, people, children, text overlay, watermark, " +
   "floating balloons, balloon strings, cartoon illustration, drawing, sketch, people, children, faces, " +
-  "text watermark, blurry, distorted shapes, wrong number of backdrops, extra backdrop panels, missing backdrop panels";
+  "text watermark, blurry, distorted shapes, wrong number of backdrops, extra backdrop panels, missing backdrop panels, " +
+  "stage podium, stage platform, raised stage, wide platform base, square pedestal, rectangular pedestal, wrong plinth shape, oversized plinth";
 
 export interface PromptInput {
   theme: ThemeId;
@@ -262,12 +262,14 @@ export function generatePrompt(input: PromptInput): {
   const sizes = input.plinthSizes ?? [];
   if (sizes.length > 0) {
     const sd = sizes.map((s) => PLINTH_SIZE_DESC[s] ?? s);
+    const antiStage =
+      "cylindrical white plinth pedestals that are narrow and tall like elegant display columns, NOT a stage or platform";
     if (sizes.length === 1) {
-      plinthClause = `one ${sd[0]} cylindrical display plinth`;
+      plinthClause = `one white cylindrical plinth pedestal (${sd[0]}), placed in front of backdrop, ${antiStage}`;
     } else if (sizes.length === 2) {
-      plinthClause = `two cylindrical plinths, one ${sd[0]} and one ${sd[1]}`;
+      plinthClause = `two white cylindrical plinth pedestals (${sd[0]}) and (${sd[1]}), placed symmetrically in front of backdrop, ${antiStage}`;
     } else {
-      plinthClause = `three cylindrical plinths: ${sd[0]}, ${sd[1]}, and ${sd[2]}`;
+      plinthClause = `three white cylindrical plinth pedestals (${sd[0]}) (${sd[1]}) (${sd[2]}), arranged in front of backdrop, ${antiStage}`;
     }
   }
 
