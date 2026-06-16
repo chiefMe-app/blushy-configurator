@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generatePrompt } from "@/lib/generatePrompt";
-import type { ThemeId, PackageId, BalloonStyleId } from "@/lib/config";
+import { generatePrompt, type PromptInput } from "@/lib/generatePrompt";
 
 // fal.ai flux/dev (synchronous run). FAL_KEY stays server-side only.
 const FAL_MODEL = "fal-ai/flux/dev";
@@ -8,15 +7,6 @@ const FAL_ENDPOINT = `https://fal.run/${FAL_MODEL}`;
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-interface GenerateBody {
-  theme: ThemeId;
-  package: PackageId;
-  balloonStyle: BalloonStyleId;
-  /** Trigger field only — not used in the prompt mapping. */
-  backdropShape?: string;
-  extras?: string[];
-}
 
 export async function POST(req: NextRequest) {
   const falKey = process.env.FAL_KEY;
@@ -27,9 +17,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: GenerateBody;
+  let body: PromptInput;
   try {
-    body = (await req.json()) as GenerateBody;
+    body = (await req.json()) as PromptInput;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
@@ -41,12 +31,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { prompt, negativePrompt } = generatePrompt({
-    theme: body.theme,
-    package: body.package,
-    balloonStyle: body.balloonStyle,
-    extras: body.extras,
-  });
+  const { prompt, negativePrompt } = generatePrompt(body);
 
   try {
     const falRes = await fetch(FAL_ENDPOINT, {
@@ -68,10 +53,7 @@ export async function POST(req: NextRequest) {
 
     if (!falRes.ok) {
       const detail = await falRes.text();
-      return NextResponse.json(
-        { error: "fal.ai request failed", detail },
-        { status: 502 }
-      );
+      return NextResponse.json({ error: "fal.ai request failed", detail }, { status: 502 });
     }
 
     const data = await falRes.json();

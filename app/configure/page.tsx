@@ -7,10 +7,11 @@ import {
   PACKAGES,
   BACKDROP_SHAPES,
   BALLOON_STYLES,
-  NAME_SIGNS,
-  CUTOUTS,
+  PLINTH_SIZES,
+  CUTOUT_SETS,
+  FONT_STYLES,
+  TEXT_COLORS,
   ADDONS,
-  PLINTH_PRICES,
   CAKE_TABLE_PRICE,
   defaultConfig,
   themeById,
@@ -18,6 +19,8 @@ import {
   priceBreakdown,
   formatAED,
   isAddOnRecommended,
+  hexToRgbTriplet,
+  softTriplet,
   type BuilderConfig,
   type DecorConfig,
   type VenueDetails,
@@ -27,9 +30,11 @@ import {
   type ThemeId,
   type PackageId,
   type BalloonStyleId,
-  type NameSignId,
-  type CutoutsId,
   type BackdropShapeId,
+  type PlinthSize,
+  type CutoutPosition,
+  type FontStyle,
+  type TextColor,
 } from "@/lib/config";
 import SetupPreview, { useSetupPreview } from "@/components/SetupPreview";
 import StepNavigation from "@/components/StepNavigation";
@@ -43,8 +48,8 @@ import StickyBottomCTA from "@/components/StickyBottomCTA";
 
 const STEPS = [
   "Event",
-  "Theme",
   "Package",
+  "Theme",
   "Decor",
   "Add-ons",
   "Venue",
@@ -74,8 +79,8 @@ export default function ConfigurePage() {
   const accentStyle = useMemo(
     () =>
       ({
-        ["--accent" as any]: theme.accent,
-        ["--accent-soft" as any]: theme.accentSoft,
+        ["--accent" as any]: hexToRgbTriplet(theme.accent),
+        ["--accent-soft" as any]: softTriplet(theme.accent),
       }) as React.CSSProperties,
     [theme]
   );
@@ -94,16 +99,34 @@ export default function ConfigurePage() {
   function setEventType(id: EventTypeId) {
     setConfig((c) => ({ ...c, eventType: id }));
   }
+  /** Selecting a theme pre-fills backdrop + balloon colors (overridable). */
   function setTheme(id: ThemeId) {
-    setConfig((c) => ({ ...c, theme: id }));
+    const t = themeById(id);
+    setConfig((c) => ({
+      ...c,
+      theme: id,
+      decor: t
+        ? {
+            ...c.decor,
+            backdropColor: t.backdropColors[0],
+            balloonColors: t.balloonColors.slice(0, 5),
+          }
+        : c.decor,
+    }));
   }
-  /** Selecting a package re-seeds the decor defaults. */
+  /** Selecting a package re-seeds decor defaults but keeps theme colors. */
   function setPackage(id: PackageId) {
     const pkg = packageById(id);
     setConfig((c) => ({
       ...c,
       package: id,
-      decor: pkg ? { ...pkg.defaultDecor, balloonColorCustom: c.decor.balloonColorCustom } : c.decor,
+      decor: pkg
+        ? {
+            ...pkg.defaultDecor,
+            backdropColor: c.decor.backdropColor,
+            balloonColors: c.decor.balloonColors,
+          }
+        : c.decor,
     }));
   }
 
@@ -285,25 +308,7 @@ export default function ConfigurePage() {
             )}
 
             {step === 1 && (
-              <StepShell title="Pick your theme">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {THEMES.map((t) => (
-                    <OptionCard
-                      key={t.id}
-                      selected={config.theme === t.id}
-                      onClick={() => setTheme(t.id)}
-                      title={t.label}
-                      subtitle={t.description}
-                      swatches={t.palette}
-                      priceBadge={t.modifier > 0 ? `+${t.modifier}` : "+0"}
-                    />
-                  ))}
-                </div>
-              </StepShell>
-            )}
-
-            {step === 2 && (
-              <StepShell title="Choose a package">
+              <StepShell title="Choose a package" subtitle="Sets your decor starting point.">
                 <div className="grid grid-cols-1 gap-4">
                   {PACKAGES.map((p) => (
                     <PackageCard
@@ -311,6 +316,25 @@ export default function ConfigurePage() {
                       pkg={p}
                       selected={config.package === p.id}
                       onClick={() => setPackage(p.id)}
+                    />
+                  ))}
+                </div>
+              </StepShell>
+            )}
+
+            {step === 2 && (
+              <StepShell title="Pick your theme">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {THEMES.map((t) => (
+                    <OptionCard
+                      key={t.id}
+                      selected={config.theme === t.id}
+                      onClick={() => setTheme(t.id)}
+                      emoji={t.emoji}
+                      title={t.name}
+                      subtitle={t.desc}
+                      swatches={t.balloonColors}
+                      priceBadge={t.priceModifier > 0 ? `+AED ${t.priceModifier}` : "Included"}
                     />
                   ))}
                 </div>
@@ -328,17 +352,24 @@ export default function ConfigurePage() {
 
             {step === 4 && (
               <StepShell title="Add experiences" subtitle="Optional extras for the day.">
-                <div className="space-y-3">
-                  {ADDONS.map((addon) => (
-                    <AddOnCard
-                      key={addon.id}
-                      addon={addon}
-                      selection={config.addOns.find((a) => a.id === addon.id)}
-                      recommended={isAddOnRecommended(addon, config)}
-                      onToggle={() => toggleAddOn(addon.id)}
-                      onOption={(k, v) => setAddOnOption(addon.id, k, v)}
-                    />
-                  ))}
+                <div className="space-y-6">
+                  <CutoutsSection config={config} patchDecor={patchDecor} />
+
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">Experiences & services</h3>
+                    <div className="space-y-3">
+                      {ADDONS.map((addon) => (
+                        <AddOnCard
+                          key={addon.id}
+                          addon={addon}
+                          selection={config.addOns.find((a) => a.id === addon.id)}
+                          recommended={isAddOnRecommended(addon, config)}
+                          onToggle={() => toggleAddOn(addon.id)}
+                          onOption={(k, v) => setAddOnOption(addon.id, k, v)}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </StepShell>
             )}
@@ -461,6 +492,37 @@ function DecorStep({
 }) {
   const d = config.decor;
   const theme = themeById(config.theme)!;
+  const t = d.backdropText;
+
+  function setText(patch: Partial<DecorConfig["backdropText"]>) {
+    patchDecor({ backdropText: { ...t, ...patch } });
+  }
+  function setPlinthCount(n: number) {
+    const sizes: PlinthSize[] = [...d.plinthSizes];
+    while (sizes.length < n) sizes.push("medium");
+    sizes.length = n;
+    patchDecor({ plinths: n, plinthSizes: sizes });
+  }
+  function setPlinthSize(i: number, size: PlinthSize) {
+    const sizes = [...d.plinthSizes];
+    sizes[i] = size;
+    patchDecor({ plinthSizes: sizes, plinths: sizes.length });
+  }
+  function toggleBalloon(hex: string) {
+    const has = d.balloonColors.includes(hex);
+    const next = has
+      ? d.balloonColors.filter((c) => c !== hex)
+      : d.balloonColors.length < 5
+        ? [...d.balloonColors, hex]
+        : d.balloonColors;
+    patchDecor({ balloonColors: next });
+  }
+
+  const swatch = (active: boolean) =>
+    `h-9 w-9 rounded-full border shadow-sm transition ${
+      active ? "ring-2 ring-accent ring-offset-2" : "border-black/15"
+    }`;
+
   return (
     <div className="space-y-5">
       <ChoiceRow<string>
@@ -489,68 +551,304 @@ function DecorStep({
         priceOf={(id) => BALLOON_STYLES.find((b) => b.id === id)?.price ?? 0}
       />
 
-      {/* Balloon palette */}
+      {/* A) Backdrop color */}
       <div>
-        <span className="mb-1.5 block text-xs font-medium text-black/55">
-          Balloon colour palette
-        </span>
-        <div className="flex items-center gap-3">
-          <div className="flex -space-x-1">
-            {theme.palette.map((c, i) => (
-              <span
-                key={i}
-                className="h-6 w-6 rounded-full border border-white shadow-sm"
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
-          <span className="text-xs text-black/45">Theme default</span>
+        <span className="mb-1.5 block text-xs font-medium text-black/55">Backdrop color</span>
+        <div className="flex flex-wrap items-center gap-2">
+          {theme.backdropColors.map((hex) => (
+            <button
+              key={hex}
+              type="button"
+              onClick={() => patchDecor({ backdropColor: hex })}
+              className={swatch(d.backdropColor.toLowerCase() === hex.toLowerCase())}
+              style={{ backgroundColor: hex }}
+              title={hex}
+            />
+          ))}
+          <label className="flex h-9 cursor-pointer items-center gap-1 rounded-full border border-dashed border-black/25 px-3 text-xs text-black/55">
+            Custom
+            <input
+              type="color"
+              value={d.backdropColor}
+              onChange={(e) => patchDecor({ backdropColor: e.target.value })}
+              className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0"
+            />
+          </label>
         </div>
-        <label className="mt-2 flex items-center gap-2 text-xs text-black/60">
-          <input
-            type="checkbox"
-            checked={d.balloonColorCustom}
-            onChange={(e) => patchDecor({ balloonColorCustom: e.target.checked })}
-            className="h-4 w-4 accent-[rgb(var(--accent))]"
-          />
-          Custom colour request (confirmed with our team)
-        </label>
       </div>
 
-      <ChoiceRow<string>
-        label="Plinths"
-        value={String(d.plinths)}
-        options={[0, 1, 2, 3].map((n) => ({ id: String(n), label: String(n) }))}
-        onChange={(v) => patchDecor({ plinths: Number(v) })}
-        priceOf={(id) => PLINTH_PRICES[Number(id)] ?? 0}
-      />
+      {/* B) Balloon colors */}
+      <div>
+        <span className="mb-1.5 block text-xs font-medium text-black/55">
+          Balloon colors — select up to 5
+        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {theme.balloonColors.map((hex) => (
+            <button
+              key={hex}
+              type="button"
+              onClick={() => toggleBalloon(hex)}
+              className={swatch(d.balloonColors.includes(hex))}
+              style={{ backgroundColor: hex }}
+              title={hex}
+            />
+          ))}
+          {/* Any custom-added colors not in the theme palette */}
+          {d.balloonColors
+            .filter((c) => !theme.balloonColors.includes(c))
+            .map((hex) => (
+              <button
+                key={hex}
+                type="button"
+                onClick={() => toggleBalloon(hex)}
+                className={swatch(true)}
+                style={{ backgroundColor: hex }}
+                title={hex}
+              />
+            ))}
+          <label className="flex h-9 cursor-pointer items-center gap-1 rounded-full border border-dashed border-black/25 px-3 text-xs text-black/55">
+            Custom
+            <input
+              type="color"
+              onChange={(e) => toggleBalloon(e.target.value)}
+              className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0"
+            />
+          </label>
+        </div>
+        <p className="mt-1.5 text-[11px] text-black/45">
+          Sempertex palette — exact shades confirmed with your stylist.
+        </p>
+      </div>
 
-      <ChoiceRow<NameSignId>
-        label="Name sign"
-        value={d.nameSign}
-        options={NAME_SIGNS}
-        onChange={(v) => patchDecor({ nameSign: v })}
-        priceOf={(id) => NAME_SIGNS.find((n) => n.id === id)?.price ?? 0}
-      />
+      {/* Backdrop text */}
+      <div>
+        <span className="mb-1.5 block text-xs font-medium text-black/55">Text on backdrop</span>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { v: "none", l: "None" },
+            { v: "birthday", l: "Happy Birthday [Name]" },
+            { v: "custom", l: "Custom text" },
+          ].map((o) => {
+            const active =
+              o.v === "none" ? !t.enabled : t.enabled && t.type === o.v;
+            return (
+              <button
+                key={o.v}
+                type="button"
+                onClick={() =>
+                  o.v === "none"
+                    ? setText({ enabled: false })
+                    : setText({ enabled: true, type: o.v as "birthday" | "custom" })
+                }
+                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                  active ? "bg-accent text-white" : "bg-white text-black/60 border border-black/15"
+                }`}
+              >
+                {o.l}
+              </button>
+            );
+          })}
+        </div>
 
-      <ChoiceRow<CutoutsId>
-        label="Themed cutouts"
-        value={d.cutouts}
-        options={CUTOUTS}
-        onChange={(v) => patchDecor({ cutouts: v })}
-        priceOf={(id) => CUTOUTS.find((c) => c.id === id)?.price ?? 0}
-      />
+        {t.enabled && (
+          <div className="mt-3 space-y-3 rounded-xl border border-accent/20 bg-accent-soft/30 p-3">
+            {t.type === "birthday" ? (
+              <input
+                type="text"
+                value={t.name}
+                onChange={(e) => setText({ name: e.target.value })}
+                placeholder="Name (e.g. Sofia)"
+                className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
+              />
+            ) : (
+              <input
+                type="text"
+                value={t.customText}
+                onChange={(e) => setText({ customText: e.target.value })}
+                placeholder="Your custom text"
+                className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
+              />
+            )}
+
+            <div>
+              <span className="mb-1 block text-[11px] font-medium text-black/50">Font style</span>
+              <div className="flex flex-wrap gap-2">
+                {FONT_STYLES.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setText({ fontStyle: f.id as FontStyle })}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                      t.fontStyle === f.id
+                        ? "bg-accent text-white"
+                        : "bg-white text-black/60 border border-black/15"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <span className="mb-1 block text-[11px] font-medium text-black/50">Text color</span>
+              <div className="flex flex-wrap gap-2">
+                {TEXT_COLORS.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setText({ color: c.id as TextColor })}
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
+                      t.color === c.id ? "border-accent bg-accent-soft/60" : "border-black/15 bg-white text-black/60"
+                    }`}
+                  >
+                    <span
+                      className="h-3.5 w-3.5 rounded-full border border-black/10"
+                      style={{ backgroundColor: c.id === "accent" ? theme.accent : c.swatch }}
+                    />
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Plinths + per-unit sizes */}
+      <div>
+        <ChoiceRow<string>
+          label="Plinths"
+          value={String(d.plinths)}
+          options={[0, 1, 2, 3].map((n) => ({ id: String(n), label: String(n) }))}
+          onChange={(v) => setPlinthCount(Number(v))}
+        />
+        {d.plinths > 0 && (
+          <div className="mt-3 space-y-2">
+            {Array.from({ length: d.plinths }).map((_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="w-16 shrink-0 text-[11px] text-black/50">Plinth {i + 1}</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {PLINTH_SIZES.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setPlinthSize(i, s.id)}
+                      className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
+                        d.plinthSizes[i] === s.id
+                          ? "bg-accent text-white"
+                          : "bg-white text-black/60 border border-black/15"
+                      }`}
+                    >
+                      {s.label}
+                      <span className={d.plinthSizes[i] === s.id ? "text-white/80" : "text-black/40"}>
+                        {" "}
+                        +{s.price}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <ChoiceRow<string>
         label="Cake / dessert table styling"
         value={d.cakeTable ? "yes" : "no"}
         options={[
           { id: "no", label: "No" },
-          { id: "yes", label: `Yes` },
+          { id: "yes", label: "Yes" },
         ]}
         onChange={(v) => patchDecor({ cakeTable: v === "yes" })}
         priceOf={(id) => (id === "yes" ? CAKE_TABLE_PRICE : 0)}
       />
+    </div>
+  );
+}
+
+/** Themed cutouts & props — lives in the Add-ons step, edits decor.cutouts. */
+function CutoutsSection({
+  config,
+  patchDecor,
+}: {
+  config: BuilderConfig;
+  patchDecor: (p: Partial<DecorConfig>) => void;
+}) {
+  const cut = config.decor.cutouts;
+  return (
+    <div>
+      <h3 className="mb-1 text-sm font-semibold">Themed Cutouts &amp; Props</h3>
+      <p className="mb-3 text-xs text-black/50">Character cutouts to match your theme.</p>
+      <div className="space-y-3">
+        {CUTOUT_SETS.map((set) => {
+          const selected = cut.size === set.size;
+          return (
+            <div
+              key={set.size}
+              className={`rounded-2xl border p-4 transition ${
+                selected ? "border-accent bg-accent-soft/50 shadow-sm" : "border-black/10 bg-white"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  patchDecor({
+                    cutouts: {
+                      size: selected ? "none" : set.size,
+                      position: cut.position,
+                    },
+                  })
+                }
+                className="flex w-full items-start justify-between gap-3 text-left"
+              >
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold">{set.label}</span>
+                  <span className="mt-0.5 text-xs text-black/50">{set.desc}</span>
+                  <span className="mt-1 text-xs font-medium text-accent">+AED {set.price}</span>
+                </div>
+                <span
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs ${
+                    selected ? "border-accent bg-accent text-white" : "border-black/20 text-transparent"
+                  }`}
+                >
+                  ✓
+                </span>
+              </button>
+
+              {selected && (
+                <div className="mt-3 border-t border-accent/15 pt-3">
+                  <span className="mb-1.5 block text-[11px] font-medium text-black/55">
+                    Position
+                  </span>
+                  <div className="flex gap-2">
+                    {[
+                      { v: "floor", l: "Standing on floor" },
+                      { v: "backdrop", l: "Mounted on backdrop" },
+                    ].map((o) => (
+                      <button
+                        key={o.v}
+                        type="button"
+                        onClick={() =>
+                          patchDecor({ cutouts: { size: set.size, position: o.v as CutoutPosition } })
+                        }
+                        className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                          cut.position === o.v
+                            ? "bg-accent text-white"
+                            : "bg-white text-black/60 border border-black/15"
+                        }`}
+                      >
+                        {o.l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

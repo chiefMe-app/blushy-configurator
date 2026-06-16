@@ -10,7 +10,6 @@ export type PreviewStatus = "idle" | "loading" | "done" | "error";
 export function deriveExtras(config: BuilderConfig): string[] {
   const e: string[] = [];
   if (config.decor.cakeTable) e.push("dessert_table");
-  if (config.decor.nameSign === "neon") e.push("neon");
   return e;
 }
 
@@ -26,11 +25,20 @@ export function useSetupPreview(config: BuilderConfig) {
   const [nonce, setNonce] = useState(0); // bumped by regenerate()
 
   const extras = deriveExtras(config);
+  const d = config.decor;
+  // Regenerate when ANY of these change: theme, backdropColor, balloonColors,
+  // backdropShape, backdropCount, balloonStyle, backdropText (+ cutouts/plinths).
   const sig = JSON.stringify({
     t: config.theme,
     p: config.package,
-    s: config.decor.backdropShape,
-    b: config.decor.balloonStyle,
+    cnt: d.backdropCount,
+    s: d.backdropShape,
+    b: d.balloonStyle,
+    bc: d.backdropColor,
+    blc: d.balloonColors,
+    txt: d.backdropText,
+    cut: d.cutouts,
+    pl: d.plinthSizes,
     e: extras,
     n: nonce,
   });
@@ -46,8 +54,14 @@ export function useSetupPreview(config: BuilderConfig) {
           body: JSON.stringify({
             theme: config.theme,
             package: config.package,
-            balloonStyle: config.decor.balloonStyle,
-            backdropShape: config.decor.backdropShape,
+            backdropCount: d.backdropCount,
+            backdropShape: d.backdropShape,
+            backdropColor: d.backdropColor,
+            balloonStyle: d.balloonStyle,
+            balloonColors: d.balloonColors,
+            backdropText: d.backdropText,
+            cutouts: d.cutouts,
+            plinthSizes: d.plinthSizes,
             extras,
           }),
         });

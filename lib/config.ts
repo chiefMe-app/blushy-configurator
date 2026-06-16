@@ -4,7 +4,7 @@
 // NEVER hardcode prices in components — derive everything from here.
 // ---------------------------------------------------------------------------
 
-// =====================  STEP 1 — EVENT TYPE  ================================
+// =====================  STEP — EVENT TYPE  =================================
 
 export type EventTypeId =
   | "birthday"
@@ -28,165 +28,69 @@ export const EVENT_TYPES: EventType[] = [
   { id: "corporate_mini", label: "Corporate Mini Setup", emoji: "🏢", description: "Branded & polished" },
 ];
 
-// =====================  STEP 2 — THEME  ====================================
+// =====================  STEP — THEME  ======================================
 
 export type ThemeId =
-  | "blush_pink"
-  | "fairy_garden"
+  | "frozen"
   | "unicorn"
-  | "baby_blue"
+  | "dinosaur"
   | "safari"
-  | "football"
-  | "pastel_rainbow"
-  | "luxury_neutral"
+  | "princess"
+  | "superhero"
+  | "barbie"
+  | "bluey"
+  | "pokemon"
+  | "stitch"
+  | "mermaid"
   | "space"
-  | "princess";
+  | "football"
+  | "kpop"
+  | "encanto"
+  | "cocomelon"
+  | "blush_garden"
+  | "luxury_neutral";
 
 export interface Theme {
   id: ThemeId;
-  label: string;
-  /** Price modifier added on top of the package base (AED). */
-  modifier: number;
-  description: string;
-  /** 3–4 swatch palette shown on the card and used by the canvas. */
-  palette: string[];
-  /** Runtime --accent CSS variable (RGB triplet). */
+  name: string;
+  emoji: string;
+  desc: string;
+  /** Suggested backdrop colors (first is the default). */
+  backdropColors: string[];
+  /** Suggested balloon palette (Sempertex). */
+  balloonColors: string[];
+  priceModifier: number;
+  /** UI accent (hex) — chosen for good contrast on a white background. */
   accent: string;
-  /** Lighter --accent-soft for tinted backgrounds (RGB triplet). */
-  accentSoft: string;
-  /** Backdrop panel fill used by the Canvas preview. */
-  backdropColor: string;
-  /** Words injected into the fal.ai prompt. */
-  promptColors: string;
 }
 
 export const THEMES: Theme[] = [
-  {
-    id: "blush_pink",
-    label: "Blush Pink",
-    modifier: 0,
-    description: "Soft pinks, cream, white",
-    palette: ["#F8C8DC", "#F6A5C0", "#FBE9E7", "#FFFFFF"],
-    accent: "236 72 153",
-    accentSoft: "252 231 243",
-    backdropColor: "#F7E4EC",
-    promptColors: "soft blush pink, cream and white",
-  },
-  {
-    id: "fairy_garden",
-    label: "Fairy Garden",
-    modifier: 50,
-    description: "Sage, dusty rose, butterfly accents",
-    palette: ["#B7C9A8", "#E3B5C0", "#F2E2D2", "#FFFFFF"],
-    accent: "124 148 104",
-    accentSoft: "226 235 215",
-    backdropColor: "#DDE6D2",
-    promptColors: "sage green, dusty rose and butterflies",
-  },
-  {
-    id: "unicorn",
-    label: "Unicorn",
-    modifier: 50,
-    description: "Pastels, iridescent, rainbow",
-    palette: ["#F6A5C0", "#C8A2F0", "#A5D8F8", "#FFF1A8"],
-    accent: "168 85 247",
-    accentSoft: "243 232 255",
-    backdropColor: "#EFE3FB",
-    promptColors: "iridescent pastel rainbow, lilac and pink",
-  },
-  {
-    id: "baby_blue",
-    label: "Baby Blue",
-    modifier: 0,
-    description: "Sky blue, white, silver",
-    palette: ["#A5D8F8", "#C9E7FB", "#FFFFFF", "#D8DEE6"],
-    accent: "59 130 246",
-    accentSoft: "219 234 254",
-    backdropColor: "#DDEBF7",
-    promptColors: "sky blue, white and silver",
-  },
-  {
-    id: "safari",
-    label: "Safari",
-    modifier: 30,
-    description: "Earthy tones, animal print, jungle",
-    palette: ["#C2A878", "#8A9A5B", "#E8DCC0", "#6B4F3A"],
-    accent: "150 123 80",
-    accentSoft: "235 226 205",
-    backdropColor: "#E6DCC4",
-    promptColors: "earthy safari tones, jungle greens and animal print",
-  },
-  {
-    id: "football",
-    label: "Football",
-    modifier: 30,
-    description: "Team colors, grass green, sporty",
-    palette: ["#2E7D32", "#FFFFFF", "#111827", "#E53935"],
-    accent: "46 125 50",
-    accentSoft: "210 232 211",
-    backdropColor: "#D7E8D8",
-    promptColors: "grass green, white and bold team colors, sporty",
-  },
-  {
-    id: "pastel_rainbow",
-    label: "Pastel Rainbow",
-    modifier: 40,
-    description: "Full pastel spectrum",
-    palette: ["#FBC4D2", "#FDE2A7", "#C9F0D2", "#BBD9F7", "#D6C3F0"],
-    accent: "244 114 182",
-    accentSoft: "252 231 243",
-    backdropColor: "#F6E9F3",
-    promptColors: "full pastel rainbow spectrum",
-  },
-  {
-    id: "luxury_neutral",
-    label: "Luxury Neutral",
-    modifier: 80,
-    description: "Beige, champagne, gold, ivory",
-    palette: ["#E8DCC8", "#D9C2A0", "#C2A15A", "#FFFDF7"],
-    accent: "176 141 87",
-    accentSoft: "242 234 221",
-    backdropColor: "#EDE4D4",
-    promptColors: "beige, champagne, gold and ivory, understated luxury",
-  },
-  {
-    id: "space",
-    label: "Space",
-    modifier: 60,
-    description: "Deep navy, silver, planets, stars",
-    palette: ["#1E2A55", "#3B4C8A", "#C0C6D6", "#0B1020"],
-    accent: "79 110 197",
-    accentSoft: "214 221 240",
-    backdropColor: "#1E2A55",
-    promptColors: "deep navy, silver, planets and stars",
-  },
-  {
-    id: "princess",
-    label: "Princess",
-    modifier: 50,
-    description: "Pink, gold crown, castle",
-    palette: ["#F4A6C8", "#E8C77A", "#FFFFFF", "#F7DCE8"],
-    accent: "219 88 154",
-    accentSoft: "250 226 238",
-    backdropColor: "#F7DCE8",
-    promptColors: "princess pink, gold crowns and castle",
-  },
+  { id: "frozen", name: "Frozen", emoji: "❄️", desc: "Icy blues, silver, snowflakes", backdropColors: ["#E8F4FD", "#B3D9F2", "#FFFFFF"], balloonColors: ["#B3D9F2", "#E8F4FD", "#C8E6FA", "#FFFFFF", "#A8D4EF"], priceModifier: 50, accent: "#4A90D9" },
+  { id: "unicorn", name: "Unicorn", emoji: "🦄", desc: "Pastels, iridescent, rainbow magic", backdropColors: ["#F9D5DF", "#E8C8F0", "#D5EEF9"], balloonColors: ["#F9D5DF", "#C4F0E8", "#E8C8F0", "#FFF0A0", "#FFFFFF"], priceModifier: 50, accent: "#C77DD6" },
+  { id: "dinosaur", name: "Dinosaur", emoji: "🦕", desc: "Earthy greens, terracotta, jungle", backdropColors: ["#E8F5E9", "#C8DFC8", "#F5F0E8"], balloonColors: ["#80CBC4", "#A5D6A7", "#BCAAA4", "#EF9A9A", "#78909C"], priceModifier: 30, accent: "#4CAF82" },
+  { id: "safari", name: "Safari", emoji: "🦁", desc: "Warm browns, animal print, jungle", backdropColors: ["#FFF8E1", "#FFE0B2", "#F5F0E8"], balloonColors: ["#FFCC80", "#A5D6A7", "#FFAB40", "#8D6E63", "#FFF176"], priceModifier: 30, accent: "#B5762A" },
+  { id: "princess", name: "Princess", emoji: "👑", desc: "Pink, gold, castle, crown", backdropColors: ["#FCE4EC", "#FFF9C4", "#FFFFFF"], balloonColors: ["#F48FB1", "#CE93D8", "#FFD54F", "#FFFFFF", "#F8BBD0"], priceModifier: 50, accent: "#E84F8B" },
+  { id: "superhero", name: "Superhero", emoji: "🦸", desc: "Bold primaries, action, pow!", backdropColors: ["#E3F2FD", "#FFEBEE", "#F3E5F5"], balloonColors: ["#EF5350", "#1565C0", "#FDD835", "#43A047", "#9C27B0"], priceModifier: 40, accent: "#1565C0" },
+  { id: "barbie", name: "Barbie", emoji: "💗", desc: "Hot pink, fuchsia, glam", backdropColors: ["#FF69B4", "#FFB6C1", "#FFFFFF"], balloonColors: ["#FF69B4", "#FF1493", "#FFB6C1", "#FFFFFF", "#FF69B4"], priceModifier: 60, accent: "#FF1493" },
+  { id: "bluey", name: "Bluey", emoji: "🐾", desc: "Blue heeler, family fun, playful", backdropColors: ["#E3F2FD", "#BBDEFB", "#FFFFFF"], balloonColors: ["#42A5F5", "#EF5350", "#FFF176", "#81C784", "#FFFFFF"], priceModifier: 40, accent: "#2E86DE" },
+  { id: "pokemon", name: "Pokémon", emoji: "⚡", desc: "Yellow, red Pokéball, adventure", backdropColors: ["#FFFDE7", "#FFF9C4", "#FFFFFF"], balloonColors: ["#FDD835", "#EF5350", "#1565C0", "#FFFFFF", "#FF8F00"], priceModifier: 50, accent: "#E0382B" },
+  { id: "stitch", name: "Stitch", emoji: "💙", desc: "Blue, tropical, Hawaiian", backdropColors: ["#E3F2FD", "#B3E5FC", "#E8F5E9"], balloonColors: ["#42A5F5", "#1565C0", "#81C784", "#FFFFFF", "#29B6F6"], priceModifier: 40, accent: "#2196D6" },
+  { id: "mermaid", name: "Mermaid", emoji: "🧜‍♀️", desc: "Teals, iridescent, ocean magic", backdropColors: ["#E0F7FA", "#B2EBF2", "#F3E5F5"], balloonColors: ["#80DEEA", "#4DD0E1", "#CE93D8", "#B2EBF2", "#FFFFFF"], priceModifier: 50, accent: "#1FB6C4" },
+  { id: "space", name: "Space", emoji: "🚀", desc: "Deep navy, stars, planets", backdropColors: ["#1A237E", "#283593", "#311B92"], balloonColors: ["#9FA8DA", "#7986CB", "#B39DDB", "#FFD54F", "#FFFFFF"], priceModifier: 60, accent: "#3949AB" },
+  { id: "football", name: "Football", emoji: "⚽", desc: "Team colors, grass green, sporty", backdropColors: ["#E8F5E9", "#FFFFFF", "#F5F5F5"], balloonColors: ["#43A047", "#FFFFFF", "#1565C0", "#EF5350", "#FDD835"], priceModifier: 30, accent: "#2E9E4F" },
+  { id: "kpop", name: "K-Pop", emoji: "🎤", desc: "Neon, sparkle, idol vibes", backdropColors: ["#F3E5F5", "#E8EAF6", "#FCE4EC"], balloonColors: ["#CE93D8", "#9FA8DA", "#F48FB1", "#FFFFFF", "#80DEEA"], priceModifier: 70, accent: "#B14FD8" },
+  { id: "encanto", name: "Encanto", emoji: "🌺", desc: "Vibrant Colombian colors, magical", backdropColors: ["#FFF8E1", "#FCE4EC", "#E8F5E9"], balloonColors: ["#FF8F00", "#E91E63", "#43A047", "#FFD54F", "#9C27B0"], priceModifier: 50, accent: "#E0561E" },
+  { id: "cocomelon", name: "Cocomelon", emoji: "🍉", desc: "Bright primaries, watermelon, fun", backdropColors: ["#E8F5E9", "#E3F2FD", "#FFFFFF"], balloonColors: ["#EF5350", "#43A047", "#42A5F5", "#FDD835", "#FFFFFF"], priceModifier: 30, accent: "#3AA655" },
+  { id: "blush_garden", name: "Blush Garden", emoji: "🌸", desc: "Soft pinks, florals, romantic", backdropColors: ["#FCE4EC", "#F8BBD0", "#FFFFFF"], balloonColors: ["#F48FB1", "#F8BBD0", "#FFFFFF", "#CE93D8", "#FFE0B2"], priceModifier: 0, accent: "#E5739A" },
+  { id: "luxury_neutral", name: "Luxury Neutral", emoji: "🤍", desc: "Beige, champagne, gold, ivory", backdropColors: ["#F5F0E8", "#EDE0D0", "#FFFFFF"], balloonColors: ["#D4B896", "#EDE0D0", "#FFD54F", "#FFFFFF", "#C8A882"], priceModifier: 80, accent: "#B08D57" },
 ];
 
-// =====================  STEP 3 — PACKAGE  ==================================
+// =====================  STEP — PACKAGE  ====================================
 
 export type PackageId = "mini" | "signature" | "luxury";
 
-export interface DecorConfig {
-  backdropCount: number;
-  backdropShape: BackdropShapeId;
-  balloonStyle: BalloonStyleId;
-  balloonColorCustom: boolean;
-  plinths: number;
-  nameSign: NameSignId;
-  cutouts: CutoutsId;
-  cakeTable: boolean;
-}
+/** Package-driven decor defaults (colors come from the theme, not the package). */
+export type PackageDecorDefaults = Omit<DecorConfig, "backdropColor" | "balloonColors">;
 
 export interface Package {
   id: PackageId;
@@ -195,8 +99,7 @@ export interface Package {
   popular?: boolean;
   includes: string[];
   bestFor: string;
-  /** Decor defaults applied when this package is selected. */
-  defaultDecor: DecorConfig;
+  defaultDecor: PackageDecorDefaults;
 }
 
 export const PACKAGES: Package[] = [
@@ -210,10 +113,10 @@ export const PACKAGES: Package[] = [
       backdropCount: 1,
       backdropShape: "round_arch",
       balloonStyle: "half",
-      balloonColorCustom: false,
       plinths: 1,
-      nameSign: "none",
-      cutouts: "none",
+      plinthSizes: ["medium"],
+      cutouts: { size: "none", position: "floor" },
+      backdropText: { enabled: false, type: "birthday", name: "", customText: "", fontStyle: "script", color: "white" },
       cakeTable: false,
     },
   },
@@ -228,10 +131,10 @@ export const PACKAGES: Package[] = [
       backdropCount: 2,
       backdropShape: "double_arch",
       balloonStyle: "full",
-      balloonColorCustom: false,
       plinths: 2,
-      nameSign: "printed",
-      cutouts: "none",
+      plinthSizes: ["medium", "medium"],
+      cutouts: { size: "none", position: "floor" },
+      backdropText: { enabled: true, type: "birthday", name: "", customText: "", fontStyle: "script", color: "white" },
       cakeTable: false,
     },
   },
@@ -250,16 +153,16 @@ export const PACKAGES: Package[] = [
       backdropCount: 3,
       backdropShape: "mixed_panels",
       balloonStyle: "premium",
-      balloonColorCustom: false,
       plinths: 3,
-      nameSign: "acrylic",
-      cutouts: "medium",
+      plinthSizes: ["large", "medium", "medium"],
+      cutouts: { size: "medium", position: "floor" },
+      backdropText: { enabled: true, type: "birthday", name: "", customText: "", fontStyle: "elegant", color: "gold" },
       cakeTable: true,
     },
   },
 ];
 
-// =====================  STEP 4 — DECOR  ====================================
+// =====================  STEP — DECOR  ======================================
 
 export type BackdropShapeId =
   | "round_arch"
@@ -269,8 +172,42 @@ export type BackdropShapeId =
   | "mixed_panels";
 
 export type BalloonStyleId = "none" | "half" | "full" | "premium";
-export type NameSignId = "none" | "printed" | "acrylic" | "neon";
-export type CutoutsId = "none" | "small" | "medium" | "premium";
+
+export type PlinthSize = "small" | "medium" | "large" | "xl";
+export type CutoutSize = "none" | "small" | "medium" | "premium";
+export type CutoutPosition = "floor" | "backdrop";
+export type BackdropTextType = "birthday" | "custom";
+export type FontStyle = "script" | "block" | "elegant";
+export type TextColor = "white" | "gold" | "black" | "accent";
+
+export interface BackdropText {
+  enabled: boolean;
+  type: BackdropTextType;
+  name: string;
+  customText: string;
+  fontStyle: FontStyle;
+  color: TextColor;
+}
+
+export interface CutoutSelection {
+  size: CutoutSize;
+  position: CutoutPosition;
+}
+
+export interface DecorConfig {
+  backdropCount: number;
+  backdropShape: BackdropShapeId;
+  balloonStyle: BalloonStyleId;
+  /** User-chosen backdrop color (hex) — defaults to the theme suggestion. */
+  backdropColor: string;
+  /** User-chosen balloon colors (hex, up to 5) — defaults to the theme palette. */
+  balloonColors: string[];
+  plinths: number;
+  plinthSizes: PlinthSize[];
+  cutouts: CutoutSelection;
+  backdropText: BackdropText;
+  cakeTable: boolean;
+}
 
 export interface Option<T extends string> {
   id: T;
@@ -293,33 +230,46 @@ export const BALLOON_STYLES: Option<BalloonStyleId>[] = [
   { id: "premium", label: "Premium Organic", price: 420 },
 ];
 
-export const NAME_SIGNS: Option<NameSignId>[] = [
-  { id: "none", label: "None", price: 0 },
-  { id: "printed", label: "Printed", price: 120 },
-  { id: "acrylic", label: "Acrylic", price: 200 },
-  { id: "neon", label: "Neon-style", price: 350 },
+export const PLINTH_SIZES: Option<PlinthSize>[] = [
+  { id: "small", label: "Small", price: 60 },
+  { id: "medium", label: "Medium", price: 80 },
+  { id: "large", label: "Large", price: 110 },
+  { id: "xl", label: "XL", price: 150 },
 ];
 
-export const CUTOUTS: Option<CutoutsId>[] = [
-  { id: "none", label: "None", price: 0 },
-  { id: "small", label: "Small set", price: 150 },
-  { id: "medium", label: "Medium set", price: 250 },
-  { id: "premium", label: "Premium set", price: 420 },
-];
+/** Cutout sets — shown as cards in the Add-ons step. */
+export interface CutoutSet {
+  size: Exclude<CutoutSize, "none">;
+  label: string;
+  desc: string;
+  price: number;
+}
 
-/** Plinth count → price (index = count). */
-export const PLINTH_PRICES = [0, 80, 150, 210];
+export const CUTOUT_SETS: CutoutSet[] = [
+  { size: "small", label: "Small Cutout Set", desc: "2 character cutouts", price: 150 },
+  { size: "medium", label: "Medium Cutout Set", desc: "4 character cutouts", price: 250 },
+  { size: "premium", label: "Premium Cutout Set", desc: "6 character cutouts + large feature piece", price: 420 },
+];
 
 export const CAKE_TABLE_PRICE = 300;
 
-/**
- * Extra/fewer backdrops beyond the package default cost this each.
- * Package base already covers its default count, so the delta is
- * (selectedCount − packageDefaultCount) × this value.
- */
+/** Extra/fewer backdrops beyond the package default cost this each. */
 export const PER_BACKDROP = 350;
 
-// =====================  STEP 5 — ADD-ONS  ==================================
+export const FONT_STYLES: { id: FontStyle; label: string }[] = [
+  { id: "script", label: "Script / Cursive" },
+  { id: "block", label: "Bold Block" },
+  { id: "elegant", label: "Elegant Serif" },
+];
+
+export const TEXT_COLORS: { id: TextColor; label: string; swatch: string }[] = [
+  { id: "white", label: "White", swatch: "#FFFFFF" },
+  { id: "gold", label: "Gold", swatch: "#D4AF37" },
+  { id: "black", label: "Black", swatch: "#222222" },
+  { id: "accent", label: "Theme accent", swatch: "" },
+];
+
+// =====================  STEP — ADD-ONS  ====================================
 
 export type AddOnId =
   | "bouncy_castle"
@@ -338,7 +288,6 @@ export type AddOnId =
 export interface SubOption {
   key: string;
   label: string;
-  /** "choice" renders as a button group; "text"/"number" render as inputs. */
   type: "choice" | "text" | "number";
   choices?: { value: string; label: string }[];
 }
@@ -348,12 +297,9 @@ export interface AddOn {
   label: string;
   description: string;
   basePrice: number;
-  /** Display string e.g. "from AED 450" or "AED 220". */
   priceLabel: string;
-  /** Price is basePrice × number of children (Return Gifts). */
   perChild?: boolean;
   subOptions?: SubOption[];
-  /** Drives the "Recommended" badge. */
   recommend?: { packages?: PackageId[]; themes?: ThemeId[] };
 }
 
@@ -387,58 +333,15 @@ export const ADDONS: AddOn[] = [
     basePrice: 450,
     priceLabel: "from AED 450",
     subOptions: [
-      {
-        key: "placement",
-        label: "Indoor or outdoor",
-        type: "choice",
-        choices: [
-          { value: "indoor", label: "Indoor" },
-          { value: "outdoor", label: "Outdoor" },
-        ],
-      },
+      { key: "placement", label: "Indoor or outdoor", type: "choice", choices: [{ value: "indoor", label: "Indoor" }, { value: "outdoor", label: "Outdoor" }] },
       { key: "space", label: "Space available", type: "text" },
-      {
-        key: "age",
-        label: "Child age range",
-        type: "choice",
-        choices: [
-          { value: "3_5", label: "3–5" },
-          { value: "5_10", label: "5–10" },
-          { value: "mixed", label: "Mixed" },
-        ],
-      },
+      { key: "age", label: "Child age range", type: "choice", choices: [{ value: "3_5", label: "3–5" }, { value: "5_10", label: "5–10" }, { value: "mixed", label: "Mixed" }] },
     ],
   },
-  {
-    id: "soft_play",
-    label: "Soft Play",
-    description: "Safe padded play zone for toddlers.",
-    basePrice: 380,
-    priceLabel: "from AED 380",
-  },
-  {
-    id: "ball_pit",
-    label: "Ball Pit",
-    description: "Colourful ball pit for endless fun.",
-    basePrice: 280,
-    priceLabel: "from AED 280",
-  },
-  {
-    id: "popcorn",
-    label: "Popcorn Machine",
-    description: "Fresh popcorn cart with serving.",
-    basePrice: 220,
-    priceLabel: "AED 220",
-    subOptions: [GUEST_COUNT],
-  },
-  {
-    id: "cotton_candy",
-    label: "Cotton Candy Machine",
-    description: "Spun-sugar treats on demand.",
-    basePrice: 220,
-    priceLabel: "AED 220",
-    subOptions: [GUEST_COUNT],
-  },
+  { id: "soft_play", label: "Soft Play", description: "Safe padded play zone for toddlers.", basePrice: 380, priceLabel: "from AED 380" },
+  { id: "ball_pit", label: "Ball Pit", description: "Colourful ball pit for endless fun.", basePrice: 280, priceLabel: "from AED 280" },
+  { id: "popcorn", label: "Popcorn Machine", description: "Fresh popcorn cart with serving.", basePrice: 220, priceLabel: "AED 220", subOptions: [GUEST_COUNT] },
+  { id: "cotton_candy", label: "Cotton Candy Machine", description: "Spun-sugar treats on demand.", basePrice: 220, priceLabel: "AED 220", subOptions: [GUEST_COUNT] },
   {
     id: "face_painting",
     label: "Face Painting",
@@ -446,67 +349,14 @@ export const ADDONS: AddOn[] = [
     basePrice: 350,
     priceLabel: "AED 350",
     recommend: { themes: ["safari", "princess"] },
-    subOptions: [
-      {
-        key: "children",
-        label: "Number of children",
-        type: "choice",
-        choices: [
-          { value: "under_10", label: "Under 10" },
-          { value: "10_20", label: "10–20" },
-          { value: "20_plus", label: "20+" },
-        ],
-      },
-    ],
+    subOptions: [{ key: "children", label: "Number of children", type: "choice", choices: [{ value: "under_10", label: "Under 10" }, { value: "10_20", label: "10–20" }, { value: "20_plus", label: "20+" }] }],
   },
-  {
-    id: "mascot",
-    label: "Mascot / Entertainer",
-    description: "Costumed character or host.",
-    basePrice: 650,
-    priceLabel: "from AED 650",
-  },
-  {
-    id: "photographer",
-    label: "Photographer",
-    description: "Capture the day professionally.",
-    basePrice: 750,
-    priceLabel: "from AED 750",
-    recommend: { packages: ["luxury"] },
-    subOptions: [DURATION],
-  },
-  {
-    id: "videographer",
-    label: "Videographer",
-    description: "Cinematic event film.",
-    basePrice: 950,
-    priceLabel: "from AED 950",
-    recommend: { packages: ["luxury"] },
-    subOptions: [DURATION],
-  },
-  {
-    id: "cake",
-    label: "Cake",
-    description: "Custom themed celebration cake.",
-    basePrice: 380,
-    priceLabel: "from AED 380",
-  },
-  {
-    id: "return_gifts",
-    label: "Return Gifts",
-    description: "Curated goodie bags per child.",
-    basePrice: 15,
-    priceLabel: "from AED 15 / child",
-    perChild: true,
-    subOptions: [{ key: "children", label: "Number of children", type: "number" }],
-  },
-  {
-    id: "kids_tables",
-    label: "Kids Tables & Chairs",
-    description: "Styled seating for little guests.",
-    basePrice: 280,
-    priceLabel: "AED 280",
-  },
+  { id: "mascot", label: "Mascot / Entertainer", description: "Costumed character or host.", basePrice: 650, priceLabel: "from AED 650" },
+  { id: "photographer", label: "Photographer", description: "Capture the day professionally.", basePrice: 750, priceLabel: "from AED 750", recommend: { packages: ["luxury"] }, subOptions: [DURATION] },
+  { id: "videographer", label: "Videographer", description: "Cinematic event film.", basePrice: 950, priceLabel: "from AED 950", recommend: { packages: ["luxury"] }, subOptions: [DURATION] },
+  { id: "cake", label: "Cake", description: "Custom themed celebration cake.", basePrice: 380, priceLabel: "from AED 380" },
+  { id: "return_gifts", label: "Return Gifts", description: "Curated goodie bags per child.", basePrice: 15, priceLabel: "from AED 15 / child", perChild: true, subOptions: [{ key: "children", label: "Number of children", type: "number" }] },
+  { id: "kids_tables", label: "Kids Tables & Chairs", description: "Styled seating for little guests.", basePrice: 280, priceLabel: "AED 280" },
 ];
 
 // =====================  LOOKUPS  ===========================================
@@ -516,9 +366,13 @@ export const themeById = (id: string) => THEMES.find((t) => t.id === id);
 export const packageById = (id: string) => PACKAGES.find((p) => p.id === id);
 export const shapeById = (id: string) => BACKDROP_SHAPES.find((s) => s.id === id);
 export const balloonStyleById = (id: string) => BALLOON_STYLES.find((b) => b.id === id);
-export const nameSignById = (id: string) => NAME_SIGNS.find((n) => n.id === id);
-export const cutoutsById = (id: string) => CUTOUTS.find((c) => c.id === id);
+export const plinthSizeById = (id: string) => PLINTH_SIZES.find((p) => p.id === id);
+export const cutoutSetBySize = (size: string) => CUTOUT_SETS.find((c) => c.size === size);
 export const addOnById = (id: string) => ADDONS.find((a) => a.id === id);
+
+export function cutoutPrice(size: CutoutSize): number {
+  return cutoutSetBySize(size)?.price ?? 0;
+}
 
 // =====================  STATE SHAPE  =======================================
 
@@ -535,7 +389,6 @@ export interface VenueDetails {
   isOutdoor: boolean;
   guestCount: number;
   childrenCount: number;
-  /** Files held in component state only (no storage yet). */
   photos: File[];
 }
 
@@ -552,7 +405,6 @@ export interface BuilderConfig {
   addOns: SelectedAddOn[];
   venue: VenueDetails;
   customer: CustomerDetails;
-  /** Derived; recomputed via computeTotal() — never set by hand. */
   estimatedTotal: number;
 }
 
@@ -566,12 +418,17 @@ export const VENUE_TYPES = [
 ] as const;
 
 export function defaultConfig(): BuilderConfig {
+  const theme = THEMES.find((t) => t.id === "blush_garden")!;
   const pkg = PACKAGES.find((p) => p.id === "signature")!;
   const cfg: BuilderConfig = {
     eventType: "birthday",
-    theme: "blush_pink",
+    theme: theme.id,
     package: pkg.id,
-    decor: { ...pkg.defaultDecor },
+    decor: {
+      ...pkg.defaultDecor,
+      backdropColor: theme.backdropColors[0],
+      balloonColors: theme.balloonColors.slice(0, 5),
+    },
     addOns: [],
     venue: {
       date: "",
@@ -598,9 +455,8 @@ export interface PriceLine {
 }
 
 /**
- * Locale-stable thousands formatter. Using a fixed grouping (not
- * toLocaleString, whose default locale differs between the Node server and the
- * browser) avoids React hydration mismatches.
+ * Locale-stable thousands formatter. Avoids React hydration mismatches that
+ * toLocaleString causes (server vs browser default locale differ).
  */
 export function formatAED(n: number): string {
   return Math.round(n)
@@ -608,15 +464,19 @@ export function formatAED(n: number): string {
     .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-/** Price contribution of a single selected add-on (handles per-child). */
+export function plinthsTotal(sizes: PlinthSize[]): number {
+  return sizes.reduce((sum, s) => sum + (plinthSizeById(s)?.price ?? 0), 0);
+}
+
 export function addOnPrice(sel: SelectedAddOn, config: BuilderConfig): number {
   const addon = addOnById(sel.id);
   if (!addon) return 0;
   if (addon.perChild) {
     const fromOption = Number(sel.options?.children ?? "");
-    const children = Number.isFinite(fromOption) && fromOption > 0
-      ? fromOption
-      : config.venue.childrenCount || 0;
+    const children =
+      Number.isFinite(fromOption) && fromOption > 0
+        ? fromOption
+        : config.venue.childrenCount || 0;
     return addon.basePrice * children;
   }
   return addon.basePrice;
@@ -627,51 +487,44 @@ export function priceBreakdown(config: BuilderConfig): {
   total: number;
 } {
   const lines: PriceLine[] = [];
+  const d = config.decor;
 
   const pkg = packageById(config.package) ?? PACKAGES[0];
   lines.push({ label: `${pkg.label} (base)`, amount: pkg.base });
 
   const theme = themeById(config.theme);
-  if (theme && theme.modifier > 0) {
-    lines.push({ label: `${theme.label} theme`, amount: theme.modifier });
+  if (theme && theme.priceModifier > 0) {
+    lines.push({ label: `${theme.name} theme`, amount: theme.priceModifier });
   }
 
-  // Backdrop count delta vs the package default.
-  const countDelta = (config.decor.backdropCount - pkg.defaultDecor.backdropCount) * PER_BACKDROP;
+  const countDelta = (d.backdropCount - pkg.defaultDecor.backdropCount) * PER_BACKDROP;
   if (countDelta !== 0) {
-    const n = config.decor.backdropCount;
-    lines.push({ label: `Backdrops (${n})`, amount: countDelta });
+    lines.push({ label: `Backdrops (${d.backdropCount})`, amount: countDelta });
   }
 
-  const style = balloonStyleById(config.decor.balloonStyle);
+  const style = balloonStyleById(d.balloonStyle);
   if (style && style.price > 0) {
     lines.push({ label: `Balloons — ${style.label}`, amount: style.price });
   }
 
-  const plinthPrice = PLINTH_PRICES[config.decor.plinths] ?? 0;
-  if (plinthPrice > 0) {
-    lines.push({ label: `Plinths (${config.decor.plinths})`, amount: plinthPrice });
+  const plinthSum = plinthsTotal(d.plinthSizes);
+  if (plinthSum > 0) {
+    lines.push({ label: `Plinths (${d.plinthSizes.length})`, amount: plinthSum });
   }
 
-  const sign = nameSignById(config.decor.nameSign);
-  if (sign && sign.price > 0) {
-    lines.push({ label: `Name sign — ${sign.label}`, amount: sign.price });
+  const cut = cutoutPrice(d.cutouts.size);
+  if (cut > 0) {
+    lines.push({ label: `${cutoutSetBySize(d.cutouts.size)?.label}`, amount: cut });
   }
 
-  const cut = cutoutsById(config.decor.cutouts);
-  if (cut && cut.price > 0) {
-    lines.push({ label: `Cutouts — ${cut.label}`, amount: cut.price });
-  }
-
-  if (config.decor.cakeTable) {
+  if (d.cakeTable) {
     lines.push({ label: "Cake / dessert table", amount: CAKE_TABLE_PRICE });
   }
 
   for (const sel of config.addOns) {
     const addon = addOnById(sel.id);
     if (!addon) continue;
-    const amount = addOnPrice(sel, config);
-    lines.push({ label: addon.label, amount });
+    lines.push({ label: addon.label, amount: addOnPrice(sel, config) });
   }
 
   const total = lines.reduce((sum, l) => sum + l.amount, 0);
@@ -682,10 +535,37 @@ export function computeTotal(config: BuilderConfig): number {
   return priceBreakdown(config).total;
 }
 
-/** Whether an add-on is recommended for the current theme/package. */
 export function isAddOnRecommended(addon: AddOn, config: BuilderConfig): boolean {
   if (!addon.recommend) return false;
   if (addon.recommend.packages?.includes(config.package)) return true;
   if (addon.recommend.themes?.includes(config.theme)) return true;
   return false;
+}
+
+// =====================  COLOR / ACCENT HELPERS  ============================
+
+export function hexToRgbTriplet(hex: string): string {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const n = parseInt(full, 16);
+  return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
+}
+
+/** Lighten a hex toward white and return an "r g b" triplet (for --accent-soft). */
+export function softTriplet(hex: string, amt = 0.85): string {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const n = parseInt(full, 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  const f = (c: number) => Math.round(c + (255 - c) * amt);
+  return `${f(r)} ${f(g)} ${f(b)}`;
+}
+
+/** Resolve a backdrop text's literal string. */
+export function resolveBackdropText(t: BackdropText): string {
+  if (!t.enabled) return "";
+  if (t.type === "birthday") return `Happy Birthday ${t.name}`.trim();
+  return t.customText.trim();
 }

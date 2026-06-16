@@ -6,8 +6,9 @@ import {
   packageById,
   shapeById,
   balloonStyleById,
-  nameSignById,
-  cutoutsById,
+  plinthSizeById,
+  cutoutSetBySize,
+  resolveBackdropText,
   addOnById,
   type BuilderConfig,
 } from "@/lib/config";
@@ -40,7 +41,7 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
     <div className="space-y-4">
       <Section title="Event">
         <Row k="Type" v={eventTypeById(config.eventType)?.label ?? "—"} />
-        <Row k="Theme" v={themeById(config.theme)?.label ?? "—"} />
+        <Row k="Theme" v={themeById(config.theme)?.name ?? "—"} />
         <Row k="Package" v={packageById(config.package)?.label ?? "—"} />
       </Section>
 
@@ -48,11 +49,43 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
         <Row k="Backdrops" v={String(decor.backdropCount)} />
         <Row k="Shape" v={shapeById(decor.backdropShape)?.label ?? "—"} />
         <Row k="Balloons" v={balloonStyleById(decor.balloonStyle)?.label ?? "—"} />
-        <Row k="Plinths" v={String(decor.plinths)} />
-        <Row k="Name sign" v={nameSignById(decor.nameSign)?.label ?? "—"} />
-        <Row k="Cutouts" v={cutoutsById(decor.cutouts)?.label ?? "—"} />
+        <div className="flex items-center justify-between gap-4 py-1 text-sm">
+          <dt className="text-black/50">Balloon colors</dt>
+          <dd className="flex gap-1">
+            {decor.balloonColors.map((c, i) => (
+              <span
+                key={i}
+                className="h-4 w-4 rounded-full border border-black/10"
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </dd>
+        </div>
+        <Row
+          k="Plinths"
+          v={
+            decor.plinthSizes.length
+              ? decor.plinthSizes
+                  .map((s) => plinthSizeById(s)?.label ?? s)
+                  .join(", ")
+              : "None"
+          }
+        />
+        <Row
+          k="Cutouts"
+          v={
+            decor.cutouts.size === "none"
+              ? "None"
+              : `${cutoutSetBySize(decor.cutouts.size)?.label} (${
+                  decor.cutouts.position === "backdrop" ? "on backdrop" : "on floor"
+                })`
+          }
+        />
+        <Row
+          k="Backdrop text"
+          v={decor.backdropText.enabled ? `“${resolveBackdropText(decor.backdropText)}”` : "None"}
+        />
         <Row k="Cake / dessert table" v={decor.cakeTable ? "Yes" : "No"} />
-        {decor.balloonColorCustom && <Row k="Balloon colors" v="Custom request" />}
       </Section>
 
       {config.addOns.length > 0 && (

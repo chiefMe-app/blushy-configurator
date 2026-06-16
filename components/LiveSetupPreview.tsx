@@ -3,9 +3,11 @@
 import { useEffect, useRef } from "react";
 import {
   themeById,
+  resolveBackdropText,
   type BuilderConfig,
   type BackdropShapeId,
   type BalloonStyleId,
+  type PlinthSize,
 } from "@/lib/config";
 
 /**
@@ -25,11 +27,12 @@ export default function LiveSetupPreview({ config }: { config: BuilderConfig }) 
     c: config.decor.backdropCount,
     sh: config.decor.backdropShape,
     b: config.decor.balloonStyle,
-    p: config.decor.plinths,
-    n: config.decor.nameSign,
+    bc: config.decor.backdropColor,
+    blc: config.decor.balloonColors,
+    p: config.decor.plinthSizes,
     cu: config.decor.cutouts,
+    txt: config.decor.backdropText,
     ck: config.decor.cakeTable,
-    nm: config.customer.name,
   });
 
   useEffect(() => {
@@ -85,7 +88,12 @@ function renderScene(
   config: BuilderConfig
 ) {
   const theme = themeById(config.theme)!;
-  const isDark = isColorDark(theme.backdropColor);
+  // User-overridable colors (Change 4) fall back to the theme suggestions.
+  const backdropColor = config.decor.backdropColor || theme.backdropColors[0];
+  const palette =
+    config.decor.balloonColors.length > 0 ? config.decor.balloonColors : theme.balloonColors;
+  const accent = theme.accent;
+  const isDark = isColorDark(backdropColor);
 
   // --- background + floor --------------------------------------------------
   const bg = ctx.createLinearGradient(0, 0, 0, H);
@@ -104,7 +112,6 @@ function renderScene(
   // --- layout backdrops across the width -----------------------------------
   const count = Math.max(1, Math.min(3, config.decor.backdropCount));
   const slotW = W / count;
-  const palette = theme.palette;
 
   for (let i = 0; i < count; i++) {
     const cx = slotW * (i + 0.5);
@@ -112,21 +119,22 @@ function renderScene(
     const heroFactor = count === 1 ? 1 : i === Math.floor(count / 2) ? 1 : 0.82;
     const pw = Math.min(slotW * 0.62, W * 0.42) * heroFactor;
 
-    drawBackdrop(ctx, cx, pw, floorY, H, config.decor.backdropShape, theme.backdropColor, isDark);
+    drawBackdrop(ctx, cx, pw, floorY, H, config.decor.backdropShape, backdropColor, isDark);
 
     const outline = backdropOutline(cx, pw, floorY, H, config.decor.backdropShape);
     drawGarland(ctx, outline, floorY, pw, palette, config.decor.balloonStyle, i * 97 + 13);
   }
 
-  // --- name sign on the hero backdrop --------------------------------------
-  if (config.decor.nameSign !== "none") {
-    drawNameSign(ctx, W / 2, H * 0.5, config, theme.accent);
+  // --- backdrop text on the hero backdrop ----------------------------------
+  if (config.decor.backdropText.enabled) {
+    drawBackdropText(ctx, W / 2, H * 0.5, config, accent);
   }
 
   // --- props in front ------------------------------------------------------
-  drawPlinths(ctx, W, floorY, config.decor.plinths, theme.accent);
-  if (config.decor.cutouts !== "none") drawCutouts(ctx, W, floorY, config.decor.cutouts, palette);
-  if (config.decor.cakeTable) drawCakeTable(ctx, W, floorY, theme.accent);
+  drawPlinths(ctx, W, floorY, config.decor.plinthSizes, accent);
+  if (config.decor.cutouts.size !== "none")
+    drawCutouts(ctx, W, floorY, config.decor.cutouts.size, palette);
+  if (config.decor.cakeTable) drawCakeTable(ctx, W, floorY, accent);
 }
 
 // --- backdrop geometry -----------------------------------------------------
@@ -430,25 +438,31 @@ function drawBalloon(
 
 // --- props -----------------------------------------------------------------
 
+const PLINTH_HEIGHT: Record<PlinthSize, number> = {
+  small: 0.1,
+  medium: 0.14,
+  large: 0.18,
+  xl: 0.22,
+};
+
 function drawPlinths(
   ctx: CanvasRenderingContext2D,
   W: number,
   floorY: number,
-  count: number,
+  sizes: PlinthSize[],
   accent: string
 ) {
-  if (count <= 0) return;
-  const n = Math.min(3, count);
-  const accentHex = rgbTripletToHex(accent);
+  const n = Math.min(3, sizes.length);
+  if (n <= 0) return;
   for (let i = 0; i < n; i++) {
     const cx = W * (0.3 + (i * 0.4) / Math.max(1, n - 1 || 1));
     const w = W * 0.06;
-    const h = (0.07 + i * 0.02) * (floorY);
+    const h = PLINTH_HEIGHT[sizes[i]] * floorY;
     const x = cx - w / 2;
     const y = floorY - h;
     const g = ctx.createLinearGradient(x, y, x + w, y);
-    g.addColorStop(0, lighten(accentHex, 0.5));
-    g.addColorStop(1, lighten(accentHex, 0.3));
+    g.addColorStop(0, lighten(accent, 0.5));
+    g.addColorStop(1, lighten(accent, 0.3));
     ctx.fillStyle = g;
     roundRect(ctx, x, y, w, h, 4);
     ctx.fill();
@@ -457,26 +471,37 @@ function drawPlinths(
   }
 }
 
-function drawNameSign(
+const TEXT_HEX: Record<string, string> = {
+  white: "#FFFFFF",
+  gold: "#D4AF37",
+  black: "#222222",
+};
+
+function drawBackdropText(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
   config: BuilderConfig,
   accent: string
 ) {
-  const text = (config.customer.name || "NAME").toUpperCase().slice(0, 14);
-  const accentHex = rgbTripletToHex(accent);
+  const t = config.decor.backdropText;
+  const text = (resolveBackdropText(t) || "Happy Birthday").slice(0, 24);
+  const color = t.color === "accent" ? accent : TEXT_HEX[t.color] ?? accent;
+  const fontFamily =
+    t.fontStyle === "block"
+      ? '700 %SIZE%px Inter, system-ui, sans-serif'
+      : t.fontStyle === "elegant"
+        ? 'italic 600 %SIZE%px Georgia, "Times New Roman", serif'
+        : 'italic 600 %SIZE%px "Brush Script MT", "Segoe Script", cursive';
+  const size = Math.round(ctx.canvas.clientWidth * 0.04);
   ctx.save();
-  ctx.font = `600 ${Math.round(ctx.canvas.clientWidth * 0.045)}px Inter, system-ui, sans-serif`;
+  ctx.font = fontFamily.replace("%SIZE%", String(size));
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  if (config.decor.nameSign === "neon") {
-    ctx.shadowColor = accentHex;
-    ctx.shadowBlur = 16;
-    ctx.fillStyle = lighten(accentHex, 0.4);
-  } else {
-    ctx.fillStyle = accentHex;
-  }
+  // subtle shadow so light text stays legible on light backdrops
+  ctx.shadowColor = "rgba(0,0,0,0.25)";
+  ctx.shadowBlur = 4;
+  ctx.fillStyle = color;
   ctx.fillText(text, cx, cy);
   ctx.restore();
 }
@@ -488,10 +513,10 @@ function drawCutouts(
   level: string,
   palette: string[]
 ) {
-  const counts: Record<string, number> = { small: 2, medium: 3, premium: 5 };
+  const counts: Record<string, number> = { small: 2, medium: 4, premium: 6 };
   const n = counts[level] ?? 0;
   for (let i = 0; i < n; i++) {
-    const x = W * (0.12 + (i / Math.max(1, n)) * 0.76);
+    const x = W * (0.1 + (i / Math.max(1, n)) * 0.8);
     const size = W * 0.035;
     drawStar(ctx, x, floorY - size * 1.4, size, palette[i % palette.length]);
   }
@@ -503,7 +528,7 @@ function drawCakeTable(
   floorY: number,
   accent: string
 ) {
-  const accentHex = rgbTripletToHex(accent);
+  const accentHex = accent;
   const w = W * 0.16;
   const h = W * 0.09;
   const x = W * 0.5 - w / 2;
@@ -587,12 +612,6 @@ function darken(hex: string, amt: number): string {
 function isColorDark(hex: string): boolean {
   const [r, g, b] = hexToRgb(hex);
   return (r * 299 + g * 587 + b * 114) / 1000 < 110;
-}
-
-function rgbTripletToHex(triplet: string): string {
-  const [r, g, b] = triplet.trim().split(/\s+/).map(Number);
-  const h = (c: number) => c.toString(16).padStart(2, "0");
-  return `#${h(r)}${h(g)}${h(b)}`;
 }
 
 // Deterministic PRNG so the garland is stable across re-renders.
