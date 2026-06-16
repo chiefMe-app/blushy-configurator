@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePrompt, type PromptInput } from "@/lib/generatePrompt";
 
-// fal.ai FLUX.2 [pro] (synchronous run). FAL_KEY stays server-side only.
-const FAL_MODEL = "fal-ai/flux-pro/v2";
+// fal.ai flux-2-pro (synchronous run). FAL_KEY stays server-side only.
+const FAL_MODEL = "fal-ai/flux-2-pro";
 const FAL_ENDPOINT = `https://fal.run/${FAL_MODEL}`;
 
 export const runtime = "nodejs";
@@ -42,8 +42,8 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         prompt,
-        negative_prompt: negativePrompt,
         image_size: "landscape_4_3",
+        output_format: "jpeg",
       }),
     });
 
@@ -52,10 +52,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "fal.ai request failed", detail }, { status: 502 });
     }
 
-    const data = await falRes.json();
-    const imageUrl: string | undefined = data?.images?.[0]?.url;
+    const result = await falRes.json();
+    console.log(JSON.stringify(result));
+    const imageUrl: string | undefined = result?.images?.[0]?.url;
     if (!imageUrl) {
-      return NextResponse.json({ error: "fal.ai returned no image", data }, { status: 502 });
+      return NextResponse.json({ error: "fal.ai returned no image", result }, { status: 502 });
     }
 
     return NextResponse.json({ imageUrl, prompt });
