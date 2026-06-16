@@ -8,6 +8,7 @@ import {
   balloonStyleById,
   plinthSizeById,
   cutoutSetBySize,
+  backdropPrintById,
   resolveBackdropText,
   addOnById,
   type BuilderConfig,
@@ -82,8 +83,16 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
           }
         />
         <Row
+          k="Backdrop print"
+          v={
+            !decor.backdropPrint || decor.backdropPrint.type === "none"
+              ? "None"
+              : backdropPrintById(decor.backdropPrint.type)?.label ?? decor.backdropPrint.type
+          }
+        />
+        <Row
           k="Backdrop text"
-          v={decor.backdropText.enabled ? `“${resolveBackdropText(decor.backdropText)}”` : "None"}
+          v={decor.backdropText.enabled ? `"${resolveBackdropText(decor.backdropText)}"` : "None"}
         />
         <Row k="Cake / dessert table" v={decor.cakeTable ? "Yes" : "No"} />
       </Section>
@@ -106,7 +115,7 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
         </Section>
       )}
 
-      <Section title="Venue & contact">
+      <Section title="Venue &amp; contact">
         <Row k="Name" v={customer.name || "—"} />
         <Row k="WhatsApp" v={customer.whatsapp || "—"} />
         <Row k="Date" v={venue.date || "—"} />

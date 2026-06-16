@@ -19,6 +19,7 @@ import {
   type BackdropText,
   type CutoutSelection,
   type PlinthSize,
+  type BackdropPrint,
 } from "./config";
 
 /** Wrapper prepended/appended to every prompt (Change 3). */
@@ -103,6 +104,39 @@ const THEME_DESC: Record<string, string> = {
  */
 const SHAPE_LOCKED_THEMES = new Set<ThemeId>(["unicorn", "lego"]);
 
+/** Per-theme vinyl print descriptions for the theme_print option. */
+const THEME_PRINT_DESC: Record<string, string> = {
+  frozen: "Frozen castle, snowflakes, Anna & Elsa silhouette",
+  unicorn: "Unicorn face with gold horn, flower crown and lashes",
+  dinosaur: "Jungle palm trees, volcano, dinosaur footprints",
+  safari: "African savanna, giraffe silhouette, tropical leaves",
+  princess: "Castle turrets, crown, stars and magic wand",
+  superhero: "City skyline, lightning bolt, hero shield",
+  barbie: "Barbie logo, stars, fashion illustration",
+  bluey: "Bluey and Bingo characters with paw prints",
+  pokemon: "Pokeball graphic, Pikachu silhouette, lightning bolt",
+  stitch: "Stitch with hibiscus flowers and Hawaii text",
+  mermaid: "Underwater scene, shells, bubbles, coral reef",
+  space: "Galaxy stars, planets, rocket ship, moon",
+  football: "Football pitch lines, soccer ball, jersey number",
+  lego: "Lego brick grid pattern and colorful Lego minifigure face graphics printed directly on flat rectangular panel surface",
+  kpop: "Stage spotlight, microphone, sparkle star graphics",
+  encanto: "Casita house, magical candle, Colombian flowers",
+  cocomelon: "Watermelon slices, JJ character, bright polka dots",
+  teddy_bear: "Cute teddy bear illustrations, hearts, soft bow",
+  pineapple_tropical: "Gold pineapple outline, tropical monstera leaves, hibiscus",
+  blush_garden: "Botanical roses and peonies, delicate foliage",
+  luxury_neutral: "Minimal gold line art, abstract botanical, elegant monogram",
+};
+
+/** Size labels for plinth prompt descriptions. */
+const PLINTH_SIZE_DESC: Record<PlinthSize, string> = {
+  small: "short small",
+  medium: "medium height",
+  large: "tall",
+  xl: "extra tall oversized",
+};
+
 /** BALLOON_DESCRIPTION — keyed by balloon style ("none" → omitted). */
 const BALLOON_DESC: Record<BalloonStyleId, string> = {
   none: "",
@@ -140,6 +174,7 @@ export interface PromptInput {
   balloonStyle: BalloonStyleId;
   balloonColors?: string[];
   backdropText?: BackdropText;
+  backdropPrint?: BackdropPrint;
   cutouts?: CutoutSelection;
   plinthSizes?: PlinthSize[];
   extras?: string[];
@@ -192,24 +227,48 @@ export function generatePrompt(input: PromptInput): {
     }
   }
 
+  // Backdrop print.
+  let printClause = "";
+  if (input.backdropPrint && input.backdropPrint.type !== "none") {
+    if (input.backdropPrint.type === "name_only") {
+      printClause = "child's name printed in elegant script font on backdrop surface";
+    } else if (input.backdropPrint.type === "theme_print") {
+      if (input.theme === "lego") {
+        // lego THEME_PRINT_DESC is already a complete sentence
+        printClause = THEME_PRINT_DESC["lego"];
+      } else {
+        const desc = THEME_PRINT_DESC[input.theme] ?? "themed decorative illustration";
+        printClause = `${desc} printed as high quality vinyl graphic on backdrop panel surface`;
+      }
+    } else if (input.backdropPrint.type === "custom_upload") {
+      printClause = "custom graphic design printed on backdrop surface";
+    }
+  }
+
   // Cutouts.
   let cutoutClause = "";
   if (input.cutouts && input.cutouts.size !== "none") {
-    cutoutClause =
-      input.cutouts.position === "backdrop"
-        ? `${themeName} character cutouts mounted on the backdrop surface`
-        : `${themeName} character cutouts standing on the floor beside the backdrop`;
+    if (input.cutouts.size === "premium" && input.cutouts.position === "floor") {
+      cutoutClause = `large oversized feature ${themeName} character cutout as centerpiece on floor, plus smaller character cutouts arranged around setup`;
+    } else if (input.cutouts.position === "backdrop") {
+      cutoutClause = `${themeName} character illustrations mounted directly on the backdrop surface`;
+    } else {
+      cutoutClause = `${themeName} character cardboard cutouts standing on floor beside the backdrop`;
+    }
   }
 
   // Plinths.
   let plinthClause = "";
   const sizes = input.plinthSizes ?? [];
   if (sizes.length > 0) {
-    const word = sizes.length === 1 ? "one" : sizes.length === 2 ? "two" : "three";
-    const varied = new Set(sizes).size > 1;
-    plinthClause = `${word} cylindrical display plinth${sizes.length > 1 ? "s" : ""}${
-      varied ? " of varying heights" : ""
-    }`;
+    const sd = sizes.map((s) => PLINTH_SIZE_DESC[s] ?? s);
+    if (sizes.length === 1) {
+      plinthClause = `one ${sd[0]} cylindrical display plinth`;
+    } else if (sizes.length === 2) {
+      plinthClause = `two cylindrical plinths, one ${sd[0]} and one ${sd[1]}`;
+    } else {
+      plinthClause = `three cylindrical plinths: ${sd[0]}, ${sd[1]}, and ${sd[2]}`;
+    }
   }
 
   const extras = (input.extras ?? [])
@@ -222,6 +281,7 @@ export function generatePrompt(input: PromptInput): {
     backdrop,
     balloons,
     textClause,
+    printClause,
     cutoutClause,
     plinthClause,
     extras,

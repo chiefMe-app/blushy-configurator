@@ -122,6 +122,7 @@ export const PACKAGES: Package[] = [
       plinths: 1,
       plinthSizes: ["medium"],
       cutouts: { size: "none", position: "floor" },
+      backdropPrint: { type: "none" },
       backdropText: { enabled: false, type: "birthday", name: "", customText: "", fontStyle: "script", color: "white" },
       cakeTable: false,
     },
@@ -140,6 +141,7 @@ export const PACKAGES: Package[] = [
       plinths: 2,
       plinthSizes: ["medium", "medium"],
       cutouts: { size: "none", position: "floor" },
+      backdropPrint: { type: "none" },
       backdropText: { enabled: true, type: "birthday", name: "", customText: "", fontStyle: "script", color: "white" },
       cakeTable: false,
     },
@@ -162,6 +164,7 @@ export const PACKAGES: Package[] = [
       plinths: 3,
       plinthSizes: ["large", "medium", "medium"],
       cutouts: { size: "medium", position: "floor" },
+      backdropPrint: { type: "none" },
       backdropText: { enabled: true, type: "birthday", name: "", customText: "", fontStyle: "elegant", color: "gold" },
       cakeTable: true,
     },
@@ -188,6 +191,25 @@ export type CutoutPosition = "floor" | "backdrop";
 export type BackdropTextType = "birthday" | "custom";
 export type FontStyle = "script" | "block" | "elegant";
 export type TextColor = "white" | "gold" | "black" | "accent";
+export type BackdropPrintType = "none" | "name_only" | "theme_print" | "custom_upload";
+
+export interface BackdropPrint {
+  type: BackdropPrintType;
+}
+
+export interface BackdropPrintOption {
+  id: BackdropPrintType;
+  label: string;
+  price: number;
+  desc: string;
+}
+
+export const BACKDROP_PRINTS: BackdropPrintOption[] = [
+  { id: "none", label: "Plain — No Print", price: 0, desc: "Solid color only" },
+  { id: "name_only", label: "Name Only", price: 80, desc: "Child's name in elegant font" },
+  { id: "theme_print", label: "Theme Graphic", price: 150, desc: "Full themed illustration printed on backdrop" },
+  { id: "custom_upload", label: "Custom Design", price: 200, desc: "Upload your own design" },
+];
 
 export interface BackdropText {
   enabled: boolean;
@@ -214,6 +236,7 @@ export interface DecorConfig {
   plinths: number;
   plinthSizes: PlinthSize[];
   cutouts: CutoutSelection;
+  backdropPrint: BackdropPrint;
   backdropText: BackdropText;
   cakeTable: boolean;
 }
@@ -258,9 +281,9 @@ export interface CutoutSet {
 }
 
 export const CUTOUT_SETS: CutoutSet[] = [
-  { size: "small", label: "Small Cutout Set", desc: "2 character cutouts", price: 150 },
-  { size: "medium", label: "Medium Cutout Set", desc: "4 character cutouts", price: 250 },
-  { size: "premium", label: "Premium Cutout Set", desc: "6 character cutouts + large feature piece", price: 420 },
+  { size: "small", label: "Small Set", desc: "2 character cutouts", price: 150 },
+  { size: "medium", label: "Medium Set", desc: "4 character cutouts", price: 250 },
+  { size: "premium", label: "Premium Set", desc: "6 cutouts + large feature piece", price: 420 },
 ];
 
 export const CAKE_TABLE_PRICE = 300;
@@ -380,6 +403,7 @@ export const shapeById = (id: string) => BACKDROP_SHAPES.find((s) => s.id === id
 export const balloonStyleById = (id: string) => BALLOON_STYLES.find((b) => b.id === id);
 export const plinthSizeById = (id: string) => PLINTH_SIZES.find((p) => p.id === id);
 export const cutoutSetBySize = (size: string) => CUTOUT_SETS.find((c) => c.size === size);
+export const backdropPrintById = (id: string) => BACKDROP_PRINTS.find((p) => p.id === id);
 export const addOnById = (id: string) => ADDONS.find((a) => a.id === id);
 
 export function cutoutPrice(size: CutoutSize): number {
@@ -532,6 +556,11 @@ export function priceBreakdown(config: BuilderConfig): {
   const cut = cutoutPrice(d.cutouts.size);
   if (cut > 0) {
     lines.push({ label: `${cutoutSetBySize(d.cutouts.size)?.label}`, amount: cut });
+  }
+
+  const printOpt = backdropPrintById(d.backdropPrint?.type ?? "none");
+  if (printOpt && printOpt.price > 0) {
+    lines.push({ label: printOpt.label, amount: printOpt.price });
   }
 
   if (d.cakeTable) {

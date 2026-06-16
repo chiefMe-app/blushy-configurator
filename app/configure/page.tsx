@@ -9,6 +9,7 @@ import {
   BALLOON_STYLES,
   PLINTH_SIZES,
   CUTOUT_SETS,
+  BACKDROP_PRINTS,
   FONT_STYLES,
   TEXT_COLORS,
   ADDONS,
@@ -33,6 +34,7 @@ import {
   type BackdropShapeId,
   type PlinthSize,
   type CutoutPosition,
+  type BackdropPrintType,
   type FontStyle,
   type TextColor,
 } from "@/lib/config";
@@ -352,24 +354,17 @@ export default function ConfigurePage() {
 
             {step === 4 && (
               <StepShell title="Add experiences" subtitle="Optional extras for the day.">
-                <div className="space-y-6">
-                  <CutoutsSection config={config} patchDecor={patchDecor} />
-
-                  <div>
-                    <h3 className="mb-3 text-sm font-semibold">Experiences & services</h3>
-                    <div className="space-y-3">
-                      {ADDONS.map((addon) => (
-                        <AddOnCard
-                          key={addon.id}
-                          addon={addon}
-                          selection={config.addOns.find((a) => a.id === addon.id)}
-                          recommended={isAddOnRecommended(addon, config)}
-                          onToggle={() => toggleAddOn(addon.id)}
-                          onOption={(k, v) => setAddOnOption(addon.id, k, v)}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                <div className="space-y-3">
+                  {ADDONS.map((addon) => (
+                    <AddOnCard
+                      key={addon.id}
+                      addon={addon}
+                      selection={config.addOns.find((a) => a.id === addon.id)}
+                      recommended={isAddOnRecommended(addon, config)}
+                      onToggle={() => toggleAddOn(addon.id)}
+                      onOption={(k, v) => setAddOnOption(addon.id, k, v)}
+                    />
+                  ))}
                 </div>
               </StepShell>
             )}
@@ -483,6 +478,39 @@ function ChoiceRow<T extends string>({
   );
 }
 
+/** Per-theme print suggestion text shown below the Theme Graphic card. */
+const THEME_PRINT_SUGGESTIONS: Record<string, string> = {
+  frozen: "Frozen castle, snowflakes, Anna & Elsa silhouette",
+  unicorn: "Unicorn face with gold horn, flower crown and lashes",
+  dinosaur: "Jungle palm trees, volcano, dinosaur footprints",
+  safari: "African savanna, giraffe silhouette, tropical leaves",
+  princess: "Castle turrets, crown, stars and magic wand",
+  superhero: "City skyline, lightning bolt, hero shield",
+  barbie: "Barbie logo, stars, fashion illustration",
+  bluey: "Bluey and Bingo characters with paw prints",
+  pokemon: "Pokeball graphic, Pikachu silhouette, lightning bolt",
+  stitch: "Stitch with hibiscus flowers and Hawaii text",
+  mermaid: "Underwater scene, shells, bubbles, coral reef",
+  space: "Galaxy stars, planets, rocket ship, moon",
+  football: "Football pitch lines, soccer ball, jersey number",
+  lego: "Lego brick grid pattern and colorful Lego minifigure face graphics",
+  kpop: "Stage spotlight, microphone, sparkle star graphics",
+  encanto: "Casita house, magical candle, Colombian flowers",
+  cocomelon: "Watermelon slices, JJ character, bright polka dots",
+  teddy_bear: "Cute teddy bear illustrations, hearts, soft bow",
+  pineapple_tropical: "Gold pineapple outline, tropical monstera leaves, hibiscus",
+  blush_garden: "Botanical roses and peonies, delicate foliage",
+  luxury_neutral: "Minimal gold line art, abstract botanical, elegant monogram",
+};
+
+/** Short display labels for plinth size buttons. */
+const PLINTH_SHORT: Record<string, string> = {
+  small: "S",
+  medium: "M",
+  large: "L",
+  xl: "XL",
+};
+
 function DecorStep({
   config,
   patchDecor,
@@ -490,12 +518,19 @@ function DecorStep({
   config: BuilderConfig;
   patchDecor: (p: Partial<DecorConfig>) => void;
 }) {
+  const [printFile, setPrintFile] = useState<File | null>(null);
+
   const d = config.decor;
   const theme = themeById(config.theme)!;
   const t = d.backdropText;
+  const cut = d.cutouts;
+  const print = d.backdropPrint ?? { type: "none" as BackdropPrintType };
 
   function setText(patch: Partial<DecorConfig["backdropText"]>) {
     patchDecor({ backdropText: { ...t, ...patch } });
+  }
+  function setPrint(type: BackdropPrintType) {
+    patchDecor({ backdropPrint: { type } });
   }
   function setPlinthCount(n: number) {
     const sizes: PlinthSize[] = [...d.plinthSizes];
@@ -552,7 +587,7 @@ function DecorStep({
         priceOf={(id) => BALLOON_STYLES.find((b) => b.id === id)?.price ?? 0}
       />
 
-      {/* A) Backdrop color */}
+      {/* Backdrop color */}
       <div>
         <span className="mb-1.5 block text-xs font-medium text-black/55">Backdrop color</span>
         <div className="flex flex-wrap items-center gap-2">
@@ -578,7 +613,80 @@ function DecorStep({
         </div>
       </div>
 
-      {/* B) Balloon colors */}
+      {/* Backdrop Print */}
+      <div>
+        <span className="mb-0.5 block text-xs font-medium text-black/55">Backdrop Print</span>
+        <p className="mb-2 text-[11px] text-black/40">Printed graphic or design on your backdrop panel</p>
+        <div className="grid grid-cols-2 gap-2">
+          {BACKDROP_PRINTS.map((opt) => {
+            const selected = print.type === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setPrint(opt.id)}
+                className={`rounded-2xl border p-3 text-left transition ${
+                  selected ? "border-accent bg-accent-soft/50 shadow-sm" : "border-black/10 bg-white"
+                }`}
+              >
+                <div className="text-xs font-semibold">{opt.label}</div>
+                <div className="mt-0.5 text-[11px] text-black/50">{opt.desc}</div>
+                {opt.price > 0 && (
+                  <div className={`mt-1 text-[11px] font-medium ${selected ? "text-accent" : "text-black/40"}`}>
+                    +AED {opt.price}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Theme print suggestion */}
+        {print.type === "theme_print" && (
+          <p className="mt-2 rounded-xl bg-accent-soft/40 px-3 py-2 text-[11px] text-black/60">
+            <span className="font-medium">Suggested for {theme.name}:</span>{" "}
+            {THEME_PRINT_SUGGESTIONS[config.theme] ?? "Themed decorative illustration"}
+          </p>
+        )}
+
+        {/* Name input (reuses backdropText.name) */}
+        {print.type === "name_only" && (
+          <div className="mt-2">
+            <input
+              type="text"
+              value={t.name}
+              onChange={(e) => setText({ name: e.target.value })}
+              placeholder="Child's name (e.g. Sofia)"
+              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
+            />
+          </div>
+        )}
+
+        {/* File upload */}
+        {print.type === "custom_upload" && (
+          <div className="mt-2 rounded-xl border border-dashed border-black/20 p-3">
+            <label className="block cursor-pointer">
+              <span className="text-[11px] font-medium text-black/60">
+                Upload your reference design or inspiration image
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setPrintFile(e.target.files?.[0] ?? null)}
+                className="mt-1.5 block w-full text-xs text-black/50 file:mr-2 file:rounded-full file:border-0 file:bg-accent-soft file:px-3 file:py-1 file:text-[11px] file:font-medium file:text-accent"
+              />
+              {printFile && (
+                <span className="mt-1 block text-[11px] text-accent">{printFile.name}</span>
+              )}
+            </label>
+            <p className="mt-1.5 text-[11px] text-black/40">
+              Our design team will finalize the print layout.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Balloon colors */}
       <div>
         <span className="mb-1.5 block text-xs font-medium text-black/55">
           Balloon colors — select up to 5
@@ -594,7 +702,6 @@ function DecorStep({
               title={hex}
             />
           ))}
-          {/* Any custom-added colors not in the theme palette */}
           {d.balloonColors
             .filter((c) => !theme.balloonColors.includes(c))
             .map((hex) => (
@@ -716,6 +823,97 @@ function DecorStep({
         )}
       </div>
 
+      {/* Character Cutouts */}
+      <div>
+        <span className="mb-0.5 block text-xs font-medium text-black/55">Character Cutouts</span>
+        <p className="mb-2 text-[11px] text-black/40">Theme-matched character cutouts for your setup</p>
+        <div className="space-y-2">
+          {/* No cutouts option */}
+          <button
+            type="button"
+            onClick={() => patchDecor({ cutouts: { size: "none", position: cut.position } })}
+            className={`flex w-full items-center justify-between rounded-2xl border p-3 text-left transition ${
+              cut.size === "none" ? "border-accent bg-accent-soft/50 shadow-sm" : "border-black/10 bg-white"
+            }`}
+          >
+            <div>
+              <div className="text-xs font-semibold">No Cutouts</div>
+              <div className="text-[11px] text-black/50">Skip cutouts for this setup</div>
+            </div>
+            <span
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] ${
+                cut.size === "none" ? "border-accent bg-accent text-white" : "border-black/20 text-transparent"
+              }`}
+            >
+              ✓
+            </span>
+          </button>
+
+          {/* Paid cutout set options */}
+          {CUTOUT_SETS.map((set) => {
+            const selected = cut.size === set.size;
+            return (
+              <div
+                key={set.size}
+                className={`rounded-2xl border transition ${
+                  selected ? "border-accent bg-accent-soft/50 shadow-sm" : "border-black/10 bg-white"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    patchDecor({ cutouts: { size: set.size, position: cut.position } })
+                  }
+                  className="flex w-full items-center justify-between gap-3 p-3 text-left"
+                >
+                  <div>
+                    <div className="text-xs font-semibold">{set.label}</div>
+                    <div className="text-[11px] text-black/50">{set.desc}</div>
+                    <div className={`mt-0.5 text-[11px] font-medium ${selected ? "text-accent" : "text-black/40"}`}>
+                      +AED {set.price}
+                    </div>
+                  </div>
+                  <span
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] ${
+                      selected ? "border-accent bg-accent text-white" : "border-black/20 text-transparent"
+                    }`}
+                  >
+                    ✓
+                  </span>
+                </button>
+
+                {selected && (
+                  <div className="border-t border-accent/15 px-3 pb-3 pt-2">
+                    <span className="mb-1.5 block text-[11px] font-medium text-black/55">Position</span>
+                    <div className="flex gap-2">
+                      {[
+                        { v: "floor", l: "On floor beside backdrop" },
+                        { v: "backdrop", l: "Mounted on backdrop" },
+                      ].map((o) => (
+                        <button
+                          key={o.v}
+                          type="button"
+                          onClick={() =>
+                            patchDecor({ cutouts: { size: set.size, position: o.v as CutoutPosition } })
+                          }
+                          className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                            cut.position === o.v
+                              ? "bg-accent text-white"
+                              : "bg-white text-black/60 border border-black/15"
+                          }`}
+                        >
+                          {o.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Plinths + per-unit sizes */}
       <div>
         <ChoiceRow<string>
@@ -741,7 +939,7 @@ function DecorStep({
                           : "bg-white text-black/60 border border-black/15"
                       }`}
                     >
-                      {s.label}
+                      {PLINTH_SHORT[s.id] ?? s.label}
                       <span className={d.plinthSizes[i] === s.id ? "text-white/80" : "text-black/40"}>
                         {" "}
                         +{s.price}
@@ -765,91 +963,6 @@ function DecorStep({
         onChange={(v) => patchDecor({ cakeTable: v === "yes" })}
         priceOf={(id) => (id === "yes" ? CAKE_TABLE_PRICE : 0)}
       />
-    </div>
-  );
-}
-
-/** Themed cutouts & props — lives in the Add-ons step, edits decor.cutouts. */
-function CutoutsSection({
-  config,
-  patchDecor,
-}: {
-  config: BuilderConfig;
-  patchDecor: (p: Partial<DecorConfig>) => void;
-}) {
-  const cut = config.decor.cutouts;
-  return (
-    <div>
-      <h3 className="mb-1 text-sm font-semibold">Themed Cutouts &amp; Props</h3>
-      <p className="mb-3 text-xs text-black/50">Character cutouts to match your theme.</p>
-      <div className="space-y-3">
-        {CUTOUT_SETS.map((set) => {
-          const selected = cut.size === set.size;
-          return (
-            <div
-              key={set.size}
-              className={`rounded-2xl border p-4 transition ${
-                selected ? "border-accent bg-accent-soft/50 shadow-sm" : "border-black/10 bg-white"
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() =>
-                  patchDecor({
-                    cutouts: {
-                      size: selected ? "none" : set.size,
-                      position: cut.position,
-                    },
-                  })
-                }
-                className="flex w-full items-start justify-between gap-3 text-left"
-              >
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold">{set.label}</span>
-                  <span className="mt-0.5 text-xs text-black/50">{set.desc}</span>
-                  <span className="mt-1 text-xs font-medium text-accent">+AED {set.price}</span>
-                </div>
-                <span
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs ${
-                    selected ? "border-accent bg-accent text-white" : "border-black/20 text-transparent"
-                  }`}
-                >
-                  ✓
-                </span>
-              </button>
-
-              {selected && (
-                <div className="mt-3 border-t border-accent/15 pt-3">
-                  <span className="mb-1.5 block text-[11px] font-medium text-black/55">
-                    Position
-                  </span>
-                  <div className="flex gap-2">
-                    {[
-                      { v: "floor", l: "Standing on floor" },
-                      { v: "backdrop", l: "Mounted on backdrop" },
-                    ].map((o) => (
-                      <button
-                        key={o.v}
-                        type="button"
-                        onClick={() =>
-                          patchDecor({ cutouts: { size: set.size, position: o.v as CutoutPosition } })
-                        }
-                        className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                          cut.position === o.v
-                            ? "bg-accent text-white"
-                            : "bg-white text-black/60 border border-black/15"
-                        }`}
-                      >
-                        {o.l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
