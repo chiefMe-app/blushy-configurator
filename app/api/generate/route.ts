@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePrompt, type PromptInput } from "@/lib/generatePrompt";
 
-// fal.ai flux/dev (synchronous run). FAL_KEY stays server-side only.
-const FAL_MODEL = "fal-ai/flux/dev";
+// fal.ai FLUX.2 [pro] (synchronous run). FAL_KEY stays server-side only.
+const FAL_MODEL = "fal-ai/flux-pro/v2";
 const FAL_ENDPOINT = `https://fal.run/${FAL_MODEL}`;
 
 export const runtime = "nodejs";
@@ -43,13 +43,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         prompt,
         negative_prompt: negativePrompt,
-        guidance_scale: 4.0,
-        num_inference_steps: 35,
-        safety_tolerance: "2",
-        num_images: 1,
-        output_format: "jpeg",
         image_size: "landscape_4_3",
-        enhance_prompt: false,
       }),
     });
 
