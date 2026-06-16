@@ -18,7 +18,6 @@ import {
   type BackdropShapeId,
   type BackdropText,
   type CutoutSelection,
-  type PlinthSize,
   type BackdropPrint,
 } from "./config";
 
@@ -57,9 +56,9 @@ const THEME_DESC: Record<string, string> = {
   frozen:
     "Frozen Disney theme party, icy pale blue and white backdrop, snowflake and ice crystal decorations, Frozen movie aesthetic",
   unicorn:
-    "Unicorn theme party, round circular pink backdrop panel with unicorn face illustration — gold horn, closed eyelashes, flower crown painted on panel surface",
+    "Unicorn theme party, round circular pink backdrop panel — unicorn face graphic is a flat printed vinyl sticker on the pink circular backdrop surface, 2D flat illustration printed on panel, horn ears and lashes are part of the flat print, NOT 3D sculpted, NOT separate pieces",
   dinosaur:
-    "Dinosaur theme party, arch backdrop with jungle palm tree and volcano illustration printed on panel, sage green and terracotta red color scheme",
+    "Dinosaur theme party, arch backdrop — jungle and palm tree scene is a flat printed vinyl graphic on the backdrop panel surface, 2D flat printed illustration, sage green and terracotta red color scheme, NOT real trees or 3D elements",
   safari:
     "Safari jungle theme party, warm beige backdrop, tropical leaves and animal silhouettes, earthy neutral tones",
   princess:
@@ -81,7 +80,7 @@ const THEME_DESC: Record<string, string> = {
   football:
     "Football soccer theme party, white or green backdrop with soccer ball and pitch line graphics, sporty clean aesthetic",
   lego:
-    "Lego theme party, flat rectangular backdrop panel with Lego brick grid pattern and colorful Lego minifigure faces printed on surface, bold primary colors red blue yellow, NOT an arch shape",
+    "Lego theme party, flat rectangular backdrop panel — lego brick grid and minifigure graphics are flat 2D printed vinyl on the rectangular backdrop panel surface, printed banner style, bold primary colors red blue yellow, NOT an arch shape",
   kpop:
     "K-Pop idol theme party, pastel purple and pink backdrop, sparkle and star stage elements, concert idol aesthetic",
   encanto:
@@ -129,13 +128,6 @@ const THEME_PRINT_DESC: Record<string, string> = {
   luxury_neutral: "Minimal gold line art, abstract botanical, elegant monogram",
 };
 
-/** Size labels for plinth prompt descriptions. */
-const PLINTH_SIZE_DESC: Record<PlinthSize, string> = {
-  small: "short cylindrical plinth pedestal, 40cm diameter, 90cm tall",
-  medium: "medium cylindrical plinth pedestal, 40cm diameter, 100cm tall",
-  large: "tall cylindrical plinth pedestal, 40cm diameter, 110cm tall",
-};
-
 /** BALLOON_DESCRIPTION — keyed by balloon style ("none" → omitted). */
 const BALLOON_DESC: Record<BalloonStyleId, string> = {
   none: "",
@@ -161,9 +153,8 @@ const FONT_DESC: Record<string, string> = {
 
 export const NEGATIVE_PROMPT =
   "floating balloons, balloon strings, cartoon, illustration, drawing, people, children, watermark, blurry, distorted, " +
-  "wide stage, wide platform, raised stage, podium, wide base pedestal, circular stage floor, round platform on ground, " +
-  "oversized plinth base, plinth wider than 50cm, square pedestal, rectangular pedestal, " +
-  "wrong number of backdrops, missing backdrop";
+  "wrong number of backdrops, missing backdrop, " +
+  "3D decorations on backdrop, floating decorations, sculpted backdrop elements, separate 3D objects on backdrop surface, raised elements on backdrop";
 
 export interface PromptInput {
   theme: ThemeId;
@@ -176,7 +167,6 @@ export interface PromptInput {
   backdropText?: BackdropText;
   backdropPrint?: BackdropPrint;
   cutouts?: CutoutSelection;
-  plinthSizes?: PlinthSize[];
   extras?: string[];
 }
 
@@ -233,12 +223,13 @@ export function generatePrompt(input: PromptInput): {
     if (input.backdropPrint.type === "name_only") {
       printClause = "child's name printed in elegant script font on backdrop surface";
     } else if (input.backdropPrint.type === "theme_print") {
+      const flatVinyl =
+        "flat 2D printed vinyl graphic applied directly onto the backdrop panel surface, like a printed banner or wallpaper, the graphic is flat and integrated into the backdrop material, NOT a 3D object, NOT floating, NOT separate from the backdrop, printed directly on panel";
       if (input.theme === "lego") {
-        // lego THEME_PRINT_DESC is already a complete sentence
-        printClause = THEME_PRINT_DESC["lego"];
+        printClause = `${THEME_PRINT_DESC["lego"]}, ${flatVinyl}`;
       } else {
         const desc = THEME_PRINT_DESC[input.theme] ?? "themed decorative illustration";
-        printClause = `${desc} printed as high quality vinyl graphic on backdrop panel surface`;
+        printClause = `${desc} printed as high quality vinyl graphic on backdrop panel surface, ${flatVinyl}`;
       }
     } else if (input.backdropPrint.type === "custom_upload") {
       printClause = "custom graphic design printed on backdrop surface";
@@ -257,24 +248,6 @@ export function generatePrompt(input: PromptInput): {
     }
   }
 
-  // Plinths.
-  let plinthClause = "";
-  const sizes = input.plinthSizes ?? [];
-  if (sizes.length > 0) {
-    const sd = sizes.map((s) => PLINTH_SIZE_DESC[s] ?? s);
-    const reference =
-      "elegant narrow white display column similar to a museum sculpture pedestal or flower stand, very narrow cylindrical tube shape, tall and slender";
-    const antiStage =
-      "slim narrow white cylindrical column pedestals with 40cm diameter only, very narrow base, tall and slender like a flower vase or display column, NOT a wide platform, NOT a stage, NOT a podium, diameter must be much smaller than height";
-    if (sizes.length === 1) {
-      plinthClause = `one white cylindrical plinth pedestal (${sd[0]}), placed in front of backdrop, ${reference}, ${antiStage}`;
-    } else if (sizes.length === 2) {
-      plinthClause = `two white cylindrical plinth pedestals (${sd[0]}) and (${sd[1]}), placed symmetrically in front of backdrop, ${reference}, ${antiStage}`;
-    } else {
-      plinthClause = `three white cylindrical plinth pedestals (${sd[0]}) (${sd[1]}) (${sd[2]}), arranged in front of backdrop, ${reference}, ${antiStage}`;
-    }
-  }
-
   const extras = (input.extras ?? [])
     .map((id) => EXTRAS_DESC[id])
     .filter(Boolean)
@@ -287,7 +260,6 @@ export function generatePrompt(input: PromptInput): {
     textClause,
     printClause,
     cutoutClause,
-    plinthClause,
     extras,
   ]
     .filter(Boolean)
