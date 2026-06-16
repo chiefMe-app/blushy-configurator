@@ -51,6 +51,58 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
 const RECT_DESC =
   "ONE flat rectangular backdrop panel, perfectly straight edges on all four sides, no curves anywhere, flat wall panel, balloon garland on sides";
 
+/** Strict per-theme descriptions (Change 2) — exact verbatim strings. */
+const THEME_DESC: Record<string, string> = {
+  frozen:
+    "Frozen Disney theme party, icy pale blue and white backdrop, snowflake and ice crystal decorations, Frozen movie aesthetic",
+  unicorn:
+    "Unicorn theme party, round circular pink backdrop panel with unicorn face illustration — gold horn, closed eyelashes, flower crown painted on panel surface",
+  dinosaur:
+    "Dinosaur theme party, arch backdrop with jungle palm tree and volcano illustration printed on panel, sage green and terracotta red color scheme",
+  safari:
+    "Safari jungle theme party, warm beige backdrop, tropical leaves and animal silhouettes, earthy neutral tones",
+  princess:
+    "Princess theme party, soft pink and gold backdrop, castle turret silhouettes, crown and star decorations",
+  superhero:
+    "Superhero theme party, bold red blue yellow primary colors, city skyline silhouette on backdrop, comic book hero aesthetic",
+  barbie:
+    "Barbie theme party, hot pink fuchsia backdrop, glamorous Barbie-inspired decoration, pink and white balloon garland",
+  bluey:
+    "Bluey cartoon theme party, bright blue white and red color scheme, playful family-friendly decoration",
+  pokemon:
+    "Pokemon theme party, yellow backdrop with red Pokeball graphic, bright cheerful primary colors, adventure theme",
+  stitch:
+    "Lilo and Stitch theme party, blue tropical Hawaiian backdrop, hibiscus flowers, tropical island aesthetic",
+  mermaid:
+    "Mermaid theme party, iridescent teal and purple backdrop, seashell and pearl details, underwater ocean atmosphere",
+  space:
+    "Space galaxy theme party, deep dark navy backdrop with stars and planets painted on, rocket ship and moon elements, silver and gold accents",
+  football:
+    "Football soccer theme party, white or green backdrop with soccer ball and pitch line graphics, sporty clean aesthetic",
+  lego:
+    "Lego theme party, flat rectangular backdrop panel with Lego brick grid pattern and colorful Lego minifigure faces printed on surface, bold primary colors red blue yellow, NOT an arch shape",
+  kpop:
+    "K-Pop idol theme party, pastel purple and pink backdrop, sparkle and star stage elements, concert idol aesthetic",
+  encanto:
+    "Encanto Disney theme party, vibrant warm colors, magical candle and Casita house motifs, Colombian-inspired floral decoration",
+  cocomelon:
+    "Cocomelon theme party, bright primary colors, watermelon pattern backdrop, cheerful nursery rhyme decoration",
+  teddy_bear:
+    "Teddy Bear theme party, soft beige and dusty pink backdrop, cute illustrated teddy bear characters, cozy nursery warm tones",
+  pineapple_tropical:
+    "Tropical Pineapple theme party, white or blush backdrop with large gold pineapple outline decoration, tropical monstera leaves, vibrant pastel balloon garland",
+  blush_garden:
+    "Blush garden elegant theme party, soft pink and cream backdrop, botanical roses and peonies floral decoration, romantic luxury aesthetic",
+  luxury_neutral:
+    "Luxury neutral elegant theme party, warm beige champagne and ivory backdrop, gold metallic line accents, sophisticated minimal premium decoration",
+};
+
+/**
+ * Themes whose description hard-specifies the backdrop shape (round / rectangular).
+ * For these we omit the separate shape fragment so it can't contradict the theme.
+ */
+const SHAPE_LOCKED_THEMES = new Set<ThemeId>(["unicorn", "lego"]);
+
 /** BALLOON_DESCRIPTION — keyed by balloon style ("none" → omitted). */
 const BALLOON_DESC: Record<BalloonStyleId, string> = {
   none: "",
@@ -100,12 +152,21 @@ export function generatePrompt(input: PromptInput): {
   const theme = themeById(input.theme);
   const themeName = theme?.name ?? "party";
 
-  // Backdrop: strict shape description (Change 2) + chosen color.
+  // Theme: strict verbatim description.
+  const themeDesc = THEME_DESC[input.theme] ?? `${themeName} theme`;
+
+  // Backdrop: strict shape description + chosen color. Omitted for themes that
+  // hard-specify their own shape (unicorn=round, lego=rectangular).
+  const shapeLocked = SHAPE_LOCKED_THEMES.has(input.theme);
   const shapeDesc = input.backdropShape
     ? SHAPE_DESC[input.backdropShape] ?? RECT_DESC
     : RECT_DESC;
   const colorName = input.backdropColor ? hexToColorName(input.backdropColor) : "";
-  const backdrop = colorName ? `${shapeDesc}, backdrop in ${colorName} tones` : shapeDesc;
+  const backdrop = shapeLocked
+    ? ""
+    : colorName
+      ? `${shapeDesc}, backdrop in ${colorName} tones`
+      : shapeDesc;
 
   // Balloons: style + chosen colors.
   const balloonStyle = BALLOON_DESC[input.balloonStyle] ?? "";
@@ -157,7 +218,7 @@ export function generatePrompt(input: PromptInput): {
     .join(", ");
 
   const core = [
-    `${themeName} theme`,
+    themeDesc,
     backdrop,
     balloons,
     textClause,

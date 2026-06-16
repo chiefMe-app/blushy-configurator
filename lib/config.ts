@@ -44,9 +44,12 @@ export type ThemeId =
   | "mermaid"
   | "space"
   | "football"
+  | "lego"
   | "kpop"
   | "encanto"
   | "cocomelon"
+  | "teddy_bear"
+  | "pineapple_tropical"
   | "blush_garden"
   | "luxury_neutral";
 
@@ -66,7 +69,7 @@ export interface Theme {
 
 export const THEMES: Theme[] = [
   { id: "frozen", name: "Frozen", emoji: "❄️", desc: "Icy blues, silver, snowflakes", backdropColors: ["#E8F4FD", "#B3D9F2", "#FFFFFF"], balloonColors: ["#B3D9F2", "#E8F4FD", "#C8E6FA", "#FFFFFF", "#A8D4EF"], priceModifier: 50, accent: "#4A90D9" },
-  { id: "unicorn", name: "Unicorn", emoji: "🦄", desc: "Pastels, iridescent, rainbow magic", backdropColors: ["#F9D5DF", "#E8C8F0", "#D5EEF9"], balloonColors: ["#F9D5DF", "#C4F0E8", "#E8C8F0", "#FFF0A0", "#FFFFFF"], priceModifier: 50, accent: "#C77DD6" },
+  { id: "unicorn", name: "Unicorn", emoji: "🦄", desc: "Pastels, iridescent, rainbow magic", backdropColors: ["#F9D5DF", "#E8C8F0", "#FFFFFF"], balloonColors: ["#F9D5DF", "#C4F0E8", "#E8C8F0", "#FFF0A0", "#FFFFFF"], priceModifier: 50, accent: "#C77DD6" },
   { id: "dinosaur", name: "Dinosaur", emoji: "🦕", desc: "Earthy greens, terracotta, jungle", backdropColors: ["#E8F5E9", "#C8DFC8", "#F5F0E8"], balloonColors: ["#80CBC4", "#A5D6A7", "#BCAAA4", "#EF9A9A", "#78909C"], priceModifier: 30, accent: "#4CAF82" },
   { id: "safari", name: "Safari", emoji: "🦁", desc: "Warm browns, animal print, jungle", backdropColors: ["#FFF8E1", "#FFE0B2", "#F5F0E8"], balloonColors: ["#FFCC80", "#A5D6A7", "#FFAB40", "#8D6E63", "#FFF176"], priceModifier: 30, accent: "#B5762A" },
   { id: "princess", name: "Princess", emoji: "👑", desc: "Pink, gold, castle, crown", backdropColors: ["#FCE4EC", "#FFF9C4", "#FFFFFF"], balloonColors: ["#F48FB1", "#CE93D8", "#FFD54F", "#FFFFFF", "#F8BBD0"], priceModifier: 50, accent: "#E84F8B" },
@@ -78,9 +81,12 @@ export const THEMES: Theme[] = [
   { id: "mermaid", name: "Mermaid", emoji: "🧜‍♀️", desc: "Teals, iridescent, ocean magic", backdropColors: ["#E0F7FA", "#B2EBF2", "#F3E5F5"], balloonColors: ["#80DEEA", "#4DD0E1", "#CE93D8", "#B2EBF2", "#FFFFFF"], priceModifier: 50, accent: "#1FB6C4" },
   { id: "space", name: "Space", emoji: "🚀", desc: "Deep navy, stars, planets", backdropColors: ["#1A237E", "#283593", "#311B92"], balloonColors: ["#9FA8DA", "#7986CB", "#B39DDB", "#FFD54F", "#FFFFFF"], priceModifier: 60, accent: "#3949AB" },
   { id: "football", name: "Football", emoji: "⚽", desc: "Team colors, grass green, sporty", backdropColors: ["#E8F5E9", "#FFFFFF", "#F5F5F5"], balloonColors: ["#43A047", "#FFFFFF", "#1565C0", "#EF5350", "#FDD835"], priceModifier: 30, accent: "#2E9E4F" },
+  { id: "lego", name: "Lego", emoji: "🧱", desc: "Bright primary colors, brick fun", backdropColors: ["#FFFFFF", "#EF5350", "#1565C0"], balloonColors: ["#EF5350", "#1565C0", "#FDD835", "#43A047", "#FFFFFF"], priceModifier: 40, accent: "#1565C0" },
   { id: "kpop", name: "K-Pop", emoji: "🎤", desc: "Neon, sparkle, idol vibes", backdropColors: ["#F3E5F5", "#E8EAF6", "#FCE4EC"], balloonColors: ["#CE93D8", "#9FA8DA", "#F48FB1", "#FFFFFF", "#80DEEA"], priceModifier: 70, accent: "#B14FD8" },
   { id: "encanto", name: "Encanto", emoji: "🌺", desc: "Vibrant Colombian colors, magical", backdropColors: ["#FFF8E1", "#FCE4EC", "#E8F5E9"], balloonColors: ["#FF8F00", "#E91E63", "#43A047", "#FFD54F", "#9C27B0"], priceModifier: 50, accent: "#E0561E" },
   { id: "cocomelon", name: "Cocomelon", emoji: "🍉", desc: "Bright primaries, watermelon, fun", backdropColors: ["#E8F5E9", "#E3F2FD", "#FFFFFF"], balloonColors: ["#EF5350", "#43A047", "#42A5F5", "#FDD835", "#FFFFFF"], priceModifier: 30, accent: "#3AA655" },
+  { id: "teddy_bear", name: "Teddy Bear", emoji: "🧸", desc: "Soft beige, dusty pink, cozy", backdropColors: ["#F5EDE0", "#F2C4CE", "#EDE0D4"], balloonColors: ["#D4A574", "#F2C4CE", "#C4A882", "#FFFFFF", "#E8D5C4"], priceModifier: 30, accent: "#C08552" },
+  { id: "pineapple_tropical", name: "Tropical 🍍", emoji: "🌺", desc: "Pineapple, palm leaves, vibrant", backdropColors: ["#FFF9C4", "#FCE4EC", "#FFFFFF"], balloonColors: ["#FDD835", "#CE93D8", "#F48FB1", "#A5D6A7", "#FFFFFF"], priceModifier: 40, accent: "#E0561E" },
   { id: "blush_garden", name: "Blush Garden", emoji: "🌸", desc: "Soft pinks, florals, romantic", backdropColors: ["#FCE4EC", "#F8BBD0", "#FFFFFF"], balloonColors: ["#F48FB1", "#F8BBD0", "#FFFFFF", "#CE93D8", "#FFE0B2"], priceModifier: 0, accent: "#E5739A" },
   { id: "luxury_neutral", name: "Luxury Neutral", emoji: "🤍", desc: "Beige, champagne, gold, ivory", backdropColors: ["#F5F0E8", "#EDE0D0", "#FFFFFF"], balloonColors: ["#D4B896", "#EDE0D0", "#FFD54F", "#FFFFFF", "#C8A882"], priceModifier: 80, accent: "#B08D57" },
 ];
