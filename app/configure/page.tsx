@@ -541,6 +541,7 @@ function DecorStep({
         value={d.backdropShape}
         options={BACKDROP_SHAPES}
         onChange={(v) => patchDecor({ backdropShape: v })}
+        priceOf={(id) => BACKDROP_SHAPES.find((s) => s.id === id)?.price ?? 0}
       />
 
       <ChoiceRow<BalloonStyleId>

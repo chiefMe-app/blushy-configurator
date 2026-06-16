@@ -15,24 +15,41 @@ import {
   type ThemeId,
   type PackageId,
   type BalloonStyleId,
+  type BackdropShapeId,
   type BackdropText,
   type CutoutSelection,
   type PlinthSize,
 } from "./config";
 
-/** Backdrop count → phrase (Change 2). */
-function countDescription(count: number): string {
-  switch (count) {
-    case 1:
-      return "single arch backdrop";
-    case 2:
-      return "two arch backdrops side by side";
-    case 3:
-      return "three arch backdrops arranged together";
-    default:
-      return `${count} arch backdrops arranged together`;
-  }
-}
+/** Wrapper prepended/appended to every prompt (Change 3). */
+const PROMPT_PREFIX =
+  "Professional event photography of a birthday party setup in Dubai, UAE. ";
+const PROMPT_SUFFIX =
+  " Wide establishing shot showing the complete full setup from the front. Sharp focus on entire scene. Soft natural lighting. Photorealistic 4k quality. Professional event decoration photography.";
+
+/** Strict per-shape backdrop descriptions (Change 2) — exact verbatim strings. */
+const SHAPE_DESC: Record<BackdropShapeId, string> = {
+  round_arch:
+    "ONE large perfectly circular round backdrop panel, flat circle standing upright, organic balloon garland wrapped completely around the circular edge, NOT an arch, round circle shape only",
+  straight_arch:
+    "ONE tall arch backdrop with straight vertical sides and rounded top like a doorway, flat bottom, straight sides going up then curving to meet at top center, balloon garland on both sides floor to top",
+  half_arch:
+    "ONE asymmetric half arch backdrop panel, one side is tall with a curved top, the other side is short and straight, asymmetric silhouette, balloon garland clustered on the tall curved side only",
+  rect_with_cutout:
+    "ONE large rectangular backdrop frame panel with a round arch-shaped open window cutout in the center, solid rectangular frame around an empty arch opening, like a picture frame with arch hole, balloon garland on sides of frame",
+  shimmer_wall:
+    "ONE flat rectangular sequin shimmer wall backdrop, entire surface covered in silver metallic sequin mirror tiles, highly reflective disco-ball-like sequin panels, glittery shimmer effect",
+  double_arch:
+    "EXACTLY TWO separate arch backdrop panels placed side by side with a small gap between them, each arch has straight sides and rounded top, balloon garland framing both arches together",
+  mixed_panels:
+    "THREE backdrop panels of different heights arranged together, tallest panel in center, shorter panels on each side, staggered height silhouette",
+  wavy:
+    "ONE backdrop panel with wavy curved top edge, organic wavy silhouette along top, soft flowing curves, balloon garland along the wavy top edge",
+};
+
+/** Plain rectangle (no current shape id, kept for completeness). */
+const RECT_DESC =
+  "ONE flat rectangular backdrop panel, perfectly straight edges on all four sides, no curves anywhere, flat wall panel, balloon garland on sides";
 
 /** BALLOON_DESCRIPTION — keyed by balloon style ("none" → omitted). */
 const BALLOON_DESC: Record<BalloonStyleId, string> = {
@@ -58,12 +75,15 @@ const FONT_DESC: Record<string, string> = {
 };
 
 export const NEGATIVE_PROMPT =
-  "floating balloons, strings, cartoon, drawing, illustration, people, children, text overlay, watermark";
+  "floating balloons, strings, cartoon, drawing, illustration, people, children, text overlay, watermark, " +
+  "floating balloons, balloon strings, cartoon illustration, drawing, sketch, people, children, faces, " +
+  "text watermark, blurry, distorted shapes, wrong number of backdrops, extra backdrop panels, missing backdrop panels";
 
 export interface PromptInput {
   theme: ThemeId;
   package: PackageId;
   backdropCount: number;
+  backdropShape?: BackdropShapeId;
   backdropColor?: string;
   balloonStyle: BalloonStyleId;
   balloonColors?: string[];
@@ -80,14 +100,12 @@ export function generatePrompt(input: PromptInput): {
   const theme = themeById(input.theme);
   const themeName = theme?.name ?? "party";
 
-  // Backdrop: count + theme look + chosen color.
+  // Backdrop: strict shape description (Change 2) + chosen color.
+  const shapeDesc = input.backdropShape
+    ? SHAPE_DESC[input.backdropShape] ?? RECT_DESC
+    : RECT_DESC;
   const colorName = input.backdropColor ? hexToColorName(input.backdropColor) : "";
-  const backdrop = [
-    countDescription(input.backdropCount),
-    colorName ? `in ${colorName} tones` : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const backdrop = colorName ? `${shapeDesc}, backdrop in ${colorName} tones` : shapeDesc;
 
   // Balloons: style + chosen colors.
   const balloonStyle = BALLOON_DESC[input.balloonStyle] ?? "";
@@ -138,24 +156,19 @@ export function generatePrompt(input: PromptInput): {
     .filter(Boolean)
     .join(", ");
 
-  const prompt = [
-    "professional event photography",
-    `${themeName} theme party setup`,
+  const core = [
+    `${themeName} theme`,
     backdrop,
     balloons,
     textClause,
     cutoutClause,
     plinthClause,
     extras,
-    "luxury Dubai party setup",
-    "soft natural lighting",
-    "wide shot",
-    "photorealistic",
-    "8k",
-    "--ar 4:3",
   ]
     .filter(Boolean)
     .join(", ");
+
+  const prompt = `${PROMPT_PREFIX}${core}.${PROMPT_SUFFIX}`;
 
   return { prompt, negativePrompt: NEGATIVE_PROMPT };
 }

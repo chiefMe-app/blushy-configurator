@@ -167,6 +167,9 @@ export const PACKAGES: Package[] = [
 export type BackdropShapeId =
   | "round_arch"
   | "straight_arch"
+  | "half_arch"
+  | "rect_with_cutout"
+  | "shimmer_wall"
   | "wavy"
   | "double_arch"
   | "mixed_panels";
@@ -218,6 +221,9 @@ export interface Option<T extends string> {
 export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   { id: "round_arch", label: "Round Arch", price: 0 },
   { id: "straight_arch", label: "Straight Arch", price: 0 },
+  { id: "half_arch", label: "Half Arch", price: 0 },
+  { id: "rect_with_cutout", label: "Arch Cutout Frame", price: 20 },
+  { id: "shimmer_wall", label: "Shimmer Wall", price: 80 },
   { id: "wavy", label: "Wavy", price: 0 },
   { id: "double_arch", label: "Double Arch", price: 0 },
   { id: "mixed_panels", label: "Mixed Panels", price: 0 },
@@ -500,6 +506,11 @@ export function priceBreakdown(config: BuilderConfig): {
   const countDelta = (d.backdropCount - pkg.defaultDecor.backdropCount) * PER_BACKDROP;
   if (countDelta !== 0) {
     lines.push({ label: `Backdrops (${d.backdropCount})`, amount: countDelta });
+  }
+
+  const shape = shapeById(d.backdropShape);
+  if (shape && shape.price > 0) {
+    lines.push({ label: `${shape.label} backdrop`, amount: shape.price });
   }
 
   const style = balloonStyleById(d.balloonStyle);
