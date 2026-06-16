@@ -1,0 +1,96 @@
+"use client";
+
+import {
+  eventTypeById,
+  themeById,
+  packageById,
+  shapeById,
+  balloonStyleById,
+  nameSignById,
+  cutoutsById,
+  addOnById,
+  type BuilderConfig,
+} from "@/lib/config";
+import PriceSummary from "./PriceSummary";
+
+function Row({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex justify-between gap-4 py-1 text-sm">
+      <dt className="text-black/50">{k}</dt>
+      <dd className="text-right font-medium">{v}</dd>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-black/10 bg-white p-4">
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-black/40">
+        {title}
+      </h4>
+      <dl>{children}</dl>
+    </div>
+  );
+}
+
+export default function ReviewSummary({ config }: { config: BuilderConfig }) {
+  const { decor, venue, customer } = config;
+
+  return (
+    <div className="space-y-4">
+      <Section title="Event">
+        <Row k="Type" v={eventTypeById(config.eventType)?.label ?? "—"} />
+        <Row k="Theme" v={themeById(config.theme)?.label ?? "—"} />
+        <Row k="Package" v={packageById(config.package)?.label ?? "—"} />
+      </Section>
+
+      <Section title="Decor">
+        <Row k="Backdrops" v={String(decor.backdropCount)} />
+        <Row k="Shape" v={shapeById(decor.backdropShape)?.label ?? "—"} />
+        <Row k="Balloons" v={balloonStyleById(decor.balloonStyle)?.label ?? "—"} />
+        <Row k="Plinths" v={String(decor.plinths)} />
+        <Row k="Name sign" v={nameSignById(decor.nameSign)?.label ?? "—"} />
+        <Row k="Cutouts" v={cutoutsById(decor.cutouts)?.label ?? "—"} />
+        <Row k="Cake / dessert table" v={decor.cakeTable ? "Yes" : "No"} />
+        {decor.balloonColorCustom && <Row k="Balloon colors" v="Custom request" />}
+      </Section>
+
+      {config.addOns.length > 0 && (
+        <Section title="Add-ons">
+          {config.addOns.map((a) => {
+            const addon = addOnById(a.id);
+            const opts = a.options
+              ? Object.values(a.options).filter(Boolean).join(", ")
+              : "";
+            return (
+              <Row
+                key={a.id}
+                k={addon?.label ?? a.id}
+                v={opts || "Selected"}
+              />
+            );
+          })}
+        </Section>
+      )}
+
+      <Section title="Venue & contact">
+        <Row k="Name" v={customer.name || "—"} />
+        <Row k="WhatsApp" v={customer.whatsapp || "—"} />
+        <Row k="Date" v={venue.date || "—"} />
+        <Row k="Time" v={venue.time || "—"} />
+        <Row k="Area" v={venue.area || "—"} />
+        <Row k="Venue type" v={venue.venueType || "—"} />
+        <Row k="Setting" v={venue.isOutdoor ? "Outdoor" : "Indoor"} />
+        <Row k="Guests" v={venue.guestCount ? String(venue.guestCount) : "—"} />
+        <Row k="Children" v={venue.childrenCount ? String(venue.childrenCount) : "—"} />
+        <Row k="Photos" v={venue.photos.length ? `${venue.photos.length} uploaded` : "None"} />
+      </Section>
+
+      <PriceSummary config={config} />
+
+      <p className="rounded-2xl bg-accent-soft/40 p-3 text-center text-[11px] leading-relaxed text-black/55">
+        Final quote may vary after date, venue access, space, and availability confirmation.
+      </p>
+    </div>
+  );
+}

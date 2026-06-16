@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Defaults to the Blush Pink theme; overridden at runtime per selection. */
+  --accent: 236 72 153;
+  --accent-soft: 252 231 243;
+  --font-inter: "Inter", system-ui, sans-serif;
+}
+
+html,
+body {
+  background-color: #fbf8f6;
+  color: #2b2530;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Smooth the accent transition as the user switches themes. */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+}
+
+/* Shimmer used by the AI preview loading skeleton. */
+@keyframes blushy-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.65),
+    transparent
+  );
+  animation: blushy-shimmer 1.6s infinite;
+}
+
+/* Hide scrollbars on the horizontal selector rows but keep scrolling. */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
