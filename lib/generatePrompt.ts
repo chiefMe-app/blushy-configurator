@@ -19,6 +19,7 @@ import {
   type BackdropText,
   type CutoutSelection,
   type BackdropPrint,
+  type PlinthSize,
 } from "./config";
 
 /** Wrapper prepended/appended to every prompt (Change 3). */
@@ -168,7 +169,11 @@ export interface PromptInput {
   backdropPrint?: BackdropPrint;
   cutouts?: CutoutSelection;
   extras?: string[];
+  plinthSizes?: PlinthSize[];
 }
+
+export const PLINTH_NEGATIVE =
+  "wide drum, flat platform, stage, podium, short cylinder, width greater than height";
 
 export function generatePrompt(input: PromptInput): {
   prompt: string;
@@ -253,6 +258,22 @@ export function generatePrompt(input: PromptInput): {
     .filter(Boolean)
     .join(", ");
 
+  // Plinths (AI mode only — omit entirely in SVG mode).
+  let plinthClause = "";
+  if (input.plinthSizes && input.plinthSizes.length > 0) {
+    const count = Math.min(3, input.plinthSizes.length);
+    const positionDesc =
+      count === 1
+        ? "centered in front of the backdrop"
+        : count === 2
+          ? "spaced evenly in front of the backdrop"
+          : "arranged in a row in front of the backdrop";
+    plinthClause =
+      `${count} narrow tall white cylindrical plinth pedestal${count > 1 ? "s" : ""}, ` +
+      `height 3x greater than diameter, slim elegant display column like a museum pedestal, ` +
+      `matte white surface, standing on floor in front of backdrop, ${positionDesc}`;
+  }
+
   const core = [
     themeDesc,
     backdrop,
@@ -260,6 +281,7 @@ export function generatePrompt(input: PromptInput): {
     textClause,
     printClause,
     cutoutClause,
+    plinthClause,
     extras,
   ]
     .filter(Boolean)

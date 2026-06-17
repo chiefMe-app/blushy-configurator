@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generatePrompt, type PromptInput } from "@/lib/generatePrompt";
+import { generatePrompt, PLINTH_NEGATIVE, type PromptInput } from "@/lib/generatePrompt";
+import type { PlinthSize } from "@/lib/config";
 
 // fal.ai flux-2-pro (synchronous run). FAL_KEY stays server-side only.
 const FAL_MODEL = "fal-ai/flux-2-pro";
 const FAL_ENDPOINT = `https://fal.run/${FAL_MODEL}`;
+
+// A/B test: "ai" = plinths rendered by the AI model; "svg" = CSS overlay only.
+// Change to "svg" to revert to overlay mode.
+const PLINTH_MODE: "ai" | "svg" = "ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -17,21 +22,33 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: PromptInput;
+  let rawBody: PromptInput & { plinthSizes?: PlinthSize[] };
   try {
-    body = (await req.json()) as PromptInput;
+    rawBody = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  if (!body.theme || !body.package) {
+  if (!rawBody.theme || !rawBody.package) {
     return NextResponse.json(
       { error: "Missing required fields: theme, package." },
       { status: 400 }
     );
   }
 
-  const { prompt, negativePrompt } = generatePrompt(body);
+  // Pass plinthSizes to generatePrompt only in AI mode.
+  const promptInput: PromptInput = {
+    ...rawBody,
+    plinthSizes: PLINTH_MODE === "ai" ? (rawBody.plinthSizes ?? []) : undefined,
+  };
+
+  const { prompt, negativePrompt } = generatePrompt(promptInput);
+
+  // Merge plinth-specific negative terms in AI mode.
+  const finalNegative =
+    PLINTH_MODE === "ai"
+      ? `${negativePrompt}, ${PLINTH_NEGATIVE}`
+      : negativePrompt;
 
   try {
     const falRes = await fetch(FAL_ENDPOINT, {
@@ -59,7 +76,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "fal.ai returned no image", result }, { status: 502 });
     }
 
-    return NextResponse.json({ imageUrl, prompt });
+    return NextResponse.json({ imageUrl, prompt, plinthMode: PLINTH_MODE });
   } catch (err) {
     return NextResponse.json(
       { error: "Unexpected error generating image", detail: String(err) },

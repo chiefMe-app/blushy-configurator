@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import type { BuilderConfig, PlinthSize } from "@/lib/config";
 import LiveSetupPreview from "./LiveSetupPreview";
 
+// Keep in sync with app/api/generate/route.ts PLINTH_MODE.
+// "ai" = plinths sent to AI prompt, SVG overlay hidden.
+// "svg" = plinths rendered as CSS overlay, not in AI prompt.
+const PLINTH_MODE: "ai" | "svg" = "ai";
+
 export type PreviewStatus = "idle" | "loading" | "done" | "error";
 
 /** Derive the prompt's extra ids from the current decor selections. */
@@ -78,7 +83,7 @@ export function useSetupPreview(config: BuilderConfig) {
 
   const extras = deriveExtras(config);
   const d = config.decor;
-  // Plinths excluded from sig — they are rendered as an overlay, not by AI.
+  // Plinths included in sig only in AI mode (they affect the generated image).
   const sig = JSON.stringify({
     t: config.theme,
     p: config.package,
@@ -90,6 +95,7 @@ export function useSetupPreview(config: BuilderConfig) {
     txt: d.backdropText,
     bp: d.backdropPrint,
     cut: d.cutouts,
+    pl: PLINTH_MODE === "ai" ? d.plinthSizes : undefined,
     e: extras,
     n: nonce,
   });
@@ -113,6 +119,7 @@ export function useSetupPreview(config: BuilderConfig) {
             backdropText: d.backdropText,
             backdropPrint: d.backdropPrint,
             cutouts: d.cutouts,
+            plinthSizes: PLINTH_MODE === "ai" ? d.plinthSizes : undefined,
             extras,
           }),
         });
@@ -170,8 +177,10 @@ export default function SetupPreview({
           <LiveSetupPreview config={config} />
         )}
 
-        {/* Plinth overlay — only on the AI image; canvas draws its own plinths */}
-        {hasImage && <PlinthOverlay sizes={config.decor.plinthSizes} />}
+        {/* Plinth overlay — SVG mode only; AI mode renders plinths in the image */}
+        {hasImage && PLINTH_MODE === "svg" && (
+          <PlinthOverlay sizes={config.decor.plinthSizes} />
+        )}
 
         {/* Loading skeleton with shimmer */}
         {status === "loading" && (
