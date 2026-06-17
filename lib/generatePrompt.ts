@@ -68,11 +68,11 @@ const THEME_DESC: Record<string, string> = {
   barbie:
     "Barbie theme party, hot pink fuchsia backdrop, glamorous Barbie-inspired decoration, pink and white balloon garland",
   bluey:
-    "Bluey cartoon theme party, bright blue white and red color scheme, playful family-friendly decoration",
+    "Blue cartoon theme party, bright blue white and red color scheme, playful family-friendly decoration with paw print motifs",
   pokemon:
     "Pokemon theme party, yellow backdrop with red Pokeball graphic, bright cheerful primary colors, adventure theme",
   stitch:
-    "Lilo and Stitch theme party, blue tropical Hawaiian backdrop, hibiscus flowers, tropical island aesthetic",
+    "Tropical blue character theme party, blue tropical Hawaiian backdrop, hibiscus flowers, tropical island aesthetic",
   mermaid:
     "Mermaid theme party, iridescent teal and purple backdrop, seashell and pearl details, underwater ocean atmosphere",
   space:
@@ -105,23 +105,23 @@ const SHAPE_LOCKED_THEMES = new Set<ThemeId>(["unicorn", "lego"]);
 
 /** Per-theme vinyl print descriptions for the theme_print option. */
 const THEME_PRINT_DESC: Record<string, string> = {
-  frozen: "Frozen castle, snowflakes, Anna & Elsa silhouette",
+  frozen: "Frozen castle, snowflakes, icy character silhouettes",
   unicorn: "Unicorn face with gold horn, flower crown and lashes",
   dinosaur: "Jungle palm trees, volcano, dinosaur footprints",
   safari: "African savanna, giraffe silhouette, tropical leaves",
   princess: "Castle turrets, crown, stars and magic wand",
   superhero: "City skyline, lightning bolt, hero shield",
   barbie: "Barbie logo, stars, fashion illustration",
-  bluey: "Bluey and Bingo characters with paw prints",
-  pokemon: "Pokeball graphic, Pikachu silhouette, lightning bolt",
-  stitch: "Stitch with hibiscus flowers and Hawaii text",
+  bluey: "cartoon themed decorations with paw prints",
+  pokemon: "Pokeball graphic, Pokemon themed elements, lightning bolt",
+  stitch: "tropical blue themed character decoration with hibiscus flowers and Hawaii text",
   mermaid: "Underwater scene, shells, bubbles, coral reef",
   space: "Galaxy stars, planets, rocket ship, moon",
   football: "Football pitch lines, soccer ball, jersey number",
   lego: "Lego brick grid pattern and colorful Lego minifigure face graphics printed directly on flat rectangular panel surface",
   kpop: "Stage spotlight, microphone, sparkle star graphics",
   encanto: "Casita house, magical candle, Colombian flowers",
-  cocomelon: "Watermelon slices, JJ character, bright polka dots",
+  cocomelon: "Watermelon slices, colorful cartoon character decoration, bright polka dots",
   teddy_bear: "Cute teddy bear illustrations, hearts, soft bow",
   pineapple_tropical: "Gold pineapple outline, tropical monstera leaves, hibiscus",
   blush_garden: "Botanical roses and peonies, delicate foliage",
@@ -152,9 +152,9 @@ const FONT_DESC: Record<string, string> = {
 };
 
 export const NEGATIVE_PROMPT =
-  "floating balloons, balloon strings, cartoon, illustration, drawing, people, children, watermark, blurry, distorted, " +
-  "wrong number of backdrops, missing backdrop, " +
-  "3D decorations on backdrop, floating decorations, sculpted backdrop elements, separate 3D objects on backdrop surface, raised elements on backdrop";
+  "cartoon style, anime style, illustration, digital art, drawing, sketch, vector art, clipart, watercolor, " +
+  "CGI render, 3d render, plastic looking, toy-like, floating objects, distorted proportions, blurry, " +
+  "low quality, grainy, watermark, logo overlay, text overlay, unrealistic lighting";
 
 export interface PromptInput {
   theme: ThemeId;
@@ -240,11 +240,11 @@ export function generatePrompt(input: PromptInput): {
   let cutoutClause = "";
   if (input.cutouts && input.cutouts.size !== "none") {
     if (input.cutouts.size === "premium" && input.cutouts.position === "floor") {
-      cutoutClause = `large oversized feature ${themeName} character cutout as centerpiece on floor, plus smaller character cutouts arranged around setup`;
+      cutoutClause = `large oversized feature ${themeName} themed standee decoration as centerpiece on floor, plus smaller themed standee decorations arranged around setup`;
     } else if (input.cutouts.position === "backdrop") {
-      cutoutClause = `${themeName} character illustrations mounted directly on the backdrop surface`;
+      cutoutClause = `${themeName} themed decorations mounted directly on the backdrop surface`;
     } else {
-      cutoutClause = `${themeName} character cardboard cutouts standing on floor beside the backdrop`;
+      cutoutClause = `${themeName} themed standee decorations standing on floor beside the backdrop`;
     }
   }
 
