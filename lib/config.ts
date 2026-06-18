@@ -454,7 +454,7 @@ export const VENUE_TYPES = [
 
 export function defaultConfig(): BuilderConfig {
   const theme = THEMES.find((t) => t.id === "blush_garden")!;
-  const pkg = PACKAGES.find((p) => p.id === "signature")!;
+  const pkg = PACKAGES.find((p) => p.id === "mini")!;
   const cfg: BuilderConfig = {
     eventType: "birthday",
     theme: theme.id,
