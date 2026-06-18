@@ -105,6 +105,79 @@ const THEME_DESC: Record<string, string> = {
  */
 const SHAPE_LOCKED_THEMES = new Set<ThemeId>(["unicorn", "lego"]);
 
+/**
+ * Shapes that are inherently multi-panel — their SHAPE_DESC already bakes in the
+ * count, so we use it verbatim regardless of backdropCount.
+ */
+const MULTI_PANEL_SHAPES = new Set<BackdropShapeId>(["double_arch", "mixed_panels"]);
+
+/**
+ * Short plural label used when a single-panel shape appears in multiple copies
+ * (e.g. two round circles side by side).
+ */
+const SHAPE_MULTI_LABEL: Record<BackdropShapeId, string> = {
+  round_arch: "perfectly circular round disc backdrop panels",
+  straight_arch: "arch backdrop panels with straight vertical sides and rounded tops",
+  half_arch: "asymmetric half arch backdrop panels",
+  rect_with_cutout: "rectangular backdrop frame panels with arch-shaped cutout opening",
+  shimmer_wall: "flat rectangular sequin shimmer wall backdrop panels",
+  double_arch: "arch backdrop panels",
+  mixed_panels: "backdrop panels of different heights",
+  wavy: "wavy-top backdrop panels",
+};
+
+/**
+ * Build the shape-description fragment, taking backdropCount into account.
+ * - Multi-panel shapes (double_arch, mixed_panels) use SHAPE_DESC verbatim.
+ * - Single-panel shapes with count > 1 describe N panels of the same type.
+ * The selected shape ALWAYS wins; count is an additive modifier only.
+ */
+function buildBackdropDesc(
+  shape: BackdropShapeId | undefined,
+  count: number
+): string {
+  const c = Math.max(1, Math.min(3, count));
+
+  if (shape && MULTI_PANEL_SHAPES.has(shape)) {
+    return SHAPE_DESC[shape]; // already encodes the count
+  }
+
+  const baseDesc = shape ? SHAPE_DESC[shape] : RECT_DESC;
+
+  if (c === 1) return baseDesc;
+
+  const countWord = c === 2 ? "TWO" : "THREE";
+  const arrangement =
+    c === 2
+      ? "placed side by side with a small gap between them"
+      : "arranged in a row with small gaps between them";
+  const label = shape ? SHAPE_MULTI_LABEL[shape] : "backdrop panels";
+  return `${countWord} ${label}, ${arrangement}`;
+}
+
+/**
+ * Physical dimension clause appended after the shape description.
+ * Gives the AI concrete proportions to render.
+ */
+function backdropDimensions(count: number, shape: BackdropShapeId | undefined): string {
+  const c = Math.max(1, Math.min(3, count));
+  const isHalfArch = shape === "half_arch";
+
+  if (c === 1) {
+    return isHalfArch
+      ? "tall side 220cm, short side 120cm"
+      : "120cm wide and 220cm tall, portrait orientation, tall and narrow";
+  }
+  if (c === 2) {
+    return isHalfArch
+      ? "each panel tall side 200cm, short side 100cm, second panel mirrored or same orientation"
+      : "each panel 100cm wide and 200cm tall, portrait orientation, slightly shorter than single backdrop";
+  }
+  return isHalfArch
+    ? "each panel tall side 180cm, short side 90cm"
+    : "each panel 100cm wide and 180cm tall, portrait orientation, uniform height across all three";
+}
+
 /** Per-theme vinyl print descriptions for the theme_print option. */
 const THEME_PRINT_DESC: Record<string, string> = {
   frozen: "Frozen castle, snowflakes, icy character silhouettes",
@@ -228,18 +301,19 @@ export function generatePrompt(input: PromptInput): {
     THEME_DESC[input.theme] ||
     `${themeName} theme`;
 
-  // Backdrop: strict shape description + chosen color. Omitted for themes that
-  // hard-specify their own shape (unicorn=round, lego=rectangular).
+  // Backdrop: shape + count + dimensions + color. Shape selection always wins;
+  // count is an additive modifier. Omitted for shape-locked themes (unicorn, lego).
   const shapeLocked = SHAPE_LOCKED_THEMES.has(input.theme);
-  const shapeDesc = input.backdropShape
-    ? SHAPE_DESC[input.backdropShape] ?? RECT_DESC
-    : RECT_DESC;
   const colorName = input.backdropColor ? hexToColorName(input.backdropColor) : "";
   const backdrop = shapeLocked
     ? ""
-    : colorName
-      ? `${shapeDesc}, backdrop in ${colorName} tones`
-      : shapeDesc;
+    : [
+        buildBackdropDesc(input.backdropShape, input.backdropCount),
+        backdropDimensions(input.backdropCount, input.backdropShape),
+        colorName ? `backdrop in ${colorName} tones` : "",
+      ]
+        .filter(Boolean)
+        .join(", ");
 
   // Balloons: style + chosen colors. Premium uses no-floral description when florals not allowed.
   const balloonStyle =
@@ -359,12 +433,13 @@ export function buildFocusedPrompt(changeType: ChangeType, input: PromptInput): 
       );
     }
     case "shape": {
-      const shapeDesc = input.backdropShape ? SHAPE_DESC[input.backdropShape] : RECT_DESC;
       const colorName = input.backdropColor ? hexToColorName(input.backdropColor) : "";
       const colorPart =
-        !SHAPE_LOCKED_THEMES.has(input.theme) && colorName ? ` in ${colorName} tones` : "";
+        !SHAPE_LOCKED_THEMES.has(input.theme) && colorName ? `, backdrop in ${colorName} tones` : "";
+      const shapeDesc = buildBackdropDesc(input.backdropShape, input.backdropCount);
+      const dimClause = backdropDimensions(input.backdropCount, input.backdropShape);
       return (
-        `Change the backdrop panel shape to: ${shapeDesc}${colorPart}. ` +
+        `Change the backdrop panel shape to: ${shapeDesc}, ${dimClause}${colorPart}. ` +
         `Keep the same theme colors, balloons, and overall composition.`
       );
     }
