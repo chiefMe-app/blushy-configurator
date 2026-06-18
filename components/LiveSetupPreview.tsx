@@ -110,9 +110,7 @@ function renderScene(
 
   // --- layout backdrops across the width -----------------------------------
   const shapes = config.decor.backdropShapes;
-  const count = shapes.includes("mixed_panels")
-    ? 3
-    : Math.max(1, Math.min(3, shapes.length));
+  const count = Math.max(1, Math.min(3, shapes.length));
   const slotW = W / count;
 
   for (let i = 0; i < count; i++) {
@@ -177,7 +175,43 @@ function backdropOutline(
     return pts;
   }
 
-  // round_arch / mixed_panels / fallback: standard arc shape
+  if (shape === "half_arch") {
+    // Left edge tall, right edge shorter, single smooth curve top
+    const tallY = apexY;
+    const shortY = apexY + r * 0.6;
+    pts.push({ x: leftX, y: floorY });
+    pts.push({ x: leftX, y: tallY });
+    for (let k = 0; k <= arcSamples; k++) {
+      const t = k / arcSamples;
+      const x = leftX + t * pw;
+      const y = tallY + (shortY - tallY) * t * t;
+      pts.push({ x, y });
+    }
+    pts.push({ x: rightX, y: floorY });
+    return pts;
+  }
+
+  if (shape === "rect" || shape === "shimmer_wall") {
+    // Flat rectangular — straight top edge
+    const topY = apexY + r * 0.1;
+    pts.push({ x: leftX, y: floorY });
+    pts.push({ x: leftX, y: topY });
+    pts.push({ x: rightX, y: topY });
+    pts.push({ x: rightX, y: floorY });
+    return pts;
+  }
+
+  if (shape === "round") {
+    // Full circle — center mid-height
+    const centerY = apexY + r;
+    for (let k = 0; k <= arcSamples * 2; k++) {
+      const a = Math.PI * 2 * (k / (arcSamples * 2));
+      pts.push({ x: cx + r * Math.cos(a), y: centerY - r * Math.sin(a) });
+    }
+    return pts;
+  }
+
+  // arch / fallback: standard semicircular arch
   const ry = r;
   const springY = apexY + ry;
   pts.push({ x: leftX, y: floorY });

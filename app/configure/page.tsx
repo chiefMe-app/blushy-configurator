@@ -560,16 +560,6 @@ function DecorStep({
   }
   function toggleShape(id: BackdropShapeId) {
     const current = d.backdropShapes;
-    if (id === "mixed_panels") {
-      // mixed_panels is exclusive — selecting it replaces all other panels
-      patchDecor({ backdropShapes: current.includes("mixed_panels") && current.length === 1 ? ["half_arch"] : ["mixed_panels"] });
-      return;
-    }
-    if (current.includes("mixed_panels")) {
-      // replacing mixed_panels with a single shape
-      patchDecor({ backdropShapes: [id] });
-      return;
-    }
     const isSelected = current.includes(id);
     if (isSelected) {
       if (current.length === 1) return; // always keep at least one
@@ -605,20 +595,16 @@ function DecorStep({
             const isSelected = d.backdropShapes.includes(shape.id);
             const panelIndex = d.backdropShapes.indexOf(shape.id);
             const shimmerExtra = shape.id === "shimmer_wall" ? 80 : 0;
-            const isAdditional = !d.backdropShapes.includes("mixed_panels") && panelIndex > 0;
+            const isAdditional = panelIndex > 0;
             const additionalCost = isAdditional ? PER_BACKDROP + shimmerExtra : shimmerExtra;
             const priceNote =
-              shape.id === "mixed_panels"
-                ? `+${formatAED(2 * PER_BACKDROP)} (3 panels)`
-                : additionalCost > 0
-                  ? `+${formatAED(additionalCost)}`
-                  : isSelected && panelIndex === 0 && shimmerExtra > 0
-                    ? `+${formatAED(shimmerExtra)}`
-                    : isSelected
-                      ? "Included"
-                      : d.backdropShapes.length === 0 || d.backdropShapes.includes("mixed_panels")
-                        ? "Included"
-                        : `+${formatAED(PER_BACKDROP + shimmerExtra)}`;
+              additionalCost > 0
+                ? `+${formatAED(additionalCost)}`
+                : isSelected && panelIndex === 0 && shimmerExtra > 0
+                  ? `+${formatAED(shimmerExtra)}`
+                  : isSelected
+                    ? "Included"
+                    : `+${formatAED(PER_BACKDROP + shimmerExtra)}`;
             return (
               <button
                 key={shape.id}

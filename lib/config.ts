@@ -156,7 +156,7 @@ export const PACKAGES: Package[] = [
     ],
     bestFor: "Full venue takeovers",
     defaultDecor: {
-      backdropShapes: ["mixed_panels"],
+      backdropShapes: ["arch", "half_arch", "wavy"],
       balloonStyle: "premium",
       plinths: 3,
       plinthSizes: ["large", "medium", "medium"] as PlinthSize[],
@@ -171,11 +171,12 @@ export const PACKAGES: Package[] = [
 // =====================  STEP — DECOR  ======================================
 
 export type BackdropShapeId =
-  | "round_arch"
+  | "arch"
   | "half_arch"
+  | "round"
+  | "rect"
   | "shimmer_wall"
-  | "wavy"
-  | "mixed_panels";
+  | "wavy";
 
 export type BalloonStyleId = "none" | "half" | "full" | "premium";
 
@@ -257,11 +258,12 @@ export interface Option<T extends string> {
 }
 
 export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
-  { id: "half_arch",    label: "Half Arch",       price: 0 },
-  { id: "round_arch",   label: "Round Backdrop",  price: 0 },
-  { id: "shimmer_wall", label: "Shimmer Wall",    price: 80 },
-  { id: "wavy",         label: "Wavy",            price: 0 },
-  { id: "mixed_panels", label: "Mixed Panels",    price: 0 },
+  { id: "arch",         label: "Arch Backdrop",        price: 0 },
+  { id: "half_arch",    label: "Half Arch Backdrop",   price: 0 },
+  { id: "round",        label: "Round Backdrop",       price: 0 },
+  { id: "rect",         label: "Rectangular Backdrop", price: 0 },
+  { id: "shimmer_wall", label: "Shimmer Wall",         price: 80 },
+  { id: "wavy",         label: "Wavy Backdrop",        price: 0 },
 ];
 
 export const BALLOON_STYLES: Option<BalloonStyleId>[] = [
@@ -296,9 +298,8 @@ export const CAKE_TABLE_PRICE = 300;
 /** Extra/fewer backdrops beyond the package default cost this each. */
 export const PER_BACKDROP = 350;
 
-/** Effective panel count — mixed_panels always counts as 3. */
+/** Effective panel count from the selected shapes array. */
 export function backdropPanelCount(shapes: BackdropShapeId[]): number {
-  if (shapes.includes("mixed_panels")) return 3;
   return Math.max(1, shapes.length);
 }
 
@@ -546,22 +547,18 @@ export function priceBreakdown(config: BuilderConfig): {
 
   // Backdrop panel pricing: first panel included, each additional is PER_BACKDROP.
   // Shimmer wall adds +80 per shimmer panel regardless of position.
-  if (d.backdropShapes.includes("mixed_panels")) {
-    lines.push({ label: "Mixed Panels (3 backdrop panels)", amount: 2 * PER_BACKDROP });
-  } else {
-    for (let i = 0; i < d.backdropShapes.length; i++) {
-      const sid = d.backdropShapes[i];
-      const sInfo = shapeById(sid);
-      const sLabel = sInfo?.label ?? sid;
-      const panelCost = i === 0 ? 0 : PER_BACKDROP;
-      const shimmerExtra = sid === "shimmer_wall" ? 80 : 0;
-      const total = panelCost + shimmerExtra;
-      if (total > 0) {
-        lines.push({
-          label: i === 0 ? `${sLabel} backdrop` : `${sLabel} — panel ${i + 1}`,
-          amount: total,
-        });
-      }
+  for (let i = 0; i < d.backdropShapes.length; i++) {
+    const sid = d.backdropShapes[i];
+    const sInfo = shapeById(sid);
+    const sLabel = sInfo?.label ?? sid;
+    const panelCost = i === 0 ? 0 : PER_BACKDROP;
+    const shimmerExtra = sid === "shimmer_wall" ? 80 : 0;
+    const total = panelCost + shimmerExtra;
+    if (total > 0) {
+      lines.push({
+        label: i === 0 ? `${sLabel} backdrop` : `${sLabel} — panel ${i + 1}`,
+        amount: total,
+      });
     }
   }
 

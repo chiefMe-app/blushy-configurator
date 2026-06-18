@@ -38,33 +38,21 @@ const PROMPT_PREFIX =
 const PROMPT_SUFFIX =
   " Wide establishing shot showing the complete full setup from the front. Sharp focus on entire scene. Soft natural lighting. Photorealistic 4k quality. Professional event decoration photography.";
 
-/** Strict per-shape backdrop descriptions — exact verbatim strings. */
+/** Strict per-shape backdrop descriptions — verbatim, dimensions included. */
 const SHAPE_DESC: Record<BackdropShapeId, string> = {
-  round_arch:
-    "EXACTLY ONE circular round backdrop disc, diameter 180cm, single circle only, standing upright like a large circular panel, perfectly circular on all sides, even if multiple backdrops are selected show only ONE round circular backdrop, NOT an arch shape, NOT two circles, just one single round disc",
+  arch:
+    "ONE arch backdrop panel: two straight vertical sides, semicircular rounded top, like a doorway or window arch, flat bottom edge, straight sides rise up then meet in a perfect half-circle at the top, width 100cm, height 200cm tall to top of arch curve, matte flat painted surface panel",
   half_arch:
-    "ONE asymmetric backdrop panel that is 100cm wide and 200cm tall on the left side, the right side is only 120cm tall, the top edge is a single smooth curve that starts at 200cm height on the left and sweeps down to 120cm height on the right, like a ski slope or quarter circle curve from top-left to mid-right, the bottom edge is perfectly flat and straight, total width 100cm, left height 200cm, right height 120cm, this shape looks like the letter J rotated or a skateboard ramp profile, NOT a full arch, NOT symmetric, NOT round",
+    "ONE half arch backdrop panel: LEFT vertical edge is 200cm tall, RIGHT vertical edge is only 110cm tall, the top edge is a single smooth diagonal curve sweeping from the tall left (200cm) down to the short right (110cm), like a skateboard ramp silhouette or quarter-pipe profile, flat bottom edge, total width 100cm, the overall shape resembles a right triangle with a curved hypotenuse, NOT symmetric, NOT a full arch, matte flat painted surface panel",
+  round:
+    "ONE perfectly circular round backdrop disc panel, complete full circle shape, diameter 180cm, flat circular panel standing upright on the floor, no flat bottom edge, perfectly round on all sides, matte flat painted surface",
+  rect:
+    "ONE rectangular backdrop panel, perfectly straight edges on all four sides, width 100cm, height 200cm, flat wall panel, no curves anywhere, matte flat painted surface",
   shimmer_wall:
-    "ONE flat rectangular sequin shimmer wall backdrop, 100cm wide and 200cm tall, entire surface covered in silver metallic sequin mirror tiles, highly reflective disco-ball-like sequin panels, glittery shimmer effect",
+    "ONE rectangular shimmer wall backdrop panel, entire surface covered with silver metallic sequin mirror tiles, highly reflective disco-ball sequin effect, width 100cm, height 200cm",
   wavy:
-    "ONE wavy-edged backdrop panel, 100cm wide and 200cm tall, organic wavy curved top edge with 2-3 gentle waves, soft flowing silhouette, NOT sharp zigzag",
-  mixed_panels:
-    "THREE flat rectangular backdrop panels of different heights arranged side by side touching each other, tallest panel in center 200cm tall 100cm wide, side panels shorter 150cm tall 100cm wide each, clean modern minimalist arrangement, NOT an arch, NOT curved tops, flat rectangular panels only",
+    "ONE wavy backdrop panel, width 100cm, height 200cm at tallest point, top edge has 2-3 gentle organic waves, soft flowing curved silhouette along top, NOT sharp zigzag, smooth gentle waves only, matte flat painted surface",
 };
-
-/**
- * Per-count descriptions for half_arch — fully self-contained including dimensions.
- * Used instead of SHAPE_DESC + SHAPE_MULTI_LABEL + backdropDimensions for this shape.
- */
-const HALF_ARCH_DESC: Record<number, string> = {
-  1: "ONE asymmetric backdrop panel that is 100cm wide and 200cm tall on the left side, the right side is only 120cm tall, the top edge is a single smooth curve that starts at 200cm height on the left and sweeps down to 120cm height on the right, like a ski slope or quarter circle curve from top-left to mid-right, the bottom edge is perfectly flat and straight, total width 100cm, left height 200cm, right height 120cm, this shape looks like the letter J rotated or a skateboard ramp profile, NOT a full arch, NOT symmetric, NOT round",
-  2: "TWO asymmetric backdrop panels side by side, each panel 100cm wide and 200cm tall at tallest point, left panel: left edge 200cm tall, right edge 110cm tall, curved top sweeping down from left to right, right panel: mirrored, left edge 110cm tall, right edge 200cm tall, curved top sweeping up from left to right, together they form a V shape or valley silhouette, NOT full arches, NOT symmetric individually",
-  3: "THREE flat backdrop panels arranged together touching each other, each panel 100cm wide, center panel is a full straight arch 200cm tall, left panel is asymmetric 190cm on outside 120cm on inside curved top, right panel is asymmetric mirrored",
-};
-
-/** Plain rectangle (no current shape id, kept for completeness). */
-const RECT_DESC =
-  "ONE flat rectangular backdrop panel, perfectly straight edges on all four sides, no curves anywhere, flat wall panel, balloon garland on sides";
 
 /**
  * THEME_MOOD — color scheme, atmosphere, and overall vibe ONLY.
@@ -132,70 +120,9 @@ const THEME_PRINT: Record<string, string> = {
  */
 const SHAPE_LOCKED_THEMES = new Set<ThemeId>();
 
-/**
- * Shapes that are inherently multi-panel — their SHAPE_DESC already bakes in the
- * count, so we use it verbatim regardless of backdropCount.
- */
-const MULTI_PANEL_SHAPES = new Set<BackdropShapeId>(["mixed_panels"]);
-
 /** Returns the effective panel count from the selected shapes array. */
 function effectiveCount(shapes: BackdropShapeId[]): number {
-  if (shapes.includes("mixed_panels")) return 3;
   return Math.max(1, Math.min(3, shapes.length));
-}
-
-/**
- * Short plural label used when a single-panel shape appears in multiple copies
- * (e.g. two round circles side by side).
- */
-const SHAPE_MULTI_LABEL: Record<BackdropShapeId, string> = {
-  round_arch:   "circular round disc backdrop panels",
-  half_arch:    "asymmetric half arch backdrop panels",
-  shimmer_wall: "flat rectangular sequin shimmer wall backdrop panels",
-  wavy:         "wavy-top backdrop panels",
-  mixed_panels: "backdrop panels of different heights",
-};
-
-/** Short per-panel description used when building multi-shape composite scenes. */
-const PANEL_SHORT_DESC: Record<BackdropShapeId, string> = {
-  half_arch:    "asymmetric half arch panel, 100cm wide, 200cm tall on left curving down to 120cm on right, NOT a full arch",
-  round_arch:   "circular round disc backdrop, 180cm diameter, single perfect circle",
-  shimmer_wall: "rectangular shimmer sequin wall panel, 100cm wide 200cm tall, fully covered in reflective metallic sequin tiles",
-  wavy:         "wavy-top backdrop panel, 100cm wide 200cm tall, organic wavy curved top edge with 2-3 gentle waves",
-  mixed_panels: "three flat rectangular panels of different heights side by side, center panel 200cm, side panels 150cm each",
-};
-
-/**
- * Build the shape-description fragment, taking backdropCount into account.
- * - Multi-panel shapes (double_arch, mixed_panels) use SHAPE_DESC verbatim.
- * - Single-panel shapes with count > 1 describe N panels of the same type.
- * The selected shape ALWAYS wins; count is an additive modifier only.
- */
-function buildBackdropDesc(shape: BackdropShapeId | undefined, count: number): string {
-  const c = Math.max(1, Math.min(3, count));
-
-  if (shape === "half_arch") return HALF_ARCH_DESC[c] ?? HALF_ARCH_DESC[1];
-  if (shape && MULTI_PANEL_SHAPES.has(shape)) return SHAPE_DESC[shape];
-
-  const baseDesc = shape ? SHAPE_DESC[shape] : RECT_DESC;
-  if (c === 1) return baseDesc;
-
-  const countWord = c === 2 ? "TWO" : "THREE";
-  const arrangement = c === 2 ? "placed side by side with a small gap" : "arranged in a row with small gaps";
-  const label = shape ? SHAPE_MULTI_LABEL[shape] : "backdrop panels";
-  return `${countWord} ${label}, ${arrangement}`;
-}
-
-/**
- * Physical dimension clause appended after the shape description.
- * Gives the AI concrete proportions to render.
- */
-function backdropDimensions(count: number, shape: BackdropShapeId | undefined): string {
-  if (shape === "half_arch" || shape === "round_arch" || shape === "mixed_panels") return "";
-  const c = Math.max(1, Math.min(3, count));
-  const perPanel = "each backdrop panel is 100cm wide and 200cm tall, human scale proportions, NOT oversized, approximately 2 meters tall and 1 meter wide per panel";
-  if (c === 1) return perPanel.replace("each backdrop panel", "the backdrop panel");
-  return perPanel;
 }
 
 /** Per-theme vinyl print descriptions for the theme_print option. */
@@ -299,23 +226,29 @@ export const PLINTH_NEGATIVE =
 
 function buildSceneBackdrop(shapes: BackdropShapeId[], colorName: string): string {
   const count = effectiveCount(shapes);
-  let descPart: string;
-  let dimPart: string;
-  if (shapes.length <= 1) {
-    const shape = shapes[0];
-    descPart = buildBackdropDesc(shape, count);
-    dimPart = backdropDimensions(count, shape);
-  } else {
-    const panels = shapes
-      .map((s, i) => `panel ${i + 1}: ${PANEL_SHORT_DESC[s]}`)
-      .join("; ");
-    const countWord = count === 2 ? "TWO" : "THREE";
-    descPart = `${countWord} distinct backdrop panels side by side — ${panels}`;
-    dimPart = "each panel approximately 100cm wide and 200cm tall, human scale";
+  const colorSuffix = colorName ? `, backdrop in ${colorName} tones` : "";
+
+  if (count === 1) {
+    return `${SHAPE_DESC[shapes[0]]}${colorSuffix}`;
   }
-  return [descPart, dimPart, colorName ? `backdrop in ${colorName} tones` : ""]
-    .filter(Boolean)
-    .join(", ");
+
+  const positions = count === 2 ? ["LEFT", "RIGHT"] : ["LEFT", "CENTER", "RIGHT"];
+  const panelLines = shapes.slice(0, count).map((s, i) => {
+    let desc = SHAPE_DESC[s];
+    // Round disc is smaller when sharing the scene with other panels
+    if (s === "round" && shapes.length > 1) {
+      desc = desc.replace("diameter 180cm", "diameter 150cm");
+    }
+    return `${positions[i]} panel: ${desc}`;
+  });
+
+  const countWord = count === 2 ? "TWO" : "THREE";
+  const arrangement =
+    count === 2
+      ? "panels placed close together with small gap between them, total scene width approximately 220cm"
+      : "panels arranged touching or with small gaps";
+
+  return `${countWord} backdrop panels arranged side by side: ${panelLines.join(". ")}. ${arrangement}${colorSuffix}`;
 }
 
 export type ChangeType =
@@ -468,11 +401,12 @@ export function generatePrompt(input: PromptInput): {
   const effectivePanels = effectiveCount(input.backdropShapes);
   const panelWord = effectivePanels === 1 ? "ONE (1)" : effectivePanels === 2 ? "TWO (2)" : "THREE (3)";
   const SHAPE_LABEL: Partial<Record<BackdropShapeId, string>> = {
-    round_arch:   "round circular disc",
+    arch:         "arch (semicircular top)",
     half_arch:    "asymmetric half arch (tall left, short right)",
+    round:        "round circular disc",
+    rect:         "flat rectangular",
     shimmer_wall: "rectangular shimmer wall",
     wavy:         "wavy top",
-    mixed_panels: "mixed height flat rectangular panels",
   };
   const shapeLabelStr = input.backdropShapes.length === 1
     ? (SHAPE_LABEL[input.backdropShapes[0]] ?? "rectangular")
@@ -515,8 +449,8 @@ export function generatePrompt(input: PromptInput): {
 
   const shapeNegative =
     input.backdropShapes.length === 1 && input.backdropShapes[0] === "half_arch"
-      ? "full arch, complete arch, symmetric arch, round top, equal height sides, doorway arch, both sides same height"
-      : input.backdropShapes.length === 1 && input.backdropShapes[0] === "round_arch"
+      ? "full arch, complete arch, symmetric arch, equal height sides, both sides same height, doorway arch"
+      : input.backdropShapes.length === 1 && input.backdropShapes[0] === "round"
         ? "two circles, multiple circles, arch shape, multiple backdrops, two backdrops"
         : "";
 
