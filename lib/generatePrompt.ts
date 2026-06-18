@@ -21,7 +21,16 @@ import {
   type BackdropPrint,
   type PlinthSize,
   type EventTypeId,
+  type GraphicStyle,
 } from "./config";
+
+const GRAPHIC_STYLE_MODIFIER: Record<GraphicStyle, string> = {
+  illustrated: "soft illustrated cartoon artwork style, hand-drawn friendly aesthetic",
+  realistic:   "photorealistic high quality printed graphic, detailed and lifelike",
+  minimal:     "clean minimal line art, elegant simple outlines, white space, sophisticated",
+  pattern:     "repeating seamless pattern covering entire backdrop, tiled themed motifs across whole surface",
+  full_scene:  "full immersive background scene illustration covering entire backdrop surface, detailed environment and setting",
+};
 
 /** Wrapper prepended/appended to every prompt (Change 3). */
 const PROMPT_PREFIX =
@@ -370,7 +379,9 @@ export function generatePrompt(input: PromptInput): {
       (!florals && THEME_PRINT_NO_FLORAL[input.theme]) ||
       THEME_PRINT[input.theme] ||
       "themed decorative illustration";
-    printClause = `${desc}, ${flatVinyl}`;
+    const styleKey = (input.backdropPrint.graphicStyle ?? "illustrated") as GraphicStyle;
+    const styleMod = GRAPHIC_STYLE_MODIFIER[styleKey];
+    printClause = `${desc}, ${styleMod}, ${flatVinyl}`;
   } else if (input.backdropPrint?.type === "custom_upload") {
     printClause = "custom graphic design printed on backdrop surface";
   }
@@ -493,7 +504,9 @@ export function buildFocusedPrompt(changeType: ChangeType, input: PromptInput): 
           (!florals && THEME_PRINT_NO_FLORAL[input.theme]) ||
           THEME_PRINT[input.theme] ||
           "themed decorative illustration";
-        printDesc = `${desc}, flat 2D printed vinyl graphic on the backdrop surface`;
+        const styleKey = (input.backdropPrint.graphicStyle ?? "illustrated") as GraphicStyle;
+        const styleMod = GRAPHIC_STYLE_MODIFIER[styleKey];
+        printDesc = `${desc}, ${styleMod}, flat 2D printed vinyl graphic on the backdrop surface`;
       } else if (input.backdropPrint?.type === "custom_upload") {
         printDesc = "custom graphic design printed on the backdrop surface";
       }
