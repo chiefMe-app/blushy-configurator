@@ -45,13 +45,23 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
   straight_arch:
     "ONE arch backdrop panel, straight vertical sides, semicircular rounded top, like a doorway or window arch shape, flat bottom, two straight sides meeting a half-circle top, approximately 200cm tall 120cm wide, NOT a circle",
   half_arch:
-    "ONE flat decorative backdrop panel, left side straight vertical edge 220cm tall, curved top connecting left to right, right side straight vertical edge cut at 130cm tall, the top silhouette curves from 220cm on left down to 130cm on right, total width 120cm, this is a flat panel with asymmetric height profile, matte painted surface, NOT a circle, NOT a full arch",
+    "ONE asymmetric backdrop panel that is 120cm wide and 220cm tall on the left side, the right side is only 130cm tall, the top edge is a single smooth curve that starts at 220cm height on the left and sweeps down to 130cm height on the right, like a ski slope or quarter circle curve from top-left to mid-right, the bottom edge is perfectly flat and straight, total width 120cm, left height 220cm, right height 130cm, this shape looks like the letter J rotated or a skateboard ramp profile, NOT a full arch, NOT symmetric, NOT round",
   shimmer_wall:
     "ONE flat rectangular sequin shimmer wall backdrop, entire surface covered in silver metallic sequin mirror tiles, highly reflective disco-ball-like sequin panels, glittery shimmer effect",
   wavy:
     "ONE wavy-edged backdrop panel, maximum 100cm wide, organic wavy curved top edge with 2-3 gentle waves, soft flowing silhouette, NOT sharp zigzag",
   mixed_panels:
     "THREE flat rectangular backdrop panels of different heights arranged side by side touching each other, tallest panel in center 200cm tall, side panels shorter 150cm each, all panels same width 80cm each, clean modern minimalist arrangement, NOT an arch, NOT curved tops, flat rectangular panels only",
+};
+
+/**
+ * Per-count descriptions for half_arch — fully self-contained including dimensions.
+ * Used instead of SHAPE_DESC + SHAPE_MULTI_LABEL + backdropDimensions for this shape.
+ */
+const HALF_ARCH_DESC: Record<number, string> = {
+  1: "ONE asymmetric backdrop panel that is 120cm wide and 220cm tall on the left side, the right side is only 130cm tall, the top edge is a single smooth curve that starts at 220cm height on the left and sweeps down to 130cm height on the right, like a ski slope or quarter circle curve from top-left to mid-right, the bottom edge is perfectly flat and straight, total width 120cm, left height 220cm, right height 130cm, this shape looks like the letter J rotated or a skateboard ramp profile, NOT a full arch, NOT symmetric, NOT round",
+  2: "TWO asymmetric backdrop panels side by side, each panel 100cm wide, left panel: left edge 200cm tall, right edge 110cm tall, curved top sweeping down from left to right, right panel: mirrored, left edge 110cm tall, right edge 200cm tall, curved top sweeping up from left to right, together they form a V shape or valley silhouette, NOT full arches, NOT symmetric individually",
+  3: "THREE flat backdrop panels, center panel is a full straight arch 180cm tall 100cm wide, left panel is asymmetric 160cm on outside 100cm on inside, right panel is asymmetric mirrored, arranged together touching each other",
 };
 
 /** Plain rectangle (no current shape id, kept for completeness). */
@@ -167,6 +177,9 @@ function buildBackdropDesc(
 ): string {
   const c = effectiveCount(shape, count);
 
+  // half_arch has fully self-contained per-count descriptions including dimensions.
+  if (shape === "half_arch") return HALF_ARCH_DESC[c] ?? HALF_ARCH_DESC[1];
+
   if (shape && MULTI_PANEL_SHAPES.has(shape)) {
     return SHAPE_DESC[shape]; // already encodes the count
   }
@@ -193,22 +206,13 @@ function buildBackdropDesc(
  * Gives the AI concrete proportions to render.
  */
 function backdropDimensions(count: number, shape: BackdropShapeId | undefined): string {
-  const c = effectiveCount(shape, count);
-  const isHalfArch = shape === "half_arch";
+  // half_arch descriptions already include exact dimensions — no separate clause needed.
+  if (shape === "half_arch") return "";
 
-  if (c === 1) {
-    return isHalfArch
-      ? "tall side 220cm, short side 120cm"
-      : "120cm wide and 220cm tall, portrait orientation, tall and narrow";
-  }
-  if (c === 2) {
-    return isHalfArch
-      ? "each panel tall side 200cm, short side 100cm, second panel mirrored or same orientation"
-      : "each panel 100cm wide and 200cm tall, portrait orientation, slightly shorter than single backdrop";
-  }
-  return isHalfArch
-    ? "each panel tall side 180cm, short side 90cm"
-    : "each panel 100cm wide and 180cm tall, portrait orientation, uniform height across all three";
+  const c = effectiveCount(shape, count);
+  if (c === 1) return "120cm wide and 220cm tall, portrait orientation, tall and narrow";
+  if (c === 2) return "each panel 100cm wide and 200cm tall, portrait orientation, slightly shorter than single backdrop";
+  return "each panel 100cm wide and 180cm tall, portrait orientation, uniform height across all three";
 }
 
 /** Per-theme vinyl print descriptions for the theme_print option. */
@@ -486,7 +490,13 @@ export function generatePrompt(input: PromptInput): {
         ? "single backdrop, one panel, three panels, triple backdrop"
         : "single backdrop, one panel, two panels, double backdrop";
 
-  return { prompt, negativePrompt: `${NEGATIVE_PROMPT}, ${countNegative}` };
+  const shapeNegative =
+    input.backdropShape === "half_arch"
+      ? "full arch, complete arch, symmetric arch, round top, equal height sides, doorway arch, both sides same height"
+      : "";
+
+  const negParts = [NEGATIVE_PROMPT, countNegative, shapeNegative].filter(Boolean);
+  return { prompt, negativePrompt: negParts.join(", ") };
 }
 
 /** Focused edit instruction for img2img (kontext) — describes only what changed. */
