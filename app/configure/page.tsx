@@ -221,6 +221,7 @@ export default function ConfigurePage() {
               config={config}
               status={preview.status}
               imageUrl={preview.imageUrl}
+              isIncremental={preview.isIncremental}
               onRegenerate={preview.regenerate}
               showControls={false}
             />
@@ -264,6 +265,7 @@ export default function ConfigurePage() {
         config={config}
         status={preview.status}
         imageUrl={preview.imageUrl}
+        isIncremental={preview.isIncremental}
         onRegenerate={preview.regenerate}
       />
       <PriceSummary config={config} className="hidden lg:block" />

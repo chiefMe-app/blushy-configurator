@@ -204,6 +204,15 @@ function allowFlorals(input: PromptInput): boolean {
 export const PLINTH_NEGATIVE =
   "wide drum, flat platform, stage, podium, short cylinder, width greater than height";
 
+export type ChangeType =
+  | "full"
+  | "theme"
+  | "shape"
+  | "balloons"
+  | "colors"
+  | "print"
+  | "extras";
+
 export function generatePrompt(input: PromptInput): {
   prompt: string;
   negativePrompt: string;
@@ -330,6 +339,93 @@ export function generatePrompt(input: PromptInput): {
   const prompt = `${PROMPT_PREFIX}${core}.${PROMPT_SUFFIX}`;
 
   return { prompt, negativePrompt: NEGATIVE_PROMPT };
+}
+
+/** Focused edit instruction for img2img (kontext) — describes only what changed. */
+export function buildFocusedPrompt(changeType: ChangeType, input: PromptInput): string {
+  const theme = themeById(input.theme);
+  const themeName = theme?.name ?? "party";
+  const florals = allowFlorals(input);
+
+  switch (changeType) {
+    case "theme": {
+      const themeDesc =
+        (!florals && THEME_DESC_NO_FLORAL[input.theme]) ||
+        THEME_DESC[input.theme] ||
+        `${themeName} theme`;
+      return (
+        `Change the color scheme and theme decoration to: ${themeDesc}. ` +
+        `Keep the same backdrop shape, balloon arrangement, and overall composition.`
+      );
+    }
+    case "shape": {
+      const shapeDesc = input.backdropShape ? SHAPE_DESC[input.backdropShape] : RECT_DESC;
+      const colorName = input.backdropColor ? hexToColorName(input.backdropColor) : "";
+      const colorPart =
+        !SHAPE_LOCKED_THEMES.has(input.theme) && colorName ? ` in ${colorName} tones` : "";
+      return (
+        `Change the backdrop panel shape to: ${shapeDesc}${colorPart}. ` +
+        `Keep the same theme colors, balloons, and overall composition.`
+      );
+    }
+    case "balloons": {
+      const styleDesc =
+        !florals && input.balloonStyle === "premium"
+          ? BALLOON_DESC_PREMIUM_NO_FLORAL
+          : (BALLOON_DESC[input.balloonStyle] ?? "");
+      const colorNames = (input.balloonColors ?? [])
+        .slice(0, 4)
+        .map(hexToColorName)
+        .filter((v, i, a) => v && a.indexOf(v) === i);
+      const colorPart = colorNames.length ? ` in ${colorNames.join(", ")} tones` : "";
+      return (
+        `Change the balloon garland to: ${styleDesc}${colorPart}. ` +
+        `Keep the backdrop, theme colors, and all other elements identical.`
+      );
+    }
+    case "colors": {
+      const colorName = input.backdropColor ? hexToColorName(input.backdropColor) : "";
+      const balloonNames = (input.balloonColors ?? [])
+        .slice(0, 4)
+        .map(hexToColorName)
+        .filter((v, i, a) => v && a.indexOf(v) === i);
+      const parts: string[] = [];
+      if (colorName) parts.push(`change the backdrop color to ${colorName} tones`);
+      if (balloonNames.length)
+        parts.push(`change balloon colors to ${balloonNames.join(", ")} tones`);
+      return (
+        (parts.length ? parts.join(", ") : "Update the color scheme") +
+        `. Keep the backdrop shape and balloon arrangement identical.`
+      );
+    }
+    case "print": {
+      let printDesc = "remove any backdrop print, show plain backdrop surface";
+      if (input.backdropPrint && input.backdropPrint.type !== "none") {
+        if (input.backdropPrint.type === "name_only") {
+          printDesc = "child's name printed in elegant script font on the backdrop surface";
+        } else if (input.backdropPrint.type === "theme_print") {
+          const desc =
+            (!florals && THEME_PRINT_DESC_NO_FLORAL[input.theme]) ||
+            THEME_PRINT_DESC[input.theme] ||
+            "themed decorative illustration";
+          printDesc = `${desc} as a flat 2D printed vinyl graphic on the backdrop surface`;
+        } else if (input.backdropPrint.type === "custom_upload") {
+          printDesc = "custom graphic design printed on the backdrop surface";
+        }
+      }
+      return `Update the backdrop surface: ${printDesc}. Keep everything else identical.`;
+    }
+    case "extras":
+    default: {
+      const extras = (input.extras ?? [])
+        .map((id) => EXTRAS_DESC[id])
+        .filter(Boolean)
+        .join(", ");
+      return extras
+        ? `Add ${extras} to the scene. Keep the backdrop and balloons identical.`
+        : `Remove any additional decorative elements. Keep the backdrop and balloons identical.`;
+    }
+  }
 }
 
 // --- hex → nearest named color --------------------------------------------
