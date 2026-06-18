@@ -226,47 +226,86 @@ export default function SetupPreview({
   onRegenerate: () => void;
   showControls?: boolean;
 }) {
-  const hasImage = status === "done" && !!imageUrl;
-  const isUpdating = status === "loading" && isIncremental && hasImage;
+  // The URL actually displayed in the <img> tag. Only updates after the new
+  // image has been pre-loaded, so the old image stays on screen until the new
+  // one is ready to cross-fade in.
+  const [shownUrl, setShownUrl] = useState<string | null>(null);
+  const shownUrlRef = useRef<string | null>(null);
+  // Controls the opacity transition when a new image arrives.
+  const [imgOpacity, setImgOpacity] = useState(1);
+  // Tracks the CSS animation key so remounting triggers the keyframe.
+  const [imgKey, setImgKey] = useState(0);
+
+  useEffect(() => {
+    if (!imageUrl || imageUrl === shownUrlRef.current) return;
+
+    // Pre-load the new image before displaying it.
+    const img = new window.Image();
+    img.onload = () => {
+      shownUrlRef.current = imageUrl;
+      // Set to 0 (no transition) then immediately schedule fade-in.
+      setImgOpacity(0);
+      setShownUrl(imageUrl);
+      setImgKey((k) => k + 1);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setImgOpacity(1));
+      });
+    };
+    img.src = imageUrl;
+  }, [imageUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hasShownImage = !!shownUrl;
+  // Show the spinner overlay whenever we're loading AND we have a previous
+  // image to keep visible — covers both full and incremental regenerations.
+  const isLoadingWithImage = status === "loading" && hasShownImage;
+  const isFirstLoad = status === "loading" && !hasShownImage;
 
   return (
     <div>
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-inner">
-        {/* AI image when ready, otherwise the canvas sketch as fallback */}
-        {hasImage || isUpdating ? (
+
+        {/* Previous / current image — stays visible during all loading states */}
+        {hasShownImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={imageUrl!}
+            key={imgKey}
+            src={shownUrl!}
             alt="AI-generated party setup preview"
+            style={{ opacity: imgOpacity, transition: "opacity 0.4s ease" }}
             className="h-full w-full object-cover"
           />
         ) : (
           <LiveSetupPreview config={config} />
         )}
 
-        {/* Plinth overlay — SVG mode only; AI mode renders plinths in the image */}
-        {(hasImage || isUpdating) && PLINTH_MODE === "svg" && (
+        {/* Plinth overlay — SVG mode only */}
+        {hasShownImage && PLINTH_MODE === "svg" && (
           <PlinthOverlay sizes={config.decor.plinthSizes} />
         )}
 
-        {/* Full skeleton for first-time / theme generation */}
-        {status === "loading" && !isIncremental && (
+        {/* First-time skeleton — only shown before ANY image has been generated */}
+        {isFirstLoad && (
           <div className="shimmer absolute inset-0 flex flex-col items-center justify-center gap-3 bg-accent-soft/80 backdrop-blur-sm">
             <div className="h-9 w-9 animate-spin rounded-full border-4 border-accent/25 border-t-accent" />
             <span className="text-sm font-medium text-accent">Creating your preview…</span>
           </div>
         )}
 
-        {/* Subtle pill for incremental img2img updates — image stays visible */}
-        {isUpdating && (
-          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/50 px-3 py-1 backdrop-blur">
-            <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            <span className="text-[11px] font-medium text-white">Updating preview…</span>
-          </div>
+        {/* Subtle overlay + spinner shown over the existing image while loading */}
+        {isLoadingWithImage && (
+          <>
+            <div className="absolute inset-0 animate-pulse bg-white/10 pointer-events-none" />
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 backdrop-blur">
+              <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              <span className="text-[11px] font-medium text-white">
+                {isIncremental ? "Refining preview…" : "Generating…"}
+              </span>
+            </div>
+          </>
         )}
 
-        {/* Regenerate button (corner) */}
-        {showControls && hasImage && (
+        {/* Regenerate button */}
+        {showControls && hasShownImage && status !== "loading" && (
           <button
             type="button"
             onClick={onRegenerate}
@@ -276,7 +315,7 @@ export default function SetupPreview({
           </button>
         )}
 
-        {/* Fallback note when generation failed */}
+        {/* Error fallback */}
         {status === "error" && (
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/45 px-3 py-1.5 backdrop-blur">
             <span className="text-[11px] text-white">
