@@ -47,8 +47,8 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
       </Section>
 
       <Section title="Decor">
-        <Row k="Backdrops" v={String(decor.backdropCount)} />
-        <Row k="Shape" v={shapeById(decor.backdropShape)?.label ?? "—"} />
+        <Row k="Backdrop panels" v={String(decor.backdropShapes.length)} />
+        <Row k="Shapes" v={decor.backdropShapes.map((s) => shapeById(s)?.label ?? s).join(", ")} />
         <Row k="Balloons" v={balloonStyleById(decor.balloonStyle)?.label ?? "—"} />
         <div className="flex items-center justify-between gap-4 py-1 text-sm">
           <dt className="text-black/50">Balloon colors</dt>

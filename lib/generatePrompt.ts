@@ -138,16 +138,10 @@ const SHAPE_LOCKED_THEMES = new Set<ThemeId>();
  */
 const MULTI_PANEL_SHAPES = new Set<BackdropShapeId>(["mixed_panels"]);
 
-/**
- * Shapes that must always render as exactly ONE panel regardless of backdropCount.
- * A round arch is a single circular disc — duplicating it produces awkward results.
- */
-const SINGLE_PANEL_SHAPES = new Set<BackdropShapeId>(["round_arch"]);
-
-/** Returns the effective panel count after applying shape constraints. */
-function effectiveCount(shape: BackdropShapeId | undefined, count: number): number {
-  if (shape && SINGLE_PANEL_SHAPES.has(shape)) return 1;
-  return Math.max(1, Math.min(3, count));
+/** Returns the effective panel count from the selected shapes array. */
+function effectiveCount(shapes: BackdropShapeId[]): number {
+  if (shapes.includes("mixed_panels")) return 3;
+  return Math.max(1, Math.min(3, shapes.length));
 }
 
 /**
@@ -162,38 +156,32 @@ const SHAPE_MULTI_LABEL: Record<BackdropShapeId, string> = {
   mixed_panels: "backdrop panels of different heights",
 };
 
+/** Short per-panel description used when building multi-shape composite scenes. */
+const PANEL_SHORT_DESC: Record<BackdropShapeId, string> = {
+  half_arch:    "asymmetric half arch panel, 100cm wide, 200cm tall on left curving down to 120cm on right, NOT a full arch",
+  round_arch:   "circular round disc backdrop, 180cm diameter, single perfect circle",
+  shimmer_wall: "rectangular shimmer sequin wall panel, 100cm wide 200cm tall, fully covered in reflective metallic sequin tiles",
+  wavy:         "wavy-top backdrop panel, 100cm wide 200cm tall, organic wavy curved top edge with 2-3 gentle waves",
+  mixed_panels: "three flat rectangular panels of different heights side by side, center panel 200cm, side panels 150cm each",
+};
+
 /**
  * Build the shape-description fragment, taking backdropCount into account.
  * - Multi-panel shapes (double_arch, mixed_panels) use SHAPE_DESC verbatim.
  * - Single-panel shapes with count > 1 describe N panels of the same type.
  * The selected shape ALWAYS wins; count is an additive modifier only.
  */
-function buildBackdropDesc(
-  shape: BackdropShapeId | undefined,
-  count: number
-): string {
-  const c = effectiveCount(shape, count);
+function buildBackdropDesc(shape: BackdropShapeId | undefined, count: number): string {
+  const c = Math.max(1, Math.min(3, count));
 
-  // half_arch has fully self-contained per-count descriptions including dimensions.
   if (shape === "half_arch") return HALF_ARCH_DESC[c] ?? HALF_ARCH_DESC[1];
-
-  if (shape && MULTI_PANEL_SHAPES.has(shape)) {
-    return SHAPE_DESC[shape]; // already encodes the count
-  }
-
-  if (shape && SINGLE_PANEL_SHAPES.has(shape)) {
-    return SHAPE_DESC[shape]; // always single panel
-  }
+  if (shape && MULTI_PANEL_SHAPES.has(shape)) return SHAPE_DESC[shape];
 
   const baseDesc = shape ? SHAPE_DESC[shape] : RECT_DESC;
-
   if (c === 1) return baseDesc;
 
   const countWord = c === 2 ? "TWO" : "THREE";
-  const arrangement =
-    c === 2
-      ? "placed side by side with a small gap between them"
-      : "arranged in a row with small gaps between them";
+  const arrangement = c === 2 ? "placed side by side with a small gap" : "arranged in a row with small gaps";
   const label = shape ? SHAPE_MULTI_LABEL[shape] : "backdrop panels";
   return `${countWord} ${label}, ${arrangement}`;
 }
@@ -203,11 +191,9 @@ function buildBackdropDesc(
  * Gives the AI concrete proportions to render.
  */
 function backdropDimensions(count: number, shape: BackdropShapeId | undefined): string {
-  // Dimensions are already baked into these shapes' descriptions.
   if (shape === "half_arch" || shape === "round_arch" || shape === "mixed_panels") return "";
-
-  const c = effectiveCount(shape, count);
-  const perPanel = "each backdrop panel is 100cm wide and 200cm tall, human scale proportions, NOT oversized, NOT monumental, approximately 2 meters tall and 1 meter wide per panel";
+  const c = Math.max(1, Math.min(3, count));
+  const perPanel = "each backdrop panel is 100cm wide and 200cm tall, human scale proportions, NOT oversized, approximately 2 meters tall and 1 meter wide per panel";
   if (c === 1) return perPanel.replace("each backdrop panel", "the backdrop panel");
   return perPanel;
 }
@@ -291,8 +277,7 @@ export interface PromptInput {
   theme: ThemeId;
   package: PackageId;
   eventType?: EventTypeId;
-  backdropCount: number;
-  backdropShape?: BackdropShapeId;
+  backdropShapes: BackdropShapeId[];
   backdropColor?: string;
   balloonStyle: BalloonStyleId;
   balloonColors?: string[];
@@ -311,6 +296,27 @@ function allowFlorals(input: PromptInput): boolean {
 
 export const PLINTH_NEGATIVE =
   "wide drum, flat platform, stage, podium, short cylinder, width greater than height";
+
+function buildSceneBackdrop(shapes: BackdropShapeId[], colorName: string): string {
+  const count = effectiveCount(shapes);
+  let descPart: string;
+  let dimPart: string;
+  if (shapes.length <= 1) {
+    const shape = shapes[0];
+    descPart = buildBackdropDesc(shape, count);
+    dimPart = backdropDimensions(count, shape);
+  } else {
+    const panels = shapes
+      .map((s, i) => `panel ${i + 1}: ${PANEL_SHORT_DESC[s]}`)
+      .join("; ");
+    const countWord = count === 2 ? "TWO" : "THREE";
+    descPart = `${countWord} distinct backdrop panels side by side — ${panels}`;
+    dimPart = "each panel approximately 100cm wide and 200cm tall, human scale";
+  }
+  return [descPart, dimPart, colorName ? `backdrop in ${colorName} tones` : ""]
+    .filter(Boolean)
+    .join(", ");
+}
 
 export type ChangeType =
   | "full"
@@ -342,13 +348,7 @@ export function generatePrompt(input: PromptInput): {
   const colorName = input.backdropColor ? hexToColorName(input.backdropColor) : "";
   const backdrop = shapeLocked
     ? ""
-    : [
-        buildBackdropDesc(input.backdropShape, input.backdropCount),
-        backdropDimensions(input.backdropCount, input.backdropShape),
-        colorName ? `backdrop in ${colorName} tones` : "",
-      ]
-        .filter(Boolean)
-        .join(", ");
+    : buildSceneBackdrop(input.backdropShapes, colorName);
 
   // Balloons: style + chosen colors. Premium uses no-floral description when florals not allowed.
   const balloonStyle =
@@ -379,7 +379,7 @@ export function generatePrompt(input: PromptInput): {
 
   // Backdrop print — only added when explicitly selected.
   // backdropPrint.type === "none" → nothing printed on backdrop surface (plain backdrop).
-  const panelCount = effectiveCount(input.backdropShape, input.backdropCount);
+  const panelCount = effectiveCount(input.backdropShapes);
   const flatVinyl =
     panelCount > 1
       ? "flat 2D printed vinyl graphic applied directly onto the CENTER backdrop panel only, " +
@@ -449,8 +449,7 @@ export function generatePrompt(input: PromptInput): {
   }
 
   // Strict count+shape requirement — shown FIRST so the model sees it before any other detail.
-  // round_arch is always 1 regardless of backdropCount.
-  const effectivePanels = effectiveCount(input.backdropShape, input.backdropCount);
+  const effectivePanels = effectiveCount(input.backdropShapes);
   const panelWord = effectivePanels === 1 ? "ONE (1)" : effectivePanels === 2 ? "TWO (2)" : "THREE (3)";
   const SHAPE_LABEL: Partial<Record<BackdropShapeId, string>> = {
     round_arch:   "round circular disc",
@@ -459,10 +458,15 @@ export function generatePrompt(input: PromptInput): {
     wavy:         "wavy top",
     mixed_panels: "mixed height flat rectangular panels",
   };
-  const shapeLabel = input.backdropShape ? (SHAPE_LABEL[input.backdropShape] ?? "rectangular") : "rectangular";
+  const shapeLabelStr = input.backdropShapes.length === 1
+    ? (SHAPE_LABEL[input.backdropShapes[0]] ?? "rectangular")
+    : input.backdropShapes.map((s) => SHAPE_LABEL[s] ?? "rectangular").join(" + ");
+  const panelShapeDesc = input.backdropShapes.length === 1
+    ? `with ${shapeLabelStr} shape`
+    : `with mixed shapes: ${shapeLabelStr}`;
   const strictRequirements =
     `STRICT REQUIREMENTS: This image must show EXACTLY ${panelWord} backdrop panel(s) ` +
-    `with ${shapeLabel} shape. This overrides everything else.`;
+    `${panelShapeDesc}. This overrides everything else.`;
 
   const humanScale =
     "These are standard party backdrop panels, human-sized decorative panels, NOT giant walls, NOT oversized installations";
@@ -492,9 +496,9 @@ export function generatePrompt(input: PromptInput): {
         : "single backdrop, one panel, two panels, double backdrop";
 
   const shapeNegative =
-    input.backdropShape === "half_arch"
+    input.backdropShapes.length === 1 && input.backdropShapes[0] === "half_arch"
       ? "full arch, complete arch, symmetric arch, round top, equal height sides, doorway arch, both sides same height"
-      : input.backdropShape === "round_arch"
+      : input.backdropShapes.length === 1 && input.backdropShapes[0] === "round_arch"
         ? "two circles, multiple circles, arch shape, multiple backdrops, two backdrops"
         : "";
 
@@ -520,13 +524,13 @@ export function buildFocusedPrompt(changeType: ChangeType, input: PromptInput): 
       );
     }
     case "shape": {
-      const colorName = input.backdropColor ? hexToColorName(input.backdropColor) : "";
-      const colorPart =
-        !SHAPE_LOCKED_THEMES.has(input.theme) && colorName ? `, backdrop in ${colorName} tones` : "";
-      const shapeDesc = buildBackdropDesc(input.backdropShape, input.backdropCount);
-      const dimClause = backdropDimensions(input.backdropCount, input.backdropShape);
+      const colorName =
+        !SHAPE_LOCKED_THEMES.has(input.theme) && input.backdropColor
+          ? hexToColorName(input.backdropColor)
+          : "";
+      const shapeDesc = buildSceneBackdrop(input.backdropShapes, colorName);
       return (
-        `Change the backdrop panel shape to: ${shapeDesc}, ${dimClause}${colorPart}. ` +
+        `Change the backdrop panel shape to: ${shapeDesc}. ` +
         `Keep the same theme colors, balloons, and overall composition.`
       );
     }
@@ -561,7 +565,7 @@ export function buildFocusedPrompt(changeType: ChangeType, input: PromptInput): 
       );
     }
     case "print": {
-      const pCount = effectiveCount(input.backdropShape, input.backdropCount);
+      const pCount = effectiveCount(input.backdropShapes);
       const centerOnly =
         pCount > 1
           ? " on the center backdrop panel only — other panels remain plain solid color with no print"

@@ -116,8 +116,7 @@ export const PACKAGES: Package[] = [
     includes: ["1 backdrop", "Small balloon garland", "1 plinth"],
     bestFor: "Intimate home setups",
     defaultDecor: {
-      backdropCount: 1,
-      backdropShape: "half_arch",
+      backdropShapes: ["half_arch"],
       balloonStyle: "half",
       plinths: 1,
       plinthSizes: ["medium"],
@@ -135,8 +134,7 @@ export const PACKAGES: Package[] = [
     includes: ["2 backdrops", "Organic balloon styling", "2 plinths", "Custom name sign"],
     bestFor: "Villa gardens, restaurant corners",
     defaultDecor: {
-      backdropCount: 2,
-      backdropShape: "half_arch",
+      backdropShapes: ["half_arch", "half_arch"],
       balloonStyle: "full",
       plinths: 2,
       plinthSizes: ["medium", "medium"],
@@ -158,8 +156,7 @@ export const PACKAGES: Package[] = [
     ],
     bestFor: "Full venue takeovers",
     defaultDecor: {
-      backdropCount: 3,
-      backdropShape: "mixed_panels",
+      backdropShapes: ["mixed_panels"],
       balloonStyle: "premium",
       plinths: 3,
       plinthSizes: ["large", "medium", "medium"] as PlinthSize[],
@@ -239,8 +236,7 @@ export interface CutoutSelection {
 }
 
 export interface DecorConfig {
-  backdropCount: number;
-  backdropShape: BackdropShapeId;
+  backdropShapes: BackdropShapeId[];
   balloonStyle: BalloonStyleId;
   /** User-chosen backdrop color (hex) — defaults to the theme suggestion. */
   backdropColor: string;
@@ -299,6 +295,12 @@ export const CAKE_TABLE_PRICE = 300;
 
 /** Extra/fewer backdrops beyond the package default cost this each. */
 export const PER_BACKDROP = 350;
+
+/** Effective panel count — mixed_panels always counts as 3. */
+export function backdropPanelCount(shapes: BackdropShapeId[]): number {
+  if (shapes.includes("mixed_panels")) return 3;
+  return Math.max(1, shapes.length);
+}
 
 export const FONT_STYLES: { id: FontStyle; label: string }[] = [
   { id: "script", label: "Script / Cursive" },
@@ -542,14 +544,25 @@ export function priceBreakdown(config: BuilderConfig): {
     lines.push({ label: `${theme.name} theme`, amount: theme.priceModifier });
   }
 
-  const countDelta = (d.backdropCount - pkg.defaultDecor.backdropCount) * PER_BACKDROP;
-  if (countDelta !== 0) {
-    lines.push({ label: `Backdrops (${d.backdropCount})`, amount: countDelta });
-  }
-
-  const shape = shapeById(d.backdropShape);
-  if (shape && shape.price > 0) {
-    lines.push({ label: `${shape.label} backdrop`, amount: shape.price });
+  // Backdrop panel pricing: first panel included, each additional is PER_BACKDROP.
+  // Shimmer wall adds +80 per shimmer panel regardless of position.
+  if (d.backdropShapes.includes("mixed_panels")) {
+    lines.push({ label: "Mixed Panels (3 backdrop panels)", amount: 2 * PER_BACKDROP });
+  } else {
+    for (let i = 0; i < d.backdropShapes.length; i++) {
+      const sid = d.backdropShapes[i];
+      const sInfo = shapeById(sid);
+      const sLabel = sInfo?.label ?? sid;
+      const panelCost = i === 0 ? 0 : PER_BACKDROP;
+      const shimmerExtra = sid === "shimmer_wall" ? 80 : 0;
+      const total = panelCost + shimmerExtra;
+      if (total > 0) {
+        lines.push({
+          label: i === 0 ? `${sLabel} backdrop` : `${sLabel} — panel ${i + 1}`,
+          amount: total,
+        });
+      }
+    }
   }
 
   const style = balloonStyleById(d.balloonStyle);

@@ -15,6 +15,7 @@ import {
   TEXT_COLORS,
   ADDONS,
   CAKE_TABLE_PRICE,
+  PER_BACKDROP,
   defaultConfig,
   themeById,
   packageById,
@@ -557,6 +558,28 @@ function DecorStep({
     sizes[i] = size;
     patchDecor({ plinthSizes: sizes, plinths: sizes.length });
   }
+  function toggleShape(id: BackdropShapeId) {
+    const current = d.backdropShapes;
+    if (id === "mixed_panels") {
+      // mixed_panels is exclusive — selecting it replaces all other panels
+      patchDecor({ backdropShapes: current.includes("mixed_panels") && current.length === 1 ? ["half_arch"] : ["mixed_panels"] });
+      return;
+    }
+    if (current.includes("mixed_panels")) {
+      // replacing mixed_panels with a single shape
+      patchDecor({ backdropShapes: [id] });
+      return;
+    }
+    const isSelected = current.includes(id);
+    if (isSelected) {
+      if (current.length === 1) return; // always keep at least one
+      patchDecor({ backdropShapes: current.filter((s) => s !== id) });
+    } else {
+      if (current.length >= 3) return; // max 3 panels
+      patchDecor({ backdropShapes: [...current, id] });
+    }
+  }
+
   function toggleBalloon(hex: string) {
     const has = d.balloonColors.includes(hex);
     const next = has
@@ -574,24 +597,46 @@ function DecorStep({
 
   return (
     <div className="space-y-5">
-      <ChoiceRow<string>
-        label="Backdrop count"
-        value={String(d.backdropCount)}
-        options={[
-          { id: "1", label: "1" },
-          { id: "2", label: "2" },
-          { id: "3", label: "3" },
-        ]}
-        onChange={(v) => patchDecor({ backdropCount: Number(v) })}
-      />
-
-      <ChoiceRow<BackdropShapeId>
-        label="Backdrop shape"
-        value={d.backdropShape}
-        options={BACKDROP_SHAPES}
-        onChange={(v) => patchDecor({ backdropShape: v })}
-        priceOf={(id) => BACKDROP_SHAPES.find((s) => s.id === id)?.price ?? 0}
-      />
+      <div>
+        <span className="mb-0.5 block text-sm font-semibold text-black/80">Backdrop Setup</span>
+        <p className="mb-2.5 text-xs text-black/45">Select one or more backdrop panels</p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {BACKDROP_SHAPES.map((shape) => {
+            const isSelected = d.backdropShapes.includes(shape.id);
+            const panelIndex = d.backdropShapes.indexOf(shape.id);
+            const shimmerExtra = shape.id === "shimmer_wall" ? 80 : 0;
+            const isAdditional = !d.backdropShapes.includes("mixed_panels") && panelIndex > 0;
+            const additionalCost = isAdditional ? PER_BACKDROP + shimmerExtra : shimmerExtra;
+            const priceNote =
+              shape.id === "mixed_panels"
+                ? `+${formatAED(2 * PER_BACKDROP)} (3 panels)`
+                : additionalCost > 0
+                  ? `+${formatAED(additionalCost)}`
+                  : isSelected && panelIndex === 0 && shimmerExtra > 0
+                    ? `+${formatAED(shimmerExtra)}`
+                    : isSelected
+                      ? "Included"
+                      : d.backdropShapes.length === 0 || d.backdropShapes.includes("mixed_panels")
+                        ? "Included"
+                        : `+${formatAED(PER_BACKDROP + shimmerExtra)}`;
+            return (
+              <button
+                key={shape.id}
+                type="button"
+                onClick={() => toggleShape(shape.id)}
+                className={`flex flex-col items-start rounded-xl border px-3 py-2.5 text-left transition ${
+                  isSelected
+                    ? "border-accent bg-accent-soft ring-1 ring-accent"
+                    : "border-black/12 bg-white hover:border-accent/40"
+                }`}
+              >
+                <span className="text-xs font-semibold text-black/80">{shape.label}</span>
+                <span className="mt-0.5 text-[11px] text-black/45">{priceNote}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <ChoiceRow<BalloonStyleId>
         label="Balloon style"

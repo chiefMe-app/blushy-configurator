@@ -70,8 +70,7 @@ type Snap = {
   theme: string;
   pkg: string;
   nonce: number;
-  backdropCount: number;
-  shape: string;
+  shapes: string;
   color: string;
   balloonStyle: string;
   balloonColors: string;
@@ -89,8 +88,7 @@ function detectChangeType(curr: Snap, base: Snap): ChangeType {
   if (curr.nonce !== base.nonce) return "full";
   if (curr.theme !== base.theme) return "full";
   if (curr.pkg !== base.pkg) return "full";
-  if (curr.backdropCount !== base.backdropCount) return "full";
-  if (curr.shape !== base.shape) return "full";
+  if (curr.shapes !== base.shapes) return "full";
   if (curr.balloonStyle !== base.balloonStyle) return "full";
   if (curr.backdropPrint !== base.backdropPrint) return "full";
   if (curr.plinthSizes !== base.plinthSizes || curr.extras !== base.extras) return "full";
@@ -126,8 +124,7 @@ export function useSetupPreview(config: BuilderConfig) {
     t: config.theme,
     p: config.package,
     et: config.eventType,
-    cnt: d.backdropCount,
-    s: d.backdropShape,
+    shapes: d.backdropShapes,
     b: d.balloonStyle,
     bc: d.backdropColor,
     blc: d.balloonColors,
@@ -146,8 +143,7 @@ export function useSetupPreview(config: BuilderConfig) {
       theme: config.theme,
       pkg: config.package,
       nonce,
-      backdropCount: d.backdropCount,
-      shape: d.backdropShape ?? "",
+      shapes: JSON.stringify(d.backdropShapes),
       color: d.backdropColor ?? "",
       balloonStyle: d.balloonStyle,
       balloonColors: JSON.stringify(d.balloonColors),
@@ -183,8 +179,7 @@ export function useSetupPreview(config: BuilderConfig) {
             theme: config.theme,
             package: config.package,
             eventType: config.eventType,
-            backdropCount: d.backdropCount,
-            backdropShape: d.backdropShape,
+            backdropShapes: d.backdropShapes,
             backdropColor: d.backdropColor,
             balloonStyle: d.balloonStyle,
             balloonColors: d.balloonColors,

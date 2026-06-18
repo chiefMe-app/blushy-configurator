@@ -24,8 +24,7 @@ export default function LiveSetupPreview({ config }: { config: BuilderConfig }) 
   // Signature of everything that affects the drawing — redraw when it changes.
   const sig = JSON.stringify({
     t: config.theme,
-    c: config.decor.backdropCount,
-    sh: config.decor.backdropShape,
+    shapes: config.decor.backdropShapes,
     b: config.decor.balloonStyle,
     bc: config.decor.backdropColor,
     blc: config.decor.balloonColors,
@@ -110,7 +109,10 @@ function renderScene(
   ctx.fillRect(0, floorY, W, H - floorY);
 
   // --- layout backdrops across the width -----------------------------------
-  const count = Math.max(1, Math.min(3, config.decor.backdropCount));
+  const shapes = config.decor.backdropShapes;
+  const count = shapes.includes("mixed_panels")
+    ? 3
+    : Math.max(1, Math.min(3, shapes.length));
   const slotW = W / count;
 
   for (let i = 0; i < count; i++) {
@@ -118,10 +120,11 @@ function renderScene(
     // Center backdrop is the hero; flank panels are a touch smaller.
     const heroFactor = count === 1 ? 1 : i === Math.floor(count / 2) ? 1 : 0.82;
     const pw = Math.min(slotW * 0.62, W * 0.42) * heroFactor;
+    const shape = shapes[i] ?? shapes[0];
 
-    drawBackdrop(ctx, cx, pw, floorY, H, config.decor.backdropShape, backdropColor, isDark);
+    drawBackdrop(ctx, cx, pw, floorY, H, shape, backdropColor, isDark);
 
-    const outline = backdropOutline(cx, pw, floorY, H, config.decor.backdropShape);
+    const outline = backdropOutline(cx, pw, floorY, H, shape);
     drawGarland(ctx, outline, floorY, pw, palette, config.decor.balloonStyle, i * 97 + 13);
   }
 

@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       id,
       created_at: createdAt,
       theme: body.theme,
-      shape: body.decor.backdropShape,
+      shape: body.decor.backdropShapes.join(","),
       garland: body.decor.balloonStyle,
       extras,
       custom_text: body.customer.name,
