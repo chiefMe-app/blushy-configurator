@@ -10,6 +10,7 @@ import {
   PLINTH_SIZES,
   CUTOUT_SETS,
   BACKDROP_PRINTS,
+  GRAPHIC_STYLES,
   FONT_STYLES,
   TEXT_COLORS,
   ADDONS,
@@ -35,6 +36,7 @@ import {
   type PlinthSize,
   type CutoutPosition,
   type BackdropPrintType,
+  type GraphicStyle,
   type FontStyle,
   type TextColor,
 } from "@/lib/config";
@@ -532,7 +534,17 @@ function DecorStep({
     patchDecor({ backdropText: { ...t, ...patch } });
   }
   function setPrint(type: BackdropPrintType) {
-    patchDecor({ backdropPrint: { type } });
+    patchDecor({
+      backdropPrint: {
+        type,
+        ...(type === "theme_print" && !print.graphicStyle
+          ? { graphicStyle: "illustrated" as GraphicStyle }
+          : {}),
+      },
+    });
+  }
+  function setGraphicStyle(style: GraphicStyle) {
+    patchDecor({ backdropPrint: { ...print, graphicStyle: style } });
   }
   function setPlinthCount(n: number) {
     const sizes: PlinthSize[] = [...d.plinthSizes];
@@ -643,12 +655,40 @@ function DecorStep({
           })}
         </div>
 
-        {/* Theme print suggestion */}
+        {/* Theme print suggestion + graphic style chips */}
         {print.type === "theme_print" && (
-          <p className="mt-2 rounded-xl bg-accent-soft/40 px-3 py-2 text-[11px] text-black/60">
-            <span className="font-medium">Suggested for {theme.name}:</span>{" "}
-            {THEME_PRINT_SUGGESTIONS[config.theme] ?? "Themed decorative illustration"}
-          </p>
+          <>
+            <p className="mt-2 rounded-xl bg-accent-soft/40 px-3 py-2 text-[11px] text-black/60">
+              <span className="font-medium">Suggested for {theme.name}:</span>{" "}
+              {THEME_PRINT_SUGGESTIONS[config.theme] ?? "Themed decorative illustration"}
+            </p>
+            <div className="mt-2">
+              <span className="mb-1.5 block text-[11px] font-medium text-black/50">Graphic style</span>
+              <div className="flex flex-wrap gap-1.5">
+                {GRAPHIC_STYLES.map((s) => {
+                  const active = (print.graphicStyle ?? "illustrated") === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      title={s.desc}
+                      onClick={() => setGraphicStyle(s.id as GraphicStyle)}
+                      className={`rounded-full border px-3 py-1 text-[11px] font-medium transition ${
+                        active
+                          ? "border-accent bg-accent text-white shadow-sm"
+                          : "border-black/15 bg-white text-black/60 hover:border-accent/50 hover:text-accent"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-1 text-[10px] text-black/35">
+                {GRAPHIC_STYLES.find((s) => s.id === (print.graphicStyle ?? "illustrated"))?.desc}
+              </p>
+            </div>
+          </>
         )}
 
         {/* Name input (reuses backdropText.name) */}

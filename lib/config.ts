@@ -192,9 +192,25 @@ export type BackdropTextType = "birthday" | "custom";
 export type FontStyle = "script" | "block" | "elegant";
 export type TextColor = "white" | "gold" | "black" | "accent";
 export type BackdropPrintType = "none" | "name_only" | "theme_print" | "custom_upload";
+export type GraphicStyle = "illustrated" | "realistic" | "minimal" | "pattern" | "full_scene";
+
+export interface GraphicStyleOption {
+  id: GraphicStyle;
+  label: string;
+  desc: string;
+}
+
+export const GRAPHIC_STYLES: GraphicStyleOption[] = [
+  { id: "illustrated", label: "Illustrated", desc: "Soft cartoon-style artwork" },
+  { id: "realistic",   label: "Realistic",   desc: "Photographic quality print" },
+  { id: "minimal",     label: "Minimal",     desc: "Clean line art, elegant" },
+  { id: "pattern",     label: "Pattern",     desc: "Repeating themed pattern" },
+  { id: "full_scene",  label: "Full Scene",  desc: "Complete themed background scene" },
+];
 
 export interface BackdropPrint {
   type: BackdropPrintType;
+  graphicStyle?: GraphicStyle;
 }
 
 export interface BackdropPrintOption {
