@@ -38,24 +38,20 @@ const PROMPT_PREFIX =
 const PROMPT_SUFFIX =
   " Wide establishing shot showing the complete full setup from the front. Sharp focus on entire scene. Soft natural lighting. Photorealistic 4k quality. Professional event decoration photography.";
 
-/** Strict per-shape backdrop descriptions (Change 2) — exact verbatim strings. */
+/** Strict per-shape backdrop descriptions — exact verbatim strings. */
 const SHAPE_DESC: Record<BackdropShapeId, string> = {
   round_arch:
     "ONE perfectly circular round disc backdrop panel, complete full circle shape, like a large circle standing upright, no flat bottom edge, perfectly round on all sides, diameter approximately 200cm, NOT an arch shape",
   straight_arch:
     "ONE arch backdrop panel, straight vertical sides, semicircular rounded top, like a doorway or window arch shape, flat bottom, two straight sides meeting a half-circle top, approximately 200cm tall 120cm wide, NOT a circle",
   half_arch:
-    "ONE asymmetric backdrop panel, LEFT side is tall with a curved rounded top reaching approximately 220cm height, RIGHT side is short straight edge approximately 120cm height, the top edge curves from tall left down to short right, like a wave or half moon cut asymmetrically, NOT a circle, NOT a full arch, asymmetric silhouette",
-  rect_with_cutout:
-    "ONE large rectangular backdrop frame panel with a round arch-shaped open window cutout in the center, solid rectangular frame around an empty arch opening, like a picture frame with arch hole, balloon garland on sides of frame",
+    "ONE flat decorative backdrop panel, left side straight vertical edge 220cm tall, curved top connecting left to right, right side straight vertical edge cut at 130cm tall, the top silhouette curves from 220cm on left down to 130cm on right, total width 120cm, this is a flat panel with asymmetric height profile, matte painted surface, NOT a circle, NOT a full arch",
   shimmer_wall:
     "ONE flat rectangular sequin shimmer wall backdrop, entire surface covered in silver metallic sequin mirror tiles, highly reflective disco-ball-like sequin panels, glittery shimmer effect",
-  double_arch:
-    "EXACTLY TWO separate arch backdrop panels placed side by side with a small gap between them, each arch has straight sides and rounded top, balloon garland framing both arches together",
-  mixed_panels:
-    "THREE backdrop panels of different heights arranged together, tallest panel in center, shorter panels on each side, staggered height silhouette",
   wavy:
-    "ONE backdrop panel with wavy curved top edge, organic wavy silhouette along top, soft flowing curves, balloon garland along the wavy top edge",
+    "ONE wavy-edged backdrop panel, maximum 100cm wide, organic wavy curved top edge with 2-3 gentle waves, soft flowing silhouette, NOT sharp zigzag",
+  mixed_panels:
+    "THREE flat rectangular backdrop panels of different heights arranged side by side touching each other, tallest panel in center 200cm tall, side panels shorter 150cm each, all panels same width 80cm each, clean modern minimalist arrangement, NOT an arch, NOT curved tops, flat rectangular panels only",
 };
 
 /** Plain rectangle (no current shape id, kept for completeness). */
@@ -132,7 +128,7 @@ const SHAPE_LOCKED_THEMES = new Set<ThemeId>();
  * Shapes that are inherently multi-panel — their SHAPE_DESC already bakes in the
  * count, so we use it verbatim regardless of backdropCount.
  */
-const MULTI_PANEL_SHAPES = new Set<BackdropShapeId>(["double_arch", "mixed_panels"]);
+const MULTI_PANEL_SHAPES = new Set<BackdropShapeId>(["mixed_panels"]);
 
 /**
  * Shapes that must always render as exactly ONE panel regardless of backdropCount.
@@ -151,14 +147,12 @@ function effectiveCount(shape: BackdropShapeId | undefined, count: number): numb
  * (e.g. two round circles side by side).
  */
 const SHAPE_MULTI_LABEL: Record<BackdropShapeId, string> = {
-  round_arch: "perfectly circular round disc backdrop panels",
+  round_arch:    "perfectly circular round disc backdrop panels",
   straight_arch: "arch backdrop panels with straight vertical sides and rounded tops",
-  half_arch: "asymmetric half arch backdrop panels",
-  rect_with_cutout: "rectangular backdrop frame panels with arch-shaped cutout opening",
-  shimmer_wall: "flat rectangular sequin shimmer wall backdrop panels",
-  double_arch: "arch backdrop panels",
-  mixed_panels: "backdrop panels of different heights",
-  wavy: "wavy-top backdrop panels",
+  half_arch:     "asymmetric half arch backdrop panels",
+  shimmer_wall:  "flat rectangular sequin shimmer wall backdrop panels",
+  wavy:          "wavy-top backdrop panels",
+  mixed_panels:  "backdrop panels of different heights",
 };
 
 /**
@@ -457,14 +451,12 @@ export function generatePrompt(input: PromptInput): {
   const countNum = Math.max(1, Math.min(3, input.backdropCount));
   const countWord = countNum === 1 ? "ONE (1)" : countNum === 2 ? "TWO (2)" : "THREE (3)";
   const SHAPE_LABEL: Partial<Record<BackdropShapeId, string>> = {
-    round_arch:       "round circular disc",
-    straight_arch:    "straight arch with rounded top",
-    half_arch:        "asymmetric half arch",
-    rect_with_cutout: "rectangular frame with arch cutout",
-    shimmer_wall:     "rectangular shimmer wall",
-    double_arch:      "double arch",
-    mixed_panels:     "mixed height panels",
-    wavy:             "wavy top",
+    round_arch:    "round circular disc",
+    straight_arch: "straight arch with rounded top",
+    half_arch:     "asymmetric half arch (tall left, short right)",
+    shimmer_wall:  "rectangular shimmer wall",
+    wavy:          "wavy top",
+    mixed_panels:  "mixed height flat rectangular panels",
   };
   const shapeLabel = input.backdropShape ? (SHAPE_LABEL[input.backdropShape] ?? "rectangular") : "rectangular";
   const strictRequirements =

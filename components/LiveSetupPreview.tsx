@@ -158,25 +158,6 @@ function backdropOutline(
 
   const arcSamples = 26;
 
-  if (shape === "double_arch") {
-    const subR = r / 2;
-    const springY = apexY + subR;
-    pts.push({ x: leftX, y: floorY });
-    pts.push({ x: leftX, y: springY });
-    // left hump
-    for (let k = 0; k <= arcSamples; k++) {
-      const a = Math.PI * (1 - k / arcSamples);
-      pts.push({ x: cx - subR + subR * Math.cos(a), y: springY - subR * Math.sin(a) });
-    }
-    // right hump
-    for (let k = 0; k <= arcSamples; k++) {
-      const a = Math.PI * (1 - k / arcSamples);
-      pts.push({ x: cx + subR + subR * Math.cos(a), y: springY - subR * Math.sin(a) });
-    }
-    pts.push({ x: rightX, y: floorY });
-    return pts;
-  }
-
   if (shape === "wavy") {
     const topY = apexY + r * 0.35;
     pts.push({ x: leftX, y: floorY });

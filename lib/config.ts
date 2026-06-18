@@ -117,7 +117,7 @@ export const PACKAGES: Package[] = [
     bestFor: "Intimate home setups",
     defaultDecor: {
       backdropCount: 1,
-      backdropShape: "round_arch",
+      backdropShape: "half_arch",
       balloonStyle: "half",
       plinths: 1,
       plinthSizes: ["medium"],
@@ -136,7 +136,7 @@ export const PACKAGES: Package[] = [
     bestFor: "Villa gardens, restaurant corners",
     defaultDecor: {
       backdropCount: 2,
-      backdropShape: "double_arch",
+      backdropShape: "straight_arch",
       balloonStyle: "full",
       plinths: 2,
       plinthSizes: ["medium", "medium"],
@@ -177,10 +177,8 @@ export type BackdropShapeId =
   | "round_arch"
   | "straight_arch"
   | "half_arch"
-  | "rect_with_cutout"
   | "shimmer_wall"
   | "wavy"
-  | "double_arch"
   | "mixed_panels";
 
 export type BalloonStyleId = "none" | "half" | "full" | "premium";
@@ -264,13 +262,11 @@ export interface Option<T extends string> {
 }
 
 export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
-  { id: "round_arch", label: "Round Arch", price: 0 },
+  { id: "half_arch",    label: "Half Arch",    price: 0 },
+  { id: "round_arch",   label: "Round Arch",   price: 0 },
   { id: "straight_arch", label: "Straight Arch", price: 0 },
-  { id: "half_arch", label: "Half Arch", price: 0 },
-  { id: "rect_with_cutout", label: "Arch Cutout Frame", price: 20 },
   { id: "shimmer_wall", label: "Shimmer Wall", price: 80 },
-  { id: "wavy", label: "Wavy", price: 0 },
-  { id: "double_arch", label: "Double Arch", price: 0 },
+  { id: "wavy",         label: "Wavy",         price: 0 },
   { id: "mixed_panels", label: "Mixed Panels", price: 0 },
 ];
 
