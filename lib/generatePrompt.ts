@@ -20,6 +20,7 @@ import {
   type CutoutSelection,
   type BackdropPrint,
   type PlinthSize,
+  type EventTypeId,
 } from "./config";
 
 /** Wrapper prepended/appended to every prompt (Change 3). */
@@ -138,6 +139,27 @@ const BALLOON_DESC: Record<BalloonStyleId, string> = {
     "premium organic balloon installation completely surrounding the backdrop with varied sizes and flower accents",
 };
 
+/** Floral-free overrides — used when florals are not explicitly selected and
+ *  event type is not bridal_shower or boutique_wedding. */
+const THEME_DESC_NO_FLORAL: Partial<Record<string, string>> = {
+  stitch:
+    "Tropical blue character theme party, blue tropical Hawaiian backdrop, hibiscus motifs, tropical island aesthetic",
+  encanto:
+    "Encanto Disney theme party, vibrant warm colors, magical candle and Casita house motifs, Colombian-inspired colorful decoration",
+  blush_garden:
+    "Blush garden elegant theme party, soft pink and cream backdrop, lush greenery and garden-style decoration, romantic luxury aesthetic",
+};
+
+const THEME_PRINT_DESC_NO_FLORAL: Partial<Record<string, string>> = {
+  unicorn: "Unicorn face with gold horn, leafy crown and lashes",
+  encanto: "Casita house, magical candle, Colombian foliage",
+  pineapple_tropical: "Gold pineapple outline, tropical monstera leaves, hibiscus motifs",
+  blush_garden: "Garden greenery and leaves, delicate foliage",
+};
+
+const BALLOON_DESC_PREMIUM_NO_FLORAL =
+  "premium organic balloon installation completely surrounding the backdrop with varied sizes and greenery accents";
+
 /** EXTRAS_DESCRIPTION — keyed by extra id. */
 const EXTRAS_DESC: Record<string, string> = {
   florals: "fresh floral clusters at base and sides",
@@ -160,6 +182,7 @@ export const NEGATIVE_PROMPT =
 export interface PromptInput {
   theme: ThemeId;
   package: PackageId;
+  eventType?: EventTypeId;
   backdropCount: number;
   backdropShape?: BackdropShapeId;
   backdropColor?: string;
@@ -172,6 +195,12 @@ export interface PromptInput {
   plinthSizes?: PlinthSize[];
 }
 
+/** Florals are permitted when explicitly added as an extra, or for wedding/bridal events. */
+function allowFlorals(input: PromptInput): boolean {
+  if ((input.extras ?? []).includes("florals")) return true;
+  return input.eventType === "bridal_shower" || input.eventType === "boutique_wedding";
+}
+
 export const PLINTH_NEGATIVE =
   "wide drum, flat platform, stage, podium, short cylinder, width greater than height";
 
@@ -182,8 +211,13 @@ export function generatePrompt(input: PromptInput): {
   const theme = themeById(input.theme);
   const themeName = theme?.name ?? "party";
 
-  // Theme: strict verbatim description.
-  const themeDesc = THEME_DESC[input.theme] ?? `${themeName} theme`;
+  const florals = allowFlorals(input);
+
+  // Theme: use floral-free override when florals are not permitted.
+  const themeDesc =
+    (!florals && THEME_DESC_NO_FLORAL[input.theme]) ||
+    THEME_DESC[input.theme] ||
+    `${themeName} theme`;
 
   // Backdrop: strict shape description + chosen color. Omitted for themes that
   // hard-specify their own shape (unicorn=round, lego=rectangular).
@@ -198,8 +232,11 @@ export function generatePrompt(input: PromptInput): {
       ? `${shapeDesc}, backdrop in ${colorName} tones`
       : shapeDesc;
 
-  // Balloons: style + chosen colors.
-  const balloonStyle = BALLOON_DESC[input.balloonStyle] ?? "";
+  // Balloons: style + chosen colors. Premium uses no-floral description when florals not allowed.
+  const balloonStyle =
+    (!florals && input.balloonStyle === "premium"
+      ? BALLOON_DESC_PREMIUM_NO_FLORAL
+      : BALLOON_DESC[input.balloonStyle]) ?? "";
   const balloonColorNames = (input.balloonColors ?? [])
     .slice(0, 4)
     .map(hexToColorName)
@@ -233,7 +270,10 @@ export function generatePrompt(input: PromptInput): {
       if (input.theme === "lego") {
         printClause = `${THEME_PRINT_DESC["lego"]}, ${flatVinyl}`;
       } else {
-        const desc = THEME_PRINT_DESC[input.theme] ?? "themed decorative illustration";
+        const desc =
+        (!florals && THEME_PRINT_DESC_NO_FLORAL[input.theme]) ||
+        THEME_PRINT_DESC[input.theme] ||
+        "themed decorative illustration";
         printClause = `${desc} printed as high quality vinyl graphic on backdrop panel surface, ${flatVinyl}`;
       }
     } else if (input.backdropPrint.type === "custom_upload") {

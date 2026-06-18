@@ -87,6 +87,7 @@ export function useSetupPreview(config: BuilderConfig) {
   const sig = JSON.stringify({
     t: config.theme,
     p: config.package,
+    et: config.eventType,
     cnt: d.backdropCount,
     s: d.backdropShape,
     b: d.balloonStyle,
@@ -111,6 +112,7 @@ export function useSetupPreview(config: BuilderConfig) {
           body: JSON.stringify({
             theme: config.theme,
             package: config.package,
+            eventType: config.eventType,
             backdropCount: d.backdropCount,
             backdropShape: d.backdropShape,
             backdropColor: d.backdropColor,
