@@ -73,27 +73,27 @@ const RECT_DESC =
  * backdropPrint.type === "theme_print".
  */
 const THEME_MOOD: Record<string, string> = {
-  frozen:    "Frozen theme party, icy pale blue and white color scheme, silver accents, winter magical atmosphere",
-  unicorn:   "Unicorn theme party, soft pink and pastel color scheme, rainbow pastel balloons, magical whimsical atmosphere",
-  dinosaur:  "Dinosaur theme party, sage green and terracotta color scheme, earthy jungle atmosphere",
-  safari:    "Safari theme party, warm beige and earthy tones, tropical atmosphere",
-  princess:  "Princess theme party, soft pink and gold color scheme, elegant fairy tale atmosphere",
-  superhero: "Superhero theme party, bold red blue yellow primary colors, energetic action atmosphere",
-  barbie:    "Barbie theme party, hot pink fuchsia color scheme, glamorous feminine atmosphere",
-  bluey:     "Blue cartoon theme party, bright blue white and red color scheme, playful cheerful atmosphere",
-  pokemon:   "Pokemon theme party, yellow and red color scheme, adventurous energetic atmosphere",
-  stitch:    "Tropical theme party, blue and tropical teal color scheme, Hawaiian tropical atmosphere",
-  mermaid:   "Mermaid theme party, iridescent teal and purple color scheme, underwater ocean atmosphere",
-  space:     "Space theme party, deep navy and silver color scheme, cosmic galaxy atmosphere",
-  football:  "Football theme party, green and white color scheme, sporty energetic atmosphere",
-  lego:      "Lego theme party, bold primary red blue yellow color scheme, playful building block atmosphere",
-  kpop:      "K-Pop theme party, pastel purple and pink color scheme, sparkly idol concert atmosphere",
-  encanto:   "Encanto theme party, warm vibrant Colombian colors, magical family atmosphere",
-  cocomelon: "Cocomelon theme party, bright primary colors, cheerful nursery rhyme atmosphere",
-  teddy_bear:         "Teddy Bear theme party, soft beige and dusty pink color scheme, cozy warm nursery atmosphere",
-  pineapple_tropical: "Tropical Pineapple theme party, yellow and pastel color scheme, vibrant tropical atmosphere",
-  blush_garden:   "Blush Garden theme party, soft pink and cream color scheme, romantic botanical atmosphere",
-  luxury_neutral: "Luxury Neutral theme party, warm beige champagne and gold color scheme, sophisticated minimal atmosphere",
+  frozen:    "icy pale blue, silver and white color palette, cool crisp atmosphere",
+  unicorn:   "soft pink, pastel mint, pastel yellow, pastel blue and white color palette, delicate pastel tones, light airy atmosphere",
+  dinosaur:  "sage green, terracotta and dusty rose color palette, earthy natural atmosphere",
+  safari:    "warm amber, earthy brown and olive green color palette, natural warm atmosphere",
+  princess:  "soft pink, champagne gold and ivory color palette, elegant feminine atmosphere",
+  superhero: "bold red, royal blue and bright yellow color palette, energetic dynamic atmosphere",
+  barbie:    "hot pink and fuchsia color palette, glamorous fashion-forward atmosphere",
+  bluey:     "bright blue, white and red color palette, playful cheerful atmosphere",
+  pokemon:   "bright yellow, red and white color palette, adventurous energetic atmosphere",
+  stitch:    "bright turquoise blue and tropical teal color palette, vibrant island atmosphere",
+  mermaid:   "iridescent teal, sea foam green and soft purple color palette, dreamy ocean atmosphere",
+  space:     "deep navy, silver and dark purple color palette, cool dark mysterious atmosphere",
+  football:  "bright green, white and black color palette, sporty energetic atmosphere",
+  lego:      "bold primary red, bright blue and bright yellow color palette, clean bright playful atmosphere",
+  kpop:      "pastel purple, soft pink and iridescent color palette, vibrant pop atmosphere",
+  encanto:   "warm terracotta, vibrant yellow and rich teal color palette, warm festive atmosphere",
+  cocomelon: "bright red, yellow and green color palette, cheerful bright playful atmosphere",
+  teddy_bear:         "soft beige, dusty rose and warm cream color palette, cozy nursery atmosphere",
+  pineapple_tropical: "bright yellow, pastel mint and coral color palette, fresh vibrant summer atmosphere",
+  blush_garden:   "soft blush pink, ivory and dusty rose color palette, romantic delicate atmosphere",
+  luxury_neutral: "warm beige, champagne and gold color palette, sophisticated minimal elegant atmosphere",
 };
 
 /**
@@ -238,7 +238,7 @@ const BALLOON_DESC: Record<BalloonStyleId, string> = {
  * and where florals are not explicitly selected.
  */
 const THEME_MOOD_NO_FLORAL: Partial<Record<string, string>> = {
-  blush_garden: "Blush Garden theme party, soft pink and cream color scheme, romantic lush garden atmosphere",
+  blush_garden: "soft blush pink, ivory and dusty rose color palette, romantic clean atmosphere",
 };
 
 /**
@@ -408,6 +408,16 @@ export function generatePrompt(input: PromptInput): {
         : "custom graphic design printed on backdrop surface";
   }
 
+  // Plain backdrop — explicit instruction when no print is selected so the AI
+  // does not hallucinate characters, clouds, or decorative elements onto the surface.
+  const plainBackdropClause =
+    !input.backdropPrint || input.backdropPrint.type === "none"
+      ? "backdrop panel surface is completely plain and empty, solid color only, " +
+        "NO illustrations, NO characters, NO prints, NO patterns, NO text, NO clouds, " +
+        "NO stars, NO decorative elements on the backdrop surface itself, " +
+        "clean flat matte painted panel"
+      : "";
+
   // Cutouts.
   let cutoutClause = "";
   if (input.cutouts && input.cutouts.size !== "none") {
@@ -426,6 +436,12 @@ export function generatePrompt(input: PromptInput): {
         `each standee featuring a DIFFERENT character design and pose — varied and unique, no two identical`;
     }
   }
+
+  // No cutouts — suppress AI from inventing standees or characters.
+  const noCutoutsClause =
+    !input.cutouts || input.cutouts.size === "none"
+      ? "NO character cutouts, NO standing figures, NO cardboard standees anywhere in the scene"
+      : "";
 
   const extras = (input.extras ?? [])
     .map((id) => EXTRAS_DESC[id])
@@ -479,7 +495,9 @@ export function generatePrompt(input: PromptInput): {
     balloons,
     textClause,
     printClause,
+    plainBackdropClause,
     cutoutClause,
+    noCutoutsClause,
     plinthClause,
     extras,
   ]
@@ -502,7 +520,19 @@ export function generatePrompt(input: PromptInput): {
         ? "two circles, multiple circles, arch shape, multiple backdrops, two backdrops"
         : "";
 
-  const negParts = [NEGATIVE_PROMPT, countNegative, shapeNegative].filter(Boolean);
+  const printNegative =
+    !input.backdropPrint || input.backdropPrint.type === "none"
+      ? "printed graphic on backdrop, illustration on backdrop, character on backdrop, " +
+        "unicorn on backdrop, pattern on backdrop, clouds on backdrop, stars on backdrop, " +
+        "decorative elements on backdrop surface"
+      : "";
+
+  const cutoutNegative =
+    !input.cutouts || input.cutouts.size === "none"
+      ? "character cutout, cardboard standee, standing figure, foam cutout"
+      : "";
+
+  const negParts = [NEGATIVE_PROMPT, countNegative, shapeNegative, printNegative, cutoutNegative].filter(Boolean);
   return { prompt, negativePrompt: negParts.join(", ") };
 }
 
