@@ -80,17 +80,21 @@ type Snap = {
   extras: string;
 };
 
-/** Compare current snapshot to the snapshot when the last image was generated. */
+/**
+ * Compare current snapshot to the last generated image snapshot.
+ * Only backdropColor and balloonColors qualify for img2img.
+ * Every other change triggers a full text-to-image regeneration.
+ */
 function detectChangeType(curr: Snap, base: Snap): ChangeType {
   if (curr.nonce !== base.nonce) return "full";
-  if (curr.theme !== base.theme) return "theme";
+  if (curr.theme !== base.theme) return "full";
   if (curr.pkg !== base.pkg) return "full";
   if (curr.backdropCount !== base.backdropCount) return "full";
-  if (curr.shape !== base.shape) return "shape";
+  if (curr.shape !== base.shape) return "full";
+  if (curr.balloonStyle !== base.balloonStyle) return "full";
+  if (curr.backdropPrint !== base.backdropPrint) return "full";
+  if (curr.plinthSizes !== base.plinthSizes || curr.extras !== base.extras) return "full";
   if (curr.color !== base.color || curr.balloonColors !== base.balloonColors) return "colors";
-  if (curr.balloonStyle !== base.balloonStyle) return "balloons";
-  if (curr.backdropPrint !== base.backdropPrint) return "print";
-  if (curr.plinthSizes !== base.plinthSizes || curr.extras !== base.extras) return "extras";
   return "full";
 }
 
@@ -158,6 +162,13 @@ export function useSetupPreview(config: BuilderConfig) {
       base && baseImageUrlRef.current ? detectChangeType(curr, base) : "full";
 
     const incremental = changeType !== "full" && changeType !== "theme";
+
+    // Clear the base reference on any full regeneration so stale images
+    // can never bleed into a subsequent img2img request.
+    if (!incremental) {
+      baseImageUrlRef.current = null;
+    }
+
     setIsIncremental(incremental);
     setStatus("loading");
 

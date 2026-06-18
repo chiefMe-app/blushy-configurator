@@ -453,18 +453,26 @@ export function generatePrompt(input: PromptInput): {
       `matte white surface, standing on floor in front of backdrop, ${positionDesc}`;
   }
 
-  // Count enforcement — first clause so the AI sees it before any shape description.
-  const countWord = input.backdropCount === 1 ? "ONE" : input.backdropCount === 2 ? "TWO" : "THREE";
-  const countEnforcement =
-    input.backdropCount === 1
-      ? "EXACTLY ONE single backdrop panel in this scene. Only one. Not two. Not three. One backdrop panel only."
-      : input.backdropCount === 2
-        ? "EXACTLY TWO backdrop panels in this scene. Two panels side by side. Not one. Not three. Two only."
-        : `EXACTLY THREE backdrop panels in this scene. Three panels arranged together. Not one. Not two. Three only.`;
-  void countWord;
+  // Strict count+shape requirement — shown FIRST so the model sees it before any other detail.
+  const countNum = Math.max(1, Math.min(3, input.backdropCount));
+  const countWord = countNum === 1 ? "ONE (1)" : countNum === 2 ? "TWO (2)" : "THREE (3)";
+  const SHAPE_LABEL: Partial<Record<BackdropShapeId, string>> = {
+    round_arch:       "round circular disc",
+    straight_arch:    "straight arch with rounded top",
+    half_arch:        "asymmetric half arch",
+    rect_with_cutout: "rectangular frame with arch cutout",
+    shimmer_wall:     "rectangular shimmer wall",
+    double_arch:      "double arch",
+    mixed_panels:     "mixed height panels",
+    wavy:             "wavy top",
+  };
+  const shapeLabel = input.backdropShape ? (SHAPE_LABEL[input.backdropShape] ?? "rectangular") : "rectangular";
+  const strictRequirements =
+    `STRICT REQUIREMENTS: This image must show EXACTLY ${countWord} backdrop panel(s) ` +
+    `with ${shapeLabel} shape. This overrides everything else.`;
 
   const core = [
-    countEnforcement,
+    strictRequirements,
     themeDesc,
     backdrop,
     balloons,

@@ -19,6 +19,10 @@ const KONTEXT_ENDPOINT = `https://fal.run/${KONTEXT_MODEL}`;
 // Change to "svg" to revert to overlay mode.
 const PLINTH_MODE: "ai" | "svg" = "ai";
 
+// Safety switch: when false, all requests use full text-to-image regardless of
+// changeType. Re-enable once shape/count stability is confirmed.
+const ENABLE_IMG2IMG = false;
+
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -57,9 +61,9 @@ export async function POST(req: NextRequest) {
     plinthSizes: PLINTH_MODE === "ai" ? (promptFields.plinthSizes ?? []) : undefined,
   };
 
-  // Use img2img (kontext) when we have a base image and a focused change type.
-  // Theme and full changes always use text-to-image for complete redesign.
+  // Use img2img (kontext) only when explicitly enabled and the change is minor.
   const useImg2Img =
+    ENABLE_IMG2IMG &&
     typeof baseImageUrl === "string" &&
     baseImageUrl.length > 0 &&
     !!rawChangeType &&
