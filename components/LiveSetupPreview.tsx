@@ -174,8 +174,8 @@ function backdropOutline(
     return pts;
   }
 
-  // round_arch / straight_arch / mixed_panels share the side-up / arc / side-down shape
-  const ry = shape === "straight_arch" ? r * 0.55 : r; // straight = flatter arch
+  // round_arch / mixed_panels / fallback: standard arc shape
+  const ry = r;
   const springY = apexY + ry;
   pts.push({ x: leftX, y: floorY });
   pts.push({ x: leftX, y: springY });

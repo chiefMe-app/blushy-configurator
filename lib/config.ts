@@ -136,7 +136,7 @@ export const PACKAGES: Package[] = [
     bestFor: "Villa gardens, restaurant corners",
     defaultDecor: {
       backdropCount: 2,
-      backdropShape: "straight_arch",
+      backdropShape: "half_arch",
       balloonStyle: "full",
       plinths: 2,
       plinthSizes: ["medium", "medium"],
@@ -175,7 +175,6 @@ export const PACKAGES: Package[] = [
 
 export type BackdropShapeId =
   | "round_arch"
-  | "straight_arch"
   | "half_arch"
   | "shimmer_wall"
   | "wavy"
@@ -262,12 +261,11 @@ export interface Option<T extends string> {
 }
 
 export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
-  { id: "half_arch",    label: "Half Arch",    price: 0 },
-  { id: "round_arch",   label: "Round Arch",   price: 0 },
-  { id: "straight_arch", label: "Straight Arch", price: 0 },
-  { id: "shimmer_wall", label: "Shimmer Wall", price: 80 },
-  { id: "wavy",         label: "Wavy",         price: 0 },
-  { id: "mixed_panels", label: "Mixed Panels", price: 0 },
+  { id: "half_arch",    label: "Half Arch",       price: 0 },
+  { id: "round_arch",   label: "Round Backdrop",  price: 0 },
+  { id: "shimmer_wall", label: "Shimmer Wall",    price: 80 },
+  { id: "wavy",         label: "Wavy",            price: 0 },
+  { id: "mixed_panels", label: "Mixed Panels",    price: 0 },
 ];
 
 export const BALLOON_STYLES: Option<BalloonStyleId>[] = [

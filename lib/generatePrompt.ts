@@ -41,17 +41,15 @@ const PROMPT_SUFFIX =
 /** Strict per-shape backdrop descriptions — exact verbatim strings. */
 const SHAPE_DESC: Record<BackdropShapeId, string> = {
   round_arch:
-    "ONE perfectly circular round disc backdrop panel, complete full circle shape, like a large circle standing upright, no flat bottom edge, perfectly round on all sides, diameter approximately 200cm, NOT an arch shape",
-  straight_arch:
-    "ONE arch backdrop panel, straight vertical sides, semicircular rounded top, like a doorway or window arch shape, flat bottom, two straight sides meeting a half-circle top, approximately 200cm tall 120cm wide, NOT a circle",
+    "EXACTLY ONE circular round backdrop disc, diameter 180cm, single circle only, standing upright like a large circular panel, perfectly circular on all sides, even if multiple backdrops are selected show only ONE round circular backdrop, NOT an arch shape, NOT two circles, just one single round disc",
   half_arch:
-    "ONE asymmetric backdrop panel that is 120cm wide and 220cm tall on the left side, the right side is only 130cm tall, the top edge is a single smooth curve that starts at 220cm height on the left and sweeps down to 130cm height on the right, like a ski slope or quarter circle curve from top-left to mid-right, the bottom edge is perfectly flat and straight, total width 120cm, left height 220cm, right height 130cm, this shape looks like the letter J rotated or a skateboard ramp profile, NOT a full arch, NOT symmetric, NOT round",
+    "ONE asymmetric backdrop panel that is 100cm wide and 200cm tall on the left side, the right side is only 120cm tall, the top edge is a single smooth curve that starts at 200cm height on the left and sweeps down to 120cm height on the right, like a ski slope or quarter circle curve from top-left to mid-right, the bottom edge is perfectly flat and straight, total width 100cm, left height 200cm, right height 120cm, this shape looks like the letter J rotated or a skateboard ramp profile, NOT a full arch, NOT symmetric, NOT round",
   shimmer_wall:
-    "ONE flat rectangular sequin shimmer wall backdrop, entire surface covered in silver metallic sequin mirror tiles, highly reflective disco-ball-like sequin panels, glittery shimmer effect",
+    "ONE flat rectangular sequin shimmer wall backdrop, 100cm wide and 200cm tall, entire surface covered in silver metallic sequin mirror tiles, highly reflective disco-ball-like sequin panels, glittery shimmer effect",
   wavy:
-    "ONE wavy-edged backdrop panel, maximum 100cm wide, organic wavy curved top edge with 2-3 gentle waves, soft flowing silhouette, NOT sharp zigzag",
+    "ONE wavy-edged backdrop panel, 100cm wide and 200cm tall, organic wavy curved top edge with 2-3 gentle waves, soft flowing silhouette, NOT sharp zigzag",
   mixed_panels:
-    "THREE flat rectangular backdrop panels of different heights arranged side by side touching each other, tallest panel in center 200cm tall, side panels shorter 150cm each, all panels same width 80cm each, clean modern minimalist arrangement, NOT an arch, NOT curved tops, flat rectangular panels only",
+    "THREE flat rectangular backdrop panels of different heights arranged side by side touching each other, tallest panel in center 200cm tall 100cm wide, side panels shorter 150cm tall 100cm wide each, clean modern minimalist arrangement, NOT an arch, NOT curved tops, flat rectangular panels only",
 };
 
 /**
@@ -59,9 +57,9 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
  * Used instead of SHAPE_DESC + SHAPE_MULTI_LABEL + backdropDimensions for this shape.
  */
 const HALF_ARCH_DESC: Record<number, string> = {
-  1: "ONE asymmetric backdrop panel that is 120cm wide and 220cm tall on the left side, the right side is only 130cm tall, the top edge is a single smooth curve that starts at 220cm height on the left and sweeps down to 130cm height on the right, like a ski slope or quarter circle curve from top-left to mid-right, the bottom edge is perfectly flat and straight, total width 120cm, left height 220cm, right height 130cm, this shape looks like the letter J rotated or a skateboard ramp profile, NOT a full arch, NOT symmetric, NOT round",
-  2: "TWO asymmetric backdrop panels side by side, each panel 100cm wide, left panel: left edge 200cm tall, right edge 110cm tall, curved top sweeping down from left to right, right panel: mirrored, left edge 110cm tall, right edge 200cm tall, curved top sweeping up from left to right, together they form a V shape or valley silhouette, NOT full arches, NOT symmetric individually",
-  3: "THREE flat backdrop panels, center panel is a full straight arch 180cm tall 100cm wide, left panel is asymmetric 160cm on outside 100cm on inside, right panel is asymmetric mirrored, arranged together touching each other",
+  1: "ONE asymmetric backdrop panel that is 100cm wide and 200cm tall on the left side, the right side is only 120cm tall, the top edge is a single smooth curve that starts at 200cm height on the left and sweeps down to 120cm height on the right, like a ski slope or quarter circle curve from top-left to mid-right, the bottom edge is perfectly flat and straight, total width 100cm, left height 200cm, right height 120cm, this shape looks like the letter J rotated or a skateboard ramp profile, NOT a full arch, NOT symmetric, NOT round",
+  2: "TWO asymmetric backdrop panels side by side, each panel 100cm wide and 200cm tall at tallest point, left panel: left edge 200cm tall, right edge 110cm tall, curved top sweeping down from left to right, right panel: mirrored, left edge 110cm tall, right edge 200cm tall, curved top sweeping up from left to right, together they form a V shape or valley silhouette, NOT full arches, NOT symmetric individually",
+  3: "THREE flat backdrop panels arranged together touching each other, each panel 100cm wide, center panel is a full straight arch 200cm tall, left panel is asymmetric 190cm on outside 120cm on inside curved top, right panel is asymmetric mirrored",
 };
 
 /** Plain rectangle (no current shape id, kept for completeness). */
@@ -157,12 +155,11 @@ function effectiveCount(shape: BackdropShapeId | undefined, count: number): numb
  * (e.g. two round circles side by side).
  */
 const SHAPE_MULTI_LABEL: Record<BackdropShapeId, string> = {
-  round_arch:    "perfectly circular round disc backdrop panels",
-  straight_arch: "arch backdrop panels with straight vertical sides and rounded tops",
-  half_arch:     "asymmetric half arch backdrop panels",
-  shimmer_wall:  "flat rectangular sequin shimmer wall backdrop panels",
-  wavy:          "wavy-top backdrop panels",
-  mixed_panels:  "backdrop panels of different heights",
+  round_arch:   "circular round disc backdrop panels",
+  half_arch:    "asymmetric half arch backdrop panels",
+  shimmer_wall: "flat rectangular sequin shimmer wall backdrop panels",
+  wavy:         "wavy-top backdrop panels",
+  mixed_panels: "backdrop panels of different heights",
 };
 
 /**
@@ -206,13 +203,13 @@ function buildBackdropDesc(
  * Gives the AI concrete proportions to render.
  */
 function backdropDimensions(count: number, shape: BackdropShapeId | undefined): string {
-  // half_arch descriptions already include exact dimensions — no separate clause needed.
-  if (shape === "half_arch") return "";
+  // Dimensions are already baked into these shapes' descriptions.
+  if (shape === "half_arch" || shape === "round_arch" || shape === "mixed_panels") return "";
 
   const c = effectiveCount(shape, count);
-  if (c === 1) return "120cm wide and 220cm tall, portrait orientation, tall and narrow";
-  if (c === 2) return "each panel 100cm wide and 200cm tall, portrait orientation, slightly shorter than single backdrop";
-  return "each panel 100cm wide and 180cm tall, portrait orientation, uniform height across all three";
+  const perPanel = "each backdrop panel is 100cm wide and 200cm tall, human scale proportions, NOT oversized, NOT monumental, approximately 2 meters tall and 1 meter wide per panel";
+  if (c === 1) return perPanel.replace("each backdrop panel", "the backdrop panel");
+  return perPanel;
 }
 
 /** Per-theme vinyl print descriptions for the theme_print option. */
@@ -452,23 +449,27 @@ export function generatePrompt(input: PromptInput): {
   }
 
   // Strict count+shape requirement — shown FIRST so the model sees it before any other detail.
-  const countNum = Math.max(1, Math.min(3, input.backdropCount));
-  const countWord = countNum === 1 ? "ONE (1)" : countNum === 2 ? "TWO (2)" : "THREE (3)";
+  // round_arch is always 1 regardless of backdropCount.
+  const effectivePanels = effectiveCount(input.backdropShape, input.backdropCount);
+  const panelWord = effectivePanels === 1 ? "ONE (1)" : effectivePanels === 2 ? "TWO (2)" : "THREE (3)";
   const SHAPE_LABEL: Partial<Record<BackdropShapeId, string>> = {
-    round_arch:    "round circular disc",
-    straight_arch: "straight arch with rounded top",
-    half_arch:     "asymmetric half arch (tall left, short right)",
-    shimmer_wall:  "rectangular shimmer wall",
-    wavy:          "wavy top",
-    mixed_panels:  "mixed height flat rectangular panels",
+    round_arch:   "round circular disc",
+    half_arch:    "asymmetric half arch (tall left, short right)",
+    shimmer_wall: "rectangular shimmer wall",
+    wavy:         "wavy top",
+    mixed_panels: "mixed height flat rectangular panels",
   };
   const shapeLabel = input.backdropShape ? (SHAPE_LABEL[input.backdropShape] ?? "rectangular") : "rectangular";
   const strictRequirements =
-    `STRICT REQUIREMENTS: This image must show EXACTLY ${countWord} backdrop panel(s) ` +
+    `STRICT REQUIREMENTS: This image must show EXACTLY ${panelWord} backdrop panel(s) ` +
     `with ${shapeLabel} shape. This overrides everything else.`;
+
+  const humanScale =
+    "These are standard party backdrop panels, human-sized decorative panels, NOT giant walls, NOT oversized installations";
 
   const core = [
     strictRequirements,
+    humanScale,
     themeDesc,
     backdrop,
     balloons,
@@ -484,16 +485,18 @@ export function generatePrompt(input: PromptInput): {
   const prompt = `${PROMPT_PREFIX}${core}.${PROMPT_SUFFIX}`;
 
   const countNegative =
-    input.backdropCount === 1
+    effectivePanels === 1
       ? "two backdrops, multiple panels, split backdrop, double backdrop, three panels"
-      : input.backdropCount === 2
+      : effectivePanels === 2
         ? "single backdrop, one panel, three panels, triple backdrop"
         : "single backdrop, one panel, two panels, double backdrop";
 
   const shapeNegative =
     input.backdropShape === "half_arch"
       ? "full arch, complete arch, symmetric arch, round top, equal height sides, doorway arch, both sides same height"
-      : "";
+      : input.backdropShape === "round_arch"
+        ? "two circles, multiple circles, arch shape, multiple backdrops, two backdrops"
+        : "";
 
   const negParts = [NEGATIVE_PROMPT, countNegative, shapeNegative].filter(Boolean);
   return { prompt, negativePrompt: negParts.join(", ") };
