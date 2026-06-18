@@ -70,6 +70,7 @@ type Snap = {
   theme: string;
   pkg: string;
   nonce: number;
+  backdropCount: number;
   shape: string;
   color: string;
   balloonStyle: string;
@@ -84,6 +85,7 @@ function detectChangeType(curr: Snap, base: Snap): ChangeType {
   if (curr.nonce !== base.nonce) return "full";
   if (curr.theme !== base.theme) return "theme";
   if (curr.pkg !== base.pkg) return "full";
+  if (curr.backdropCount !== base.backdropCount) return "full";
   if (curr.shape !== base.shape) return "shape";
   if (curr.color !== base.color || curr.balloonColors !== base.balloonColors) return "colors";
   if (curr.balloonStyle !== base.balloonStyle) return "balloons";
@@ -140,6 +142,7 @@ export function useSetupPreview(config: BuilderConfig) {
       theme: config.theme,
       pkg: config.package,
       nonce,
+      backdropCount: d.backdropCount,
       shape: d.backdropShape ?? "",
       color: d.backdropColor ?? "",
       balloonStyle: d.balloonStyle,

@@ -453,7 +453,18 @@ export function generatePrompt(input: PromptInput): {
       `matte white surface, standing on floor in front of backdrop, ${positionDesc}`;
   }
 
+  // Count enforcement — first clause so the AI sees it before any shape description.
+  const countWord = input.backdropCount === 1 ? "ONE" : input.backdropCount === 2 ? "TWO" : "THREE";
+  const countEnforcement =
+    input.backdropCount === 1
+      ? "EXACTLY ONE single backdrop panel in this scene. Only one. Not two. Not three. One backdrop panel only."
+      : input.backdropCount === 2
+        ? "EXACTLY TWO backdrop panels in this scene. Two panels side by side. Not one. Not three. Two only."
+        : `EXACTLY THREE backdrop panels in this scene. Three panels arranged together. Not one. Not two. Three only.`;
+  void countWord;
+
   const core = [
+    countEnforcement,
     themeDesc,
     backdrop,
     balloons,
@@ -468,7 +479,14 @@ export function generatePrompt(input: PromptInput): {
 
   const prompt = `${PROMPT_PREFIX}${core}.${PROMPT_SUFFIX}`;
 
-  return { prompt, negativePrompt: NEGATIVE_PROMPT };
+  const countNegative =
+    input.backdropCount === 1
+      ? "two backdrops, multiple panels, split backdrop, double backdrop, three panels"
+      : input.backdropCount === 2
+        ? "single backdrop, one panel, three panels, triple backdrop"
+        : "single backdrop, one panel, two panels, double backdrop";
+
+  return { prompt, negativePrompt: `${NEGATIVE_PROMPT}, ${countNegative}` };
 }
 
 /** Focused edit instruction for img2img (kontext) — describes only what changed. */

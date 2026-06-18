@@ -109,7 +109,6 @@ export async function POST(req: NextRequest) {
     const { prompt, negativePrompt } = generatePrompt(promptInput);
     const finalNegative =
       PLINTH_MODE === "ai" ? `${negativePrompt}, ${PLINTH_NEGATIVE}` : negativePrompt;
-    void finalNegative; // negative prompt logged but not sent (flux-2-pro is zero-config)
 
     const falRes = await fetch(FAL_ENDPOINT, {
       method: "POST",
@@ -119,6 +118,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         prompt,
+        negative_prompt: finalNegative,
         image_size: "landscape_4_3",
         output_format: "jpeg",
       }),
