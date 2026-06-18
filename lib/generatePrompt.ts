@@ -53,57 +53,71 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
 const RECT_DESC =
   "ONE flat rectangular backdrop panel, perfectly straight edges on all four sides, no curves anywhere, flat wall panel, balloon garland on sides";
 
-/** Strict per-theme descriptions (Change 2) — exact verbatim strings. */
-const THEME_DESC: Record<string, string> = {
-  frozen:
-    "Frozen Disney theme party, icy pale blue and white backdrop, snowflake and ice crystal decorations, Frozen movie aesthetic",
-  unicorn:
-    "Unicorn theme party, round circular pink backdrop panel — unicorn face graphic is a flat printed vinyl sticker on the pink circular backdrop surface, 2D flat illustration printed on panel, horn ears and lashes are part of the flat print, NOT 3D sculpted, NOT separate pieces",
-  dinosaur:
-    "Dinosaur theme party, arch backdrop — jungle and palm tree scene is a flat printed vinyl graphic on the backdrop panel surface, 2D flat printed illustration, sage green and terracotta red color scheme, NOT real trees or 3D elements",
-  safari:
-    "Safari jungle theme party, warm beige backdrop, tropical leaves and animal silhouettes, earthy neutral tones",
-  princess:
-    "Princess theme party, soft pink and gold backdrop, castle turret silhouettes, crown and star decorations",
-  superhero:
-    "Superhero theme party, bold red blue yellow primary colors, city skyline silhouette on backdrop, comic book hero aesthetic",
-  barbie:
-    "Barbie theme party, hot pink fuchsia backdrop, glamorous Barbie-inspired decoration, pink and white balloon garland",
-  bluey:
-    "Blue cartoon theme party, bright blue white and red color scheme, playful family-friendly decoration with paw print motifs",
-  pokemon:
-    "Pokemon theme party, yellow backdrop with red Pokeball graphic, bright cheerful primary colors, adventure theme",
-  stitch:
-    "Tropical blue character theme party, blue tropical Hawaiian backdrop, hibiscus flowers, tropical island aesthetic",
-  mermaid:
-    "Mermaid theme party, iridescent teal and purple backdrop, seashell and pearl details, underwater ocean atmosphere",
-  space:
-    "Space galaxy theme party, deep dark navy backdrop with stars and planets painted on, rocket ship and moon elements, silver and gold accents",
-  football:
-    "Football soccer theme party, white or green backdrop with soccer ball and pitch line graphics, sporty clean aesthetic",
-  lego:
-    "Lego theme party, flat rectangular backdrop panel — lego brick grid and minifigure graphics are flat 2D printed vinyl on the rectangular backdrop panel surface, printed banner style, bold primary colors red blue yellow, NOT an arch shape",
-  kpop:
-    "K-Pop idol theme party, pastel purple and pink backdrop, sparkle and star stage elements, concert idol aesthetic",
-  encanto:
-    "Encanto Disney theme party, vibrant warm colors, magical candle and Casita house motifs, Colombian-inspired floral decoration",
-  cocomelon:
-    "Cocomelon theme party, bright primary colors, watermelon pattern backdrop, cheerful nursery rhyme decoration",
-  teddy_bear:
-    "Teddy Bear theme party, soft beige and dusty pink backdrop, cute illustrated teddy bear characters, cozy nursery warm tones",
-  pineapple_tropical:
-    "Tropical Pineapple theme party, white or blush backdrop with large gold pineapple outline decoration, tropical monstera leaves, vibrant pastel balloon garland",
-  blush_garden:
-    "Blush garden elegant theme party, soft pink and cream backdrop, botanical roses and peonies floral decoration, romantic luxury aesthetic",
-  luxury_neutral:
-    "Luxury neutral elegant theme party, warm beige champagne and ivory backdrop, gold metallic line accents, sophisticated minimal premium decoration",
+/**
+ * THEME_MOOD — color scheme, atmosphere, and overall vibe ONLY.
+ * MUST NOT mention any graphic, illustration, print, or visual on the backdrop surface.
+ * Graphics are handled separately by THEME_PRINT and only injected when
+ * backdropPrint.type === "theme_print".
+ */
+const THEME_MOOD: Record<string, string> = {
+  frozen:    "Frozen theme party, icy pale blue and white color scheme, silver accents, winter magical atmosphere",
+  unicorn:   "Unicorn theme party, soft pink and pastel color scheme, rainbow pastel balloons, magical whimsical atmosphere",
+  dinosaur:  "Dinosaur theme party, sage green and terracotta color scheme, earthy jungle atmosphere",
+  safari:    "Safari theme party, warm beige and earthy tones, tropical atmosphere",
+  princess:  "Princess theme party, soft pink and gold color scheme, elegant fairy tale atmosphere",
+  superhero: "Superhero theme party, bold red blue yellow primary colors, energetic action atmosphere",
+  barbie:    "Barbie theme party, hot pink fuchsia color scheme, glamorous feminine atmosphere",
+  bluey:     "Blue cartoon theme party, bright blue white and red color scheme, playful cheerful atmosphere",
+  pokemon:   "Pokemon theme party, yellow and red color scheme, adventurous energetic atmosphere",
+  stitch:    "Tropical theme party, blue and tropical teal color scheme, Hawaiian tropical atmosphere",
+  mermaid:   "Mermaid theme party, iridescent teal and purple color scheme, underwater ocean atmosphere",
+  space:     "Space theme party, deep navy and silver color scheme, cosmic galaxy atmosphere",
+  football:  "Football theme party, green and white color scheme, sporty energetic atmosphere",
+  lego:      "Lego theme party, bold primary red blue yellow color scheme, playful building block atmosphere",
+  kpop:      "K-Pop theme party, pastel purple and pink color scheme, sparkly idol concert atmosphere",
+  encanto:   "Encanto theme party, warm vibrant Colombian colors, magical family atmosphere",
+  cocomelon: "Cocomelon theme party, bright primary colors, cheerful nursery rhyme atmosphere",
+  teddy_bear:         "Teddy Bear theme party, soft beige and dusty pink color scheme, cozy warm nursery atmosphere",
+  pineapple_tropical: "Tropical Pineapple theme party, yellow and pastel color scheme, vibrant tropical atmosphere",
+  blush_garden:   "Blush Garden theme party, soft pink and cream color scheme, romantic botanical atmosphere",
+  luxury_neutral: "Luxury Neutral theme party, warm beige champagne and gold color scheme, sophisticated minimal atmosphere",
 };
 
 /**
- * Themes whose description hard-specifies the backdrop shape (round / rectangular).
- * For these we omit the separate shape fragment so it can't contradict the theme.
+ * THEME_PRINT — the graphic printed on the backdrop surface.
+ * Used ONLY when backdropPrint.type === "theme_print".
+ * Describes the visual illustration only — no color/mood/shape info.
  */
-const SHAPE_LOCKED_THEMES = new Set<ThemeId>(["unicorn", "lego"]);
+const THEME_PRINT: Record<string, string> = {
+  frozen:    "snowflake and ice crystal pattern printed on backdrop",
+  unicorn:   "unicorn face with gold horn flower crown and lashes printed on backdrop surface",
+  dinosaur:  "palm tree volcano and jungle scene printed on backdrop",
+  safari:    "African savanna animal silhouettes printed on backdrop",
+  princess:  "castle turrets crown and stars printed on backdrop",
+  superhero: "city skyline and hero shield printed on backdrop",
+  barbie:    "Barbie-inspired fashion graphics printed on backdrop",
+  bluey:     "cartoon dog paw prints and playful graphics on backdrop",
+  pokemon:   "Pokeball pattern and lightning bolt graphics on backdrop",
+  stitch:    "tropical hibiscus and island graphics on backdrop",
+  mermaid:   "seashell coral and wave graphics on backdrop",
+  space:     "stars planets and rocket graphics on backdrop",
+  football:  "football pitch lines and soccer ball on backdrop",
+  lego:      "Lego brick grid pattern and minifigure graphics printed directly on flat rectangular panel surface",
+  kpop:      "stage spotlight and star graphics on backdrop",
+  encanto:   "magical candle and tropical flower graphics on backdrop",
+  cocomelon: "watermelon pattern and colorful polka dots on backdrop",
+  teddy_bear:         "cute teddy bear illustrations on backdrop",
+  pineapple_tropical: "gold pineapple outline and tropical leaves on backdrop",
+  blush_garden:   "roses peonies and botanical foliage on backdrop",
+  luxury_neutral: "minimal gold line art and abstract botanical on backdrop",
+};
+
+/**
+ * Themes whose mood description hard-specifies the backdrop shape.
+ * Now empty: THEME_MOOD contains no shape info, so the shape fragment from
+ * buildBackdropDesc() is always safe to include for every theme.
+ */
+const SHAPE_LOCKED_THEMES = new Set<ThemeId>();
 
 /**
  * Shapes that are inherently multi-panel — their SHAPE_DESC already bakes in the
@@ -212,22 +226,23 @@ const BALLOON_DESC: Record<BalloonStyleId, string> = {
     "premium organic balloon installation completely surrounding the backdrop with varied sizes and flower accents",
 };
 
-/** Floral-free overrides — used when florals are not explicitly selected and
- *  event type is not bridal_shower or boutique_wedding. */
-const THEME_DESC_NO_FLORAL: Partial<Record<string, string>> = {
-  stitch:
-    "Tropical blue character theme party, blue tropical Hawaiian backdrop, hibiscus motifs, tropical island aesthetic",
-  encanto:
-    "Encanto Disney theme party, vibrant warm colors, magical candle and Casita house motifs, Colombian-inspired colorful decoration",
-  blush_garden:
-    "Blush garden elegant theme party, soft pink and cream backdrop, lush greenery and garden-style decoration, romantic luxury aesthetic",
+/**
+ * Floral-free mood overrides.
+ * Only needed for moods that contain flagged floral words ("botanical" etc.)
+ * and where florals are not explicitly selected.
+ */
+const THEME_MOOD_NO_FLORAL: Partial<Record<string, string>> = {
+  blush_garden: "Blush Garden theme party, soft pink and cream color scheme, romantic lush garden atmosphere",
 };
 
-const THEME_PRINT_DESC_NO_FLORAL: Partial<Record<string, string>> = {
-  unicorn: "Unicorn face with gold horn, leafy crown and lashes",
-  encanto: "Casita house, magical candle, Colombian foliage",
-  pineapple_tropical: "Gold pineapple outline, tropical monstera leaves, hibiscus motifs",
-  blush_garden: "Garden greenery and leaves, delicate foliage",
+/**
+ * Floral-free print overrides — used when florals are not selected and the
+ * THEME_PRINT description contains flagged floral words.
+ */
+const THEME_PRINT_NO_FLORAL: Partial<Record<string, string>> = {
+  unicorn:     "unicorn face with gold horn leafy crown and lashes printed on backdrop surface",
+  encanto:     "magical candle and tropical foliage graphics on backdrop",
+  blush_garden: "garden leaves and delicate foliage on backdrop",
 };
 
 const BALLOON_DESC_PREMIUM_NO_FLORAL =
@@ -295,10 +310,10 @@ export function generatePrompt(input: PromptInput): {
 
   const florals = allowFlorals(input);
 
-  // Theme: use floral-free override when florals are not permitted.
+  // Theme mood: color/atmosphere only — no graphics. Floral-free when needed.
   const themeDesc =
-    (!florals && THEME_DESC_NO_FLORAL[input.theme]) ||
-    THEME_DESC[input.theme] ||
+    (!florals && THEME_MOOD_NO_FLORAL[input.theme]) ||
+    THEME_MOOD[input.theme] ||
     `${themeName} theme`;
 
   // Backdrop: shape + count + dimensions + color. Shape selection always wins;
@@ -342,26 +357,22 @@ export function generatePrompt(input: PromptInput): {
     }
   }
 
-  // Backdrop print.
+  // Backdrop print — only added when explicitly selected.
+  // backdropPrint.type === "none" → nothing printed on backdrop surface (plain backdrop).
+  const flatVinyl =
+    "flat 2D printed vinyl graphic applied directly onto the backdrop panel surface, " +
+    "integrated into the backdrop material, NOT a 3D object, NOT floating, printed directly on panel";
   let printClause = "";
-  if (input.backdropPrint && input.backdropPrint.type !== "none") {
-    if (input.backdropPrint.type === "name_only") {
-      printClause = "child's name printed in elegant script font on backdrop surface";
-    } else if (input.backdropPrint.type === "theme_print") {
-      const flatVinyl =
-        "flat 2D printed vinyl graphic applied directly onto the backdrop panel surface, like a printed banner or wallpaper, the graphic is flat and integrated into the backdrop material, NOT a 3D object, NOT floating, NOT separate from the backdrop, printed directly on panel";
-      if (input.theme === "lego") {
-        printClause = `${THEME_PRINT_DESC["lego"]}, ${flatVinyl}`;
-      } else {
-        const desc =
-        (!florals && THEME_PRINT_DESC_NO_FLORAL[input.theme]) ||
-        THEME_PRINT_DESC[input.theme] ||
-        "themed decorative illustration";
-        printClause = `${desc} printed as high quality vinyl graphic on backdrop panel surface, ${flatVinyl}`;
-      }
-    } else if (input.backdropPrint.type === "custom_upload") {
-      printClause = "custom graphic design printed on backdrop surface";
-    }
+  if (input.backdropPrint?.type === "name_only") {
+    printClause = "child's name printed in elegant script font on backdrop surface";
+  } else if (input.backdropPrint?.type === "theme_print") {
+    const desc =
+      (!florals && THEME_PRINT_NO_FLORAL[input.theme]) ||
+      THEME_PRINT[input.theme] ||
+      "themed decorative illustration";
+    printClause = `${desc}, ${flatVinyl}`;
+  } else if (input.backdropPrint?.type === "custom_upload") {
+    printClause = "custom graphic design printed on backdrop surface";
   }
 
   // Cutouts.
@@ -424,8 +435,8 @@ export function buildFocusedPrompt(changeType: ChangeType, input: PromptInput): 
   switch (changeType) {
     case "theme": {
       const themeDesc =
-        (!florals && THEME_DESC_NO_FLORAL[input.theme]) ||
-        THEME_DESC[input.theme] ||
+        (!florals && THEME_MOOD_NO_FLORAL[input.theme]) ||
+        THEME_MOOD[input.theme] ||
         `${themeName} theme`;
       return (
         `Change the color scheme and theme decoration to: ${themeDesc}. ` +
@@ -474,19 +485,17 @@ export function buildFocusedPrompt(changeType: ChangeType, input: PromptInput): 
       );
     }
     case "print": {
-      let printDesc = "remove any backdrop print, show plain backdrop surface";
-      if (input.backdropPrint && input.backdropPrint.type !== "none") {
-        if (input.backdropPrint.type === "name_only") {
-          printDesc = "child's name printed in elegant script font on the backdrop surface";
-        } else if (input.backdropPrint.type === "theme_print") {
-          const desc =
-            (!florals && THEME_PRINT_DESC_NO_FLORAL[input.theme]) ||
-            THEME_PRINT_DESC[input.theme] ||
-            "themed decorative illustration";
-          printDesc = `${desc} as a flat 2D printed vinyl graphic on the backdrop surface`;
-        } else if (input.backdropPrint.type === "custom_upload") {
-          printDesc = "custom graphic design printed on the backdrop surface";
-        }
+      let printDesc = "remove any backdrop print, show plain bare backdrop surface with no graphics";
+      if (input.backdropPrint?.type === "name_only") {
+        printDesc = "child's name printed in elegant script font on the backdrop surface";
+      } else if (input.backdropPrint?.type === "theme_print") {
+        const desc =
+          (!florals && THEME_PRINT_NO_FLORAL[input.theme]) ||
+          THEME_PRINT[input.theme] ||
+          "themed decorative illustration";
+        printDesc = `${desc}, flat 2D printed vinyl graphic on the backdrop surface`;
+      } else if (input.backdropPrint?.type === "custom_upload") {
+        printDesc = "custom graphic design printed on the backdrop surface";
       }
       return `Update the backdrop surface: ${printDesc}. Keep everything else identical.`;
     }
