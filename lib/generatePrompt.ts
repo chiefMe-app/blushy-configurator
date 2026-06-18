@@ -32,11 +32,11 @@ const PROMPT_SUFFIX =
 /** Strict per-shape backdrop descriptions (Change 2) — exact verbatim strings. */
 const SHAPE_DESC: Record<BackdropShapeId, string> = {
   round_arch:
-    "ONE large perfectly circular round backdrop panel, flat circle standing upright, organic balloon garland wrapped completely around the circular edge, NOT an arch, round circle shape only",
+    "ONE perfectly circular round disc backdrop panel, complete full circle shape, like a large circle standing upright, no flat bottom edge, perfectly round on all sides, diameter approximately 200cm, NOT an arch shape",
   straight_arch:
-    "ONE tall arch backdrop with straight vertical sides and rounded top like a doorway, flat bottom, straight sides going up then curving to meet at top center, balloon garland on both sides floor to top",
+    "ONE arch backdrop panel, straight vertical sides, semicircular rounded top, like a doorway or window arch shape, flat bottom, two straight sides meeting a half-circle top, approximately 200cm tall 120cm wide, NOT a circle",
   half_arch:
-    "ONE asymmetric half arch backdrop panel, one side is tall with a curved top, the other side is short and straight, asymmetric silhouette, balloon garland clustered on the tall curved side only",
+    "ONE asymmetric backdrop panel, LEFT side is tall with a curved rounded top reaching approximately 220cm height, RIGHT side is short straight edge approximately 120cm height, the top edge curves from tall left down to short right, like a wave or half moon cut asymmetrically, NOT a circle, NOT a full arch, asymmetric silhouette",
   rect_with_cutout:
     "ONE large rectangular backdrop frame panel with a round arch-shaped open window cutout in the center, solid rectangular frame around an empty arch opening, like a picture frame with arch hole, balloon garland on sides of frame",
   shimmer_wall:
