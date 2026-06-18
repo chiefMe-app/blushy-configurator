@@ -4,6 +4,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Blushy — Backdrop Configurator",
   description: "Design your dream party backdrop and see it come to life.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export const viewport: Viewport = {
@@ -21,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         {/* Inter via stylesheet so the build never needs network access. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
