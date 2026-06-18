@@ -135,6 +135,18 @@ const SHAPE_LOCKED_THEMES = new Set<ThemeId>();
 const MULTI_PANEL_SHAPES = new Set<BackdropShapeId>(["double_arch", "mixed_panels"]);
 
 /**
+ * Shapes that must always render as exactly ONE panel regardless of backdropCount.
+ * A round arch is a single circular disc — duplicating it produces awkward results.
+ */
+const SINGLE_PANEL_SHAPES = new Set<BackdropShapeId>(["round_arch"]);
+
+/** Returns the effective panel count after applying shape constraints. */
+function effectiveCount(shape: BackdropShapeId | undefined, count: number): number {
+  if (shape && SINGLE_PANEL_SHAPES.has(shape)) return 1;
+  return Math.max(1, Math.min(3, count));
+}
+
+/**
  * Short plural label used when a single-panel shape appears in multiple copies
  * (e.g. two round circles side by side).
  */
@@ -159,10 +171,14 @@ function buildBackdropDesc(
   shape: BackdropShapeId | undefined,
   count: number
 ): string {
-  const c = Math.max(1, Math.min(3, count));
+  const c = effectiveCount(shape, count);
 
   if (shape && MULTI_PANEL_SHAPES.has(shape)) {
     return SHAPE_DESC[shape]; // already encodes the count
+  }
+
+  if (shape && SINGLE_PANEL_SHAPES.has(shape)) {
+    return SHAPE_DESC[shape]; // always single panel
   }
 
   const baseDesc = shape ? SHAPE_DESC[shape] : RECT_DESC;
@@ -183,7 +199,7 @@ function buildBackdropDesc(
  * Gives the AI concrete proportions to render.
  */
 function backdropDimensions(count: number, shape: BackdropShapeId | undefined): string {
-  const c = Math.max(1, Math.min(3, count));
+  const c = effectiveCount(shape, count);
   const isHalfArch = shape === "half_arch";
 
   if (c === 1) {
@@ -368,12 +384,20 @@ export function generatePrompt(input: PromptInput): {
 
   // Backdrop print — only added when explicitly selected.
   // backdropPrint.type === "none" → nothing printed on backdrop surface (plain backdrop).
+  const panelCount = effectiveCount(input.backdropShape, input.backdropCount);
   const flatVinyl =
-    "flat 2D printed vinyl graphic applied directly onto the backdrop panel surface, " +
-    "integrated into the backdrop material, NOT a 3D object, NOT floating, printed directly on panel";
+    panelCount > 1
+      ? "flat 2D printed vinyl graphic applied directly onto the CENTER backdrop panel only, " +
+        "the other backdrop panels remain plain solid color with NO print on them, " +
+        "NOT a 3D object, NOT floating, printed directly on center panel surface only"
+      : "flat 2D printed vinyl graphic applied directly onto the backdrop panel surface, " +
+        "integrated into the backdrop material, NOT a 3D object, NOT floating, printed directly on panel";
   let printClause = "";
   if (input.backdropPrint?.type === "name_only") {
-    printClause = "child's name printed in elegant script font on backdrop surface";
+    printClause =
+      panelCount > 1
+        ? "child's name printed in elegant script font on the center backdrop panel only, other panels plain"
+        : "child's name printed in elegant script font on backdrop surface";
   } else if (input.backdropPrint?.type === "theme_print") {
     const desc =
       (!florals && THEME_PRINT_NO_FLORAL[input.theme]) ||
@@ -383,18 +407,28 @@ export function generatePrompt(input: PromptInput): {
     const styleMod = GRAPHIC_STYLE_MODIFIER[styleKey];
     printClause = `${desc}, ${styleMod}, ${flatVinyl}`;
   } else if (input.backdropPrint?.type === "custom_upload") {
-    printClause = "custom graphic design printed on backdrop surface";
+    printClause =
+      panelCount > 1
+        ? "custom graphic design printed on the center backdrop panel only, other panels plain"
+        : "custom graphic design printed on backdrop surface";
   }
 
   // Cutouts.
   let cutoutClause = "";
   if (input.cutouts && input.cutouts.size !== "none") {
     if (input.cutouts.size === "premium" && input.cutouts.position === "floor") {
-      cutoutClause = `large oversized feature ${themeName} themed standee decoration as centerpiece on floor, plus smaller themed standee decorations arranged around setup`;
+      cutoutClause =
+        `large oversized feature ${themeName} themed standee as centerpiece on floor, ` +
+        `plus several smaller ${themeName} themed standee decorations arranged around the setup, ` +
+        `each standee featuring a DIFFERENT character, design, and pose — no two identical`;
     } else if (input.cutouts.position === "backdrop") {
-      cutoutClause = `${themeName} themed decorations mounted directly on the backdrop surface`;
+      cutoutClause =
+        `${themeName} themed decorations mounted directly on the backdrop surface, ` +
+        `each decoration a DIFFERENT design and character — varied and unique, no two the same`;
     } else {
-      cutoutClause = `${themeName} themed standee decorations standing on floor beside the backdrop`;
+      cutoutClause =
+        `${themeName} themed standee decorations standing on floor beside the backdrop, ` +
+        `each standee featuring a DIFFERENT character design and pose — varied and unique, no two identical`;
     }
   }
 
@@ -496,9 +530,14 @@ export function buildFocusedPrompt(changeType: ChangeType, input: PromptInput): 
       );
     }
     case "print": {
-      let printDesc = "remove any backdrop print, show plain bare backdrop surface with no graphics";
+      const pCount = effectiveCount(input.backdropShape, input.backdropCount);
+      const centerOnly =
+        pCount > 1
+          ? " on the center backdrop panel only — other panels remain plain solid color with no print"
+          : " on the backdrop surface";
+      let printDesc = "remove any backdrop print, show plain bare backdrop panels with no graphics on any panel";
       if (input.backdropPrint?.type === "name_only") {
-        printDesc = "child's name printed in elegant script font on the backdrop surface";
+        printDesc = `child's name printed in elegant script font${centerOnly}`;
       } else if (input.backdropPrint?.type === "theme_print") {
         const desc =
           (!florals && THEME_PRINT_NO_FLORAL[input.theme]) ||
@@ -506,9 +545,9 @@ export function buildFocusedPrompt(changeType: ChangeType, input: PromptInput): 
           "themed decorative illustration";
         const styleKey = (input.backdropPrint.graphicStyle ?? "illustrated") as GraphicStyle;
         const styleMod = GRAPHIC_STYLE_MODIFIER[styleKey];
-        printDesc = `${desc}, ${styleMod}, flat 2D printed vinyl graphic on the backdrop surface`;
+        printDesc = `${desc}, ${styleMod}, flat 2D printed vinyl graphic${centerOnly}`;
       } else if (input.backdropPrint?.type === "custom_upload") {
-        printDesc = "custom graphic design printed on the backdrop surface";
+        printDesc = `custom graphic design printed${centerOnly}`;
       }
       return `Update the backdrop surface: ${printDesc}. Keep everything else identical.`;
     }
