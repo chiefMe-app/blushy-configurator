@@ -116,7 +116,7 @@ export const PACKAGES: Package[] = [
     includes: ["1 backdrop", "Small balloon garland", "1 plinth"],
     bestFor: "Intimate home setups",
     defaultDecor: {
-      backdropShapes: ["half_arch"],
+      backdropShapes: ["arch"],
       balloonStyle: "half",
       plinths: 1,
       plinthSizes: ["medium"],
@@ -134,7 +134,7 @@ export const PACKAGES: Package[] = [
     includes: ["2 backdrops", "Organic balloon styling", "2 plinths", "Custom name sign"],
     bestFor: "Villa gardens, restaurant corners",
     defaultDecor: {
-      backdropShapes: ["half_arch", "half_arch"],
+      backdropShapes: ["arch", "arch"],
       balloonStyle: "full",
       plinths: 2,
       plinthSizes: ["medium", "medium"],
