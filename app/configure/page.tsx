@@ -7,6 +7,8 @@ import {
   PACKAGES,
   BACKDROP_SHAPES,
   ARCH_SIZES,
+  RECT_SIZES,
+  makeBackdropItem,
   BALLOON_STYLES,
   PLINTH_SIZES,
   CUTOUT_SETS,
@@ -37,6 +39,7 @@ import {
   type BackdropShapeId,
   type BackdropItem,
   type ArchSizeId,
+  type RectSizeId,
   type PlinthSize,
   type CutoutPosition,
   type BackdropPrintType,
@@ -562,22 +565,29 @@ function DecorStep({
     sizes[i] = size;
     patchDecor({ plinthSizes: sizes, plinths: sizes.length });
   }
-  // Whether any arch item is currently selected
+  // Arch state
   const hasArch = d.backdropItems.some((i) => i.type === "arch");
   const selectedArchSizeIds = d.backdropItems
     .filter((i) => i.type === "arch")
     .map((i) => i.sizeId)
     .filter((id): id is ArchSizeId => !!id);
 
-  function toggleNonArchType(type: BackdropShapeId) {
+  // Rect state
+  const hasRect = d.backdropItems.some((i) => i.type === "rect");
+  const selectedRectSizeIds = d.backdropItems
+    .filter((i) => i.type === "rect")
+    .map((i) => i.sizeId)
+    .filter((id): id is RectSizeId => !!id);
+
+  function toggleNonSizedType(type: BackdropShapeId) {
     const hasType = d.backdropItems.some((i) => i.type === type);
     if (hasType) {
       const next = d.backdropItems.filter((i) => i.type !== type);
-      if (next.length === 0) return; // always keep at least one
+      if (next.length === 0) return;
       patchDecor({ backdropItems: next });
     } else {
       if (d.backdropItems.length >= 3) return;
-      patchDecor({ backdropItems: [...d.backdropItems, { type }] });
+      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem(type)] });
     }
   }
 
@@ -588,7 +598,7 @@ function DecorStep({
       patchDecor({ backdropItems: next });
     } else {
       if (d.backdropItems.length >= 3) return;
-      patchDecor({ backdropItems: [...d.backdropItems, { type: "arch", sizeId: "arch_66ft" }] });
+      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("arch", "arch_66ft")] });
     }
   }
 
@@ -600,7 +610,30 @@ function DecorStep({
       patchDecor({ backdropItems: next });
     } else {
       if (d.backdropItems.length >= 3) return;
-      patchDecor({ backdropItems: [...d.backdropItems, { type: "arch", sizeId }] });
+      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("arch", sizeId)] });
+    }
+  }
+
+  function toggleRectType() {
+    if (hasRect) {
+      const next = d.backdropItems.filter((i) => i.type !== "rect");
+      if (next.length === 0) return;
+      patchDecor({ backdropItems: next });
+    } else {
+      if (d.backdropItems.length >= 3) return;
+      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("rect", "rect_100x200")] });
+    }
+  }
+
+  function toggleRectSize(sizeId: RectSizeId) {
+    const hasSize = d.backdropItems.some((i) => i.type === "rect" && i.sizeId === sizeId);
+    if (hasSize) {
+      const next = d.backdropItems.filter((i) => !(i.type === "rect" && i.sizeId === sizeId));
+      if (next.length === 0) return;
+      patchDecor({ backdropItems: next });
+    } else {
+      if (d.backdropItems.length >= 3) return;
+      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("rect", sizeId)] });
     }
   }
 
@@ -745,13 +778,84 @@ function DecorStep({
           );
         })()}
 
-        {/* Non-arch backdrop type cards */}
+        {/* Rectangular Backdrop — size-family card (same pattern as Arch) */}
+        {(() => {
+          const rectPanelIndex = d.backdropItems.findIndex((i) => i.type === "rect");
+          const rectCount = d.backdropItems.filter((i) => i.type === "rect").length;
+          return (
+            <div style={{ marginBottom: 8 }}>
+              <button
+                type="button"
+                onClick={toggleRectType}
+                style={{
+                  position: "relative", width: "100%",
+                  border: hasRect ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
+                  background: hasRect ? accent + "10" : "white",
+                  borderRadius: 12, padding: "10px 12px", textAlign: "left", transition: "all 0.15s",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: hasRect ? accent : "#1A1A2E" }}>
+                    Rectangular Backdrop
+                  </div>
+                  <span style={{
+                    marginTop: 4, fontSize: 11, fontWeight: 700, display: "inline-block",
+                    color: hasRect ? accent : "#666",
+                    background: hasRect ? accent + "18" : "rgba(0,0,0,0.06)",
+                    padding: "2px 8px", borderRadius: 20,
+                  }}>
+                    {hasRect
+                      ? rectPanelIndex === 0 ? `${rectCount} rect${rectCount > 1 ? "s" : ""} — Included` : `+${formatAED(rectCount * PER_BACKDROP)}`
+                      : `+${formatAED(PER_BACKDROP)}`}
+                  </span>
+                </div>
+                {hasRect && (
+                  <span style={{ width: 18, height: 18, borderRadius: "50%", background: accent, color: "white", fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0 }}>✓</span>
+                )}
+              </button>
+
+              {hasRect && (
+                <div style={{ marginTop: 6, padding: "10px 12px", background: accent + "08", borderRadius: 10, border: `1px solid ${accent}28` }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#444", marginBottom: 8 }}>Select size(s)</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {RECT_SIZES.map((size) => {
+                      const isActive = selectedRectSizeIds.includes(size.id);
+                      return (
+                        <button
+                          key={size.id}
+                          type="button"
+                          onClick={() => toggleRectSize(size.id)}
+                          style={{
+                            border: isActive ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.15)",
+                            background: isActive ? accent : "white",
+                            color: isActive ? "white" : "#333",
+                            borderRadius: 8, padding: "5px 10px",
+                            fontSize: 11, fontWeight: 600, transition: "all 0.15s",
+                          }}
+                        >
+                          {size.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedRectSizeIds.length > 0 && (
+                    <div style={{ marginTop: 6, fontSize: 11, color: "#666" }}>
+                      {selectedRectSizeIds.map((id) => RECT_SIZES.find((s) => s.id === id)?.label ?? id).join(", ")}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Non-sized backdrop type cards: round, shimmer_wall, wavy */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {BACKDROP_SHAPES.filter((s) => s.id !== "arch").map((shape) => {
+          {BACKDROP_SHAPES.filter((s) => s.id !== "arch" && s.id !== "rect").map((shape) => {
             const isSelected = d.backdropItems.some((i) => i.type === shape.id);
             const panelIndex = d.backdropItems.findIndex((i) => i.type === shape.id);
             const shimmerExtra = shape.id === "shimmer_wall" ? 80 : 0;
-            const isAdditional = panelIndex > 0 || (panelIndex === -1 && d.backdropItems.length > 0);
             const priceNote = isSelected
               ? panelIndex === 0 && shimmerExtra > 0
                 ? `+${formatAED(shimmerExtra)}`
@@ -763,7 +867,7 @@ function DecorStep({
               <button
                 key={shape.id}
                 type="button"
-                onClick={() => toggleNonArchType(shape.id as BackdropShapeId)}
+                onClick={() => toggleNonSizedType(shape.id as BackdropShapeId)}
                 style={{
                   position: "relative",
                   border: isSelected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",

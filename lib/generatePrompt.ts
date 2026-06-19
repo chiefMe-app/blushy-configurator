@@ -8,12 +8,12 @@ import {
   themeById,
   resolveBackdropText,
   ARCH_SIZES,
+  RECT_SIZES,
   type ThemeId,
   type PackageId,
   type BalloonStyleId,
   type BackdropShapeId,
   type BackdropItem,
-  type ArchSizeId,
   type BackdropText,
   type CutoutSelection,
   type BackdropPrint,
@@ -207,6 +207,13 @@ export const PLINTH_NEGATIVE =
 
 /** Build size-aware description for a single arch item. */
 function buildArchItemDesc(item: BackdropItem): string {
+  // Prefer explicit dimensions stored on the item
+  if (item.heightCm && item.widthCm) {
+    return (
+      `one symmetrical full arch vertical panel with a rounded top center, ` +
+      `${item.heightCm}cm tall, ${item.widthCm}cm wide, standing directly on the floor`
+    );
+  }
   const size = ARCH_SIZES.find((s) => s.id === item.sizeId);
   if (size) {
     return (
@@ -218,8 +225,30 @@ function buildArchItemDesc(item: BackdropItem): string {
   return SHAPE_DESC.arch;
 }
 
+/** Build dimension-aware description for a rectangular panel — explicitly NOT arch-shaped. */
+function buildRectItemDesc(item: BackdropItem): string {
+  if (item.heightCm && item.widthCm) {
+    return (
+      `one rectangular vertical backdrop panel with straight edges and a perfectly flat horizontal top, ` +
+      `${item.heightCm}cm tall, ${item.widthCm}cm wide, ` +
+      `NOT arch-shaped, NOT rounded top, standing directly on the floor`
+    );
+  }
+  const size = RECT_SIZES.find((s) => s.id === item.sizeId);
+  if (size) {
+    return (
+      `one rectangular vertical backdrop panel with straight edges and a perfectly flat horizontal top, ` +
+      `${size.heightCm}cm tall, ${size.widthCm}cm wide, ` +
+      `NOT arch-shaped, NOT rounded top, standing directly on the floor`
+    );
+  }
+  return SHAPE_DESC.rect;
+}
+
 function itemDesc(item: BackdropItem): string {
-  return item.type === "arch" ? buildArchItemDesc(item) : SHAPE_DESC[item.type];
+  if (item.type === "arch") return buildArchItemDesc(item);
+  if (item.type === "rect") return buildRectItemDesc(item);
+  return SHAPE_DESC[item.type];
 }
 
 function effectiveItems(items: BackdropItem[]): BackdropItem[] {

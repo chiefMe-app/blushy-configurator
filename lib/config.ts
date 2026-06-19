@@ -116,7 +116,9 @@ export const PACKAGES: Package[] = [
     includes: ["1 backdrop", "Small balloon garland", "1 plinth"],
     bestFor: "Intimate home setups",
     defaultDecor: {
-      backdropItems: [{ type: "arch", sizeId: "arch_66ft" }],
+      backdropItems: [
+        { id: "arch_66ft", type: "arch", sizeId: "arch_66ft", widthCm: 130, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+      ],
       balloonStyle: "half",
       plinths: 1,
       plinthSizes: ["medium"],
@@ -135,8 +137,8 @@ export const PACKAGES: Package[] = [
     bestFor: "Villa gardens, restaurant corners",
     defaultDecor: {
       backdropItems: [
-        { type: "arch", sizeId: "arch_72ft" },
-        { type: "arch", sizeId: "arch_6ft" },
+        { id: "arch_72ft", type: "arch", sizeId: "arch_72ft", widthCm: 143, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "arch_6ft",  type: "arch", sizeId: "arch_6ft",  widthCm: 117, heightCm: 180, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
       balloonStyle: "full",
       plinths: 2,
@@ -160,9 +162,9 @@ export const PACKAGES: Package[] = [
     bestFor: "Full venue takeovers",
     defaultDecor: {
       backdropItems: [
-        { type: "arch", sizeId: "arch_72ft" },
-        { type: "arch", sizeId: "arch_66ft" },
-        { type: "wavy" },
+        { id: "arch_72ft", type: "arch", sizeId: "arch_72ft", widthCm: 143, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "arch_66ft", type: "arch", sizeId: "arch_66ft", widthCm: 130, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "wavy",      type: "wavy",                      widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
       balloonStyle: "premium",
       plinths: 3,
@@ -197,21 +199,99 @@ export interface ArchSize {
   heightFt: number;
   heightM: number;
   heightCm: number;
+  /** Approximate panel width (arch is wider than it is deep). */
+  widthCm: number;
 }
 
 export const ARCH_SIZES: ArchSize[] = [
-  { id: "arch_4ft",  label: "4FT / 1.2M",   heightFt: 4,   heightM: 1.2, heightCm: 120 },
-  { id: "arch_5ft",  label: "5FT / 1.5M",   heightFt: 5,   heightM: 1.5, heightCm: 150 },
-  { id: "arch_6ft",  label: "6FT / 1.8M",   heightFt: 6,   heightM: 1.8, heightCm: 180 },
-  { id: "arch_66ft", label: "6.6FT / 2M",   heightFt: 6.6, heightM: 2.0, heightCm: 200 },
-  { id: "arch_72ft", label: "7.2FT / 2.2M", heightFt: 7.2, heightM: 2.2, heightCm: 220 },
+  { id: "arch_4ft",  label: "4FT / 1.2M",   heightFt: 4,   heightM: 1.2, heightCm: 120, widthCm: 78  },
+  { id: "arch_5ft",  label: "5FT / 1.5M",   heightFt: 5,   heightM: 1.5, heightCm: 150, widthCm: 98  },
+  { id: "arch_6ft",  label: "6FT / 1.8M",   heightFt: 6,   heightM: 1.8, heightCm: 180, widthCm: 117 },
+  { id: "arch_66ft", label: "6.6FT / 2M",   heightFt: 6.6, heightM: 2.0, heightCm: 200, widthCm: 130 },
+  { id: "arch_72ft", label: "7.2FT / 2.2M", heightFt: 7.2, heightM: 2.2, heightCm: 220, widthCm: 143 },
 ];
 
-/** A single backdrop panel in the setup — source of truth for count, shape, and arch sizing. */
+export type RectSizeId = "rect_100x200" | "rect_80x180";
+
+export interface RectSize {
+  id: RectSizeId;
+  label: string;
+  widthCm: number;
+  heightCm: number;
+}
+
+export const RECT_SIZES: RectSize[] = [
+  { id: "rect_100x200", label: "100 × 200 cm", widthCm: 100, heightCm: 200 },
+  { id: "rect_80x180",  label: "80 × 180 cm",  widthCm: 80,  heightCm: 180 },
+];
+
+export interface BackdropItemText {
+  enabled: boolean;
+  value: string;
+  fontStyle: FontStyle;
+  color: string;
+}
+
+export interface BackdropItemGraphic {
+  enabled: boolean;
+  theme: string;
+  style: GraphicStyle;
+}
+
+/**
+ * Source of truth for a single backdrop panel — shape, exact dimensions,
+ * per-panel color, text, and graphic settings.
+ */
 export interface BackdropItem {
+  /** Stable unique ID for this panel (sizeId for sized panels, type for others). */
+  id: string;
   type: BackdropShapeId;
-  /** Only set when type === "arch" */
-  sizeId?: ArchSizeId;
+  /** For arch: ArchSizeId. For rect: RectSizeId. Undefined for unsized types. */
+  sizeId?: string;
+  widthCm: number;
+  heightCm: number;
+  /** Per-panel backdrop color. Falls back to global backdropColor when empty. */
+  color: string;
+  text: BackdropItemText;
+  graphic: BackdropItemGraphic;
+}
+
+const DEFAULT_ITEM_TEXT: BackdropItemText = {
+  enabled: false, value: "", fontStyle: "script", color: "white",
+};
+const DEFAULT_ITEM_GRAPHIC: BackdropItemGraphic = {
+  enabled: false, theme: "", style: "illustrated",
+};
+
+/** Create a fully-populated BackdropItem from type and optional sizeId. */
+export function makeBackdropItem(
+  type: BackdropShapeId,
+  sizeId?: string,
+  color = "",
+): BackdropItem {
+  let widthCm = 100;
+  let heightCm = 200;
+  if (type === "arch" && sizeId) {
+    const s = ARCH_SIZES.find((a) => a.id === sizeId);
+    if (s) { widthCm = s.widthCm; heightCm = s.heightCm; }
+  } else if (type === "rect" && sizeId) {
+    const s = RECT_SIZES.find((r) => r.id === sizeId);
+    if (s) { widthCm = s.widthCm; heightCm = s.heightCm; }
+  } else if (type === "round") {
+    widthCm = 120; heightCm = 120;
+  } else if (type === "shimmer_wall") {
+    widthCm = 80; heightCm = 210;
+  }
+  return {
+    id:      sizeId ?? type,
+    type,
+    sizeId,
+    widthCm,
+    heightCm,
+    color,
+    text:    { ...DEFAULT_ITEM_TEXT },
+    graphic: { ...DEFAULT_ITEM_GRAPHIC },
+  };
 }
 
 export type BalloonStyleId = "none" | "half" | "full" | "premium";
