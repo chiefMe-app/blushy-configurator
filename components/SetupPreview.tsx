@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { BuilderConfig, PlinthSize } from "@/lib/config";
 import type { ChangeType } from "@/lib/generatePrompt";
-import { generateBackdropSVG } from "@/lib/backdropSVG";
-import { svgStringToPngBase64 } from "@/lib/clientSvgToPng";
 import LiveSetupPreview from "./LiveSetupPreview";
 
 // Keep in sync with app/api/generate/route.ts PLINTH_MODE.
@@ -174,23 +172,6 @@ export function useSetupPreview(config: BuilderConfig) {
 
     const timer = setTimeout(async () => {
       try {
-        // For full regenerations, render the backdrop silhouette client-side
-        // and send it as a reference image for the kontext model.
-        let referenceImageBase64: string | undefined;
-        if (!incremental) {
-          try {
-            const svgString = generateBackdropSVG(
-              d.backdropShapes,
-              d.backdropColor ?? "#F5F0EB",
-              800,
-              600
-            );
-            referenceImageBase64 = await svgStringToPngBase64(svgString, 800, 600);
-          } catch {
-            // Non-fatal — API falls back to t2i if base64 is absent.
-          }
-        }
-
         const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -209,7 +190,6 @@ export function useSetupPreview(config: BuilderConfig) {
             extras,
             baseImageUrl: incremental ? capturedBaseUrl : undefined,
             changeType,
-            referenceImageBase64,
           }),
         });
         const data = await res.json().catch(() => ({}));
