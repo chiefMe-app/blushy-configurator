@@ -6,6 +6,7 @@ import {
   THEMES,
   PACKAGES,
   BACKDROP_SHAPES,
+  ARCH_SIZES,
   BALLOON_STYLES,
   PLINTH_SIZES,
   CUTOUT_SETS,
@@ -34,6 +35,8 @@ import {
   type PackageId,
   type BalloonStyleId,
   type BackdropShapeId,
+  type BackdropItem,
+  type ArchSizeId,
   type PlinthSize,
   type CutoutPosition,
   type BackdropPrintType,
@@ -559,15 +562,45 @@ function DecorStep({
     sizes[i] = size;
     patchDecor({ plinthSizes: sizes, plinths: sizes.length });
   }
-  function toggleShape(id: BackdropShapeId) {
-    const current = d.backdropShapes;
-    const isSelected = current.includes(id);
-    if (isSelected) {
-      if (current.length === 1) return; // always keep at least one
-      patchDecor({ backdropShapes: current.filter((s) => s !== id) });
+  // Whether any arch item is currently selected
+  const hasArch = d.backdropItems.some((i) => i.type === "arch");
+  const selectedArchSizeIds = d.backdropItems
+    .filter((i) => i.type === "arch")
+    .map((i) => i.sizeId)
+    .filter((id): id is ArchSizeId => !!id);
+
+  function toggleNonArchType(type: BackdropShapeId) {
+    const hasType = d.backdropItems.some((i) => i.type === type);
+    if (hasType) {
+      const next = d.backdropItems.filter((i) => i.type !== type);
+      if (next.length === 0) return; // always keep at least one
+      patchDecor({ backdropItems: next });
     } else {
-      if (current.length >= 3) return; // max 3 panels
-      patchDecor({ backdropShapes: [...current, id] });
+      if (d.backdropItems.length >= 3) return;
+      patchDecor({ backdropItems: [...d.backdropItems, { type }] });
+    }
+  }
+
+  function toggleArchType() {
+    if (hasArch) {
+      const next = d.backdropItems.filter((i) => i.type !== "arch");
+      if (next.length === 0) return;
+      patchDecor({ backdropItems: next });
+    } else {
+      if (d.backdropItems.length >= 3) return;
+      patchDecor({ backdropItems: [...d.backdropItems, { type: "arch", sizeId: "arch_66ft" }] });
+    }
+  }
+
+  function toggleArchSize(sizeId: ArchSizeId) {
+    const hasSize = d.backdropItems.some((i) => i.type === "arch" && i.sizeId === sizeId);
+    if (hasSize) {
+      const next = d.backdropItems.filter((i) => !(i.type === "arch" && i.sizeId === sizeId));
+      if (next.length === 0) return;
+      patchDecor({ backdropItems: next });
+    } else {
+      if (d.backdropItems.length >= 3) return;
+      patchDecor({ backdropItems: [...d.backdropItems, { type: "arch", sizeId }] });
     }
   }
 
@@ -622,27 +655,115 @@ function DecorStep({
       {/* BACKDROP SETUP */}
       <div style={card}>
         {secLabel("Backdrop Setup")}
-        {secSub("Select one or more backdrop panels")}
+        {secSub("Select backdrop type(s) — up to 3 panels")}
+
+        {/* Arch Backdrop card */}
+        {(() => {
+          const archPanelIndex = d.backdropItems.findIndex((i) => i.type === "arch");
+          const shimmerInItems = d.backdropItems.filter((i) => i.type === "shimmer_wall").length;
+          const archCount = d.backdropItems.filter((i) => i.type === "arch").length;
+          return (
+            <div style={{ marginBottom: 8 }}>
+              <button
+                type="button"
+                onClick={toggleArchType}
+                style={{
+                  position: "relative", width: "100%",
+                  border: hasArch ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
+                  background: hasArch ? accent + "10" : "white",
+                  borderRadius: 12, padding: "10px 12px", textAlign: "left", transition: "all 0.15s",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: hasArch ? accent : "#1A1A2E" }}>
+                    Arch Backdrop
+                  </div>
+                  <span style={{
+                    marginTop: 4, fontSize: 11, fontWeight: 700, display: "inline-block",
+                    color: hasArch ? accent : "#666",
+                    background: hasArch ? accent + "18" : "rgba(0,0,0,0.06)",
+                    padding: "2px 8px", borderRadius: 20,
+                  }}>
+                    {hasArch
+                      ? archPanelIndex === 0
+                        ? `${archCount} arch${archCount > 1 ? "es" : ""} — Included`
+                        : `+${formatAED(archCount * PER_BACKDROP)}`
+                      : `+${formatAED(PER_BACKDROP)}`}
+                  </span>
+                </div>
+                {hasArch && (
+                  <span style={{
+                    width: 18, height: 18, borderRadius: "50%", background: accent, color: "white",
+                    fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0,
+                  }}>✓</span>
+                )}
+              </button>
+
+              {/* Arch size selector */}
+              {hasArch && (
+                <div style={{
+                  marginTop: 6, padding: "10px 12px",
+                  background: accent + "08", borderRadius: 10,
+                  border: `1px solid ${accent}28`,
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#444", marginBottom: 8 }}>
+                    Select arch size(s) — add up to {3 - d.backdropItems.filter((i) => i.type !== "arch").length - d.backdropItems.filter((i) => i.type === "arch").length + d.backdropItems.filter((i) => i.type === "arch").length} arch{d.backdropItems.filter((i) => i.type === "arch").length !== 1 ? "es" : ""}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ARCH_SIZES.map((size) => {
+                      const isActive = selectedArchSizeIds.includes(size.id);
+                      return (
+                        <button
+                          key={size.id}
+                          type="button"
+                          onClick={() => toggleArchSize(size.id)}
+                          style={{
+                            border: isActive ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.15)",
+                            background: isActive ? accent : "white",
+                            color: isActive ? "white" : "#333",
+                            borderRadius: 8, padding: "5px 10px",
+                            fontSize: 11, fontWeight: 600, transition: "all 0.15s",
+                          }}
+                        >
+                          {size.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedArchSizeIds.length > 0 && (
+                    <div style={{ marginTop: 6, fontSize: 11, color: "#666" }}>
+                      {selectedArchSizeIds.length} arch{selectedArchSizeIds.length > 1 ? "es" : ""} selected:{" "}
+                      {selectedArchSizeIds
+                        .map((id) => ARCH_SIZES.find((s) => s.id === id)?.label ?? id)
+                        .join(", ")}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Non-arch backdrop type cards */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {BACKDROP_SHAPES.map((shape) => {
-            const isSelected = d.backdropShapes.includes(shape.id);
-            const panelIndex = d.backdropShapes.indexOf(shape.id);
+          {BACKDROP_SHAPES.filter((s) => s.id !== "arch").map((shape) => {
+            const isSelected = d.backdropItems.some((i) => i.type === shape.id);
+            const panelIndex = d.backdropItems.findIndex((i) => i.type === shape.id);
             const shimmerExtra = shape.id === "shimmer_wall" ? 80 : 0;
-            const isAdditional = panelIndex > 0;
-            const additionalCost = isAdditional ? PER_BACKDROP + shimmerExtra : shimmerExtra;
-            const priceNote =
-              additionalCost > 0
-                ? `+${formatAED(additionalCost)}`
-                : isSelected && panelIndex === 0 && shimmerExtra > 0
-                  ? `+${formatAED(shimmerExtra)}`
-                  : isSelected
-                    ? "Included"
-                    : `+${formatAED(PER_BACKDROP + shimmerExtra)}`;
+            const isAdditional = panelIndex > 0 || (panelIndex === -1 && d.backdropItems.length > 0);
+            const priceNote = isSelected
+              ? panelIndex === 0 && shimmerExtra > 0
+                ? `+${formatAED(shimmerExtra)}`
+                : panelIndex === 0
+                  ? "Included"
+                  : `+${formatAED(PER_BACKDROP + shimmerExtra)}`
+              : `+${formatAED(PER_BACKDROP + shimmerExtra)}`;
             return (
               <button
                 key={shape.id}
                 type="button"
-                onClick={() => toggleShape(shape.id)}
+                onClick={() => toggleNonArchType(shape.id as BackdropShapeId)}
                 style={{
                   position: "relative",
                   border: isSelected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",

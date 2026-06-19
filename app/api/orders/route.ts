@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       id,
       created_at: createdAt,
       theme: body.theme,
-      shape: body.decor.backdropShapes.join(","),
+      shape: body.decor.backdropItems.map((i: { type: string; sizeId?: string }) => i.sizeId ?? i.type).join(","),
       garland: body.decor.balloonStyle,
       extras,
       custom_text: body.customer.name,

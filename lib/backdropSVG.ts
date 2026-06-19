@@ -38,23 +38,6 @@ function drawPanel(
       return `<path d="${d}" fill="${color}" ${sa}/>`;
     }
 
-    case "half_arch": {
-      const rightH = Math.round(h * 0.55);
-      const rightTop = floor - rightH;
-      const cp1x = px + w * 0.08;
-      const cp1y = top + (rightTop - top) * 0.25;
-      const cp2x = px + w * 0.88;
-      const cp2y = rightTop + (top - rightTop) * 0.08;
-      const d = [
-        `M ${px},${floor}`,
-        `L ${px},${top}`,
-        `C ${cp1x},${cp1y} ${cp2x},${cp2y} ${px + w},${rightTop}`,
-        `L ${px + w},${floor}`,
-        "Z",
-      ].join(" ");
-      return `<path d="${d}" fill="${color}" ${sa}/>`;
-    }
-
     case "round": {
       const cy = floor - r;
       return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" ${sa}/>`;

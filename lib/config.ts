@@ -116,7 +116,7 @@ export const PACKAGES: Package[] = [
     includes: ["1 backdrop", "Small balloon garland", "1 plinth"],
     bestFor: "Intimate home setups",
     defaultDecor: {
-      backdropShapes: ["arch"],
+      backdropItems: [{ type: "arch", sizeId: "arch_66ft" }],
       balloonStyle: "half",
       plinths: 1,
       plinthSizes: ["medium"],
@@ -134,7 +134,10 @@ export const PACKAGES: Package[] = [
     includes: ["2 backdrops", "Organic balloon styling", "2 plinths", "Custom name sign"],
     bestFor: "Villa gardens, restaurant corners",
     defaultDecor: {
-      backdropShapes: ["arch", "arch"],
+      backdropItems: [
+        { type: "arch", sizeId: "arch_72ft" },
+        { type: "arch", sizeId: "arch_6ft" },
+      ],
       balloonStyle: "full",
       plinths: 2,
       plinthSizes: ["medium", "medium"],
@@ -156,7 +159,11 @@ export const PACKAGES: Package[] = [
     ],
     bestFor: "Full venue takeovers",
     defaultDecor: {
-      backdropShapes: ["arch", "half_arch", "wavy"],
+      backdropItems: [
+        { type: "arch", sizeId: "arch_72ft" },
+        { type: "arch", sizeId: "arch_66ft" },
+        { type: "wavy" },
+      ],
       balloonStyle: "premium",
       plinths: 3,
       plinthSizes: ["large", "medium", "medium"] as PlinthSize[],
@@ -172,11 +179,40 @@ export const PACKAGES: Package[] = [
 
 export type BackdropShapeId =
   | "arch"
-  | "half_arch"
   | "round"
   | "rect"
   | "shimmer_wall"
   | "wavy";
+
+export type ArchSizeId =
+  | "arch_4ft"
+  | "arch_5ft"
+  | "arch_6ft"
+  | "arch_66ft"
+  | "arch_72ft";
+
+export interface ArchSize {
+  id: ArchSizeId;
+  label: string;
+  heightFt: number;
+  heightM: number;
+  heightCm: number;
+}
+
+export const ARCH_SIZES: ArchSize[] = [
+  { id: "arch_4ft",  label: "4FT / 1.2M",   heightFt: 4,   heightM: 1.2, heightCm: 120 },
+  { id: "arch_5ft",  label: "5FT / 1.5M",   heightFt: 5,   heightM: 1.5, heightCm: 150 },
+  { id: "arch_6ft",  label: "6FT / 1.8M",   heightFt: 6,   heightM: 1.8, heightCm: 180 },
+  { id: "arch_66ft", label: "6.6FT / 2M",   heightFt: 6.6, heightM: 2.0, heightCm: 200 },
+  { id: "arch_72ft", label: "7.2FT / 2.2M", heightFt: 7.2, heightM: 2.2, heightCm: 220 },
+];
+
+/** A single backdrop panel in the setup — source of truth for count, shape, and arch sizing. */
+export interface BackdropItem {
+  type: BackdropShapeId;
+  /** Only set when type === "arch" */
+  sizeId?: ArchSizeId;
+}
 
 export type BalloonStyleId = "none" | "half" | "full" | "premium";
 
@@ -247,7 +283,8 @@ export interface CutoutSelection {
 }
 
 export interface DecorConfig {
-  backdropShapes: BackdropShapeId[];
+  /** Source of truth for all backdrop panels — type, count, and arch sizes. */
+  backdropItems: BackdropItem[];
   balloonStyle: BalloonStyleId;
   /** User-chosen backdrop color (hex) — defaults to the theme suggestion. */
   backdropColor: string;
@@ -269,7 +306,6 @@ export interface Option<T extends string> {
 
 export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   { id: "arch",         label: "Arch Backdrop",        price: 0 },
-  { id: "half_arch",    label: "Half Arch Backdrop",   price: 0 },
   { id: "round",        label: "Round Backdrop",       price: 0 },
   { id: "rect",         label: "Rectangular Backdrop", price: 0 },
   { id: "shimmer_wall", label: "Shimmer Wall",         price: 80 },
@@ -308,9 +344,9 @@ export const CAKE_TABLE_PRICE = 300;
 /** Extra/fewer backdrops beyond the package default cost this each. */
 export const PER_BACKDROP = 350;
 
-/** Effective panel count from the selected shapes array. */
-export function backdropPanelCount(shapes: BackdropShapeId[]): number {
-  return Math.max(1, shapes.length);
+/** Effective panel count from the selected backdrop items. */
+export function backdropPanelCount(items: BackdropItem[]): number {
+  return Math.max(1, items.length);
 }
 
 export const FONT_STYLES: { id: FontStyle; label: string }[] = [
@@ -557,12 +593,12 @@ export function priceBreakdown(config: BuilderConfig): {
 
   // Backdrop panel pricing: first panel included, each additional is PER_BACKDROP.
   // Shimmer wall adds +80 per shimmer panel regardless of position.
-  for (let i = 0; i < d.backdropShapes.length; i++) {
-    const sid = d.backdropShapes[i];
-    const sInfo = shapeById(sid);
-    const sLabel = sInfo?.label ?? sid;
+  for (let i = 0; i < d.backdropItems.length; i++) {
+    const item = d.backdropItems[i];
+    const sInfo = shapeById(item.type);
+    const sLabel = sInfo?.label ?? item.type;
     const panelCost = i === 0 ? 0 : PER_BACKDROP;
-    const shimmerExtra = sid === "shimmer_wall" ? 80 : 0;
+    const shimmerExtra = item.type === "shimmer_wall" ? 80 : 0;
     const total = panelCost + shimmerExtra;
     if (total > 0) {
       lines.push({

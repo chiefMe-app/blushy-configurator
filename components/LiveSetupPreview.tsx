@@ -24,7 +24,7 @@ export default function LiveSetupPreview({ config }: { config: BuilderConfig }) 
   // Signature of everything that affects the drawing — redraw when it changes.
   const sig = JSON.stringify({
     t: config.theme,
-    shapes: config.decor.backdropShapes,
+    items: config.decor.backdropItems,
     b: config.decor.balloonStyle,
     bc: config.decor.backdropColor,
     blc: config.decor.balloonColors,
@@ -109,8 +109,8 @@ function renderScene(
   ctx.fillRect(0, floorY, W, H - floorY);
 
   // --- layout backdrops across the width -----------------------------------
-  const shapes = config.decor.backdropShapes;
-  const count = Math.max(1, Math.min(3, shapes.length));
+  const items = config.decor.backdropItems;
+  const count = Math.max(1, Math.min(3, items.length));
   const slotW = W / count;
 
   for (let i = 0; i < count; i++) {
@@ -118,7 +118,7 @@ function renderScene(
     // Center backdrop is the hero; flank panels are a touch smaller.
     const heroFactor = count === 1 ? 1 : i === Math.floor(count / 2) ? 1 : 0.82;
     const pw = Math.min(slotW * 0.62, W * 0.42) * heroFactor;
-    const shape = shapes[i] ?? shapes[0];
+    const shape = (items[i]?.type ?? items[0]?.type ?? "arch") as BackdropShapeId;
 
     drawBackdrop(ctx, cx, pw, floorY, H, shape, backdropColor, isDark);
 
@@ -169,22 +169,6 @@ function backdropOutline(
       const t = k / (arcSamples * 2);
       const x = leftX + t * pw;
       const y = topY - amp * Math.sin(t * Math.PI * waves);
-      pts.push({ x, y });
-    }
-    pts.push({ x: rightX, y: floorY });
-    return pts;
-  }
-
-  if (shape === "half_arch") {
-    // Left edge tall, right edge shorter, single smooth curve top
-    const tallY = apexY;
-    const shortY = apexY + r * 0.6;
-    pts.push({ x: leftX, y: floorY });
-    pts.push({ x: leftX, y: tallY });
-    for (let k = 0; k <= arcSamples; k++) {
-      const t = k / arcSamples;
-      const x = leftX + t * pw;
-      const y = tallY + (shortY - tallY) * t * t;
       pts.push({ x, y });
     }
     pts.push({ x: rightX, y: floorY });

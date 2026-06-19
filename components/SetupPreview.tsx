@@ -64,7 +64,6 @@ const FONT_WEIGHT: Record<FontStyle, number> = { script: 400, block: 900, elegan
 
 const BACKDROP_SAFE_AREA: Record<BackdropShapeId, { x: number; y: number; w: number; h: number }> = {
   arch:         { x: 22, y: 16, w: 56, h: 40 },
-  half_arch:    { x: 10, y: 18, w: 45, h: 35 },
   round:        { x: 26, y: 22, w: 48, h: 32 },
   rect:         { x: 20, y: 15, w: 60, h: 44 },
   shimmer_wall: { x: 16, y: 14, w: 68, h: 46 },
@@ -624,7 +623,7 @@ export function useSetupPreview(config: BuilderConfig) {
 
   const sig = JSON.stringify({
     t: config.theme, p: config.package, et: config.eventType,
-    shapes: d.backdropShapes, b: d.balloonStyle,
+    items: d.backdropItems, b: d.balloonStyle,
     bc: d.backdropColor, blc: d.balloonColors,
     bp: d.backdropPrint,
     pl: PLINTH_MODE === "ai" ? d.plinthSizes : undefined,
@@ -635,7 +634,7 @@ export function useSetupPreview(config: BuilderConfig) {
     const id = ++reqId.current;
     const curr: Snap = {
       theme: config.theme, pkg: config.package, nonce,
-      shapes: JSON.stringify(d.backdropShapes),
+      shapes: JSON.stringify(d.backdropItems),
       color: d.backdropColor ?? "",
       balloonStyle: d.balloonStyle,
       balloonColors: JSON.stringify(d.balloonColors),
@@ -658,7 +657,7 @@ export function useSetupPreview(config: BuilderConfig) {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             theme: config.theme, package: config.package, eventType: config.eventType,
-            backdropShapes: d.backdropShapes, backdropColor: d.backdropColor,
+            backdropItems: d.backdropItems, backdropColor: d.backdropColor,
             balloonStyle: d.balloonStyle, balloonColors: d.balloonColors,
             backdropText: d.backdropText, backdropPrint: d.backdropPrint,
             cutouts: d.cutouts,
@@ -697,7 +696,7 @@ export default function SetupPreview({
 }) {
   const themeAccent   = THEMES.find((t) => t.id === config.theme)?.accent ?? "#C77DD6";
   const overlayText   = resolveBackdropText(config.decor.backdropText);
-  const primaryShape: BackdropShapeId = config.decor.backdropShapes[0] ?? "arch";
+  const primaryShape: BackdropShapeId = (config.decor.backdropItems[0]?.type ?? "arch") as BackdropShapeId;
 
   const [shownUrl, setShownUrl]       = useState<string | null>(null);
   const shownUrlRef                   = useRef<string | null>(null);

@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
 
     // Full generation.
     const { prompt } = generatePrompt(promptInput);
-    const negativePrompt = generateNegativePrompt(promptInput.backdropShapes);
+    const negativePrompt = generateNegativePrompt(promptInput.backdropItems);
 
     // Experimental: SVG silhouette reference path.
     // Only active when the client explicitly opts in and provides a PNG.
@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
 
     // Default: strict text-to-image.
     if (process.env.NODE_ENV === "development") {
-      console.log("[generate] backdropShapes:", promptInput.backdropShapes);
+      console.log("[generate] backdropItems:", promptInput.backdropItems);
       console.log("[generate] prompt:", prompt);
       console.log("[generate] negative_prompt:", negativePrompt);
     }

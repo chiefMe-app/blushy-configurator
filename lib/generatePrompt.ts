@@ -1,21 +1,19 @@
 // ---------------------------------------------------------------------------
 // Builds the fal.ai prompt for the photorealistic preview.
 // Pure + side-effect free so it can run on the server (route.ts) where the
-// FAL_KEY lives. Structure:
-//
-// "professional event photography, [THEME] theme party setup, [COUNT] in
-//  [BACKDROP_COLOR], [BALLOON_DESC] in [BALLOON_COLORS] tones,
-//  [BACKDROP_TEXT], [CUTOUTS], [PLINTHS], [EXTRAS], luxury Dubai party setup,
-//  soft natural lighting, wide shot, photorealistic, 8k, --ar 4:3"
+// FAL_KEY lives.
 // ---------------------------------------------------------------------------
 
 import {
   themeById,
   resolveBackdropText,
+  ARCH_SIZES,
   type ThemeId,
   type PackageId,
   type BalloonStyleId,
   type BackdropShapeId,
+  type BackdropItem,
+  type ArchSizeId,
   type BackdropText,
   type CutoutSelection,
   type BackdropPrint,
@@ -32,23 +30,13 @@ const GRAPHIC_STYLE_MODIFIER: Record<GraphicStyle, string> = {
   full_scene:  "full immersive background scene illustration covering entire backdrop surface, detailed environment and setting",
 };
 
-/** Wrapper prepended/appended to every prompt (Change 3). */
 const PROMPT_PREFIX =
   "Professional event photography of a birthday party setup in Dubai, UAE. ";
 const PROMPT_SUFFIX =
   " Wide establishing shot showing the complete full setup from the front. Sharp focus on entire scene. Soft natural lighting. Photorealistic 4k quality. Professional event decoration photography.";
 
-/**
- * Per-shape descriptions used in multi-panel context (LEFT/CENTER/RIGHT panel lists)
- * and as single-panel description for non-half_arch shapes.
- * For half_arch single-panel: HALF_ARCH_SINGLE_BLOCK is used instead.
- * MUST NOT contain "half arch", "arch backdrop", or "arched backdrop".
- */
+/** Per-shape descriptions used in single-panel and multi-panel context. */
 const SHAPE_DESC: Record<BackdropShapeId, string> = {
-  half_arch:
-    "one asymmetrical rounded-corner vertical panel with one full-height straight side and one visibly shorter side; " +
-    "the top edge curves downward from the tall side to the shorter side; only one top corner is rounded; " +
-    "not a full arch, not symmetrical, not a round panel",
   arch:
     "one symmetrical full arch vertical panel with a rounded top center, standing directly on the floor",
   round:
@@ -61,29 +49,6 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
     "one wavy organic-shaped vertical backdrop panel with soft curved edges, standing directly on the floor",
 };
 
-/**
- * Full geometry + exclusion block used when half_arch is the ONLY selected panel.
- * Uses explicit 220cm/140cm proportions so the model renders the height difference clearly.
- * Contains NO "half arch" phrase — pure geometry language only.
- */
-const HALF_ARCH_SINGLE_BLOCK =
-  "STRICT SCENE STRUCTURE: exactly one backdrop panel only. " +
-  "The selected panel is an asymmetrical rounded-corner vertical backdrop panel. " +
-  "It has one full-height straight vertical side from floor to top, approximately 220cm tall. " +
-  "The opposite side is visibly shorter, approximately 140cm tall. " +
-  "The top edge starts high on the tall side, curves smoothly downward, and ends on the shorter side. " +
-  "Only one top corner is rounded. " +
-  "The outline must clearly show one tall side and one short side. " +
-  "The panel stands directly on the floor with no base platform. No second panel. No extra panels. " +
-  "This is not a full arch, not a symmetrical arch, not a centered arch, not a tombstone arch, " +
-  "not a round panel, not a circular wall, not a rectangular panel with a rounded top.";
-
-/**
- * THEME_MOOD — color scheme, atmosphere, and overall vibe ONLY.
- * MUST NOT mention any graphic, illustration, print, or visual on the backdrop surface.
- * Graphics are handled separately by THEME_PRINT and only injected when
- * backdropPrint.type === "theme_print".
- */
 const THEME_MOOD: Record<string, string> = {
   frozen:    "icy pale blue, silver and white color palette, cool crisp atmosphere",
   unicorn:   "soft pink, pastel mint, pastel yellow, pastel blue and white color palette, delicate pastel tones, light airy atmosphere",
@@ -108,11 +73,6 @@ const THEME_MOOD: Record<string, string> = {
   luxury_neutral: "warm beige, champagne and gold color palette, sophisticated minimal elegant atmosphere",
 };
 
-/**
- * THEME_PRINT — the graphic printed on the backdrop surface.
- * Used ONLY when backdropPrint.type === "theme_print".
- * Describes the visual illustration only — no color/mood/shape info.
- */
 const THEME_PRINT: Record<string, string> = {
   frozen:    "snowflake and ice crystal pattern printed on backdrop",
   unicorn:   "unicorn face with gold horn flower crown and lashes printed on backdrop surface",
@@ -137,19 +97,8 @@ const THEME_PRINT: Record<string, string> = {
   luxury_neutral: "minimal gold line art and abstract botanical on backdrop",
 };
 
-/**
- * Themes whose mood description hard-specifies the backdrop shape.
- * Now empty: THEME_MOOD contains no shape info, so the shape fragment from
- * buildBackdropDesc() is always safe to include for every theme.
- */
 const SHAPE_LOCKED_THEMES = new Set<ThemeId>();
 
-/** Returns the effective panel count from the selected shapes array. */
-function effectiveCount(shapes: BackdropShapeId[]): number {
-  return Math.max(1, Math.min(3, shapes.length));
-}
-
-/** Per-theme vinyl print descriptions for the theme_print option. */
 const THEME_PRINT_DESC: Record<string, string> = {
   frozen: "Frozen castle, snowflakes, icy character silhouettes",
   unicorn: "Unicorn face with gold horn, flower crown and lashes",
@@ -174,7 +123,6 @@ const THEME_PRINT_DESC: Record<string, string> = {
   luxury_neutral: "Minimal gold line art, abstract botanical, elegant monogram",
 };
 
-/** BALLOON_DESCRIPTION — keyed by balloon style ("none" → omitted). */
 const BALLOON_DESC: Record<BalloonStyleId, string> = {
   none: "",
   half: "organic balloon garland on one side of the backdrop, clusters touching the ground",
@@ -183,19 +131,10 @@ const BALLOON_DESC: Record<BalloonStyleId, string> = {
     "premium organic balloon installation completely surrounding the backdrop with varied sizes and flower accents",
 };
 
-/**
- * Floral-free mood overrides.
- * Only needed for moods that contain flagged floral words ("botanical" etc.)
- * and where florals are not explicitly selected.
- */
 const THEME_MOOD_NO_FLORAL: Partial<Record<string, string>> = {
   blush_garden: "soft blush pink, ivory and dusty rose color palette, romantic clean atmosphere",
 };
 
-/**
- * Floral-free print overrides — used when florals are not selected and the
- * THEME_PRINT description contains flagged floral words.
- */
 const THEME_PRINT_NO_FLORAL: Partial<Record<string, string>> = {
   unicorn:     "unicorn face with gold horn leafy crown and lashes printed on backdrop surface",
   encanto:     "magical candle and tropical foliage graphics on backdrop",
@@ -205,7 +144,6 @@ const THEME_PRINT_NO_FLORAL: Partial<Record<string, string>> = {
 const BALLOON_DESC_PREMIUM_NO_FLORAL =
   "premium organic balloon installation completely surrounding the backdrop with varied sizes and greenery accents";
 
-/** EXTRAS_DESCRIPTION — keyed by extra id. */
 const EXTRAS_DESC: Record<string, string> = {
   florals: "fresh floral clusters at base and sides",
   dessert_table: "styled dessert and cake table in foreground",
@@ -224,14 +162,10 @@ export const NEGATIVE_PROMPT =
   "CGI render, 3d render, plastic looking, toy-like, floating objects, distorted proportions, blurry, " +
   "low quality, grainy, watermark, logo overlay, text overlay, unrealistic lighting";
 
-/**
- * Fixed negative prompt sent to fal.ai for all text-to-image generations.
- * Covers shape confusion, plinth misrendering, and unwanted people/cartoon elements.
- */
-export function generateNegativePrompt(shapes?: BackdropShapeId[]): string {
-  const isSingle = !shapes || shapes.length <= 1;
-  const hasHalfArch = shapes?.includes("half_arch") ?? false;
-  const hasRound = shapes?.includes("round") ?? false;
+export function generateNegativePrompt(items?: BackdropItem[]): string {
+  const shapes = items?.map((i) => i.type) ?? [];
+  const isSingle = !items || items.length <= 1;
+  const hasRound = shapes.includes("round");
 
   const base =
     "floating balloons, balloon strings, cartoon, illustration, drawing, people, children, " +
@@ -239,30 +173,20 @@ export function generateNegativePrompt(shapes?: BackdropShapeId[]): string {
     "wide base pedestal, circular stage floor, round platform on ground, oversized plinth base, " +
     "plinth wider than 50cm, square pedestal, rectangular pedestal";
 
-  // Count mismatch negatives differ by whether 1 or multiple panels are selected
   const countNeg = isSingle
     ? "wrong number of backdrops, second backdrop panel, extra backdrop panel, multiple backdrop panels, double arch"
     : "wrong number of backdrop panels, extra unselected backdrop panel, missing selected backdrop panel";
 
-  // Half arch negatives — omit "circular backdrop / round backdrop" when round is also selected
-  let halfArchNeg = "";
-  if (hasHalfArch) {
-    const circularNeg = hasRound ? "" : ", circular backdrop, round backdrop, round wall";
-    halfArchNeg =
-      ", full arch, symmetrical arch, centered arch, tombstone arch, rounded top rectangle" +
-      circularNeg +
-      ", equal height sides, both sides same height, " +
-      "balloons covering panel outline, balloons hiding backdrop silhouette";
-  }
+  const roundNeg = hasRound && isSingle ? ", two circles, multiple circles, arch shape" : "";
 
-  return `${base}, ${countNeg}${halfArchNeg}`;
+  return `${base}, ${countNeg}${roundNeg}`;
 }
 
 export interface PromptInput {
   theme: ThemeId;
   package: PackageId;
   eventType?: EventTypeId;
-  backdropShapes: BackdropShapeId[];
+  backdropItems: BackdropItem[];
   backdropColor?: string;
   balloonStyle: BalloonStyleId;
   balloonColors?: string[];
@@ -273,7 +197,6 @@ export interface PromptInput {
   plinthSizes?: PlinthSize[];
 }
 
-/** Florals are permitted when explicitly added as an extra, or for wedding/bridal events. */
 function allowFlorals(input: PromptInput): boolean {
   if ((input.extras ?? []).includes("florals")) return true;
   return input.eventType === "bridal_shower" || input.eventType === "boutique_wedding";
@@ -282,19 +205,38 @@ function allowFlorals(input: PromptInput): boolean {
 export const PLINTH_NEGATIVE =
   "wide drum, flat platform, stage, podium, short cylinder, width greater than height";
 
-function buildSceneBackdrop(shapes: BackdropShapeId[], colorName: string): string {
-  const count = effectiveCount(shapes);
+/** Build size-aware description for a single arch item. */
+function buildArchItemDesc(item: BackdropItem): string {
+  const size = ARCH_SIZES.find((s) => s.id === item.sizeId);
+  if (size) {
+    return (
+      `one symmetrical full arch vertical panel with a rounded top center, ` +
+      `${size.heightFt}ft / ${size.heightM}m (${size.heightCm}cm) tall, ` +
+      `standing directly on the floor`
+    );
+  }
+  return SHAPE_DESC.arch;
+}
+
+function itemDesc(item: BackdropItem): string {
+  return item.type === "arch" ? buildArchItemDesc(item) : SHAPE_DESC[item.type];
+}
+
+function effectiveItems(items: BackdropItem[]): BackdropItem[] {
+  return items.slice(0, Math.max(1, Math.min(3, items.length)));
+}
+
+function buildSceneBackdrop(items: BackdropItem[], colorName: string): string {
+  const active = effectiveItems(items);
+  const count = active.length;
   const colorSuffix = colorName ? `, backdrop color: ${colorName}` : "";
 
   if (count === 1) {
-    // half_arch single panel gets the full geometry block with explicit proportions
-    const desc = shapes[0] === "half_arch" ? HALF_ARCH_SINGLE_BLOCK : SHAPE_DESC[shapes[0]];
-    return `${desc}${colorSuffix}`;
+    return `${itemDesc(active[0])}${colorSuffix}`;
   }
 
-  // Multi-panel: describe each selected panel by name, then list them
   const countWord = count === 2 ? "two" : "three";
-  const panelDescriptions = shapes.slice(0, count).map(s => SHAPE_DESC[s]).join("; ");
+  const panelDescriptions = active.map((item) => itemDesc(item)).join("; ");
 
   return (
     `STRICT SCENE STRUCTURE: exactly ${countWord} separate backdrop panels arranged side by side as a layered event backdrop set. ` +
@@ -321,24 +263,17 @@ export function generatePrompt(input: PromptInput): {
 } {
   const theme = themeById(input.theme);
   const themeName = theme?.name ?? "party";
-
   const florals = allowFlorals(input);
 
-  // Theme mood: color/atmosphere only — no graphics. Floral-free when needed.
   const themeDesc =
     (!florals && THEME_MOOD_NO_FLORAL[input.theme]) ||
     THEME_MOOD[input.theme] ||
     `${themeName} theme`;
 
-  // Backdrop: shape + count + dimensions + color. Shape selection always wins;
-  // count is an additive modifier. Omitted for shape-locked themes (unicorn, lego).
   const shapeLocked = SHAPE_LOCKED_THEMES.has(input.theme);
   const colorName = input.backdropColor ? hexToColorName(input.backdropColor) : "";
-  const backdrop = shapeLocked
-    ? ""
-    : buildSceneBackdrop(input.backdropShapes, colorName);
+  const backdrop = shapeLocked ? "" : buildSceneBackdrop(input.backdropItems, colorName);
 
-  // Balloons: style + chosen colors. Premium uses no-floral description when florals not allowed.
   const balloonStyle =
     (!florals && input.balloonStyle === "premium"
       ? BALLOON_DESC_PREMIUM_NO_FLORAL
@@ -347,24 +282,12 @@ export function generatePrompt(input: PromptInput): {
     .slice(0, 4)
     .map(hexToColorName)
     .filter((v, i, a) => v && a.indexOf(v) === i);
-  const balloonsBase = balloonStyle
+  const balloons = balloonStyle
     ? balloonColorNames.length
       ? `${balloonStyle} in ${balloonColorNames.join(", ")} tones`
       : balloonStyle
     : "";
 
-  // When half_arch is selected (single or multi), override balloon placement so panel silhouette stays visible
-  const hasHalfArch = input.backdropShapes.includes("half_arch");
-  const balloons = hasHalfArch && balloonStyle
-    ? (balloonColorNames.length
-        ? `balloon garland in ${balloonColorNames.join(", ")} tones`
-        : "balloon garland") +
-      ", balloon garland must frame the selected panels without hiding the outer silhouette of the asymmetrical panel, " +
-      "do not cover the full-height straight outer edge, do not cover the top outline, " +
-      "keep all selected backdrop panel shapes readable"
-    : balloonsBase;
-
-  // Backdrop text.
   let textClause = "";
   if (input.backdropText?.enabled) {
     const text = resolveBackdropText(input.backdropText);
@@ -376,9 +299,8 @@ export function generatePrompt(input: PromptInput): {
     }
   }
 
-  // Backdrop print — only added when explicitly selected.
-  // backdropPrint.type === "none" → nothing printed on backdrop surface (plain backdrop).
-  const panelCount = effectiveCount(input.backdropShapes);
+  const activeItems = effectiveItems(input.backdropItems);
+  const panelCount = activeItems.length;
   const flatVinyl =
     panelCount > 1
       ? "flat 2D printed vinyl graphic applied directly onto the CENTER backdrop panel only, " +
@@ -407,8 +329,6 @@ export function generatePrompt(input: PromptInput): {
         : "custom graphic design printed on backdrop surface";
   }
 
-  // Plain backdrop — explicit instruction when no print is selected so the AI
-  // does not hallucinate characters, clouds, or decorative elements onto the surface.
   const plainBackdropClause =
     !input.backdropPrint || input.backdropPrint.type === "none"
       ? "backdrop panel surface is completely plain and empty, solid color only, " +
@@ -417,7 +337,6 @@ export function generatePrompt(input: PromptInput): {
         "clean flat matte painted panel"
       : "";
 
-  // Cutouts.
   let cutoutClause = "";
   if (input.cutouts && input.cutouts.size !== "none") {
     if (input.cutouts.size === "premium" && input.cutouts.position === "floor") {
@@ -436,7 +355,6 @@ export function generatePrompt(input: PromptInput): {
     }
   }
 
-  // No cutouts — suppress AI from inventing standees or characters.
   const noCutoutsClause =
     !input.cutouts || input.cutouts.size === "none"
       ? "NO character cutouts, NO standing figures, NO cardboard standees anywhere in the scene"
@@ -447,7 +365,6 @@ export function generatePrompt(input: PromptInput): {
     .filter(Boolean)
     .join(", ");
 
-  // Plinths (AI mode only — omit entirely in SVG mode).
   const PLINTH_SIZE_LABEL: Record<string, string> = {
     small: "small",
     medium: "medium-height",
@@ -482,23 +399,36 @@ export function generatePrompt(input: PromptInput): {
     }
   }
 
-  // Strict count+shape requirement — shown FIRST so the model sees it before any other detail.
-  const effectivePanels = effectiveCount(input.backdropShapes);
-  const panelWord = effectivePanels === 1 ? "ONE (1)" : effectivePanels === 2 ? "TWO (2)" : "THREE (3)";
-  const SHAPE_LABEL: Partial<Record<BackdropShapeId, string>> = {
+  const effectivePanels = panelCount;
+  const panelWord =
+    effectivePanels === 1 ? "ONE (1)" : effectivePanels === 2 ? "TWO (2)" : "THREE (3)";
+
+  const SHAPE_LABEL: Record<BackdropShapeId, string> = {
     arch:         "arch (semicircular top)",
-    half_arch:    "asymmetrical curved-side vertical panel (one tall side, one short side)",
     round:        "round circular disc",
     rect:         "flat rectangular",
     shimmer_wall: "rectangular shimmer wall",
     wavy:         "wavy top",
   };
-  const shapeLabelStr = input.backdropShapes.length === 1
-    ? (SHAPE_LABEL[input.backdropShapes[0]] ?? "rectangular")
-    : input.backdropShapes.map((s) => SHAPE_LABEL[s] ?? "rectangular").join(" + ");
-  const panelShapeDesc = input.backdropShapes.length === 1
-    ? `with ${shapeLabelStr} shape`
-    : `with mixed shapes: ${shapeLabelStr}`;
+
+  // For arch items include size in the label
+  function itemLabel(item: BackdropItem): string {
+    if (item.type === "arch") {
+      const size = ARCH_SIZES.find((s) => s.id === item.sizeId);
+      return size ? `arch ${size.label}` : "arch (semicircular top)";
+    }
+    return SHAPE_LABEL[item.type];
+  }
+
+  const shapeLabelStr =
+    activeItems.length === 1
+      ? itemLabel(activeItems[0])
+      : activeItems.map(itemLabel).join(" + ");
+  const panelShapeDesc =
+    activeItems.length === 1
+      ? `with ${shapeLabelStr} shape`
+      : `with mixed shapes: ${shapeLabelStr}`;
+
   const strictRequirements =
     effectivePanels === 1
       ? `STRICT REQUIREMENTS: This image must show EXACTLY ONE (1) backdrop panel ${panelShapeDesc}, ` +
@@ -538,15 +468,10 @@ export function generatePrompt(input: PromptInput): {
         ? "single backdrop, one panel, three panels, triple backdrop"
         : "single backdrop, one panel, two panels, double backdrop";
 
-  const _hasHalfArch = input.backdropShapes.includes("half_arch");
-  const _hasRound = input.backdropShapes.includes("round");
-  const _isSingle = effectivePanels === 1;
-  const shapeNegative = _hasHalfArch
-    ? "full arch, symmetrical arch, centered arch, tombstone arch, rounded top rectangle, " +
-      (_hasRound ? "" : "circular backdrop, round wall, ") +
-      "equal height sides, both sides same height, balloons covering panel outline, balloons hiding backdrop silhouette" +
-      (_isSingle ? ", second panel, extra backdrop panel" : "")
-    : _isSingle && _hasRound
+  const shapes = activeItems.map((i) => i.type);
+  const _hasRound = shapes.includes("round");
+  const shapeNegative =
+    effectivePanels === 1 && _hasRound
       ? "two circles, multiple circles, arch shape"
       : "";
 
@@ -566,7 +491,6 @@ export function generatePrompt(input: PromptInput): {
   return { prompt, negativePrompt: negParts.join(", ") };
 }
 
-/** Focused edit instruction for img2img (kontext) — describes only what changed. */
 export function buildFocusedPrompt(changeType: ChangeType, input: PromptInput): string {
   const theme = themeById(input.theme);
   const themeName = theme?.name ?? "party";
@@ -588,7 +512,7 @@ export function buildFocusedPrompt(changeType: ChangeType, input: PromptInput): 
         !SHAPE_LOCKED_THEMES.has(input.theme) && input.backdropColor
           ? hexToColorName(input.backdropColor)
           : "";
-      const shapeDesc = buildSceneBackdrop(input.backdropShapes, colorName);
+      const shapeDesc = buildSceneBackdrop(input.backdropItems, colorName);
       return (
         `Change the backdrop panel shape to: ${shapeDesc}. ` +
         `Keep the same theme colors, balloons, and overall composition.`
@@ -625,7 +549,7 @@ export function buildFocusedPrompt(changeType: ChangeType, input: PromptInput): 
       );
     }
     case "print": {
-      const pCount = effectiveCount(input.backdropShapes);
+      const pCount = effectiveItems(input.backdropItems).length;
       const centerOnly =
         pCount > 1
           ? " on the center backdrop panel only — other panels remain plain solid color with no print"
@@ -711,3 +635,6 @@ export function hexToColorName(hex: string): string {
   }
   return best.name;
 }
+
+// Retained for backwards compat — not used internally.
+export { THEME_PRINT_DESC };
