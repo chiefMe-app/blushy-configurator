@@ -113,21 +113,44 @@ function renderScene(
   const count = Math.max(1, Math.min(3, items.length));
   const slotW = W / count;
 
+  // Compute max height for relative size scaling
+  const maxHeightCm = Math.max(...items.map((it) => it.heightCm ?? 200));
+
   for (let i = 0; i < count; i++) {
     const cx = slotW * (i + 0.5);
-    // Center backdrop is the hero; flank panels are a touch smaller.
+    const item = items[i] ?? items[0];
+    const shape = (item?.type ?? "arch") as BackdropShapeId;
+
+    // Per-panel color — falls back to global backdrop color
+    const panelColor = item?.color || backdropColor;
+    const panelDark  = isColorDark(panelColor);
+
+    // Scale panel width by relative height — taller panels appear larger
+    const heightRatio = (item?.heightCm ?? 200) / maxHeightCm;
+    const basePw = Math.min(slotW * 0.62, W * 0.42);
+    // Hero factor: for 2+ panels, center panel is slightly larger than flanks
     const heroFactor = count === 1 ? 1 : i === Math.floor(count / 2) ? 1 : 0.82;
-    const pw = Math.min(slotW * 0.62, W * 0.42) * heroFactor;
-    const shape = (items[i]?.type ?? items[0]?.type ?? "arch") as BackdropShapeId;
+    const pw = basePw * heroFactor * (count === 1 ? 1 : (0.75 + 0.25 * heightRatio));
 
-    drawBackdrop(ctx, cx, pw, floorY, H, shape, backdropColor, isDark);
+    // Adjust apex (topmost point) based on relative height so taller items reach higher
+    const apexFactor = 0.05 + 0.12 * (1 - heightRatio);  // tallest → 0.05, shortest → 0.17
+    const customApexY = H * apexFactor;
 
-    const outline = backdropOutline(cx, pw, floorY, H, shape);
+    drawBackdrop(ctx, cx, pw, floorY, H, shape, panelColor, panelDark, customApexY);
+
+    const outline = backdropOutline(cx, pw, floorY, H, shape, customApexY);
     drawGarland(ctx, outline, floorY, pw, palette, config.decor.balloonStyle, i * 97 + 13);
   }
 
-  // --- backdrop text on the hero backdrop ----------------------------------
-  if (config.decor.backdropText.enabled) {
+  // --- backdrop text: draw per-panel text, fall back to global setting ----
+  const hasPanelText = config.decor.backdropItems.some((it) => it.text.enabled && it.text.value.trim());
+  if (hasPanelText) {
+    config.decor.backdropItems.forEach((it, i) => {
+      if (!it.text.enabled || !it.text.value.trim()) return;
+      const panelCx = slotW * (i + 0.5);
+      drawBackdropText(ctx, panelCx, H * 0.5, config, accent);
+    });
+  } else if (config.decor.backdropText.enabled) {
     drawBackdropText(ctx, W / 2, H * 0.5, config, accent);
   }
 
@@ -149,12 +172,13 @@ function backdropOutline(
   pw: number,
   floorY: number,
   H: number,
-  shape: BackdropShapeId
+  shape: BackdropShapeId,
+  apexYOverride?: number
 ): Pt[] {
   const r = pw / 2;
   const leftX = cx - r;
   const rightX = cx + r;
-  const apexY = H * 0.14;
+  const apexY = apexYOverride ?? H * 0.14;
   const pts: Pt[] = [];
 
   const arcSamples = 26;
@@ -217,9 +241,10 @@ function drawBackdrop(
   H: number,
   shape: BackdropShapeId,
   color: string,
-  isDark: boolean
+  isDark: boolean,
+  apexYOverride?: number
 ) {
-  const outline = backdropOutline(cx, pw, floorY, H, shape);
+  const outline = backdropOutline(cx, pw, floorY, H, shape, apexYOverride);
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(outline[0].x, outline[0].y);

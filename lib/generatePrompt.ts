@@ -205,75 +205,100 @@ function allowFlorals(input: PromptInput): boolean {
 export const PLINTH_NEGATIVE =
   "wide drum, flat platform, stage, podium, short cylinder, width greater than height";
 
-/** Build size-aware description for a single arch item. */
-function buildArchItemDesc(item: BackdropItem): string {
-  // Prefer explicit dimensions stored on the item
+/** Build size-aware description for a single arch item, including per-panel color. */
+function buildArchItemDesc(item: BackdropItem, panelColorName = ""): string {
+  const colorPart = panelColorName ? ` in ${panelColorName} color` : "";
   if (item.heightCm && item.widthCm) {
     return (
       `one symmetrical full arch vertical panel with a rounded top center, ` +
-      `${item.heightCm}cm tall, ${item.widthCm}cm wide, standing directly on the floor`
+      `${item.heightCm}cm tall, ${item.widthCm}cm wide${colorPart}, standing directly on the floor`
     );
   }
   const size = ARCH_SIZES.find((s) => s.id === item.sizeId);
   if (size) {
     return (
       `one symmetrical full arch vertical panel with a rounded top center, ` +
-      `${size.heightFt}ft / ${size.heightM}m (${size.heightCm}cm) tall, ` +
+      `${size.heightFt}ft / ${size.heightM}m (${size.heightCm}cm) tall${colorPart}, ` +
       `standing directly on the floor`
     );
   }
-  return SHAPE_DESC.arch;
+  return SHAPE_DESC.arch + colorPart;
 }
 
 /** Build dimension-aware description for a rectangular panel — explicitly NOT arch-shaped. */
-function buildRectItemDesc(item: BackdropItem): string {
+function buildRectItemDesc(item: BackdropItem, panelColorName = ""): string {
+  const colorPart = panelColorName ? ` in ${panelColorName} color` : "";
   if (item.heightCm && item.widthCm) {
     return (
-      `one rectangular vertical backdrop panel with straight edges and a perfectly flat horizontal top, ` +
-      `${item.heightCm}cm tall, ${item.widthCm}cm wide, ` +
-      `NOT arch-shaped, NOT rounded top, standing directly on the floor`
+      `one rectangular vertical backdrop panel with a straight horizontal top edge and straight vertical sides, ` +
+      `${item.heightCm}cm tall, ${item.widthCm}cm wide${colorPart}, ` +
+      `NOT arch-shaped, NOT rounded or curved top, NOT oval — this panel has a completely flat top, ` +
+      `standing directly on the floor`
     );
   }
   const size = RECT_SIZES.find((s) => s.id === item.sizeId);
   if (size) {
     return (
-      `one rectangular vertical backdrop panel with straight edges and a perfectly flat horizontal top, ` +
-      `${size.heightCm}cm tall, ${size.widthCm}cm wide, ` +
-      `NOT arch-shaped, NOT rounded top, standing directly on the floor`
+      `one rectangular vertical backdrop panel with a straight horizontal top edge and straight vertical sides, ` +
+      `${size.heightCm}cm tall, ${size.widthCm}cm wide${colorPart}, ` +
+      `NOT arch-shaped, NOT rounded or curved top, NOT oval — this panel has a completely flat top, ` +
+      `standing directly on the floor`
     );
   }
-  return SHAPE_DESC.rect;
+  return SHAPE_DESC.rect + colorPart;
 }
 
-function itemDesc(item: BackdropItem): string {
-  if (item.type === "arch") return buildArchItemDesc(item);
-  if (item.type === "rect") return buildRectItemDesc(item);
-  return SHAPE_DESC[item.type];
+/** Build description for any panel, including per-panel color, text, and graphic. */
+function itemDesc(item: BackdropItem, panelColorName = ""): string {
+  let base: string;
+  if (item.type === "arch") base = buildArchItemDesc(item, panelColorName);
+  else if (item.type === "rect") base = buildRectItemDesc(item, panelColorName);
+  else {
+    const colorPart = panelColorName ? ` in ${panelColorName} color` : "";
+    base = SHAPE_DESC[item.type] + colorPart;
+  }
+
+  // Per-panel graphic presence
+  const graphicPart = item.graphic?.enabled
+    ? ` with ${item.graphic.style} themed graphic printed on its surface`
+    : " with plain solid color surface and no printed graphics";
+
+  // Per-panel text presence
+  const textVal = item.text?.enabled && item.text?.value?.trim();
+  const textPart = textVal
+    ? ` with the text "${textVal}" in ${FONT_DESC[item.text.fontStyle] ?? "elegant lettering"}`
+    : "";
+
+  return base + graphicPart + textPart;
 }
 
 function effectiveItems(items: BackdropItem[]): BackdropItem[] {
   return items.slice(0, Math.max(1, Math.min(3, items.length)));
 }
 
-function buildSceneBackdrop(items: BackdropItem[], colorName: string): string {
+function buildSceneBackdrop(items: BackdropItem[], globalColorName: string): string {
   const active = effectiveItems(items);
   const count = active.length;
-  const colorSuffix = colorName ? `, backdrop color: ${colorName}` : "";
 
   if (count === 1) {
-    return `${itemDesc(active[0])}${colorSuffix}`;
+    // Per-item color takes priority; fall back to global
+    const itemColorName = active[0].color ? hexToColorName(active[0].color) : globalColorName;
+    return itemDesc(active[0], itemColorName);
   }
 
   const countWord = count === 2 ? "two" : "three";
-  const panelDescriptions = active.map((item) => itemDesc(item)).join("; ");
+  // Describe each panel individually with its own type, size, and color
+  const panelDescriptions = active.map((item) => {
+    const c = item.color ? hexToColorName(item.color) : globalColorName;
+    return `PANEL: ${itemDesc(item, c)}`;
+  }).join("; ");
 
   return (
-    `STRICT SCENE STRUCTURE: exactly ${countWord} separate backdrop panels arranged side by side as a layered event backdrop set. ` +
-    `The selected backdrop panels are: ${panelDescriptions}. ` +
-    `Each selected panel must remain clearly visible as a distinct panel. ` +
-    `Do not add any extra backdrop panels beyond the selected ${countWord}. ` +
-    `All panels stand directly on the floor with no base platform.` +
-    colorSuffix
+    `STRICT SCENE STRUCTURE: exactly ${countWord} separate backdrop panels arranged side by side. ` +
+    `${panelDescriptions}. ` +
+    `Each panel is DISTINCT — different shape, different size, different color as described above. ` +
+    `Each selected panel must remain clearly visible. ` +
+    `Do not add extra panels. All panels stand directly on the floor with no base platform.`
   );
 }
 
@@ -358,12 +383,13 @@ export function generatePrompt(input: PromptInput): {
         : "custom graphic design printed on backdrop surface";
   }
 
+  // Plain-surface clause only fires when no panel has a graphic enabled and no global print.
+  const anyPanelGraphicOn = activeItems.some((i) => i.graphic?.enabled);
   const plainBackdropClause =
-    !input.backdropPrint || input.backdropPrint.type === "none"
-      ? "backdrop panel surface is completely plain and empty, solid color only, " +
-        "NO illustrations, NO characters, NO prints, NO patterns, NO text, NO clouds, " +
-        "NO stars, NO decorative elements on the backdrop surface itself, " +
-        "clean flat matte painted panel"
+    !anyPanelGraphicOn && (!input.backdropPrint || input.backdropPrint.type === "none")
+      ? "backdrop panel surfaces are completely plain solid color, " +
+        "NO illustrations, NO characters, NO prints, NO patterns on any panel surface, " +
+        "clean flat matte painted panels"
       : "";
 
   let cutoutClause = "";
@@ -440,11 +466,17 @@ export function generatePrompt(input: PromptInput): {
     wavy:         "wavy top",
   };
 
-  // For arch items include size in the label
+  // Per-item label includes type + size for the strict requirements block
   function itemLabel(item: BackdropItem): string {
     if (item.type === "arch") {
       const size = ARCH_SIZES.find((s) => s.id === item.sizeId);
-      return size ? `arch ${size.label}` : "arch (semicircular top)";
+      return size ? `arch ${size.label} (semicircular top)` : "arch (semicircular top)";
+    }
+    if (item.type === "rect") {
+      const size = RECT_SIZES.find((s) => s.id === item.sizeId);
+      return size
+        ? `rectangular ${size.label} (flat straight top, NOT arch)`
+        : "rectangular (flat straight top, NOT arch)";
     }
     return SHAPE_LABEL[item.type];
   }
@@ -499,10 +531,15 @@ export function generatePrompt(input: PromptInput): {
 
   const shapes = activeItems.map((i) => i.type);
   const _hasRound = shapes.includes("round");
-  const shapeNegative =
+  const _hasRect  = shapes.includes("rect");
+  const shapeNegative = [
     effectivePanels === 1 && _hasRound
       ? "two circles, multiple circles, arch shape"
-      : "";
+      : "",
+    _hasRect
+      ? "arch-shaped panel, rounded top panel, curved top panel, arched backdrop, semicircular top"
+      : "",
+  ].filter(Boolean).join(", ");
 
   const printNegative =
     !input.backdropPrint || input.backdropPrint.type === "none"
@@ -665,5 +702,3 @@ export function hexToColorName(hex: string): string {
   return best.name;
 }
 
-// Retained for backwards compat — not used internally.
-export { THEME_PRINT_DESC };
