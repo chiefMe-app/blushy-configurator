@@ -200,6 +200,23 @@ export const NEGATIVE_PROMPT =
   "CGI render, 3d render, plastic looking, toy-like, floating objects, distorted proportions, blurry, " +
   "low quality, grainy, watermark, logo overlay, text overlay, unrealistic lighting";
 
+/**
+ * Fixed negative prompt sent to fal.ai for all text-to-image generations.
+ * Covers shape confusion, plinth misrendering, and unwanted people/cartoon elements.
+ */
+export function generateNegativePrompt(): string {
+  return (
+    "floating balloons, balloon strings, cartoon, illustration, drawing, people, children, " +
+    "watermark, blurry, distorted, wide stage, wide platform, raised stage, podium, " +
+    "wide base pedestal, circular stage floor, round platform on ground, oversized plinth base, " +
+    "plinth wider than 50cm, square pedestal, rectangular pedestal, " +
+    "wrong number of backdrops, missing backdrop, " +
+    "full arch when half arch is selected, symmetrical arch when half arch is selected, " +
+    "circular backdrop when half arch is selected, round wall, double arch, " +
+    "multiple backdrop panels when single backdrop is selected"
+  );
+}
+
 export interface PromptInput {
   theme: ThemeId;
   package: PackageId;

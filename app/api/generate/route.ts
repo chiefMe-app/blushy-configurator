@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   generatePrompt,
   buildFocusedPrompt,
+  generateNegativePrompt,
   PLINTH_NEGATIVE,
   type PromptInput,
   type ChangeType,
@@ -110,9 +111,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Full text-to-image generation.
-    const { prompt, negativePrompt } = generatePrompt(promptInput);
-    const finalNegative =
-      PLINTH_MODE === "ai" ? `${negativePrompt}, ${PLINTH_NEGATIVE}` : negativePrompt;
+    const { prompt } = generatePrompt(promptInput);
+    const negativePrompt = generateNegativePrompt();
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("[generate] prompt:", prompt);
+      console.log("[generate] negative_prompt:", negativePrompt);
+    }
 
     const falRes = await fetch(FAL_ENDPOINT, {
       method: "POST",
@@ -122,7 +127,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         prompt,
-        negative_prompt: finalNegative,
+        negative_prompt: negativePrompt,
         image_size: "landscape_4_3",
         output_format: "jpeg",
       }),
