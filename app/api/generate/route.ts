@@ -115,6 +115,8 @@ export async function POST(req: NextRequest) {
     const negativePrompt = generateNegativePrompt();
 
     if (process.env.NODE_ENV === "development") {
+      console.log("[generate] backdropShapes:", promptInput.backdropShapes);
+      console.log("[generate] shapePromptBlock:", promptInput.backdropShapes.join(","));
       console.log("[generate] prompt:", prompt);
       console.log("[generate] negative_prompt:", negativePrompt);
     }

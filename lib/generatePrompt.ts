@@ -38,10 +38,18 @@ const PROMPT_PREFIX =
 const PROMPT_SUFFIX =
   " Wide establishing shot showing the complete full setup from the front. Sharp focus on entire scene. Soft natural lighting. Photorealistic 4k quality. Professional event decoration photography.";
 
-/** Strict per-shape backdrop descriptions — geometry-first, with explicit NOT statements. */
+/**
+ * Geometry description used when this shape appears in a multi-panel arrangement.
+ * For the half_arch single-panel case, HALF_ARCH_SINGLE_BLOCK is used instead.
+ * MUST NOT contain "half arch", "arch backdrop", or "arched backdrop".
+ */
 const SHAPE_DESC: Record<BackdropShapeId, string> = {
   half_arch:
-    "exactly one single half arch backdrop panel, asymmetrical backdrop shape, one straight vertical side and one curved side, only one top corner rounded, flat vertical decorative panel standing directly on the floor, NOT a full arch, NOT a symmetrical arch, NOT a circular backdrop, NOT a round wall",
+    "asymmetrical rounded-corner vertical backdrop panel, " +
+    "one full-height straight vertical side from floor to top, opposite side is shorter, " +
+    "top edge starts high on the straight side curves smoothly downward ends on the shorter side, " +
+    "only one top corner is rounded, panel stands directly on the floor with no base platform, " +
+    "this is not a symmetrical arch, not a centered arch, not a round panel",
   arch:
     "single full arch backdrop panel, symmetrical arch shape with rounded top center, flat vertical decorative panel standing directly on the floor",
   round:
@@ -53,6 +61,23 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
   wavy:
     "single wavy organic-shaped vertical backdrop panel with soft curved edges, flat decorative panel standing directly on the floor",
 };
+
+/**
+ * Full geometry + exclusion block used when half_arch is the ONLY selected panel.
+ * Contains NO "half arch" phrase — uses pure geometry language only.
+ * CHANGE 1 + CHANGE 2 + CHANGE 4 from spec.
+ */
+const HALF_ARCH_SINGLE_BLOCK =
+  "STRICT SCENE STRUCTURE: one backdrop panel only. " +
+  "The panel is an asymmetrical rounded-corner vertical backdrop panel. " +
+  "It has one full-height straight vertical side from floor to top, and the opposite side is shorter. " +
+  "The top edge starts high on the straight side, curves smoothly downward, and ends on the shorter side. " +
+  "Only one top corner is rounded. " +
+  "The outer silhouette must be clearly visible with a defined edge. " +
+  "The panel stands directly on the floor with no base platform. No second panel. No extra panels. " +
+  "This is not a full arch, not a symmetrical arch, not a centered arch, not a round panel, " +
+  "not a circular wall, not a tombstone arch, not an arch opening. " +
+  "Use enough contrast and lighting so the complete outer silhouette of the backdrop panel is visible from top to bottom.";
 
 /**
  * THEME_MOOD — color scheme, atmosphere, and overall vibe ONLY.
@@ -207,12 +232,13 @@ export const NEGATIVE_PROMPT =
 export function generateNegativePrompt(): string {
   return (
     "floating balloons, balloon strings, cartoon, illustration, drawing, people, children, " +
-    "watermark, blurry, distorted, wide stage, wide platform, raised stage, podium, " +
+    "watermark, blurry, distorted, wide platform, raised stage, podium, " +
     "wide base pedestal, circular stage floor, round platform on ground, oversized plinth base, " +
     "plinth wider than 50cm, square pedestal, rectangular pedestal, " +
     "wrong number of backdrops, missing backdrop, " +
-    "full arch when half arch is selected, symmetrical arch when half arch is selected, " +
-    "circular backdrop when half arch is selected, round wall, double arch, " +
+    "full arch, symmetrical arch, centered arch, arch opening, round arch, tombstone arch, " +
+    "circular backdrop, round wall, round backdrop, " +
+    "second backdrop panel, extra backdrop panel, double arch, " +
     "multiple backdrop panels when single backdrop is selected"
   );
 }
@@ -246,7 +272,9 @@ function buildSceneBackdrop(shapes: BackdropShapeId[], colorName: string): strin
   const colorSuffix = colorName ? `, backdrop in ${colorName} tones` : "";
 
   if (count === 1) {
-    return `${SHAPE_DESC[shapes[0]]}${colorSuffix}`;
+    // half_arch gets a dedicated geometry block with no "half arch" wording
+    const desc = shapes[0] === "half_arch" ? HALF_ARCH_SINGLE_BLOCK : SHAPE_DESC[shapes[0]];
+    return `${desc}${colorSuffix}`;
   }
 
   const positions = count === 2 ? ["LEFT", "RIGHT"] : ["LEFT", "CENTER", "RIGHT"];
@@ -438,7 +466,7 @@ export function generatePrompt(input: PromptInput): {
   const panelWord = effectivePanels === 1 ? "ONE (1)" : effectivePanels === 2 ? "TWO (2)" : "THREE (3)";
   const SHAPE_LABEL: Partial<Record<BackdropShapeId, string>> = {
     arch:         "arch (semicircular top)",
-    half_arch:    "asymmetric half arch (tall left, short right)",
+    half_arch:    "asymmetrical curved-side vertical panel (one tall side, one short side)",
     round:        "round circular disc",
     rect:         "flat rectangular",
     shimmer_wall: "rectangular shimmer wall",
@@ -489,9 +517,11 @@ export function generatePrompt(input: PromptInput): {
         ? "single backdrop, one panel, three panels, triple backdrop"
         : "single backdrop, one panel, two panels, double backdrop";
 
+  // CHANGE 3: direct negative terms, no conditional phrases like "when X is selected"
   const shapeNegative =
     input.backdropShapes.length === 1 && input.backdropShapes[0] === "half_arch"
-      ? "full arch, complete arch, symmetric arch, equal height sides, both sides same height, doorway arch"
+      ? "full arch, symmetrical arch, centered arch, arch opening, round arch, tombstone arch, " +
+        "circular backdrop, round wall, round backdrop, second backdrop panel, extra backdrop panel, double arch"
       : input.backdropShapes.length === 1 && input.backdropShapes[0] === "round"
         ? "two circles, multiple circles, arch shape, multiple backdrops, two backdrops"
         : "";
