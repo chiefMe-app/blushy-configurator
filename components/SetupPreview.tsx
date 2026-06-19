@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { BuilderConfig, PlinthSize, FontStyle, TextColor } from "@/lib/config";
+import type {
+  BuilderConfig,
+  PlinthSize,
+  FontStyle,
+  TextColor,
+  CutoutSize,
+  CutoutPosition,
+} from "@/lib/config";
 import { resolveBackdropText, THEMES } from "@/lib/config";
 import type { ChangeType } from "@/lib/generatePrompt";
 import LiveSetupPreview from "./LiveSetupPreview";
@@ -66,6 +73,10 @@ function PlinthOverlay({ sizes }: { sizes: PlinthSize[] }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Text overlay — updates instantly, no AI call.
+// ---------------------------------------------------------------------------
+
 const FONT_FAMILY: Record<FontStyle, string> = {
   script:  '"Brush Script MT", "Segoe Script", cursive',
   block:   '"Arial Black", Impact, sans-serif',
@@ -90,11 +101,14 @@ function TextOverlay({
   fontStyle,
   color,
   themeAccent,
+  verticalPct = 32,
 }: {
   text: string;
   fontStyle: FontStyle;
   color: TextColor;
   themeAccent: string;
+  /** Vertical position as % from top of the preview container. */
+  verticalPct?: number;
 }) {
   const resolvedColor = resolveTextColor(color, themeAccent);
   const textShadow =
@@ -102,31 +116,128 @@ function TextOverlay({
       ? "0 1px 3px rgba(255,255,255,0.5)"
       : "0 1px 5px rgba(0,0,0,0.65), 0 0 16px rgba(0,0,0,0.25)";
 
+  // Split on literal \n OR actual newlines so custom text can span lines.
+  const lines = text.split(/\\n|\n/);
+
   return (
     <div
       className="pointer-events-none absolute inset-x-0"
-      style={{ top: "32%" }}
+      style={{ top: `${verticalPct}%` }}
     >
-      <p
-        style={{
-          fontFamily:    FONT_FAMILY[fontStyle],
-          fontWeight:    FONT_WEIGHT[fontStyle],
-          fontStyle:     fontStyle === "script" ? "italic" : "normal",
-          color:         resolvedColor,
-          textShadow,
-          fontSize:      "clamp(1rem, 4.5vw, 2.4rem)",
-          letterSpacing: fontStyle === "elegant" ? "0.1em" : fontStyle === "block" ? "0.04em" : "0.02em",
-          textAlign:     "center",
-          padding:       "0 10%",
-          lineHeight:    1.3,
-          userSelect:    "none",
-        }}
-      >
-        {text}
-      </p>
+      {lines.map((line, i) => (
+        <p
+          key={i}
+          style={{
+            fontFamily:    FONT_FAMILY[fontStyle],
+            fontWeight:    FONT_WEIGHT[fontStyle],
+            fontStyle:     fontStyle === "script" ? "italic" : "normal",
+            color:         resolvedColor,
+            textShadow,
+            fontSize:      "clamp(0.95rem, 4vw, 2.2rem)",
+            letterSpacing: fontStyle === "elegant" ? "0.1em" : fontStyle === "block" ? "0.04em" : "0.02em",
+            textAlign:     "center",
+            padding:       "0 10%",
+            lineHeight:    1.35,
+            margin:        0,
+            userSelect:    "none",
+          }}
+        >
+          {line || " "}
+        </p>
+      ))}
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Cutout overlay — shows correct cutout count without AI regeneration.
+// Small = 2, Medium = 4, Premium = 6 + 1 large feature piece.
+// ---------------------------------------------------------------------------
+
+const CUTOUT_COUNT: Record<Exclude<CutoutSize, "none">, number> = {
+  small:   2,
+  medium:  4,
+  premium: 6,
+};
+
+// Horizontal positions (% from left) keyed by cutout count.
+const CUTOUT_X: Record<number, number[]> = {
+  2: [22, 78],
+  4: [16, 35, 65, 84],
+  6: [10, 24, 38, 62, 76, 90],
+};
+
+function CutoutBoard({
+  left,
+  bottom,
+  width,
+  height,
+}: {
+  left: number;
+  bottom: number;
+  width: number;
+  height: number;
+}) {
+  return (
+    <div
+      style={{
+        position:     "absolute",
+        bottom:       `${bottom}%`,
+        left:         `${left}%`,
+        transform:    "translateX(-50%)",
+        width:        `${width}%`,
+        height:       `${height}%`,
+        background:   "rgba(255,255,255,0.12)",
+        border:       "1.5px solid rgba(255,255,255,0.38)",
+        // Rounded top suggests a head / character silhouette.
+        borderRadius: "50% 50% 4px 4px / 22% 22% 4px 4px",
+        boxShadow:    "0 2px 12px rgba(0,0,0,0.22)",
+      }}
+    />
+  );
+}
+
+function CutoutOverlay({
+  size,
+  position,
+}: {
+  size: CutoutSize;
+  position: CutoutPosition;
+}) {
+  if (size === "none") return null;
+
+  const count      = CUTOUT_COUNT[size];
+  const xPositions = CUTOUT_X[count] ?? [50];
+  const bottomPct  = position === "floor" ? 5 : 30;
+  const isPremium  = size === "premium";
+
+  return (
+    <div className="pointer-events-none absolute inset-0">
+      {/* Premium large feature piece — centered, slightly bigger */}
+      {isPremium && (
+        <CutoutBoard
+          left={50}
+          bottom={bottomPct}
+          width={9}
+          height={50}
+        />
+      )}
+      {xPositions.map((left, i) => (
+        <CutoutBoard
+          key={i}
+          left={left}
+          bottom={bottomPct}
+          width={6}
+          height={40}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Generation hook
+// ---------------------------------------------------------------------------
 
 /** Snapshot of config values relevant to change detection. */
 type Snap = {
@@ -143,15 +254,14 @@ type Snap = {
 };
 
 /**
- * Compare current snapshot to the last generated image snapshot.
- * Only backdropColor and balloonColors qualify for img2img.
- * Every other change triggers a full text-to-image regeneration.
+ * Structural changes → full regeneration.
+ * Text / font / color / cutout changes → overlay only, no AI call.
  */
 function detectChangeType(curr: Snap, base: Snap): ChangeType {
-  if (curr.nonce !== base.nonce) return "full";
-  if (curr.theme !== base.theme) return "full";
-  if (curr.pkg !== base.pkg) return "full";
-  if (curr.shapes !== base.shapes) return "full";
+  if (curr.nonce !== base.nonce)        return "full";
+  if (curr.theme !== base.theme)        return "full";
+  if (curr.pkg !== base.pkg)            return "full";
+  if (curr.shapes !== base.shapes)      return "full";
   if (curr.balloonStyle !== base.balloonStyle) return "full";
   if (curr.backdropPrint !== base.backdropPrint) return "full";
   if (curr.plinthSizes !== base.plinthSizes || curr.extras !== base.extras) return "full";
@@ -159,72 +269,57 @@ function detectChangeType(curr: Snap, base: Snap): ChangeType {
   return "full";
 }
 
-/**
- * Debounced preview hook with incremental img2img support.
- *
- * - First generation: full text-to-image (flux-2-pro).
- * - Subsequent focused changes: img2img via fal-ai/flux-pro/kontext, keeping
- *   overall composition stable and only updating what changed.
- * - Theme changes and manual Regenerate clicks always trigger full t2i.
- */
 export function useSetupPreview(config: BuilderConfig) {
-  const [status, setStatus] = useState<PreviewStatus>("idle");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [status, setStatus]           = useState<PreviewStatus>("idle");
+  const [imageUrl, setImageUrl]       = useState<string | null>(null);
   const [isIncremental, setIsIncremental] = useState(false);
-  const reqId = useRef(0);
+  const reqId   = useRef(0);
   const [nonce, setNonce] = useState(0);
 
-  // Snapshot of the config at the time of the last successful generation.
-  // Change detection compares current config to this — not to the previous render.
-  const baseSnap = useRef<Snap | null>(null);
-  // URL of the last successfully generated image (sent as reference for img2img).
+  const baseSnap        = useRef<Snap | null>(null);
   const baseImageUrlRef = useRef<string | null>(null);
 
   const extras = deriveExtras(config);
-  const d = config.decor;
+  const d      = config.decor;
 
-  // Text/font/color changes are handled by the CSS overlay — excluded from the
-  // AI generation sig so they never trigger a new fal.ai request.
+  // Excluded from sig: backdropText (text/font/color) and cutouts.
+  // Both are handled as overlays and must NOT trigger AI regeneration.
   const sig = JSON.stringify({
-    t: config.theme,
-    p: config.package,
-    et: config.eventType,
+    t:      config.theme,
+    p:      config.package,
+    et:     config.eventType,
     shapes: d.backdropShapes,
-    b: d.balloonStyle,
-    bc: d.backdropColor,
-    blc: d.balloonColors,
-    bp: d.backdropPrint,
-    cut: d.cutouts,
-    pl: PLINTH_MODE === "ai" ? d.plinthSizes : undefined,
-    e: extras,
-    n: nonce,
+    b:      d.balloonStyle,
+    bc:     d.backdropColor,
+    blc:    d.balloonColors,
+    bp:     d.backdropPrint,
+    pl:     PLINTH_MODE === "ai" ? d.plinthSizes : undefined,
+    e:      extras,
+    n:      nonce,
   });
 
   useEffect(() => {
     const id = ++reqId.current;
 
     const curr: Snap = {
-      theme: config.theme,
-      pkg: config.package,
+      theme:         config.theme,
+      pkg:           config.package,
       nonce,
-      shapes: JSON.stringify(d.backdropShapes),
-      color: d.backdropColor ?? "",
-      balloonStyle: d.balloonStyle,
+      shapes:        JSON.stringify(d.backdropShapes),
+      color:         d.backdropColor ?? "",
+      balloonStyle:  d.balloonStyle,
       balloonColors: JSON.stringify(d.balloonColors),
       backdropPrint: JSON.stringify(d.backdropPrint),
-      plinthSizes: JSON.stringify(PLINTH_MODE === "ai" ? d.plinthSizes : []),
-      extras: JSON.stringify(extras),
+      plinthSizes:   JSON.stringify(PLINTH_MODE === "ai" ? d.plinthSizes : []),
+      extras:        JSON.stringify(extras),
     };
 
-    // Determine what changed relative to the last generated image.
-    const base = baseSnap.current;
+    const base       = baseSnap.current;
     const changeType: ChangeType =
       base && baseImageUrlRef.current ? detectChangeType(curr, base) : "full";
 
     const incremental = changeType !== "full" && changeType !== "theme";
 
-    // Clear the base reference on any full regeneration so stale images
-    // can never bleed into a subsequent img2img request.
     if (!incremental) {
       baseImageUrlRef.current = null;
     }
@@ -237,22 +332,22 @@ export function useSetupPreview(config: BuilderConfig) {
     const timer = setTimeout(async () => {
       try {
         const res = await fetch("/api/generate", {
-          method: "POST",
+          method:  "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            theme: config.theme,
-            package: config.package,
-            eventType: config.eventType,
+            theme:         config.theme,
+            package:       config.package,
+            eventType:     config.eventType,
             backdropShapes: d.backdropShapes,
-            backdropColor: d.backdropColor,
-            balloonStyle: d.balloonStyle,
-            balloonColors: d.balloonColors,
-            backdropText: d.backdropText,
-            backdropPrint: d.backdropPrint,
-            cutouts: d.cutouts,
-            plinthSizes: PLINTH_MODE === "ai" ? d.plinthSizes : undefined,
+            backdropColor:  d.backdropColor,
+            balloonStyle:   d.balloonStyle,
+            balloonColors:  d.balloonColors,
+            backdropText:   d.backdropText,
+            backdropPrint:  d.backdropPrint,
+            cutouts:        d.cutouts,
+            plinthSizes:    PLINTH_MODE === "ai" ? d.plinthSizes : undefined,
             extras,
-            baseImageUrl: incremental ? capturedBaseUrl : undefined,
+            baseImageUrl:   incremental ? capturedBaseUrl : undefined,
             changeType,
           }),
         });
@@ -262,8 +357,7 @@ export function useSetupPreview(config: BuilderConfig) {
           setStatus("error");
           return;
         }
-        // Update the base snapshot and image URL for the next change detection.
-        baseSnap.current = curr;
+        baseSnap.current        = curr;
         baseImageUrlRef.current = data.imageUrl;
         setImageUrl(data.imageUrl);
         setStatus("done");
@@ -284,6 +378,10 @@ export function useSetupPreview(config: BuilderConfig) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Preview component
+// ---------------------------------------------------------------------------
+
 export default function SetupPreview({
   config,
   status,
@@ -292,33 +390,26 @@ export default function SetupPreview({
   onRegenerate,
   showControls = true,
 }: {
-  config: BuilderConfig;
-  status: PreviewStatus;
-  imageUrl: string | null;
+  config:        BuilderConfig;
+  status:        PreviewStatus;
+  imageUrl:      string | null;
   isIncremental?: boolean;
-  onRegenerate: () => void;
-  showControls?: boolean;
+  onRegenerate:  () => void;
+  showControls?:  boolean;
 }) {
   const themeAccent = THEMES.find((t) => t.id === config.theme)?.accent ?? "#C77DD6";
   const overlayText = resolveBackdropText(config.decor.backdropText);
-  // The URL actually displayed in the <img> tag. Only updates after the new
-  // image has been pre-loaded, so the old image stays on screen until the new
-  // one is ready to cross-fade in.
-  const [shownUrl, setShownUrl] = useState<string | null>(null);
-  const shownUrlRef = useRef<string | null>(null);
-  // Controls the opacity transition when a new image arrives.
+
+  const [shownUrl, setShownUrl]   = useState<string | null>(null);
+  const shownUrlRef               = useRef<string | null>(null);
   const [imgOpacity, setImgOpacity] = useState(1);
-  // Tracks the CSS animation key so remounting triggers the keyframe.
-  const [imgKey, setImgKey] = useState(0);
+  const [imgKey, setImgKey]       = useState(0);
 
   useEffect(() => {
     if (!imageUrl || imageUrl === shownUrlRef.current) return;
-
-    // Pre-load the new image before displaying it.
     const img = new window.Image();
     img.onload = () => {
       shownUrlRef.current = imageUrl;
-      // Set to 0 (no transition) then immediately schedule fade-in.
       setImgOpacity(0);
       setShownUrl(imageUrl);
       setImgKey((k) => k + 1);
@@ -329,17 +420,15 @@ export default function SetupPreview({
     img.src = imageUrl;
   }, [imageUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasShownImage = !!shownUrl;
-  // Show the spinner overlay whenever we're loading AND we have a previous
-  // image to keep visible — covers both full and incremental regenerations.
+  const hasShownImage     = !!shownUrl;
   const isLoadingWithImage = status === "loading" && hasShownImage;
-  const isFirstLoad = status === "loading" && !hasShownImage;
+  const isFirstLoad        = status === "loading" && !hasShownImage;
 
   return (
     <div>
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-inner">
 
-        {/* Previous / current image — stays visible during all loading states */}
+        {/* Base image — stays visible during all loading states */}
         {hasShownImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -358,7 +447,15 @@ export default function SetupPreview({
           <PlinthOverlay sizes={config.decor.plinthSizes} />
         )}
 
-        {/* Text overlay — updates instantly without AI regeneration */}
+        {/* Cutout overlay — updates instantly, no AI regeneration */}
+        {hasShownImage && config.decor.cutouts.size !== "none" && (
+          <CutoutOverlay
+            size={config.decor.cutouts.size}
+            position={config.decor.cutouts.position}
+          />
+        )}
+
+        {/* Text overlay — updates instantly, no AI regeneration */}
         {hasShownImage && config.decor.backdropText.enabled && overlayText && (
           <TextOverlay
             text={overlayText}
@@ -368,7 +465,7 @@ export default function SetupPreview({
           />
         )}
 
-        {/* First-time skeleton — only shown before ANY image has been generated */}
+        {/* First-time skeleton */}
         {isFirstLoad && (
           <div className="shimmer absolute inset-0 flex flex-col items-center justify-center gap-3 bg-accent-soft/80 backdrop-blur-sm">
             <div className="h-9 w-9 animate-spin rounded-full border-4 border-accent/25 border-t-accent" />
@@ -376,7 +473,7 @@ export default function SetupPreview({
           </div>
         )}
 
-        {/* Subtle overlay + spinner shown over the existing image while loading */}
+        {/* Loading overlay on top of existing image */}
         {isLoadingWithImage && (
           <>
             <div className="absolute inset-0 animate-pulse bg-white/10 pointer-events-none" />
