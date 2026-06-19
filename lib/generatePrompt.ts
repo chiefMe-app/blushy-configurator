@@ -64,20 +64,21 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
 
 /**
  * Full geometry + exclusion block used when half_arch is the ONLY selected panel.
- * Contains NO "half arch" phrase — uses pure geometry language only.
- * CHANGE 1 + CHANGE 2 + CHANGE 4 from spec.
+ * Contains NO "half arch" phrase — uses pure geometry language with explicit proportions.
+ * CHANGE 1 + CHANGE 2 from spec.
  */
 const HALF_ARCH_SINGLE_BLOCK =
   "STRICT SCENE STRUCTURE: one backdrop panel only. " +
-  "The panel is an asymmetrical rounded-corner vertical backdrop panel. " +
-  "It has one full-height straight vertical side from floor to top, and the opposite side is shorter. " +
-  "The top edge starts high on the straight side, curves smoothly downward, and ends on the shorter side. " +
-  "Only one top corner is rounded. " +
-  "The outer silhouette must be clearly visible with a defined edge. " +
+  "The panel is an asymmetrical rounded-corner vertical backdrop panel with a clearly uneven height profile. " +
+  "The left side is a full-height straight vertical edge, approximately 220cm tall. " +
+  "The right side is visibly shorter, approximately 140cm tall. " +
+  "The top edge starts at the full-height left side, curves smoothly downward, and ends on the shorter right side. " +
+  "Only the upper-left corner is high; only one top corner is rounded. " +
+  "The outline must clearly show one tall side and one short side. " +
+  "The complete outer silhouette must remain visible from top to bottom. " +
   "The panel stands directly on the floor with no base platform. No second panel. No extra panels. " +
-  "This is not a full arch, not a symmetrical arch, not a centered arch, not a round panel, " +
-  "not a circular wall, not a tombstone arch, not an arch opening. " +
-  "Use enough contrast and lighting so the complete outer silhouette of the backdrop panel is visible from top to bottom.";
+  "This is not a full arch, not a symmetrical arch, not a centered arch, not a tombstone arch, " +
+  "not a round panel, not a circular wall, not a rectangular panel with a rounded top.";
 
 /**
  * THEME_MOOD — color scheme, atmosphere, and overall vibe ONLY.
@@ -229,8 +230,8 @@ export const NEGATIVE_PROMPT =
  * Fixed negative prompt sent to fal.ai for all text-to-image generations.
  * Covers shape confusion, plinth misrendering, and unwanted people/cartoon elements.
  */
-export function generateNegativePrompt(): string {
-  return (
+export function generateNegativePrompt(shapes?: BackdropShapeId[]): string {
+  const base =
     "floating balloons, balloon strings, cartoon, illustration, drawing, people, children, " +
     "watermark, blurry, distorted, wide platform, raised stage, podium, " +
     "wide base pedestal, circular stage floor, round platform on ground, oversized plinth base, " +
@@ -239,8 +240,17 @@ export function generateNegativePrompt(): string {
     "full arch, symmetrical arch, centered arch, arch opening, round arch, tombstone arch, " +
     "circular backdrop, round wall, round backdrop, " +
     "second backdrop panel, extra backdrop panel, double arch, " +
-    "multiple backdrop panels when single backdrop is selected"
-  );
+    "multiple backdrop panels when single backdrop is selected";
+
+  if (shapes?.length === 1 && shapes[0] === "half_arch") {
+    return (
+      base +
+      ", rounded rectangle backdrop, rounded top rectangle, equal height sides, both sides same height, " +
+      "balloons covering panel outline, balloons hiding backdrop silhouette"
+    );
+  }
+
+  return base;
 }
 
 export interface PromptInput {
@@ -337,11 +347,22 @@ export function generatePrompt(input: PromptInput): {
     .slice(0, 4)
     .map(hexToColorName)
     .filter((v, i, a) => v && a.indexOf(v) === i);
-  const balloons = balloonStyle
+  const balloonsBase = balloonStyle
     ? balloonColorNames.length
       ? `${balloonStyle} in ${balloonColorNames.join(", ")} tones`
       : balloonStyle
     : "";
+
+  // For half_arch single panel: override balloon placement so the asymmetric silhouette stays visible
+  const isHalfArchSingle = input.backdropShapes.length === 1 && input.backdropShapes[0] === "half_arch";
+  const balloons = isHalfArchSingle && balloonStyle
+    ? (balloonColorNames.length
+        ? `balloon garland in ${balloonColorNames.join(", ")} tones`
+        : "balloon garland") +
+      ", balloon garland must sit beside the panel and partially along the lower curved side only, " +
+      "do not cover the full-height straight outer edge, do not cover the top outline, " +
+      "keep the panel silhouette visible, balloons should frame the panel without hiding the one-tall-side one-short-side shape"
+    : balloonsBase;
 
   // Backdrop text.
   let textClause = "";
@@ -517,11 +538,11 @@ export function generatePrompt(input: PromptInput): {
         ? "single backdrop, one panel, three panels, triple backdrop"
         : "single backdrop, one panel, two panels, double backdrop";
 
-  // CHANGE 3: direct negative terms, no conditional phrases like "when X is selected"
   const shapeNegative =
     input.backdropShapes.length === 1 && input.backdropShapes[0] === "half_arch"
-      ? "full arch, symmetrical arch, centered arch, arch opening, round arch, tombstone arch, " +
-        "circular backdrop, round wall, round backdrop, second backdrop panel, extra backdrop panel, double arch"
+      ? "full arch, symmetrical arch, centered arch, tombstone arch, rounded rectangle backdrop, " +
+        "rounded top rectangle, circular backdrop, round wall, equal height sides, both sides same height, " +
+        "balloons covering panel outline, balloons hiding backdrop silhouette, second panel, extra backdrop panel"
       : input.backdropShapes.length === 1 && input.backdropShapes[0] === "round"
         ? "two circles, multiple circles, arch shape, multiple backdrops, two backdrops"
         : "";

@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
 
     // Full text-to-image generation.
     const { prompt } = generatePrompt(promptInput);
-    const negativePrompt = generateNegativePrompt();
+    const negativePrompt = generateNegativePrompt(promptInput.backdropShapes);
 
     if (process.env.NODE_ENV === "development") {
       console.log("[generate] backdropShapes:", promptInput.backdropShapes);
