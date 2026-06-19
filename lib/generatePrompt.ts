@@ -38,20 +38,20 @@ const PROMPT_PREFIX =
 const PROMPT_SUFFIX =
   " Wide establishing shot showing the complete full setup from the front. Sharp focus on entire scene. Soft natural lighting. Photorealistic 4k quality. Professional event decoration photography.";
 
-/** Strict per-shape backdrop descriptions — verbatim, dimensions included. */
+/** Strict per-shape backdrop descriptions — geometry-first, with explicit NOT statements. */
 const SHAPE_DESC: Record<BackdropShapeId, string> = {
-  arch:
-    "ONE arch backdrop panel: two straight vertical sides, semicircular rounded top, like a doorway or window arch, flat bottom edge, straight sides rise up then meet in a perfect half-circle at the top, width 100cm, height 200cm tall to top of arch curve, matte flat painted surface panel",
   half_arch:
-    "ONE half arch backdrop panel: LEFT vertical edge is 200cm tall, RIGHT vertical edge is only 110cm tall, the top edge is a single smooth diagonal curve sweeping from the tall left (200cm) down to the short right (110cm), like a skateboard ramp silhouette or quarter-pipe profile, flat bottom edge, total width 100cm, the overall shape resembles a right triangle with a curved hypotenuse, NOT symmetric, NOT a full arch, matte flat painted surface panel",
+    "exactly one single half arch backdrop panel, asymmetrical backdrop shape, one straight vertical side and one curved side, only one top corner rounded, flat vertical decorative panel standing directly on the floor, NOT a full arch, NOT a symmetrical arch, NOT a circular backdrop, NOT a round wall",
+  arch:
+    "single full arch backdrop panel, symmetrical arch shape with rounded top center, flat vertical decorative panel standing directly on the floor",
   round:
-    "ONE perfectly circular round backdrop disc panel, complete full circle shape, diameter 180cm, flat circular panel standing upright on the floor, no flat bottom edge, perfectly round on all sides, matte flat painted surface",
+    "single circular round backdrop panel, perfect round flat vertical decorative panel standing directly on the floor",
   rect:
-    "ONE rectangular backdrop panel, perfectly straight edges on all four sides, width 100cm, height 200cm, flat wall panel, no curves anywhere, matte flat painted surface",
+    "single rectangular vertical backdrop panel with straight edges, flat vertical decorative panel standing directly on the floor",
   shimmer_wall:
-    "ONE rectangular shimmer wall backdrop panel, entire surface covered with silver metallic sequin mirror tiles, highly reflective disco-ball sequin effect, width 100cm, height 200cm",
+    "single rectangular shimmer wall backdrop panel, entire surface covered with silver metallic sequin mirror tiles, highly reflective sequin effect, flat vertical decorative panel standing directly on the floor",
   wavy:
-    "ONE wavy backdrop panel, width 100cm, height 200cm at tallest point, top edge has 2-3 gentle organic waves, soft flowing curved silhouette along top, NOT sharp zigzag, smooth gentle waves only, matte flat painted surface",
+    "single wavy organic-shaped vertical backdrop panel with soft curved edges, flat decorative panel standing directly on the floor",
 };
 
 /**
@@ -104,7 +104,7 @@ const THEME_PRINT: Record<string, string> = {
   space:     "stars planets and rocket graphics on backdrop",
   football:  "football pitch lines and soccer ball on backdrop",
   lego:      "Lego brick grid pattern and minifigure graphics printed directly on flat rectangular panel surface",
-  kpop:      "stage spotlight and star graphics on backdrop",
+  kpop:      "spotlight beam and star graphics on backdrop",
   encanto:   "magical candle and tropical flower graphics on backdrop",
   cocomelon: "watermelon pattern and colorful polka dots on backdrop",
   teddy_bear:         "cute teddy bear illustrations on backdrop",
@@ -399,19 +399,38 @@ export function generatePrompt(input: PromptInput): {
     .join(", ");
 
   // Plinths (AI mode only — omit entirely in SVG mode).
+  const PLINTH_SIZE_LABEL: Record<string, string> = {
+    small: "small",
+    medium: "medium-height",
+    large: "large",
+    xl: "extra-large",
+  };
+  const PLINTH_BASE =
+    "elegant narrow white display column similar to a museum sculpture pedestal or flower stand, " +
+    "very narrow cylindrical tube shape, tall and slender, slim narrow white cylindrical column pedestals with 40cm diameter only, " +
+    "very narrow base, tall and slender like a flower vase or display column, " +
+    "NOT a wide platform, NOT a podium, diameter must be much smaller than height";
+  const PLINTH_FLOOR_RULE =
+    "The backdrop stands directly on the floor with no raised base. " +
+    "Pedestals are separate narrow vertical columns, not connected to each other and not forming a platform.";
   let plinthClause = "";
   if (input.plinthSizes && input.plinthSizes.length > 0) {
     const count = Math.min(3, input.plinthSizes.length);
-    const positionDesc =
-      count === 1
-        ? "centered in front of the backdrop"
-        : count === 2
-          ? "spaced evenly in front of the backdrop"
-          : "arranged in a row in front of the backdrop";
-    plinthClause =
-      `${count} narrow tall white cylindrical plinth pedestal${count > 1 ? "s" : ""}, ` +
-      `height 3x greater than diameter, slim elegant display column like a museum pedestal, ` +
-      `matte white surface, standing on floor in front of backdrop, ${positionDesc}`;
+    const sizes = input.plinthSizes.slice(0, count);
+    if (count === 1) {
+      plinthClause =
+        `one ${PLINTH_SIZE_LABEL[sizes[0]] ?? "medium-height"} narrow cylindrical white display column pedestal, ` +
+        `${PLINTH_BASE}. ${PLINTH_FLOOR_RULE}`;
+    } else if (count === 2) {
+      plinthClause =
+        `two separate narrow cylindrical white display column pedestals of different heights, ` +
+        `one ${PLINTH_SIZE_LABEL[sizes[0]] ?? "medium-height"} and one ${PLINTH_SIZE_LABEL[sizes[1]] ?? "large"}, ` +
+        `${PLINTH_BASE}. ${PLINTH_FLOOR_RULE}`;
+    } else {
+      plinthClause =
+        `three separate narrow cylindrical white display column pedestals grouped beside the backdrop, ` +
+        `${PLINTH_BASE}. ${PLINTH_FLOOR_RULE}`;
+    }
   }
 
   // Strict count+shape requirement — shown FIRST so the model sees it before any other detail.
@@ -432,8 +451,14 @@ export function generatePrompt(input: PromptInput): {
     ? `with ${shapeLabelStr} shape`
     : `with mixed shapes: ${shapeLabelStr}`;
   const strictRequirements =
-    `STRICT REQUIREMENTS: This image must show EXACTLY ${panelWord} backdrop panel(s) ` +
-    `${panelShapeDesc}. This overrides everything else.`;
+    effectivePanels === 1
+      ? `STRICT REQUIREMENTS: This image must show EXACTLY ONE (1) backdrop panel ${panelShapeDesc}, ` +
+        `one backdrop panel only, no second backdrop, no extra panels. This overrides everything else.`
+      : effectivePanels === 2
+        ? `STRICT REQUIREMENTS: This image must show EXACTLY TWO (2) backdrop panels ${panelShapeDesc}, ` +
+          `two backdrop panels side by side. This overrides everything else.`
+        : `STRICT REQUIREMENTS: This image must show EXACTLY THREE (3) backdrop panels ${panelShapeDesc}, ` +
+          `three backdrop panels arranged together. This overrides everything else.`;
 
   const humanScale =
     "These are standard party backdrop panels, human-sized decorative panels, NOT giant walls, NOT oversized installations";
