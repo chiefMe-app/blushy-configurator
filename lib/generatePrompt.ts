@@ -42,7 +42,8 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
   round:
     "one perfect circular round vertical backdrop panel, standing directly on the floor",
   rect:
-    "one rectangular vertical backdrop panel with straight edges, standing directly on the floor",
+    "one rectangular vertical backdrop panel with a straight horizontal top edge, straight vertical sides, flat horizontal top, clear 90-degree top corners, and a flat bottom resting on the floor — " +
+    "NOT an arch, NOT a curved-top panel, NOT a rounded-top backdrop, NOT a semicircle top, NOT a tombstone shape, NOT a dome top",
   shimmer_wall:
     "one vertical shimmer wall panel with reflective fringe texture, standing directly on the floor",
   wavy:
@@ -166,6 +167,7 @@ export function generateNegativePrompt(items?: BackdropItem[]): string {
   const shapes = items?.map((i) => i.type) ?? [];
   const isSingle = !items || items.length <= 1;
   const hasRound = shapes.includes("round");
+  const hasRect  = shapes.includes("rect");
 
   const base =
     "floating balloons, balloon strings, cartoon, illustration, drawing, people, children, " +
@@ -179,7 +181,13 @@ export function generateNegativePrompt(items?: BackdropItem[]): string {
 
   const roundNeg = hasRound && isSingle ? ", two circles, multiple circles, arch shape" : "";
 
-  return `${base}, ${countNeg}${roundNeg}`;
+  // Explicit exclusions when a rectangular panel is selected
+  const rectNeg = hasRect
+    ? ", arch-shaped panel, rounded-top panel, curved-top panel, semicircle top, " +
+      "tombstone-shaped panel, dome-top panel, arched backdrop, half-arch panel"
+    : "";
+
+  return `${base}, ${countNeg}${roundNeg}${rectNeg}`;
 }
 
 export interface PromptInput {
@@ -225,27 +233,49 @@ function buildArchItemDesc(item: BackdropItem, panelColorName = ""): string {
   return SHAPE_DESC.arch + colorPart;
 }
 
-/** Build dimension-aware description for a rectangular panel — explicitly NOT arch-shaped. */
+const RECT_GEOMETRY =
+  "straight horizontal top edge, straight vertical sides, flat horizontal top, " +
+  "clear 90-degree top corners, portrait orientation, " +
+  "NOT an arch, NOT curved-top, NOT rounded-top, NOT semicircle top, NOT tombstone shape, NOT dome-top";
+
+/** Build strict dimension-aware description for a rectangular panel. */
 function buildRectItemDesc(item: BackdropItem, panelColorName = ""): string {
   const colorPart = panelColorName ? ` in ${panelColorName} color` : "";
-  if (item.heightCm && item.widthCm) {
+
+  // Prefer size-specific language for known IDs
+  if (item.sizeId === "rect_100x200") {
     return (
-      `one rectangular vertical backdrop panel with a straight horizontal top edge and straight vertical sides, ` +
-      `${item.heightCm}cm tall, ${item.widthCm}cm wide${colorPart}, ` +
-      `NOT arch-shaped, NOT rounded or curved top, NOT oval — this panel has a completely flat top, ` +
-      `standing directly on the floor`
+      `one rectangular vertical backdrop panel, 100 cm wide and 200 cm tall${colorPart}, ` +
+      `${RECT_GEOMETRY}, standing directly on the floor`
     );
   }
+  if (item.sizeId === "rect_80x180") {
+    return (
+      `one rectangular vertical backdrop panel, 80 cm wide and 180 cm tall${colorPart}, ` +
+      `${RECT_GEOMETRY}, standing directly on the floor`
+    );
+  }
+
+  // Fallback: use stored dimensions
+  if (item.heightCm && item.widthCm) {
+    return (
+      `one rectangular vertical backdrop panel, ${item.widthCm} cm wide and ${item.heightCm} cm tall${colorPart}, ` +
+      `${RECT_GEOMETRY}, standing directly on the floor`
+    );
+  }
+
   const size = RECT_SIZES.find((s) => s.id === item.sizeId);
   if (size) {
     return (
-      `one rectangular vertical backdrop panel with a straight horizontal top edge and straight vertical sides, ` +
-      `${size.heightCm}cm tall, ${size.widthCm}cm wide${colorPart}, ` +
-      `NOT arch-shaped, NOT rounded or curved top, NOT oval — this panel has a completely flat top, ` +
-      `standing directly on the floor`
+      `one rectangular vertical backdrop panel, ${size.widthCm} cm wide and ${size.heightCm} cm tall${colorPart}, ` +
+      `${RECT_GEOMETRY}, standing directly on the floor`
     );
   }
-  return SHAPE_DESC.rect + colorPart;
+
+  return (
+    `one rectangular vertical backdrop panel with a completely flat top${colorPart}, ` +
+    `${RECT_GEOMETRY}, standing directly on the floor`
+  );
 }
 
 /** Build description for any panel, including per-panel color, text, and graphic. */
