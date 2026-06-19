@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { BuilderConfig, PlinthSize } from "@/lib/config";
+import type { BuilderConfig, PlinthSize, FontStyle, TextColor } from "@/lib/config";
+import { resolveBackdropText, THEMES } from "@/lib/config";
 import type { ChangeType } from "@/lib/generatePrompt";
 import LiveSetupPreview from "./LiveSetupPreview";
 
@@ -65,6 +66,68 @@ function PlinthOverlay({ sizes }: { sizes: PlinthSize[] }) {
   );
 }
 
+const FONT_FAMILY: Record<FontStyle, string> = {
+  script:  '"Brush Script MT", "Segoe Script", cursive',
+  block:   '"Arial Black", Impact, sans-serif',
+  elegant: 'Georgia, "Times New Roman", serif',
+};
+
+const FONT_WEIGHT: Record<FontStyle, number> = {
+  script:  400,
+  block:   900,
+  elegant: 400,
+};
+
+function resolveTextColor(color: TextColor, themeAccent: string): string {
+  if (color === "white")  return "#FFFFFF";
+  if (color === "gold")   return "#D4AF37";
+  if (color === "black")  return "#222222";
+  return themeAccent;
+}
+
+function TextOverlay({
+  text,
+  fontStyle,
+  color,
+  themeAccent,
+}: {
+  text: string;
+  fontStyle: FontStyle;
+  color: TextColor;
+  themeAccent: string;
+}) {
+  const resolvedColor = resolveTextColor(color, themeAccent);
+  const textShadow =
+    color === "black"
+      ? "0 1px 3px rgba(255,255,255,0.5)"
+      : "0 1px 5px rgba(0,0,0,0.65), 0 0 16px rgba(0,0,0,0.25)";
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-x-0"
+      style={{ top: "32%" }}
+    >
+      <p
+        style={{
+          fontFamily:    FONT_FAMILY[fontStyle],
+          fontWeight:    FONT_WEIGHT[fontStyle],
+          fontStyle:     fontStyle === "script" ? "italic" : "normal",
+          color:         resolvedColor,
+          textShadow,
+          fontSize:      "clamp(1rem, 4.5vw, 2.4rem)",
+          letterSpacing: fontStyle === "elegant" ? "0.1em" : fontStyle === "block" ? "0.04em" : "0.02em",
+          textAlign:     "center",
+          padding:       "0 10%",
+          lineHeight:    1.3,
+          userSelect:    "none",
+        }}
+      >
+        {text}
+      </p>
+    </div>
+  );
+}
+
 /** Snapshot of config values relevant to change detection. */
 type Snap = {
   theme: string;
@@ -120,6 +183,8 @@ export function useSetupPreview(config: BuilderConfig) {
   const extras = deriveExtras(config);
   const d = config.decor;
 
+  // Text/font/color changes are handled by the CSS overlay — excluded from the
+  // AI generation sig so they never trigger a new fal.ai request.
   const sig = JSON.stringify({
     t: config.theme,
     p: config.package,
@@ -128,7 +193,6 @@ export function useSetupPreview(config: BuilderConfig) {
     b: d.balloonStyle,
     bc: d.backdropColor,
     blc: d.balloonColors,
-    txt: d.backdropText,
     bp: d.backdropPrint,
     cut: d.cutouts,
     pl: PLINTH_MODE === "ai" ? d.plinthSizes : undefined,
@@ -235,6 +299,8 @@ export default function SetupPreview({
   onRegenerate: () => void;
   showControls?: boolean;
 }) {
+  const themeAccent = THEMES.find((t) => t.id === config.theme)?.accent ?? "#C77DD6";
+  const overlayText = resolveBackdropText(config.decor.backdropText);
   // The URL actually displayed in the <img> tag. Only updates after the new
   // image has been pre-loaded, so the old image stays on screen until the new
   // one is ready to cross-fade in.
@@ -290,6 +356,16 @@ export default function SetupPreview({
         {/* Plinth overlay — SVG mode only */}
         {hasShownImage && PLINTH_MODE === "svg" && (
           <PlinthOverlay sizes={config.decor.plinthSizes} />
+        )}
+
+        {/* Text overlay — updates instantly without AI regeneration */}
+        {hasShownImage && config.decor.backdropText.enabled && overlayText && (
+          <TextOverlay
+            text={overlayText}
+            fontStyle={config.decor.backdropText.fontStyle}
+            color={config.decor.backdropText.color}
+            themeAccent={themeAccent}
+          />
         )}
 
         {/* First-time skeleton — only shown before ANY image has been generated */}
