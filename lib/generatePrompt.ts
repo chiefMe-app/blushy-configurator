@@ -39,43 +39,41 @@ const PROMPT_SUFFIX =
   " Wide establishing shot showing the complete full setup from the front. Sharp focus on entire scene. Soft natural lighting. Photorealistic 4k quality. Professional event decoration photography.";
 
 /**
- * Geometry description used when this shape appears in a multi-panel arrangement.
- * For the half_arch single-panel case, HALF_ARCH_SINGLE_BLOCK is used instead.
+ * Per-shape descriptions used in multi-panel context (LEFT/CENTER/RIGHT panel lists)
+ * and as single-panel description for non-half_arch shapes.
+ * For half_arch single-panel: HALF_ARCH_SINGLE_BLOCK is used instead.
  * MUST NOT contain "half arch", "arch backdrop", or "arched backdrop".
  */
 const SHAPE_DESC: Record<BackdropShapeId, string> = {
   half_arch:
-    "asymmetrical rounded-corner vertical backdrop panel, " +
-    "one full-height straight vertical side from floor to top, opposite side is shorter, " +
-    "top edge starts high on the straight side curves smoothly downward ends on the shorter side, " +
-    "only one top corner is rounded, panel stands directly on the floor with no base platform, " +
-    "this is not a symmetrical arch, not a centered arch, not a round panel",
+    "one asymmetrical rounded-corner vertical panel with one full-height straight side and one visibly shorter side; " +
+    "the top edge curves downward from the tall side to the shorter side; only one top corner is rounded; " +
+    "not a full arch, not symmetrical, not a round panel",
   arch:
-    "single full arch backdrop panel, symmetrical arch shape with rounded top center, flat vertical decorative panel standing directly on the floor",
+    "one symmetrical full arch vertical panel with a rounded top center, standing directly on the floor",
   round:
-    "single circular round backdrop panel, perfect round flat vertical decorative panel standing directly on the floor",
+    "one perfect circular round vertical backdrop panel, standing directly on the floor",
   rect:
-    "single rectangular vertical backdrop panel with straight edges, flat vertical decorative panel standing directly on the floor",
+    "one rectangular vertical backdrop panel with straight edges, standing directly on the floor",
   shimmer_wall:
-    "single rectangular shimmer wall backdrop panel, entire surface covered with silver metallic sequin mirror tiles, highly reflective sequin effect, flat vertical decorative panel standing directly on the floor",
+    "one vertical shimmer wall panel with reflective fringe texture, standing directly on the floor",
   wavy:
-    "single wavy organic-shaped vertical backdrop panel with soft curved edges, flat decorative panel standing directly on the floor",
+    "one wavy organic-shaped vertical backdrop panel with soft curved edges, standing directly on the floor",
 };
 
 /**
  * Full geometry + exclusion block used when half_arch is the ONLY selected panel.
- * Contains NO "half arch" phrase — uses pure geometry language with explicit proportions.
- * CHANGE 1 + CHANGE 2 from spec.
+ * Uses explicit 220cm/140cm proportions so the model renders the height difference clearly.
+ * Contains NO "half arch" phrase — pure geometry language only.
  */
 const HALF_ARCH_SINGLE_BLOCK =
-  "STRICT SCENE STRUCTURE: one backdrop panel only. " +
-  "The panel is an asymmetrical rounded-corner vertical backdrop panel with a clearly uneven height profile. " +
-  "The left side is a full-height straight vertical edge, approximately 220cm tall. " +
-  "The right side is visibly shorter, approximately 140cm tall. " +
-  "The top edge starts at the full-height left side, curves smoothly downward, and ends on the shorter right side. " +
-  "Only the upper-left corner is high; only one top corner is rounded. " +
+  "STRICT SCENE STRUCTURE: exactly one backdrop panel only. " +
+  "The selected panel is an asymmetrical rounded-corner vertical backdrop panel. " +
+  "It has one full-height straight vertical side from floor to top, approximately 220cm tall. " +
+  "The opposite side is visibly shorter, approximately 140cm tall. " +
+  "The top edge starts high on the tall side, curves smoothly downward, and ends on the shorter side. " +
+  "Only one top corner is rounded. " +
   "The outline must clearly show one tall side and one short side. " +
-  "The complete outer silhouette must remain visible from top to bottom. " +
   "The panel stands directly on the floor with no base platform. No second panel. No extra panels. " +
   "This is not a full arch, not a symmetrical arch, not a centered arch, not a tombstone arch, " +
   "not a round panel, not a circular wall, not a rectangular panel with a rounded top.";
@@ -231,26 +229,33 @@ export const NEGATIVE_PROMPT =
  * Covers shape confusion, plinth misrendering, and unwanted people/cartoon elements.
  */
 export function generateNegativePrompt(shapes?: BackdropShapeId[]): string {
+  const isSingle = !shapes || shapes.length <= 1;
+  const hasHalfArch = shapes?.includes("half_arch") ?? false;
+  const hasRound = shapes?.includes("round") ?? false;
+
   const base =
     "floating balloons, balloon strings, cartoon, illustration, drawing, people, children, " +
     "watermark, blurry, distorted, wide platform, raised stage, podium, " +
     "wide base pedestal, circular stage floor, round platform on ground, oversized plinth base, " +
-    "plinth wider than 50cm, square pedestal, rectangular pedestal, " +
-    "wrong number of backdrops, missing backdrop, " +
-    "full arch, symmetrical arch, centered arch, arch opening, round arch, tombstone arch, " +
-    "circular backdrop, round wall, round backdrop, " +
-    "second backdrop panel, extra backdrop panel, double arch, " +
-    "multiple backdrop panels when single backdrop is selected";
+    "plinth wider than 50cm, square pedestal, rectangular pedestal";
 
-  if (shapes?.length === 1 && shapes[0] === "half_arch") {
-    return (
-      base +
-      ", rounded rectangle backdrop, rounded top rectangle, equal height sides, both sides same height, " +
-      "balloons covering panel outline, balloons hiding backdrop silhouette"
-    );
+  // Count mismatch negatives differ by whether 1 or multiple panels are selected
+  const countNeg = isSingle
+    ? "wrong number of backdrops, second backdrop panel, extra backdrop panel, multiple backdrop panels, double arch"
+    : "wrong number of backdrop panels, extra unselected backdrop panel, missing selected backdrop panel";
+
+  // Half arch negatives — omit "circular backdrop / round backdrop" when round is also selected
+  let halfArchNeg = "";
+  if (hasHalfArch) {
+    const circularNeg = hasRound ? "" : ", circular backdrop, round backdrop, round wall";
+    halfArchNeg =
+      ", full arch, symmetrical arch, centered arch, tombstone arch, rounded top rectangle" +
+      circularNeg +
+      ", equal height sides, both sides same height, " +
+      "balloons covering panel outline, balloons hiding backdrop silhouette";
   }
 
-  return base;
+  return `${base}, ${countNeg}${halfArchNeg}`;
 }
 
 export interface PromptInput {
@@ -279,31 +284,26 @@ export const PLINTH_NEGATIVE =
 
 function buildSceneBackdrop(shapes: BackdropShapeId[], colorName: string): string {
   const count = effectiveCount(shapes);
-  const colorSuffix = colorName ? `, backdrop in ${colorName} tones` : "";
+  const colorSuffix = colorName ? `, backdrop color: ${colorName}` : "";
 
   if (count === 1) {
-    // half_arch gets a dedicated geometry block with no "half arch" wording
+    // half_arch single panel gets the full geometry block with explicit proportions
     const desc = shapes[0] === "half_arch" ? HALF_ARCH_SINGLE_BLOCK : SHAPE_DESC[shapes[0]];
     return `${desc}${colorSuffix}`;
   }
 
-  const positions = count === 2 ? ["LEFT", "RIGHT"] : ["LEFT", "CENTER", "RIGHT"];
-  const panelLines = shapes.slice(0, count).map((s, i) => {
-    let desc = SHAPE_DESC[s];
-    // Round disc is smaller when sharing the scene with other panels
-    if (s === "round" && shapes.length > 1) {
-      desc = desc.replace("diameter 180cm", "diameter 150cm");
-    }
-    return `${positions[i]} panel: ${desc}`;
-  });
+  // Multi-panel: describe each selected panel by name, then list them
+  const countWord = count === 2 ? "two" : "three";
+  const panelDescriptions = shapes.slice(0, count).map(s => SHAPE_DESC[s]).join("; ");
 
-  const countWord = count === 2 ? "TWO" : "THREE";
-  const arrangement =
-    count === 2
-      ? "panels placed close together with small gap between them, total scene width approximately 220cm"
-      : "panels arranged touching or with small gaps";
-
-  return `${countWord} backdrop panels arranged side by side: ${panelLines.join(". ")}. ${arrangement}${colorSuffix}`;
+  return (
+    `STRICT SCENE STRUCTURE: exactly ${countWord} separate backdrop panels arranged side by side as a layered event backdrop set. ` +
+    `The selected backdrop panels are: ${panelDescriptions}. ` +
+    `Each selected panel must remain clearly visible as a distinct panel. ` +
+    `Do not add any extra backdrop panels beyond the selected ${countWord}. ` +
+    `All panels stand directly on the floor with no base platform.` +
+    colorSuffix
+  );
 }
 
 export type ChangeType =
@@ -353,15 +353,15 @@ export function generatePrompt(input: PromptInput): {
       : balloonStyle
     : "";
 
-  // For half_arch single panel: override balloon placement so the asymmetric silhouette stays visible
-  const isHalfArchSingle = input.backdropShapes.length === 1 && input.backdropShapes[0] === "half_arch";
-  const balloons = isHalfArchSingle && balloonStyle
+  // When half_arch is selected (single or multi), override balloon placement so panel silhouette stays visible
+  const hasHalfArch = input.backdropShapes.includes("half_arch");
+  const balloons = hasHalfArch && balloonStyle
     ? (balloonColorNames.length
         ? `balloon garland in ${balloonColorNames.join(", ")} tones`
         : "balloon garland") +
-      ", balloon garland must sit beside the panel and partially along the lower curved side only, " +
+      ", balloon garland must frame the selected panels without hiding the outer silhouette of the asymmetrical panel, " +
       "do not cover the full-height straight outer edge, do not cover the top outline, " +
-      "keep the panel silhouette visible, balloons should frame the panel without hiding the one-tall-side one-short-side shape"
+      "keep all selected backdrop panel shapes readable"
     : balloonsBase;
 
   // Backdrop text.
@@ -538,14 +538,17 @@ export function generatePrompt(input: PromptInput): {
         ? "single backdrop, one panel, three panels, triple backdrop"
         : "single backdrop, one panel, two panels, double backdrop";
 
-  const shapeNegative =
-    input.backdropShapes.length === 1 && input.backdropShapes[0] === "half_arch"
-      ? "full arch, symmetrical arch, centered arch, tombstone arch, rounded rectangle backdrop, " +
-        "rounded top rectangle, circular backdrop, round wall, equal height sides, both sides same height, " +
-        "balloons covering panel outline, balloons hiding backdrop silhouette, second panel, extra backdrop panel"
-      : input.backdropShapes.length === 1 && input.backdropShapes[0] === "round"
-        ? "two circles, multiple circles, arch shape, multiple backdrops, two backdrops"
-        : "";
+  const _hasHalfArch = input.backdropShapes.includes("half_arch");
+  const _hasRound = input.backdropShapes.includes("round");
+  const _isSingle = effectivePanels === 1;
+  const shapeNegative = _hasHalfArch
+    ? "full arch, symmetrical arch, centered arch, tombstone arch, rounded top rectangle, " +
+      (_hasRound ? "" : "circular backdrop, round wall, ") +
+      "equal height sides, both sides same height, balloons covering panel outline, balloons hiding backdrop silhouette" +
+      (_isSingle ? ", second panel, extra backdrop panel" : "")
+    : _isSingle && _hasRound
+      ? "two circles, multiple circles, arch shape"
+      : "";
 
   const printNegative =
     !input.backdropPrint || input.backdropPrint.type === "none"
