@@ -547,6 +547,19 @@ function StandeePiece({
   );
 }
 
+// ---------------------------------------------------------------------------
+// AI-generated cutout asset types + layout constants
+// ---------------------------------------------------------------------------
+
+interface CutoutAsset {
+  id: string;
+  url: string;
+  widthCm: number;
+  heightCm: number;
+  isFeature: boolean;
+  recommendedPosition: "floor" | "backdrop";
+}
+
 const CUTOUT_COUNT: Record<Exclude<CutoutSize, "none">, number> = {
   small: 2, medium: 4, premium: 6,
 };
@@ -561,22 +574,98 @@ const MOUNTED_X: Record<number, number[]> = {
   6: [18, 30, 43, 57, 70, 82],
 };
 
+/**
+ * Fetches AI-generated cutout assets for a theme+size combination.
+ * Results are cached in a component-level Map so toggling cutouts on/off
+ * never re-triggers generation for the same theme+size.
+ * Falls back silently to empty array (SVG shapes are shown as fallback).
+ */
+function useCutoutAssets(themeId: ThemeId, cutoutSize: CutoutSize) {
+  const [assets, setAssets]   = useState<CutoutAsset[]>([]);
+  const [loading, setLoading] = useState(false);
+  const cache = useRef(new Map<string, CutoutAsset[]>());
+
+  useEffect(() => {
+    if (cutoutSize === "none") { setAssets([]); return; }
+    const key = `${themeId}_${cutoutSize}`;
+    if (cache.current.has(key)) {
+      setAssets(cache.current.get(key)!);
+      return;
+    }
+    setLoading(true);
+    fetch("/api/generate-cutouts", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ themeId, cutoutSetSize: cutoutSize }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        const list = (data.assets ?? []) as CutoutAsset[];
+        cache.current.set(key, list);
+        setAssets(list);
+      })
+      .catch(() => { /* keep SVG fallback on error */ })
+      .finally(() => setLoading(false));
+  }, [themeId, cutoutSize]);
+
+  return { assets, loading };
+}
+
 function CutoutOverlay({
-  size, position, themeAccent, themeId,
+  size, position, themeAccent, themeId, assets = [],
 }: {
   size: CutoutSize; position: CutoutPosition; themeAccent: string; themeId: ThemeId;
+  assets?: CutoutAsset[];
 }) {
   if (size === "none") return null;
-  const c1 = themeAccent;
-  const c2 = lightenHex(themeAccent, 52);
+
+  const c1        = themeAccent;
+  const c2        = lightenHex(themeAccent, 52);
   const count     = CUTOUT_COUNT[size];
   const isFloor   = position === "floor";
   const isPremium = size === "premium";
   const xArr      = isFloor ? (FLOOR_X[count] ?? [50]) : (MOUNTED_X[count] ?? [50]);
   const bottomPct = isFloor ? 5 : 18;
   const pieceH    = isFloor ? 42 : 36;
-  const shapes    = getShapes(themeId, !isFloor);
 
+  // Use real AI-generated transparent PNG assets when available
+  if (assets.length > 0) {
+    const regularAssets = assets.filter((a) => !a.isFeature);
+    const featureAsset  = assets.find((a) => a.isFeature);
+    return (
+      <div className="pointer-events-none absolute inset-0">
+        {isPremium && featureAsset && (
+          <div style={{
+            position: "absolute", bottom: `${bottomPct}%`, left: "50%",
+            transform: "translateX(-50%)", width: "9%", height: "52%",
+            filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.28))",
+          }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={featureAsset.url} alt="party standee"
+                 style={{ width: "100%", height: "100%", objectFit: "contain" }}/>
+          </div>
+        )}
+        {xArr.map((left, i) => {
+          const asset = regularAssets[i] ?? regularAssets[regularAssets.length - 1];
+          if (!asset) return null;
+          return (
+            <div key={i} style={{
+              position: "absolute", bottom: `${bottomPct}%`, left: `${left}%`,
+              transform: "translateX(-50%)", width: "6.5%", height: `${pieceH}%`,
+              filter: "drop-shadow(0 3px 10px rgba(0,0,0,0.22))",
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={asset.url} alt="party standee"
+                   style={{ width: "100%", height: "100%", objectFit: "contain" }}/>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Fallback: themed SVG shape standees (while assets are loading or on error)
+  const shapes = getShapes(themeId, !isFloor);
   return (
     <div className="pointer-events-none absolute inset-0">
       {isPremium && (
@@ -712,6 +801,9 @@ export default function SetupPreview({
   const overlayText   = resolveBackdropText(config.decor.backdropText);
   const primaryShape: BackdropShapeId = (config.decor.backdropItems[0]?.type ?? "arch") as BackdropShapeId;
 
+  // Fetch AI-generated cutout assets (cached per theme+size, no base-render side-effect)
+  const { assets: cutoutAssets } = useCutoutAssets(config.theme, config.decor.cutouts.size);
+
   const [shownUrl, setShownUrl]       = useState<string | null>(null);
   const shownUrlRef                   = useRef<string | null>(null);
   const [imgOpacity, setImgOpacity]   = useState(1);
@@ -751,13 +843,14 @@ export default function SetupPreview({
           <PlinthOverlay sizes={config.decor.plinthSizes}/>
         )}
 
-        {/* Cutout overlay — themed standees, exact count, no AI call */}
+        {/* Cutout overlay — AI assets when ready, SVG fallback while loading */}
         {hasShownImage && config.decor.cutouts.size !== "none" && (
           <CutoutOverlay
             size={config.decor.cutouts.size}
             position={config.decor.cutouts.position}
             themeAccent={themeAccent}
             themeId={config.theme}
+            assets={cutoutAssets}
           />
         )}
 
