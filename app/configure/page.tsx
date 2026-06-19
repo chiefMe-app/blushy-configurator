@@ -585,11 +585,43 @@ function DecorStep({
       active ? "ring-2 ring-accent ring-offset-2" : "border-black/15"
     }`;
 
+  const accent = theme.accent;
+  const card: React.CSSProperties = {
+    background: "white",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+  };
+  const secLabel = (text: string) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+      <span style={{ width: 3, height: 16, borderRadius: 2, background: accent, display: "inline-block", flexShrink: 0 }} />
+      <span style={{ fontSize: 15, fontWeight: 800, color: "#1A1A2E", letterSpacing: "-0.2px" }}>{text}</span>
+    </div>
+  );
+  const secSub = (text: string) => (
+    <p style={{ fontSize: 12, color: "#888", marginTop: 2, marginBottom: 10 }}>{text}</p>
+  );
+  const chip = (label: string, active: boolean): React.CSSProperties => ({
+    fontSize: 11, fontWeight: 700,
+    color: active ? "rgba(255,255,255,0.85)" : accent,
+    background: active ? "rgba(255,255,255,0.2)" : accent + "18",
+    padding: "2px 8px", borderRadius: 20, marginLeft: 6, display: "inline-block",
+  });
+  const checkBadge = (active: boolean): React.CSSProperties => ({
+    width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
+    background: active ? accent : "transparent",
+    color: active ? "white" : "transparent",
+    border: `1.5px solid ${active ? accent : "rgba(0,0,0,0.2)"}`,
+    fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700,
+  });
+
   return (
-    <div className="space-y-5">
-      <div>
-        <span className="mb-0.5 block text-sm font-semibold text-black/80">Backdrop Setup</span>
-        <p className="mb-2.5 text-xs text-black/45">Select one or more backdrop panels</p>
+    <div>
+      {/* BACKDROP SETUP */}
+      <div style={card}>
+        {secLabel("Backdrop Setup")}
+        {secSub("Select one or more backdrop panels")}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {BACKDROP_SHAPES.map((shape) => {
             const isSelected = d.backdropShapes.includes(shape.id);
@@ -610,31 +642,59 @@ function DecorStep({
                 key={shape.id}
                 type="button"
                 onClick={() => toggleShape(shape.id)}
-                className={`flex flex-col items-start rounded-xl border px-3 py-2.5 text-left transition ${
-                  isSelected
-                    ? "border-accent bg-accent-soft ring-1 ring-accent"
-                    : "border-black/12 bg-white hover:border-accent/40"
-                }`}
+                style={{
+                  position: "relative",
+                  border: isSelected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
+                  background: isSelected ? accent + "10" : "white",
+                  borderRadius: 12, padding: "10px 12px", textAlign: "left", transition: "all 0.15s",
+                }}
               >
-                <span className="text-xs font-semibold text-black/80">{shape.label}</span>
-                <span className="mt-0.5 text-[11px] text-black/45">{priceNote}</span>
+                {isSelected && (
+                  <span style={{
+                    position: "absolute", top: 5, right: 5, width: 16, height: 16,
+                    borderRadius: "50%", background: accent, color: "white",
+                    fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700,
+                  }}>✓</span>
+                )}
+                <div style={{ fontSize: 12, fontWeight: 600, color: isSelected ? accent : "#1A1A2E" }}>{shape.label}</div>
+                <span style={{
+                  marginTop: 5, fontSize: 11, fontWeight: 700, display: "inline-block",
+                  color: isSelected ? accent : "#666",
+                  background: isSelected ? accent + "18" : "rgba(0,0,0,0.06)",
+                  padding: "2px 8px", borderRadius: 20,
+                }}>{priceNote}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      <ChoiceRow<BalloonStyleId>
-        label="Balloon style"
-        value={d.balloonStyle}
-        options={BALLOON_STYLES}
-        onChange={(v) => patchDecor({ balloonStyle: v })}
-        priceOf={(id) => BALLOON_STYLES.find((b) => b.id === id)?.price ?? 0}
-      />
+      {/* BALLOON STYLE */}
+      <div style={card}>
+        {secLabel("Balloon style")}
+        <div className="flex flex-wrap gap-2">
+          {BALLOON_STYLES.map((o) => {
+            const active = o.id === d.balloonStyle;
+            return (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => patchDecor({ balloonStyle: o.id })}
+                style={active
+                  ? { background: accent, color: "white", border: `2px solid ${accent}`, borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500, transition: "all 0.15s" }
+                  : { background: "white", color: "rgba(0,0,0,0.6)", border: "1.5px solid rgba(0,0,0,0.15)", borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500, transition: "all 0.15s" }}
+              >
+                {o.label}
+                {o.price > 0 && <span style={chip(`+${o.price}`, active)}>+{o.price}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      {/* Backdrop color */}
-      <div>
-        <span className="mb-1.5 block text-xs font-medium text-black/55">Backdrop color</span>
+      {/* BACKDROP COLOR */}
+      <div style={card}>
+        {secLabel("Backdrop color")}
         <div className="flex flex-wrap items-center gap-2">
           {theme.backdropColors.map((hex) => (
             <button
@@ -658,10 +718,10 @@ function DecorStep({
         </div>
       </div>
 
-      {/* Backdrop Print */}
-      <div>
-        <span className="mb-0.5 block text-xs font-medium text-black/55">Backdrop Print</span>
-        <p className="mb-2 text-[11px] text-black/40">Printed graphic or design on your backdrop panel</p>
+      {/* BACKDROP PRINT */}
+      <div style={card}>
+        {secLabel("Backdrop Print")}
+        {secSub("Printed graphic or design on your backdrop panel")}
         <div className="grid grid-cols-2 gap-2">
           {BACKDROP_PRINTS.map((opt) => {
             const selected = print.type === opt.id;
@@ -670,16 +730,27 @@ function DecorStep({
                 key={opt.id}
                 type="button"
                 onClick={() => setPrint(opt.id)}
-                className={`rounded-2xl border p-3 text-left transition ${
-                  selected ? "border-accent bg-accent-soft/50 shadow-sm" : "border-black/10 bg-white"
-                }`}
+                style={{
+                  position: "relative",
+                  border: selected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
+                  background: selected ? accent + "10" : "white",
+                  borderRadius: 14, padding: 12, textAlign: "left", transition: "all 0.15s",
+                }}
               >
-                <div className="text-xs font-semibold">{opt.label}</div>
-                <div className="mt-0.5 text-[11px] text-black/50">{opt.desc}</div>
+                {selected && (
+                  <span style={{
+                    position: "absolute", top: 5, right: 5, width: 16, height: 16,
+                    borderRadius: "50%", background: accent, color: "white",
+                    fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700,
+                  }}>✓</span>
+                )}
+                <div style={{ fontSize: 12, fontWeight: 600, color: selected ? accent : "#1A1A2E" }}>{opt.label}</div>
+                <div style={{ marginTop: 2, fontSize: 11, color: "rgba(0,0,0,0.5)" }}>{opt.desc}</div>
                 {opt.price > 0 && (
-                  <div className={`mt-1 text-[11px] font-medium ${selected ? "text-accent" : "text-black/40"}`}>
-                    +AED {opt.price}
-                  </div>
+                  <span style={{
+                    marginTop: 6, fontSize: 11, fontWeight: 700, display: "inline-block",
+                    color: accent, background: accent + "18", padding: "2px 8px", borderRadius: 20,
+                  }}>+AED {opt.price}</span>
                 )}
               </button>
             );
@@ -759,11 +830,10 @@ function DecorStep({
         )}
       </div>
 
-      {/* Balloon colors */}
-      <div>
-        <span className="mb-1.5 block text-xs font-medium text-black/55">
-          Balloon colors — select up to 5
-        </span>
+      {/* BALLOON COLORS */}
+      <div style={card}>
+        {secLabel("Balloon colors")}
+        {secSub("Select up to 5 shades — Sempertex palette confirmed with your stylist")}
         <div className="flex flex-wrap items-center gap-2">
           {theme.balloonColors.map((hex) => (
             <button
@@ -796,14 +866,11 @@ function DecorStep({
             />
           </label>
         </div>
-        <p className="mt-1.5 text-[11px] text-black/45">
-          Sempertex palette — exact shades confirmed with your stylist.
-        </p>
       </div>
 
-      {/* Backdrop text */}
-      <div>
-        <span className="mb-1.5 block text-xs font-medium text-black/55">Text on backdrop</span>
+      {/* TEXT ON BACKDROP */}
+      <div style={card}>
+        {secLabel("Text on backdrop")}
         <div className="flex flex-wrap gap-2">
           {[
             { v: "none", l: "None" },
@@ -821,9 +888,10 @@ function DecorStep({
                     ? setText({ enabled: false })
                     : setText({ enabled: true, type: o.v as "birthday" | "custom" })
                 }
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                  active ? "bg-accent text-white" : "bg-white text-black/60 border border-black/15"
-                }`}
+                style={active
+                  ? { background: accent, color: "white", border: `2px solid ${accent}`, borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500 }
+                  : { background: "white", color: "rgba(0,0,0,0.6)", border: "1.5px solid rgba(0,0,0,0.15)", borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500 }}
+                className="transition"
               >
                 {o.l}
               </button>
@@ -896,30 +964,27 @@ function DecorStep({
         )}
       </div>
 
-      {/* Character Cutouts */}
-      <div>
-        <span className="mb-0.5 block text-xs font-medium text-black/55">Character Cutouts</span>
-        <p className="mb-2 text-[11px] text-black/40">Theme-matched character cutouts for your setup</p>
+      {/* CHARACTER CUTOUTS */}
+      <div style={card}>
+        {secLabel("Character Cutouts")}
+        {secSub("Theme-matched character cutouts for your setup")}
         <div className="space-y-2">
           {/* No cutouts option */}
           <button
             type="button"
             onClick={() => patchDecor({ cutouts: { size: "none", position: cut.position } })}
-            className={`flex w-full items-center justify-between rounded-2xl border p-3 text-left transition ${
-              cut.size === "none" ? "border-accent bg-accent-soft/50 shadow-sm" : "border-black/10 bg-white"
-            }`}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+              border: cut.size === "none" ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
+              background: cut.size === "none" ? accent + "10" : "white",
+              borderRadius: 14, padding: 12, textAlign: "left", transition: "all 0.15s",
+            }}
           >
             <div>
-              <div className="text-xs font-semibold">No Cutouts</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: cut.size === "none" ? accent : "#1A1A2E" }}>No Cutouts</div>
               <div className="text-[11px] text-black/50">Skip cutouts for this setup</div>
             </div>
-            <span
-              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] ${
-                cut.size === "none" ? "border-accent bg-accent text-white" : "border-black/20 text-transparent"
-              }`}
-            >
-              ✓
-            </span>
+            <span style={checkBadge(cut.size === "none")}>✓</span>
           </button>
 
           {/* Paid cutout set options */}
@@ -928,9 +993,11 @@ function DecorStep({
             return (
               <div
                 key={set.size}
-                className={`rounded-2xl border transition ${
-                  selected ? "border-accent bg-accent-soft/50 shadow-sm" : "border-black/10 bg-white"
-                }`}
+                style={{
+                  border: selected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
+                  background: selected ? accent + "10" : "white",
+                  borderRadius: 14, transition: "all 0.15s",
+                }}
               >
                 <button
                   type="button"
@@ -940,19 +1007,14 @@ function DecorStep({
                   className="flex w-full items-center justify-between gap-3 p-3 text-left"
                 >
                   <div>
-                    <div className="text-xs font-semibold">{set.label}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: selected ? accent : "#1A1A2E" }}>{set.label}</div>
                     <div className="text-[11px] text-black/50">{set.desc}</div>
-                    <div className={`mt-0.5 text-[11px] font-medium ${selected ? "text-accent" : "text-black/40"}`}>
-                      +AED {set.price}
-                    </div>
+                    <span style={{
+                      marginTop: 6, fontSize: 11, fontWeight: 700, display: "inline-block",
+                      color: accent, background: accent + "18", padding: "2px 8px", borderRadius: 20,
+                    }}>+AED {set.price}</span>
                   </div>
-                  <span
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] ${
-                      selected ? "border-accent bg-accent text-white" : "border-black/20 text-transparent"
-                    }`}
-                  >
-                    ✓
-                  </span>
+                  <span style={checkBadge(selected)}>✓</span>
                 </button>
 
                 {selected && (
@@ -987,14 +1049,26 @@ function DecorStep({
         </div>
       </div>
 
-      {/* Plinths + per-unit sizes */}
-      <div>
-        <ChoiceRow<string>
-          label="Plinths"
-          value={String(d.plinths)}
-          options={[0, 1, 2, 3].map((n) => ({ id: String(n), label: String(n) }))}
-          onChange={(v) => setPlinthCount(Number(v))}
-        />
+      {/* PLINTHS */}
+      <div style={card}>
+        {secLabel("Plinths")}
+        <div className="flex flex-wrap gap-2">
+          {[0, 1, 2, 3].map((n) => {
+            const active = d.plinths === n;
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setPlinthCount(n)}
+                style={active
+                  ? { background: accent, color: "white", border: `2px solid ${accent}`, borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500, transition: "all 0.15s" }
+                  : { background: "white", color: "rgba(0,0,0,0.6)", border: "1.5px solid rgba(0,0,0,0.15)", borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500, transition: "all 0.15s" }}
+              >
+                {n}
+              </button>
+            );
+          })}
+        </div>
         {d.plinths > 0 && (
           <div className="mt-3 space-y-2">
             {Array.from({ length: d.plinths }).map((_, i) => (
@@ -1014,8 +1088,7 @@ function DecorStep({
                     >
                       {PLINTH_SHORT[s.id] ?? s.label}
                       <span className={d.plinthSizes[i] === s.id ? "text-white/80" : "text-black/40"}>
-                        {" "}
-                        +{s.price}
+                        {" "}+{s.price}
                       </span>
                     </button>
                   ))}
@@ -1026,16 +1099,31 @@ function DecorStep({
         )}
       </div>
 
-      <ChoiceRow<string>
-        label="Cake / dessert table styling"
-        value={d.cakeTable ? "yes" : "no"}
-        options={[
-          { id: "no", label: "No" },
-          { id: "yes", label: "Yes" },
-        ]}
-        onChange={(v) => patchDecor({ cakeTable: v === "yes" })}
-        priceOf={(id) => (id === "yes" ? CAKE_TABLE_PRICE : 0)}
-      />
+      {/* CAKE TABLE */}
+      <div style={card}>
+        {secLabel("Cake / dessert table styling")}
+        <div className="flex flex-wrap gap-2">
+          {[
+            { id: "no", label: "No" },
+            { id: "yes", label: "Yes" },
+          ].map((o) => {
+            const active = (d.cakeTable ? "yes" : "no") === o.id;
+            return (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => patchDecor({ cakeTable: o.id === "yes" })}
+                style={active
+                  ? { background: accent, color: "white", border: `2px solid ${accent}`, borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500, transition: "all 0.15s" }
+                  : { background: "white", color: "rgba(0,0,0,0.6)", border: "1.5px solid rgba(0,0,0,0.15)", borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500, transition: "all 0.15s" }}
+              >
+                {o.label}
+                {o.id === "yes" && <span style={chip(`+${CAKE_TABLE_PRICE}`, active)}>+{CAKE_TABLE_PRICE}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
