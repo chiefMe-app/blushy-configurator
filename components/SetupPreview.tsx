@@ -82,11 +82,16 @@ function TextOverlay({
   fontSize = 4, lineHeight = 140,
   verticalOffset = 30, horizontalOffset = 50,
   align = "center", shape = "arch",
+  panelIndex = 0, totalPanels = 1,
 }: {
   text: string; fontStyle: FontStyle; color: TextColor; themeAccent: string;
   fontSize?: number; lineHeight?: number;
   verticalOffset?: number; horizontalOffset?: number;
   align?: TextAlign; shape?: BackdropShapeId;
+  /** Which panel slot this text belongs to (0-indexed). */
+  panelIndex?: number;
+  /** Total number of panels in the current layout. */
+  totalPanels?: number;
 }) {
   const safe = BACKDROP_SAFE_AREA[shape] ?? BACKDROP_SAFE_AREA.arch;
   const resolvedColor = resolveTextColor(color, themeAccent);
@@ -94,13 +99,17 @@ function TextOverlay({
     ? "0 1px 3px rgba(255,255,255,0.5)"
     : "0 1px 5px rgba(0,0,0,0.65), 0 0 14px rgba(0,0,0,0.25)";
 
-  const blockCenterX = safe.x + safe.w * (horizontalOffset / 100);
-  const leftPct      = blockCenterX - safe.w / 2;
-  const topPct       = safe.y + safe.h * (verticalOffset / 100);
+  // Divide the safe area horizontally by the number of panels so each
+  // panel's text stays within its own slice of the backdrop.
+  const sliceW   = safe.w / totalPanels;
+  const sliceX   = safe.x + sliceW * panelIndex;
+  const blockCX  = sliceX + sliceW * (horizontalOffset / 100);
+  const leftPct  = blockCX - sliceW / 2;
+  const topPct   = safe.y + safe.h * (verticalOffset / 100);
 
   return (
     <div className="pointer-events-none absolute"
-         style={{ top: `${topPct}%`, left: `${leftPct}%`, width: `${safe.w}%` }}>
+         style={{ top: `${topPct}%`, left: `${leftPct}%`, width: `${sliceW}%` }}>
       {text.split(/\\n|\n/).map((line, i) => (
         <p key={i} style={{
           fontFamily:    FONT_FAMILY[fontStyle],
@@ -621,9 +630,14 @@ export function useSetupPreview(config: BuilderConfig) {
   const extras = deriveExtras(config);
   const d = config.decor;
 
+  // Structural-only: exclude per-panel color/text/graphic to prevent AI
+  // regeneration when overlay-only fields change.
+  const structuralItems = d.backdropItems.map(i => ({
+    t: i.type, s: i.sizeId, w: i.widthCm, h: i.heightCm,
+  }));
   const sig = JSON.stringify({
     t: config.theme, p: config.package, et: config.eventType,
-    items: d.backdropItems, b: d.balloonStyle,
+    items: structuralItems, b: d.balloonStyle,
     bc: d.backdropColor, blc: d.balloonColors,
     bp: d.backdropPrint,
     pl: PLINTH_MODE === "ai" ? d.plinthSizes : undefined,
@@ -634,7 +648,7 @@ export function useSetupPreview(config: BuilderConfig) {
     const id = ++reqId.current;
     const curr: Snap = {
       theme: config.theme, pkg: config.package, nonce,
-      shapes: JSON.stringify(d.backdropItems),
+      shapes: JSON.stringify(structuralItems),
       color: d.backdropColor ?? "",
       balloonStyle: d.balloonStyle,
       balloonColors: JSON.stringify(d.balloonColors),
@@ -747,21 +761,27 @@ export default function SetupPreview({
           />
         )}
 
-        {/* Text overlay — anchored to backdrop safe area, no AI call */}
-        {hasShownImage && config.decor.backdropText.enabled && overlayText && (
-          <TextOverlay
-            text={overlayText}
-            fontStyle={config.decor.backdropText.fontStyle}
-            color={config.decor.backdropText.color}
-            themeAccent={themeAccent}
-            fontSize={config.decor.backdropText.fontSize}
-            lineHeight={config.decor.backdropText.lineHeight}
-            verticalOffset={config.decor.backdropText.verticalOffset}
-            horizontalOffset={config.decor.backdropText.horizontalOffset}
-            align={config.decor.backdropText.align}
-            shape={primaryShape}
-          />
-        )}
+        {/* Per-panel text overlays — instant update, no AI regeneration */}
+        {hasShownImage && config.decor.backdropItems.map((item, idx) => {
+          if (!item.text.enabled || !item.text.value.trim()) return null;
+          return (
+            <TextOverlay
+              key={item.id}
+              text={item.text.value}
+              fontStyle={item.text.fontStyle}
+              color={item.text.color}
+              themeAccent={themeAccent}
+              fontSize={config.decor.backdropText.fontSize}
+              lineHeight={config.decor.backdropText.lineHeight}
+              verticalOffset={config.decor.backdropText.verticalOffset}
+              horizontalOffset={config.decor.backdropText.horizontalOffset}
+              align={config.decor.backdropText.align}
+              shape={item.type}
+              panelIndex={idx}
+              totalPanels={config.decor.backdropItems.length}
+            />
+          );
+        })}
 
         {isFirstLoad && (
           <div className="shimmer absolute inset-0 flex flex-col items-center justify-center gap-3 bg-accent-soft/80 backdrop-blur-sm">

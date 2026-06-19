@@ -38,6 +38,8 @@ import {
   type BalloonStyleId,
   type BackdropShapeId,
   type BackdropItem,
+  type BackdropItemText,
+  type BackdropItemGraphic,
   type ArchSizeId,
   type RectSizeId,
   type PlinthSize,
@@ -637,6 +639,22 @@ function DecorStep({
     }
   }
 
+  // Per-panel patch helpers
+  function patchItem(idx: number, patch: Partial<BackdropItem>) {
+    const next = d.backdropItems.map((item, i) => i === idx ? { ...item, ...patch } : item);
+    patchDecor({ backdropItems: next });
+  }
+  function patchItemText(idx: number, patch: Partial<BackdropItemText>) {
+    const item = d.backdropItems[idx];
+    if (!item) return;
+    patchItem(idx, { text: { ...item.text, ...patch } });
+  }
+  function patchItemGraphic(idx: number, patch: Partial<BackdropItemGraphic>) {
+    const item = d.backdropItems[idx];
+    if (!item) return;
+    patchItem(idx, { graphic: { ...item.graphic, ...patch } });
+  }
+
   function toggleBalloon(hex: string) {
     const has = d.balloonColors.includes(hex);
     const next = has
@@ -895,6 +913,220 @@ function DecorStep({
         </div>
       </div>
 
+      {/* PANEL SETTINGS — per-panel color, text, graphic */}
+      {d.backdropItems.length > 0 && (
+        <div style={card}>
+          {secLabel("Panel Settings")}
+          {secSub("Configure each panel's color, text, and graphic individually")}
+
+          {d.backdropItems.map((item, idx) => {
+            const typeLabel = BACKDROP_SHAPES.find((s) => s.id === item.type)?.label ?? item.type;
+            const sizeLabel =
+              item.type === "arch"
+                ? (ARCH_SIZES.find((s) => s.id === item.sizeId)?.label ?? "")
+                : item.type === "rect"
+                  ? (RECT_SIZES.find((s) => s.id === item.sizeId)?.label ?? "")
+                  : item.widthCm
+                    ? `${item.widthCm} × ${item.heightCm} cm`
+                    : "";
+
+            return (
+              <div key={item.id} style={{ border: `1.5px solid ${accent}28`, borderRadius: 14, padding: 14, marginBottom: 10, background: "#FAFAFA" }}>
+                {/* Header */}
+                <div style={{ fontSize: 12, fontWeight: 700, color: accent, marginBottom: 12 }}>
+                  Panel {idx + 1} — {typeLabel}{sizeLabel ? ` · ${sizeLabel}` : ""}
+                </div>
+
+                {/* Color */}
+                <div style={{ marginBottom: 12 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Color</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {theme.backdropColors.map((hex) => (
+                      <button
+                        key={hex}
+                        type="button"
+                        onClick={() => patchItem(idx, { color: hex })}
+                        className={`h-8 w-8 rounded-full border shadow-sm transition ${
+                          item.color === hex ? "ring-2 ring-accent ring-offset-2" : "border-black/15"
+                        }`}
+                        style={{ backgroundColor: hex }}
+                        title={hex}
+                      />
+                    ))}
+                    <label className="flex h-8 cursor-pointer items-center gap-1 rounded-full border border-dashed border-black/25 px-2.5 text-[11px] text-black/55">
+                      Custom
+                      <input
+                        type="color"
+                        value={item.color || d.backdropColor || "#FFFFFF"}
+                        onChange={(e) => patchItem(idx, { color: e.target.value })}
+                        className="h-4 w-4 cursor-pointer border-0 bg-transparent p-0"
+                      />
+                    </label>
+                    {item.color && (
+                      <button
+                        type="button"
+                        onClick={() => patchItem(idx, { color: "" })}
+                        style={{ fontSize: 10, color: "#BBB", background: "none", border: "none", cursor: "pointer" }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Text */}
+                <div style={{ marginBottom: 12 }}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Text</span>
+                    <button
+                      type="button"
+                      onClick={() => patchItemText(idx, { enabled: !item.text.enabled })}
+                      style={{
+                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, cursor: "pointer",
+                        background: item.text.enabled ? accent + "20" : "rgba(0,0,0,0.06)",
+                        color: item.text.enabled ? accent : "#999",
+                        border: `1px solid ${item.text.enabled ? accent + "40" : "rgba(0,0,0,0.12)"}`,
+                      }}
+                    >
+                      {item.text.enabled ? "On" : "Off"}
+                    </button>
+                  </div>
+                  {item.text.enabled && (
+                    <div className="space-y-2 pl-1">
+                      <textarea
+                        rows={2}
+                        value={item.text.value}
+                        onChange={(e) => patchItemText(idx, { value: e.target.value })}
+                        placeholder="Enter text for this panel"
+                        className="w-full resize-none rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
+                      />
+                      <div className="flex flex-wrap gap-1.5">
+                        {FONT_STYLES.map((f) => (
+                          <button
+                            key={f.id}
+                            type="button"
+                            onClick={() => patchItemText(idx, { fontStyle: f.id as FontStyle })}
+                            className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
+                              item.text.fontStyle === f.id ? "bg-accent text-white" : "bg-white text-black/60 border border-black/15"
+                            }`}
+                          >
+                            {f.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {TEXT_COLORS.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => patchItemText(idx, { color: c.id as TextColor })}
+                            className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition ${
+                              item.text.color === c.id ? "border-accent bg-accent-soft/60" : "border-black/15 bg-white text-black/60"
+                            }`}
+                          >
+                            <span className="h-3 w-3 rounded-full border border-black/10"
+                              style={{ backgroundColor: c.id === "accent" ? theme.accent : c.swatch }} />
+                            {c.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Graphic */}
+                <div>
+                  <div className="mb-2 flex items-center gap-2">
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Theme Graphic</span>
+                    <button
+                      type="button"
+                      onClick={() => patchItemGraphic(idx, { enabled: !item.graphic.enabled })}
+                      style={{
+                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, cursor: "pointer",
+                        background: item.graphic.enabled ? accent + "20" : "rgba(0,0,0,0.06)",
+                        color: item.graphic.enabled ? accent : "#999",
+                        border: `1px solid ${item.graphic.enabled ? accent + "40" : "rgba(0,0,0,0.12)"}`,
+                      }}
+                    >
+                      {item.graphic.enabled ? "On" : "Off"}
+                    </button>
+                  </div>
+                  {item.graphic.enabled && (
+                    <div className="flex flex-wrap gap-1.5 pl-1">
+                      {GRAPHIC_STYLES.map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          title={s.desc}
+                          onClick={() => patchItemGraphic(idx, { style: s.id as GraphicStyle })}
+                          className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                            item.graphic.style === s.id ? "border-accent bg-accent text-white" : "border-black/15 bg-white text-black/60"
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Shared text layout controls — visible only when any panel has text on */}
+          {d.backdropItems.some((i) => i.text.enabled) && (
+            <div style={{ marginTop: 6, padding: 12, background: accent + "06", borderRadius: 12, border: `1px solid ${accent}20` }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#555", display: "block", marginBottom: 10 }}>Text Layout</span>
+              <div className="space-y-3">
+                <div>
+                  <span className="mb-1 block text-[11px] font-medium text-black/50">Alignment</span>
+                  <div className="flex gap-1.5">
+                    {(["left", "center", "right"] as TextAlign[]).map((a) => (
+                      <button key={a} type="button" onClick={() => setText({ align: a })}
+                        className={`rounded px-3 py-1 text-xs font-medium transition capitalize ${
+                          t.align === a ? "bg-accent text-white" : "bg-white text-black/60 border border-black/15"
+                        }`}>{a}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-black/50">Font size</span>
+                    <span className="text-[11px] text-black/40">{t.fontSize}</span>
+                  </div>
+                  <input type="range" min={1} max={10} step={1} value={t.fontSize}
+                    onChange={(e) => setText({ fontSize: Number(e.target.value) })} className="w-full accent-accent" />
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-black/50">Line spacing</span>
+                    <span className="text-[11px] text-black/40">{(t.lineHeight / 100).toFixed(1)}×</span>
+                  </div>
+                  <input type="range" min={100} max={240} step={10} value={t.lineHeight}
+                    onChange={(e) => setText({ lineHeight: Number(e.target.value) })} className="w-full accent-accent" />
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-black/50">Vertical position</span>
+                    <span className="text-[11px] text-black/40">{t.verticalOffset}%</span>
+                  </div>
+                  <input type="range" min={0} max={90} step={5} value={t.verticalOffset}
+                    onChange={(e) => setText({ verticalOffset: Number(e.target.value) })} className="w-full accent-accent" />
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-black/50">Horizontal position</span>
+                    <span className="text-[11px] text-black/40">{t.horizontalOffset}%</span>
+                  </div>
+                  <input type="range" min={0} max={100} step={5} value={t.horizontalOffset}
+                    onChange={(e) => setText({ horizontalOffset: Number(e.target.value) })} className="w-full accent-accent" />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* BALLOON STYLE */}
       <div style={card}>
         {secLabel("Balloon style")}
@@ -1094,176 +1326,6 @@ function DecorStep({
         </div>
       </div>
 
-      {/* TEXT ON BACKDROP */}
-      <div style={card}>
-        {secLabel("Text on backdrop")}
-        <div className="flex flex-wrap gap-2">
-          {[
-            { v: "none", l: "None" },
-            { v: "birthday", l: "Happy Birthday [Name]" },
-            { v: "custom", l: "Custom text" },
-          ].map((o) => {
-            const active =
-              o.v === "none" ? !t.enabled : t.enabled && t.type === o.v;
-            return (
-              <button
-                key={o.v}
-                type="button"
-                onClick={() =>
-                  o.v === "none"
-                    ? setText({ enabled: false })
-                    : setText({ enabled: true, type: o.v as "birthday" | "custom" })
-                }
-                style={active
-                  ? { background: accent, color: "white", border: `2px solid ${accent}`, borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500 }
-                  : { background: "white", color: "rgba(0,0,0,0.6)", border: "1.5px solid rgba(0,0,0,0.15)", borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500 }}
-                className="transition"
-              >
-                {o.l}
-              </button>
-            );
-          })}
-        </div>
-
-        {t.enabled && (
-          <div className="mt-3 space-y-3 rounded-xl border border-accent/20 bg-accent-soft/30 p-3">
-            {t.type === "birthday" ? (
-              <input
-                type="text"
-                value={t.name}
-                onChange={(e) => setText({ name: e.target.value })}
-                placeholder="Name (e.g. Sofia)"
-                className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
-              />
-            ) : (
-              <textarea
-                rows={3}
-                value={t.customText}
-                onChange={(e) => setText({ customText: e.target.value })}
-                placeholder={"Your custom text\nUse new lines for multi-line text"}
-                className="w-full resize-none rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
-              />
-            )}
-
-            <div>
-              <span className="mb-1 block text-[11px] font-medium text-black/50">Font style</span>
-              <div className="flex flex-wrap gap-2">
-                {FONT_STYLES.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setText({ fontStyle: f.id as FontStyle })}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                      t.fontStyle === f.id
-                        ? "bg-accent text-white"
-                        : "bg-white text-black/60 border border-black/15"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <span className="mb-1 block text-[11px] font-medium text-black/50">Text color</span>
-              <div className="flex flex-wrap gap-2">
-                {TEXT_COLORS.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setText({ color: c.id as TextColor })}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
-                      t.color === c.id ? "border-accent bg-accent-soft/60" : "border-black/15 bg-white text-black/60"
-                    }`}
-                  >
-                    <span
-                      className="h-3.5 w-3.5 rounded-full border border-black/10"
-                      style={{ backgroundColor: c.id === "accent" ? theme.accent : c.swatch }}
-                    />
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Text alignment */}
-            <div>
-              <span className="mb-1 block text-[11px] font-medium text-black/50">Alignment</span>
-              <div className="flex gap-1.5">
-                {(["left", "center", "right"] as TextAlign[]).map((a) => (
-                  <button
-                    key={a}
-                    type="button"
-                    onClick={() => setText({ align: a })}
-                    className={`rounded px-3 py-1 text-xs font-medium transition capitalize ${
-                      t.align === a ? "bg-accent text-white" : "bg-white text-black/60 border border-black/15"
-                    }`}
-                  >
-                    {a}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Font size */}
-            <div>
-              <div className="mb-1 flex items-center justify-between">
-                <span className="text-[11px] font-medium text-black/50">Font size</span>
-                <span className="text-[11px] text-black/40">{t.fontSize}</span>
-              </div>
-              <input
-                type="range" min={1} max={10} step={1}
-                value={t.fontSize}
-                onChange={(e) => setText({ fontSize: Number(e.target.value) })}
-                className="w-full accent-accent"
-              />
-            </div>
-
-            {/* Line height */}
-            <div>
-              <div className="mb-1 flex items-center justify-between">
-                <span className="text-[11px] font-medium text-black/50">Line spacing</span>
-                <span className="text-[11px] text-black/40">{(t.lineHeight / 100).toFixed(1)}×</span>
-              </div>
-              <input
-                type="range" min={100} max={240} step={10}
-                value={t.lineHeight}
-                onChange={(e) => setText({ lineHeight: Number(e.target.value) })}
-                className="w-full accent-accent"
-              />
-            </div>
-
-            {/* Vertical position */}
-            <div>
-              <div className="mb-1 flex items-center justify-between">
-                <span className="text-[11px] font-medium text-black/50">Vertical position</span>
-                <span className="text-[11px] text-black/40">{t.verticalOffset}%</span>
-              </div>
-              <input
-                type="range" min={0} max={90} step={5}
-                value={t.verticalOffset}
-                onChange={(e) => setText({ verticalOffset: Number(e.target.value) })}
-                className="w-full accent-accent"
-              />
-            </div>
-
-            {/* Horizontal position */}
-            <div>
-              <div className="mb-1 flex items-center justify-between">
-                <span className="text-[11px] font-medium text-black/50">Horizontal position</span>
-                <span className="text-[11px] text-black/40">{t.horizontalOffset}%</span>
-              </div>
-              <input
-                type="range" min={0} max={100} step={5}
-                value={t.horizontalOffset}
-                onChange={(e) => setText({ horizontalOffset: Number(e.target.value) })}
-                className="w-full accent-accent"
-              />
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* CHARACTER CUTOUTS */}
       <div style={card}>

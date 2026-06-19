@@ -229,7 +229,7 @@ export interface BackdropItemText {
   enabled: boolean;
   value: string;
   fontStyle: FontStyle;
-  color: string;
+  color: TextColor;
 }
 
 export interface BackdropItemGraphic {
