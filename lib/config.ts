@@ -122,7 +122,7 @@ export const PACKAGES: Package[] = [
       plinthSizes: ["medium"],
       cutouts: { size: "none", position: "floor" },
       backdropPrint: { type: "none" },
-      backdropText: { enabled: false, type: "birthday", name: "", customText: "", fontStyle: "script", color: "white" },
+      backdropText: { enabled: false, type: "birthday", name: "", customText: "", fontStyle: "script", color: "white", fontSize: 4, lineHeight: 140, verticalOffset: 30, horizontalOffset: 50, align: "center" },
       cakeTable: false,
     },
   },
@@ -140,7 +140,7 @@ export const PACKAGES: Package[] = [
       plinthSizes: ["medium", "medium"],
       cutouts: { size: "none", position: "floor" },
       backdropPrint: { type: "none" },
-      backdropText: { enabled: true, type: "birthday", name: "", customText: "", fontStyle: "script", color: "white" },
+      backdropText: { enabled: true, type: "birthday", name: "", customText: "", fontStyle: "script", color: "white", fontSize: 4, lineHeight: 140, verticalOffset: 30, horizontalOffset: 50, align: "center" },
       cakeTable: false,
     },
   },
@@ -162,7 +162,7 @@ export const PACKAGES: Package[] = [
       plinthSizes: ["large", "medium", "medium"] as PlinthSize[],
       cutouts: { size: "medium", position: "floor" },
       backdropPrint: { type: "none" },
-      backdropText: { enabled: true, type: "birthday", name: "", customText: "", fontStyle: "elegant", color: "gold" },
+      backdropText: { enabled: true, type: "birthday", name: "", customText: "", fontStyle: "elegant", color: "gold", fontSize: 4, lineHeight: 140, verticalOffset: 30, horizontalOffset: 50, align: "center" },
       cakeTable: true,
     },
   },
@@ -186,6 +186,7 @@ export type CutoutPosition = "floor" | "backdrop";
 export type BackdropTextType = "birthday" | "custom";
 export type FontStyle = "script" | "block" | "elegant";
 export type TextColor = "white" | "gold" | "black" | "accent";
+export type TextAlign = "left" | "center" | "right";
 export type BackdropPrintType = "none" | "name_only" | "theme_print" | "custom_upload";
 export type GraphicStyle = "illustrated" | "realistic" | "minimal" | "pattern" | "full_scene";
 
@@ -229,6 +230,15 @@ export interface BackdropText {
   customText: string;
   fontStyle: FontStyle;
   color: TextColor;
+  /** 1–10 scale; maps to CSS font-size. Default 4. */
+  fontSize: number;
+  /** 100–250; divide by 100 for CSS line-height. Default 140. */
+  lineHeight: number;
+  /** 0–100; vertical position within the backdrop safe area. Default 30. */
+  verticalOffset: number;
+  /** 0–100; horizontal center of the text block within the safe area. Default 50. */
+  horizontalOffset: number;
+  align: TextAlign;
 }
 
 export interface CutoutSelection {

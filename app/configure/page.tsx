@@ -40,6 +40,7 @@ import {
   type GraphicStyle,
   type FontStyle,
   type TextColor,
+  type TextAlign,
 } from "@/lib/config";
 import SetupPreview, { useSetupPreview } from "@/components/SetupPreview";
 import StepNavigation from "@/components/StepNavigation";
@@ -910,12 +911,12 @@ function DecorStep({
                 className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
               />
             ) : (
-              <input
-                type="text"
+              <textarea
+                rows={3}
                 value={t.customText}
                 onChange={(e) => setText({ customText: e.target.value })}
-                placeholder="Your custom text"
-                className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
+                placeholder={"Your custom text\nUse new lines for multi-line text"}
+                className="w-full resize-none rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
               />
             )}
 
@@ -959,6 +960,81 @@ function DecorStep({
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Text alignment */}
+            <div>
+              <span className="mb-1 block text-[11px] font-medium text-black/50">Alignment</span>
+              <div className="flex gap-1.5">
+                {(["left", "center", "right"] as TextAlign[]).map((a) => (
+                  <button
+                    key={a}
+                    type="button"
+                    onClick={() => setText({ align: a })}
+                    className={`rounded px-3 py-1 text-xs font-medium transition capitalize ${
+                      t.align === a ? "bg-accent text-white" : "bg-white text-black/60 border border-black/15"
+                    }`}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Font size */}
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[11px] font-medium text-black/50">Font size</span>
+                <span className="text-[11px] text-black/40">{t.fontSize}</span>
+              </div>
+              <input
+                type="range" min={1} max={10} step={1}
+                value={t.fontSize}
+                onChange={(e) => setText({ fontSize: Number(e.target.value) })}
+                className="w-full accent-accent"
+              />
+            </div>
+
+            {/* Line height */}
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[11px] font-medium text-black/50">Line spacing</span>
+                <span className="text-[11px] text-black/40">{(t.lineHeight / 100).toFixed(1)}×</span>
+              </div>
+              <input
+                type="range" min={100} max={240} step={10}
+                value={t.lineHeight}
+                onChange={(e) => setText({ lineHeight: Number(e.target.value) })}
+                className="w-full accent-accent"
+              />
+            </div>
+
+            {/* Vertical position */}
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[11px] font-medium text-black/50">Vertical position</span>
+                <span className="text-[11px] text-black/40">{t.verticalOffset}%</span>
+              </div>
+              <input
+                type="range" min={0} max={90} step={5}
+                value={t.verticalOffset}
+                onChange={(e) => setText({ verticalOffset: Number(e.target.value) })}
+                className="w-full accent-accent"
+              />
+            </div>
+
+            {/* Horizontal position */}
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[11px] font-medium text-black/50">Horizontal position</span>
+                <span className="text-[11px] text-black/40">{t.horizontalOffset}%</span>
+              </div>
+              <input
+                type="range" min={0} max={100} step={5}
+                value={t.horizontalOffset}
+                onChange={(e) => setText({ horizontalOffset: Number(e.target.value) })}
+                className="w-full accent-accent"
+              />
             </div>
           </div>
         )}
