@@ -7,12 +7,13 @@ import {
   type PromptInput,
   type ChangeType,
 } from "@/lib/generatePrompt";
-import { generateBackdropSVG } from "@/lib/backdropSVG";
-import { svgToBase64PNG } from "@/lib/svgToBase64";
 
-// Reference-image-guided generation — uses SVG silhouette as structural anchor.
+// Reference-image-guided generation.
 const KONTEXT_MODEL = "fal-ai/flux-pro/kontext";
 const KONTEXT_ENDPOINT = `https://fal.run/${KONTEXT_MODEL}`;
+
+// Fallback text-to-image when no reference image is available.
+const FAL_T2I_ENDPOINT = "https://fal.run/fal-ai/flux-2-pro";
 
 // A/B test: "ai" = plinths rendered by the AI model; "svg" = CSS overlay only.
 const PLINTH_MODE: "ai" | "svg" = "ai";
@@ -26,6 +27,7 @@ export const maxDuration = 60;
 type RequestBody = PromptInput & {
   baseImageUrl?: string;
   changeType?: string;
+  referenceImageBase64?: string;
 };
 
 export async function POST(req: NextRequest) {
@@ -51,7 +53,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { baseImageUrl, changeType: rawChangeType, ...promptFields } = rawBody;
+  const {
+    baseImageUrl,
+    changeType: rawChangeType,
+    referenceImageBase64,
+    ...promptFields
+  } = rawBody;
 
   const promptInput: PromptInput = {
     ...promptFields,
@@ -109,38 +116,70 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ imageUrl, prompt: focusedPrompt, mode: "img2img" });
     }
 
-    // Full generation: build prompt, generate SVG silhouette, upload as reference.
+    // Full generation path.
     const { prompt: basePrompt } = generatePrompt(promptInput);
     const negativePrompt = generateNegativePrompt(promptInput.backdropShapes);
 
-    // Append reference-image adherence instructions to the positive prompt.
     const refInstruction =
-      "Follow the exact silhouette and panel geometry shown in the reference image. " +
-      "Preserve the exact number of backdrop panels and each panel's shape. " +
-      "Do not add, remove, or reshape any backdrop panels. " +
-      "Render all scene details (balloons, florals, plinths, lighting) around this structure.";
+      "Follow the exact silhouette and shape of the reference image. " +
+      "Preserve the panel geometry shown in the reference image. " +
+      "The selected backdrop panels must match the reference silhouette exactly. " +
+      "Do not change the number of panels. Do not change the panel shapes.";
     const prompt = `${basePrompt} ${refInstruction}`;
 
-    // Generate SVG → PNG → upload to fal storage → use as structural reference.
-    const shapes = promptInput.backdropShapes ?? [];
-    const backdropColor = promptInput.backdropColor ?? "#F0C4C4";
-    const svgString = generateBackdropSVG(shapes, backdropColor);
-    const pngBuffer = await svgToBase64PNG(svgString);
+    if (referenceImageBase64) {
+      // Client sent a pre-rendered PNG — upload to fal storage and use as reference.
+      const pngBuffer = Buffer.from(referenceImageBase64, "base64");
+      fal.config({ credentials: falKey });
+      const file = new Blob([new Uint8Array(pngBuffer)], { type: "image/png" });
+      const referenceImageUrl = await fal.storage.upload(file);
 
-    fal.config({ credentials: falKey });
-    const svgBlob = new Blob([new Uint8Array(pngBuffer)], { type: "image/png" });
-    const referenceImageUrl = await fal.storage.upload(svgBlob);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[generate] backdropShapes:", promptInput.backdropShapes);
+        console.log("[generate] backdropColor:", promptInput.backdropColor);
+        console.log("[generate] referenceImageUrl:", referenceImageUrl);
+        console.log("[generate] model:", KONTEXT_MODEL);
+        console.log("[generate] prompt:", prompt);
+        console.log("[generate] negative_prompt (not sent to kontext):", negativePrompt);
+      }
 
-    if (process.env.NODE_ENV === "development") {
-      console.log("[generate] backdropShapes:", shapes);
-      console.log("[generate] backdropColor:", backdropColor);
-      console.log("[generate] referenceImageUrl:", referenceImageUrl);
-      console.log("[generate] model:", KONTEXT_MODEL);
-      console.log("[generate] prompt:", prompt);
-      console.log("[generate] negative_prompt (not sent to kontext):", negativePrompt);
+      const falRes = await fetch(KONTEXT_ENDPOINT, {
+        method: "POST",
+        headers: {
+          Authorization: `Key ${falKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+          image_url: referenceImageUrl,
+          image_size: "landscape_4_3",
+          output_format: "jpeg",
+          num_images: 1,
+        }),
+      });
+
+      if (!falRes.ok) {
+        const detail = await falRes.text();
+        return NextResponse.json({ error: "fal.ai request failed", detail }, { status: 502 });
+      }
+
+      const result = await falRes.json();
+      const imageUrl: string | undefined = result?.images?.[0]?.url;
+      if (!imageUrl) {
+        return NextResponse.json({ error: "fal.ai returned no image", result }, { status: 502 });
+      }
+
+      return NextResponse.json({ imageUrl, prompt, mode: "svg-kontext", plinthMode: PLINTH_MODE });
     }
 
-    const falRes = await fetch(KONTEXT_ENDPOINT, {
+    // Fallback: no reference image — plain text-to-image.
+    if (process.env.NODE_ENV === "development") {
+      console.log("[generate] no referenceImageBase64 — falling back to t2i");
+      console.log("[generate] prompt:", prompt);
+      console.log("[generate] negative_prompt:", negativePrompt);
+    }
+
+    const falRes = await fetch(FAL_T2I_ENDPOINT, {
       method: "POST",
       headers: {
         Authorization: `Key ${falKey}`,
@@ -148,12 +187,9 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         prompt,
-        image_url: referenceImageUrl,
+        negative_prompt: negativePrompt,
         image_size: "landscape_4_3",
         output_format: "jpeg",
-        num_inference_steps: 35,
-        guidance_scale: 4.0,
-        num_images: 1,
       }),
     });
 
@@ -168,7 +204,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "fal.ai returned no image", result }, { status: 502 });
     }
 
-    return NextResponse.json({ imageUrl, prompt, mode: "svg-kontext", plinthMode: PLINTH_MODE });
+    return NextResponse.json({ imageUrl, prompt, mode: "t2i", plinthMode: PLINTH_MODE });
   } catch (err) {
     return NextResponse.json(
       { error: "Unexpected error generating image", detail: String(err) },
