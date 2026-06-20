@@ -505,7 +505,7 @@ export const CUTOUT_SETS: CutoutSet[] = [
 
 export const CAKE_TABLE_PRICE = 300;
 
-/** Extra/fewer backdrops beyond the package default cost this each. */
+/** Price per backdrop panel. Each selected panel adds this to the total. */
 export const PER_BACKDROP = 350;
 
 /** Effective panel count from the selected backdrop items. */
@@ -764,21 +764,19 @@ export function priceBreakdown(config: BuilderConfig): {
     lines.push({ label: `${theme.name} theme`, amount: theme.priceModifier, section: "design" });
   }
 
-  // Backdrop panel pricing: first panel included, each additional is PER_BACKDROP.
+  // Backdrop panel pricing: each selected panel costs PER_BACKDROP.
+  // Service packages no longer include a free backdrop — panels are priced individually.
   for (let i = 0; i < d.backdropItems.length; i++) {
     const item = d.backdropItems[i];
     const sInfo = shapeById(item.type);
     const sLabel = sInfo?.label ?? item.type;
-    const panelCost = i === 0 ? 0 : PER_BACKDROP;
     const shimmerExtra = item.type === "shimmer_wall" ? 80 : 0;
-    const cost = panelCost + shimmerExtra;
-    if (cost > 0) {
-      lines.push({
-        label: i === 0 ? `${sLabel} backdrop` : `${sLabel} — panel ${i + 1}`,
-        amount: cost,
-        section: "design",
-      });
-    }
+    const cost = PER_BACKDROP + shimmerExtra;
+    lines.push({
+      label: d.backdropItems.length === 1 ? `${sLabel} backdrop` : `${sLabel} — panel ${i + 1}`,
+      amount: cost,
+      section: "design",
+    });
   }
 
   const style = balloonStyleById(d.balloonStyle);
