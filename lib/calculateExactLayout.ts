@@ -20,6 +20,8 @@ export interface PanelLayout {
   widthCm:     number;
   heightCm:    number;
   aspectRatio: number;  // widthCm / heightCm — 0.5 for all standard arches
+  /** Render order: 0 = drawn first (tallest, behind); higher = drawn later (in front) */
+  zOrder:      number;
   /** Safe area for text overlays, expressed as % of canvas */
   textSafeArea: { xPct: number; yPct: number; wPct: number; hPct: number };
 }
@@ -55,42 +57,65 @@ export function calculateExactLayout(
   canvasH:     number,
 ): ExactLayout {
   const count   = Math.max(1, Math.min(3, items.length));
-  const slotW   = canvasW / count;
   const floorY  = canvasH * 0.9;
 
   const maxHeightCm = Math.max(...items.map(it => it.heightCm ?? 200), 1);
 
-  // --- Panels ---
-  const panels: PanelLayout[] = [];
+  // Max panel width per count — keeps groups tight without overflow
+  const maxPwByCount = count === 1 ? canvasW * 0.70 : count === 2 ? canvasW * 0.42 : canvasW * 0.30;
 
-  for (let i = 0; i < count; i++) {
-    const item = items[i] ?? items[0];
-    const cx   = slotW * (i + 0.5);
-
+  // --- Compute intrinsic sizes and z-orders ---
+  const rawPanels = items.slice(0, count).map((item, i) => {
     const wCm = item?.widthCm  ?? 100;
     const hCm = item?.heightCm ?? 200;
-
-    // Taller panels reach higher up the canvas
-    const heightRatio  = hCm / maxHeightCm;
-    const apexFactor   = 0.05 + 0.12 * (1 - heightRatio);
-    const apexY        = canvasH * apexFactor;
+    const heightRatio   = hCm / maxHeightCm;
+    const apexFactor    = 0.05 + 0.12 * (1 - heightRatio);
+    const apexY         = canvasH * apexFactor;
     const panelHeightPx = floorY - apexY;
+    const aspect        = wCm / hCm;
+    const pw = Math.max(canvasW * 0.08, Math.min(maxPwByCount, panelHeightPx * aspect));
 
-    // True aspect ratio — arch_66ft = 100/200 = 0.5 (narrow portrait)
-    const aspect      = wCm / hCm;
-    const intrinsicPw = panelHeightPx * aspect;
-    const pw          = Math.max(slotW * 0.22, Math.min(slotW * 0.80, intrinsicPw));
+    // z-order: tallest = 0 (behind), shortest = count-1 (in front)
+    const sorted = [...items.slice(0, count)]
+      .map((it, idx) => ({ idx, h: it?.heightCm ?? 200 }))
+      .sort((a, b) => b.h - a.h);
+    const zOrder = sorted.findIndex(s => s.idx === i);
 
-    // Text safe area as % of full canvas
+    return { i, wCm, hCm, apexY, pw, aspect, zOrder };
+  });
+
+  // Gap between panels (tight, event-like)
+  const gap = count === 1 ? 0 : Math.max(6, canvasW * 0.008);
+
+  // Scale group down if it overflows canvas
+  let totalGroupW = rawPanels.reduce((s, p) => s + p.pw, 0) + (count - 1) * gap;
+  const maxGroupW = canvasW * 0.90;
+  const groupScale = totalGroupW > maxGroupW ? maxGroupW / totalGroupW : 1;
+  totalGroupW *= groupScale;
+
+  // --- Assign x positions (selection order = left-to-right) ---
+  const panels: PanelLayout[] = [];
+  let xCursor = (canvasW - totalGroupW) / 2;
+
+  for (const raw of rawPanels) {
+    const pw  = raw.pw * groupScale;
+    const cx  = xCursor + pw / 2;
+    xCursor  += pw + gap;
+
     const safeXPct = ((cx - pw / 2) / canvasW) * 100;
-    const safeYPct = (apexY / canvasH) * 100;
+    const safeYPct = (raw.apexY / canvasH) * 100;
     const safeWPct = (pw / canvasW) * 100;
-    const safeHPct = ((floorY - apexY) / canvasH) * 100 * 0.7; // upper 70% of panel
+    const safeHPct = ((floorY - raw.apexY) / canvasH) * 100 * 0.7;
 
     panels.push({
-      idx: i, cx, pw, apexY, floorY,
-      widthCm: wCm, heightCm: hCm,
-      aspectRatio: aspect,
+      idx:         raw.i,
+      cx, pw,
+      apexY:       raw.apexY,
+      floorY,
+      widthCm:     raw.wCm,
+      heightCm:    raw.hCm,
+      aspectRatio: raw.aspect,
+      zOrder:      raw.zOrder,
       textSafeArea: { xPct: safeXPct, yPct: safeYPct, wPct: safeWPct, hPct: safeHPct },
     });
   }
@@ -119,15 +144,19 @@ export function calculateExactLayout(
   return { panels, plinths, floorY, canvasW, canvasH };
 }
 
-/** Log layout details in development for each panel. */
-export function debugLayout(layout: ExactLayout): void {
+/** Log layout details in development for each panel and plinth. */
+export function debugLayout(layout: ExactLayout, items?: BackdropItem[]): void {
   if (process.env.NODE_ENV !== "development") return;
   console.group("[ExactLayout] Customer Approval Preview layout");
-  layout.panels.forEach((p) => {
+  // Sort by zOrder for readable depth output
+  [...layout.panels].sort((a, b) => a.zOrder - b.zOrder).forEach((p) => {
+    const item = items?.[p.idx];
     console.log(
-      `  Panel ${p.idx + 1}: widthCm=${p.widthCm} heightCm=${p.heightCm} ` +
-      `aspectRatio=${p.aspectRatio.toFixed(3)} ` +
-      `pw=${p.pw.toFixed(0)}px apexY=${p.apexY.toFixed(0)}px`,
+      `  Panel ${p.idx + 1} (z=${p.zOrder}): ` +
+      `id=${item?.id ?? "?"} type=${item?.type ?? "?"} sizeId=${item?.sizeId ?? "?"} ` +
+      `widthCm=${p.widthCm} heightCm=${p.heightCm} aspectRatio=${p.aspectRatio.toFixed(3)} ` +
+      `x=${p.cx.toFixed(0)} y=${p.apexY.toFixed(0)} ` +
+      `widthPx=${p.pw.toFixed(0)} heightPx=${(p.floorY - p.apexY).toFixed(0)}`,
     );
   });
   layout.plinths.forEach((pl) => {

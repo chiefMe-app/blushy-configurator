@@ -5,6 +5,7 @@ import {
   themeById,
   resolveBackdropText,
   type BuilderConfig,
+  type BackdropItem,
   type BackdropShapeId,
   type BalloonStyleId,
   type PlinthSize,
@@ -61,7 +62,7 @@ export default function LiveSetupPreview({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       renderScene(ctx, W, H, config);
       // Log exact layout in development for each panel and plinth
-      debugLayout(calculateExactLayout(config.decor.backdropItems, config.decor.plinthSizes, W, H));
+      debugLayout(calculateExactLayout(config.decor.backdropItems, config.decor.plinthSizes, W, H), config.decor.backdropItems);
     };
 
     draw();
@@ -146,55 +147,93 @@ function renderScene(
   ctx.fillStyle = jShadow;
   ctx.fillRect(0, floorY - 10, W, 28);
 
-  // --- layout backdrops across the width -----------------------------------
+  // --- layout backdrops — tight grouped arrangement ------------------------
   const items = config.decor.backdropItems;
   const count = Math.max(1, Math.min(3, items.length));
-  const slotW = W / count;
 
   // Compute max height for relative apex scaling
   const maxHeightCm = Math.max(...items.map((it) => it.heightCm ?? 200));
 
-  for (let i = 0; i < count; i++) {
-    const cx = slotW * (i + 0.5);
-    const item = items[i] ?? items[0];
-    const shape = (item?.type ?? "arch") as BackdropShapeId;
+  // Per-panel max width caps by count so the group fits the canvas
+  const maxPwByCount = count === 1 ? W * 0.70 : count === 2 ? W * 0.42 : W * 0.30;
 
-    // Per-panel color — falls back to global backdrop color
-    const panelColor = item?.color || backdropColor;
-    const panelDark  = isColorDark(panelColor);
+  // Pass 1 — compute intrinsic sizes for every panel
+  interface PanelRenderData {
+    i: number; item: BackdropItem; shape: BackdropShapeId;
+    color: string; dark: boolean;
+    cx: number; pw: number; apexY: number; zOrder: number;
+  }
 
-    // Apex based on relative height (taller panels reach higher up the canvas)
-    const heightRatio  = (item?.heightCm ?? 200) / maxHeightCm;
-    const apexFactor   = 0.05 + 0.12 * (1 - heightRatio);   // tallest → 0.05, shortest → 0.17
-    const customApexY  = H * apexFactor;
-    const panelHeightPx = floorY - customApexY;
+  const rawPanels: Omit<PanelRenderData, "cx">[] = items.slice(0, count).map((item, i) => {
+    const hCm = item?.heightCm ?? 200;
+    const wCm = item?.widthCm  ?? 100;
+    const heightRatio = hCm / maxHeightCm;
+    const apexFactor  = 0.05 + 0.12 * (1 - heightRatio);
+    const apexY       = H * apexFactor;
+    const panelH      = floorY - apexY;
+    const aspect      = wCm / hCm;
+    const pw = Math.max(W * 0.08, Math.min(maxPwByCount, panelH * aspect));
+    const panelColor  = item?.color || backdropColor;
+    return {
+      i, item,
+      shape:   (item?.type ?? "arch") as BackdropShapeId,
+      color:   panelColor,
+      dark:    isColorDark(panelColor),
+      pw, apexY,
+      // z-order: tallest → 0 (drawn first = behind), shortest → count-1 (in front)
+      zOrder:  (() => {
+        const sorted = [...items.slice(0, count)]
+          .map((it, idx) => ({ idx, h: it?.heightCm ?? 200 }))
+          .sort((a, b) => b.h - a.h);
+        return sorted.findIndex(s => s.idx === i);
+      })(),
+    };
+  });
 
-    // Use the true widthCm/heightCm ratio so each panel renders at its correct
-    // proportion. AI render is visual only — production dimensions come from
-    // backdropItems.widthCm / backdropItems.heightCm.
-    const wCm  = item?.widthCm  ?? 100;
-    const hCm  = item?.heightCm ?? 200;
-    const trueAspect = wCm / hCm;
-    const intrinsicPw = panelHeightPx * trueAspect;
+  // Gap between panels — tight, event-like
+  const gap = count === 1 ? 0 : Math.max(6, W * 0.008);
 
-    // Clamp so panels fit their slot without overlapping neighbours
-    const maxPw = slotW * 0.80;
-    const minPw = slotW * 0.22;
-    const pw = Math.max(minPw, Math.min(maxPw, intrinsicPw));
+  // Total group width; scale down if it overflows the canvas
+  let totalGroupW = rawPanels.reduce((s, p) => s + p.pw, 0) + (count - 1) * gap;
+  const maxGroupW = W * 0.90;
+  const groupScale = totalGroupW > maxGroupW ? maxGroupW / totalGroupW : 1;
+  totalGroupW *= groupScale;
 
-    drawBackdrop(ctx, cx, pw, floorY, H, shape, panelColor, panelDark, customApexY);
+  // Pass 2 — assign x positions (selection order = left-to-right)
+  let xCursor = (W - totalGroupW) / 2;
+  const panels: PanelRenderData[] = rawPanels.map(p => {
+    const pw = p.pw * groupScale;
+    const cx = xCursor + pw / 2;
+    xCursor += pw + gap;
+    return { ...p, pw, cx };
+  });
 
-    const outline = backdropOutline(cx, pw, floorY, H, shape, customApexY);
-    drawGarland(ctx, outline, floorY, pw, palette, config.decor.balloonStyle, i * 97 + 13);
+  // Pass 3 — render in z-order (tallest first = behind)
+  const byZ = [...panels].sort((a, b) => a.zOrder - b.zOrder);
+  for (const { cx, pw, apexY, shape, color, dark, i } of byZ) {
+    drawBackdrop(ctx, cx, pw, floorY, H, shape, color, dark, apexY);
+
+    // Garland: outer panels get full coverage, middle panels get reduced coverage
+    // so the garland reads as one connected frame around the group.
+    const isOuterLeft  = i === 0;
+    const isOuterRight = i === count - 1;
+    const isSingleOrOuter = count === 1 || isOuterLeft || isOuterRight;
+    const outline = backdropOutline(cx, pw, floorY, H, shape, apexY);
+    const garlandStyle: BalloonStyleId =
+      isSingleOrOuter ? config.decor.balloonStyle
+        : config.decor.balloonStyle === "none" ? "none"
+        : config.decor.balloonStyle === "half"  ? "none"   // centre panels: top-only
+        : "half";                                            // centre: lighter density
+    drawGarland(ctx, outline, floorY, pw, palette, garlandStyle, i * 97 + 13);
   }
 
   // --- backdrop text: draw per-panel text, fall back to global setting ----
   const hasPanelText = config.decor.backdropItems.some((it) => it.text.enabled && it.text.value.trim());
   if (hasPanelText) {
-    config.decor.backdropItems.forEach((it, i) => {
+    panels.forEach((p) => {
+      const it = p.item;
       if (!it.text.enabled || !it.text.value.trim()) return;
-      const panelCx = slotW * (i + 0.5);
-      drawBackdropText(ctx, panelCx, H * 0.5, config, accent);
+      drawBackdropText(ctx, p.cx, H * 0.5, config, accent);
     });
   } else if (config.decor.backdropText.enabled) {
     drawBackdropText(ctx, W / 2, H * 0.5, config, accent);
