@@ -9,6 +9,7 @@ import {
   type BackdropShapeId,
   type BalloonStyleId,
   type PlinthSize,
+  type GraphicStyle,
 } from "@/lib/config";
 import { calculateExactLayout, debugLayout } from "@/lib/calculateExactLayout";
 import { getPlinthDimensions } from "@/lib/layoutDimensions";
@@ -210,8 +211,17 @@ function renderScene(
 
   // Pass 3 — render in z-order (tallest first = behind)
   const byZ = [...panels].sort((a, b) => a.zOrder - b.zOrder);
-  for (const { cx, pw, apexY, shape, color, dark, i } of byZ) {
+  for (const { cx, pw, apexY, shape, color, dark, i, item } of byZ) {
     drawBackdrop(ctx, cx, pw, floorY, H, shape, color, dark, apexY);
+
+    // Per-panel theme graphic — clips to panel shape, updates immediately
+    if (item?.graphic?.enabled && item.graphic.style) {
+      drawPanelGraphic(
+        ctx, cx, pw, apexY, floorY, H,
+        shape, config.theme, item.graphic.style as GraphicStyle,
+        accent, color, i * 137 + 7,
+      );
+    }
 
     // Garland: outer panels get full coverage, middle panels get reduced coverage
     // so the garland reads as one connected frame around the group.
@@ -387,6 +397,235 @@ function drawBackdrop(
       ctx.fill();
     }
   }
+
+  ctx.restore();
+}
+
+// --- panel graphic overlay -------------------------------------------------
+
+// Motif functions prefixed with `m` to avoid collision with existing drawStar etc.
+type MotifFn = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, c1: string, c2: string) => void;
+
+const mStar: MotifFn = (ctx, x, y, size, c1) => {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = (i * Math.PI / 5) - Math.PI / 2;
+    const r = i % 2 === 0 ? size : size * 0.42;
+    const px = x + r * Math.cos(a), py = y + r * Math.sin(a);
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.closePath(); ctx.fillStyle = c1; ctx.fill();
+};
+
+const mHeart: MotifFn = (ctx, x, y, size, c1) => {
+  const s = size * 0.7;
+  ctx.beginPath();
+  ctx.moveTo(x, y + s * 0.3);
+  ctx.bezierCurveTo(x, y - s * 0.5, x - s * 0.8, y - s * 0.5, x - s * 0.8, y);
+  ctx.bezierCurveTo(x - s * 0.8, y + s * 0.5, x, y + s * 0.8, x, y + s);
+  ctx.bezierCurveTo(x, y + s * 0.8, x + s * 0.8, y + s * 0.5, x + s * 0.8, y);
+  ctx.bezierCurveTo(x + s * 0.8, y - s * 0.5, x, y - s * 0.5, x, y + s * 0.3);
+  ctx.fillStyle = c1; ctx.fill();
+};
+
+const mSnowflake: MotifFn = (ctx, x, y, size, c1) => {
+  ctx.save();
+  ctx.strokeStyle = c1; ctx.lineWidth = size * 0.11; ctx.lineCap = "round";
+  for (let i = 0; i < 6; i++) {
+    const a = (i * Math.PI) / 3;
+    const ex = x + Math.cos(a) * size, ey = y + Math.sin(a) * size;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
+    const mx = x + Math.cos(a) * size * 0.5, my = y + Math.sin(a) * size * 0.5;
+    for (const da of [Math.PI / 3, -Math.PI / 3]) {
+      ctx.beginPath(); ctx.moveTo(mx, my);
+      ctx.lineTo(mx + Math.cos(a + da) * size * 0.28, my + Math.sin(a + da) * size * 0.28);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+};
+
+const mCrown: MotifFn = (ctx, x, y, size, c1) => {
+  ctx.beginPath();
+  ctx.moveTo(x - size, y + size * 0.4); ctx.lineTo(x - size, y - size * 0.15);
+  ctx.lineTo(x - size * 0.45, y + size * 0.1); ctx.lineTo(x, y - size * 0.6);
+  ctx.lineTo(x + size * 0.45, y + size * 0.1); ctx.lineTo(x + size, y - size * 0.15);
+  ctx.lineTo(x + size, y + size * 0.4); ctx.closePath();
+  ctx.fillStyle = c1; ctx.fill();
+};
+
+const mDiamond: MotifFn = (ctx, x, y, size, c1) => {
+  ctx.beginPath();
+  ctx.moveTo(x, y - size); ctx.lineTo(x + size * 0.55, y);
+  ctx.lineTo(x, y + size); ctx.lineTo(x - size * 0.55, y);
+  ctx.closePath(); ctx.fillStyle = c1; ctx.fill();
+};
+
+const mFlower: MotifFn = (ctx, x, y, size, c1, c2) => {
+  for (let i = 0; i < 5; i++) {
+    const a = (i * Math.PI * 2) / 5 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.arc(x + Math.cos(a) * size * 0.5, y + Math.sin(a) * size * 0.5, size * 0.38, 0, Math.PI * 2);
+    ctx.fillStyle = c1; ctx.fill();
+  }
+  ctx.beginPath(); ctx.arc(x, y, size * 0.26, 0, Math.PI * 2);
+  ctx.fillStyle = c2; ctx.fill();
+};
+
+const mSparkle: MotifFn = (ctx, x, y, size, c1) => {
+  ctx.save(); ctx.strokeStyle = c1; ctx.lineWidth = size * 0.1; ctx.lineCap = "round";
+  for (let i = 0; i < 4; i++) {
+    const a = (i * Math.PI) / 4;
+    ctx.beginPath();
+    ctx.moveTo(x + Math.cos(a) * size * 0.2, y + Math.sin(a) * size * 0.2);
+    ctx.lineTo(x + Math.cos(a) * size, y + Math.sin(a) * size);
+    ctx.moveTo(x - Math.cos(a) * size * 0.2, y - Math.sin(a) * size * 0.2);
+    ctx.lineTo(x - Math.cos(a) * size, y - Math.sin(a) * size);
+    ctx.stroke();
+  }
+  ctx.restore();
+};
+
+const mRocket: MotifFn = (ctx, x, y, size, c1) => {
+  ctx.beginPath(); ctx.moveTo(x - size * 0.28, y - size * 0.4);
+  ctx.lineTo(x + size * 0.28, y - size * 0.4); ctx.lineTo(x, y - size);
+  ctx.closePath(); ctx.fillStyle = c1; ctx.fill();
+  ctx.fillRect(x - size * 0.28, y - size * 0.4, size * 0.56, size * 0.9);
+  ctx.beginPath(); ctx.moveTo(x - size * 0.18, y + size * 0.5);
+  ctx.lineTo(x - size * 0.28, y + size * 0.8); ctx.lineTo(x, y + size * 0.55);
+  ctx.lineTo(x + size * 0.28, y + size * 0.8); ctx.lineTo(x + size * 0.18, y + size * 0.5);
+  ctx.fillStyle = darken(c1, 0.15); ctx.fill();
+};
+
+const mLeaf: MotifFn = (ctx, x, y, size, c1) => {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(-Math.PI / 4);
+  ctx.beginPath(); ctx.ellipse(0, 0, size * 0.32, size * 0.7, 0, 0, Math.PI * 2);
+  ctx.fillStyle = c1; ctx.fill(); ctx.restore();
+};
+
+const mPawPrint: MotifFn = (ctx, x, y, size, c1) => {
+  ctx.beginPath(); ctx.ellipse(x, y + size * 0.2, size * 0.38, size * 0.32, 0, 0, Math.PI * 2);
+  ctx.fillStyle = c1; ctx.fill();
+  [[-0.35, -0.35], [0, -0.45], [0.35, -0.35]].forEach(([dx, dy]) => {
+    ctx.beginPath(); ctx.arc(x + dx * size, y + dy * size, size * 0.16, 0, Math.PI * 2);
+    ctx.fill();
+  });
+};
+
+const mStarfish: MotifFn = (ctx, x, y, size, c1) => {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = (i * Math.PI / 5) - Math.PI / 2;
+    const r = i % 2 === 0 ? size : size * 0.48;
+    const px = x + r * Math.cos(a), py = y + r * Math.sin(a);
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.closePath(); ctx.fillStyle = c1; ctx.fill();
+};
+
+// Theme motif arrays (m-prefixed functions only)
+const THEME_MOTIFS: Partial<Record<string, MotifFn[]>> = {
+  frozen:             [mSnowflake, mStar, mDiamond, mSnowflake, mSparkle],
+  unicorn:            [mStar, mHeart, mSparkle, mDiamond, mFlower],
+  princess:           [mCrown, mStar, mHeart, mDiamond, mSparkle],
+  barbie:             [mCrown, mStar, mHeart, mSparkle, mDiamond, mHeart],
+  dinosaur:           [mLeaf, mStar, mLeaf, mHeart, mStar],
+  safari:             [mPawPrint, mLeaf, mStar, mPawPrint, mLeaf],
+  mermaid:            [mStarfish, mStar, mHeart, mDiamond, mStarfish],
+  space:              [mStar, mRocket, mDiamond, mStar, mSparkle],
+  superhero:          [mStar, mDiamond, mSparkle, mStar, mHeart],
+  lego:               [mDiamond, mStar, mHeart, mSparkle, mStar],
+  kpop:               [mStar, mSparkle, mHeart, mStar, mDiamond],
+  encanto:            [mFlower, mStar, mLeaf, mFlower, mHeart],
+  teddy_bear:         [mHeart, mStar, mFlower, mHeart, mSparkle],
+  blush_garden:       [mFlower, mHeart, mLeaf, mFlower, mSparkle],
+  luxury_neutral:     [mDiamond, mStar, mSparkle, mHeart, mDiamond],
+  pineapple_tropical: [mStar, mLeaf, mFlower, mStar, mHeart],
+  cocomelon:          [mStar, mHeart, mFlower, mStar, mSparkle],
+  bluey:              [mPawPrint, mStar, mHeart, mPawPrint, mSparkle],
+  stitch:             [mStar, mFlower, mLeaf, mHeart, mStar],
+  football:           [mStar, mDiamond, mHeart, mStar, mSparkle],
+};
+const GENERIC_MOTIFS: MotifFn[] = [mStar, mHeart, mSparkle, mDiamond, mFlower];
+
+interface GraphicStyleConfig { count: number; sizeF: number; }
+const GRAPHIC_STYLE_CFG: Record<GraphicStyle, GraphicStyleConfig> = {
+  minimal:    { count: 3,  sizeF: 0.20 },
+  illustrated:{ count: 8,  sizeF: 0.14 },
+  pattern:    { count: 20, sizeF: 0.07 },
+  full_scene: { count: 13, sizeF: 0.12 },
+  realistic:  { count: 8,  sizeF: 0.13 },
+};
+
+/**
+ * Draw a deterministic themed graphic overlay clipped to the panel shape.
+ * Updates immediately when panel.graphic.enabled or graphic.style changes.
+ */
+function drawPanelGraphic(
+  ctx: CanvasRenderingContext2D,
+  cx: number, pw: number, apexY: number, floorY: number, H: number,
+  shape: BackdropShapeId, themeId: string, style: GraphicStyle,
+  themeAccent: string, panelColor: string, seedBase: number,
+) {
+  const outline = backdropOutline(cx, pw, floorY, H, shape, apexY);
+  const cfg     = GRAPHIC_STYLE_CFG[style] ?? GRAPHIC_STYLE_CFG.illustrated;
+  const motifs  = THEME_MOTIFS[themeId] ?? GENERIC_MOTIFS;
+  const rng     = mulberry32(seedBase + 5000);
+
+  // Motif colors: use theme accent at 85% opacity + a lighter variant
+  const c1 = themeAccent + "D9";         // accent at ~85% opacity
+  const c2 = lighten(themeAccent, 0.35) + "CC";  // lighter tint
+
+  ctx.save();
+
+  // Clip to panel shape
+  ctx.beginPath();
+  ctx.moveTo(outline[0].x, outline[0].y);
+  for (const p of outline) ctx.lineTo(p.x, p.y);
+  ctx.closePath();
+  ctx.clip();
+
+  const panelH = floorY - apexY;
+  const left   = cx - pw / 2;
+  const margin = cfg.sizeF * pw;
+
+  // For pattern style: grid layout; other styles: scatter
+  if (style === "pattern") {
+    const cols = Math.max(2, Math.round(pw / (margin * 2.2)));
+    const rows = Math.max(2, Math.round(panelH / (margin * 2.2)));
+    let idx = 0;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = left   + margin + c * (pw - margin * 2) / Math.max(1, cols - 1);
+        const y = apexY  + margin + r * (panelH - margin * 2) / Math.max(1, rows - 1);
+        const jx = (rng() - 0.5) * margin * 0.4;
+        const jy = (rng() - 0.5) * margin * 0.4;
+        const s  = margin * (0.7 + rng() * 0.4);
+        motifs[idx % motifs.length](ctx, x + jx, y + jy, s, c1, c2);
+        idx++;
+      }
+    }
+  } else {
+    // Scatter placement — for minimal, use fixed relative positions
+    const positions =
+      style === "minimal"
+        ? [
+            [0.50, 0.28], [0.28, 0.60], [0.72, 0.60],
+          ].map(([xf, yf]) => ({ x: left + xf * pw, y: apexY + yf * panelH }))
+        : Array.from({ length: cfg.count }, () => ({
+            x: left   + margin + rng() * (pw     - margin * 2),
+            y: apexY  + margin + rng() * (panelH - margin * 2),
+          }));
+
+    positions.forEach(({ x, y }, idx) => {
+      const s = margin * (0.7 + rng() * 0.55);
+      motifs[idx % motifs.length](ctx, x, y, s, c1, c2);
+    });
+  }
+
+  // Overlay tint to blend graphic into panel (avoids harsh floating icons)
+  ctx.fillStyle = `${panelColor}22`;
+  ctx.fillRect(left, apexY, pw, panelH);
 
   ctx.restore();
 }
