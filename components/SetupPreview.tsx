@@ -14,7 +14,9 @@ import type {
 } from "@/lib/config";
 import { THEMES } from "@/lib/config";
 import { buildSceneModel } from "@/lib/buildSceneModel";
-import { renderLayoutControlImage } from "@/lib/renderLayoutControlImage";
+import { generateStructureControlMap } from "@/lib/generateStructureControlMap";
+// renderLayoutControlImage is used only for the visible Production Layout Preview,
+// NOT passed to the AI as a style reference.
 import type { ChangeType } from "@/lib/generatePrompt";
 import LiveSetupPreview from "./LiveSetupPreview";
 
@@ -694,14 +696,19 @@ function CutoutOverlay({
 export type FinalRenderStatus = "idle" | "loading" | "done" | "error";
 
 /**
- * Generates the Final Design Render using the Production Layout Preview as a
- * structural control image passed to fal-ai/flux-pro/kontext.
+ * Generates the Final Design Render.
  *
- * TODO: Small visual edits should use image-to-image / Kontext editing with
- * currentFinalRenderUrl as image_url, not full text-to-image regeneration.
+ * Visible Production Layout Preview is NOT used as image_url for the AI.
+ * AI receives structure from the text prompt (panel count, dimensions, types).
  *
- * Production Layout Preview and future export package use scene state as source
- * of truth. AI render is a visual preview, not the production measurement source.
+ * first_generate → fal-ai/flux-2-pro text-to-image with detailed photorealistic prompt.
+ * edit_existing  → fal-ai/flux-pro/kontext on the previous beautiful photorealistic render.
+ *
+ * A hidden edge-only structure control map is generated locally (for future ControlNet use)
+ * but is NOT passed to the current text-to-image path.
+ *
+ * TODO: Small visual edits should use fal-ai/flux-pro/kontext with
+ * currentFinalRenderUrl as image_url to preserve venue, camera, light, and composition.
  */
 export function useFinalRender(config: BuilderConfig) {
   const [status, setStatus]             = useState<FinalRenderStatus>("idle");
@@ -711,9 +718,10 @@ export function useFinalRender(config: BuilderConfig) {
   async function generateFinalRender() {
     setStatus("loading");
     try {
-      // 1. Render the deterministic layout to a PNG for structural guidance
-      const controlImageBase64 = renderLayoutControlImage(config, 800, 600);
-      if (!controlImageBase64) throw new Error("Failed to render control image");
+      // 1. Generate hidden edge-only structure map (reserved for future ControlNet use).
+      //    This is NOT the visible Production Layout Preview.
+      //    NOT passed to the text-to-image API — structure comes from the text prompt.
+      const _structureControlMap = generateStructureControlMap(config, 800, 600);
 
       // 2. Build scene model and prompt input
       const sceneModel   = buildSceneModel(config);
@@ -732,17 +740,19 @@ export function useFinalRender(config: BuilderConfig) {
         plinthSizes:   d.plinthSizes,
       };
 
-      // 3. Determine mode: first generate or edit existing
+      // 3. Determine mode
       const renderMode = currentFinalRenderUrl.current ? "edit_existing" : "first_generate";
 
-      // 4. Call the controlled render API
+      // 4. Call the controlled render API.
+      //    controlImageBase64 is omitted — the route uses pure text-to-image for first_generate.
       const res = await fetch("/api/generate-controlled-render", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           promptInput,
           sceneModel,
-          controlImageBase64,
+          // controlImageBase64 intentionally omitted — visible Production Preview
+          // is NOT passed as style reference; structure comes from text prompt.
           previousFinalRenderUrl: currentFinalRenderUrl.current ?? undefined,
           renderMode,
         }),
