@@ -10,6 +10,7 @@ import {
   type PlinthSize,
 } from "@/lib/config";
 import { calculateExactLayout, debugLayout } from "@/lib/calculateExactLayout";
+import { getPlinthDimensions } from "@/lib/layoutDimensions";
 
 /**
  * Customer Approval Preview — deterministic canvas rendering of the exact setup.
@@ -200,7 +201,10 @@ function renderScene(
   }
 
   // --- props in front ------------------------------------------------------
-  drawPlinths(ctx, W, floorY, config.decor.plinthSizes, accent);
+  // px-per-cm scale: anchored to the tallest panel's rendered height
+  const refApexY   = H * 0.05;               // apex y for tallest panel (heightRatio = 1)
+  const pxPerCm    = (floorY - refApexY) / maxHeightCm;
+  drawPlinths(ctx, W, floorY, config.decor.plinthSizes, pxPerCm);
   if (config.decor.cutouts.size !== "none")
     drawCutouts(ctx, W, floorY, config.decor.cutouts.size, palette);
   if (config.decor.cakeTable) drawCakeTable(ctx, W, floorY, accent);
@@ -548,56 +552,97 @@ function drawBalloon(
 
 // --- props -----------------------------------------------------------------
 
-const PLINTH_HEIGHT: Record<PlinthSize, number> = {
-  small: 0.1,
-  medium: 0.14,
-  large: 0.18,
+/** Plinth X-center positions as fraction of W for 1/2/3 plinths. */
+const PLINTH_X: Record<number, number[]> = {
+  1: [0.50],
+  2: [0.33, 0.67],
+  3: [0.22, 0.50, 0.78],
 };
 
+/**
+ * Draws polished cylindrical display columns using exact production dimensions
+ * from layoutDimensions.ts. Rendering: floor shadow → body → bottom cap →
+ * top cap. All plinths are 40 cm diameter; height varies by selected size.
+ */
 function drawPlinths(
   ctx: CanvasRenderingContext2D,
   W: number,
   floorY: number,
   sizes: PlinthSize[],
-  _accent: string
+  pxPerCm: number
 ) {
   const n = Math.min(3, sizes.length);
   if (n <= 0) return;
-  for (let i = 0; i < n; i++) {
-    const cx = W * (0.3 + (i * 0.4) / Math.max(1, n - 1 || 1));
-    const w  = W * 0.055;
-    const h  = PLINTH_HEIGHT[sizes[i]] * floorY;
-    const x  = cx - w / 2;
-    const y  = floorY - h;
+  const xFracs = PLINTH_X[n] ?? [0.5];
 
-    // Floor shadow ellipse
+  for (let i = 0; i < n; i++) {
+    const cx   = W * (xFracs[i] ?? 0.5);
+    const dims = getPlinthDimensions(sizes[i]);
+    const diam = dims.diameterCm * pxPerCm;
+    const h    = dims.heightCm   * pxPerCm;
+    const rx   = diam / 2;
+    // Foreshortened ellipse for top/bottom — looks correct at typical 2.5D angle
+    const ry   = diam * 0.155;
+    const x    = cx - rx;
+    const topY = floorY - h;
+
+    // --- 1. Blurred floor shadow ---
     ctx.save();
     ctx.beginPath();
-    ctx.ellipse(cx, floorY + 2, w * 0.62, w * 0.18, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(0,0,0,0.14)";
+    ctx.ellipse(cx, floorY + 5, rx * 0.80, rx * 0.22, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0,0,0,0.18)";
+    ctx.filter = "blur(4px)";
+    ctx.fill();
+    ctx.filter = "none";
+    ctx.restore();
+
+    // --- 2. Cylinder body — horizontal gradient simulates curvature ---
+    const bodyGrad = ctx.createLinearGradient(x, 0, x + diam, 0);
+    bodyGrad.addColorStop(0,    "#BEBAB6");   // deep shadow on left rim
+    bodyGrad.addColorStop(0.16, "#E8E4E0");   // penumbra
+    bodyGrad.addColorStop(0.38, "#FFFFFF");   // key-light centre
+    bodyGrad.addColorStop(0.60, "#F2EFEC");   // gentle falloff
+    bodyGrad.addColorStop(0.84, "#DEDBD7");   // penumbra
+    bodyGrad.addColorStop(1,    "#BDBAB6");   // deep shadow on right rim
+    ctx.fillStyle = bodyGrad;
+    ctx.fillRect(x, topY + ry, diam, h - ry);   // body stops at the top cap centre
+
+    // --- 3. Bottom cap ellipse (slightly darker, partially occluded) ---
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx, floorY, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#B8B4B0";
     ctx.fill();
     ctx.restore();
 
-    // White marble column — horizontal gradient simulates cylinder curvature
-    const g = ctx.createLinearGradient(x, 0, x + w, 0);
-    g.addColorStop(0,    "#E8E4E0");
-    g.addColorStop(0.25, "#FFFFFF");
-    g.addColorStop(0.55, "#F8F5F3");
-    g.addColorStop(1,    "#DDD8D4");
-    ctx.fillStyle = g;
-    roundRect(ctx, x, y, w, h, 3);
+    // --- 4. Top cap ellipse — bright white, creates full 3D illusion ---
+    ctx.save();
+    const topGrad = ctx.createRadialGradient(
+      cx - rx * 0.28, topY - ry * 0.15, 0,
+      cx, topY, rx * 1.05
+    );
+    topGrad.addColorStop(0,   "#FFFFFF");
+    topGrad.addColorStop(0.5, "#F8F5F3");
+    topGrad.addColorStop(1,   "#DEDAD6");
+    ctx.beginPath();
+    ctx.ellipse(cx, topY, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = topGrad;
     ctx.fill();
-
-    // Subtle top cap edge
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    roundRect(ctx, x, y, w, 3, 2);
-    ctx.fill();
-
-    // Faint column stroke
-    ctx.strokeStyle = "rgba(0,0,0,0.07)";
+    // Rim stroke for crisp edge
+    ctx.strokeStyle = "rgba(0,0,0,0.09)";
     ctx.lineWidth = 0.8;
-    roundRect(ctx, x, y, w, h, 3);
     ctx.stroke();
+    ctx.restore();
+
+    // --- 5. Specular highlight strip on body (left of centre) ---
+    const hiGrad = ctx.createLinearGradient(x + rx * 0.55, 0, x + rx * 0.82, 0);
+    hiGrad.addColorStop(0, "rgba(255,255,255,0)");
+    hiGrad.addColorStop(0.5, "rgba(255,255,255,0.20)");
+    hiGrad.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.save();
+    ctx.fillStyle = hiGrad;
+    ctx.fillRect(x + rx * 0.55, topY + ry * 2, rx * 0.27, h - ry * 3);
+    ctx.restore();
   }
 }
 
