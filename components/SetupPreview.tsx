@@ -825,7 +825,78 @@ export default function SetupPreview({
 
   return (
     <div className="space-y-4">
-      {/* ─── PRIMARY: Customer Approval Preview ─────────────────────────── */}
+      {/* ─── 1. AI Inspiration Render (top, optional, mood only) ─────────── */}
+      <div>
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold text-black/60">AI Inspiration Render</span>
+            <span className="rounded-full bg-black/8 px-2 py-0.5 text-[10px] text-black/45">
+              Mood only — not used for production
+            </span>
+          </div>
+          {showControls && (
+            <button
+              type="button"
+              onClick={onRegenerate}
+              disabled={aiIsLoading}
+              className="flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-[11px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+            >
+              {aiIsLoading ? (
+                <>
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"/>
+                  <span>Generating…</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm leading-none">✦</span>
+                  <span>{aiUrl ? "Regenerate" : "Generate Inspiration Render"}</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-black/5 shadow-inner">
+          {aiUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={aiKey}
+              src={aiUrl}
+              alt="AI inspiration render"
+              style={{ opacity: aiOpacity, transition: "opacity 0.4s ease" }}
+              className="h-full w-full object-cover"
+            />
+          ) : aiIsLoading ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-black/10 border-t-black/35"/>
+              <span className="text-[11px] text-black/40">Creating AI render…</span>
+            </div>
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-black/30">
+              <span className="text-3xl">✦</span>
+              <span className="text-[11px]">Click &ldquo;Generate Inspiration Render&rdquo; to create an AI concept</span>
+            </div>
+          )}
+
+          {status === "error" && (
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/45 px-3 py-1.5 backdrop-blur">
+              <span className="text-[11px] text-white">AI render unavailable</span>
+              {showControls && (
+                <button type="button" onClick={onRegenerate}
+                        className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-medium text-white">
+                  Retry
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <p className="mt-1 text-center text-[10px] text-black/35">
+          Optional AI concept for mood only. Production files are based on the Customer Approval Preview below.
+        </p>
+      </div>
+
+      {/* ─── 2. Customer Approval Preview (below, always deterministic) ──── */}
       {/*
        * Customer Approval Preview and production exports are generated from
        * scene state. AI render is not the source of truth.
@@ -874,79 +945,12 @@ export default function SetupPreview({
           <div className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur">
             Customer Approval Preview
           </div>
-
-          {/* Generate Inspiration Render button */}
-          {showControls && (
-            <button
-              type="button"
-              onClick={onRegenerate}
-              disabled={aiIsLoading}
-              className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-3 py-1.5 text-[11px] font-medium text-white backdrop-blur transition hover:bg-black/70 disabled:opacity-60"
-            >
-              {aiIsLoading ? (
-                <>
-                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"/>
-                  <span>Generating…</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-sm leading-none">✦</span>
-                  <span>Generate Inspiration Render</span>
-                </>
-              )}
-            </button>
-          )}
         </LiveSetupPreview>
 
         <p className="mt-1.5 text-center text-[11px] text-black/50">
           What you approve here is used for the final production files.
         </p>
       </div>
-
-      {/* ─── SECONDARY: AI Inspiration Render (optional, mood only) ─────── */}
-      {(aiUrl || (aiIsLoading && !aiUrl)) && (
-        <div>
-          <div className="mb-1.5 flex items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-black/55">AI Inspiration Render</span>
-            <span className="rounded-full bg-black/8 px-2 py-0.5 text-[10px] text-black/45">
-              Mood only — not used for production
-            </span>
-          </div>
-
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-inner bg-black/5">
-            {aiUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={aiKey}
-                src={aiUrl}
-                alt="AI inspiration render"
-                style={{ opacity: aiOpacity, transition: "opacity 0.4s ease" }}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <div className="h-7 w-7 animate-spin rounded-full border-4 border-black/10 border-t-black/40"/>
-              </div>
-            )}
-
-            {status === "error" && !aiUrl && (
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/45 px-3 py-1.5 backdrop-blur">
-                <span className="text-[11px] text-white">AI render unavailable</span>
-                {showControls && (
-                  <button type="button" onClick={onRegenerate}
-                          className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-medium text-white">
-                    Retry
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          <p className="mt-1 text-center text-[10px] text-black/35">
-            Optional AI concept render for mood only. Final production follows the Customer Approval Preview.
-          </p>
-        </div>
-      )}
     </div>
   );
 }
