@@ -113,7 +113,7 @@ function renderScene(
   const count = Math.max(1, Math.min(3, items.length));
   const slotW = W / count;
 
-  // Compute max height for relative size scaling
+  // Compute max height for relative apex scaling
   const maxHeightCm = Math.max(...items.map((it) => it.heightCm ?? 200));
 
   for (let i = 0; i < count; i++) {
@@ -125,16 +125,24 @@ function renderScene(
     const panelColor = item?.color || backdropColor;
     const panelDark  = isColorDark(panelColor);
 
-    // Scale panel width by relative height — taller panels appear larger
-    const heightRatio = (item?.heightCm ?? 200) / maxHeightCm;
-    const basePw = Math.min(slotW * 0.62, W * 0.42);
-    // Hero factor: for 2+ panels, center panel is slightly larger than flanks
-    const heroFactor = count === 1 ? 1 : i === Math.floor(count / 2) ? 1 : 0.82;
-    const pw = basePw * heroFactor * (count === 1 ? 1 : (0.75 + 0.25 * heightRatio));
+    // Apex based on relative height (taller panels reach higher up the canvas)
+    const heightRatio  = (item?.heightCm ?? 200) / maxHeightCm;
+    const apexFactor   = 0.05 + 0.12 * (1 - heightRatio);   // tallest → 0.05, shortest → 0.17
+    const customApexY  = H * apexFactor;
+    const panelHeightPx = floorY - customApexY;
 
-    // Adjust apex (topmost point) based on relative height so taller items reach higher
-    const apexFactor = 0.05 + 0.12 * (1 - heightRatio);  // tallest → 0.05, shortest → 0.17
-    const customApexY = H * apexFactor;
+    // Use the true widthCm/heightCm ratio so each panel renders at its correct
+    // proportion. AI render is visual only — production dimensions come from
+    // backdropItems.widthCm / backdropItems.heightCm.
+    const wCm  = item?.widthCm  ?? 100;
+    const hCm  = item?.heightCm ?? 200;
+    const trueAspect = wCm / hCm;
+    const intrinsicPw = panelHeightPx * trueAspect;
+
+    // Clamp so panels fit their slot without overlapping neighbours
+    const maxPw = slotW * 0.80;
+    const minPw = slotW * 0.22;
+    const pw = Math.max(minPw, Math.min(maxPw, intrinsicPw));
 
     drawBackdrop(ctx, cx, pw, floorY, H, shape, panelColor, panelDark, customApexY);
 

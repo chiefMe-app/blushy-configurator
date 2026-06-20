@@ -168,6 +168,7 @@ export function generateNegativePrompt(items?: BackdropItem[]): string {
   const isSingle = !items || items.length <= 1;
   const hasRound = shapes.includes("round");
   const hasRect  = shapes.includes("rect");
+  const hasArch  = shapes.includes("arch");
 
   const base =
     "floating balloons, balloon strings, cartoon, illustration, drawing, people, children, " +
@@ -181,13 +182,20 @@ export function generateNegativePrompt(items?: BackdropItem[]): string {
 
   const roundNeg = hasRound && isSingle ? ", two circles, multiple circles, arch shape" : "";
 
+  // Explicit proportion exclusions when an arch panel is selected
+  const archNeg = hasArch
+    ? ", wide arch wall, oversized arch panel, wall-sized arch, arch wider than selected size, " +
+      "square arch, landscape arch, arch width similar to height, extra-wide backdrop, " +
+      "arch panel wider than 1.5 meters, backdrop spanning full wall width"
+    : "";
+
   // Explicit exclusions when a rectangular panel is selected
   const rectNeg = hasRect
     ? ", arch-shaped panel, rounded-top panel, curved-top panel, semicircle top, " +
       "tombstone-shaped panel, dome-top panel, arched backdrop, half-arch panel"
     : "";
 
-  return `${base}, ${countNeg}${roundNeg}${rectNeg}`;
+  return `${base}, ${countNeg}${roundNeg}${archNeg}${rectNeg}`;
 }
 
 export interface PromptInput {
@@ -213,23 +221,39 @@ function allowFlorals(input: PromptInput): boolean {
 export const PLINTH_NEGATIVE =
   "wide drum, flat platform, stage, podium, short cylinder, width greater than height";
 
-/** Build size-aware description for a single arch item, including per-panel color. */
+/**
+ * Build dimension-locked description for a single arch item.
+ * AI render is visual only. Production dimensions come from backdropItems widthCm/heightCm.
+ */
 function buildArchItemDesc(item: BackdropItem, panelColorName = ""): string {
   const colorPart = panelColorName ? ` in ${panelColorName} color` : "";
-  if (item.heightCm && item.widthCm) {
+
+  const w = item.widthCm;
+  const h = item.heightCm;
+
+  if (w && h) {
+    const ratio = (w / h).toFixed(2);
+    const ratioDesc = `width-to-height ratio ${ratio} (narrow portrait proportion, width is half of height)`;
+    const metricDesc = `${w} cm wide and ${h} cm tall (${(w / 100).toFixed(2)}m × ${(h / 100).toFixed(2)}m)`;
     return (
       `one symmetrical full arch vertical panel with a rounded top center, ` +
-      `${item.heightCm}cm tall, ${item.widthCm}cm wide${colorPart}, standing directly on the floor`
+      `exactly ${metricDesc}${colorPart}, ${ratioDesc}, ` +
+      `NOT oversized, NOT wall-sized, NOT wider than selected size, ` +
+      `narrow portrait arch panel, standing directly on the floor`
     );
   }
+
   const size = ARCH_SIZES.find((s) => s.id === item.sizeId);
   if (size) {
+    const ratio = (size.widthCm / size.heightCm).toFixed(2);
     return (
       `one symmetrical full arch vertical panel with a rounded top center, ` +
-      `${size.heightFt}ft / ${size.heightM}m (${size.heightCm}cm) tall${colorPart}, ` +
-      `standing directly on the floor`
+      `exactly ${size.widthCm} cm wide and ${size.heightCm} cm tall${colorPart}, ` +
+      `width-to-height ratio ${ratio} (narrow portrait proportion, width is half of height), ` +
+      `NOT oversized, NOT wall-sized, narrow portrait arch panel, standing directly on the floor`
     );
   }
+
   return SHAPE_DESC.arch + colorPart;
 }
 
