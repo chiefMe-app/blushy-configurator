@@ -362,12 +362,13 @@ function styleParams(style: BalloonStyleId, pw: number): StyleParams | null {
   switch (style) {
     case "none":
       return null;
+    // Larger radii, tighter spacing, and richer floor pools for premium look.
     case "half":
-      return { rows: 2, baseR: pw * 0.05, coverage: 0.55, spacing: 0.95, floorPool: 0 };
+      return { rows: 3, baseR: pw * 0.068, coverage: 0.50, spacing: 0.80, floorPool: 5 };
     case "full":
-      return { rows: 3, baseR: pw * 0.055, coverage: 1, spacing: 0.85, floorPool: 4 };
+      return { rows: 4, baseR: pw * 0.072, coverage: 1.00, spacing: 0.74, floorPool: 9 };
     case "premium":
-      return { rows: 4, baseR: pw * 0.062, coverage: 1, spacing: 0.78, floorPool: 8 };
+      return { rows: 5, baseR: pw * 0.082, coverage: 1.00, spacing: 0.65, floorPool: 16 };
   }
 }
 
@@ -409,10 +410,13 @@ function drawGarland(
     // (purely cosmetic; bulge the cluster outward and a bit upward)
 
     for (let row = 0; row < sp.rows; row++) {
-      const off = (row - (sp.rows - 1) / 2) * sp.baseR * 0.9;
-      const jx = (rng() - 0.5) * sp.baseR * 0.6;
-      const jy = (rng() - 0.5) * sp.baseR * 0.6;
-      const r = sp.baseR * (0.72 + rng() * 0.5);
+      // Wider offset spread — rows fan out further from the strand path
+      const off = (row - (sp.rows - 1) / 2) * sp.baseR * 1.15;
+      // More jitter for organic, overlapping clusters
+      const jx = (rng() - 0.5) * sp.baseR * 1.0;
+      const jy = (rng() - 0.5) * sp.baseR * 1.0;
+      // Wider size range: 60% – 135% of baseR
+      const r = sp.baseR * (0.60 + rng() * 0.75);
       balls.push({
         x: st.x + nx * off + jx,
         y: st.y + ny * off + jy,
@@ -422,15 +426,15 @@ function drawGarland(
     }
   }
 
-  // Floor pooling at both ends (grounds the garland).
+  // Floor pooling — wider spread and taller mound for a premium grounded look
   const ends = [stations[0], stations[stations.length - 1]].filter(Boolean);
   for (const end of ends) {
-    if (Math.abs(end.y - floorY) > sp.baseR * 3) continue; // only ends actually at the floor
+    if (Math.abs(end.y - floorY) > sp.baseR * 3) continue;
     for (let i = 0; i < sp.floorPool; i++) {
-      const r = sp.baseR * (0.8 + rng() * 0.5);
+      const r = sp.baseR * (0.75 + rng() * 0.70);
       balls.push({
-        x: end.x + (rng() - 0.5) * sp.baseR * 5,
-        y: floorY - r * 0.5 - rng() * sp.baseR * 2,
+        x: end.x + (rng() - 0.5) * sp.baseR * 8,
+        y: floorY - r * 0.5 - rng() * sp.baseR * 3.5,
         r,
         color: palette[Math.floor(rng() * palette.length)],
       });
@@ -492,40 +496,53 @@ function drawBalloon(
   r: number,
   color: string
 ) {
-  const rx = r * 0.86;
+  const rx = r * 0.88;
   const ry = r;
 
-  // knot at the bottom
+  // --- 1. Soft cast shadow beneath balloon ---
+  ctx.save();
   ctx.beginPath();
-  ctx.moveTo(x - r * 0.16, y + ry * 0.96);
-  ctx.lineTo(x + r * 0.16, y + ry * 0.96);
-  ctx.lineTo(x, y + ry * 1.22);
+  ctx.ellipse(x + r * 0.08, y + ry * 1.05, rx * 0.72, ry * 0.20, 0, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(0,0,0,0.14)";
+  ctx.filter = "blur(2px)";
+  ctx.fill();
+  ctx.filter = "none";
+  ctx.restore();
+
+  // --- 2. Knot at bottom ---
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.14, y + ry * 0.94);
+  ctx.lineTo(x + r * 0.14, y + ry * 0.94);
+  ctx.lineTo(x, y + ry * 1.20);
   ctx.closePath();
-  ctx.fillStyle = darken(color, 0.22);
+  ctx.fillStyle = darken(color, 0.28);
   ctx.fill();
 
-  // body with radial highlight (light top-left → darker bottom)
+  // --- 3. Body: radial gradient — bright top-left, rich mid, deep bottom ---
   const g = ctx.createRadialGradient(
-    x - rx * 0.35,
-    y - ry * 0.4,
-    r * 0.1,
-    x,
-    y,
-    r * 1.15
+    x - rx * 0.30, y - ry * 0.38, r * 0.08,
+    x + rx * 0.05, y + ry * 0.05, r * 1.20
   );
-  g.addColorStop(0, lighten(color, 0.5));
-  g.addColorStop(0.45, color);
-  g.addColorStop(1, darken(color, 0.26));
+  g.addColorStop(0,    lighten(color, 0.60));
+  g.addColorStop(0.30, lighten(color, 0.18));
+  g.addColorStop(0.65, color);
+  g.addColorStop(1,    darken(color, 0.30));
 
   ctx.beginPath();
   ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
   ctx.fillStyle = g;
   ctx.fill();
 
-  // tiny specular dot
+  // --- 4. Primary specular highlight ---
   ctx.beginPath();
-  ctx.ellipse(x - rx * 0.32, y - ry * 0.38, rx * 0.16, ry * 0.12, -0.5, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.ellipse(x - rx * 0.30, y - ry * 0.36, rx * 0.22, ry * 0.16, -0.45, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,0.62)";
+  ctx.fill();
+
+  // --- 5. Tiny secondary specular (depth) ---
+  ctx.beginPath();
+  ctx.ellipse(x - rx * 0.12, y - ry * 0.16, rx * 0.08, ry * 0.06, -0.45, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,0.35)";
   ctx.fill();
 }
 
