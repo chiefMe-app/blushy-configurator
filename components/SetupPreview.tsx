@@ -825,14 +825,16 @@ export default function SetupPreview({
 
   return (
     <div className="space-y-4">
-      {/* ─── 1. AI Inspiration Render (top, optional, mood only) ─────────── */}
+      {/* ─── 1. Final Design Render (top) ───────────────────────────────── */}
+      {/*
+       * TODO: Small visual edits should use image-to-image / Kontext editing
+       * with currentFinalRender as image_url, not full text-to-image regeneration.
+       */}
       <div>
         <div className="mb-1.5 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-black/60">AI Inspiration Render</span>
-            <span className="rounded-full bg-black/8 px-2 py-0.5 text-[10px] text-black/45">
-              Mood only — not used for production
-            </span>
+          <div>
+            <span className="text-[11px] font-semibold text-black/70">Final Design Render</span>
+            <p className="text-[10px] text-black/40">High-quality visual preview for customer review.</p>
           </div>
           {showControls && (
             <button
@@ -849,7 +851,7 @@ export default function SetupPreview({
               ) : (
                 <>
                   <span className="text-sm leading-none">✦</span>
-                  <span>{aiUrl ? "Regenerate" : "Generate Inspiration Render"}</span>
+                  <span>{aiUrl ? "Regenerate" : "Generate Final Render"}</span>
                 </>
               )}
             </button>
@@ -862,25 +864,25 @@ export default function SetupPreview({
             <img
               key={aiKey}
               src={aiUrl}
-              alt="AI inspiration render"
+              alt="Final design render"
               style={{ opacity: aiOpacity, transition: "opacity 0.4s ease" }}
               className="h-full w-full object-cover"
             />
           ) : aiIsLoading ? (
             <div className="flex h-full flex-col items-center justify-center gap-3">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-black/10 border-t-black/35"/>
-              <span className="text-[11px] text-black/40">Creating AI render…</span>
+              <span className="text-[11px] text-black/40">Generating final render…</span>
             </div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-black/30">
               <span className="text-3xl">✦</span>
-              <span className="text-[11px]">Click &ldquo;Generate Inspiration Render&rdquo; to create an AI concept</span>
+              <span className="text-[11px]">Click &ldquo;Generate Final Render&rdquo; to create the design visual</span>
             </div>
           )}
 
           {status === "error" && (
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/45 px-3 py-1.5 backdrop-blur">
-              <span className="text-[11px] text-white">AI render unavailable</span>
+              <span className="text-[11px] text-white">Render unavailable</span>
               {showControls && (
                 <button type="button" onClick={onRegenerate}
                         className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-medium text-white">
@@ -890,18 +892,20 @@ export default function SetupPreview({
             </div>
           )}
         </div>
-
-        <p className="mt-1 text-center text-[10px] text-black/35">
-          Optional AI concept for mood only. Production files are based on the Customer Approval Preview below.
-        </p>
       </div>
 
-      {/* ─── 2. Customer Approval Preview (below, always deterministic) ──── */}
+      {/* ─── 2. Production Layout Preview (below, always deterministic) ──── */}
       {/*
-       * Customer Approval Preview and production exports are generated from
-       * scene state. AI render is not the source of truth.
+       * Production Layout Preview and future export package use scene state
+       * as source of truth. AI render is a visual preview, not the production
+       * measurement source.
        */}
       <div>
+        <div className="mb-1.5">
+          <span className="text-[11px] font-semibold text-black/70">Production Layout Preview</span>
+          <p className="text-[10px] text-black/40">Exact panel sizes, item placement, and production reference.</p>
+        </div>
+
         <LiveSetupPreview config={config}>
           {/* Plinth overlay — SVG mode only */}
           {PLINTH_MODE === "svg" && (
@@ -941,15 +945,11 @@ export default function SetupPreview({
             );
           })}
 
-          {/* Label badge */}
+          {/* Production label badge */}
           <div className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur">
-            Customer Approval Preview
+            Production Layout
           </div>
         </LiveSetupPreview>
-
-        <p className="mt-1.5 text-center text-[11px] text-black/50">
-          What you approve here is used for the final production files.
-        </p>
       </div>
     </div>
   );
