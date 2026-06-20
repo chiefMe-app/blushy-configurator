@@ -12,7 +12,7 @@ import type {
   BackdropShapeId,
   ThemeId,
 } from "@/lib/config";
-import { resolveBackdropText, THEMES } from "@/lib/config";
+import { THEMES } from "@/lib/config";
 import type { ChangeType } from "@/lib/generatePrompt";
 import LiveSetupPreview from "./LiveSetupPreview";
 
