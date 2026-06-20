@@ -3,7 +3,7 @@
 import {
   eventTypeById,
   themeById,
-  packageById,
+  servicePackageById,
   shapeById,
   balloonStyleById,
   plinthSizeById,
@@ -41,9 +41,9 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
   return (
     <div className="space-y-4">
       <Section title="Event">
-        <Row k="Type" v={eventTypeById(config.eventType)?.label ?? "—"} />
-        <Row k="Theme" v={themeById(config.theme)?.name ?? "—"} />
-        <Row k="Package" v={packageById(config.package)?.label ?? "—"} />
+        <Row k="Type"    v={eventTypeById(config.eventType)?.label ?? "—"} />
+        <Row k="Theme"   v={themeById(config.theme)?.name ?? "—"} />
+        <Row k="Service" v={servicePackageById(config.servicePackageId)?.name ?? "—"} />
       </Section>
 
       <Section title="Decor">
@@ -97,23 +97,39 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
         <Row k="Cake / dessert table" v={decor.cakeTable ? "Yes" : "No"} />
       </Section>
 
-      {config.addOns.length > 0 && (
-        <Section title="Add-ons">
-          {config.addOns.map((a) => {
-            const addon = addOnById(a.id);
-            const opts = a.options
-              ? Object.values(a.options).filter(Boolean).join(", ")
-              : "";
-            return (
-              <Row
-                key={a.id}
-                k={addon?.label ?? a.id}
-                v={opts || "Selected"}
-              />
-            );
-          })}
-        </Section>
-      )}
+      {(() => {
+        const svcPkg = servicePackageById(config.servicePackageId);
+        if (!svcPkg) return null;
+        return (
+          <Section title="Service Package">
+            <Row k="Package" v={svcPkg.name} />
+            {svcPkg.includes.map((item) => (
+              <div key={item} className="flex items-start gap-2 py-0.5 text-sm">
+                <span className="mt-[3px] text-accent">✓</span>
+                <span className="text-black/65">{item}</span>
+              </div>
+            ))}
+          </Section>
+        );
+      })()}
+
+      <Section title="Add-ons">
+        {config.addOns.length === 0 ? (
+          <p className="text-sm text-black/40">None selected</p>
+        ) : config.addOns.map((a) => {
+          const addon = addOnById(a.id);
+          const opts = a.options
+            ? Object.values(a.options).filter(Boolean).join(", ")
+            : "";
+          return (
+            <Row
+              key={a.id}
+              k={addon?.label ?? a.id}
+              v={opts || "Selected"}
+            />
+          );
+        })}
+      </Section>
 
       <Section title="Venue &amp; contact">
         <Row k="Name" v={customer.name || "—"} />

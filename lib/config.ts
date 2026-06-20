@@ -712,8 +712,10 @@ export function defaultConfig(): BuilderConfig {
 // =====================  PRICING  ===========================================
 
 export interface PriceLine {
-  label: string;
-  amount: number;
+  label:   string;
+  amount:  number;
+  /** Groups lines for display in the pricing breakdown. */
+  section: "design" | "package" | "addons";
 }
 
 /**
@@ -751,61 +753,64 @@ export function priceBreakdown(config: BuilderConfig): {
   const lines: PriceLine[] = [];
   const d = config.decor;
 
-  // Service package is the base price — it defines what the customer receives,
-  // not their design. Decor items add on top of this.
+  // ── Service package ────────────────────────────────────────────────────
+  // Defines what the customer receives — separate from the design items below.
   const svcPkg = servicePackageById(config.servicePackageId) ?? SERVICE_PACKAGES[0];
-  lines.push({ label: svcPkg.name, amount: svcPkg.price });
+  lines.push({ label: svcPkg.name, amount: svcPkg.price, section: "package" });
 
+  // ── Design / decor items ────────────────────────────────────────────────
   const theme = themeById(config.theme);
   if (theme && theme.priceModifier > 0) {
-    lines.push({ label: `${theme.name} theme`, amount: theme.priceModifier });
+    lines.push({ label: `${theme.name} theme`, amount: theme.priceModifier, section: "design" });
   }
 
   // Backdrop panel pricing: first panel included, each additional is PER_BACKDROP.
-  // Shimmer wall adds +80 per shimmer panel regardless of position.
   for (let i = 0; i < d.backdropItems.length; i++) {
     const item = d.backdropItems[i];
     const sInfo = shapeById(item.type);
     const sLabel = sInfo?.label ?? item.type;
     const panelCost = i === 0 ? 0 : PER_BACKDROP;
     const shimmerExtra = item.type === "shimmer_wall" ? 80 : 0;
-    const total = panelCost + shimmerExtra;
-    if (total > 0) {
+    const cost = panelCost + shimmerExtra;
+    if (cost > 0) {
       lines.push({
         label: i === 0 ? `${sLabel} backdrop` : `${sLabel} — panel ${i + 1}`,
-        amount: total,
+        amount: cost,
+        section: "design",
       });
     }
   }
 
   const style = balloonStyleById(d.balloonStyle);
   if (style && style.price > 0) {
-    lines.push({ label: `Balloons — ${style.label}`, amount: style.price });
+    lines.push({ label: `Balloons — ${style.label}`, amount: style.price, section: "design" });
   }
 
   const plinthSum = plinthsTotal(d.plinthSizes);
   if (plinthSum > 0) {
-    lines.push({ label: `Plinths (${d.plinthSizes.length})`, amount: plinthSum });
+    lines.push({ label: `Plinths (${d.plinthSizes.length})`, amount: plinthSum, section: "design" });
   }
 
   const cut = cutoutPrice(d.cutouts.size);
   if (cut > 0) {
-    lines.push({ label: `${cutoutSetBySize(d.cutouts.size)?.label}`, amount: cut });
+    lines.push({ label: `${cutoutSetBySize(d.cutouts.size)?.label}`, amount: cut, section: "design" });
   }
 
   const printOpt = backdropPrintById(d.backdropPrint?.type ?? "none");
   if (printOpt && printOpt.price > 0) {
-    lines.push({ label: printOpt.label, amount: printOpt.price });
+    lines.push({ label: printOpt.label, amount: printOpt.price, section: "design" });
   }
 
   if (d.cakeTable) {
-    lines.push({ label: "Cake / dessert table", amount: CAKE_TABLE_PRICE });
+    lines.push({ label: "Cake / dessert table", amount: CAKE_TABLE_PRICE, section: "design" });
   }
 
+  // ── Add-ons ─────────────────────────────────────────────────────────────
+  // Available for all service packages — never cleared by package selection.
   for (const sel of config.addOns) {
     const addon = addOnById(sel.id);
     if (!addon) continue;
-    lines.push({ label: addon.label, amount: addOnPrice(sel, config) });
+    lines.push({ label: addon.label, amount: addOnPrice(sel, config), section: "addons" });
   }
 
   const total = lines.reduce((sum, l) => sum + l.amount, 0);
