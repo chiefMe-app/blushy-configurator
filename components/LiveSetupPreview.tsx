@@ -105,18 +105,45 @@ function renderScene(
   const isDark = isColorDark(backdropColor);
 
   // --- background + floor --------------------------------------------------
+  // Premium neutral wall: warm ivory, subtly lighter in the center
   const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, "#FBF8F6");
-  bg.addColorStop(1, "#F1E9E4");
+  bg.addColorStop(0,   "#EDEAE6");
+  bg.addColorStop(0.5, "#F5F2EE");
+  bg.addColorStop(1,   "#EBE6E0");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  const floorY = H * 0.9;
+  // Soft centre-bright radial — mimics a studio key light from above
+  const keyLight = ctx.createRadialGradient(W * 0.5, H * 0.25, 0, W * 0.5, H * 0.25, W * 0.75);
+  keyLight.addColorStop(0, "rgba(255,255,255,0.18)");
+  keyLight.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = keyLight;
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle corner vignette for depth
+  const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.28, W / 2, H / 2, H * 0.9);
+  vig.addColorStop(0, "rgba(0,0,0,0)");
+  vig.addColorStop(1, "rgba(0,0,0,0.09)");
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+
+  const floorY = H * 0.88;
+
+  // Floor: slightly warmer, subtle sheen
   const floor = ctx.createLinearGradient(0, floorY, 0, H);
-  floor.addColorStop(0, "#EAded6");
-  floor.addColorStop(1, "#E0D2C8");
+  floor.addColorStop(0,   "#DDD5CC");
+  floor.addColorStop(0.4, "#E8E0D6");
+  floor.addColorStop(1,   "#D8D0C8");
   ctx.fillStyle = floor;
   ctx.fillRect(0, floorY, W, H - floorY);
+
+  // Floor-wall junction: soft cast shadow from the wall meeting the floor
+  const jShadow = ctx.createLinearGradient(0, floorY - 10, 0, floorY + 18);
+  jShadow.addColorStop(0, "rgba(0,0,0,0)");
+  jShadow.addColorStop(0.55, "rgba(0,0,0,0.11)");
+  jShadow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = jShadow;
+  ctx.fillRect(0, floorY - 10, W, 28);
 
   // --- layout backdrops across the width -----------------------------------
   const items = config.decor.backdropItems;
@@ -263,40 +290,61 @@ function drawBackdrop(
   apexYOverride?: number
 ) {
   const outline = backdropOutline(cx, pw, floorY, H, shape, apexYOverride);
+  const apexY = apexYOverride ?? H * 0.14;
+
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(outline[0].x, outline[0].y);
   for (const p of outline) ctx.lineTo(p.x, p.y);
   ctx.closePath();
 
-  const g = ctx.createLinearGradient(0, H * 0.14, 0, floorY);
-  g.addColorStop(0, lighten(color, isDark ? 0.12 : 0.06));
-  g.addColorStop(1, darken(color, 0.06));
-  ctx.fillStyle = g;
-  ctx.shadowColor = "rgba(0,0,0,0.12)";
-  ctx.shadowBlur = 18;
-  ctx.shadowOffsetY = 6;
+  // --- 1. Deep cast shadow on the floor below the panel ---
+  ctx.shadowColor = "rgba(0,0,0,0.30)";
+  ctx.shadowBlur = 28;
+  ctx.shadowOffsetX = 3;
+  ctx.shadowOffsetY = 14;
+  ctx.fillStyle = "rgba(0,0,0,0)";  // paint transparent first to stamp shadow
   ctx.fill();
   ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
 
-  // soft inner edge
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = darken(color, 0.1);
+  // --- 2. Panel fill: vertical gradient for subtle material depth ---
+  const g = ctx.createLinearGradient(0, apexY, 0, floorY);
+  g.addColorStop(0,    lighten(color, isDark ? 0.18 : 0.10));
+  g.addColorStop(0.45, color);
+  g.addColorStop(1,    darken(color, 0.08));
+  ctx.fillStyle = g;
+  ctx.fill();
+
+  // --- 3. Rim highlight on the left edge (ambient fill light) ---
+  const rimW = pw * 0.12;
+  const rimGrad = ctx.createLinearGradient(cx - pw / 2, 0, cx - pw / 2 + rimW, 0);
+  rimGrad.addColorStop(0, "rgba(255,255,255,0.20)");
+  rimGrad.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = rimGrad;
+  ctx.fill();
+
+  // --- 4. Clean edge stroke ---
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = isDark ? "rgba(255,255,255,0.12)" : darken(color, 0.12);
   ctx.stroke();
 
-  // Space theme: scatter a few stars on the panel.
+  // --- 5. Space theme: star field ---
   if (isDark) {
     ctx.fillStyle = "rgba(255,255,255,0.85)";
     const seed = mulberry32(42);
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 22; i++) {
       const x = cx - pw / 2 + seed() * pw;
-      const y = H * 0.16 + seed() * (floorY - H * 0.16) * 0.8;
-      const s = 0.6 + seed() * 1.4;
+      const y = apexY + seed() * (floorY - apexY) * 0.88;
+      const s = 0.5 + seed() * 1.6;
       ctx.beginPath();
       ctx.arc(x, y, s, 0, Math.PI * 2);
       ctx.fill();
     }
   }
+
   ctx.restore();
 }
 
@@ -494,24 +542,45 @@ function drawPlinths(
   W: number,
   floorY: number,
   sizes: PlinthSize[],
-  accent: string
+  _accent: string
 ) {
   const n = Math.min(3, sizes.length);
   if (n <= 0) return;
   for (let i = 0; i < n; i++) {
     const cx = W * (0.3 + (i * 0.4) / Math.max(1, n - 1 || 1));
-    const w = W * 0.06;
-    const h = PLINTH_HEIGHT[sizes[i]] * floorY;
-    const x = cx - w / 2;
-    const y = floorY - h;
-    const g = ctx.createLinearGradient(x, y, x + w, y);
-    g.addColorStop(0, lighten(accent, 0.5));
-    g.addColorStop(1, lighten(accent, 0.3));
-    ctx.fillStyle = g;
-    roundRect(ctx, x, y, w, h, 4);
+    const w  = W * 0.055;
+    const h  = PLINTH_HEIGHT[sizes[i]] * floorY;
+    const x  = cx - w / 2;
+    const y  = floorY - h;
+
+    // Floor shadow ellipse
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx, floorY + 2, w * 0.62, w * 0.18, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0,0,0,0.14)";
     ctx.fill();
-    ctx.fillStyle = "rgba(0,0,0,0.06)";
-    ctx.fillRect(x, y, w, 4);
+    ctx.restore();
+
+    // White marble column — horizontal gradient simulates cylinder curvature
+    const g = ctx.createLinearGradient(x, 0, x + w, 0);
+    g.addColorStop(0,    "#E8E4E0");
+    g.addColorStop(0.25, "#FFFFFF");
+    g.addColorStop(0.55, "#F8F5F3");
+    g.addColorStop(1,    "#DDD8D4");
+    ctx.fillStyle = g;
+    roundRect(ctx, x, y, w, h, 3);
+    ctx.fill();
+
+    // Subtle top cap edge
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    roundRect(ctx, x, y, w, 3, 2);
+    ctx.fill();
+
+    // Faint column stroke
+    ctx.strokeStyle = "rgba(0,0,0,0.07)";
+    ctx.lineWidth = 0.8;
+    roundRect(ctx, x, y, w, h, 3);
+    ctx.stroke();
   }
 }
 
