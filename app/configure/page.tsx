@@ -24,6 +24,8 @@ import {
   packageById,
   priceBreakdown,
   formatAED,
+  SERVICE_PACKAGES,
+  servicePackageById,
   isAddOnRecommended,
   hexToRgbTriplet,
   softTriplet,
@@ -35,6 +37,7 @@ import {
   type EventTypeId,
   type ThemeId,
   type PackageId,
+  type ServicePackageId,
   type BalloonStyleId,
   type BackdropShapeId,
   type BackdropItem,
@@ -62,9 +65,9 @@ import StickyBottomCTA from "@/components/StickyBottomCTA";
 
 const STEPS = [
   "Event",
-  "Package",
   "Theme",
   "Decor",
+  "Package",
   "Add-ons",
   "Venue",
   "Review",
@@ -128,20 +131,12 @@ export default function ConfigurePage() {
         : c.decor,
     }));
   }
-  /** Selecting a package re-seeds decor defaults but keeps theme colors. */
-  function setPackage(id: PackageId) {
-    const pkg = packageById(id);
-    setConfig((c) => ({
-      ...c,
-      package: id,
-      decor: pkg
-        ? {
-            ...pkg.defaultDecor,
-            backdropColor: c.decor.backdropColor,
-            balloonColors: c.decor.balloonColors,
-          }
-        : c.decor,
-    }));
+  /**
+   * Selecting a service package only updates the service level — it never
+   * touches the user's design (backdropItems, colors, text, graphics, etc.).
+   */
+  function setServicePackage(id: ServicePackageId) {
+    setConfig((c) => ({ ...c, servicePackageId: id }));
   }
 
   function toggleAddOn(id: AddOnId) {
@@ -324,21 +319,6 @@ export default function ConfigurePage() {
             )}
 
             {step === 1 && (
-              <StepShell title="Choose a package" subtitle="Sets your decor starting point.">
-                <div className="grid grid-cols-1 gap-4">
-                  {PACKAGES.map((p) => (
-                    <PackageCard
-                      key={p.id}
-                      pkg={p}
-                      selected={config.package === p.id}
-                      onClick={() => setPackage(p.id)}
-                    />
-                  ))}
-                </div>
-              </StepShell>
-            )}
-
-            {step === 2 && (
               <StepShell title="Pick your theme">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {THEMES.map((t) => (
@@ -357,12 +337,94 @@ export default function ConfigurePage() {
               </StepShell>
             )}
 
+            {step === 2 && (
+              <StepShell title="Customize your decor">
+                <DecorStep config={config} patchDecor={patchDecor} />
+              </StepShell>
+            )}
+
             {step === 3 && (
               <StepShell
-                title="Customize your decor"
-                subtitle="Pre-filled from your package — adjust anything."
+                title="Choose your service package"
+                subtitle="Your design is ready — now choose how you want to use it."
               >
-                <DecorStep config={config} patchDecor={patchDecor} />
+                <p className="mb-5 rounded-xl bg-black/4 px-4 py-3 text-xs text-black/55">
+                  Packages do not change your design. They define what you receive and how the setup is handled.
+                </p>
+
+                {/* Design Packages */}
+                <div className="mb-6">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-black/35">
+                    Design Packages
+                  </p>
+                  <div className="grid grid-cols-1 gap-3">
+                    {SERVICE_PACKAGES.filter((p) => p.group === "design").map((p) => {
+                      const selected = config.servicePackageId === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setServicePackage(p.id)}
+                          className={`flex w-full flex-col gap-3 rounded-2xl border p-5 text-left transition ${
+                            selected
+                              ? "border-accent bg-accent-soft/60 shadow-sm"
+                              : "border-black/10 bg-white hover:border-accent/40"
+                          }`}
+                        >
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-sm font-semibold">{p.name}</span>
+                            <span className="text-sm font-bold text-accent">AED {formatAED(p.price)}</span>
+                          </div>
+                          <ul className="space-y-1.5">
+                            {p.includes.map((line) => (
+                              <li key={line} className="flex items-start gap-2 text-xs text-black/65">
+                                <span className="mt-[3px] text-accent">✓</span>
+                                <span>{line}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Execution Packages */}
+                <div>
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-black/35">
+                    Execution Packages
+                  </p>
+                  <div className="grid grid-cols-1 gap-3">
+                    {SERVICE_PACKAGES.filter((p) => p.group === "execution").map((p) => {
+                      const selected = config.servicePackageId === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setServicePackage(p.id)}
+                          className={`flex w-full flex-col gap-3 rounded-2xl border p-5 text-left transition ${
+                            selected
+                              ? "border-accent bg-accent-soft/60 shadow-sm"
+                              : "border-black/10 bg-white hover:border-accent/40"
+                          }`}
+                        >
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-sm font-semibold">{p.name}</span>
+                            <span className="text-sm font-bold text-accent">AED {formatAED(p.price)}</span>
+                          </div>
+                          <ul className="space-y-1.5">
+                            {p.includes.map((line) => (
+                              <li key={line} className="flex items-start gap-2 text-xs text-black/65">
+                                <span className="mt-[3px] text-accent">✓</span>
+                                <span>{line}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </StepShell>
             )}
 

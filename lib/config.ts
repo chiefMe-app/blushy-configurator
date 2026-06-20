@@ -91,7 +91,90 @@ export const THEMES: Theme[] = [
   { id: "luxury_neutral", name: "Luxury Neutral", emoji: "🤍", desc: "Beige, champagne, gold, ivory", backdropColors: ["#F5F0E8", "#EDE0D0", "#FFFFFF"], balloonColors: ["#D4B896", "#EDE0D0", "#FFD54F", "#FFFFFF", "#C8A882"], priceModifier: 80, accent: "#B08D57" },
 ];
 
-// =====================  STEP — PACKAGE  ====================================
+// =====================  STEP — SERVICE PACKAGE  ============================
+
+/**
+ * Service packages define what the customer receives and how the setup is
+ * handled. They do NOT affect or reset the user's design configuration.
+ */
+export type ServicePackageId =
+  | "design_only"
+  | "full_design"
+  | "delivery_backdrop"
+  | "delivery_full";
+
+export type ServicePackageGroup = "design" | "execution";
+
+export interface ServicePackage {
+  id:       ServicePackageId;
+  group:    ServicePackageGroup;
+  name:     string;
+  includes: string[];
+  price:    number;
+}
+
+export const SERVICE_PACKAGES: ServicePackage[] = [
+  // ── Design Packages ───────────────────────────────────────────────────
+  {
+    id:    "design_only",
+    group: "design",
+    name:  "Design Only",
+    price: 250,
+    includes: [
+      "Final Design Render",
+      "Production Layout Preview",
+      "Backdrop design specification",
+      "Basic item & spec summary",
+    ],
+  },
+  {
+    id:    "full_design",
+    group: "design",
+    name:  "Full Design Package",
+    price: 450,
+    includes: [
+      "Final Design Render",
+      "Production Layout Preview",
+      "Backdrop design specification",
+      "Table setup design",
+      "Basic styling direction",
+      "Complete item & spec summary",
+    ],
+  },
+  // ── Execution Packages ────────────────────────────────────────────────
+  {
+    id:    "delivery_backdrop",
+    group: "execution",
+    name:  "Backdrop Design + Delivery",
+    price: 450,
+    includes: [
+      "Final backdrop design",
+      "Backdrop production specification",
+      "Delivery & execution coordination",
+      "Production-ready item list",
+    ],
+  },
+  {
+    id:    "delivery_full",
+    group: "execution",
+    name:  "Backdrop + Table Setup + Delivery",
+    price: 750,
+    includes: [
+      "Final backdrop design",
+      "Table setup design",
+      "Backdrop production specification",
+      "Table setup specification",
+      "Delivery & execution coordination",
+      "Production-ready item list",
+    ],
+  },
+];
+
+export function servicePackageById(id: ServicePackageId): ServicePackage | undefined {
+  return SERVICE_PACKAGES.find((p) => p.id === id);
+}
+
+// =====================  STEP — PACKAGE (legacy, kept for order compat) ===
 
 export type PackageId = "mini" | "signature" | "luxury";
 
@@ -575,7 +658,10 @@ export interface CustomerDetails {
 export interface BuilderConfig {
   eventType: EventTypeId;
   theme: ThemeId;
+  /** Legacy field — kept for order compatibility. Does not reset decor. */
   package: PackageId;
+  /** User-selected service package — defines what they receive, not their design. */
+  servicePackageId: ServicePackageId;
   decor: DecorConfig;
   addOns: SelectedAddOn[];
   venue: VenueDetails;
@@ -599,6 +685,7 @@ export function defaultConfig(): BuilderConfig {
     eventType: "birthday",
     theme: theme.id,
     package: pkg.id,
+    servicePackageId: "design_only",
     decor: {
       ...pkg.defaultDecor,
       backdropColor: theme.backdropColors[0],
@@ -664,8 +751,10 @@ export function priceBreakdown(config: BuilderConfig): {
   const lines: PriceLine[] = [];
   const d = config.decor;
 
-  const pkg = packageById(config.package) ?? PACKAGES[0];
-  lines.push({ label: `${pkg.label} (base)`, amount: pkg.base });
+  // Service package is the base price — it defines what the customer receives,
+  // not their design. Decor items add on top of this.
+  const svcPkg = servicePackageById(config.servicePackageId) ?? SERVICE_PACKAGES[0];
+  lines.push({ label: svcPkg.name, amount: svcPkg.price });
 
   const theme = themeById(config.theme);
   if (theme && theme.priceModifier > 0) {
