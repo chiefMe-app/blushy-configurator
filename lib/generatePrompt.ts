@@ -302,7 +302,11 @@ function buildRectItemDesc(item: BackdropItem, panelColorName = ""): string {
   );
 }
 
-/** Build description for any panel, including per-panel color, text, and graphic. */
+/**
+ * Build description for any panel, including per-panel color, text, and graphic.
+ * Scene model is the source of truth — color, text, and graphic are all
+ * resolved before this function is called.
+ */
 function itemDesc(item: BackdropItem, panelColorName = ""): string {
   let base: string;
   if (item.type === "arch") base = buildArchItemDesc(item, panelColorName);
@@ -312,16 +316,16 @@ function itemDesc(item: BackdropItem, panelColorName = ""): string {
     base = SHAPE_DESC[item.type] + colorPart;
   }
 
-  // Per-panel graphic presence
+  // Per-panel graphic: explicit either way so AI doesn't invent decoration
   const graphicPart = item.graphic?.enabled
     ? ` with ${item.graphic.style} themed graphic printed on its surface`
-    : " with plain solid color surface and no printed graphics";
+    : " with a plain solid color surface — NO printed graphics, NO illustrations, NO patterns on this panel";
 
-  // Per-panel text presence
-  const textVal = item.text?.enabled && item.text?.value?.trim();
+  // Per-panel text: explicit NO TEXT when disabled so AI does not invent words
+  const textVal = item.text?.enabled ? item.text?.value?.trim() : "";
   const textPart = textVal
     ? ` with the text "${textVal}" in ${FONT_DESC[item.text.fontStyle] ?? "elegant lettering"}`
-    : "";
+    : " — NO text, NO words, NO lettering, NO names on this panel surface";
 
   return base + graphicPart + textPart;
 }

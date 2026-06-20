@@ -7,6 +7,9 @@ import {
   type PromptInput,
   type ChangeType,
 } from "@/lib/generatePrompt";
+// Scene model is the source of truth for Customer Approval Preview,
+// AI Inspiration Render prompt, pricing, and future production export.
+import { buildSceneModelFromItems } from "@/lib/buildSceneModel";
 
 // Default text-to-image model.
 const FAL_T2I_ENDPOINT = "https://fal.run/fal-ai/flux-2-pro";
@@ -61,8 +64,29 @@ export async function POST(req: NextRequest) {
     ...promptFields
   } = rawBody;
 
+  // Build a scene model so both the AI prompt and Customer Approval Preview
+  // are driven from the same resolved data (per-panel colors, text, graphics).
+  const sceneModel = buildSceneModelFromItems(
+    promptFields.theme,
+    promptFields.backdropItems ?? [],
+    promptFields.backdropColor ?? "",
+    promptFields.balloonStyle,
+    promptFields.balloonColors ?? [],
+    PLINTH_MODE === "ai" ? (promptFields.plinthSizes ?? []) : [],
+    promptFields.cutouts?.size ?? "none",
+    promptFields.cutouts?.position ?? "floor",
+  );
+
+  // Replace raw backdropItems with color-resolved panels from the scene model
+  // so generatePrompt uses the same per-panel colors as the canvas preview.
+  const resolvedItems = sceneModel.panels.map((p) => ({
+    ...(promptFields.backdropItems?.find((it) => it.id === p.id) ?? promptFields.backdropItems?.[p.order]),
+    color: p.color,  // resolved: per-panel or global fallback
+  }));
+
   const promptInput: PromptInput = {
     ...promptFields,
+    backdropItems: resolvedItems.length > 0 ? (resolvedItems as typeof promptFields.backdropItems) : promptFields.backdropItems,
     plinthSizes: PLINTH_MODE === "ai" ? (promptFields.plinthSizes ?? []) : undefined,
   };
 

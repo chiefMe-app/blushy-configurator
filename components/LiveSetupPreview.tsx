@@ -13,6 +13,9 @@ import {
 } from "@/lib/config";
 import { calculateExactLayout, debugLayout } from "@/lib/calculateExactLayout";
 import { getPlinthDimensions } from "@/lib/layoutDimensions";
+// Scene model is the source of truth for Customer Approval Preview,
+// AI Inspiration Render prompt, pricing, and future production export.
+import { buildSceneModel, type ScenePanel } from "@/lib/buildSceneModel";
 
 /**
  * Customer Approval Preview — deterministic canvas rendering of the exact setup.
@@ -149,8 +152,13 @@ function renderScene(
   ctx.fillStyle = jShadow;
   ctx.fillRect(0, floorY - 10, W, 28);
 
+  // --- build scene model — single source of truth for preview rendering ---
+  // Colors, text, and graphics are fully resolved here so panel rendering
+  // uses the same data as the AI Inspiration Render prompt.
+  const sceneModel = buildSceneModel(config);
+
   // --- layout backdrops — tight grouped arrangement ------------------------
-  const items = config.decor.backdropItems;
+  const items: ScenePanel[] = sceneModel.panels;
   const count = Math.max(1, Math.min(3, items.length));
 
   // Compute max height for relative apex scaling
@@ -161,7 +169,7 @@ function renderScene(
 
   // Pass 1 — compute intrinsic sizes for every panel
   interface PanelRenderData {
-    i: number; item: BackdropItem; shape: BackdropShapeId;
+    i: number; item: ScenePanel; shape: BackdropShapeId;
     color: string; dark: boolean;
     cx: number; pw: number; apexY: number; zOrder: number;
   }
