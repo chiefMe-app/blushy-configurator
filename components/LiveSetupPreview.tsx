@@ -33,15 +33,16 @@ export default function LiveSetupPreview({
 
   // Signature of everything that affects the drawing — redraw when it changes.
   const sig = JSON.stringify({
-    t: config.theme,
-    items: config.decor.backdropItems,
-    b: config.decor.balloonStyle,
-    bc: config.decor.backdropColor,
+    t:   config.theme,
+    items: config.decor.backdropItems,   // includes item.text, item.graphic, item.color
+    b:   config.decor.balloonStyle,
+    bc:  config.decor.backdropColor,
     blc: config.decor.balloonColors,
-    p: config.decor.plinthSizes,
-    cu: config.decor.cutouts,
-    txt: config.decor.backdropText,
-    ck: config.decor.cakeTable,
+    p:   config.decor.plinthSizes,
+    cu:  config.decor.cutouts,
+    txt: config.decor.backdropText,      // layout sliders (fontSize, lineHeight, offset)
+    bp:  config.decor.backdropPrint,     // print mode — must trigger redraw
+    ck:  config.decor.cakeTable,
   });
 
   useEffect(() => {
@@ -237,16 +238,34 @@ function renderScene(
     drawGarland(ctx, outline, floorY, pw, palette, garlandStyle, i * 97 + 13);
   }
 
-  // --- backdrop text: draw per-panel text, fall back to global setting ----
-  const hasPanelText = config.decor.backdropItems.some((it) => it.text.enabled && it.text.value.trim());
-  if (hasPanelText) {
-    panels.forEach((p) => {
-      const it = p.item;
-      if (!it.text.enabled || !it.text.value.trim()) return;
-      drawBackdropText(ctx, p.cx, H * 0.5, config, accent);
-    });
-  } else if (config.decor.backdropText.enabled) {
-    drawBackdropText(ctx, W / 2, H * 0.5, config, accent);
+  // --- per-panel text ---------------------------------------------------------
+  // Text is drawn ONLY when item.text.enabled === true AND item.text.value is set.
+  // No fallback text, no "Happy Birthday" if disabled.
+  const tLayout = config.decor.backdropText; // provides fontSize/lineHeight/verticalOffset
+  panels.forEach((p) => {
+    const it = p.item;
+    if (!it.text.enabled || !it.text.value.trim()) return;
+    drawPanelText(ctx, p.cx, p.pw, p.apexY, floorY, it.text, tLayout, accent);
+  });
+
+  // --- backdrop print layer (global) ----------------------------------------
+  // Renders a visual indicator for the selected print mode.
+  // "name_only": prints the entered name centered on every panel.
+  // "theme_print": themed motifs — already handled by item.graphic per panel.
+  // "custom_upload": shows a placeholder badge on the first panel.
+  const print = config.decor.backdropPrint;
+  if (print && print.type === "name_only") {
+    const name = config.decor.backdropText?.name?.trim();
+    if (name) {
+      panels.forEach((p) => {
+        drawPrintName(ctx, p.cx, p.pw, p.apexY, floorY, name, accent);
+      });
+    }
+  } else if (print && print.type === "custom_upload") {
+    const fp = panels[0];
+    if (fp) {
+      drawPrintBadge(ctx, fp.cx, fp.apexY + (floorY - fp.apexY) * 0.55, "Custom Design", accent);
+    }
   }
 
   // --- props in front ------------------------------------------------------
@@ -930,32 +949,123 @@ const TEXT_HEX: Record<string, string> = {
   black: "#222222",
 };
 
-function drawBackdropText(
+/**
+ * Render per-panel text clipped to the panel's safe area.
+ * Only called when item.text.enabled === true and value is non-empty.
+ * No fallback text is shown if disabled.
+ */
+function drawPanelText(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  pw: number,
+  apexY: number,
+  floorY: number,
+  text: { value: string; fontStyle: string; color: string },
+  layout: { fontSize: number; lineHeight: number; verticalOffset: number },
+  accent: string,
+) {
+  const raw = text.value.trim();
+  if (!raw) return;
+
+  const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
+  const panelH  = floorY - apexY;
+  // Size proportional to panel width, scaled by user's fontSize (1–10 → 0.06–0.16)
+  const sizeF   = 0.06 + (layout.fontSize / 10) * 0.10;
+  const size    = Math.max(8, Math.round(pw * sizeF));
+  const lineGap = size * (layout.lineHeight / 100);
+  const totalH  = lines.length * lineGap;
+
+  // verticalOffset 0–90 maps within the safe area (20%–75% of panel height)
+  const safeTop = apexY + panelH * 0.20;
+  const safeH   = panelH * 0.55;
+  const textTop = safeTop + (layout.verticalOffset / 90) * safeH - totalH / 2;
+
+  const resolvedColor =
+    text.color === "white"  ? "#FFFFFF"
+    : text.color === "gold" ? "#D4AF37"
+    : text.color === "black"? "#222222"
+    : accent;
+
+  const fontStr =
+    text.fontStyle === "block"
+      ? `700 ${size}px Inter, system-ui, sans-serif`
+      : text.fontStyle === "elegant"
+        ? `italic 600 ${size}px Georgia, "Times New Roman", serif`
+        : `italic 600 ${size}px "Brush Script MT", "Segoe Script", cursive`;
+
+  ctx.save();
+  ctx.font = fontStr;
+  ctx.textAlign    = "center";
+  ctx.textBaseline = "top";
+  ctx.shadowColor  = "rgba(0,0,0,0.28)";
+  ctx.shadowBlur   = 3;
+  ctx.fillStyle    = resolvedColor;
+
+  // maxWidth keeps text from overflowing the panel
+  const maxW = pw * 0.84;
+  lines.forEach((line, i) => {
+    ctx.fillText(line, cx, textTop + i * lineGap, maxW);
+  });
+
+  ctx.restore();
+}
+
+/**
+ * Render a "Name Only" backdrop print — the customer-entered name
+ * displayed as a print on the panel surface, separate from panel.text.
+ */
+function drawPrintName(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  pw: number,
+  apexY: number,
+  floorY: number,
+  name: string,
+  accent: string,
+) {
+  const panelH = floorY - apexY;
+  const size   = Math.max(8, Math.round(pw * 0.10));
+  const cy     = apexY + panelH * 0.52;
+
+  ctx.save();
+  ctx.font         = `italic 600 ${size}px Georgia, "Times New Roman", serif`;
+  ctx.textAlign    = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle    = lighten(accent, 0.4) + "CC";
+  ctx.shadowColor  = "rgba(0,0,0,0.12)";
+  ctx.shadowBlur   = 2;
+  ctx.fillText(name, cx, cy, pw * 0.80);
+  ctx.restore();
+}
+
+/**
+ * Render a small badge indicating a custom print is applied to the panel.
+ */
+function drawPrintBadge(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
-  config: BuilderConfig,
-  accent: string
+  label: string,
+  accent: string,
 ) {
-  const t = config.decor.backdropText;
-  const text = (resolveBackdropText(t) || "Happy Birthday").slice(0, 24);
-  const color = t.color === "accent" ? accent : TEXT_HEX[t.color] ?? accent;
-  const fontFamily =
-    t.fontStyle === "block"
-      ? '700 %SIZE%px Inter, system-ui, sans-serif'
-      : t.fontStyle === "elegant"
-        ? 'italic 600 %SIZE%px Georgia, "Times New Roman", serif'
-        : 'italic 600 %SIZE%px "Brush Script MT", "Segoe Script", cursive';
-  const size = Math.round(ctx.canvas.clientWidth * 0.04);
+  const size = 11;
   ctx.save();
-  ctx.font = fontFamily.replace("%SIZE%", String(size));
-  ctx.textAlign = "center";
+  ctx.font         = `600 ${size}px Inter, system-ui, sans-serif`;
+  ctx.textAlign    = "center";
   ctx.textBaseline = "middle";
-  // subtle shadow so light text stays legible on light backdrops
-  ctx.shadowColor = "rgba(0,0,0,0.25)";
-  ctx.shadowBlur = 4;
-  ctx.fillStyle = color;
-  ctx.fillText(text, cx, cy);
+  const w = ctx.measureText(label).width + 16;
+  const h = size + 10;
+  // Badge background
+  ctx.fillStyle    = accent + "33";
+  ctx.strokeStyle  = accent + "66";
+  ctx.lineWidth    = 1;
+  roundRect(ctx, cx - w / 2, cy - h / 2, w, h, 6);
+  ctx.fill();
+  ctx.stroke();
+  // Label
+  ctx.fillStyle    = accent;
+  ctx.shadowColor  = "transparent";
+  ctx.fillText(label, cx, cy);
   ctx.restore();
 }
 
