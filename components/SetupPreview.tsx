@@ -13,6 +13,8 @@ import type {
   ThemeId,
 } from "@/lib/config";
 import { THEMES } from "@/lib/config";
+import { buildSceneModel } from "@/lib/buildSceneModel";
+import { renderLayoutControlImage } from "@/lib/renderLayoutControlImage";
 import type { ChangeType } from "@/lib/generatePrompt";
 import LiveSetupPreview from "./LiveSetupPreview";
 
@@ -686,6 +688,86 @@ function CutoutOverlay({
 }
 
 // ---------------------------------------------------------------------------
+// Final Design Render hook — controlled render via layout control image
+// ---------------------------------------------------------------------------
+
+export type FinalRenderStatus = "idle" | "loading" | "done" | "error";
+
+/**
+ * Generates the Final Design Render using the Production Layout Preview as a
+ * structural control image passed to fal-ai/flux-pro/kontext.
+ *
+ * TODO: Small visual edits should use image-to-image / Kontext editing with
+ * currentFinalRenderUrl as image_url, not full text-to-image regeneration.
+ *
+ * Production Layout Preview and future export package use scene state as source
+ * of truth. AI render is a visual preview, not the production measurement source.
+ */
+export function useFinalRender(config: BuilderConfig) {
+  const [status, setStatus]             = useState<FinalRenderStatus>("idle");
+  const [finalUrl, setFinalUrl]         = useState<string | null>(null);
+  const currentFinalRenderUrl           = useRef<string | null>(null);
+
+  async function generateFinalRender() {
+    setStatus("loading");
+    try {
+      // 1. Render the deterministic layout to a PNG for structural guidance
+      const controlImageBase64 = renderLayoutControlImage(config, 800, 600);
+      if (!controlImageBase64) throw new Error("Failed to render control image");
+
+      // 2. Build scene model and prompt input
+      const sceneModel   = buildSceneModel(config);
+      const d            = config.decor;
+      const promptInput  = {
+        theme:         config.theme,
+        package:       config.package,
+        eventType:     config.eventType,
+        backdropItems: d.backdropItems,
+        backdropColor: d.backdropColor,
+        balloonStyle:  d.balloonStyle,
+        balloonColors: d.balloonColors,
+        backdropText:  d.backdropText,
+        backdropPrint: d.backdropPrint,
+        cutouts:       d.cutouts,
+        plinthSizes:   d.plinthSizes,
+      };
+
+      // 3. Determine mode: first generate or edit existing
+      const renderMode = currentFinalRenderUrl.current ? "edit_existing" : "first_generate";
+
+      // 4. Call the controlled render API
+      const res = await fetch("/api/generate-controlled-render", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          promptInput,
+          sceneModel,
+          controlImageBase64,
+          previousFinalRenderUrl: currentFinalRenderUrl.current ?? undefined,
+          renderMode,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.imageUrl) {
+        setStatus("error");
+        return;
+      }
+
+      // 5. Store the result as currentFinalRenderUrl for future edits
+      currentFinalRenderUrl.current = data.imageUrl;
+      setFinalUrl(data.imageUrl);
+      setStatus("done");
+    } catch (err) {
+      console.error("[useFinalRender]", err);
+      setStatus("error");
+    }
+  }
+
+  return { status, finalUrl, generateFinalRender };
+}
+
+// ---------------------------------------------------------------------------
 // Generation hook
 // ---------------------------------------------------------------------------
 
@@ -802,48 +884,46 @@ export default function SetupPreview({
   // Fetch AI-generated cutout assets (cached per theme+size, no base-render side-effect)
   const { assets: cutoutAssets } = useCutoutAssets(config.theme, config.decor.cutouts.size);
 
-  // Track AI inspiration image separately — it never replaces the primary canvas view
-  const [aiUrl, setAiUrl]         = useState<string | null>(null);
-  const [aiOpacity, setAiOpacity] = useState(1);
-  const [aiKey, setAiKey]         = useState(0);
-  const aiUrlRef                  = useRef<string | null>(null);
+  // Controlled Final Design Render — uses Production Layout Preview as structure guide.
+  const {
+    status:              finalStatus,
+    finalUrl,
+    generateFinalRender,
+  } = useFinalRender(config);
+
+  const [finalOpacity, setFinalOpacity] = useState(1);
+  const [finalKey, setFinalKey]         = useState(0);
+  const prevFinalUrl                    = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!imageUrl || imageUrl === aiUrlRef.current) return;
-    const img = new window.Image();
-    img.onload = () => {
-      aiUrlRef.current = imageUrl;
-      setAiOpacity(0);
-      setAiUrl(imageUrl);
-      setAiKey((k) => k + 1);
-      requestAnimationFrame(() => requestAnimationFrame(() => setAiOpacity(1)));
-    };
-    img.src = imageUrl;
-  }, [imageUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!finalUrl || finalUrl === prevFinalUrl.current) return;
+    prevFinalUrl.current = finalUrl;
+    setFinalOpacity(0);
+    setFinalKey((k) => k + 1);
+    requestAnimationFrame(() => requestAnimationFrame(() => setFinalOpacity(1)));
+  }, [finalUrl]);
 
-  const aiIsLoading = status === "loading";
+  const finalIsLoading = finalStatus === "loading";
 
   return (
     <div className="space-y-4">
       {/* ─── 1. Final Design Render (top) ───────────────────────────────── */}
-      {/*
-       * TODO: Small visual edits should use image-to-image / Kontext editing
-       * with currentFinalRender as image_url, not full text-to-image regeneration.
-       */}
       <div>
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <div>
             <span className="text-[11px] font-semibold text-black/70">Final Design Render</span>
-            <p className="text-[10px] text-black/40">High-quality visual preview for customer review.</p>
+            <p className="text-[10px] text-black/40">
+              High-quality visual preview generated from the exact layout.
+            </p>
           </div>
           {showControls && (
             <button
               type="button"
-              onClick={onRegenerate}
-              disabled={aiIsLoading}
+              onClick={generateFinalRender}
+              disabled={finalIsLoading}
               className="flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-[11px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
             >
-              {aiIsLoading ? (
+              {finalIsLoading ? (
                 <>
                   <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"/>
                   <span>Generating…</span>
@@ -851,7 +931,7 @@ export default function SetupPreview({
               ) : (
                 <>
                   <span className="text-sm leading-none">✦</span>
-                  <span>{aiUrl ? "Regenerate" : "Generate Final Render"}</span>
+                  <span>{finalUrl ? "Regenerate" : "Generate Final Render"}</span>
                 </>
               )}
             </button>
@@ -859,16 +939,16 @@ export default function SetupPreview({
         </div>
 
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-black/5 shadow-inner">
-          {aiUrl ? (
+          {finalUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              key={aiKey}
-              src={aiUrl}
+              key={finalKey}
+              src={finalUrl}
               alt="Final design render"
-              style={{ opacity: aiOpacity, transition: "opacity 0.4s ease" }}
+              style={{ opacity: finalOpacity, transition: "opacity 0.4s ease" }}
               className="h-full w-full object-cover"
             />
-          ) : aiIsLoading ? (
+          ) : finalIsLoading ? (
             <div className="flex h-full flex-col items-center justify-center gap-3">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-black/10 border-t-black/35"/>
               <span className="text-[11px] text-black/40">Generating final render…</span>
@@ -876,15 +956,17 @@ export default function SetupPreview({
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-black/30">
               <span className="text-3xl">✦</span>
-              <span className="text-[11px]">Click &ldquo;Generate Final Render&rdquo; to create the design visual</span>
+              <span className="text-[11px]">
+                Click &ldquo;Generate Final Render&rdquo; to create the design visual
+              </span>
             </div>
           )}
 
-          {status === "error" && (
+          {finalStatus === "error" && (
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/45 px-3 py-1.5 backdrop-blur">
               <span className="text-[11px] text-white">Render unavailable</span>
               {showControls && (
-                <button type="button" onClick={onRegenerate}
+                <button type="button" onClick={generateFinalRender}
                         className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-medium text-white">
                   Retry
                 </button>
