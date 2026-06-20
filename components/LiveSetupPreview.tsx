@@ -9,15 +9,22 @@ import {
   type BalloonStyleId,
   type PlinthSize,
 } from "@/lib/config";
+import { calculateExactLayout, debugLayout } from "@/lib/calculateExactLayout";
 
 /**
- * Canvas-based live preview of the party setup. Redraws on every relevant
- * selection. The balloon garland is rendered as organic clusters that hug the
- * backdrop edge — over the arch, down both sides, and grounded at the floor —
- * with per-balloon radial shading, a knot, and size variation (no strings, no
- * floating isolated balloons).
+ * Customer Approval Preview — deterministic canvas rendering of the exact setup.
+ * This is the source of truth for production. AI render is optional mood-only.
+ *
+ * Accepts overlay children (text layers, cutout overlays) rendered inside the
+ * same relative container so they stay perfectly aligned with the canvas.
  */
-export default function LiveSetupPreview({ config }: { config: BuilderConfig }) {
+export default function LiveSetupPreview({
+  config,
+  children,
+}: {
+  config: BuilderConfig;
+  children?: React.ReactNode;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +59,8 @@ export default function LiveSetupPreview({ config }: { config: BuilderConfig }) 
       if (!ctx) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       renderScene(ctx, W, H, config);
+      // Log exact layout in development for each panel and plinth
+      debugLayout(calculateExactLayout(config.decor.backdropItems, config.decor.plinthSizes, W, H));
     };
 
     draw();
@@ -67,6 +76,7 @@ export default function LiveSetupPreview({ config }: { config: BuilderConfig }) 
       className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-inner"
     >
       <canvas ref={canvasRef} className="block h-full w-full" />
+      {children}
     </div>
   );
 }

@@ -797,127 +797,156 @@ export default function SetupPreview({
   config: BuilderConfig; status: PreviewStatus; imageUrl: string | null;
   isIncremental?: boolean; onRegenerate: () => void; showControls?: boolean;
 }) {
-  const themeAccent   = THEMES.find((t) => t.id === config.theme)?.accent ?? "#C77DD6";
-  const overlayText   = resolveBackdropText(config.decor.backdropText);
-  const primaryShape: BackdropShapeId = (config.decor.backdropItems[0]?.type ?? "arch") as BackdropShapeId;
+  const themeAccent = THEMES.find((t) => t.id === config.theme)?.accent ?? "#C77DD6";
 
   // Fetch AI-generated cutout assets (cached per theme+size, no base-render side-effect)
   const { assets: cutoutAssets } = useCutoutAssets(config.theme, config.decor.cutouts.size);
 
-  const [shownUrl, setShownUrl]       = useState<string | null>(null);
-  const shownUrlRef                   = useRef<string | null>(null);
-  const [imgOpacity, setImgOpacity]   = useState(1);
-  const [imgKey, setImgKey]           = useState(0);
+  // Track AI inspiration image separately — it never replaces the primary canvas view
+  const [aiUrl, setAiUrl]         = useState<string | null>(null);
+  const [aiOpacity, setAiOpacity] = useState(1);
+  const [aiKey, setAiKey]         = useState(0);
+  const aiUrlRef                  = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!imageUrl || imageUrl === shownUrlRef.current) return;
+    if (!imageUrl || imageUrl === aiUrlRef.current) return;
     const img = new window.Image();
     img.onload = () => {
-      shownUrlRef.current = imageUrl;
-      setImgOpacity(0);
-      setShownUrl(imageUrl);
-      setImgKey((k) => k + 1);
-      requestAnimationFrame(() => requestAnimationFrame(() => setImgOpacity(1)));
+      aiUrlRef.current = imageUrl;
+      setAiOpacity(0);
+      setAiUrl(imageUrl);
+      setAiKey((k) => k + 1);
+      requestAnimationFrame(() => requestAnimationFrame(() => setAiOpacity(1)));
     };
     img.src = imageUrl;
   }, [imageUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasShownImage      = !!shownUrl;
-  const isLoadingWithImage = status === "loading" && hasShownImage;
-  const isFirstLoad        = status === "loading" && !hasShownImage;
+  const aiIsLoading = status === "loading";
 
   return (
-    <div>
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-inner">
+    <div className="space-y-4">
+      {/* ─── PRIMARY: Customer Approval Preview ─────────────────────────── */}
+      {/*
+       * Customer Approval Preview and production exports are generated from
+       * scene state. AI render is not the source of truth.
+       */}
+      <div>
+        <LiveSetupPreview config={config}>
+          {/* Plinth overlay — SVG mode only */}
+          {PLINTH_MODE === "svg" && (
+            <PlinthOverlay sizes={config.decor.plinthSizes}/>
+          )}
 
-        {hasShownImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img key={imgKey} src={shownUrl!} alt="AI-generated party setup preview"
-               style={{ opacity: imgOpacity, transition: "opacity 0.4s ease" }}
-               className="h-full w-full object-cover"/>
-        ) : (
-          <LiveSetupPreview config={config}/>
-        )}
-
-        {hasShownImage && PLINTH_MODE === "svg" && (
-          <PlinthOverlay sizes={config.decor.plinthSizes}/>
-        )}
-
-        {/* Cutout overlay — AI assets when ready, SVG fallback while loading */}
-        {hasShownImage && config.decor.cutouts.size !== "none" && (
-          <CutoutOverlay
-            size={config.decor.cutouts.size}
-            position={config.decor.cutouts.position}
-            themeAccent={themeAccent}
-            themeId={config.theme}
-            assets={cutoutAssets}
-          />
-        )}
-
-        {/* Per-panel text overlays — instant update, no AI regeneration */}
-        {hasShownImage && config.decor.backdropItems.map((item, idx) => {
-          if (!item.text.enabled || !item.text.value.trim()) return null;
-          return (
-            <TextOverlay
-              key={item.id}
-              text={item.text.value}
-              fontStyle={item.text.fontStyle}
-              color={item.text.color}
+          {/* Cutout overlay — AI transparent assets when ready, SVG fallback */}
+          {config.decor.cutouts.size !== "none" && (
+            <CutoutOverlay
+              size={config.decor.cutouts.size}
+              position={config.decor.cutouts.position}
               themeAccent={themeAccent}
-              fontSize={config.decor.backdropText.fontSize}
-              lineHeight={config.decor.backdropText.lineHeight}
-              verticalOffset={config.decor.backdropText.verticalOffset}
-              horizontalOffset={config.decor.backdropText.horizontalOffset}
-              align={config.decor.backdropText.align}
-              shape={item.type}
-              panelIndex={idx}
-              totalPanels={config.decor.backdropItems.length}
+              themeId={config.theme}
+              assets={cutoutAssets}
             />
-          );
-        })}
+          )}
 
-        {isFirstLoad && (
-          <div className="shimmer absolute inset-0 flex flex-col items-center justify-center gap-3 bg-accent-soft/80 backdrop-blur-sm">
-            <div className="h-9 w-9 animate-spin rounded-full border-4 border-accent/25 border-t-accent"/>
-            <span className="text-sm font-medium text-accent">Creating your preview…</span>
+          {/* Per-panel text overlays — instant update, no AI regeneration */}
+          {config.decor.backdropItems.map((item, idx) => {
+            if (!item.text.enabled || !item.text.value.trim()) return null;
+            return (
+              <TextOverlay
+                key={item.id}
+                text={item.text.value}
+                fontStyle={item.text.fontStyle}
+                color={item.text.color}
+                themeAccent={themeAccent}
+                fontSize={config.decor.backdropText.fontSize}
+                lineHeight={config.decor.backdropText.lineHeight}
+                verticalOffset={config.decor.backdropText.verticalOffset}
+                horizontalOffset={config.decor.backdropText.horizontalOffset}
+                align={config.decor.backdropText.align}
+                shape={item.type}
+                panelIndex={idx}
+                totalPanels={config.decor.backdropItems.length}
+              />
+            );
+          })}
+
+          {/* Label badge */}
+          <div className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur">
+            Customer Approval Preview
           </div>
-        )}
 
-        {isLoadingWithImage && (
-          <>
-            <div className="absolute inset-0 animate-pulse bg-white/10 pointer-events-none"/>
-            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 backdrop-blur">
-              <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"/>
-              <span className="text-[11px] font-medium text-white">
-                {isIncremental ? "Refining preview…" : "Generating…"}
-              </span>
-            </div>
-          </>
-        )}
+          {/* Generate Inspiration Render button */}
+          {showControls && (
+            <button
+              type="button"
+              onClick={onRegenerate}
+              disabled={aiIsLoading}
+              className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-3 py-1.5 text-[11px] font-medium text-white backdrop-blur transition hover:bg-black/70 disabled:opacity-60"
+            >
+              {aiIsLoading ? (
+                <>
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"/>
+                  <span>Generating…</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm leading-none">✦</span>
+                  <span>Generate Inspiration Render</span>
+                </>
+              )}
+            </button>
+          )}
+        </LiveSetupPreview>
 
-        {showControls && hasShownImage && status !== "loading" && (
-          <button type="button" onClick={onRegenerate}
-                  className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-3 py-1.5 text-[11px] font-medium text-white backdrop-blur transition hover:bg-black/70">
-            <span className="text-sm leading-none">↻</span> Regenerate
-          </button>
-        )}
-
-        {status === "error" && (
-          <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/45 px-3 py-1.5 backdrop-blur">
-            <span className="text-[11px] text-white">AI preview unavailable — showing sketch</span>
-            {showControls && (
-              <button type="button" onClick={onRegenerate}
-                      className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-medium text-white">
-                Retry
-              </button>
-            )}
-          </div>
-        )}
+        <p className="mt-1.5 text-center text-[11px] text-black/50">
+          What you approve here is used for the final production files.
+        </p>
       </div>
 
-      <p className="mt-2 text-center text-[11px] text-black/45">
-        AI preview — actual setup may vary slightly
-      </p>
+      {/* ─── SECONDARY: AI Inspiration Render (optional, mood only) ─────── */}
+      {(aiUrl || (aiIsLoading && !aiUrl)) && (
+        <div>
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold text-black/55">AI Inspiration Render</span>
+            <span className="rounded-full bg-black/8 px-2 py-0.5 text-[10px] text-black/45">
+              Mood only — not used for production
+            </span>
+          </div>
+
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-inner bg-black/5">
+            {aiUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={aiKey}
+                src={aiUrl}
+                alt="AI inspiration render"
+                style={{ opacity: aiOpacity, transition: "opacity 0.4s ease" }}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <div className="h-7 w-7 animate-spin rounded-full border-4 border-black/10 border-t-black/40"/>
+              </div>
+            )}
+
+            {status === "error" && !aiUrl && (
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/45 px-3 py-1.5 backdrop-blur">
+                <span className="text-[11px] text-white">AI render unavailable</span>
+                {showControls && (
+                  <button type="button" onClick={onRegenerate}
+                          className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-medium text-white">
+                    Retry
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <p className="mt-1 text-center text-[10px] text-black/35">
+            Optional AI concept render for mood only. Final production follows the Customer Approval Preview.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
