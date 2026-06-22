@@ -32,18 +32,21 @@ const FAL_T2I_ENDPOINT    = "https://fal.run/fal-ai/flux-2-pro";
 // edit_existing: image-to-image on the already-beautiful photorealistic render
 const KONTEXT_ENDPOINT    = "https://fal.run/fal-ai/flux-pro/kontext";
 
-export const runtime      = "nodejs";
-export const maxDuration  = 90;
+export const runtime  = "nodejs";
+export const dynamic  = "force-dynamic"; // prevent Next.js from caching route responses
+export const maxDuration = 90;
 
 type RenderMode = "first_generate" | "edit_existing";
 
 interface RequestBody {
   promptInput:             PromptInput;
   sceneModel:              SceneModel;
-  controlImageBase64?:     string;      // hidden structure map — not used for t2i, reserved for ControlNet
-  previousFinalRenderUrl?: string;      // stored currentFinalRenderUrl for edits
+  controlImageBase64?:     string;      // reserved for future ControlNet; not used for t2i
+  previousFinalRenderUrl?: string;
   renderMode:              RenderMode;
   editDescription?:        string;
+  force?:                  boolean;     // when true, always call fal — never reuse cached render
+  currentSceneHash?:       string;      // hash of visual scene state at time of request
 }
 
 // ---------------------------------------------------------------------------
@@ -163,28 +166,31 @@ export async function POST(req: NextRequest) {
 
   const {
     promptInput, sceneModel,
-    controlImageBase64,   // reserved for future ControlNet; not used for t2i
+    controlImageBase64,
     previousFinalRenderUrl,
     renderMode, editDescription,
+    force          = false,
+    currentSceneHash,
   } = body;
 
   const hasText    = sceneModel.panels.some((p) => p.text.enabled && p.text.value.trim());
   const hasGraphic = sceneModel.panels.some((p) => p.graphic.enabled);
 
   if (process.env.NODE_ENV === "development") {
-    console.group("[generate-controlled-render]");
-    console.log("renderMode:                  ", renderMode);
-    console.log("model (first_generate):      fal-ai/flux-2-pro (text-to-image, NO image_url)");
-    console.log("model (edit_existing):       fal-ai/flux-pro/kontext (img2img on prev render)");
-    console.log("Visible Production Preview:  NOT used as image_url — structure from text prompt only");
-    console.log("controlImageBase64 present:  ", !!controlImageBase64, "(reserved for ControlNet, unused for t2i)");
-    console.log("previousFinalRenderUrl:      ", previousFinalRenderUrl ?? "none");
-    console.log("panelCount:                  ", sceneModel.panels.length);
-    console.log("plinthCount:                 ", sceneModel.plinths.length);
-    console.log("hasText:                     ", hasText);
-    console.log("hasGraphic:                  ", hasGraphic);
+    console.group("[generate-controlled-render] incoming request");
+    console.log("renderMode:              ", renderMode);
+    console.log("force:                   ", force, force ? "→ always calls fal, no cache reuse" : "");
+    console.log("currentSceneHash:        ", currentSceneHash ?? "none");
+    console.log("model:                   fal-ai/flux-2-pro (text-to-image, NO image_url)");
+    console.log("Production Preview:      NOT used as image_url");
+    console.log("controlImageBase64:      ", !!controlImageBase64, "(reserved for ControlNet)");
+    console.log("previousFinalRenderUrl:  ", previousFinalRenderUrl ?? "none");
+    console.log("panelCount:              ", sceneModel.panels.length);
+    console.log("plinthCount:             ", sceneModel.plinths.length);
+    console.log("hasText:                 ", hasText);
+    console.log("hasGraphic:              ", hasGraphic);
     sceneModel.panels.forEach((p, i) =>
-      console.log(`  panel ${i + 1}: type=${p.type} sizeId=${p.sizeId} ${p.widthCm}×${p.heightCm}cm`)
+      console.log(`  panel ${i + 1}: type=${p.type} sizeId=${p.sizeId} ${p.widthCm}×${p.heightCm}cm color=${p.color}`)
     );
     console.groupEnd();
   }
@@ -235,6 +241,7 @@ export async function POST(req: NextRequest) {
     const negativePrompt         = buildNegativePrompt(sceneModel.panels, hasText, hasGraphic);
 
     if (process.env.NODE_ENV === "development") {
+      console.log("[generate-controlled-render] → calling fal-ai/flux-2-pro (new fal call, no cache)");
       console.log("[generate-controlled-render] prompt:", finalPrompt);
       console.log("[generate-controlled-render] negative:", negativePrompt);
     }

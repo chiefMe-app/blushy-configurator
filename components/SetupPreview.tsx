@@ -696,40 +696,78 @@ function CutoutOverlay({
 export type FinalRenderStatus = "idle" | "loading" | "done" | "error";
 
 /**
+ * Stable hash of all visual fields that affect the Final Design Render.
+ * Excludes non-visual fields (customer name, WhatsApp, venue form, package scope).
+ */
+function computeSceneHash(config: BuilderConfig): string {
+  const d = config.decor;
+  return JSON.stringify({
+    theme:         config.theme,
+    eventType:     config.eventType,
+    backdropItems: d.backdropItems.map((i) => ({
+      id: i.id, type: i.type, sizeId: i.sizeId,
+      widthCm: i.widthCm, heightCm: i.heightCm, color: i.color,
+      text:    { enabled: i.text.enabled,    value: i.text.value,    fontStyle: i.text.fontStyle, color: i.text.color },
+      graphic: { enabled: i.graphic.enabled, style: i.graphic.style },
+    })),
+    backdropColor: d.backdropColor,
+    balloonStyle:  d.balloonStyle,
+    balloonColors: d.balloonColors,
+    plinthSizes:   d.plinthSizes,
+    backdropPrint: d.backdropPrint,
+    cutouts:       d.cutouts,
+    cakeTable:     d.cakeTable,
+  });
+}
+
+/**
  * Generates the Final Design Render.
  *
+ * TODO: Later: route small edits through image-to-image/Kontext.
+ * For now, explicit Regenerate always refreshes Final Design Render from latest sceneModel.
+ *
  * Visible Production Layout Preview is NOT used as image_url for the AI.
- * AI receives structure from the text prompt (panel count, dimensions, types).
- *
+ * Structure comes from the text prompt (panel count, dimensions, types).
  * first_generate → fal-ai/flux-2-pro text-to-image with detailed photorealistic prompt.
- * edit_existing  → fal-ai/flux-pro/kontext on the previous beautiful photorealistic render.
- *
- * A hidden edge-only structure control map is generated locally (for future ControlNet use)
- * but is NOT passed to the current text-to-image path.
- *
- * TODO: Small visual edits should use fal-ai/flux-pro/kontext with
- * currentFinalRenderUrl as image_url to preserve venue, camera, light, and composition.
  */
 export function useFinalRender(config: BuilderConfig) {
-  const [status, setStatus]             = useState<FinalRenderStatus>("idle");
-  const [finalUrl, setFinalUrl]         = useState<string | null>(null);
+  const [status, setStatus]     = useState<FinalRenderStatus>("idle");
+  const [finalUrl, setFinalUrl] = useState<string | null>(null);
+
+  // Always use the latest config — avoid stale closures by reading from ref
+  const configRef                       = useRef(config);
   const currentFinalRenderUrl           = useRef<string | null>(null);
+  const currentFinalRenderSceneHash     = useRef<string | null>(null);
+
+  // Keep ref current on every render
+  configRef.current = config;
+
+  // Compute current scene hash from live config
+  const currentSceneHash = computeSceneHash(config);
+
+  // Derived: stale when the scene changed after last successful render
+  const isStale =
+    finalUrl !== null &&
+    currentFinalRenderSceneHash.current !== null &&
+    currentSceneHash !== currentFinalRenderSceneHash.current;
 
   async function generateFinalRender() {
+    // Always read from the ref so we get the absolute latest config
+    const liveConfig  = configRef.current;
+    const liveHash    = computeSceneHash(liveConfig);
+
     setStatus("loading");
     try {
-      // 1. Generate hidden edge-only structure map (reserved for future ControlNet use).
-      //    This is NOT the visible Production Layout Preview.
-      //    NOT passed to the text-to-image API — structure comes from the text prompt.
-      const _structureControlMap = generateStructureControlMap(config, 800, 600);
+      // Generate hidden edge-only structure map (reserved for future ControlNet use).
+      // NOT passed to text-to-image — structure comes from the text prompt.
+      generateStructureControlMap(liveConfig, 800, 600);
 
-      // 2. Build scene model and prompt input
-      const sceneModel   = buildSceneModel(config);
-      const d            = config.decor;
-      const promptInput  = {
-        theme:         config.theme,
-        package:       config.package,
-        eventType:     config.eventType,
+      const sceneModel  = buildSceneModel(liveConfig);
+      const d           = liveConfig.decor;
+      const promptInput = {
+        theme:         liveConfig.theme,
+        package:       liveConfig.package,
+        eventType:     liveConfig.eventType,
         backdropItems: d.backdropItems,
         backdropColor: d.backdropColor,
         balloonStyle:  d.balloonStyle,
@@ -740,21 +778,31 @@ export function useFinalRender(config: BuilderConfig) {
         plinthSizes:   d.plinthSizes,
       };
 
-      // 3. Determine mode
-      const renderMode = currentFinalRenderUrl.current ? "edit_existing" : "first_generate";
+      if (process.env.NODE_ENV === "development") {
+        console.group("[useFinalRender] generateFinalRender");
+        console.log("liveHash:                    ", liveHash);
+        console.log("lastRenderedHash:             ", currentFinalRenderSceneHash.current ?? "none");
+        console.log("isStale:                      ", liveHash !== currentFinalRenderSceneHash.current);
+        console.log("renderMode:                   first_generate (explicit Regenerate always refreshes)");
+        console.log("backdropItems:", d.backdropItems.map((i) => `${i.type}/${i.sizeId}`));
+        console.log("balloonStyle:", d.balloonStyle, "colors:", d.balloonColors);
+        console.log("plinthSizes:", d.plinthSizes);
+        console.log("text:", d.backdropItems.map((i) => ({ enabled: i.text.enabled, value: i.text.value })));
+        console.log("graphic:", d.backdropItems.map((i) => ({ enabled: i.graphic.enabled, style: i.graphic.style })));
+        console.groupEnd();
+      }
 
-      // 4. Call the controlled render API.
-      //    controlImageBase64 is omitted — the route uses pure text-to-image for first_generate.
       const res = await fetch("/api/generate-controlled-render", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           promptInput,
           sceneModel,
-          // controlImageBase64 intentionally omitted — visible Production Preview
-          // is NOT passed as style reference; structure comes from text prompt.
-          previousFinalRenderUrl: currentFinalRenderUrl.current ?? undefined,
-          renderMode,
+          // Explicit Regenerate always does first_generate from latest sceneModel.
+          // Never reuses currentFinalRenderUrl when the user explicitly triggers regeneration.
+          renderMode:   "first_generate",
+          force:        true,
+          currentSceneHash: liveHash,
         }),
       });
 
@@ -764,8 +812,8 @@ export function useFinalRender(config: BuilderConfig) {
         return;
       }
 
-      // 5. Store the result as currentFinalRenderUrl for future edits
-      currentFinalRenderUrl.current = data.imageUrl;
+      currentFinalRenderUrl.current           = data.imageUrl;
+      currentFinalRenderSceneHash.current     = liveHash;
       setFinalUrl(data.imageUrl);
       setStatus("done");
     } catch (err) {
@@ -774,7 +822,7 @@ export function useFinalRender(config: BuilderConfig) {
     }
   }
 
-  return { status, finalUrl, generateFinalRender };
+  return { status, finalUrl, generateFinalRender, isStale };
 }
 
 // ---------------------------------------------------------------------------
@@ -894,11 +942,12 @@ export default function SetupPreview({
   // Fetch AI-generated cutout assets (cached per theme+size, no base-render side-effect)
   const { assets: cutoutAssets } = useCutoutAssets(config.theme, config.decor.cutouts.size);
 
-  // Controlled Final Design Render — uses Production Layout Preview as structure guide.
+  // Controlled Final Design Render — text-to-image from latest sceneModel.
   const {
     status:              finalStatus,
     finalUrl,
     generateFinalRender,
+    isStale,
   } = useFinalRender(config);
 
   const [finalOpacity, setFinalOpacity] = useState(1);
@@ -931,12 +980,19 @@ export default function SetupPreview({
               type="button"
               onClick={generateFinalRender}
               disabled={finalIsLoading}
-              className="flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-[11px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+              className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium text-white transition hover:opacity-90 disabled:opacity-60 ${
+                isStale ? "bg-amber-500" : "bg-accent"
+              }`}
             >
               {finalIsLoading ? (
                 <>
                   <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"/>
                   <span>Generating…</span>
+                </>
+              ) : isStale ? (
+                <>
+                  <span className="text-sm leading-none">↻</span>
+                  <span>Design changed — regenerate</span>
                 </>
               ) : (
                 <>
@@ -968,6 +1024,15 @@ export default function SetupPreview({
               <span className="text-3xl">✦</span>
               <span className="text-[11px]">
                 Click &ldquo;Generate Final Render&rdquo; to create the design visual
+              </span>
+            </div>
+          )}
+
+          {/* Stale overlay — shown when decor changed after last render */}
+          {isStale && finalUrl && !finalIsLoading && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center gap-1.5 bg-amber-500/80 py-1.5 backdrop-blur-sm">
+              <span className="text-[11px] font-medium text-white">
+                Design changed — render is out of date
               </span>
             </div>
           )}
