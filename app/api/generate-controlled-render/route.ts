@@ -124,7 +124,11 @@ function buildNegativePrompt(
   const styleNeg =
     "flat mockup, vector preview, engineering diagram, layout drawing, " +
     "cartoon style, sticker render, 3D toy render, plain catalog image, " +
-    "sterile product mockup, CG render, plastic looking, unrealistic";
+    "sterile product mockup, CG render, plastic looking, unrealistic, " +
+    // Measurement text must NEVER appear in AI render — app overlay adds exact labels from scene state
+    "measurement text, dimension labels, ruler lines, size annotations, numbers on floor, " +
+    "technical labels, measurement arrows, dimension lines, centimeter labels, cm text, " +
+    "100cm, 200cm, width labels, height labels, floor measurements";
 
   const structureNeg =
     "wrong number of panels, extra backdrop panel, missing backdrop panel, " +

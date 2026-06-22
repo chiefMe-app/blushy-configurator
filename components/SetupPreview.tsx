@@ -15,6 +15,7 @@ import type {
 import { THEMES } from "@/lib/config";
 import { buildSceneModel } from "@/lib/buildSceneModel";
 import { generateStructureControlMap } from "@/lib/generateStructureControlMap";
+import MeasurementOverlay from "./MeasurementOverlay";
 // renderLayoutControlImage is used only for the visible Production Layout Preview,
 // NOT passed to the AI as a style reference.
 import type { ChangeType } from "@/lib/generatePrompt";
@@ -950,6 +951,9 @@ export default function SetupPreview({
     isStale,
   } = useFinalRender(config);
 
+  // "Show measurements" toggle — overlays exact panel/plinth dimensions from scene state
+  const [showMeasurements, setShowMeasurements] = useState(false);
+
   const [finalOpacity, setFinalOpacity] = useState(1);
   const [finalKey, setFinalKey]         = useState(0);
   const prevFinalUrl                    = useRef<string | null>(null);
@@ -975,6 +979,21 @@ export default function SetupPreview({
               High-quality visual preview generated from the exact layout.
             </p>
           </div>
+          <div className="flex items-center gap-2">
+            {/* Show measurements toggle — labels from scene state, never from AI */}
+            {finalUrl && (
+              <button
+                type="button"
+                onClick={() => setShowMeasurements((v) => !v)}
+                className={`rounded-full border px-2.5 py-1 text-[10px] font-medium transition ${
+                  showMeasurements
+                    ? "border-accent bg-accent-soft/60 text-accent"
+                    : "border-black/15 bg-white text-black/50"
+                }`}
+              >
+                {showMeasurements ? "Hide measurements" : "Show measurements"}
+              </button>
+            )}
           {showControls && (
             <button
               type="button"
@@ -1002,6 +1021,7 @@ export default function SetupPreview({
               )}
             </button>
           )}
+          </div>
         </div>
 
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-black/5 shadow-inner">
@@ -1028,6 +1048,11 @@ export default function SetupPreview({
             </div>
           )}
 
+          {/* Measurement overlay — exact dimensions from scene state, never from AI */}
+          {showMeasurements && finalUrl && !finalIsLoading && (
+            <MeasurementOverlay config={config}/>
+          )}
+
           {/* Stale overlay — shown when decor changed after last render */}
           {isStale && finalUrl && !finalIsLoading && (
             <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center gap-1.5 bg-amber-500/80 py-1.5 backdrop-blur-sm">
@@ -1051,16 +1076,21 @@ export default function SetupPreview({
         </div>
       </div>
 
-      {/* ─── 2. Production Layout Preview (below, always deterministic) ──── */}
+      {/* ─── 2. Production Layout Preview (collapsed — technical reference) ── */}
       {/*
-       * Production Layout Preview and future export package use scene state
-       * as source of truth. AI render is a visual preview, not the production
-       * measurement source.
+       * Technical production layout is used for export/spec calculations and
+       * optional admin view, not primary customer preview.
+       * Not shown by default — too technical for customer-facing flow.
        */}
-      <div>
+      <details className="group">
+        <summary className="cursor-pointer list-none text-[11px] text-black/40 hover:text-black/60">
+          <span className="group-open:hidden">▶ Show technical production layout</span>
+          <span className="hidden group-open:inline">▼ Hide technical production layout</span>
+        </summary>
+        <div className="mt-2">
         <div className="mb-1.5">
-          <span className="text-[11px] font-semibold text-black/70">Production Layout Preview</span>
-          <p className="text-[10px] text-black/40">Exact panel sizes, item placement, and production reference.</p>
+          <span className="text-[11px] font-semibold text-black/60">Production Layout Preview</span>
+          <p className="text-[10px] text-black/35">Exact panel sizes, item placement, and production reference.</p>
         </div>
 
         <LiveSetupPreview config={config}>
@@ -1107,7 +1137,8 @@ export default function SetupPreview({
             Production Layout
           </div>
         </LiveSetupPreview>
-      </div>
+        </div>
+      </details>
     </div>
   );
 }
