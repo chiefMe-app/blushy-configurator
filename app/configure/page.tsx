@@ -274,6 +274,7 @@ export default function ConfigurePage() {
         imageUrl={preview.imageUrl}
         isIncremental={preview.isIncremental}
         onRegenerate={preview.regenerate}
+        onPatchDecor={patchDecor}
       />
       <PriceSummary config={config} className="hidden lg:block" />
     </div>

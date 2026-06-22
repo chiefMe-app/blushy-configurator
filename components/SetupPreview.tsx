@@ -16,6 +16,7 @@ import { THEMES } from "@/lib/config";
 import { buildSceneModel } from "@/lib/buildSceneModel";
 import { generateStructureControlMap } from "@/lib/generateStructureControlMap";
 import MeasurementOverlay from "./MeasurementOverlay";
+import DesignChangePrompt from "./DesignChangePrompt";
 // renderLayoutControlImage is used only for the visible Production Layout Preview,
 // NOT passed to the AI as a style reference.
 import type { ChangeType } from "@/lib/generatePrompt";
@@ -823,7 +824,50 @@ export function useFinalRender(config: BuilderConfig) {
     }
   }
 
-  return { status, finalUrl, generateFinalRender, isStale };
+  /**
+   * Apply a style edit to the existing final render using Kontext (img2img).
+   * Keeps the same composition — only the requested style change is applied.
+   * TODO: Later: route small edits through image-to-image/Kontext.
+   */
+  async function requestRenderEdit(editDescription: string) {
+    if (!currentFinalRenderUrl.current) return;
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/generate-controlled-render", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          promptInput: {
+            theme:   configRef.current.theme,
+            package: configRef.current.package,
+          },
+          sceneModel:            buildSceneModel(configRef.current),
+          previousFinalRenderUrl: currentFinalRenderUrl.current,
+          renderMode:            "edit_existing",
+          editDescription,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.imageUrl) {
+        currentFinalRenderUrl.current           = data.imageUrl;
+        currentFinalRenderSceneHash.current     = computeSceneHash(configRef.current);
+        setFinalUrl(data.imageUrl);
+        setStatus("done");
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  /** Force-mark the current render as stale without clearing it. */
+  function markStale() {
+    // Clear the stored hash so the stale badge appears immediately
+    currentFinalRenderSceneHash.current = null;
+  }
+
+  return { status, finalUrl, generateFinalRender, isStale, requestRenderEdit, markStale };
 }
 
 // ---------------------------------------------------------------------------
@@ -934,9 +978,12 @@ export function useSetupPreview(config: BuilderConfig) {
 
 export default function SetupPreview({
   config, status, imageUrl, isIncremental = false, onRegenerate, showControls = true,
+  onPatchDecor,
 }: {
   config: BuilderConfig; status: PreviewStatus; imageUrl: string | null;
   isIncremental?: boolean; onRegenerate: () => void; showControls?: boolean;
+  /** Optional — enables the Ask for a change prompt when provided. */
+  onPatchDecor?: (patch: Partial<import("@/lib/config").DecorConfig>) => void;
 }) {
   const themeAccent = THEMES.find((t) => t.id === config.theme)?.accent ?? "#C77DD6";
 
@@ -949,6 +996,8 @@ export default function SetupPreview({
     finalUrl,
     generateFinalRender,
     isStale,
+    requestRenderEdit,
+    markStale,
   } = useFinalRender(config);
 
   // "Show measurements" toggle — overlays exact panel/plinth dimensions from scene state
@@ -1075,6 +1124,18 @@ export default function SetupPreview({
           )}
         </div>
       </div>
+
+      {/* ─── Ask for a change prompt ─────────────────────────────────── */}
+      {onPatchDecor && (
+        <DesignChangePrompt
+          sceneModel={buildSceneModel(config)}
+          finalUrl={finalUrl}
+          themeAccent={themeAccent}
+          onPatchDecor={onPatchDecor}
+          onRenderEdit={requestRenderEdit}
+          onMarkStale={markStale}
+        />
+      )}
 
       {/* ─── 2. Production Layout Preview (collapsed — technical reference) ── */}
       {/*
