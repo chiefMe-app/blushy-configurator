@@ -98,23 +98,29 @@ function SinglePanelMeasurements({ panel, widthCm, heightCm, typeLabel }: {
   const top   = panel.apexY;
   const bot   = panel.floorY;
 
-  // Width line: 20px below the floor
-  const wY  = Math.min(bot + 22, REF_H - 28);
-  // Height line: 22px right of the panel
-  const hX  = Math.min(right + 22, REF_W - 60);
+  // Width line: sits below the floor, clearly tied to the backdrop base
+  const wY  = Math.min(bot + 24, REF_H - 30);
+  // Height line: outside the right panel edge
+  const hX  = Math.min(right + 24, REF_W - 62);
 
   return (
     <g>
-      {/* Type label above panel */}
-      <Pill x={panel.cx} y={Math.max(top - 16, 20)} text={typeLabel} size={11}/>
+      {/* Type label: upper-left OUTSIDE the panel (above top-left corner) */}
+      <Pill
+        x={Math.max(left, 6)}
+        y={Math.max(top - 15, 16)}
+        text={typeLabel}
+        anchor="start"
+        size={11}
+      />
 
-      {/* Width dimension */}
+      {/* Width dimension — clearly spans the full backdrop base */}
       <DimLine x1={left} y1={wY} x2={right} y2={wY}/>
       <TickH x={left}  y={wY}/>
       <TickH x={right} y={wY}/>
       <Pill x={panel.cx} y={wY + 16} text={`${widthCm} cm`} size={13}/>
 
-      {/* Height dimension */}
+      {/* Height dimension — right side, outside the panel */}
       <DimLine x1={hX} y1={top} x2={hX} y2={bot}/>
       <TickV x={hX} y={top}/>
       <TickV x={hX} y={bot}/>
@@ -258,19 +264,9 @@ export default function MeasurementOverlay({ config }: { config: BuilderConfig }
         </g>
       )}
 
-      {/* Plinths */}
-      {layout.plinths.map((plinth) => {
-        const sp = sceneModel.plinths[plinth.idx];
-        if (!sp) return null;
-        return (
-          <PlinthLabel
-            key={`pl-${plinth.idx}`}
-            cx={plinth.cx}
-            topY={plinth.bottomY - plinth.heightPx}
-            diameterCm={sp.diameterCm}
-          />
-        );
-      })}
+      {/* Plinth labels omitted from Final Design Render overlay —
+          they create clutter and can be confused with backdrop width labels.
+          Plinth specs are available in the technical production layout. */}
     </svg>
   );
 }
