@@ -53,12 +53,13 @@ interface RequestBody {
 // Prompt builders
 // ---------------------------------------------------------------------------
 
+// Plinth wording intentionally excluded from STYLE_PREFIX — count-specific plinth
+// language is added only by plinthClause where the actual count is known.
 const STYLE_PREFIX =
   "Photorealistic luxury birthday party event setup in Dubai, UAE. " +
   "Premium high-end event decorator portfolio photograph. " +
   "Soft natural daylight from the left, elegant indoor venue, glossy reflective floor, " +
-  "realistic room depth, beautiful lighting, " +
-  "narrow white cylindrical display plinths with realistic shadow and rim-light. " +
+  "realistic room depth, beautiful lighting. " +
   "Professional event photography, 4K quality, sharp focus, soft bokeh background.";
 
 const BALLOON_STYLE: Record<string, string> = {
@@ -95,12 +96,17 @@ function buildFirstGenPrompt(
   const plinthCount = sceneModel.plinths.length;
   const hasArch = sceneModel.panels.some((p) => p.type === "arch");
 
-  const plinthClause = plinthCount > 0
-    ? `Plinths: exactly ${plinthCount} narrow white cylindrical display ` +
-      `${plinthCount === 1 ? "plinth" : "plinths"}, realistic slim cylinder, ` +
-      `40 cm diameter, tall slender column, NOT a stage, NOT a podium, NOT a wide platform, ` +
-      `subtle floor shadow.`
-    : "No plinths.";
+  const plinthClause = plinthCount === 0
+    ? "No plinths."
+    : plinthCount === 1
+      ? "Plinths: exactly one (1) narrow white cylindrical display plinth, " +
+        "realistic slim cylinder, 40 cm diameter, tall slender column, " +
+        "NOT a stage, NOT a podium, NOT a wide platform, subtle floor shadow. " +
+        "Do not add a second plinth."
+      : `Plinths: exactly ${plinthCount} narrow white cylindrical display plinths, ` +
+        "realistic slim cylinders, 40 cm diameter each, tall slender columns, " +
+        "NOT stages, NOT podiums, NOT wide platforms, subtle floor shadows. " +
+        `Do not add extra plinths beyond ${plinthCount}.`;
 
   // Selected-objects whitelist — theme influences mood/color only, not physical props
   const extras        = promptInput.extras ?? [];
@@ -190,7 +196,10 @@ function buildNegativePrompt(
 
   const balloonNeg = "bead-like balloons, uniform balloon sizes, fake balloons";
 
-  const plinthNeg  = "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base";
+  const plinthCountNeg = (sceneModel?.plinths?.length ?? 0) === 1
+    ? ", second plinth, two plinths, duplicate plinth, extra plinth, additional cylinder, extra white cylinder"
+    : "";
+  const plinthNeg = "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base" + plinthCountNeg;
 
   // Unselected-prop negatives — block everything not in the scene config
   const extrasList  = promptInput?.extras ?? [];
