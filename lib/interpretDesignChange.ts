@@ -259,6 +259,48 @@ export function interpretDesignChange(
 
   // ── 3. Detect concrete state changes ─────────────────────────────────────
 
+  // ── 3a. Balloon COLOR REMOVAL — must run before generic color detection ────
+  // Detects: "remove golden balloons", "no gold balloons", "take out pink balloons" etc.
+  // Interpreted as removing a color from the palette, NOT reducing balloon count.
+  // TODO: Balloon color removal should use a localized balloon mask/recolor edit
+  //       to preserve balloon density and layout without touching the AI render directly.
+  {
+    const hasRemovalVerb = /\b(remove|take\s*out|no\s+more|without|get\s*rid\s*of|drop|replace)\b/i.test(lower);
+    const hasBalloonWord = /\bballoo?n/i.test(lower);
+    const removedColorHex = findColor(lower);
+
+    if (hasRemovalVerb && hasBalloonWord && removedColorHex !== null) {
+      const currentColors  = sceneModel.balloons.colors;
+      const inPalette      = currentColors.some(
+        (c) => c.toLowerCase() === removedColorHex.toLowerCase()
+      );
+      const removedName    = Object.entries(COLOR_HEX)
+        .find(([, h]) => h === removedColorHex)?.[0] ?? "that color";
+      const displayName    = removedName.charAt(0).toUpperCase() + removedName.slice(1);
+
+      if (!inPalette) {
+        return {
+          changeType: "state_change",
+          summary:    `${displayName} is not currently selected in the balloon palette.`,
+        };
+      }
+
+      const filtered = currentColors.filter(
+        (c) => c.toLowerCase() !== removedColorHex.toLowerCase()
+      );
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("[interpretDesignChange] balloon color removal →", { removedName, removedColorHex, filtered });
+      }
+
+      return {
+        changeType:   "state_change",
+        summary:      `Removed ${removedName} from the balloon palette while preserving the same balloon arrangement. Regenerate Final Design Render to update the visual.`,
+        stateUpdates: { balloonColors: filtered.length > 0 ? filtered : currentColors },
+      };
+    }
+  }
+
   const updates: Partial<DecorConfig> = {};
 
   // Balloon style
