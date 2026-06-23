@@ -246,6 +246,8 @@ export function interpretDesignChange(
       const editPrompt =
         `Edit the existing render ONLY. Keep the same backdrop count, panel shapes, ` +
         `sizes, plinth positions, camera angle, room, floor, and composition identical. ` +
+        `Do NOT add flowers, foliage, tables, cake stands, themed props, or any unselected objects — ` +
+        `only improve the existing scene's lighting, materials, and atmosphere. ` +
         `Apply only this change: ${prompt}.`;
       return {
         changeType:        "render_style_edit",

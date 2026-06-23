@@ -71,7 +71,11 @@ const BALLOON_STYLE: Record<string, string> = {
   none:    "",
 };
 
-function buildFirstGenPrompt(sceneModel: SceneModel, basePrompt: string): string {
+function buildFirstGenPrompt(
+  sceneModel:  SceneModel,
+  basePrompt:  string,
+  promptInput: PromptInput,
+): string {
   const panelCount  = sceneModel.panels.length;
   const panelWord   = panelCount === 1 ? "panel" : "panels";
 
@@ -103,6 +107,31 @@ function buildFirstGenPrompt(sceneModel: SceneModel, basePrompt: string): string
       `subtle floor shadow.`
     : "No plinths.";
 
+  // Selected-objects whitelist — theme influences mood/color only, not physical props
+  const extras        = promptInput.extras ?? [];
+  const hasFlorals    = extras.includes("florals");
+  const hasCakeTable  = extras.includes("dessert_table");
+  const hasCutouts    = sceneModel.cutouts.size !== "none";
+
+  const allowedItems  = [
+    `${panelCount} backdrop ${panelWord}`,
+    sceneModel.balloons.style !== "none" ? "balloon garland" : null,
+    plinthCount > 0 ? `${plinthCount} plinth${plinthCount > 1 ? "s" : ""}` : null,
+    hasCutouts   ? "character cutout standees" : null,
+    hasCakeTable ? "cake/dessert table" : null,
+    hasFlorals   ? "floral clusters" : null,
+  ].filter(Boolean).join(", ");
+
+  const whitelistClause =
+    `STRICT SCENE RULE: Render ONLY the following configured objects — ${allowedItems}. ` +
+    `Do NOT invent extra decor items. ` +
+    `The theme controls color palette and mood ONLY — it must NOT automatically add physical props, ` +
+    `flowers, foliage, greenery, tables, cake stands, themed toys, or decorative filler objects. ` +
+    (!hasFlorals    ? "No flowers, no floral arrangements, no foliage, no greenery. " : "") +
+    (!hasCakeTable  ? "No cake stand, no dessert table, no side table, no coffee table. " : "") +
+    (!hasCutouts    ? "No character cutouts, no themed standees, no figure props. " : "") +
+    `Clean event backdrop scene: only the configured items listed above.`;
+
   // Scale reference: helps AI understand backdrop width relative to the plinth
   const scaleRefClause = hasArch && plinthCount > 0
     ? `SCALE REFERENCE: the white cylindrical plinth is 40 cm diameter. ` +
@@ -114,6 +143,7 @@ function buildFirstGenPrompt(sceneModel: SceneModel, basePrompt: string): string
   return [
     STYLE_PREFIX,
     basePrompt,
+    whitelistClause,
     panelCount_str,
     scaleRefClause,
     balloonClause,
@@ -122,9 +152,11 @@ function buildFirstGenPrompt(sceneModel: SceneModel, basePrompt: string): string
 }
 
 function buildNegativePrompt(
-  items: SceneModel["panels"],
-  hasText: boolean,
-  hasGraphic: boolean,
+  items:        SceneModel["panels"],
+  hasText:      boolean,
+  hasGraphic:   boolean,
+  promptInput?: PromptInput,
+  sceneModel?:  SceneModel,
 ): string {
   const baseItems = items.map((p) => ({
     type: p.type, widthCm: p.widthCm, heightCm: p.heightCm,
@@ -163,6 +195,21 @@ function buildNegativePrompt(
 
   const plinthNeg  = "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base";
 
+  // Unselected-prop negatives — block everything not in the scene config
+  const extrasList  = promptInput?.extras ?? [];
+  const selCutouts  = sceneModel?.cutouts?.size !== "none";
+  const selFlorals  = extrasList.includes("florals");
+  const selCakeTable = extrasList.includes("dessert_table");
+
+  const propNeg = [
+    !selFlorals    && "extra flowers, floral arrangements, foliage, greenery, plant decorations, botanical props",
+    !selCakeTable  && "side table, cake stand, dessert stand, dessert table, cake table, coffee table",
+    !selCutouts    && "character cutouts, themed standees, figure props, cartoon props",
+    "unselected props, extra decor items, random decorative objects, cluttered scene",
+    "extra styling objects, themed toys, dinosaur toy, barbie accessory, safari prop",
+    "gift box, candle, lamp, shelf, tray, basket, stool, chair, rug, cushion",
+  ].filter(Boolean).join(", ");
+
   const textNeg    = !hasText
     ? ", text overlay, words on backdrop, birthday message, name signage, logo, " +
       "typography, lettering, handwriting, calligraphy"
@@ -173,7 +220,7 @@ function buildNegativePrompt(
       "artwork on panel surface"
     : "";
 
-  return `${sceneNeg}, ${styleNeg}, ${structureNeg}, ${balloonNeg}, ${plinthNeg}${textNeg}${printNeg}`;
+  return `${sceneNeg}, ${styleNeg}, ${structureNeg}, ${balloonNeg}, ${plinthNeg}, ${propNeg}${textNeg}${printNeg}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -266,8 +313,8 @@ export async function POST(req: NextRequest) {
     // Structure comes entirely from the detailed text prompt.
     // This ensures the output is fully photorealistic, not a styled layout copy.
     const { prompt: basePrompt } = generatePrompt(promptInput);
-    const finalPrompt            = buildFirstGenPrompt(sceneModel, basePrompt);
-    const negativePrompt         = buildNegativePrompt(sceneModel.panels, hasText, hasGraphic);
+    const finalPrompt            = buildFirstGenPrompt(sceneModel, basePrompt, promptInput);
+    const negativePrompt         = buildNegativePrompt(sceneModel.panels, hasText, hasGraphic, promptInput, sceneModel);
 
     if (process.env.NODE_ENV === "development") {
       console.log("[generate-controlled-render] → calling fal-ai/flux-2-pro (new fal call, no cache)");
