@@ -94,32 +94,49 @@ function buildFirstGenPrompt(
   const plinthCount = sceneModel.plinths.length;
   const hasArch = sceneModel.panels.some((p) => p.type === "arch");
 
-  // Per-plinth description with height:diameter ratio to prevent short stool shape
+  // Per-plinth description — geometry only, no "cake/table/stand/stool" words in positive prompt
   function plinthDesc(heightCm: number): string {
     const ratio = (heightCm / 40).toFixed(1);
-    let sizeWord = "tall";
-    if      (heightCm >= 120) sizeWord = "extra tall";
-    else if (heightCm >= 100) sizeWord = "large tall";
-    else if (heightCm >= 80)  sizeWord = "medium tall";
-    else                       sizeWord = "shorter";
+    if (heightCm >= 120) {
+      return (
+        `one extra tall slim white cylindrical event plinth, ` +
+        `40 cm diameter and ${heightCm} cm tall, ` +
+        `height-to-diameter ratio ${ratio}:1, tall narrow vertical cylinder, ` +
+        `clean white matte finish, standing directly on the floor`
+      );
+    }
+    if (heightCm >= 100) {
+      return (
+        `one large tall slim white cylindrical event plinth, ` +
+        `40 cm diameter and ${heightCm} cm tall, ` +
+        `height-to-diameter ratio ${ratio}:1, clearly much taller than wide, ` +
+        `narrow vertical cylinder, clean white matte finish, standing directly on the floor`
+      );
+    }
+    if (heightCm >= 80) {
+      return (
+        `one medium tall slim white cylindrical event plinth, ` +
+        `40 cm diameter and ${heightCm} cm tall, ` +
+        `height-to-diameter ratio ${ratio}:1, clearly taller than wide, ` +
+        `narrow vertical cylinder, clean white matte finish, standing directly on the floor`
+      );
+    }
     return (
-      `${sizeWord} slim white cylindrical display column plinth, ` +
+      `one white cylindrical event plinth, ` +
       `40 cm diameter and ${heightCm} cm tall, ` +
-      `height-to-diameter ratio ${ratio}:1 (clearly taller than wide), ` +
-      `narrow vertical cylinder, clean white event display pedestal column, ` +
-      `NOT a stool, NOT a side table, NOT a cake stand, NOT a low cylinder`
+      `height-to-diameter ratio ${ratio}:1, vertical cylinder, ` +
+      `clean white matte finish, standing directly on the floor`
     );
   }
 
   const plinthSizeDesc = sceneModel.plinths.length > 0
-    ? sceneModel.plinths.map((pl) => plinthDesc(pl.heightCm)).join("; and ")
+    ? sceneModel.plinths.map((pl) => plinthDesc(pl.heightCm)).join("; ")
     : "";
 
   const plinthClause = plinthCount > 0
-    ? `Plinths: exactly ${plinthCount} white cylindrical display column ` +
+    ? `Plinths: exactly ${plinthCount} white cylindrical event ` +
       `${plinthCount === 1 ? "plinth" : "plinths"} standing directly on the floor. ` +
-      `Each plinth is: ${plinthSizeDesc}. ` +
-      `These are tall slim display columns, NOT stools, NOT tables, NOT cake stands. ` +
+      `${plinthSizeDesc}. ` +
       `Subtle floor shadow beneath each plinth.`
     : "No plinths.";
 
@@ -155,7 +172,7 @@ function buildFirstGenPrompt(
       `The arch backdrop panel is approximately 100 cm wide — about 2.5 times the plinth diameter. ` +
       `Use this ratio to judge the correct arch panel width in the scene. ` +
       `The arch must NOT appear wider than 2.5 plinths placed side by side. ` +
-      `The plinth is tall and narrow, not a low table — its height is much greater than its diameter.`
+      `The plinth is 40 cm diameter. The plinth is tall and narrow, not low or table-like.`
     : "";
 
   return [
@@ -212,11 +229,11 @@ function buildNegativePrompt(
   const balloonNeg = "bead-like balloons, uniform balloon sizes, fake balloons";
 
   const plinthNeg  =
-    "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base, " +
-    // Block short/squat stool shapes that the model confuses with plinths
-    "short stool, round stool, low cylinder, short round table, side table, cake stand, " +
-    "drum table, squat cylinder, wide cylinder, fat cylinder, low pedestal, " +
-    "coffee table, small table, round table, ottoman, accent table, tray table";
+    "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base, wide pedestal, " +
+    "short stool, round stool, low cylinder, short cylinder, squat cylinder, " +
+    "wide cylinder, fat cylinder, low pedestal, " +
+    "side table, cake stand, dessert stand, drum table, coffee table, " +
+    "small table, round table, ottoman, accent table, tray table, stage platform";
 
   // Unselected-prop negatives — block everything not in the scene config
   const extrasList  = promptInput?.extras ?? [];
