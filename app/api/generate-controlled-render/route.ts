@@ -64,6 +64,27 @@ const STYLE_PREFIX =
   "realistic room depth, beautiful lighting. " +
   "Professional event photography, 4K quality, sharp focus, soft bokeh background.";
 
+// Fixed studio environment clause — appended to every Final Design Render prompt
+// to ensure consistent room/background across regenerations.
+const ENV_CLAUSE =
+  "Set inside a luxury high-end minimalist interior photography studio. " +
+  "The background is a solid, clean, seamless warm-gray microcement wall with a matching " +
+  "light-beige polished concrete floor and subtle clean reflections. " +
+  "Soft highly directional natural light comes from an off-camera large window on the left; " +
+  "the window itself is not visible. " +
+  "Maintain identical camera angle, lens perspective, wall, floor, lighting direction, " +
+  "and studio atmosphere across all renders.";
+
+// Prop isolation clause — prevents hallucinated side columns, furniture, and background clutter
+const ISOLATION_CLAUSE =
+  "The backdrop installation stands freely in the center. " +
+  "No extra props, no side columns, no visible windows, no stray furniture, " +
+  "no decorative background objects, no additional event structures.";
+
+// Fixed seed for reproducible studio environment across Final Design Renders.
+// fal-ai/flux-2-pro supports the seed parameter.
+const FINAL_RENDER_SEED = 42424242;
+
 const BALLOON_STYLE: Record<string, string> = {
   half:    "asymmetric organic balloon garland cascading from the top corner down one side, " +
            "with a floor balloon cluster, varied balloon sizes (large, medium, small), " +
@@ -147,8 +168,10 @@ function buildFirstGenPrompt(
 
   return [
     STYLE_PREFIX,
+    ENV_CLAUSE,
     basePrompt,
     whitelistClause,
+    ISOLATION_CLAUSE,
     panelCount_str,
     scaleRefClause,
     balloonClause,
@@ -228,7 +251,14 @@ function buildNegativePrompt(
       "artwork on panel surface"
     : "";
 
-  return `${sceneNeg}, ${styleNeg}, ${structureNeg}, ${balloonNeg}, ${plinthNeg}, ${propNeg}${textNeg}${printNeg}`;
+  // Environment consistency negatives — prevent random room/furniture/window changes
+  const envNeg =
+    ", visible window, window frame, curtains, chandelier, sofa, chair, side column, pillar, " +
+    "plant, vase, extra furniture, decorative props, busy background, " +
+    "different room, new room, changed camera angle, different lighting direction, " +
+    "extra event structures";
+
+  return `${sceneNeg}, ${styleNeg}, ${structureNeg}, ${balloonNeg}, ${plinthNeg}, ${propNeg}${textNeg}${printNeg}${envNeg}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -296,9 +326,10 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           prompt:        editPrompt,
           image_url:     previousFinalRenderUrl,
-          image_size:    renderAspectRatio,   // dynamic from panel dimensions
+          image_size:    renderAspectRatio,   // dynamic from panel dimensions — preserved
           output_format: "jpeg",
           num_images:    1,
+          seed:          FINAL_RENDER_SEED,   // fixed seed for consistent studio environment
         }),
       });
 
@@ -337,9 +368,10 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         prompt:          finalPrompt,
         negative_prompt: negativePrompt,
-        image_size:      renderAspectRatio,   // dynamic from panel dimensions
+        image_size:      renderAspectRatio,   // dynamic from panel dimensions — preserved
         output_format:   "jpeg",
         num_images:      1,
+        seed:            FINAL_RENDER_SEED,   // fixed seed for reproducible studio environment
       }),
     });
 
