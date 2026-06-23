@@ -216,7 +216,35 @@ function buildFirstGenPrompt(
     plinthLockClause,
     textSurfaceOnlyLockClause,
     buildCompositionBlueprintClause(sceneModel, textEnabled),
+    buildVisibleTextRenderClause(sceneModel),
   ].filter(Boolean).join(" ");
+}
+
+/**
+ * Builds an explicit text visibility clause for every panel that has text enabled.
+ * Each configured text string must appear visibly on its panel — not omitted,
+ * not hidden behind balloons, not blended into the backdrop.
+ */
+function buildVisibleTextRenderClause(sceneModel: SceneModel): string {
+  const textPanels = sceneModel.panels.filter((p) => p.text.enabled && p.text.value.trim());
+  if (textPanels.length === 0) return "";
+
+  const entries = textPanels.map((p) => {
+    const panelTypeLabel = p.type === "arch" ? "arch" : p.type === "rect" ? "rectangular" : p.type;
+    const fontDesc       = p.text.fontStyle === "block" ? "bold block" : p.text.fontStyle === "elegant" ? "elegant serif" : "script cursive";
+    return (
+      `Render the exact text "${p.text.value}" visibly on the ${panelTypeLabel} backdrop panel ` +
+      `in ${fontDesc} style, ${p.text.color} color, centered. ` +
+      `The text must be clearly legible, not omitted, not hidden behind balloons, ` +
+      `and not blended into the backdrop surface. ` +
+      `Do not place any balloon or object over the text area. ` +
+      `If the text color is too close to the backdrop color for legibility, ` +
+      `preserve the intended color appearance but add a subtle shadow or soft outline ` +
+      `so the text remains clearly readable.`
+    );
+  });
+
+  return `[Text Render - REQUIRED]: ${entries.join(" ")}`;
 }
 
 /**
@@ -237,10 +265,14 @@ function buildCompositionBlueprintClause(
       ? sceneModel.balloons.colors.slice(0, 4).join(", ")
       : "the currently configured palette";
     balloonBlueprintSection =
-      `2. BALLOON GARLAND: Preserve the configured ${styleLabel} organic balloon garland — ` +
-      `its configured side, flow, scale, density, volume, and organic nesting exactly as established. ` +
-      `Color palette is ${colorList}. Do not move, mirror, shrink, thin, simplify, recolor, ` +
-      `or relocate the garland when text is added or updated.`;
+      `2. BALLOON GARLAND: The configured ${styleLabel} organic balloon garland is a single continuous ` +
+      `installation on its configured side. It must extend from its upper attachment area all the way ` +
+      `down to the floor in one unbroken flow — do not stop it mid-height, do not end it above the floor, ` +
+      `and do not convert any part of it into a detached floor cluster on the opposite side. ` +
+      `Preserve its configured side, flow, density, volume, color palette (${colorList}), and organic ` +
+      `nesting exactly as established. Do not move, mirror, shrink, thin, simplify, recolor, or relocate ` +
+      `the garland when text is added or updated. Only allow separate floor clusters if they are ` +
+      `explicitly configured in the scene.`;
   } else {
     balloonBlueprintSection = `2. BALLOON GARLAND: No balloon garland is configured. Do not add one.`;
   }
@@ -256,11 +288,16 @@ function buildCompositionBlueprintClause(
     ).join(" and ");
     const countWord = plinthCount === 1 ? "exactly one (1) plinth" : `exactly ${plinthCount} plinths`;
     plinthBlueprintSection =
-      `3. PLINTH SETUP: Preserve ${countWord} (${plinthDescList}). ` +
-      `Preserve the exact shape, scale, color, and floor placement for each plinth. ` +
+      `3. PLINTH SETUP: Preserve ${countWord} (${plinthDescList}) visibly rendered in the foreground. ` +
+      `Every configured plinth must remain visible — text must never cause any plinth to be omitted, ` +
+      `hidden, cropped out, merged into the backdrop, or removed from the scene. ` +
+      `Preserve the exact configured count, height, diameter, shape, color, floor contact, ` +
+      `foreground placement, and vertical orientation for each plinth. ` +
       `Do not add, remove, duplicate, widen, shorten, enlarge, distort, or move any plinth ` +
       `when text is added or updated. ` +
-      (plinthCount === 1 ? "Do not add a second plinth. " : `Maintain exactly ${plinthCount} plinths, no more, no less. `);
+      (plinthCount === 1
+        ? "Exactly one (1) visible plinth must remain. Do not add a second plinth. "
+        : `Exactly ${plinthCount} visible plinths must remain, no more, no less. `);
   }
 
   // ── Full clause ──────────────────────────────────────────────────────────
@@ -363,7 +400,46 @@ function buildNegativePrompt(
       "duplicate plinth, extra plinth, repositioned plinth"
     : "";
 
-  return `${sceneNeg}, ${styleNeg}, ${structureNeg}, ${balloonNeg}, ${plinthNeg}, ${propNeg}${textNeg}${printNeg}${envNeg}${textDriftNeg}`;
+  // Step C — conditional negatives for text visibility, garland continuity, plinth omission
+
+  // 1. Text visibility negatives
+  const textVisibilityNeg = hasText
+    ? ", missing text, omitted text, invisible text, unreadable text, illegible text, " +
+      "text blending into backdrop, text hidden behind balloons, cropped text, tiny text"
+    : "";
+
+  // 2. Garland continuity negatives (when balloons are present)
+  const hasBalloons = sceneModel?.balloons?.style !== "none";
+  const garlandContinuityNeg = hasBalloons
+    ? ", partial garland, broken garland continuity, garland stopping above floor, " +
+      "detached floor balloon cluster, disconnected balloon pile, sparse lower garland, " +
+      "missing lower balloons, balloon garland moved to opposite side"
+    : "";
+
+  // 3. Plinth omission negatives (when text is on AND plinths are configured)
+  const plinthOmissionNeg = (hasText && (sceneModel?.plinths?.length ?? 0) > 0)
+    ? ", missing plinth, omitted plinth, invisible plinth, plinth disappeared, plinth hidden, " +
+      "plinth blended into backdrop, plinth merged with backdrop, cropped plinth, " +
+      "removed plinth, absent foreground plinth"
+    : "";
+
+  const strip = (s: string) => s.replace(/^,\s*/, "").trim();
+
+  return [
+    sceneNeg,
+    styleNeg,
+    structureNeg,
+    balloonNeg,
+    plinthNeg,
+    propNeg,
+    textNeg,
+    printNeg,
+    envNeg,
+    textDriftNeg,
+    textVisibilityNeg,
+    garlandContinuityNeg,
+    plinthOmissionNeg,
+  ].map(strip).filter(Boolean).join(", ");
 }
 
 // ---------------------------------------------------------------------------
