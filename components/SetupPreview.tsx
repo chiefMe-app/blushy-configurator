@@ -710,7 +710,7 @@ function computeSceneHash(config: BuilderConfig): string {
     backdropItems: d.backdropItems.map((i) => ({
       id: i.id, type: i.type, sizeId: i.sizeId,
       widthCm: i.widthCm, heightCm: i.heightCm, color: i.color,
-      text:    { enabled: i.text.enabled,    value: i.text.value,    fontStyle: i.text.fontStyle, color: i.text.color },
+      // text excluded: text changes update the overlay instantly — no AI regen needed
       graphic: { enabled: i.graphic.enabled, style: i.graphic.style },
     })),
     backdropColor: d.backdropColor,
@@ -1108,7 +1108,32 @@ export default function SetupPreview({
             </div>
           )}
 
-          {/* Measurement overlay — exact dimensions from scene state, never from AI */}
+          {/* Text overlay on Final Design Render — deterministic, instant, no AI regen.
+               Updates instantly when text value/font/color/size/position changes.
+               Renders on top of the AI image; MeasurementOverlay renders above this. */}
+          {finalUrl && config.decor.backdropItems.map((item, idx) => {
+            if (!item.text.enabled || !item.text.value.trim()) return null;
+            return (
+              <TextOverlay
+                key={item.id}
+                text={item.text.value}
+                fontStyle={item.text.fontStyle}
+                color={item.text.color}
+                themeAccent={themeAccent}
+                fontSize={config.decor.backdropText.fontSize}
+                lineHeight={config.decor.backdropText.lineHeight}
+                verticalOffset={config.decor.backdropText.verticalOffset}
+                horizontalOffset={config.decor.backdropText.horizontalOffset}
+                align={config.decor.backdropText.align}
+                shape={item.type}
+                panelIndex={idx}
+                totalPanels={config.decor.backdropItems.length}
+              />
+            );
+          })}
+
+          {/* Measurement overlay — exact dimensions from scene state, never from AI.
+               Rendered above text overlay so measurement labels remain visible. */}
           {showMeasurements && finalUrl && !finalIsLoading && (
             <MeasurementOverlay config={config}/>
           )}

@@ -166,41 +166,15 @@ function buildFirstGenPrompt(
       `The plinth is 40 cm diameter. The plinth is tall and narrow, not low or table-like.`
     : "";
 
-  // Text-enabled lock clauses — only injected when at least one panel has active text
-  const textEnabled = sceneModel.panels.some((p) => p.text.enabled && p.text.value.trim());
+  // Text is now a deterministic client-side overlay — NOT rendered by AI.
+  // renderTextInAi = false disables all AI text clauses globally.
+  const renderTextInAi = false as const;
 
-  const lockBalloonColors = sceneModel.balloons.colors.length > 0
-    ? sceneModel.balloons.colors.slice(0, 4).join(", ")
-    : "the currently selected palette";
-
-  const balloonLockClause = textEnabled && sceneModel.balloons.style !== "none"
-    ? `[Balloon Installation Lock]: The currently configured organic balloon garland is ` +
-      `completely locked in its structure, composition, density, silhouette, and volume. ` +
-      `It must preserve the same continuous flow, same fullness, same rich nested sizing, ` +
-      `and same exact positioning as in the standard render without text. ` +
-      `Introducing or updating text on the backdrop surface must not alter, shift, shrink, ` +
-      `thin out, simplify, or reposition the balloon garland in any way. ` +
-      `Preserve the identical balloon installation layout exactly as already established in the scene. ` +
-      `The locked balloon garland must use strictly the currently selected balloon color palette: ` +
-      `${lockBalloonColors}. Do not introduce stray colors, and do not modify the garland's density, ` +
-      `silhouette, or overall volume while applying these colors.`
-    : "";
-
-  const plinthLockClause = textEnabled && plinthCount > 0
-    ? `[Foreground Plinth Lock]: The currently selected foreground plinth configuration is ` +
-      `completely locked. Preserve the exact plinth count (${plinthCount}), exact height, ` +
-      `exact diameter (40 cm), exact slender proportions, exact floor position, and exact spacing ` +
-      `as configured in the standard render without text. ` +
-      `Text on the backdrop is completely independent from the plinth zone and must not modify, ` +
-      `upscale, widen, thicken, shorten, duplicate, or reposition any plinth. ` +
-      (plinthCount === 1 ? "Do not add a second plinth. " : `Maintain exactly ${plinthCount} plinths. `)
-    : "";
-
-  const textSurfaceOnlyLockClause = textEnabled
-    ? `[Text Surface Only Lock]: Treat all text as a flat surface-level graphic applied only to ` +
-      `the backdrop face. Text must not cause any physical decor element to be regenerated, ` +
-      `resized, repositioned, duplicated, removed, recolored, widened, shortened, or simplified.`
-    : "";
+  // balloonLockClause and plinthLockClause are disabled since text is overlay-only.
+  // The standard balloonClause / plinthClause already describe the physical scene correctly.
+  const balloonLockClause       = "";
+  const plinthLockClause        = "";
+  const textSurfaceOnlyLockClause = "";
 
   return [
     STYLE_PREFIX,
@@ -212,11 +186,12 @@ function buildFirstGenPrompt(
     scaleRefClause,
     balloonClause,
     plinthClause,
+    // buildVisibleTextRenderClause and buildCompositionBlueprintClause removed:
+    // text is overlay-only; AI should render only the physical setup.
+    buildCompositionBlueprintClause(sceneModel, renderTextInAi),
     balloonLockClause,
     plinthLockClause,
     textSurfaceOnlyLockClause,
-    buildCompositionBlueprintClause(sceneModel, textEnabled),
-    buildVisibleTextRenderClause(sceneModel),
   ].filter(Boolean).join(" ");
 }
 
@@ -392,25 +367,22 @@ function buildNegativePrompt(
     "different room, new room, changed camera angle, different lighting direction, " +
     "extra event structures";
 
-  // Text-enabled drift negatives — only added when backdrop text is active
-  const textDriftNeg = hasText
+  // Garland/plinth drift negatives — always active when balloons are present.
+  // Previously gated on hasText; now unconditional since text is overlay-only.
+  const hasBalloonsDrift = (sceneModel?.balloons?.style ?? "none") !== "none";
+  const textDriftNeg = hasBalloonsDrift
     ? ", shifted garland, sparse garland, reduced balloon volume, thinner garland, " +
       "simplified garland, altered balloon layout, changed balloon silhouette, missing floor balloons, " +
       "thick plinth, wide plinth, distorted plinth, enlarged plinth, shortened plinth, " +
       "duplicate plinth, extra plinth, repositioned plinth"
     : "";
 
-  // Step C — conditional negatives for text visibility, garland continuity, plinth omission
-
-  // 1. Text visibility negatives
-  const textVisibilityNeg = hasText
-    ? ", missing text, omitted text, invisible text, unreadable text, illegible text, " +
-      "text blending into backdrop, text hidden behind balloons, cropped text, tiny text"
-    : "";
+  // Text is now a client-side overlay — remove AI text visibility negatives.
+  // "missing text / omitted text" would encourage the AI to render text, which we no longer want.
+  const textVisibilityNeg = "";
 
   // 2. Garland continuity negatives (when balloons are present)
-  const hasBalloons = sceneModel?.balloons?.style !== "none";
-  const garlandContinuityNeg = hasBalloons
+  const garlandContinuityNeg = hasBalloonsDrift
     ? ", partial garland, broken garland continuity, garland stopping above floor, " +
       "detached floor balloon cluster, disconnected balloon pile, sparse lower garland, " +
       "missing lower balloons, balloon garland moved to opposite side"
