@@ -11,7 +11,7 @@
  * preservation rules and current sceneModel context.
  */
 
-import type { DecorConfig, ExtraBalloonCluster, BalloonClusterLocation } from "./config";
+import type { DecorConfig, BackdropItem, ExtraBalloonCluster, BalloonClusterLocation } from "./config";
 import type { SceneModel } from "./buildSceneModel";
 
 // ---------------------------------------------------------------------------
@@ -325,14 +325,88 @@ export function interpretDesignChange(
     }
   }
 
-  // Backdrop / panel color
+  // ── Backdrop / panel color ────────────────────────────────────────────────
+  // Covers: "make backdrop white", "change backdrop to white", "backdrop should be white",
+  // "make panel white", "change panel color to white", "make arch backdrop white" etc.
+  // IMPORTANT: updates only the backdrop panel color in state.
+  // Does NOT trigger a render_style_edit — full-image editing is intentionally avoided
+  // because it can accidentally recolor the plinth, balloons, room, or floor.
+  // TODO: Backdrop color edits should use a localized panel mask/recolor edit to
+  //       preserve plinth, balloons, and room exactly.
+  const BACKDROP_SURFACE_WORDS = "(backdrop|panel|arch|rectangular|round|shimmer.wall|wavy)";
   const backdropColorMatch =
-    re("backdrop.*(color|colour|white|pink|blue|gold|blush)").test(lower) ||
-    re("(white|pink|blue|gold|blush|cream|nude|ivory).*backdrop").test(lower) ||
-    re("make.*backdrop.*(white|pink|blue|gold|blush|cream)").test(lower);
+    re(`${BACKDROP_SURFACE_WORDS}.{0,40}(color|colour|${Object.keys(COLOR_HEX).join("|")})`).test(lower) ||
+    re(`(${Object.keys(COLOR_HEX).join("|")}).{0,40}${BACKDROP_SURFACE_WORDS}`).test(lower) ||
+    re(`make.{0,20}${BACKDROP_SURFACE_WORDS}.{0,30}(${Object.keys(COLOR_HEX).join("|")})`).test(lower) ||
+    re(`change.{0,20}${BACKDROP_SURFACE_WORDS}.{0,30}(to|into|color).{0,20}(${Object.keys(COLOR_HEX).join("|")})`).test(lower) ||
+    re(`${BACKDROP_SURFACE_WORDS}.{0,20}should.{0,10}be.{0,20}(${Object.keys(COLOR_HEX).join("|")})`).test(lower);
+
   if (backdropColorMatch) {
     const color = findColor(lower);
-    if (color) updates.backdropColor = color;
+    if (color) {
+      const colorName = Object.entries(COLOR_HEX).find(([, h]) => h === color)?.[0] ?? color;
+
+      // Determine which panel types the user is targeting
+      const targetArch    = /\barch\b/i.test(lower);
+      const targetRect    = /\b(rectangular|rect)\b/i.test(lower);
+      const targetShimmer = /\b(shimmer|sequin|shiny)\b/i.test(lower);
+      const targetRound   = /\bround\b/i.test(lower);
+      const targetAll     = !targetArch && !targetRect && !targetShimmer && !targetRound;
+
+      // Build updated backdropItems from sceneModel.panels with the new color applied.
+      // Per-panel color (item.color) is the source of truth; global backdropColor is synced too.
+      // Note: sceneModel.panels[i].color is the resolved color (item.color || globalColor).
+      // For panels NOT being updated we preserve their resolved value as an explicit color.
+      // TODO: Backdrop color edits should use a localized panel mask/recolor edit to
+      //       preserve plinth, balloons, and room exactly.
+      const updatedItems: BackdropItem[] = sceneModel.panels.map((p) => {
+        const shouldUpdate =
+          targetAll ||
+          (targetArch  && p.type === "arch") ||
+          (targetRect    && p.type === "rect") ||
+          (targetShimmer && p.type === "shimmer_wall") ||
+          (targetRound && p.type === "round");
+
+        return {
+          id:       p.id,
+          type:     p.type,
+          sizeId:   p.sizeId,
+          widthCm:  p.widthCm,
+          heightCm: p.heightCm,
+          color:    shouldUpdate ? color : p.color,
+          text: {
+            enabled:   p.text.enabled,
+            value:     p.text.value,
+            fontStyle: p.text.fontStyle,
+            color:     p.text.color,
+          },
+          graphic: {
+            enabled: p.graphic.enabled,
+            theme:   "",   // not stored on ScenePanel; default is always ""
+            style:   p.graphic.style,
+          },
+        };
+      });
+
+      let scopeLabel = "selected backdrop panel";
+      if (targetArch)  scopeLabel = "arch backdrop panel";
+      if (targetRect)  scopeLabel = "rectangular backdrop panel";
+      if (targetRound) scopeLabel = "round backdrop panel";
+      if (targetAll && sceneModel.panels.length > 1) scopeLabel = "all selected backdrop panels";
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("[interpretDesignChange] backdropColor →", { color, targetAll, targetArch, targetRect, updatedItems: updatedItems.map((i) => ({ id: i.id, type: i.type, color: i.color })) });
+      }
+
+      return {
+        changeType:   "state_change",
+        summary:      `Applied: ${scopeLabel} color → ${colorName}. Regenerate Final Design Render to update the visual.`,
+        stateUpdates: {
+          backdropColor:  color,          // keep global in sync as fallback
+          backdropItems:  updatedItems,   // per-panel source of truth
+        },
+      };
+    }
   }
 
   // Generic color request without specific target — try backdrop color
