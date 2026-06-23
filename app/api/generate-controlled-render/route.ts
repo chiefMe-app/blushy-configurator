@@ -25,6 +25,7 @@ import {
   type PromptInput,
 } from "@/lib/generatePrompt";
 import { type SceneModel } from "@/lib/buildSceneModel";
+import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
 
 // first_generate: pure text-to-image — photorealistic, no control image passed
 const FAL_T2I_ENDPOINT    = "https://fal.run/fal-ai/flux-2-pro";
@@ -45,8 +46,9 @@ interface RequestBody {
   previousFinalRenderUrl?: string;
   renderMode:              RenderMode;
   editDescription?:        string;
-  force?:                  boolean;     // when true, always call fal — never reuse cached render
-  currentSceneHash?:       string;      // hash of visual scene state at time of request
+  force?:                  boolean;
+  currentSceneHash?:       string;
+  renderAspectRatio?:      FalImageSize; // dynamic image_size from real panel dimensions
 }
 
 // ---------------------------------------------------------------------------
@@ -251,8 +253,9 @@ export async function POST(req: NextRequest) {
     controlImageBase64,
     previousFinalRenderUrl,
     renderMode, editDescription,
-    force          = false,
+    force             = false,
     currentSceneHash,
+    renderAspectRatio = "landscape_4_3",  // default fallback if not sent
   } = body;
 
   const hasText    = sceneModel.panels.some((p) => p.text.enabled && p.text.value.trim());
@@ -293,7 +296,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           prompt:        editPrompt,
           image_url:     previousFinalRenderUrl,
-          image_size:    "landscape_4_3",
+          image_size:    renderAspectRatio,   // dynamic from panel dimensions
           output_format: "jpeg",
           num_images:    1,
         }),
@@ -334,7 +337,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         prompt:          finalPrompt,
         negative_prompt: negativePrompt,
-        image_size:      "landscape_4_3",
+        image_size:      renderAspectRatio,   // dynamic from panel dimensions
         output_format:   "jpeg",
         num_images:      1,
       }),

@@ -15,6 +15,7 @@ import type {
 import { THEMES } from "@/lib/config";
 import { buildSceneModel } from "@/lib/buildSceneModel";
 import { generateStructureControlMap } from "@/lib/generateStructureControlMap";
+import { calculateRenderAspectRatio } from "@/lib/calculateRenderAspectRatio";
 import MeasurementOverlay from "./MeasurementOverlay";
 import DesignChangePrompt from "./DesignChangePrompt";
 // renderLayoutControlImage is used only for the visible Production Layout Preview,
@@ -794,17 +795,19 @@ export function useFinalRender(config: BuilderConfig) {
         console.groupEnd();
       }
 
+      // Calculate render aspect ratio from real panel dimensions
+      const { falImageSize } = calculateRenderAspectRatio(liveConfig.decor.backdropItems);
+
       const res = await fetch("/api/generate-controlled-render", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           promptInput,
           sceneModel,
-          // Explicit Regenerate always does first_generate from latest sceneModel.
-          // Never reuses currentFinalRenderUrl when the user explicitly triggers regeneration.
-          renderMode:   "first_generate",
-          force:        true,
-          currentSceneHash: liveHash,
+          renderAspectRatio: falImageSize,   // dynamic image_size for fal.ai
+          renderMode:        "first_generate",
+          force:             true,
+          currentSceneHash:  liveHash,
         }),
       });
 
@@ -1002,6 +1005,9 @@ export default function SetupPreview({
     markStale,
   } = useFinalRender(config);
 
+  // Dynamic aspect ratio from real panel dimensions — updates when backdrop changes
+  const { cssAspectRatio } = calculateRenderAspectRatio(config.decor.backdropItems);
+
   // "Show measurements" toggle — overlays exact panel/plinth dimensions from scene state
   const [showMeasurements, setShowMeasurements] = useState(false);
 
@@ -1075,7 +1081,10 @@ export default function SetupPreview({
           </div>
         </div>
 
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-black/5 shadow-inner">
+        <div
+          className="relative w-full overflow-hidden rounded-2xl bg-black/5 shadow-inner"
+          style={{ aspectRatio: cssAspectRatio, transition: "aspect-ratio 0.35s ease" }}
+        >
           {finalUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
