@@ -57,7 +57,8 @@ const STYLE_PREFIX =
   "Photorealistic luxury birthday party event setup in Dubai, UAE. " +
   "Premium high-end event decorator portfolio photograph. " +
   "Soft natural daylight from the left, elegant indoor venue, glossy reflective floor, " +
-  "realistic room depth, beautiful lighting. " +
+  "realistic room depth, beautiful lighting, " +
+  "narrow white cylindrical display plinths with realistic shadow and rim-light. " +
   "Professional event photography, 4K quality, sharp focus, soft bokeh background.";
 
 const BALLOON_STYLE: Record<string, string> = {
@@ -94,50 +95,11 @@ function buildFirstGenPrompt(
   const plinthCount = sceneModel.plinths.length;
   const hasArch = sceneModel.panels.some((p) => p.type === "arch");
 
-  // Per-plinth description — geometry only, no "cake/table/stand/stool" words in positive prompt
-  function plinthDesc(heightCm: number): string {
-    const ratio = (heightCm / 40).toFixed(1);
-    if (heightCm >= 120) {
-      return (
-        `one extra tall slim white cylindrical event plinth, ` +
-        `40 cm diameter and ${heightCm} cm tall, ` +
-        `height-to-diameter ratio ${ratio}:1, tall narrow vertical cylinder, ` +
-        `clean white matte finish, standing directly on the floor`
-      );
-    }
-    if (heightCm >= 100) {
-      return (
-        `one large tall slim white cylindrical event plinth, ` +
-        `40 cm diameter and ${heightCm} cm tall, ` +
-        `height-to-diameter ratio ${ratio}:1, clearly much taller than wide, ` +
-        `narrow vertical cylinder, clean white matte finish, standing directly on the floor`
-      );
-    }
-    if (heightCm >= 80) {
-      return (
-        `one medium tall slim white cylindrical event plinth, ` +
-        `40 cm diameter and ${heightCm} cm tall, ` +
-        `height-to-diameter ratio ${ratio}:1, clearly taller than wide, ` +
-        `narrow vertical cylinder, clean white matte finish, standing directly on the floor`
-      );
-    }
-    return (
-      `one white cylindrical event plinth, ` +
-      `40 cm diameter and ${heightCm} cm tall, ` +
-      `height-to-diameter ratio ${ratio}:1, vertical cylinder, ` +
-      `clean white matte finish, standing directly on the floor`
-    );
-  }
-
-  const plinthSizeDesc = sceneModel.plinths.length > 0
-    ? sceneModel.plinths.map((pl) => plinthDesc(pl.heightCm)).join("; ")
-    : "";
-
   const plinthClause = plinthCount > 0
-    ? `Plinths: exactly ${plinthCount} white cylindrical event ` +
-      `${plinthCount === 1 ? "plinth" : "plinths"} standing directly on the floor. ` +
-      `${plinthSizeDesc}. ` +
-      `Subtle floor shadow beneath each plinth.`
+    ? `Plinths: exactly ${plinthCount} narrow white cylindrical display ` +
+      `${plinthCount === 1 ? "plinth" : "plinths"}, realistic slim cylinder, ` +
+      `40 cm diameter, tall slender column, NOT a stage, NOT a podium, NOT a wide platform, ` +
+      `subtle floor shadow.`
     : "No plinths.";
 
   // Selected-objects whitelist — theme influences mood/color only, not physical props
@@ -228,12 +190,7 @@ function buildNegativePrompt(
 
   const balloonNeg = "bead-like balloons, uniform balloon sizes, fake balloons";
 
-  const plinthNeg  =
-    "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base, wide pedestal, " +
-    "short stool, round stool, low cylinder, short cylinder, squat cylinder, " +
-    "wide cylinder, fat cylinder, low pedestal, " +
-    "side table, cake stand, dessert stand, drum table, coffee table, " +
-    "small table, round table, ottoman, accent table, tray table, stage platform";
+  const plinthNeg  = "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base";
 
   // Unselected-prop negatives — block everything not in the scene config
   const extrasList  = promptInput?.extras ?? [];
