@@ -215,7 +215,65 @@ function buildFirstGenPrompt(
     balloonLockClause,
     plinthLockClause,
     textSurfaceOnlyLockClause,
+    buildCompositionBlueprintClause(sceneModel, textEnabled),
   ].filter(Boolean).join(" ");
+}
+
+/**
+ * Generates a dynamic composition blueprint clause for text-enabled renders.
+ * All values come from sceneModel — no hardcoded sides, counts, or dimensions.
+ */
+function buildCompositionBlueprintClause(
+  sceneModel:  SceneModel,
+  textEnabled: boolean,
+): string {
+  if (!textEnabled) return "";
+
+  // ── Balloon section ──────────────────────────────────────────────────────
+  let balloonBlueprintSection = "";
+  if (sceneModel.balloons.style !== "none") {
+    const styleLabel = sceneModel.balloons.style; // half | full | premium
+    const colorList  = sceneModel.balloons.colors.length > 0
+      ? sceneModel.balloons.colors.slice(0, 4).join(", ")
+      : "the currently configured palette";
+    balloonBlueprintSection =
+      `2. BALLOON GARLAND: Preserve the configured ${styleLabel} organic balloon garland — ` +
+      `its configured side, flow, scale, density, volume, and organic nesting exactly as established. ` +
+      `Color palette is ${colorList}. Do not move, mirror, shrink, thin, simplify, recolor, ` +
+      `or relocate the garland when text is added or updated.`;
+  } else {
+    balloonBlueprintSection = `2. BALLOON GARLAND: No balloon garland is configured. Do not add one.`;
+  }
+
+  // ── Plinth section ───────────────────────────────────────────────────────
+  let plinthBlueprintSection = "";
+  const plinthCount = sceneModel.plinths.length;
+  if (plinthCount === 0) {
+    plinthBlueprintSection = `3. PLINTH SETUP: No plinths are configured. Do not add any plinth.`;
+  } else {
+    const plinthDescList = sceneModel.plinths.map((sp) =>
+      `${sp.heightCm} cm tall, ${sp.diameterCm} cm diameter`
+    ).join(" and ");
+    const countWord = plinthCount === 1 ? "exactly one (1) plinth" : `exactly ${plinthCount} plinths`;
+    plinthBlueprintSection =
+      `3. PLINTH SETUP: Preserve ${countWord} (${plinthDescList}). ` +
+      `Preserve the exact shape, scale, color, and floor placement for each plinth. ` +
+      `Do not add, remove, duplicate, widen, shorten, enlarge, distort, or move any plinth ` +
+      `when text is added or updated. ` +
+      (plinthCount === 1 ? "Do not add a second plinth. " : `Maintain exactly ${plinthCount} plinths, no more, no less. `);
+  }
+
+  // ── Full clause ──────────────────────────────────────────────────────────
+  return (
+    `[Composition Blueprint - DO NOT ALTER]: This is the exact configured spatial layout for this render. ` +
+    `Text is a flat surface-level decal only and must not cause the physical event setup to be ` +
+    `regenerated, mirrored, flipped, rebalanced, resized, or reinterpreted. ` +
+    `1. BACKDROP TEXT: Place the configured text only on its configured backdrop panel/surface ` +
+    `and preserve its configured alignment. ` +
+    `${balloonBlueprintSection} ` +
+    `${plinthBlueprintSection} ` +
+    `Maintain this exact configured spatial arrangement across all text-enabled generations.`
+  );
 }
 
 function buildNegativePrompt(
