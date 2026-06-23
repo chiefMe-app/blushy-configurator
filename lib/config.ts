@@ -446,6 +446,32 @@ export interface CutoutSelection {
   position: CutoutPosition;
 }
 
+/**
+ * Extra balloon clusters from natural language edits.
+ * Stored in scene state so production specs can reflect requested quantity and placement.
+ * TODO: Add pricing rule for extra clusters if needed.
+ */
+export type BalloonClusterLocation =
+  | "bottom_left"
+  | "bottom_right"
+  | "bottom_empty_side"
+  | "left_side"
+  | "right_side"
+  | "top_cluster";
+
+export type BalloonClusterType = "floor_cluster" | "side_cluster" | "top_cluster";
+
+export interface ExtraBalloonCluster {
+  id:              string;
+  type:            BalloonClusterType;
+  targetPanelId?:  string;
+  location:        BalloonClusterLocation;
+  count:           number;
+  colors:          string[];
+  sizeMix:         "organic";
+  source:          "user_prompt";
+}
+
 export interface DecorConfig {
   /** Source of truth for all backdrop panels — type, count, and arch sizes. */
   backdropItems: BackdropItem[];
@@ -460,6 +486,12 @@ export interface DecorConfig {
   backdropPrint: BackdropPrint;
   backdropText: BackdropText;
   cakeTable: boolean;
+  /**
+   * Extra balloon clusters from natural language / customer edits.
+   * Extra balloon clusters from natural language edits are stored in scene state
+   * so production specs can reflect the requested quantity and placement.
+   */
+  extraBalloonClusters?: ExtraBalloonCluster[];
 }
 
 export interface Option<T extends string> {

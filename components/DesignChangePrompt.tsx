@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { DecorConfig } from "@/lib/config";
+import type { DecorConfig, ExtraBalloonCluster } from "@/lib/config";
 import type { SceneModel } from "@/lib/buildSceneModel";
 import { interpretDesignChange } from "@/lib/interpretDesignChange";
 
@@ -15,16 +15,18 @@ const QUICK_CHIPS = [
 ];
 
 interface Props {
-  sceneModel:    SceneModel;
-  finalUrl:      string | null;
-  themeAccent:   string;
-  onPatchDecor:  (patch: Partial<DecorConfig>) => void;
-  onRenderEdit:  (editPrompt: string) => Promise<void>;
-  onMarkStale:   () => void;
+  sceneModel:           SceneModel;
+  currentExtraClusters: ExtraBalloonCluster[];
+  finalUrl:             string | null;
+  themeAccent:          string;
+  onPatchDecor:         (patch: Partial<DecorConfig>) => void;
+  onRenderEdit:         (editPrompt: string) => Promise<void>;
+  onMarkStale:          () => void;
 }
 
 export default function DesignChangePrompt({
   sceneModel,
+  currentExtraClusters,
   finalUrl,
   themeAccent,
   onPatchDecor,
@@ -98,6 +100,40 @@ export default function DesignChangePrompt({
           if (result.renderEditPrompt) {
             setMessage({ text: "Applying style edit…", type: "info" });
             await onRenderEdit(result.renderEditPrompt);
+            setMessage({ text: result.summary, type: "success" });
+          }
+          setPrompt("");
+          break;
+        }
+
+        case "object_level_edit": {
+          const edit = result.objectEdit;
+          if (!edit?.balloonCluster) {
+            setMessage({ text: result.summary, type: "info" });
+            break;
+          }
+          // 1. Persist to scene state so production specs include the cluster
+          const newCluster: ExtraBalloonCluster = {
+            ...edit.balloonCluster,
+            id: `cluster_${Date.now()}`,
+          };
+          onPatchDecor({
+            extraBalloonClusters: [...currentExtraClusters, newCluster],
+          });
+
+          // 2. Edit the existing render to show the change visually
+          if (finalUrl && result.renderEditPrompt) {
+            setMessage({ text: "Applying balloon placement…", type: "info" });
+            try {
+              await onRenderEdit(result.renderEditPrompt);
+              setMessage({
+                text: `${result.summary} Added as a design instruction and visual edit. Exact production count is saved in the design specs.`,
+                type: "success",
+              });
+            } catch {
+              setMessage({ text: result.summary + " (Visual edit failed — spec saved.)", type: "warn" });
+            }
+          } else {
             setMessage({ text: result.summary, type: "success" });
           }
           setPrompt("");

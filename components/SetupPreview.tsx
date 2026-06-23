@@ -1129,6 +1129,7 @@ export default function SetupPreview({
       {onPatchDecor && (
         <DesignChangePrompt
           sceneModel={buildSceneModel(config)}
+          currentExtraClusters={config.decor.extraBalloonClusters ?? []}
           finalUrl={finalUrl}
           themeAccent={themeAccent}
           onPatchDecor={onPatchDecor}

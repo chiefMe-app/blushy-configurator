@@ -11,7 +11,7 @@
  * preservation rules and current sceneModel context.
  */
 
-import type { DecorConfig } from "./config";
+import type { DecorConfig, ExtraBalloonCluster, BalloonClusterLocation } from "./config";
 import type { SceneModel } from "./buildSceneModel";
 
 // ---------------------------------------------------------------------------
@@ -21,13 +21,25 @@ import type { SceneModel } from "./buildSceneModel";
 export type ChangeType =
   | "state_change"
   | "render_style_edit"
+  | "object_level_edit"       // precise placement: add/move specific objects with quantity/position
   | "structural_regenerate"
   | "clarification_needed";
+
+export interface ObjectLevelEditDetail {
+  target:            "balloons" | "plinth" | "text" | "cutouts";
+  action:            "add" | "remove" | "move";
+  quantity?:         number;
+  location?:         BalloonClusterLocation;
+  preserveExisting:  boolean;
+  /** Ready-to-use cluster for state update */
+  balloonCluster?:   Omit<ExtraBalloonCluster, "id">;
+}
 
 export interface DesignChangeResult {
   changeType:               ChangeType;
   summary:                  string;
   stateUpdates?:            Partial<DecorConfig>;
+  objectEdit?:              ObjectLevelEditDetail;
   renderEditPrompt?:        string;
   requiresRegenerate?:      boolean;
   requiresUserConfirmation?: boolean;
@@ -90,6 +102,62 @@ const BALLOON_STYLE_PATTERNS: [RegExp, DecorConfig["balloonStyle"]][] = [
   [re("no.balloon|remove.balloon|without.balloon|balloon.off"), "none"],
 ];
 
+// ---------------------------------------------------------------------------
+// Object-level edit detection (must run BEFORE render_style_edit)
+// ---------------------------------------------------------------------------
+
+/** Extract a number from phrases like "10 pieces", "10 balloons", "only 10" */
+function extractQuantity(text: string): number | null {
+  const m = text.match(/\b(\d{1,3})\b/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+/** Resolve the target location from position keywords */
+function resolveLocation(lower: string): BalloonClusterLocation {
+  const hasBottom  = /down|bottom|floor|low/i.test(lower);
+  const hasRight   = /right/i.test(lower);
+  const hasLeft    = /left/i.test(lower);
+  const hasEmpty   = /empty/i.test(lower);
+  const hasTop     = /top|upper|ceiling/i.test(lower);
+
+  if (hasTop)   return "top_cluster";
+  if (hasEmpty) return hasRight ? "bottom_right" : hasLeft ? "bottom_left" : "bottom_empty_side";
+  if (hasBottom && hasRight) return "bottom_right";
+  if (hasBottom && hasLeft)  return "bottom_left";
+  if (hasBottom)             return "bottom_empty_side";
+  if (hasRight)              return "right_side";
+  if (hasLeft)               return "left_side";
+  return "bottom_empty_side"; // sensible default
+}
+
+/** Location label for the edit prompt */
+function locationLabel(loc: BalloonClusterLocation): string {
+  const MAP: Record<BalloonClusterLocation, string> = {
+    bottom_left:        "lower left side",
+    bottom_right:       "lower right side",
+    bottom_empty_side:  "lower empty side",
+    left_side:          "left side",
+    right_side:         "right side",
+    top_cluster:        "top area",
+  };
+  return MAP[loc] ?? "lower empty side";
+}
+
+const BALLOON_PLACEMENT_PATTERNS = [
+  /\bmore balloon/i,
+  /\badd.{0,20}balloon/i,
+  /\bput.{0,30}balloon/i,
+  /\bplace.{0,20}balloon/i,
+  /\bballon.{0,30}(side|bottom|floor|down|empty|right|left)/i,
+  /\b(bottom|floor|down|empty|right|left).{0,30}balloon/i,
+  /(empty|downside|floor.side|bottom.side)/i,
+  /\d+\s*(piece|balloon|ballon)/i,
+];
+
+function isBalloonPlacementRequest(lower: string): boolean {
+  return BALLOON_PLACEMENT_PATTERNS.some((p) => p.test(lower));
+}
+
 const RENDER_STYLE_KEYWORDS = [
   "more luxury", "make it luxury", "premium feel", "more premium",
   "brighter", "more vibrant", "softer", "more pastel", "warmer lighting",
@@ -128,7 +196,51 @@ export function interpretDesignChange(
     }
   }
 
-  // ── 2. Detect render style edits (keep current render, apply style edit) ─
+  // ── 2. Detect precise object-level edits (before generic style check) ────
+  if (isBalloonPlacementRequest(lower)) {
+    const quantity  = extractQuantity(lower) ?? 10;
+    const location  = resolveLocation(lower);
+    const locLabel  = locationLabel(location);
+
+    const renderEditPrompt =
+      `Edit the existing render ONLY. ` +
+      `Keep the same room, camera angle, lighting, backdrop panels, plinth, ` +
+      `existing balloon garland, colors, and composition completely identical. ` +
+      `Add approximately ${quantity} additional organic latex balloons only to the ${locLabel} area near the floor. ` +
+      `Do not remove any existing balloons. Do not move the backdrop. ` +
+      `Do not move the plinth. Do not change the venue. ` +
+      `TODO: Precise object-level edits should use localized/masked image editing ` +
+      `to avoid affecting the rest of the render.`;
+
+    const cluster: Omit<ExtraBalloonCluster, "id"> = {
+      type:             "floor_cluster",
+      location,
+      count:            quantity,
+      colors:           sceneModel.balloons.colors,
+      sizeMix:          "organic",
+      source:           "user_prompt",
+    };
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("[interpretDesignChange] object_level_edit →", { quantity, location, cluster });
+    }
+
+    return {
+      changeType:       "object_level_edit",
+      summary:          `Add ${quantity} extra balloon${quantity !== 1 ? "s" : ""} to the ${locLabel}.`,
+      objectEdit:       {
+        target:           "balloons",
+        action:           "add",
+        quantity,
+        location,
+        preserveExisting: true,
+        balloonCluster:   cluster,
+      },
+      renderEditPrompt,
+    };
+  }
+
+  // ── 3. Detect render style edits (keep current render, apply style edit) ─
   for (const kw of RENDER_STYLE_KEYWORDS) {
     if (lower.includes(kw)) {
       const editPrompt =
