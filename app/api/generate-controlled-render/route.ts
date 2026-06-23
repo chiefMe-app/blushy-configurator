@@ -166,6 +166,42 @@ function buildFirstGenPrompt(
       `The plinth is 40 cm diameter. The plinth is tall and narrow, not low or table-like.`
     : "";
 
+  // Text-enabled lock clauses — only injected when at least one panel has active text
+  const textEnabled = sceneModel.panels.some((p) => p.text.enabled && p.text.value.trim());
+
+  const lockBalloonColors = sceneModel.balloons.colors.length > 0
+    ? sceneModel.balloons.colors.slice(0, 4).join(", ")
+    : "the currently selected palette";
+
+  const balloonLockClause = textEnabled && sceneModel.balloons.style !== "none"
+    ? `[Balloon Installation Lock]: The currently configured organic balloon garland is ` +
+      `completely locked in its structure, composition, density, silhouette, and volume. ` +
+      `It must preserve the same continuous flow, same fullness, same rich nested sizing, ` +
+      `and same exact positioning as in the standard render without text. ` +
+      `Introducing or updating text on the backdrop surface must not alter, shift, shrink, ` +
+      `thin out, simplify, or reposition the balloon garland in any way. ` +
+      `Preserve the identical balloon installation layout exactly as already established in the scene. ` +
+      `The locked balloon garland must use strictly the currently selected balloon color palette: ` +
+      `${lockBalloonColors}. Do not introduce stray colors, and do not modify the garland's density, ` +
+      `silhouette, or overall volume while applying these colors.`
+    : "";
+
+  const plinthLockClause = textEnabled && plinthCount > 0
+    ? `[Foreground Plinth Lock]: The currently selected foreground plinth configuration is ` +
+      `completely locked. Preserve the exact plinth count (${plinthCount}), exact height, ` +
+      `exact diameter (40 cm), exact slender proportions, exact floor position, and exact spacing ` +
+      `as configured in the standard render without text. ` +
+      `Text on the backdrop is completely independent from the plinth zone and must not modify, ` +
+      `upscale, widen, thicken, shorten, duplicate, or reposition any plinth. ` +
+      (plinthCount === 1 ? "Do not add a second plinth. " : `Maintain exactly ${plinthCount} plinths. `)
+    : "";
+
+  const textSurfaceOnlyLockClause = textEnabled
+    ? `[Text Surface Only Lock]: Treat all text as a flat surface-level graphic applied only to ` +
+      `the backdrop face. Text must not cause any physical decor element to be regenerated, ` +
+      `resized, repositioned, duplicated, removed, recolored, widened, shortened, or simplified.`
+    : "";
+
   return [
     STYLE_PREFIX,
     ENV_CLAUSE,
@@ -176,6 +212,9 @@ function buildFirstGenPrompt(
     scaleRefClause,
     balloonClause,
     plinthClause,
+    balloonLockClause,
+    plinthLockClause,
+    textSurfaceOnlyLockClause,
   ].filter(Boolean).join(" ");
 }
 
@@ -258,7 +297,15 @@ function buildNegativePrompt(
     "different room, new room, changed camera angle, different lighting direction, " +
     "extra event structures";
 
-  return `${sceneNeg}, ${styleNeg}, ${structureNeg}, ${balloonNeg}, ${plinthNeg}, ${propNeg}${textNeg}${printNeg}${envNeg}`;
+  // Text-enabled drift negatives — only added when backdrop text is active
+  const textDriftNeg = hasText
+    ? ", shifted garland, sparse garland, reduced balloon volume, thinner garland, " +
+      "simplified garland, altered balloon layout, changed balloon silhouette, missing floor balloons, " +
+      "thick plinth, wide plinth, distorted plinth, enlarged plinth, shortened plinth, " +
+      "duplicate plinth, extra plinth, repositioned plinth"
+    : "";
+
+  return `${sceneNeg}, ${styleNeg}, ${structureNeg}, ${balloonNeg}, ${plinthNeg}, ${propNeg}${textNeg}${printNeg}${envNeg}${textDriftNeg}`;
 }
 
 // ---------------------------------------------------------------------------
