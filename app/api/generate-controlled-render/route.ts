@@ -416,11 +416,20 @@ function buildNegativePrompt(
       "missing lower balloons, balloon garland moved to opposite side"
     : "";
 
-  // 3. Plinth omission negatives (when text is on AND plinths are configured)
-  const plinthOmissionNeg = (hasText && (sceneModel?.plinths?.length ?? 0) > 0)
+  // 3. Plinth omission negatives — applies whenever plinths are configured (not limited to text renders)
+  const hasPlinths = (sceneModel?.plinths?.length ?? 0) > 0;
+  const plinthOmissionNeg = hasPlinths
     ? ", missing plinth, omitted plinth, invisible plinth, plinth disappeared, plinth hidden, " +
       "plinth blended into backdrop, plinth merged with backdrop, cropped plinth, " +
       "removed plinth, absent foreground plinth"
+    : "";
+
+  // 4. Platform/base suppression — whenever a backdrop or plinth is configured
+  const hasBackdrop = items.length > 0;
+  const platformBaseNeg = (hasBackdrop || hasPlinths)
+    ? ", stage, podium base, semicircle platform, oval platform, raised platform, " +
+      "pedestal base attached to backdrop, backdrop base extension, " +
+      "platform under backdrop, fake base platform"
     : "";
 
   const strip = (s: string) => s.replace(/^,\s*/, "").trim();
@@ -439,6 +448,7 @@ function buildNegativePrompt(
     textVisibilityNeg,
     garlandContinuityNeg,
     plinthOmissionNeg,
+    platformBaseNeg,
   ].map(strip).filter(Boolean).join(", ");
 }
 
