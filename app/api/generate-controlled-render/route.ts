@@ -88,17 +88,34 @@ function buildFirstGenPrompt(sceneModel: SceneModel, basePrompt: string): string
     : "";
 
   const plinthCount = sceneModel.plinths.length;
+  const hasArch = sceneModel.panels.some((p) => p.type === "arch");
+
+  const plinthSizeDesc = sceneModel.plinths.length > 0
+    ? sceneModel.plinths.map((pl) =>
+        `${pl.heightCm} cm tall, 40 cm diameter`
+      ).join(" and ")
+    : "";
+
   const plinthClause = plinthCount > 0
     ? `Plinths: exactly ${plinthCount} narrow white cylindrical display ` +
-      `${plinthCount === 1 ? "plinth" : "plinths"}, realistic slim cylinder, ` +
+      `${plinthCount === 1 ? "plinth" : "plinths"} (${plinthSizeDesc}), realistic slim cylinder, ` +
       `40 cm diameter, tall slender column, NOT a stage, NOT a podium, NOT a wide platform, ` +
       `subtle floor shadow.`
     : "No plinths.";
+
+  // Scale reference: helps AI understand backdrop width relative to the plinth
+  const scaleRefClause = hasArch && plinthCount > 0
+    ? `SCALE REFERENCE: the white cylindrical plinth is 40 cm diameter. ` +
+      `The arch backdrop panel is approximately 100 cm wide — about 2.5 times the plinth diameter. ` +
+      `Use this ratio to judge the correct arch panel width in the scene. ` +
+      `The arch must NOT appear wider than 2.5 plinths placed side by side.`
+    : "";
 
   return [
     STYLE_PREFIX,
     basePrompt,
     panelCount_str,
+    scaleRefClause,
     balloonClause,
     plinthClause,
   ].filter(Boolean).join(" ");
@@ -130,9 +147,17 @@ function buildNegativePrompt(
     "technical labels, measurement arrows, dimension lines, centimeter labels, cm text, " +
     "100cm, 200cm, width labels, height labels, floor measurements";
 
+  const hasArchPanel = items.some((p) => p.type === "arch");
+  const archPropNeg  = hasArchPanel
+    ? ", wide arch wall, oversized arch panel, 150 cm wide arch, 180 cm wide arch, " +
+      "2 meter wide arch, wall-sized backdrop, square arch, landscape arch, " +
+      "extra-wide panel, panel width similar to height, arch wider than 120 cm"
+    : "";
+
   const structureNeg =
     "wrong number of panels, extra backdrop panel, missing backdrop panel, " +
-    "changed panel silhouette, wrong panel proportions, oversized backdrop wall";
+    "changed panel silhouette, wrong panel proportions, oversized backdrop wall" +
+    archPropNeg;
 
   const balloonNeg = "bead-like balloons, uniform balloon sizes, fake balloons";
 

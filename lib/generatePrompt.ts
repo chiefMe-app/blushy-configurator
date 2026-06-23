@@ -232,25 +232,35 @@ function buildArchItemDesc(item: BackdropItem, panelColorName = ""): string {
   const h = item.heightCm;
 
   if (w && h) {
-    const ratio = (w / h).toFixed(2);
-    const ratioDesc = `width-to-height ratio ${ratio} (narrow portrait proportion, width is half of height)`;
-    const metricDesc = `${w} cm wide and ${h} cm tall (${(w / 100).toFixed(2)}m × ${(h / 100).toFixed(2)}m)`;
+    const ratio    = (w / h).toFixed(2);
+    const isStd66  = item.sizeId === "arch_66ft";
+    const humanRef = isStd66 ? "1 meter wide and 2 meters tall, " : `${(w/100).toFixed(2)}m wide and ${(h/100).toFixed(2)}m tall, `;
     return (
-      `one symmetrical full arch vertical panel with a rounded top center, ` +
-      `exactly ${metricDesc}${colorPart}, ${ratioDesc}, ` +
-      `NOT oversized, NOT wall-sized, NOT wider than selected size, ` +
+      `one narrow vertical arch backdrop panel with a rounded top center, ` +
+      `exactly ${w} cm wide and ${h} cm tall${colorPart}, ` +
+      `${humanRef}` +
+      `width-to-height ratio ${ratio} — width is exactly half of height, ` +
+      `slim portrait arch proportion, standard party backdrop panel size, ` +
+      `the arch panel should look narrow and tall; its width should visually be about half its height, ` +
+      `NOT a wide wall, NOT oversized, NOT wider than ${w} cm, ` +
       `narrow portrait arch panel, standing directly on the floor`
     );
   }
 
   const size = ARCH_SIZES.find((s) => s.id === item.sizeId);
   if (size) {
-    const ratio = (size.widthCm / size.heightCm).toFixed(2);
+    const ratio   = (size.widthCm / size.heightCm).toFixed(2);
+    const isStd66 = item.sizeId === "arch_66ft";
+    const humanRef = isStd66 ? "1 meter wide and 2 meters tall, " : `${(size.widthCm/100).toFixed(2)}m wide and ${(size.heightCm/100).toFixed(2)}m tall, `;
     return (
-      `one symmetrical full arch vertical panel with a rounded top center, ` +
+      `one narrow vertical arch backdrop panel with a rounded top center, ` +
       `exactly ${size.widthCm} cm wide and ${size.heightCm} cm tall${colorPart}, ` +
-      `width-to-height ratio ${ratio} (narrow portrait proportion, width is half of height), ` +
-      `NOT oversized, NOT wall-sized, narrow portrait arch panel, standing directly on the floor`
+      `${humanRef}` +
+      `width-to-height ratio ${ratio} — width is exactly half of height, ` +
+      `slim portrait arch proportion, standard party backdrop panel size, ` +
+      `the arch panel should look narrow and tall; its width should visually be about half its height, ` +
+      `NOT a wide wall, NOT oversized, NOT wider than ${size.widthCm} cm, ` +
+      `narrow portrait arch panel, standing directly on the floor`
     );
   }
 
