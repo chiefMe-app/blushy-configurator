@@ -36,19 +36,23 @@ const CSS_RATIOS: Record<FalImageSize, string> = {
 /**
  * Derive the render aspect ratio from selected backdrop panels.
  *
- * Total setup width  = sum of all panel widths + gaps between panels
- * Total setup height = tallest selected panel
+ * Total setup width uses overlap-aware calculation:
+ *   1 panel:  totalWidthCm = first panel widthCm
+ *   2+ panels: totalWidthCm = firstPanel.widthCm
+ *              + sum(Math.max(panel.widthCm - 35, 20)) for each additional panel
+ *   (panels in multi-panel setups overlap in the real world by ~35 cm)
  *
- * Mapping (width / height ratio → fal image_size):
- *   < 0.65  → portrait_16_9  (single narrow arch, e.g. 100×200)
+ * Total setup height = tallest selected panel (maxHeightCm)
+ *
+ * Mapping (totalWidthCm / maxHeightCm ratio → fal image_size):
+ *   < 0.65  → portrait_16_9  (single narrow arch, e.g. 100×200 → ratio 0.5)
  *   < 0.90  → portrait_4_3   (slightly wider portrait)
- *   < 1.15  → square_hd      (roughly square multi-panel)
+ *   < 1.15  → square_hd      (roughly square)
  *   < 1.55  → landscape_4_3  (standard multi-panel landscape)
- *   ≥ 1.55  → landscape_16_9 (very wide three-panel)
+ *   ≥ 1.55  → landscape_16_9 (very wide)
  */
 export function calculateRenderAspectRatio(
   backdropItems: BackdropItem[],
-  panelGapCm    = 15,
 ): RenderAspectRatio {
   const defaults: RenderAspectRatio = {
     falImageSize:   "landscape_4_3",
@@ -60,9 +64,13 @@ export function calculateRenderAspectRatio(
 
   if (!backdropItems || backdropItems.length === 0) return defaults;
 
+  // Overlap-aware total width:
+  // First panel contributes its full width; each additional panel adds
+  // only the visible portion (widthCm - 35 cm overlap, minimum 20 cm).
+  const [first, ...rest] = backdropItems;
   const totalWidthCm =
-    backdropItems.reduce((sum, item) => sum + (item.widthCm || 100), 0) +
-    Math.max(0, backdropItems.length - 1) * panelGapCm;
+    (first?.widthCm || 100) +
+    rest.reduce((sum, item) => sum + Math.max((item.widthCm || 100) - 35, 20), 0);
 
   const maxHeightCm = Math.max(...backdropItems.map((item) => item.heightCm || 200), 1);
 
