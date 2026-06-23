@@ -904,15 +904,17 @@ export function useSetupPreview(config: BuilderConfig) {
   const extras = deriveExtras(config);
   const d = config.decor;
 
-  // Structural-only: exclude per-panel color/text/graphic to prevent AI
-  // regeneration when overlay-only fields change.
+  // Structural-only sig — color changes (backdropColor, balloonColors, per-panel color)
+  // are intentionally excluded so they do NOT auto-trigger /api/generate.
+  // Color changes via the NL prompt or UI sliders only update state and mark the
+  // Final Design Render stale; the user must click Regenerate to apply them visually.
+  // Balloon STYLE is kept because it is structural (changes garland type/density).
   const structuralItems = d.backdropItems.map(i => ({
     t: i.type, s: i.sizeId, w: i.widthCm, h: i.heightCm,
   }));
   const sig = JSON.stringify({
     t: config.theme, p: config.package, et: config.eventType,
     items: structuralItems, b: d.balloonStyle,
-    bc: d.backdropColor, blc: d.balloonColors,
     bp: d.backdropPrint,
     pl: PLINTH_MODE === "ai" ? d.plinthSizes : undefined,
     e: extras, n: nonce,
