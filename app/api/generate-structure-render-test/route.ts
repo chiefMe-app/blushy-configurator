@@ -27,6 +27,13 @@ import { calculateRenderAspectRatio } from "@/lib/calculateRenderAspectRatio";
 const CANNY_MODEL_ID = "fal-ai/flux-control-lora-canny";
 // Raw REST endpoint (used by fal-test mode blocking fetch):
 const CANNY_ENDPOINT = `https://fal.run/${CANNY_MODEL_ID}`;
+
+// EasyControl Canny — fal-ai/flux-general with easycontrols array
+// Docs: https://fal.ai/models/fal-ai/flux-general/api
+// Field `easycontrols[].control_method_url: "canny"` is a built-in keyword, no weight path needed.
+// Field `easycontrols[].image_control_type: "spatial"` = structure/layout guidance.
+const EASYCONTROL_MODEL_ID = "fal-ai/flux-general";
+
 const TEST_SEED      = 42424242;
 
 export const runtime    = "nodejs";
@@ -47,12 +54,13 @@ interface TestRequestBody {
   balloonStyle:   BalloonStyleId;
   balloonColors?: string[];
   /**
-   * "svg-only"       — default, returns SVG string + layout debug (no fal call).
-   * "png-debug"      — converts SVG → PNG and returns size/mime info (no fal call).
-   * "fal-test"       — blocking raw fetch to fal REST endpoint (legacy, may time out).
-   * "fal-queue-test" — fal.subscribe queue/poll pattern, 180s max wait (preferred).
+   * "svg-only"            — default, returns SVG string + layout debug (no fal call).
+   * "png-debug"           — converts SVG → PNG and returns size/mime info (no fal call).
+   * "fal-test"            — blocking raw fetch to fal REST endpoint (legacy, may time out).
+   * "fal-queue-test"      — fal.subscribe to flux-control-lora-canny, 180s max wait.
+   * "fal-easycontrol-test"— fal.subscribe to flux-general + EasyControl Canny, 120s max wait.
    */
-  mode?:          "svg-only" | "png-debug" | "fal-test" | "fal-queue-test";
+  mode?:          "svg-only" | "png-debug" | "fal-test" | "fal-queue-test" | "fal-easycontrol-test";
 }
 
 export async function POST(req: NextRequest) {
@@ -240,6 +248,36 @@ export async function POST(req: NextRequest) {
     return handleFalQueueTest(
       tId, falKey, pngDataUri, pngBuffer, promptSummary,
       computedSize, payloadApproxSizeBytes, svgDebug.debug.checks,
+    );
+  }
+
+  // ── fal-easycontrol-test: flux-general + EasyControl Canny ───────────────
+  if (mode === "fal-easycontrol-test") {
+    const falKey = process.env.FAL_KEY;
+    if (!falKey) {
+      return NextResponse.json({
+        ok: false, mode: "fal-easycontrol-test", testId: tId,
+        modelId: EASYCONTROL_MODEL_ID, requestId: null,
+        imageUrl: null, error: "FAL_KEY not configured", latencyMs: null,
+        controlImageMime: pngBuffer ? "image/png" : null,
+        controlImageSizeBytes: pngBuffer?.length ?? null,
+        payloadApproxSizeBytes, hasFalKey: false,
+        svgChecks: svgDebug.debug.checks, queueStatusHistory: [],
+      }, { status: 500 });
+    }
+    if (!pngDataUri || !pngBuffer) {
+      return NextResponse.json({
+        ok: false, mode: "fal-easycontrol-test", testId: tId,
+        modelId: EASYCONTROL_MODEL_ID, requestId: null,
+        imageUrl: null, error: `PNG conversion required. ${pngError ?? "sharp not available."}`,
+        latencyMs: null, controlImageMime: null, controlImageSizeBytes: null,
+        payloadApproxSizeBytes, hasFalKey: true,
+        svgChecks: svgDebug.debug.checks, queueStatusHistory: [],
+      }, { status: 500 });
+    }
+    return handleFalEasyControlTest(
+      tId, falKey, pngDataUri, pngBuffer, promptSummary,
+      payloadApproxSizeBytes, svgDebug.debug.checks,
     );
   }
 
@@ -535,5 +573,135 @@ async function handleFalQueueTest(
     svgChecks,
     falResponseKeys,
     falImagesCount:         imagesArr?.length ?? 0,
+  });
+}
+
+// ── EasyControl Canny handler ─────────────────────────────────────────────────
+// Uses fal-ai/flux-general with easycontrols[].control_method_url: "canny"
+// Verified schema: https://fal.ai/models/fal-ai/flux-general/api
+async function handleFalEasyControlTest(
+  tId: string,
+  falKey: string,
+  controlDataUri: string,
+  pngBuffer: Buffer,
+  promptSummary: string,
+  payloadApproxSizeBytes: number,
+  svgChecks: Record<string, unknown>,
+): Promise<NextResponse> {
+  const controlImageMime      = "image/png";
+  const controlImageSizeBytes = pngBuffer.length;
+  const maxWaitMs             = 120_000;
+
+  fal.config({ credentials: falKey });
+
+  const queueStatusHistory: string[] = [];
+  const t0                           = Date.now();
+  const abortController              = new AbortController();
+  const timeoutHandle                = setTimeout(() => abortController.abort(), maxWaitMs);
+
+  let requestId: string | null  = null;
+  let imageUrl: string | null   = null;
+  let queueError: string | null = null;
+  let rawData: unknown          = null;
+
+  console.log("[structure-test-easycontrol] start — model:", EASYCONTROL_MODEL_ID);
+  console.log("[structure-test-easycontrol] controlImageSizeBytes:", controlImageSizeBytes);
+  console.log("[structure-test-easycontrol] payloadApproxSizeBytes:", payloadApproxSizeBytes);
+  console.log("[structure-test-easycontrol] maxWaitMs:", maxWaitMs, "hasFalKey:", !!falKey);
+
+  try {
+    // easycontrols is not in the SDK's generated EndpointTypeMap for flux-general,
+    // so we cast input to Record<string,unknown> to avoid strict type rejection.
+    // This cast is scoped to this experimental function only.
+    const easyControlInput: Record<string, unknown> = {
+      prompt:              promptSummary,
+      image_size:          "portrait_16_9",
+      num_inference_steps: 28,
+      guidance_scale:      3.5,
+      seed:                TEST_SEED,
+      num_images:          1,
+      output_format:       "jpeg",
+      easycontrols: [
+        {
+          control_method_url:  "canny",
+          image_url:           controlDataUri,
+          image_control_type:  "spatial",
+          scale:               0.80,
+        },
+      ],
+    };
+
+    const falResult = await fal.subscribe(EASYCONTROL_MODEL_ID, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      input: easyControlInput as any,
+      logs:        true,
+      abortSignal: abortController.signal,
+      onQueueUpdate: (status) => {
+        const ts  = new Date().toISOString();
+        const pos = status.status === "IN_QUEUE" ? ` queue_pos=${status.queue_position}` : "";
+        const entry = `[${ts}] ${status.status}${pos}`;
+        queueStatusHistory.push(entry);
+        console.log("[structure-test-easycontrol]", entry);
+        if (!requestId && status.request_id) {
+          requestId = status.request_id;
+          console.log("[structure-test-easycontrol] requestId:", requestId);
+        }
+      },
+    });
+
+    requestId = falResult.requestId ?? requestId;
+    rawData   = falResult.data;
+
+    const d         = falResult.data as Record<string, unknown>;
+    const imagesArr = Array.isArray(d?.["images"]) ? (d["images"] as Record<string, unknown>[]) : null;
+    imageUrl =
+      (imagesArr?.[0]?.["url"] as string | undefined) ??
+      ((d?.["image"] as Record<string, unknown> | undefined)?.["url"] as string | undefined) ??
+      (d?.["url"] as string | undefined) ??
+      null;
+
+    if (!imageUrl) {
+      queueError = "fal returned no image url";
+      console.warn("[structure-test-easycontrol] no imageUrl. response keys:", Object.keys(d ?? {}));
+    } else {
+      console.log("[structure-test-easycontrol] imageUrl:", imageUrl);
+    }
+  } catch (err) {
+    const isTimeout = abortController.signal.aborted;
+    queueError      = isTimeout
+      ? `fal easycontrol timed out after ${maxWaitMs / 1000}s`
+      : String(err);
+    console.error("[structure-test-easycontrol] error:", queueError);
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
+
+  const latencyMs = Date.now() - t0;
+  console.log("[structure-test-easycontrol] done. latencyMs:", latencyMs, "imageUrl:", imageUrl ?? "null");
+
+  const d               = rawData as Record<string, unknown> | null;
+  const falResponseKeys = d ? Object.keys(d) : [];
+  const imagesArr       = Array.isArray(d?.["images"]) ? (d!["images"] as unknown[]) : null;
+  const firstImage      = imagesArr?.[0] as Record<string, unknown> | undefined;
+  const falFirstImageKeys = firstImage ? Object.keys(firstImage) : [];
+
+  return NextResponse.json({
+    ok:                     imageUrl !== null,
+    mode:                   "fal-easycontrol-test",
+    testId:                 tId,
+    modelId:                EASYCONTROL_MODEL_ID,
+    requestId,
+    imageUrl,
+    error:                  queueError,
+    latencyMs,
+    queueStatusHistory,
+    controlImageMime,
+    controlImageSizeBytes,
+    payloadApproxSizeBytes,
+    hasFalKey:              true,
+    svgChecks,
+    falResponseKeys,
+    falImagesCount:         imagesArr?.length ?? 0,
+    falFirstImageKeys,
   });
 }
