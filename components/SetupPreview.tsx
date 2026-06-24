@@ -79,9 +79,28 @@ const BACKDROP_SAFE_AREA: Record<BackdropShapeId, { x: number; y: number; w: num
 
 function resolveTextColor(color: TextColor, accent: string): string {
   if (color === "white") return "#FFFFFF";
-  if (color === "gold")  return "#D4AF37";
-  if (color === "black") return "#222222";
-  return accent;
+  if (color === "gold")  return "#C9A227";  // richer, warmer gold
+  if (color === "black") return "#1A1A1A";
+  return accent;                             // "accent" → exact theme accent
+}
+
+/** Returns a text-shadow value that ensures legibility on any backdrop tone. */
+function resolveTextShadow(color: TextColor, accent: string): string {
+  if (color === "black") {
+    // crisp white halo for dark text on light/mid backdrops
+    return "0 0 6px rgba(255,255,255,0.9), 0 1px 3px rgba(255,255,255,0.6)";
+  }
+  if (color === "white") {
+    // strong dark drop shadow + ambient glow so white reads on any tone
+    return "0 1px 4px rgba(0,0,0,0.85), 0 0 18px rgba(0,0,0,0.45)";
+  }
+  if (color === "gold") {
+    // dark shadow beneath, warm ambient
+    return "0 1px 4px rgba(0,0,0,0.80), 0 0 12px rgba(0,0,0,0.35)";
+  }
+  // "accent": could be any color — use both dark + light shadow for adaptability
+  void accent; // used for color but shadow logic is universal
+  return "0 1px 4px rgba(0,0,0,0.75), 0 0 14px rgba(0,0,0,0.35), 0 0 2px rgba(255,255,255,0.3)";
 }
 
 function TextOverlay({
@@ -95,19 +114,13 @@ function TextOverlay({
   fontSize?: number; lineHeight?: number;
   verticalOffset?: number; horizontalOffset?: number;
   align?: TextAlign; shape?: BackdropShapeId;
-  /** Which panel slot this text belongs to (0-indexed). */
   panelIndex?: number;
-  /** Total number of panels in the current layout. */
   totalPanels?: number;
 }) {
-  const safe = BACKDROP_SAFE_AREA[shape] ?? BACKDROP_SAFE_AREA.arch;
+  const safe          = BACKDROP_SAFE_AREA[shape] ?? BACKDROP_SAFE_AREA.arch;
   const resolvedColor = resolveTextColor(color, themeAccent);
-  const textShadow = color === "black"
-    ? "0 1px 3px rgba(255,255,255,0.5)"
-    : "0 1px 5px rgba(0,0,0,0.65), 0 0 14px rgba(0,0,0,0.25)";
+  const textShadow    = resolveTextShadow(color, themeAccent);
 
-  // Divide the safe area horizontally by the number of panels so each
-  // panel's text stays within its own slice of the backdrop.
   const sliceW   = safe.w / totalPanels;
   const sliceX   = safe.x + sliceW * panelIndex;
   const blockCX  = sliceX + sliceW * (horizontalOffset / 100);
@@ -125,11 +138,14 @@ function TextOverlay({
           color:         resolvedColor,
           textShadow,
           fontSize:      `${(fontSize * 0.25 + 0.75).toFixed(2)}rem`,
-          letterSpacing: fontStyle === "elegant" ? "0.1em" : fontStyle === "block" ? "0.04em" : "0.02em",
+          letterSpacing: fontStyle === "elegant" ? "0.12em" : fontStyle === "block" ? "0.04em" : "0.03em",
           textAlign:     align,
           lineHeight:    (lineHeight / 100).toFixed(2),
-          margin: 0, padding: "0 4px",
-          userSelect: "none", whiteSpace: "pre-wrap",
+          margin: 0, padding: "0 6px",
+          userSelect:    "none",
+          whiteSpace:    "pre-wrap",
+          // Subtle backdrop-filter so text reads on complex AI-rendered backgrounds
+          WebkitTextStroke: color === "white" ? "0px transparent" : undefined,
         }}>
           {line || " "}
         </p>
@@ -1033,7 +1049,7 @@ export default function SetupPreview({
           <div>
             <span className="text-[11px] font-semibold text-black/70">Final Design Render</span>
             <p className="text-[10px] text-black/40">
-              High-quality visual preview generated from the exact layout.
+              Physical scene render. Text updates instantly as an overlay — no regeneration needed.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -1108,14 +1124,15 @@ export default function SetupPreview({
             </div>
           )}
 
-          {/* Text overlay on Final Design Render — deterministic, instant, no AI regen.
-               Updates instantly when text value/font/color/size/position changes.
-               Renders on top of the AI image; MeasurementOverlay renders above this. */}
-          {finalUrl && config.decor.backdropItems.map((item, idx) => {
+          {/* Deterministic text overlay — updates instantly, no AI regen.
+               Only shown when an image exists (not during loading/empty state).
+               One overlay per panel; unique key by item.id prevents duplicates.
+               MeasurementOverlay is rendered after this and therefore above it. */}
+          {finalUrl && !finalIsLoading && config.decor.backdropItems.map((item, idx) => {
             if (!item.text.enabled || !item.text.value.trim()) return null;
             return (
               <TextOverlay
-                key={item.id}
+                key={`final-text-${item.id}`}
                 text={item.text.value}
                 fontStyle={item.text.fontStyle}
                 color={item.text.color}
