@@ -92,15 +92,28 @@ const ISOLATION_CLAUSE =
 // fal-ai/flux-2-pro supports the seed parameter.
 const FINAL_RENDER_SEED = 42424242;
 
+// Active for every AI render — physical setup must be rendered exactly as configured.
+const PHYSICAL_FIDELITY_CLAUSE =
+  "[Physical Setup Fidelity]: Render the exact configured setup — no creative reinterpretation, " +
+  "no embellishment, no extra decor, and no inflation of a minimal setup into a fuller or more luxurious one. " +
+  "Preserve the exact backdrop count, types, proportions, and colors. " +
+  "Preserve the exact configured balloon style and volume — do not expand a half garland into a full garland " +
+  "or add extra balloon clusters in unconfigured areas. " +
+  "Preserve the exact plinth count, size, and freestanding floor position — every configured plinth must be clearly visible. " +
+  "If the setup is minimal (one panel, one plinth, half garland), render it as a minimal but premium event scene, " +
+  "not as a fully decorated installation.";
+
 const BALLOON_STYLE: Record<string, string> = {
-  half:    "asymmetric organic balloon garland cascading from the top corner down one side, " +
-           "with a floor balloon cluster, varied balloon sizes (large, medium, small), " +
-           "layered depth, glossy latex balloons, professional balloon styling",
-  full:    "full organic balloon frame around the backdrop group, " +
+  half:    "a controlled asymmetric half-garland: organic balloon installation cascading from ONE top corner " +
+           "down ONE side only, NOT wrapping around to the other side. " +
+           "Exactly a half garland — do not expand to a full garland or full frame. " +
+           "Include a modest floor balloon cluster only at the base of the same side. " +
+           "Varied balloon sizes (large, medium, small), layered depth, glossy latex balloons",
+  full:    "a full organic balloon frame around the backdrop group — both sides and top, " +
            "varied balloon sizes, rich layered depth, glossy latex balloons",
-  premium: "dense luxury organic balloon installation with large, medium, small, and mini latex balloons, " +
+  premium: "a dense luxury organic balloon installation — large, medium, small, and mini latex balloons, " +
            "rich layered depth, high-end editorial balloon styling",
-  none:    "",
+  none:    "no balloons anywhere in the scene",
 };
 
 function buildFirstGenPrompt(
@@ -187,6 +200,7 @@ function buildFirstGenPrompt(
     STYLE_PREFIX,
     ENV_CLAUSE,
     BLANK_BACKDROP_CLAUSE,
+    PHYSICAL_FIDELITY_CLAUSE,
     basePrompt,
     whitelistClause,
     ISOLATION_CLAUSE,
@@ -389,6 +403,16 @@ function buildNegativePrompt(
       "duplicate plinth, extra plinth, repositioned plinth"
     : "";
 
+  // Conditional half-garland fidelity — only fires when half garland is configured.
+  // Prevents the AI from expanding a half garland into a full frame or adding extra clusters.
+  const isHalfGarland = (sceneModel?.balloons?.style ?? "none") === "half";
+  const halfGarlandNeg = isHalfGarland
+    ? ", full garland when half garland is configured, full balloon frame, " +
+      "balloons wrapping both sides, symmetrical balloon installation, " +
+      "oversized balloon installation, extra balloon clusters, extra floor balloons, " +
+      "over-decorated setup, embellished setup, balloon arch, full arch garland"
+    : "";
+
   // Text is now a client-side overlay — remove AI text visibility negatives.
   // "missing text / omitted text" would encourage the AI to render text, which we no longer want.
   const textVisibilityNeg = "";
@@ -431,6 +455,7 @@ function buildNegativePrompt(
     textDriftNeg,
     textVisibilityNeg,
     garlandContinuityNeg,
+    halfGarlandNeg,
     plinthOmissionNeg,
     platformBaseNeg,
   ].map(strip).filter(Boolean).join(", ");
