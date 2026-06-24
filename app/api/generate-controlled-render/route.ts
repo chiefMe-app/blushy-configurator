@@ -137,11 +137,17 @@ function buildFirstGenPrompt(
     `no more, no less. Do not add extra panels. Do not remove panels.`;
 
   const balloonStyle   = sceneModel.balloons.style;
-  const balloonColors  = sceneModel.balloons.colors.length > 0
-    ? `in ${sceneModel.balloons.colors.slice(0, 4).join(", ")} tones`
+  const configuredBalloonColors = sceneModel.balloons.colors.slice(0, 4);
+  const balloonColors  = configuredBalloonColors.length > 0
+    ? `in ${configuredBalloonColors.join(", ")} tones`
+    : "";
+  const balloonColorAdherence = configuredBalloonColors.length > 0
+    ? ` Balloon colors must visibly and clearly match the configured palette (${configuredBalloonColors.join(", ")}). ` +
+      `Do not desaturate the garland into mostly white or colorless. ` +
+      `The configured colors must be the dominant visible colors in the balloon installation.`
     : "";
   const balloonClause  = BALLOON_STYLE[balloonStyle]
-    ? `Balloons: ${BALLOON_STYLE[balloonStyle]}${balloonColors ? " " + balloonColors : ""}.`
+    ? `Balloons: ${BALLOON_STYLE[balloonStyle]}${balloonColors ? " " + balloonColors : ""}.${balloonColorAdherence}`
     : "";
 
   const plinthCount = sceneModel.plinths.length;
@@ -157,7 +163,9 @@ function buildFirstGenPrompt(
         `a tall, slim, upright cylindrical display column — ${h}cm tall, ${d}cm diameter, ` +
         `height (${h}cm) is much greater than diameter (${d}cm), ` +
         `vertical orientation, straight vertical sides, flat circular top, ` +
-        `freestanding on the floor, NOT a low platform, NOT a wide disk, NOT a stage, NOT a podium`
+        `freestanding on the floor. ` +
+        `NOT a low platform, NOT a wide disk, NOT a stage, NOT a podium, ` +
+        `NOT a cake stand, NOT a short round podium, NOT a low display stand, NOT a short cylinder`
       );
     });
 
@@ -399,10 +407,18 @@ function buildNegativePrompt(
 
   const balloonNeg = "bead-like balloons, uniform balloon sizes, fake balloons";
 
+  // Balloon color fidelity — active when a palette is configured
+  const hasBalloonColors = (sceneModel?.balloons?.colors?.length ?? 0) > 0;
+  const balloonColorNeg = hasBalloonColors
+    ? ", mostly white balloons, all-white garland, desaturated balloons, " +
+      "colorless balloon garland, washed-out balloon colors, faded balloon palette"
+    : "";
+
   const plinthCountNeg = (sceneModel?.plinths?.length ?? 0) === 1
     ? ", second plinth, two plinths, duplicate plinth, extra plinth, additional cylinder, extra white cylinder"
     : "";
-  const plinthNeg = "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base" + plinthCountNeg;
+  const plinthNeg = "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base, " +
+    "short round podium, cake stand, low display stand, short cylinder" + plinthCountNeg;
 
   // Unselected-prop negatives — block everything not in the scene config
   const extrasList  = promptInput?.extras ?? [];
@@ -511,6 +527,7 @@ function buildNegativePrompt(
     styleNeg,
     structureNeg,
     balloonNeg,
+    balloonColorNeg,
     plinthNeg,
     propNeg,
     textNeg,
