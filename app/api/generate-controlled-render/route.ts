@@ -644,16 +644,22 @@ export async function POST(req: NextRequest) {
       }
 
       if (layoutGuideUrl) {
+        // Layout guide interpretation: use reference for structure only, not visual style.
+        // Full sanitized scene prompt (finalPrompt) supplies theme, colors, and all design details.
         const kontextPrompt =
-          `Transform this clean structural layout guide into a professional photorealistic event photography scene. ` +
-          `Do NOT preserve the flat colors of the reference — transform it into real studio photography. ` +
-          `${ENV_CLAUSE} ` +
-          `Preserve all structure exactly as shown in the reference image: ` +
-          `panel shapes, sizes, and positions; ` +
-          `plinth height-to-diameter ratio, vertical orientation, and freestanding floor position; ` +
-          `balloon garland flow, side, and floor-reach path (the lavender/purple shapes show the balloon placement). ` +
-          `${PHYSICAL_FIDELITY_CLAUSE} ` +
-          `${BLANK_BACKDROP_CLAUSE}`;
+          `[LAYOUT GUIDE — STRUCTURAL REFERENCE ONLY]: ` +
+          `The reference image is a flat layout guide for object placement. ` +
+          `Do NOT copy or preserve any guide colors, dot shapes, schematic circles, marker blobs, or wireframe elements. ` +
+          `Do NOT render beads, dots, marker lines, guide shapes, lavender/purple circles, or flat-color indicators. ` +
+          `Use the reference image ONLY to determine: ` +
+          `(1) backdrop panel shapes, positions, and proportions; ` +
+          `(2) plinth position, vertical orientation, and height-to-diameter ratio; ` +
+          `(3) balloon garland flow path, which side it is on, and that it reaches the floor. ` +
+          `The colored circles in the guide indicate WHERE the balloon garland flows — ` +
+          `convert them into a realistic dense organic balloon garland in the correct configured colors. ` +
+          `Balloons must look like a rich layered professional organic installation with varied sizes, ` +
+          `not a thin string of beads or single-file dots. ` +
+          `[SCENE DESIGN — FOLLOW EXACTLY]: ${finalPrompt}`;
 
         console.log("[generate-controlled-render] → calling flux-pro/kontext with layout guide");
         if (process.env.NODE_ENV === "development") {

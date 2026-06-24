@@ -63,6 +63,16 @@ function controlOutline(
   return pts;
 }
 
+function lightenColor(hex: string): string {
+  const h = hex.replace("#", "");
+  if (h.length !== 6) return "#FFFFFF";
+  const n = parseInt(h, 16);
+  const r = Math.min(255, ((n >> 16) & 255) + 48);
+  const g = Math.min(255, ((n >> 8)  & 255) + 48);
+  const b = Math.min(255, ( n        & 255) + 48);
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
 function fillOutline(ctx: CanvasRenderingContext2D, pts: Pt[], color: string) {
   if (pts.length < 2) return;
   ctx.beginPath();
@@ -175,64 +185,100 @@ export function renderLayoutControlImage(
     ctx.restore();
   }
 
-  // --- balloon path indicator ---
-  // Draw a simplified garland path so the AI can follow exact placement and flow.
-  // Uses distinct lavender color so AI distinguishes balloons from panels.
-  const balloonStyle = (config.decor as { balloonStyle?: BalloonStyleId }).balloonStyle ?? "none";
+  // --- balloon guide — organic clusters in configured theme/balloon colors ---
+  // Kontext reads these as "where balloons go and what color", not marker dots.
+  const decor        = config.decor as { balloonStyle?: BalloonStyleId; balloonColors?: string[] };
+  const balloonStyle = decor.balloonStyle ?? "none";
 
   if (balloonStyle !== "none" && layout.panels.length > 0) {
-    const BALLOON_FILL   = "#C4A8D4";
-    const BALLOON_STROKE = "#A882C0";
+    // Use configured balloon colors; fallback to warm neutrals if none set
+    const configuredColors: string[] = (decor.balloonColors && decor.balloonColors.length > 0)
+      ? decor.balloonColors.slice(0, 5)
+      : ["#D8EAF5", "#F0F4F8", "#B8D4E8"];
 
     const groupLeft  = Math.min(...layout.panels.map((p) => p.cx - p.pw / 2));
     const groupRight = Math.max(...layout.panels.map((p) => p.cx + p.pw / 2));
     const groupTop   = Math.min(...layout.panels.map((p) => p.apexY));
     const floorY     = layout.floorY;
 
-    const drawBalloonCluster = (bx: number, by: number, r: number) => {
+    // Draw a single organic balloon with natural-looking gradient and highlight
+    const drawBalloon = (bx: number, by: number, r: number, colorIdx: number) => {
+      const fill = configuredColors[colorIdx % configuredColors.length];
+      // Subtle radial gradient for balloon depth
+      const grad = ctx.createRadialGradient(bx - r * 0.3, by - r * 0.3, r * 0.05, bx, by, r);
+      grad.addColorStop(0, lightenColor(fill));
+      grad.addColorStop(1, fill);
       ctx.beginPath();
       ctx.arc(bx, by, r, 0, Math.PI * 2);
-      ctx.fillStyle = BALLOON_FILL;
+      ctx.fillStyle = grad;
       ctx.fill();
-      ctx.strokeStyle = BALLOON_STROKE;
-      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = "rgba(0,0,0,0.12)";
+      ctx.lineWidth = 0.7;
       ctx.stroke();
     };
 
-    if (balloonStyle === "half") {
-      // Continuous half garland: top-right corner → down right side → floor cluster
-      // Slight inward curve so it hugs the panel edge naturally
-      const startX = groupRight + 18;
-      const steps  = 9;
-      for (let i = 0; i <= steps; i++) {
-        const t  = i / steps;
-        const bx = startX + Math.sin(t * Math.PI * 0.35) * 24; // gentle inward bow
-        const by = groupTop + 10 + t * (floorY - groupTop - 10);
-        const r  = i === 0 ? 26 : i === steps ? 20 : 14 + (1 - t) * 8;
-        drawBalloonCluster(bx, by, r);
-      }
-      // Explicit floor cluster to indicate garland reaches the floor
-      for (let j = -1; j <= 1; j++) {
-        drawBalloonCluster(startX + 14 + j * 20, floorY - 14, 12 + Math.abs(j) * 3);
-      }
-    } else if (balloonStyle === "full" || balloonStyle === "premium") {
-      const density = balloonStyle === "premium" ? 8 : 6;
-      const r       = balloonStyle === "premium" ? 16 : 14;
+    // Draw a dense organic cluster node: multiple overlapping circles at one position
+    const drawClusterNode = (cx: number, cy: number, baseR: number, colorOffset: number, jitterSeed: number) => {
+      // 3–4 overlapping balloons per node to simulate organic volume
+      const offsets: [number, number, number][] = [
+        [0,                              0,                          baseR],
+        [((jitterSeed * 7)  % 22) - 11, ((jitterSeed * 13) % 18) - 9,  baseR * 0.82],
+        [((jitterSeed * 11) % 18) - 9,  ((jitterSeed * 5)  % 22) - 11, baseR * 0.9],
+        [((jitterSeed * 17) % 26) - 13, ((jitterSeed * 3)  % 14) - 7,  baseR * 0.75],
+      ];
+      offsets.forEach(([dx, dy, r], k) => {
+        drawBalloon(cx + dx, cy + dy, r, colorOffset + k);
+      });
+    };
 
-      // Right side: top → floor
-      for (let i = 0; i <= density; i++) {
-        const t = i / density;
-        drawBalloonCluster(groupRight + 18, groupTop + t * (floorY - groupTop), r);
+    if (balloonStyle === "half") {
+      // Half garland: dense cluster at top corner, continuous organic side column,
+      // connected floor cluster — all in configured balloon colors.
+      const anchorX = groupRight + 16;
+
+      // Dense top-corner burst
+      const topY = groupTop + 10;
+      drawClusterNode(anchorX,      topY,      24, 0, 1);
+      drawClusterNode(anchorX - 18, topY + 14, 18, 2, 3);
+      drawClusterNode(anchorX + 10, topY + 22, 16, 1, 5);
+
+      // Side column: 8 nodes from top to floor — organically offset, not perfectly aligned
+      const sideNodes = 8;
+      for (let i = 1; i <= sideNodes; i++) {
+        const t        = i / sideNodes;
+        const nodeX    = anchorX + Math.sin(t * Math.PI * 0.5) * 16;
+        const nodeY    = topY + 30 + t * (floorY - topY - 45);
+        const baseR    = 15 + ((i * 3) % 6);   // 15–20 px, varied
+        drawClusterNode(nodeX, nodeY, baseR, i, i * 4);
       }
-      // Top: left edge → right edge
-      for (let i = 0; i <= density; i++) {
-        const t = i / density;
-        drawBalloonCluster(groupLeft + t * (groupRight - groupLeft), groupTop - 16, r);
-      }
-      // Left side: top → floor
-      for (let i = 0; i <= density; i++) {
-        const t = i / density;
-        drawBalloonCluster(groupLeft - 18, groupTop + t * (floorY - groupTop), r);
+
+      // Connected floor cluster — spreads horizontally to indicate floor-reach
+      const floorCx = anchorX + 10;
+      const floorCy = floorY - 16;
+      drawClusterNode(floorCx,      floorCy,      20, 0, 9);
+      drawClusterNode(floorCx - 24, floorCy + 4,  17, 2, 11);
+      drawClusterNode(floorCx + 20, floorCy + 6,  15, 1, 13);
+
+    } else if (balloonStyle === "full" || balloonStyle === "premium") {
+      const nodes    = balloonStyle === "premium" ? 9 : 7;
+      const baseR    = balloonStyle === "premium" ? 17 : 14;
+
+      const drawSide = (edgeX: number, direction: 1 | -1, colorOff: number) => {
+        for (let i = 0; i <= nodes; i++) {
+          const t  = i / nodes;
+          const cx = edgeX + direction * (8 + ((i * 5) % 12));
+          const cy = groupTop + t * (floorY - groupTop);
+          drawClusterNode(cx, cy, baseR + ((i * 3) % 5), colorOff + i, i * 6);
+        }
+      };
+      drawSide(groupRight, 1, 0);
+      drawSide(groupLeft, -1, 2);
+      // Top arc
+      for (let i = 0; i <= nodes; i++) {
+        const t  = i / nodes;
+        const cx = groupLeft + t * (groupRight - groupLeft);
+        const cy = groupTop - 14 - ((i * 4) % 10);
+        drawClusterNode(cx, cy, baseR + ((i * 2) % 5), i, i * 3);
       }
     }
   }
