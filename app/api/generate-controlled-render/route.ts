@@ -104,10 +104,12 @@ const PHYSICAL_FIDELITY_CLAUSE =
   "not as a fully decorated installation.";
 
 const BALLOON_STYLE: Record<string, string> = {
-  half:    "a controlled asymmetric half-garland: organic balloon installation cascading from ONE top corner " +
-           "down ONE side only, NOT wrapping around to the other side. " +
-           "Exactly a half garland — do not expand to a full garland or full frame. " +
-           "Include a modest floor balloon cluster only at the base of the same side. " +
+  half:    "a controlled asymmetric half-garland: organic balloon installation that begins at ONE top corner " +
+           "and extends continuously down the SAME side all the way to the floor in one connected flow. " +
+           "The garland must NOT stop halfway — it must reach the floor. " +
+           "The lower balloon section must connect visually to the side garland with no visible gap. " +
+           "The floor cluster and the side garland are one continuous installation, not two separate elements. " +
+           "Do NOT wrap around to the other side. Do NOT become a full garland or full frame. " +
            "Varied balloon sizes (large, medium, small), layered depth, glossy latex balloons",
   full:    "a full organic balloon frame around the backdrop group — both sides and top, " +
            "varied balloon sizes, rich layered depth, glossy latex balloons",
@@ -436,8 +438,12 @@ function buildNegativePrompt(
   const halfGarlandNeg = isHalfGarland
     ? ", full garland when half garland is configured, full balloon frame, " +
       "balloons wrapping both sides, symmetrical balloon installation, " +
-      "oversized balloon installation, extra balloon clusters, extra floor balloons, " +
-      "over-decorated setup, embellished setup, balloon arch, full arch garland"
+      "oversized balloon installation, extra balloon clusters, " +
+      "over-decorated setup, embellished setup, balloon arch, full arch garland, " +
+      "garland stopping halfway, incomplete side garland, truncated garland, shortened garland, " +
+      "cut-off lower garland, upper-only garland, broken garland flow, " +
+      "disconnected floor balloons, separate floor balloon pile, floating balloon cluster, " +
+      "missing lower balloons, weak lower section, gap between garland and floor cluster"
     : "";
 
   // Text is now a client-side overlay — remove AI text visibility negatives.
