@@ -55,6 +55,13 @@ interface RequestBody {
 // Prompt builders
 // ---------------------------------------------------------------------------
 
+// Active for every AI render — backdrop must be physically blank (text is a frontend overlay).
+const BLANK_BACKDROP_CLAUSE =
+  "[Blank Backdrop Surface]: The backdrop panels must remain completely blank and plain, " +
+  "with no text, no lettering, no typography, no calligraphy, no birthday sign, " +
+  "no name sign, no decals, no printed words, and no logo. " +
+  "Text is handled separately as a frontend overlay and must not be rendered by the AI.";
+
 // Plinth wording intentionally excluded from STYLE_PREFIX — count-specific plinth
 // language is added only by plinthClause where the actual count is known.
 const STYLE_PREFIX =
@@ -179,6 +186,7 @@ function buildFirstGenPrompt(
   return [
     STYLE_PREFIX,
     ENV_CLAUSE,
+    BLANK_BACKDROP_CLAUSE,
     basePrompt,
     whitelistClause,
     ISOLATION_CLAUSE,
@@ -350,9 +358,13 @@ function buildNegativePrompt(
     "gift box, candle, lamp, shelf, tray, basket, stool, chair, rug, cushion",
   ].filter(Boolean).join(", ");
 
-  const textNeg    = !hasText
-    ? ", text overlay, words on backdrop, birthday message, name signage, logo, " +
-      "typography, lettering, handwriting, calligraphy"
+  // Text is always an overlay — AI must never bake text into the image.
+  // Active when hasText=false (= renderTextInAi=false), which is always the case for AI renders.
+  const textNeg = !hasText
+    ? ", text, lettering, typography, words, printed words, calligraphy, handwriting, " +
+      "birthday sign, name sign, backdrop text, vinyl text, decals, logo, " +
+      "text overlay, words on backdrop, birthday message, name signage, " +
+      "any written characters, any readable text on backdrop surface"
     : "";
 
   const printNeg   = !hasGraphic
@@ -512,12 +524,26 @@ export async function POST(req: NextRequest) {
     }
 
     // ── First generate — pure text-to-image, NO image_url ─────────────────────
-    // Visible Production Layout Preview is NOT passed as image_url.
-    // Structure comes entirely from the detailed text prompt.
-    // This ensures the output is fully photorealistic, not a styled layout copy.
-    const { prompt: basePrompt } = generatePrompt(promptInput);
-    const finalPrompt            = buildFirstGenPrompt(sceneModel, basePrompt, promptInput);
-    const negativePrompt         = buildNegativePrompt(sceneModel.panels, hasText, hasGraphic, promptInput, sceneModel);
+    // Text is a frontend overlay — strip all panel text before building the AI prompt
+    // so the AI never receives or renders user text.
+    const renderTextInAi = false as const;
+
+    const promptInputForAi: typeof promptInput = {
+      ...promptInput,
+      // Clear backdrop text fields — AI must always render a blank/plain backdrop surface
+      backdropText: promptInput.backdropText
+        ? { ...promptInput.backdropText, enabled: false, name: "", customText: "" }
+        : undefined,
+      backdropItems: promptInput.backdropItems?.map((item) => ({
+        ...item,
+        text: { ...item.text, enabled: false, value: "" },
+      })),
+    };
+
+    const { prompt: basePrompt } = generatePrompt(promptInputForAi);
+    const finalPrompt            = buildFirstGenPrompt(sceneModel, basePrompt, promptInputForAi);
+    // Pass renderTextInAi (always false) so text-suppression negatives are always active
+    const negativePrompt         = buildNegativePrompt(sceneModel.panels, renderTextInAi, hasGraphic, promptInputForAi, sceneModel);
 
     if (process.env.NODE_ENV === "development") {
       console.log("[generate-controlled-render] → calling fal-ai/flux-2-pro (new fal call, no cache)");
