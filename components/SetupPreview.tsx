@@ -15,7 +15,6 @@ import type {
 import { THEMES } from "@/lib/config";
 import { buildSceneModel } from "@/lib/buildSceneModel";
 import { generateStructureControlMap } from "@/lib/generateStructureControlMap";
-import { renderLayoutControlImage } from "@/lib/renderLayoutControlImage";
 import { calculateRenderAspectRatio } from "@/lib/calculateRenderAspectRatio";
 import MeasurementOverlay from "./MeasurementOverlay";
 import DesignChangePrompt from "./DesignChangePrompt";
@@ -776,11 +775,8 @@ export function useFinalRender(config: BuilderConfig) {
 
     setStatus("loading");
     try {
-      // Edge-only structure map (reserved, not used).
+      // Edge-only structure map (reserved for future ControlNet use).
       generateStructureControlMap(liveConfig, 800, 600);
-
-      // Layout guide: panels + plinths + balloon path — sent to backend as reference image.
-      const controlImageBase64 = renderLayoutControlImage(liveConfig, 800, 600);
 
       const sceneModel  = buildSceneModel(liveConfig);
       const d           = liveConfig.decor;
@@ -821,16 +817,14 @@ export function useFinalRender(config: BuilderConfig) {
         body: JSON.stringify({
           promptInput,
           sceneModel,
-          renderAspectRatio:   falImageSize,      // dynamic image_size for fal.ai
-          renderMode:          "first_generate",
-          controlImageBase64,                     // layout guide: panels + plinths + balloon path
-          force:               true,
-          currentSceneHash:    liveHash,
+          renderAspectRatio: falImageSize,   // dynamic image_size for fal.ai
+          renderMode:        "first_generate",
+          force:             true,
+          currentSceneHash:  liveHash,
         }),
       });
 
       const data = await res.json().catch(() => ({}));
-      console.log("[final-render-debug]", data.debug);
       if (!res.ok || !data.imageUrl) {
         setStatus("error");
         return;
