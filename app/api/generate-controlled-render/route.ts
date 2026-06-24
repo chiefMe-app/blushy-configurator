@@ -27,11 +27,14 @@ import {
 import { type SceneModel } from "@/lib/buildSceneModel";
 import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
 
-// first_generate: pure text-to-image — photorealistic, no control image passed
+// first_generate (no layout guide): pure text-to-image fallback
 const FAL_T2I_ENDPOINT    = "https://fal.run/fal-ai/flux-2-pro";
 
-// edit_existing: image-to-image on the already-beautiful photorealistic render
+// first_generate (with layout guide) + edit_existing: image-guided Kontext
 const KONTEXT_ENDPOINT    = "https://fal.run/fal-ai/flux-pro/kontext";
+
+// fal.ai storage upload — converts base64 layout guide to a URL Kontext can read
+const FAL_STORAGE_UPLOAD  = "https://fal.run/files/upload";
 
 export const runtime  = "nodejs";
 export const dynamic  = "force-dynamic"; // prevent Next.js from caching route responses
@@ -49,6 +52,31 @@ interface RequestBody {
   force?:                  boolean;
   currentSceneHash?:       string;
   renderAspectRatio?:      FalImageSize; // dynamic image_size from real panel dimensions
+}
+
+// ---------------------------------------------------------------------------
+// fal storage helper — uploads base64 layout guide, returns a URL for Kontext
+// ---------------------------------------------------------------------------
+
+async function uploadLayoutGuide(base64: string, falKey: string): Promise<string> {
+  const buffer = Buffer.from(base64, "base64");
+  const res = await fetch(FAL_STORAGE_UPLOAD, {
+    method:  "POST",
+    headers: {
+      "Authorization": `Key ${falKey}`,
+      "Content-Type": "image/png",
+    },
+    body: buffer,
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`fal storage upload failed (${res.status}): ${detail}`);
+  }
+  const data = await res.json();
+  // fal storage returns { url: "https://..." }
+  const url = (data as { url?: string }).url;
+  if (!url) throw new Error("fal storage upload returned no URL");
+  return url;
 }
 
 // ---------------------------------------------------------------------------
@@ -608,8 +636,68 @@ export async function POST(req: NextRequest) {
     // Pass renderTextInAi (always false) so text-suppression negatives are always active
     const negativePrompt         = buildNegativePrompt(sceneModel.panels, renderTextInAi, hasGraphic, promptInputForAi, sceneModel);
 
+    // ── Layout-guided render (Kontext) when a layout guide is provided ──────────
+    if (controlImageBase64) {
+      let layoutGuideUrl: string;
+      try {
+        layoutGuideUrl = await uploadLayoutGuide(controlImageBase64, falKey);
+      } catch (uploadErr) {
+        // Storage upload failed — fall through to T2I rather than blocking the render
+        console.error("[generate-controlled-render] layout guide upload failed, falling back to T2I:", uploadErr);
+        layoutGuideUrl = "";
+      }
+
+      if (layoutGuideUrl) {
+        const kontextPrompt =
+          `Transform this clean structural layout guide into a professional photorealistic event photography scene. ` +
+          `Do NOT preserve the flat colors of the reference — transform it into real studio photography. ` +
+          `${ENV_CLAUSE} ` +
+          `Preserve all structure exactly as shown in the reference image: ` +
+          `panel shapes, sizes, and positions; ` +
+          `plinth height-to-diameter ratio, vertical orientation, and freestanding floor position; ` +
+          `balloon garland flow, side, and floor-reach path (the lavender/purple shapes show the balloon placement). ` +
+          `${PHYSICAL_FIDELITY_CLAUSE} ` +
+          `${BLANK_BACKDROP_CLAUSE}`;
+
+        if (process.env.NODE_ENV === "development") {
+          console.log("[generate-controlled-render] → calling flux-pro/kontext with layout guide");
+          console.log("[generate-controlled-render] layoutGuideUrl:", layoutGuideUrl);
+          console.log("[generate-controlled-render] kontextPrompt:", kontextPrompt);
+        }
+
+        const falRes = await fetch(KONTEXT_ENDPOINT, {
+          method:  "POST",
+          headers: { Authorization: `Key ${falKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt:        kontextPrompt,
+            image_url:     layoutGuideUrl,
+            image_size:    renderAspectRatio,   // dynamic from panel dimensions — preserved
+            output_format: "jpeg",
+            num_images:    1,
+            seed:          FINAL_RENDER_SEED,   // fixed seed for reproducible studio environment
+          }),
+        });
+
+        if (!falRes.ok) {
+          const detail = await falRes.text();
+          return NextResponse.json({ error: "Layout-guided render failed", detail }, { status: 502 });
+        }
+
+        const result   = await falRes.json();
+        const imageUrl = result?.images?.[0]?.url as string | undefined;
+        if (!imageUrl) return NextResponse.json({ error: "No image returned", result }, { status: 502 });
+
+        return NextResponse.json({
+          imageUrl,
+          mode:  "first_generate_layout_guided",
+          model: "fal-ai/flux-pro/kontext",
+        });
+      }
+    }
+
+    // ── Pure text-to-image fallback (no layout guide) ────────────────────────
     if (process.env.NODE_ENV === "development") {
-      console.log("[generate-controlled-render] → calling fal-ai/flux-2-pro (new fal call, no cache)");
+      console.log("[generate-controlled-render] → calling fal-ai/flux-2-pro (T2I fallback, no layout guide)");
       console.log("[generate-controlled-render] prompt:", finalPrompt);
       console.log("[generate-controlled-render] negative:", negativePrompt);
     }

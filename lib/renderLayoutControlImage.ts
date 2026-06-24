@@ -8,7 +8,7 @@
  * Client-side only — uses HTMLCanvasElement.
  */
 
-import type { BuilderConfig, BackdropShapeId } from "./config";
+import type { BuilderConfig, BackdropShapeId, BalloonStyleId } from "./config";
 import { calculateExactLayout } from "./calculateExactLayout";
 
 interface Pt { x: number; y: number }
@@ -173,6 +173,68 @@ export function renderLayoutControlImage(
     ctx.fill();
     ctx.filter = "none";
     ctx.restore();
+  }
+
+  // --- balloon path indicator ---
+  // Draw a simplified garland path so the AI can follow exact placement and flow.
+  // Uses distinct lavender color so AI distinguishes balloons from panels.
+  const balloonStyle = (config.decor as { balloonStyle?: BalloonStyleId }).balloonStyle ?? "none";
+
+  if (balloonStyle !== "none" && layout.panels.length > 0) {
+    const BALLOON_FILL   = "#C4A8D4";
+    const BALLOON_STROKE = "#A882C0";
+
+    const groupLeft  = Math.min(...layout.panels.map((p) => p.cx - p.pw / 2));
+    const groupRight = Math.max(...layout.panels.map((p) => p.cx + p.pw / 2));
+    const groupTop   = Math.min(...layout.panels.map((p) => p.apexY));
+    const floorY     = layout.floorY;
+
+    const drawBalloonCluster = (bx: number, by: number, r: number) => {
+      ctx.beginPath();
+      ctx.arc(bx, by, r, 0, Math.PI * 2);
+      ctx.fillStyle = BALLOON_FILL;
+      ctx.fill();
+      ctx.strokeStyle = BALLOON_STROKE;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    };
+
+    if (balloonStyle === "half") {
+      // Continuous half garland: top-right corner → down right side → floor cluster
+      // Slight inward curve so it hugs the panel edge naturally
+      const startX = groupRight + 18;
+      const steps  = 9;
+      for (let i = 0; i <= steps; i++) {
+        const t  = i / steps;
+        const bx = startX + Math.sin(t * Math.PI * 0.35) * 24; // gentle inward bow
+        const by = groupTop + 10 + t * (floorY - groupTop - 10);
+        const r  = i === 0 ? 26 : i === steps ? 20 : 14 + (1 - t) * 8;
+        drawBalloonCluster(bx, by, r);
+      }
+      // Explicit floor cluster to indicate garland reaches the floor
+      for (let j = -1; j <= 1; j++) {
+        drawBalloonCluster(startX + 14 + j * 20, floorY - 14, 12 + Math.abs(j) * 3);
+      }
+    } else if (balloonStyle === "full" || balloonStyle === "premium") {
+      const density = balloonStyle === "premium" ? 8 : 6;
+      const r       = balloonStyle === "premium" ? 16 : 14;
+
+      // Right side: top → floor
+      for (let i = 0; i <= density; i++) {
+        const t = i / density;
+        drawBalloonCluster(groupRight + 18, groupTop + t * (floorY - groupTop), r);
+      }
+      // Top: left edge → right edge
+      for (let i = 0; i <= density; i++) {
+        const t = i / density;
+        drawBalloonCluster(groupLeft + t * (groupRight - groupLeft), groupTop - 16, r);
+      }
+      // Left side: top → floor
+      for (let i = 0; i <= density; i++) {
+        const t = i / density;
+        drawBalloonCluster(groupLeft - 18, groupTop + t * (floorY - groupTop), r);
+      }
+    }
   }
 
   return canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
