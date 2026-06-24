@@ -98,17 +98,18 @@ const FINAL_RENDER_SEED = 42424242;
 
 // Applied whenever plinths are configured — guarantees the plinth is always rendered.
 const PLINTH_VISIBILITY_CLAUSE =
-  "[Plinth Visibility Guarantee]: Every configured plinth must be fully rendered and clearly visible. " +
-  "Do not omit, crop, hide, replace, merge, or sacrifice the plinth. " +
-  "The plinth must remain a freestanding tall slim cylindrical display column on the floor, " +
-  "fully readable as a separate object. " +
-  "It must not be hidden behind balloons, covered by balloons, merged into the backdrop, or replaced by decor.";
+  "[Plinth Visibility Guarantee]: Every configured plinth must be fully rendered and clearly visible in the final image. " +
+  "The plinth must appear as a separate freestanding tall slim white cylindrical display column on the open side of the setup, in front of the backdrop but not merged with it. " +
+  "It must be upright, vertical, and clearly taller than it is wide. " +
+  "Do not omit, crop, hide, replace, merge, flatten, widen, shorten, or sacrifice the plinth. " +
+  "It must not be hidden behind balloons, covered by balloons, merged into the backdrop, or replaced by decor. " +
+  "The plinth must remain visually separated from the balloon garland with clear empty floor space around it.";
 
 const PLINTH_GEOMETRY_LOCK_CLAUSE =
   "[Plinth Geometry Lock]: Any configured plinth must remain a tall, slim, upright cylindrical display column. " +
-  "Its height must be clearly greater than its diameter. " +
-  "It must never become a short podium, low platform, cake stand, squat cylinder, wide cylinder, flat cylinder, or disk-shaped base. " +
-  "Theme selection must not alter plinth geometry, proportions, height, diameter, or vertical orientation.";
+  "Its height must be clearly greater than its diameter, like a vertical column, not a low table. " +
+  "It must never become a short podium, low platform, cake stand, squat cylinder, wide cylinder, flat cylinder, disk-shaped base, drum table, or round stool. " +
+  "Theme selection must not alter plinth geometry, proportions, height, diameter, position, or vertical orientation.";
 
 const FROZEN_PALETTE_LOCK_CLAUSE =
   "[Frozen Palette Lock]: For the Frozen theme, the balloon installation must be dominated by icy baby blue, soft powder blue, crisp white, and metallic silver. " +
@@ -126,6 +127,12 @@ const PHYSICAL_FIDELITY_CLAUSE =
   "Preserve the exact plinth count, size, and freestanding floor position — every configured plinth must be clearly visible. " +
   "If the setup is minimal (one panel, one plinth, half garland), render it as a minimal but premium event scene, " +
   "not as a fully decorated installation.";
+
+  const BACKDROP_SIZE_LOCK_CLAUSE =
+  "[Backdrop Size Lock]: The main arch backdrop panel must preserve its configured real-world size and proportions. " +
+  "For a 100cm wide by 200cm tall arch panel, the panel must appear tall and narrow with an approximate 1:2 width-to-height ratio. " +
+  "It must not become a wide wall, oversized architectural arch, 150cm wide panel, 180cm wide panel, or wall-sized backdrop. " +
+  "The arch should read as a portable event backdrop panel, not a permanent wall feature.";
 
 const BALLOON_STYLE: Record<string, string> = {
   half:    "a controlled asymmetric half-garland attached to ONE side of the backdrop only. " +
@@ -178,7 +185,8 @@ function buildFirstGenPrompt(
 
   const plinthCount = sceneModel.plinths.length;
   const hasArch = sceneModel.panels.some((p) => p.type === "arch");
-
+  const backdropSizeLockClause = hasArch ? BACKDROP_SIZE_LOCK_CLAUSE : "";
+  
   const frozenPaletteLockClause = isFrozenTheme ? FROZEN_PALETTE_LOCK_CLAUSE : "";
   const plinthGeometryLockClause = plinthCount > 0 ? PLINTH_GEOMETRY_LOCK_CLAUSE : "";
 
@@ -296,6 +304,7 @@ function buildFirstGenPrompt(
     ISOLATION_CLAUSE,
     panelCount_str,
     scaleRefClause,
+    backdropSizeLockClause,
     balloonClause,
     frozenPaletteLockClause,
     halfGarlandContainmentClause,
@@ -434,10 +443,11 @@ function buildNegativePrompt(
     "100cm, 200cm, width labels, height labels, floor measurements";
 
   const hasArchPanel = items.some((p) => p.type === "arch");
-  const archPropNeg  = hasArchPanel
+    const archPropNeg  = hasArchPanel
     ? ", wide arch wall, oversized arch panel, 150 cm wide arch, 180 cm wide arch, " +
-      "2 meter wide arch, wall-sized backdrop, square arch, landscape arch, " +
-      "extra-wide panel, panel width similar to height, arch wider than 120 cm"
+      "2 meter wide arch, wall-sized backdrop, architectural wall arch, permanent arch wall, " +
+      "extra-wide panel, panel width similar to height, arch wider than 120 cm, " +
+      "wide rounded wall, giant arch, oversized event wall, backdrop wider than configured size"
     : "";
 
   const structureNeg =
@@ -475,8 +485,10 @@ function buildNegativePrompt(
   const plinthCountNeg = (sceneModel?.plinths?.length ?? 0) === 1
     ? ", second plinth, two plinths, duplicate plinth, extra plinth, additional cylinder, extra white cylinder"
     : "";
-  const plinthNeg = "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base, " +
-    "short round podium, cake stand, low display stand, short cylinder" + plinthCountNeg;
+    const plinthNeg = "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base, " +
+    "short round podium, cake stand, low display stand, short cylinder, low podium, " +
+    "squat cylinder, wide cylinder, flat cylinder, disk plinth, drum table, round stool, " +
+    "short round stand, wide display stand" + plinthCountNeg;
 
   // Unselected-prop negatives — block everything not in the scene config
   const extrasList  = promptInput?.extras ?? [];
