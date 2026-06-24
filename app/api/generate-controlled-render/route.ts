@@ -139,17 +139,35 @@ function buildFirstGenPrompt(
   const plinthCount = sceneModel.plinths.length;
   const hasArch = sceneModel.panels.some((p) => p.type === "arch");
 
-  const plinthClause = plinthCount === 0
-    ? "No plinths."
-    : plinthCount === 1
-      ? "Plinths: exactly one (1) narrow white cylindrical display plinth, " +
-        "realistic slim cylinder, 40 cm diameter, tall slender column, " +
-        "NOT a stage, NOT a podium, NOT a wide platform, subtle floor shadow. " +
-        "Do not add a second plinth."
-      : `Plinths: exactly ${plinthCount} narrow white cylindrical display plinths, ` +
-        "realistic slim cylinders, 40 cm diameter each, tall slender columns, " +
-        "NOT stages, NOT podiums, NOT wide platforms, subtle floor shadows. " +
-        `Do not add extra plinths beyond ${plinthCount}.`;
+  const plinthClause = (() => {
+    if (plinthCount === 0) return "No plinths.";
+
+    const plinthDescs = sceneModel.plinths.map((p) => {
+      const h = p.heightCm;
+      const d = p.diameterCm;
+      return (
+        `a tall, slim, upright cylindrical display column — ${h}cm tall, ${d}cm diameter, ` +
+        `height (${h}cm) is much greater than diameter (${d}cm), ` +
+        `vertical orientation, straight vertical sides, flat circular top, ` +
+        `freestanding on the floor, NOT a low platform, NOT a wide disk, NOT a stage, NOT a podium`
+      );
+    });
+
+    if (plinthCount === 1) {
+      return (
+        `Plinths: exactly one (1) visible white cylindrical display plinth — ${plinthDescs[0]}. ` +
+        `It must stand upright as a tall narrow column, never as a short round platform or floor disk. ` +
+        `Do not add a second plinth.`
+      );
+    }
+
+    return (
+      `Plinths: exactly ${plinthCount} visible white cylindrical display plinths. ` +
+      plinthDescs.map((d, i) => `Plinth ${i + 1}: ${d}`).join(". ") + ". " +
+      `Each must stand upright as a tall narrow column, never as a short round platform or floor disk. ` +
+      `Do not add extra plinths beyond ${plinthCount}.`
+    );
+  })();
 
   // Selected-objects whitelist — theme influences mood/color only, not physical props
   const extras        = promptInput.extras ?? [];
@@ -178,12 +196,21 @@ function buildFirstGenPrompt(
     `Clean event backdrop scene: only the configured items listed above.`;
 
   // Scale reference: helps AI understand backdrop width relative to the plinth
-  const scaleRefClause = hasArch && plinthCount > 0
-    ? `SCALE REFERENCE: the white cylindrical plinth is 40 cm diameter. ` +
-      `The arch backdrop panel is approximately 100 cm wide — about 2.5 times the plinth diameter. ` +
-      `Use this ratio to judge the correct arch panel width in the scene. ` +
-      `The arch must NOT appear wider than 2.5 plinths placed side by side. ` +
-      `The plinth is 40 cm diameter. The plinth is tall and narrow, not low or table-like.`
+  const firstPlinth = sceneModel.plinths[0];
+  const scaleRefClause = hasArch && plinthCount > 0 && firstPlinth
+    ? (() => {
+        const d = firstPlinth.diameterCm;
+        const h = firstPlinth.heightCm;
+        const ratio = Math.round(100 / d * 10) / 10;
+        return (
+          `SCALE REFERENCE: the white cylindrical plinth is ${d}cm diameter and ${h}cm tall. ` +
+          `Height (${h}cm) is much greater than diameter (${d}cm) — it is a tall, slim, upright column, ` +
+          `NOT a low disk or round platform. ` +
+          `The arch backdrop panel is approximately 100cm wide — about ${ratio} times the plinth diameter. ` +
+          `Use this ratio to judge the correct arch panel width in the scene. ` +
+          `The arch must NOT appear wider than ${ratio} plinths placed side by side.`
+        );
+      })()
     : "";
 
   // Text is now a deterministic client-side overlay — NOT rendered by AI.
@@ -429,7 +456,11 @@ function buildNegativePrompt(
   const plinthOmissionNeg = hasPlinths
     ? ", missing plinth, omitted plinth, invisible plinth, plinth disappeared, plinth hidden, " +
       "plinth blended into backdrop, plinth merged with backdrop, cropped plinth, " +
-      "removed plinth, absent foreground plinth"
+      "removed plinth, absent foreground plinth, " +
+      "plinth replaced by platform, plinth as stage, flattened plinth, widened plinth, " +
+      "short cylinder, squat cylinder, wide cylinder, horizontal cylinder, " +
+      "low round platform, short round platform, flat circular stage, circular floor platform, " +
+      "round stage, low podium, podium disk, floor disk, circular base platform"
     : "";
 
   // 4. Platform/base suppression — whenever a backdrop or plinth is configured
@@ -437,7 +468,8 @@ function buildNegativePrompt(
   const platformBaseNeg = (hasBackdrop || hasPlinths)
     ? ", stage, podium base, semicircle platform, oval platform, raised platform, " +
       "pedestal base attached to backdrop, backdrop base extension, " +
-      "platform under backdrop, fake base platform"
+      "platform under backdrop, fake base platform, stage base, platform base, " +
+      "low disk, disk on floor, round floor platform, flat round base"
     : "";
 
   const strip = (s: string) => s.replace(/^,\s*/, "").trim();
