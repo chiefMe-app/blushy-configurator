@@ -108,11 +108,13 @@ const PHYSICAL_FIDELITY_CLAUSE =
   "not as a fully decorated installation.";
 
 const BALLOON_STYLE: Record<string, string> = {
-  half:    "a controlled asymmetric half-garland: organic balloon installation that begins at ONE top corner " +
-           "and extends continuously down the SAME side all the way to the floor in one connected flow. " +
-           "The garland must NOT stop halfway — it must reach the floor. " +
-           "The lower balloon section must connect visually to the side garland with no visible gap. " +
-           "The floor cluster and the side garland are one continuous installation, not two separate elements. " +
+  half:    "a controlled asymmetric half-garland attached to ONE side of the backdrop only. " +
+           "Begins near the top corner of that side and extends continuously down the SAME side to the floor. " +
+           "Terminates in one compact cluster at the base of that same side — NOT spread across the floor, " +
+           "NOT running horizontally in front of the backdrop, NOT covering the open/opposite side. " +
+           "'Floor-reaching' means the garland ends in a compact side-base cluster only — " +
+           "it does NOT become a horizontal floor trail, a balloon carpet, or a front-of-stage installation. " +
+           "The opposite side remains completely open and clean. " +
            "Do NOT wrap around to the other side. Do NOT become a full garland or full frame. " +
            "Varied balloon sizes (large, medium, small), layered depth, glossy latex balloons",
   full:    "a full organic balloon frame around the backdrop group — both sides and top, " +
@@ -223,6 +225,17 @@ function buildFirstGenPrompt(
   // renderTextInAi = false disables all AI text clauses globally.
   const renderTextInAi = false as const;
 
+  // Half-garland containment — fires only when half garland is configured.
+  // Keeps all balloons confined to one side and plinth clearly visible on the open side.
+  const halfGarlandContainmentClause = sceneModel.balloons.style === "half"
+    ? `[Half Garland Containment]: All balloons must remain confined to the ONE configured garland side. ` +
+      `The opposite/open side of the backdrop must remain completely clean with no balloons. ` +
+      `The floor in front of the backdrop must remain clear — no balloons spreading horizontally across the floor. ` +
+      `The plinth stands on the open side and must remain fully visible — ` +
+      `no balloons must overlap, surround, cover, or obscure the plinth. ` +
+      `The plinth must be clearly separated from the balloon installation.`
+    : "";
+
   // balloonLockClause and plinthLockClause are disabled since text is overlay-only.
   // The standard balloonClause / plinthClause already describe the physical scene correctly.
   const balloonLockClause       = "";
@@ -240,6 +253,7 @@ function buildFirstGenPrompt(
     panelCount_str,
     scaleRefClause,
     balloonClause,
+    halfGarlandContainmentClause,
     plinthClause,
     // buildVisibleTextRenderClause and buildCompositionBlueprintClause removed:
     // text is overlay-only; AI should render only the physical setup.
@@ -447,7 +461,12 @@ function buildNegativePrompt(
       "garland stopping halfway, incomplete side garland, truncated garland, shortened garland, " +
       "cut-off lower garland, upper-only garland, broken garland flow, " +
       "disconnected floor balloons, separate floor balloon pile, floating balloon cluster, " +
-      "missing lower balloons, weak lower section, gap between garland and floor cluster"
+      "missing lower balloons, weak lower section, gap between garland and floor cluster, " +
+      "balloons across the floor, horizontal floor balloon trail, floor-spreading balloons, " +
+      "balloon spillover, balloon carpet, balloons across front, balloons on open side, " +
+      "full floor balloon garland, overextended floor cluster, balloons on both sides, " +
+      "balloons surrounding the plinth, balloons covering plinth, balloons hiding plinth, " +
+      "balloons behind plinth, plinth obscured by balloons"
     : "";
 
   // Text is now a client-side overlay — remove AI text visibility negatives.
@@ -466,11 +485,14 @@ function buildNegativePrompt(
   const plinthOmissionNeg = hasPlinths
     ? ", missing plinth, omitted plinth, invisible plinth, plinth disappeared, plinth hidden, " +
       "plinth blended into backdrop, plinth merged with backdrop, cropped plinth, " +
-      "removed plinth, absent foreground plinth, " +
+      "removed plinth, absent foreground plinth, no plinth, " +
       "plinth replaced by platform, plinth as stage, flattened plinth, widened plinth, " +
       "short cylinder, squat cylinder, wide cylinder, horizontal cylinder, " +
       "low round platform, short round platform, flat circular stage, circular floor platform, " +
-      "round stage, low podium, podium disk, floor disk, circular base platform"
+      "round stage, low podium, podium disk, floor disk, circular base platform, " +
+      "balloons covering plinth, balloons hiding plinth, balloons obscuring plinth, " +
+      "balloons around plinth, balloons behind plinth, plinth buried in balloons, " +
+      "plinth not visible, plinth covered by decor"
     : "";
 
   // 4. Platform/base suppression — whenever a backdrop or plinth is configured
