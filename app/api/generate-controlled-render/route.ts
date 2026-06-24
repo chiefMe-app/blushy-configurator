@@ -28,13 +28,10 @@ import { type SceneModel } from "@/lib/buildSceneModel";
 import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
 
 // first_generate (no layout guide): pure text-to-image fallback
-const FAL_T2I_ENDPOINT    = "https://fal.run/fal-ai/flux-2-pro";
+const FAL_T2I_ENDPOINT = "https://fal.run/fal-ai/flux-2-pro";
 
 // first_generate (with layout guide) + edit_existing: image-guided Kontext
-const KONTEXT_ENDPOINT    = "https://fal.run/fal-ai/flux-pro/kontext";
-
-// fal.ai storage upload — converts base64 layout guide to a URL Kontext can read
-const FAL_STORAGE_UPLOAD  = "https://fal.run/files/upload";
+const KONTEXT_ENDPOINT = "https://fal.run/fal-ai/flux-pro/kontext";
 
 export const runtime  = "nodejs";
 export const dynamic  = "force-dynamic"; // prevent Next.js from caching route responses
@@ -59,23 +56,12 @@ interface RequestBody {
 // ---------------------------------------------------------------------------
 
 async function uploadLayoutGuide(base64: string, falKey: string): Promise<string> {
+  // Use the official fal SDK — fal is already imported and configured at call site
+  fal.config({ credentials: falKey });
   const buffer = Buffer.from(base64, "base64");
-  const res = await fetch(FAL_STORAGE_UPLOAD, {
-    method:  "POST",
-    headers: {
-      "Authorization": `Key ${falKey}`,
-      "Content-Type": "image/png",
-    },
-    body: buffer,
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`fal storage upload failed (${res.status}): ${detail}`);
-  }
-  const data = await res.json();
-  // fal storage returns { url: "https://..." }
-  const url = (data as { url?: string }).url;
-  if (!url) throw new Error("fal storage upload returned no URL");
+  const blob   = new Blob([buffer], { type: "image/png" });
+  const url    = await fal.storage.upload(blob);
+  if (!url) throw new Error("fal.storage.upload returned empty URL");
   return url;
 }
 
