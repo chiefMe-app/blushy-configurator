@@ -96,6 +96,14 @@ const ISOLATION_CLAUSE =
 // fal-ai/flux-2-pro supports the seed parameter.
 const FINAL_RENDER_SEED = 42424242;
 
+// Applied whenever plinths are configured — guarantees the plinth is always rendered.
+const PLINTH_VISIBILITY_CLAUSE =
+  "[Plinth Visibility Guarantee]: Every configured plinth must be fully rendered and clearly visible. " +
+  "Do not omit, crop, hide, replace, merge, or sacrifice the plinth. " +
+  "The plinth must remain a freestanding tall slim cylindrical display column on the floor, " +
+  "fully readable as a separate object. " +
+  "It must not be hidden behind balloons, covered by balloons, merged into the backdrop, or replaced by decor.";
+
 // Active for every AI render — physical setup must be rendered exactly as configured.
 const PHYSICAL_FIDELITY_CLAUSE =
   "[Physical Setup Fidelity]: Render the exact configured setup — no creative reinterpretation, " +
@@ -244,8 +252,15 @@ function buildFirstGenPrompt(
       `The plinth must be clearly separated from the balloon installation.`
     : "";
 
+  // Plinth clear zone — fires when a half garland and at least one plinth are configured.
+  const plinthClearZoneClause = (sceneModel.balloons.style === "half" && plinthCount > 0)
+    ? `[Plinth Clear Zone]: The plinth stands on the open side of the setup and must remain isolated and unobstructed. ` +
+      `No balloons may overlap, touch, wrap around, sit directly in front of, sit behind, surround, ` +
+      `or visually cover the plinth. ` +
+      `Keep a clear floor area around the plinth so it remains fully visible as a separate object.`
+    : "";
+
   // balloonLockClause and plinthLockClause are disabled since text is overlay-only.
-  // The standard balloonClause / plinthClause already describe the physical scene correctly.
   const balloonLockClause       = "";
   const plinthLockClause        = "";
   const textSurfaceOnlyLockClause = "";
@@ -263,6 +278,8 @@ function buildFirstGenPrompt(
     balloonClause,
     halfGarlandContainmentClause,
     plinthClause,
+    plinthCount > 0 ? PLINTH_VISIBILITY_CLAUSE : "",
+    plinthClearZoneClause,
     // buildVisibleTextRenderClause and buildCompositionBlueprintClause removed:
     // text is overlay-only; AI should render only the physical setup.
     buildCompositionBlueprintClause(sceneModel, renderTextInAi),
@@ -482,7 +499,9 @@ function buildNegativePrompt(
       "balloon spillover, balloon carpet, balloons across front, balloons on open side, " +
       "full floor balloon garland, overextended floor cluster, balloons on both sides, " +
       "balloons surrounding the plinth, balloons covering plinth, balloons hiding plinth, " +
-      "balloons behind plinth, plinth obscured by balloons"
+      "balloons behind plinth, plinth obscured by balloons, " +
+      "balloons touching plinth, balloons overlapping plinth, balloons blocking plinth, " +
+      "balloons in front of plinth, balloon garland covering plinth, balloon cluster replacing plinth"
     : "";
 
   // Text is now a client-side overlay — remove AI text visibility negatives.
@@ -508,7 +527,10 @@ function buildNegativePrompt(
       "round stage, low podium, podium disk, floor disk, circular base platform, " +
       "balloons covering plinth, balloons hiding plinth, balloons obscuring plinth, " +
       "balloons around plinth, balloons behind plinth, plinth buried in balloons, " +
-      "plinth not visible, plinth covered by decor"
+      "plinth not visible, plinth covered by decor, " +
+      "partially visible plinth, plinth behind balloons, plinth merged into backdrop, " +
+      "plinth replaced by decor, plinth removed from scene, plinth sacrificed for balloons, " +
+      "plinth hidden by balloon garland"
     : "";
 
   // 4. Platform/base suppression — whenever a backdrop or plinth is configured
