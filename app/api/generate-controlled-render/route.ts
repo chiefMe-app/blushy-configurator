@@ -104,6 +104,18 @@ const PLINTH_VISIBILITY_CLAUSE =
   "fully readable as a separate object. " +
   "It must not be hidden behind balloons, covered by balloons, merged into the backdrop, or replaced by decor.";
 
+const PLINTH_GEOMETRY_LOCK_CLAUSE =
+  "[Plinth Geometry Lock]: Any configured plinth must remain a tall, slim, upright cylindrical display column. " +
+  "Its height must be clearly greater than its diameter. " +
+  "It must never become a short podium, low platform, cake stand, squat cylinder, wide cylinder, flat cylinder, or disk-shaped base. " +
+  "Theme selection must not alter plinth geometry, proportions, height, diameter, or vertical orientation.";
+
+const FROZEN_PALETTE_LOCK_CLAUSE =
+  "[Frozen Palette Lock]: For the Frozen theme, the balloon installation must be dominated by icy baby blue, soft powder blue, crisp white, and metallic silver. " +
+  "The overall feeling must be cool-toned, fresh, icy, and wintery. " +
+  "Do not shift the palette warm, creamy, beige, yellow, ivory-heavy, or champagne-dominant. " +
+  "Blue and white must remain the primary visible colors, with metallic silver as the accent.";
+
 // Active for every AI render — physical setup must be rendered exactly as configured.
 const PHYSICAL_FIDELITY_CLAUSE =
   "[Physical Setup Fidelity]: Render the exact configured setup — no creative reinterpretation, " +
@@ -146,6 +158,12 @@ function buildFirstGenPrompt(
 
   const balloonStyle   = sceneModel.balloons.style;
   const configuredBalloonColors = sceneModel.balloons.colors.slice(0, 4);
+  const promptProbe = JSON.stringify(promptInput).toLowerCase() + " " + basePrompt.toLowerCase();
+  const isFrozenTheme =
+    promptProbe.includes("frozen") ||
+    promptProbe.includes("icy blues") ||
+    promptProbe.includes("snowflake");
+
   const balloonColors  = configuredBalloonColors.length > 0
     ? `in ${configuredBalloonColors.join(", ")} tones`
     : "";
@@ -160,6 +178,9 @@ function buildFirstGenPrompt(
 
   const plinthCount = sceneModel.plinths.length;
   const hasArch = sceneModel.panels.some((p) => p.type === "arch");
+
+  const frozenPaletteLockClause = isFrozenTheme ? FROZEN_PALETTE_LOCK_CLAUSE : "";
+  const plinthGeometryLockClause = plinthCount > 0 ? PLINTH_GEOMETRY_LOCK_CLAUSE : "";
 
   const plinthClause = (() => {
     if (plinthCount === 0) return "No plinths.";
@@ -276,9 +297,11 @@ function buildFirstGenPrompt(
     panelCount_str,
     scaleRefClause,
     balloonClause,
+    frozenPaletteLockClause,
     halfGarlandContainmentClause,
     plinthClause,
     plinthCount > 0 ? PLINTH_VISIBILITY_CLAUSE : "",
+    plinthGeometryLockClause,
     plinthClearZoneClause,
     // buildVisibleTextRenderClause and buildCompositionBlueprintClause removed:
     // text is overlay-only; AI should render only the physical setup.
@@ -431,6 +454,24 @@ function buildNegativePrompt(
       "colorless balloon garland, washed-out balloon colors, faded balloon palette"
     : "";
 
+  const promptProbeForTheme = promptInput ? JSON.stringify(promptInput).toLowerCase() : "";
+  const balloonColorProbe = (sceneModel?.balloons?.colors ?? []).join(" ").toLowerCase();
+  const isFrozenTheme =
+    promptProbeForTheme.includes("frozen") ||
+    promptProbeForTheme.includes("icy blues") ||
+    promptProbeForTheme.includes("snowflake") ||
+    (balloonColorProbe.includes("blue") && balloonColorProbe.includes("silver"));
+
+  const frozenPaletteNeg = isFrozenTheme
+    ? ", warm balloons, creamy balloons, beige balloons, ivory-dominant balloons, " +
+      "champagne-dominant balloons, yellowish balloons, warm pastel drift, " +
+      "gold-dominant balloons, cream balloon garland, beige balloon garland"
+    : "";
+
+  const plinthGeometryNeg =
+    "short podium, low podium, cake stand, squat cylinder, short cylinder, wide cylinder, " +
+    "flat cylinder, disk plinth, low round platform, short round stand, wide display stand";
+
   const plinthCountNeg = (sceneModel?.plinths?.length ?? 0) === 1
     ? ", second plinth, two plinths, duplicate plinth, extra plinth, additional cylinder, extra white cylinder"
     : "";
@@ -550,7 +591,9 @@ function buildNegativePrompt(
     structureNeg,
     balloonNeg,
     balloonColorNeg,
+    frozenPaletteNeg,
     plinthNeg,
+    plinthGeometryNeg,
     propNeg,
     textNeg,
     printNeg,
