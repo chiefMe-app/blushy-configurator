@@ -562,9 +562,7 @@ export async function POST(req: NextRequest) {
     console.log("renderMode:              ", renderMode);
     console.log("force:                   ", force, force ? "→ always calls fal, no cache reuse" : "");
     console.log("currentSceneHash:        ", currentSceneHash ?? "none");
-    console.log("model:                   fal-ai/flux-2-pro (text-to-image, NO image_url)");
-    console.log("Production Preview:      NOT used as image_url");
-    console.log("controlImageBase64:      ", !!controlImageBase64, "(reserved for ControlNet)");
+    console.log("controlImageBase64:      ", !!controlImageBase64, controlImageBase64 ? `length=${controlImageBase64.length}` : "(not provided)");
     console.log("previousFinalRenderUrl:  ", previousFinalRenderUrl ?? "none");
     console.log("panelCount:              ", sceneModel.panels.length);
     console.log("plinthCount:             ", sceneModel.plinths.length);
@@ -636,15 +634,27 @@ export async function POST(req: NextRequest) {
     // Pass renderTextInAi (always false) so text-suppression negatives are always active
     const negativePrompt         = buildNegativePrompt(sceneModel.panels, renderTextInAi, hasGraphic, promptInputForAi, sceneModel);
 
+    // ── Diagnostics state — always logged and returned in response ───────────
+    const controlImageProvided = !!controlImageBase64;
+    const controlImageBase64Length = controlImageBase64?.length ?? 0;
+    let layoutGuideUploadAttempted = false;
+    let layoutGuideUploadSucceeded = false;
+    let layoutGuideUrl = "";
+    let fallbackReason: string | undefined;
+
+    console.log("[generate-controlled-render] controlImageProvided:", controlImageProvided, "length:", controlImageBase64Length);
+
     // ── Layout-guided render (Kontext) when a layout guide is provided ──────────
     if (controlImageBase64) {
-      let layoutGuideUrl: string;
+      layoutGuideUploadAttempted = true;
+      console.log("[generate-controlled-render] uploading layout guide to fal storage...");
       try {
         layoutGuideUrl = await uploadLayoutGuide(controlImageBase64, falKey);
+        layoutGuideUploadSucceeded = true;
+        console.log("[generate-controlled-render] layout guide upload succeeded:", layoutGuideUrl);
       } catch (uploadErr) {
-        // Storage upload failed — fall through to T2I rather than blocking the render
-        console.error("[generate-controlled-render] layout guide upload failed, falling back to T2I:", uploadErr);
-        layoutGuideUrl = "";
+        fallbackReason = String(uploadErr);
+        console.error("[generate-controlled-render] layout guide upload failed — falling back to T2I:", fallbackReason);
       }
 
       if (layoutGuideUrl) {
@@ -659,9 +669,8 @@ export async function POST(req: NextRequest) {
           `${PHYSICAL_FIDELITY_CLAUSE} ` +
           `${BLANK_BACKDROP_CLAUSE}`;
 
+        console.log("[generate-controlled-render] → calling flux-pro/kontext with layout guide");
         if (process.env.NODE_ENV === "development") {
-          console.log("[generate-controlled-render] → calling flux-pro/kontext with layout guide");
-          console.log("[generate-controlled-render] layoutGuideUrl:", layoutGuideUrl);
           console.log("[generate-controlled-render] kontextPrompt:", kontextPrompt);
         }
 
@@ -687,17 +696,27 @@ export async function POST(req: NextRequest) {
         const imageUrl = result?.images?.[0]?.url as string | undefined;
         if (!imageUrl) return NextResponse.json({ error: "No image returned", result }, { status: 502 });
 
+        console.log("[generate-controlled-render] layout_guided_kontext succeeded:", imageUrl);
         return NextResponse.json({
           imageUrl,
           mode:  "first_generate_layout_guided",
           model: "fal-ai/flux-pro/kontext",
+          debug: {
+            controlImageProvided,
+            controlImageBase64Length,
+            layoutGuideUploadAttempted,
+            layoutGuideUploadSucceeded,
+            layoutGuideUrl,
+            renderPath: "layout_guided_kontext" as const,
+          },
         });
       }
     }
 
-    // ── Pure text-to-image fallback (no layout guide) ────────────────────────
+    // ── Pure text-to-image fallback (no layout guide / upload failed) ─────────
+    const renderPath = controlImageProvided ? "t2i_fallback" : "pure_t2i_no_control";
+    console.log("[generate-controlled-render] → calling fal-ai/flux-2-pro, renderPath:", renderPath, fallbackReason ? `fallbackReason: ${fallbackReason}` : "");
     if (process.env.NODE_ENV === "development") {
-      console.log("[generate-controlled-render] → calling fal-ai/flux-2-pro (T2I fallback, no layout guide)");
       console.log("[generate-controlled-render] prompt:", finalPrompt);
       console.log("[generate-controlled-render] negative:", negativePrompt);
     }
@@ -728,6 +747,15 @@ export async function POST(req: NextRequest) {
       imageUrl,
       mode:  "first_generate",
       model: "fal-ai/flux-2-pro",
+      debug: {
+        controlImageProvided,
+        controlImageBase64Length,
+        layoutGuideUploadAttempted,
+        layoutGuideUploadSucceeded,
+        layoutGuideUrl:             layoutGuideUrl || undefined,
+        renderPath:                 renderPath as "t2i_fallback" | "pure_t2i_no_control",
+        fallbackReason,
+      },
     });
 
   } catch (err) {

@@ -830,6 +830,7 @@ export function useFinalRender(config: BuilderConfig) {
       });
 
       const data = await res.json().catch(() => ({}));
+      console.log("[final-render-debug]", data.debug);
       if (!res.ok || !data.imageUrl) {
         setStatus("error");
         return;
