@@ -30,9 +30,18 @@ const CANNY_ENDPOINT = `https://fal.run/${CANNY_MODEL_ID}`;
 
 // EasyControl Canny — fal-ai/flux-general with easycontrols array
 // Docs: https://fal.ai/models/fal-ai/flux-general/api
-// Field `easycontrols[].control_method_url: "canny"` is a built-in keyword, no weight path needed.
-// Field `easycontrols[].image_control_type: "spatial"` = structure/layout guidance.
 const EASYCONTROL_MODEL_ID = "fal-ai/flux-general";
+
+// Layout reference edit — fal-ai/flux-2-pro/edit
+// Docs: https://fal.ai/models/fal-ai/flux-2-pro/edit/api
+// Verified schema: image_urls (array, accepts base64 data URIs), prompt, image_size, seed, output_format
+const LAYOUT_REF_MODEL_ID = "fal-ai/flux-2-pro/edit";
+
+// Replicate Canny ControlNet model
+// Docs: https://replicate.com/black-forest-labs/flux-canny-pro
+// Endpoint: POST https://api.replicate.com/v1/models/{owner}/{name}/predictions
+const REPLICATE_MODEL_ID    = "black-forest-labs/flux-canny-pro";
+const REPLICATE_PREDICT_URL = `https://api.replicate.com/v1/models/${REPLICATE_MODEL_ID}/predictions`;
 
 const TEST_SEED      = 42424242;
 
@@ -54,19 +63,34 @@ interface TestRequestBody {
   balloonStyle:   BalloonStyleId;
   balloonColors?: string[];
   /**
-   * "svg-only"            — default, returns SVG string + layout debug (no fal call).
-   * "png-debug"           — converts SVG → PNG and returns size/mime info (no fal call).
-   * "fal-test"            — blocking raw fetch to fal REST endpoint (legacy, may time out).
-   * "fal-queue-test"      — fal.subscribe to flux-control-lora-canny, 180s max wait.
-   * "fal-easycontrol-test"— fal.subscribe to flux-general + EasyControl Canny, 120s max wait.
+   * "svg-only"                — default, returns SVG + layout debug (no generation).
+   * "png-debug"               — converts SVG → PNG, returns size/mime (no generation).
+   * "fal-test"                — blocking raw fetch to fal REST (legacy, may time out).
+   * "fal-queue-test"          — fal.subscribe flux-control-lora-canny, 180s max.
+   * "fal-easycontrol-test"    — fal.subscribe flux-general + EasyControl Canny, 120s max.
+   * "replicate-canny-dry-run" — builds Replicate payload but does NOT call API (no generation).
+   * "replicate-canny-test"    — Replicate flux-canny-pro with PNG control image, 120s max.
    */
-  mode?:          "svg-only" | "png-debug" | "fal-test" | "fal-queue-test" | "fal-easycontrol-test";
+  mode?:
+    | "svg-only"
+    | "png-debug"
+    | "fal-test"
+    | "fal-queue-test"
+    | "fal-easycontrol-test"
+    | "replicate-canny-dry-run"
+    | "replicate-canny-test"
+    | "fal-layout-reference-dry-run"
+    | "fal-layout-reference-test";
 }
 
 export async function POST(req: NextRequest) {
   if (!checkAccess(req)) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
+
+  // Top-level guard — this route must never return an uncaught 500.
+  // All branches are wrapped; this outer catch is the last safety net.
+  try {
 
   let body: TestRequestBody;
   try {
@@ -281,6 +305,176 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // ── replicate-canny-test: Replicate flux-canny-pro + PNG control image ──────
+  // ── replicate-canny-dry-run: build payload only, do NOT call Replicate ──────
+  if (mode === "replicate-canny-dry-run") {
+    const replicateKey = process.env.REPLICATE_API_TOKEN;
+    const replicateInput = {
+      prompt:
+        "Professional event photography, photorealistic studio render. " +
+        "Single tall cream-white arch backdrop, 100cm wide by 200cm tall, narrow and portrait-oriented. " +
+        "One slim freestanding white cylindrical display plinth on the open left side, " +
+        "clearly visible from base to top, tall and narrow, not a podium or cake stand. " +
+        "Organic half balloon garland on the right side only, reaching from the top corner continuously down to the floor. " +
+        "Frozen theme palette: icy blue, pale blue, white, and metallic silver latex balloons. " +
+        "Luxury minimalist indoor event studio. Soft natural light from the left. " +
+        "No text on backdrop. No people. No cake. No table. No stage. No podium. No floor balloons on the open side.",
+      control_image: pngDataUri ?? "(not available — PNG conversion failed)",
+      seed:          42424242,
+      steps:         35,
+      guidance:      25,
+      output_format: "jpg",
+    };
+    const dryRunPayloadBytes = Buffer.byteLength(JSON.stringify({ input: replicateInput }), "utf8");
+
+    return NextResponse.json({
+      ok:                    true,
+      mode:                  "replicate-canny-dry-run",
+      testId:                tId,
+      modelId:               REPLICATE_MODEL_ID,
+      predictUrl:            REPLICATE_PREDICT_URL,
+      hasReplicateKey:       !!replicateKey,
+      controlImageMime:      pngBuffer ? "image/png" : null,
+      controlImageSizeBytes: pngBuffer?.length ?? null,
+      payloadApproxSizeBytes: dryRunPayloadBytes,
+      inputKeys:             Object.keys(replicateInput),
+      promptPreview:         replicateInput.prompt.slice(0, 120) + "…",
+      controlImagePrefix:    typeof replicateInput.control_image === "string"
+        ? replicateInput.control_image.slice(0, 40)
+        : null,
+      guideVersion:          "v4-minimal-edge-map",
+      guideChanges:          [
+        "pure white background — no fills, no color signals, edge map only",
+        "arch: open-bottom outline only, no fill, no base line, no panel thickness",
+        "plinth: two faint vertical lines + prominent top ellipse + faint bottom ellipse, no fill",
+        "garland: individual overlapping circles with organic jitter, no filled blob slab",
+        "all shapes: edge strokes only, no solid fills that create slab signals",
+      ],
+      replicateSettings: { seed: 42424242, steps: 35, guidance: 18, output_format: "jpg" },
+      note:                  "Dry-run only — no Replicate call was made.",
+    });
+  }
+
+  // ── fal-layout-reference-dry-run: build payload, do NOT call fal ────────────
+  if (mode === "fal-layout-reference-dry-run") {
+    const falKey         = process.env.FAL_KEY;
+    const refPrompt      = buildLayoutRefPrompt();
+    const refPayload     = buildLayoutRefInput(pngDataUri ?? "", computedSize, refPrompt);
+    const dryRunBytes    = Buffer.byteLength(JSON.stringify({ input: refPayload }), "utf8");
+
+    return NextResponse.json({
+      ok:                     true,
+      mode:                   "fal-layout-reference-dry-run",
+      testId:                 tId,
+      modelId:                LAYOUT_REF_MODEL_ID,
+      hasFalKey:              !!falKey,
+      referenceImageMime:     pngBuffer ? "image/png" : null,
+      referenceImageSizeBytes: pngBuffer?.length ?? null,
+      payloadApproxSizeBytes: dryRunBytes,
+      promptPreview:          refPrompt.slice(0, 120) + "…",
+      referenceImagePrefix:   (pngDataUri ?? "").slice(0, 80),
+      inputKeys:              Object.keys(refPayload),
+      referenceVersion:       "clean-layout-reference-v1",
+      note:                   "Dry-run only — no fal call was made.",
+    });
+  }
+
+  // ── fal-layout-reference-test: fal-ai/flux-2-pro/edit with layout PNG ref ──
+  if (mode === "fal-layout-reference-test") {
+    const falKey = process.env.FAL_KEY;
+    if (!falKey) {
+      return NextResponse.json({
+        ok: false, mode: "fal-layout-reference-test", testId: tId,
+        modelId: LAYOUT_REF_MODEL_ID, requestId: null,
+        imageUrl: null, error: "FAL_KEY not configured", latencyMs: null,
+        hasFalKey: false,
+        referenceImageMime: pngBuffer ? "image/png" : null,
+        referenceImageSizeBytes: pngBuffer?.length ?? null,
+        payloadApproxSizeBytes,
+      }, { status: 500 });
+    }
+    if (!pngDataUri || !pngBuffer) {
+      return NextResponse.json({
+        ok: false, mode: "fal-layout-reference-test", testId: tId,
+        modelId: LAYOUT_REF_MODEL_ID, requestId: null,
+        imageUrl: null, error: `PNG required. ${pngError ?? "sharp not available."}`,
+        latencyMs: null, hasFalKey: true,
+        referenceImageMime: null, referenceImageSizeBytes: null,
+        payloadApproxSizeBytes,
+      }, { status: 500 });
+    }
+    try {
+      return await handleFalLayoutReferenceTest(
+        tId, falKey, pngDataUri, pngBuffer, computedSize,
+        payloadApproxSizeBytes, svgDebug.debug.checks,
+      );
+    } catch (fatal) {
+      const fe = fatal as Record<string, unknown>;
+      console.error("[structure-test-fal-layout-ref] fatal:", String(fatal));
+      return NextResponse.json({
+        ok: false, mode: "fal-layout-reference-test", testId: tId,
+        modelId: LAYOUT_REF_MODEL_ID, requestId: null,
+        imageUrl: null, error: `fatal: ${String(fatal)}`,
+        errorName: String(fe["name"] ?? "unknown"),
+        errorMessage: String(fe["message"] ?? String(fatal)),
+        latencyMs: null, hasFalKey: true,
+        referenceImageMime: "image/png",
+        referenceImageSizeBytes: pngBuffer.length,
+        payloadApproxSizeBytes,
+      });
+    }
+  }
+
+  if (mode === "replicate-canny-test") {
+    const replicateKey = process.env.REPLICATE_API_TOKEN;
+    if (!replicateKey) {
+      return NextResponse.json({
+        ok: false, mode: "replicate-canny-test", testId: tId,
+        modelId: REPLICATE_MODEL_ID, predictionId: null,
+        imageUrl: null, error: "REPLICATE_API_TOKEN missing",
+        latencyMs: null, hasReplicateKey: false,
+        controlImageMime: pngBuffer ? "image/png" : null,
+        controlImageSizeBytes: pngBuffer?.length ?? null,
+        payloadApproxSizeBytes,
+      }, { status: 500 });
+    }
+    if (!pngDataUri || !pngBuffer) {
+      return NextResponse.json({
+        ok: false, mode: "replicate-canny-test", testId: tId,
+        modelId: REPLICATE_MODEL_ID, predictionId: null,
+        imageUrl: null, error: `PNG required. ${pngError ?? "sharp not available."}`,
+        latencyMs: null, hasReplicateKey: true,
+        controlImageMime: null, controlImageSizeBytes: null,
+        payloadApproxSizeBytes,
+      }, { status: 500 });
+    }
+    try {
+      return await handleReplicateCannyTest(
+        tId, replicateKey, pngDataUri, pngBuffer,
+        payloadApproxSizeBytes, svgDebug.debug.checks,
+      );
+    } catch (fatal) {
+      const fe = fatal as Record<string, unknown>;
+      console.error("[structure-test-replicate-canny] fatal (call site):", String(fatal));
+      return NextResponse.json({
+        ok: false, mode: "replicate-canny-test", testId: tId,
+        modelId: REPLICATE_MODEL_ID, predictionId: null,
+        imageUrl: null,
+        error:            `fatal: ${String(fatal)}`,
+        errorName:        String(fe["name"]    ?? "unknown"),
+        errorMessage:     String(fe["message"] ?? String(fatal)),
+        errorStackFirstLines: typeof fe["stack"] === "string"
+          ? fe["stack"].split("\n").slice(0, 3).join(" | ")
+          : null,
+        hasReplicateKey:       true,
+        controlImageMime:      "image/png",
+        controlImageSizeBytes: pngBuffer.length,
+        payloadApproxSizeBytes,
+        latencyMs: null,
+      });
+    }
+  }
+
   // If we reach fal-test mode but PNG conversion failed, stop safely
   if (!pngDataUri) {
     return NextResponse.json({
@@ -457,6 +651,22 @@ export async function POST(req: NextRequest) {
     falImagesCount,
     falFirstImageKeys,
   });
+
+  } catch (topLevelErr) {
+    // Last-resort catch — returns HTTP 200 with diagnostic JSON, never 500.
+    const e = topLevelErr as Record<string, unknown>;
+    console.error("[structure-test-route] top-level fatal:", String(topLevelErr));
+    return NextResponse.json({
+      ok:                  false,
+      mode:                "unknown",
+      error:               `top-level fatal: ${String(topLevelErr)}`,
+      errorName:           String(e["name"]    ?? "unknown"),
+      errorMessage:        String(e["message"] ?? String(topLevelErr)),
+      errorStackFirstLines: typeof e["stack"] === "string"
+        ? e["stack"].split("\n").slice(0, 3).join(" | ")
+        : null,
+    });
+  }
 }
 
 // Isolated fal-queue-test handler — extracted for clarity
@@ -702,6 +912,353 @@ async function handleFalEasyControlTest(
     svgChecks,
     falResponseKeys,
     falImagesCount:         imagesArr?.length ?? 0,
+    falFirstImageKeys,
+  });
+}
+
+// ── Replicate Canny handler ───────────────────────────────────────────────────
+// Uses Replicate black-forest-labs/flux-canny-pro with PNG data URI control image.
+// Sends Prefer: wait=60 for a synchronous first response, then polls up to 120s total.
+function extractReplicateImageUrl(output: unknown): string | null {
+  if (typeof output === "string" && output.startsWith("http")) return output;
+  if (Array.isArray(output) && typeof output[0] === "string" && (output[0] as string).startsWith("http")) return output[0] as string;
+  return null;
+}
+
+async function handleReplicateCannyTest(
+  tId: string,
+  replicateKey: string,
+  controlDataUri: string,
+  pngBuffer: Buffer,
+  payloadApproxSizeBytes: number,
+  svgChecks: Record<string, unknown>,
+): Promise<NextResponse> {
+  const controlImageMime      = "image/png";
+  const controlImageSizeBytes = pngBuffer.length;
+  const maxWaitMs             = 120_000;
+  const t0                    = Date.now();
+
+  const prompt =
+    "Wide full-body professional event photography, entire setup fully visible, nothing cropped. " +
+    "Premium indoor children's birthday event, luxury minimalist studio with soft warm directional lighting. " +
+    "Single tall narrow cream-white rounded arch backdrop, seamless smooth matte surface standing freely, " +
+    "no visible outline or border on the arch, no black edge, no rectangular wall shape, no extra side panel, no extra slab. " +
+    "One slim freestanding white cylindrical display column on the open left side, " +
+    "fully visible from polished floor to rounded top, top circular, height much greater than diameter, " +
+    "not a box, not a flat block, not a podium, not a cake stand, not a stage base. " +
+    "Organic half balloon garland made of individual round latex balloons on the right side only, " +
+    "in front of the arch, fully visible within frame, cascading from top-right corner down the right side to the floor. " +
+    "Frozen theme palette: icy blue, pale blue, white, metallic silver latex balloons. " +
+    "No base platform. No stage. No podium. No floor riser. No rectangular plinth. No extra side wall or slab. " +
+    "No text. No people. No cake. No table.";
+
+  const input = {
+    prompt,
+    control_image: controlDataUri,
+    seed:          42424242,
+    steps:         35,
+    guidance:      18,
+    output_format: "jpg",
+  };
+
+  console.log("[structure-test-replicate-canny] start — model:", REPLICATE_MODEL_ID);
+  console.log("[structure-test-replicate-canny] controlImageSizeBytes:", controlImageSizeBytes);
+  console.log("[structure-test-replicate-canny] payloadApproxSizeBytes:", payloadApproxSizeBytes);
+  console.log("[structure-test-replicate-canny] hasReplicateKey: true");
+
+  let predictionId: string | null   = null;
+  let finalStatus:  string | null   = null;
+  let rawOutput:    unknown         = null;
+  let replicateError: string | null = null;
+  let rawResponseKeys: string[]     = [];
+  let replicateStatus: number | null    = null;
+  let replicateStatusText: string | null = null;
+  let replicateErrorBody: string | null  = null;
+
+  // Outer guard — ensures handleReplicateCannyTest never propagates an uncaught rejection
+  try {
+
+  try {
+    // Step 1: create prediction — Prefer: wait=60 (safe Replicate synchronous limit)
+    console.log("[structure-test-replicate-canny] predictUrl:", REPLICATE_PREDICT_URL);
+    const createRes  = await fetch(REPLICATE_PREDICT_URL, {
+      method:  "POST",
+      headers: {
+        "Authorization": `Bearer ${replicateKey}`,
+        "Content-Type":  "application/json",
+        "Prefer":        "wait=60",
+      },
+      body:   JSON.stringify({ input }),
+      signal: AbortSignal.timeout(65_000),
+    });
+
+    const createBody = await createRes.json() as Record<string, unknown>;
+    rawResponseKeys  = Object.keys(createBody);
+    predictionId     = createBody["id"]     as string | null ?? null;
+    finalStatus      = createBody["status"] as string | null ?? null;
+    rawOutput        = createBody["output"] ?? null;
+
+    console.log("[structure-test-replicate-canny] create HTTP:", createRes.status, "prediction status:", finalStatus);
+
+    if (!createRes.ok) {
+      replicateStatus     = createRes.status;
+      replicateStatusText = createRes.statusText;
+      replicateErrorBody  = JSON.stringify(createBody).slice(0, 500);
+      replicateError = `Replicate API ${createRes.status} ${createRes.statusText}`;
+      console.error("[structure-test-replicate-canny] create failed:", replicateStatus, replicateErrorBody);
+
+    } else if (finalStatus === "succeeded") {
+      console.log("[structure-test-replicate-canny] succeeded immediately. imageUrl:", extractReplicateImageUrl(rawOutput) ?? "null");
+
+    } else if (finalStatus === "failed" || finalStatus === "canceled") {
+      replicateError = `prediction ${finalStatus}: ${String(createBody["error"] ?? "unknown")}`;
+      console.error("[structure-test-replicate-canny] terminal:", replicateError);
+
+    } else if (predictionId) {
+      // Step 2: poll until terminal or 120s total timeout
+      console.log("[structure-test-replicate-canny] polling predictionId:", predictionId, "current status:", finalStatus);
+      while (true) {
+        const elapsed = Date.now() - t0;
+        if (elapsed >= maxWaitMs) {
+          replicateError = `timed out after ${maxWaitMs / 1000}s (last status: ${finalStatus})`;
+          console.warn("[structure-test-replicate-canny] timeout. elapsed:", elapsed);
+          break;
+        }
+        await new Promise<void>((r) => setTimeout(r, 2500));
+
+        const pollRes  = await fetch(
+          `https://api.replicate.com/v1/predictions/${predictionId}`,
+          { headers: { "Authorization": `Bearer ${replicateKey}` }, signal: AbortSignal.timeout(10_000) },
+        );
+        const pollBody = await pollRes.json() as Record<string, unknown>;
+        finalStatus    = pollBody["status"] as string | null ?? finalStatus;
+        rawOutput      = pollBody["output"] ?? rawOutput;
+
+        console.log("[structure-test-replicate-canny] poll status:", finalStatus, "elapsed:", Date.now() - t0, "ms");
+
+        if (finalStatus === "succeeded") {
+          console.log("[structure-test-replicate-canny] succeeded. imageUrl:", extractReplicateImageUrl(rawOutput) ?? "null");
+          break;
+        } else if (finalStatus === "failed" || finalStatus === "canceled") {
+          replicateError = `prediction ${finalStatus}: ${String(pollBody["error"] ?? "unknown")}`;
+          console.error("[structure-test-replicate-canny] terminal:", replicateError);
+          break;
+        }
+      }
+    }
+  } catch (innerErr) {
+    replicateError = String(innerErr);
+    console.error("[structure-test-replicate-canny] error:", replicateError);
+  }
+
+  // Outer catch — captures any exception that escaped the inner block
+  } catch (fatal) {
+    const fe = fatal as Record<string, unknown>;
+    const latencyMsFatal = Date.now() - t0;
+    console.error("[structure-test-replicate-canny] fatal:", String(fatal));
+    return NextResponse.json({
+      ok:                    false,
+      mode:                  "replicate-canny-test",
+      testId:                tId,
+      modelId:               REPLICATE_MODEL_ID,
+      predictionId,
+      imageUrl:              null,
+      error:                 `fatal: ${String(fatal)}`,
+      errorName:             String(fe["name"]    ?? "unknown"),
+      errorMessage:          String(fe["message"] ?? String(fatal)),
+      errorStackFirstLines:  typeof fe["stack"] === "string"
+        ? fe["stack"].split("\n").slice(0, 3).join(" | ")
+        : null,
+      latencyMs:             latencyMsFatal,
+      hasReplicateKey:       true,
+      controlImageMime,
+      controlImageSizeBytes,
+      payloadApproxSizeBytes,
+      replicateResponseKeys: rawResponseKeys,
+      replicateOutputType:   "unknown",
+      svgChecks,
+    });
+  }
+
+  const imageUrl            = extractReplicateImageUrl(rawOutput);
+  const latencyMs           = Date.now() - t0;
+  const replicateOutputType = rawOutput === null ? "null" : Array.isArray(rawOutput) ? "array" : typeof rawOutput;
+
+  if (!imageUrl && !replicateError && finalStatus === "succeeded") {
+    replicateError = "prediction succeeded but no image URL found in output";
+    console.warn("[structure-test-replicate-canny] no imageUrl. raw output:", JSON.stringify(rawOutput).slice(0, 200));
+  }
+
+  console.log("[structure-test-replicate-canny] done. latencyMs:", latencyMs, "imageUrl:", imageUrl ?? "null");
+
+  return NextResponse.json({
+    ok:                    imageUrl !== null,
+    mode:                  "replicate-canny-test",
+    testId:                tId,
+    modelId:               REPLICATE_MODEL_ID,
+    predictionId,
+    status:                finalStatus,
+    imageUrl,
+    output:                rawOutput,
+    error:                 replicateError,
+    errorName:             null,
+    errorMessage:          null,
+    errorStackFirstLines:  null,
+    latencyMs,
+    controlImageMime,
+    controlImageSizeBytes,
+    payloadApproxSizeBytes,
+    hasReplicateKey:       true,
+    replicateStatus,
+    replicateStatusText,
+    replicateErrorBody,
+    replicateResponseKeys: rawResponseKeys,
+    replicateOutputType,
+    svgChecks,
+  });
+}
+
+// ── fal-layout-reference helpers ─────────────────────────────────────────────
+
+function buildLayoutRefPrompt(): string {
+  return (
+    "Transform this clean layout reference into a premium photorealistic indoor children's birthday event setup. " +
+    "Preserve the exact arch position and tall rounded-arch proportions. " +
+    "Preserve the exact plinth position on the open left side — render it as one slim freestanding white cylindrical display column, " +
+    "fully visible from base to rounded top, height much greater than diameter. " +
+    "Render the right-side organic half balloon garland with full dense volume, " +
+    "individual latex balloons cascading from the top corner to the floor. " +
+    "Full setup visible, nothing cropped. " +
+    "Frozen palette: icy blue, white, pearl/silver latex balloons. " +
+    "Premium realistic event photography, soft natural studio lighting, luxury indoor venue, polished floor, " +
+    "cream-white matte seamless arch backdrop. " +
+    "No text on backdrop. No people. No cake. No table. No stage. No podium. No base platform. " +
+    "No extra side panel. No extra wall. No rectangular box plinth. No black outline around arch."
+  );
+}
+
+function buildLayoutRefInput(
+  pngDataUri: string,
+  imageSize: string,
+  prompt: string,
+): Record<string, unknown> {
+  return {
+    prompt,
+    image_urls:     [pngDataUri],
+    image_size:     imageSize,
+    seed:           42424242,
+    output_format:  "jpeg",
+  };
+}
+
+async function handleFalLayoutReferenceTest(
+  tId: string,
+  falKey: string,
+  pngDataUri: string,
+  pngBuffer: Buffer,
+  computedSize: string,
+  payloadApproxSizeBytes: number,
+  svgChecks: Record<string, unknown>,
+): Promise<NextResponse> {
+  const referenceImageMime      = "image/png";
+  const referenceImageSizeBytes = pngBuffer.length;
+  const maxWaitMs               = 120_000;
+  const refPrompt               = buildLayoutRefPrompt();
+  const promptPreview           = refPrompt.slice(0, 120) + "…";
+
+  fal.config({ credentials: falKey });
+
+  const queueStatusHistory: string[] = [];
+  const t0                           = Date.now();
+  const abortController              = new AbortController();
+  const timeoutHandle                = setTimeout(() => abortController.abort(), maxWaitMs);
+
+  let requestId: string | null  = null;
+  let imageUrl:  string | null  = null;
+  let queueError: string | null = null;
+  let rawData:   unknown        = null;
+
+  console.log("[structure-test-fal-layout-ref] start — model:", LAYOUT_REF_MODEL_ID);
+  console.log("[structure-test-fal-layout-ref] referenceImageSizeBytes:", referenceImageSizeBytes);
+  console.log("[structure-test-fal-layout-ref] payloadApproxSizeBytes:", payloadApproxSizeBytes);
+  console.log("[structure-test-fal-layout-ref] imageSize:", computedSize);
+
+  try {
+    const refInput = buildLayoutRefInput(pngDataUri, computedSize, refPrompt);
+
+    const falResult = await fal.subscribe(LAYOUT_REF_MODEL_ID, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      input: refInput as any,
+      logs:  true,
+      abortSignal: abortController.signal,
+      onQueueUpdate: (status) => {
+        const ts    = new Date().toISOString();
+        const pos   = status.status === "IN_QUEUE" ? ` queue_pos=${status.queue_position}` : "";
+        const entry = `[${ts}] ${status.status}${pos}`;
+        queueStatusHistory.push(entry);
+        console.log("[structure-test-fal-layout-ref]", entry);
+        if (!requestId && status.request_id) {
+          requestId = status.request_id;
+          console.log("[structure-test-fal-layout-ref] requestId:", requestId);
+        }
+      },
+    });
+
+    requestId = falResult.requestId ?? requestId;
+    rawData   = falResult.data;
+
+    const d         = falResult.data as Record<string, unknown>;
+    const imagesArr = Array.isArray(d?.["images"]) ? (d["images"] as Record<string, unknown>[]) : null;
+    imageUrl =
+      (imagesArr?.[0]?.["url"] as string | undefined) ??
+      ((d?.["image"] as Record<string, unknown> | undefined)?.["url"] as string | undefined) ??
+      (d?.["url"] as string | undefined) ??
+      null;
+
+    if (!imageUrl) {
+      queueError = "fal returned no image url";
+      console.warn("[structure-test-fal-layout-ref] no imageUrl. response keys:", Object.keys(d ?? {}));
+    } else {
+      console.log("[structure-test-fal-layout-ref] imageUrl:", imageUrl);
+    }
+  } catch (err) {
+    const isTimeout = abortController.signal.aborted;
+    queueError = isTimeout
+      ? `fal layout-ref timed out after ${maxWaitMs / 1000}s`
+      : String(err);
+    console.error("[structure-test-fal-layout-ref] error:", queueError);
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
+
+  const latencyMs = Date.now() - t0;
+  console.log("[structure-test-fal-layout-ref] done. latencyMs:", latencyMs, "imageUrl:", imageUrl ?? "null");
+
+  const d               = rawData as Record<string, unknown> | null;
+  const falResponseKeys = d ? Object.keys(d) : [];
+  const imagesArr       = Array.isArray(d?.["images"]) ? (d!["images"] as unknown[]) : null;
+  const firstImage      = imagesArr?.[0] as Record<string, unknown> | undefined;
+  const falFirstImageKeys = firstImage ? Object.keys(firstImage) : [];
+
+  return NextResponse.json({
+    ok:                      imageUrl !== null,
+    mode:                    "fal-layout-reference-test",
+    testId:                  tId,
+    modelId:                 LAYOUT_REF_MODEL_ID,
+    requestId,
+    imageUrl,
+    error:                   queueError,
+    latencyMs,
+    queueStatusHistory,
+    referenceImageMime,
+    referenceImageSizeBytes,
+    payloadApproxSizeBytes,
+    hasFalKey:               true,
+    promptPreview,
+    referenceVersion:        "clean-layout-reference-v1",
+    svgChecks,
+    falResponseKeys,
+    falImagesCount:          imagesArr?.length ?? 0,
     falFirstImageKeys,
   });
 }

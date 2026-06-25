@@ -49,14 +49,17 @@ function panelPathOrShape(
   const left  = cx - r;
   const right = cx + r;
 
+  // Very light grey stroke only — avoid any hard outline that Canny reads as a structural border
+  const stroke = `stroke="rgba(150,150,150,0.14)" stroke-width="1"`;
+
   if (shape === "round") {
     const centerY = apexY + r;
-    return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="#F0ECE8" stroke="rgba(0,0,0,0.20)" stroke-width="2"/>`;
+    return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="#F0ECE8" ${stroke}/>`;
   }
 
   if (shape === "rect" || shape === "shimmer_wall") {
     const h = floorY - apexY;
-    return `<rect x="${left}" y="${apexY}" width="${pw}" height="${h}" fill="#F0ECE8" stroke="rgba(0,0,0,0.20)" stroke-width="2"/>`;
+    return `<rect x="${left}" y="${apexY}" width="${pw}" height="${h}" fill="#F0ECE8" ${stroke}/>`;
   }
 
   if (shape === "wavy") {
@@ -72,10 +75,10 @@ function panelPathOrShape(
       pts.push(`Q ${x1.toFixed(1)},${y1.toFixed(1)} ${x2.toFixed(1)},${(topY + amp).toFixed(1)}`);
     }
     pts.push(`L ${right},${floorY}`, "Z");
-    return `<path d="${pts.join(" ")}" fill="#F0ECE8" stroke="rgba(0,0,0,0.20)" stroke-width="2"/>`;
+    return `<path d="${pts.join(" ")}" fill="#F0ECE8" ${stroke}/>`;
   }
 
-  // arch / default — the most important case: 100×200cm → r = pw/2, springY = apexY + r
+  // arch — the most important case for Canny structure guidance
   const springY = apexY + r;
   const d = [
     `M ${left},${floorY}`,
@@ -84,21 +87,96 @@ function panelPathOrShape(
     `L ${right},${floorY}`,
     "Z",
   ].join(" ");
-  return `<path d="${d}" fill="#F0ECE8" stroke="rgba(0,0,0,0.20)" stroke-width="2"/>`;
+  return `<path d="${d}" fill="#F0ECE8" ${stroke}/>`;
 }
 
-function plinthRect(cx: number, bottomY: number, heightPx: number, diameterPx: number): string {
-  // Enforce visual height:width ≥ 2.8 so it never reads as a squat podium or cake stand.
-  const visualWidth = Math.min(diameterPx, Math.round(heightPx / 2.8));
-  const rx   = visualWidth / 2;
-  const topY = bottomY - heightPx;
+// v3: Cylindrical plinth — top ellipse is the dominant Canny cue.
+// Side body edges are barely visible (not rectangular-box signal).
+// No floor platform, no podium base — just the slim column and its top.
+function plinthCylinder(cx: number, bottomY: number, heightPx: number, diameterPx: number): string {
+  // Enforce ≥ 3:1 — slim column, not podium
+  const visualWidth = Math.min(diameterPx, Math.round(heightPx / 3.0));
+  const rx    = visualWidth / 2;
+  // Prominent top ellipse: ry = rx * 0.45 is clearly elliptical and unambiguous
+  const ryTop = Math.max(3, Math.round(rx * 0.45));
+  const topY  = bottomY - heightPx;
   return [
-    // floor shadow
-    `<ellipse cx="${cx}" cy="${bottomY + 3}" rx="${(rx * 0.9).toFixed(1)}" ry="${(rx * 0.18).toFixed(1)}" fill="rgba(0,0,0,0.13)"/>`,
-    // body — drawn as a rectangle, unambiguously a tall column
-    `<rect x="${cx - rx}" y="${topY}" width="${visualWidth}" height="${heightPx}" fill="#FFFFFF" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>`,
-    // top cap line
-    `<line x1="${cx - rx}" y1="${topY}" x2="${cx + rx}" y2="${topY}" stroke="rgba(0,0,0,0.28)" stroke-width="2"/>`,
+    // Cylinder body — near-invisible side edges so Canny sees the top/bottom ellipses, not a box
+    `<rect x="${cx - rx}" y="${topY}" width="${visualWidth}" height="${heightPx}" fill="#FDFCFB" stroke="rgba(150,150,150,0.12)" stroke-width="0.5"/>`,
+    // Bottom cap ellipse — subtle, indicates curved base not a flat floor block
+    `<ellipse cx="${cx}" cy="${bottomY}" rx="${rx}" ry="${ryTop}" fill="rgba(235,232,228,0.70)" stroke="rgba(140,140,140,0.14)" stroke-width="0.5"/>`,
+    // Top cap ellipse — the primary cylinder cue; make it clearly visible
+    `<ellipse cx="${cx}" cy="${topY}" rx="${rx}" ry="${ryTop}" fill="#F5F3F0" stroke="rgba(130,130,130,0.30)" stroke-width="1"/>`,
+  ].join("\n    ");
+}
+
+// ---------------------------------------------------------------------------
+// v4: Pure edge/line guide functions — no fills, no slabs, no floor lines
+// ---------------------------------------------------------------------------
+
+// Arch outline only — no fill, no base line, no panel thickness.
+// Open-bottom path: Canny sees only the arch top curve and two side lines.
+function panelEdgeOnly(
+  cx: number, pw: number, apexY: number, floorY: number,
+  shape: BackdropShapeId,
+): string {
+  const r     = pw / 2;
+  const left  = cx - r;
+  const right = cx + r;
+  const edgeStroke = `fill="none" stroke="rgba(95,95,95,0.45)" stroke-width="2" stroke-linecap="round"`;
+
+  if (shape === "round") {
+    const centerY = apexY + r;
+    return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="none" stroke="rgba(95,95,95,0.42)" stroke-width="2"/>`;
+  }
+  if (shape === "rect" || shape === "shimmer_wall") {
+    // Three sides only (no bottom) so there's no horizontal base-line signal
+    const d = `M ${left},${floorY} L ${left},${apexY} L ${right},${apexY} L ${right},${floorY}`;
+    return `<path d="${d}" ${edgeStroke}/>`;
+  }
+  if (shape === "wavy") {
+    const amp = pw * 0.08;
+    const segs = 3;
+    const segW = pw / segs;
+    const topY = apexY + amp;
+    const pts = [`M ${left},${floorY}`, `L ${left},${topY + amp}`];
+    for (let i = 0; i < segs; i++) {
+      const x1 = left + (i + 0.5) * segW;
+      const x2 = Math.min(left + (i + 1) * segW, right);
+      const y1 = i % 2 === 0 ? topY - amp : topY + amp * 2;
+      pts.push(`Q ${x1.toFixed(1)},${y1.toFixed(1)} ${x2.toFixed(1)},${(topY + amp).toFixed(1)}`);
+    }
+    pts.push(`L ${right},${floorY}`); // open bottom
+    return `<path d="${pts.join(" ")}" ${edgeStroke}/>`;
+  }
+  // arch — open-bottom outline: two side lines + top arc, no horizontal base
+  const springY = apexY + r;
+  const d = [
+    `M ${left},${floorY}`,
+    `L ${left},${springY}`,
+    `A ${r},${r} 0 0 1 ${right},${springY}`,
+    `L ${right},${floorY}`,
+  ].join(" ");
+  return `<path d="${d}" ${edgeStroke}/>`;
+}
+
+// Cylindrical plinth edge guide — two vertical lines + top and bottom ellipses.
+// No rectangular fill, no block, no base platform.
+function plinthEdge(cx: number, bottomY: number, heightPx: number, diameterPx: number): string {
+  const visualWidth = Math.min(diameterPx, Math.round(heightPx / 3.0));
+  const rx    = visualWidth / 2;
+  const ryTop = Math.max(3, Math.round(rx * 0.45));
+  const topY  = bottomY - heightPx;
+
+  return [
+    // Left vertical edge — very faint
+    `<line x1="${cx - rx}" y1="${topY}" x2="${cx - rx}" y2="${bottomY}" stroke="rgba(90,90,90,0.22)" stroke-width="0.8"/>`,
+    // Right vertical edge — very faint
+    `<line x1="${cx + rx}" y1="${topY}" x2="${cx + rx}" y2="${bottomY}" stroke="rgba(90,90,90,0.22)" stroke-width="0.8"/>`,
+    // Bottom ellipse — subtle, faint
+    `<ellipse cx="${cx}" cy="${bottomY}" rx="${rx}" ry="${ryTop}" fill="none" stroke="rgba(90,90,90,0.20)" stroke-width="0.8"/>`,
+    // Top ellipse — primary cylinder cue, clearly visible
+    `<ellipse cx="${cx}" cy="${topY}" rx="${rx}" ry="${ryTop}" fill="none" stroke="rgba(80,80,80,0.48)" stroke-width="1.6"/>`,
   ].join("\n    ");
 }
 
@@ -121,35 +199,39 @@ export function generateStructureSilhouette(
     ? balloonColors.slice(0, 4)
     : ["#C8D8E8", "#E8EEF4", "#B0C8DC"];
 
-  const lines: string[] = [];
+  // Zoomed-out composition: scale the scene to 80% of the canvas to create margins
+  // on all sides. This ensures the full arch, plinth, and garland are fully visible
+  // with no cropping, matching the wider camera angle requested in the Replicate prompt.
+  const SCALE  = 0.80;
+  const marginX = Math.round(W * (1 - SCALE) / 2);
+  const marginY = Math.round(H * (1 - SCALE) / 2);
 
-  // Background
-  lines.push(`<rect width="${W}" height="${H}" fill="#D8D4D0"/>`);
+  // bg: full-canvas background only (not scaled)
+  const bgLines: string[] = [];
+  // content: everything else — scaled and centered
+  const content: string[] = [];
 
-  // Floor area
-  lines.push(`<rect x="0" y="${layout.floorY}" width="${W}" height="${H - layout.floorY}" fill="#C4C0BC"/>`);
-  lines.push(`<line x1="0" y1="${layout.floorY}" x2="${W}" y2="${layout.floorY}" stroke="#A8A4A0" stroke-width="2"/>`);
+  // v4: pure white background — no fills, no color signals, edge map only
+  bgLines.push(`<rect width="${W}" height="${H}" fill="#FFFFFF"/>`);
 
-  // Backdrop panels (tallest first via zOrder)
+  // v4: Arch outline only — no fill, no base line, no panel thickness
   const sorted = [...layout.panels].sort((a, b) => a.zOrder - b.zOrder);
   for (const panel of sorted) {
     const item  = backdropItems[panel.idx];
     const shape = (item?.type ?? "arch") as BackdropShapeId;
-    lines.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape));
+    content.push(panelEdgeOnly(panel.cx, panel.pw, panel.apexY, panel.floorY, shape));
   }
 
-  // Plinths — tall narrow rectangles, placed on the open side when half garland is configured.
+  // v4: Cylindrical plinth edge guide — no fill, no block
   for (const p of layout.plinths) {
-    // When a half garland runs down the right side, shift the plinth to the open left zone
-    // so it is clearly separated from the garland in the silhouette.
     const plinthCx = balloonStyle === "half"
-      ? Math.round(W * 0.28)
+      ? Math.round(W * 0.28)   // open left side, away from right-side garland
       : p.cx;
-    lines.push(plinthRect(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
+    content.push(plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
   }
 
-  // Balloon garland — drawn as one continuous organic filled blob, not separate circles.
-  // Canny/ControlNet reads this as a single mass rather than a bead chain.
+  // v4: Individual balloon circles — no filled blob, organic circles follow right-side path.
+  // Avoids vertical slab boundary that the filled blob created.
   if (balloonStyle !== "none" && layout.panels.length > 0) {
     const groupRight = Math.max(...layout.panels.map((p) => p.cx + p.pw / 2));
     const groupLeft  = Math.min(...layout.panels.map((p) => p.cx - p.pw / 2));
@@ -159,79 +241,61 @@ export function generateStructureSilhouette(
     const primary    = colors[0];
     const secondary  = colors[1] ?? colors[0];
 
+    // Individual balloon circles along the configured path — no blobs, no slabs
+    const balloonStroke = `stroke="rgba(85,85,85,0.30)" stroke-width="1"`;
+    const balloonFill   = `fill="rgba(200,218,235,0.08)"`;
+
     if (balloonStyle === "half") {
-      // Garland anchored to the right side of the panel group.
-      // ax = inner (left) edge of garland = right edge of panels.
-      // gw = horizontal width of the garland mass.
-      const ax = groupRight;
-      const gw = W * 0.14;
+      // Right-side half garland: circles from top-right corner to floor
+      // Positioned outside the panel right edge with organic jitter
+      const outerOffset = Math.round(W * 0.055);
+      const numBalloons = 22;
 
-      // Single closed path: outer right edge curves organically from top to floor,
-      // inner left edge follows the panel side, base widens into a compact floor cluster.
-      const d = [
-        // Start: top inner corner (panel right edge, panel top)
-        `M ${ax},${groupTop}`,
-        // Top burst: sweeps out to the right
-        `Q ${ax + gw * 0.55},${groupTop - H * 0.008}  ${ax + gw * 0.95},${groupTop + dy * 0.13}`,
-        // Upper mid: slight inward as it flows down
-        `Q ${ax + gw * 0.88},${groupTop + dy * 0.28}  ${ax + gw * 0.72},${groupTop + dy * 0.46}`,
-        // Lower mid: stays roughly same width, slight outward bow
-        `Q ${ax + gw * 0.70},${groupTop + dy * 0.62}  ${ax + gw * 0.76},${groupTop + dy * 0.76}`,
-        // Approach to floor: curves into base cluster
-        `Q ${ax + gw * 0.88},${floorY - H * 0.03}  ${ax + gw * 0.78},${floorY}`,
-        // Floor base: compact same-side cluster, does NOT extend far left
-        `L ${ax - gw * 0.04},${floorY}`,
-        // Inner edge: back up along the panel right side
-        `Q ${ax},${floorY - dy * 0.12}  ${ax},${groupTop + dy * 0.3}`,
-        `Q ${ax},${groupTop + dy * 0.08}  ${ax},${groupTop}`,
-        `Z`,
-      ].join(" ");
-
-      // Soft blur shadow for organic depth
-      lines.push(`<defs><filter id="gBlur"><feGaussianBlur stdDeviation="5"/></filter></defs>`);
-      lines.push(`<path d="${d}" fill="${primary}" opacity="0.22" filter="url(#gBlur)"/>`);
-      // Main garland silhouette — one solid readable mass
-      lines.push(`<path d="${d}" fill="${primary}" opacity="0.88"/>`);
-      // Soft internal color hints (no stroke) — suggests color variation without beads
-      lines.push(`<ellipse cx="${(ax + gw*0.5).toFixed(1)}" cy="${(groupTop + dy*0.18).toFixed(1)}" rx="${(gw*0.32).toFixed(1)}" ry="${(dy*0.10).toFixed(1)}" fill="${secondary}" opacity="0.35"/>`);
-      lines.push(`<ellipse cx="${(ax + gw*0.48).toFixed(1)}" cy="${(groupTop + dy*0.52).toFixed(1)}" rx="${(gw*0.26).toFixed(1)}" ry="${(dy*0.09).toFixed(1)}" fill="${secondary}" opacity="0.28"/>`);
+      for (let i = 0; i < numBalloons; i++) {
+        const t   = i / (numBalloons - 1);
+        // Sine-wave horizontal jitter — avoids straight vertical line of circles
+        const jx  = Math.sin(t * Math.PI * 2.1 + 0.4) * Math.round(W * 0.022);
+        // Smaller vertical jitter for organic overlap
+        const jy  = (((i * 11) % 28) - 14);
+        const bx  = groupRight + outerOffset + jx;
+        const by  = groupTop + t * dy + jy;
+        // Varied radii: large cluster at top, varied in middle, compact at floor
+        const r   = i < 3 ? 20 + ((i * 5) % 7) : i > numBalloons - 4 ? 16 + ((i * 3) % 6) : 12 + ((i * 7) % 9);
+        content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonFill} ${balloonStroke}/>`);
+      }
 
     } else if (balloonStyle === "full" || balloonStyle === "premium") {
-      const gw = W * (balloonStyle === "premium" ? 0.12 : 0.10);
+      const numPerSide = balloonStyle === "premium" ? 14 : 10;
+      const offset     = Math.round(W * 0.05);
 
-      // Right side blob
-      const makeStrip = (edgeX: number, dir: 1 | -1): string => {
-        const ox = dir * gw;
-        const d = [
-          `M ${edgeX},${groupTop}`,
-          `Q ${edgeX + ox * 0.9},${groupTop + dy * 0.1}  ${edgeX + ox},${groupTop + dy * 0.35}`,
-          `Q ${edgeX + ox},${groupTop + dy * 0.65}  ${edgeX + ox * 0.85},${floorY}`,
-          `L ${edgeX},${floorY}`,
-          `Q ${edgeX},${groupTop + dy * 0.5}  ${edgeX},${groupTop}`,
-          `Z`,
-        ].join(" ");
-        return `<path d="${d}" fill="${primary}" opacity="0.85"/>`;
+      const drawSide = (edgeX: number, dir: 1 | -1) => {
+        for (let i = 0; i < numPerSide; i++) {
+          const t  = i / (numPerSide - 1);
+          const bx = edgeX + dir * (offset + (((i * 5) % 14)));
+          const by = groupTop + t * dy;
+          const r  = 12 + ((i * 7) % 9);
+          content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonFill} ${balloonStroke}/>`);
+        }
       };
-      // Top arc blob
-      const topArcD = [
-        `M ${groupLeft},${groupTop}`,
-        `Q ${groupLeft + (groupRight-groupLeft)*0.5},${groupTop - gw * 0.9}  ${groupRight},${groupTop}`,
-        `Q ${groupRight},${groupTop + gw * 0.3}  ${groupRight - gw * 0.3},${groupTop + gw * 0.4}`,
-        `Q ${groupLeft + (groupRight-groupLeft)*0.5},${groupTop - gw * 0.2}  ${groupLeft + gw * 0.3},${groupTop + gw * 0.4}`,
-        `Q ${groupLeft},${groupTop + gw * 0.3}  ${groupLeft},${groupTop}`,
-        `Z`,
-      ].join(" ");
-
-      lines.push(`<defs><filter id="gBlur"><feGaussianBlur stdDeviation="5"/></filter></defs>`);
-      lines.push(makeStrip(groupRight,  1));
-      lines.push(makeStrip(groupLeft,  -1));
-      lines.push(`<path d="${topArcD}" fill="${primary}" opacity="0.85"/>`);
+      drawSide(groupRight,  1);
+      drawSide(groupLeft,  -1);
+      // Top arc circles
+      for (let i = 0; i < numPerSide; i++) {
+        const t  = i / (numPerSide - 1);
+        const bx = groupLeft + t * (groupRight - groupLeft);
+        const by = groupTop - offset + (((i * 5) % 12));
+        content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${12 + ((i * 3) % 7)}" ${balloonFill} ${balloonStroke}/>`);
+      }
     }
   }
 
+  // Assemble SVG: full-canvas background + scaled content group
   const svg = [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`,
-    `  ${lines.join("\n  ")}`,
+    `  ${bgLines.join("\n  ")}`,
+    `  <g transform="translate(${marginX},${marginY}) scale(${SCALE})">`,
+    `    ${content.join("\n    ")}`,
+    `  </g>`,
     `</svg>`,
   ].join("\n");
 
