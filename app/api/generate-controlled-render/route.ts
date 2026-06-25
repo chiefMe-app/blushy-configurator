@@ -662,12 +662,11 @@ async function generateLayoutReferencePng(
     return { dataUri: null, error: msg, stage: "svg-generation", bytes: null };
   }
 
-  // Stage 2: sharp import (same new Function pattern as test route)
+  // Stage 2: sharp import — direct dynamic import so webpack/Vercel can trace and bundle it
   let sharpMod: (buf: Buffer) => { png(): { toBuffer(): Promise<Buffer> } };
   try {
-    // eslint-disable-next-line no-new-func
-    sharpMod = await (new Function("m", "return import(m)"))("sharp")
-      .then((m: { default?: unknown }) => m.default ?? m) as typeof sharpMod;
+    const sharpPkg = await import("sharp");
+    sharpMod = (sharpPkg.default ?? sharpPkg) as typeof sharpMod;
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] sharp import failed:", msg);
