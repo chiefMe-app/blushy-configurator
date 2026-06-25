@@ -516,9 +516,9 @@ export const BALLOON_STYLES: Option<BalloonStyleId>[] = [
 ];
 
 export const PLINTH_SIZES: Option<PlinthSize>[] = [
-  { id: "small", label: "S — 90cm", price: 60 },
-  { id: "medium", label: "M — 100cm", price: 80 },
-  { id: "large", label: "L — 110cm", price: 110 },
+  { id: "small",  label: "S — 60cm",  price: 60  },
+  { id: "medium", label: "M — 75cm",  price: 80  },
+  { id: "large",  label: "L — 90cm",  price: 110 },
 ];
 
 /** Cutout sets — shown as cards in the Add-ons step. */

@@ -20,6 +20,7 @@ import type { BackdropItem, PlinthSize, BalloonStyleId } from "@/lib/config";
 import { generateStructureSilhouette } from "@/lib/generateStructureSilhouette";
 import { calculateExactLayout } from "@/lib/calculateExactLayout";
 import { calculateRenderAspectRatio } from "@/lib/calculateRenderAspectRatio";
+import { getPlinthDimensions } from "@/lib/layoutDimensions";
 
 // Canny ControlNet model — verified from fal docs
 // Docs: https://fal.ai/models/fal-ai/flux-control-lora-canny/api
@@ -221,6 +222,12 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Resolve exact plinth dimensions from the first configured plinth size (if any)
+  const firstPlinthSize   = plinthSizes?.[0] as PlinthSize | undefined;
+  const resolvedPlinthDims: PlinthDims | null = firstPlinthSize
+    ? getPlinthDimensions(firstPlinthSize)
+    : null;
+
   // Shared variables for any fal call — computed once, used by both fal-test and fal-queue-test
   const controlDataUri = pngDataUri ?? "";
   const promptSummary =
@@ -358,7 +365,7 @@ export async function POST(req: NextRequest) {
   // ── fal-layout-reference-dry-run: build payload, do NOT call fal ────────────
   if (mode === "fal-layout-reference-dry-run") {
     const falKey         = process.env.FAL_KEY;
-    const refPrompt      = buildLayoutRefPrompt();
+    const refPrompt      = buildLayoutRefPrompt(resolvedPlinthDims);
     const refPayload     = buildLayoutRefInput(pngDataUri ?? "", computedSize, refPrompt);
     const dryRunBytes    = Buffer.byteLength(JSON.stringify({ input: refPayload }), "utf8");
 
@@ -374,7 +381,10 @@ export async function POST(req: NextRequest) {
       promptPreview:          refPrompt.slice(0, 120) + "…",
       referenceImagePrefix:   (pngDataUri ?? "").slice(0, 80),
       inputKeys:              Object.keys(refPayload),
-      referenceVersion:       "clean-layout-reference-v1",
+      selectedPlinthSize:     firstPlinthSize ?? null,
+      resolvedPlinthHeightCm:   resolvedPlinthDims?.heightCm ?? null,
+      resolvedPlinthDiameterCm: resolvedPlinthDims?.diameterCm ?? null,
+      referenceVersion:       "clean-layout-reference-v3-exact-plinth-sizes",
       note:                   "Dry-run only — no fal call was made.",
     });
   }
@@ -406,7 +416,7 @@ export async function POST(req: NextRequest) {
     try {
       return await handleFalLayoutReferenceTest(
         tId, falKey, pngDataUri, pngBuffer, computedSize,
-        payloadApproxSizeBytes, svgDebug.debug.checks,
+        payloadApproxSizeBytes, svgDebug.debug.checks, resolvedPlinthDims,
       );
     } catch (fatal) {
       const fe = fatal as Record<string, unknown>;
@@ -1120,20 +1130,29 @@ async function handleReplicateCannyTest(
 
 // ── fal-layout-reference helpers ─────────────────────────────────────────────
 
-function buildLayoutRefPrompt(): string {
+interface PlinthDims { heightCm: number; diameterCm: number; }
+
+function buildLayoutRefPrompt(plinthDims?: PlinthDims | null): string {
+  const plinthDesc = plinthDims
+    ? `one slim freestanding white cylindrical plinth, ${plinthDims.heightCm}cm tall and ${plinthDims.diameterCm}cm diameter`
+    : "one slim freestanding white cylindrical plinth";
   return (
     "Transform this clean layout reference into a premium photorealistic indoor children's birthday event setup. " +
-    "Preserve the exact arch position and tall rounded-arch proportions. " +
-    "Preserve the exact plinth position on the open left side — render it as one slim freestanding white cylindrical display column, " +
-    "fully visible from base to rounded top, height much greater than diameter. " +
-    "Render the right-side organic half balloon garland with full dense volume, " +
-    "individual latex balloons cascading from the top corner to the floor. " +
-    "Full setup visible, nothing cropped. " +
-    "Frozen palette: icy blue, white, pearl/silver latex balloons. " +
-    "Premium realistic event photography, soft natural studio lighting, luxury indoor venue, polished floor, " +
+    "Wide full-body event photography shot — camera pulled back so the entire setup has breathing room on all sides. " +
+    "Arch fully visible from base to the very top, with clear space above and around it. " +
+    "Preserve the tall rounded-arch proportions and its exact position. " +
+    `Plinth is ${plinthDesc} on the open left side, ` +
+    "slightly smaller in the scene and positioned closer to the backdrop rather than oversized in the foreground, " +
+    "fully visible from polished floor to rounded top, height clearly greater than diameter. " +
+    "Right-side organic half balloon garland remains dense and premium — full volume, " +
+    "individual latex balloons cascading from the top corner down to the floor. " +
+    "Full setup clearly visible with breathing room, nothing cropped. " +
+    "Frozen palette: icy blue, white, pearl and metallic silver latex balloons. " +
+    "Luxury indoor event photography, soft natural studio lighting, polished reflective floor, " +
     "cream-white matte seamless arch backdrop. " +
     "No text on backdrop. No people. No cake. No table. No stage. No podium. No base platform. " +
-    "No extra side panel. No extra wall. No rectangular box plinth. No black outline around arch."
+    "No extra side panel. No extra wall. No rectangular box plinth. No black outline around arch. " +
+    "No low podium. No cake stand. No floor riser."
   );
 }
 
@@ -1159,11 +1178,12 @@ async function handleFalLayoutReferenceTest(
   computedSize: string,
   payloadApproxSizeBytes: number,
   svgChecks: Record<string, unknown>,
+  plinthDims?: PlinthDims | null,
 ): Promise<NextResponse> {
   const referenceImageMime      = "image/png";
   const referenceImageSizeBytes = pngBuffer.length;
   const maxWaitMs               = 120_000;
-  const refPrompt               = buildLayoutRefPrompt();
+  const refPrompt               = buildLayoutRefPrompt(plinthDims);
   const promptPreview           = refPrompt.slice(0, 120) + "…";
 
   fal.config({ credentials: falKey });
@@ -1255,7 +1275,7 @@ async function handleFalLayoutReferenceTest(
     payloadApproxSizeBytes,
     hasFalKey:               true,
     promptPreview,
-    referenceVersion:        "clean-layout-reference-v1",
+    referenceVersion:        "clean-layout-reference-v3-exact-plinth-sizes",
     svgChecks,
     falResponseKeys,
     falImagesCount:          imagesArr?.length ?? 0,

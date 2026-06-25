@@ -19,9 +19,9 @@ export const RECT_DIMS = {
 } as const;
 
 export const PLINTH_DIMS = {
-  small:  { label: "Small",  diameterCm: 40, heightCm: 60  },
-  medium: { label: "Medium", diameterCm: 40, heightCm: 80  },
-  large:  { label: "Large",  diameterCm: 40, heightCm: 100 },
+  small:  { label: "Small",  diameterCm: 40, heightCm: 60 },
+  medium: { label: "Medium", diameterCm: 40, heightCm: 75 },
+  large:  { label: "Large",  diameterCm: 40, heightCm: 90 },
   xl:     { label: "XL",     diameterCm: 40, heightCm: 120 },
 } as const;
 
