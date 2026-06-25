@@ -26,9 +26,15 @@ import {
 } from "@/lib/generatePrompt";
 import { type SceneModel } from "@/lib/buildSceneModel";
 import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
+import { generateStructureSilhouette } from "@/lib/generateStructureSilhouette";
+import { type BalloonStyleId } from "@/lib/config";
 
 // first_generate (no layout guide): pure text-to-image fallback
 const FAL_T2I_ENDPOINT = "https://fal.run/fal-ai/flux-2-pro";
+
+// first_generate (primary): clean layout reference → premium edit
+// Verified schema: image_urls (array, base64 data URIs accepted), prompt, image_size, seed, output_format
+const FAL_EDIT_MODEL_ID = "fal-ai/flux-2-pro/edit";
 
 // first_generate (with layout guide) + edit_existing: image-guided Kontext
 const KONTEXT_ENDPOINT = "https://fal.run/fal-ai/flux-pro/kontext";
@@ -622,6 +628,97 @@ function buildNegativePrompt(
 }
 
 // ---------------------------------------------------------------------------
+// Layout-reference edit helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Generates a clean SVG layout reference and rasterizes it to a PNG data URI.
+ * Uses sharp via dynamic import to avoid webpack bundling issues.
+ * Returns null if sharp is not available or conversion fails.
+ */
+async function generateLayoutReferencePng(
+  sceneModel: SceneModel,
+  promptInput: PromptInput,
+): Promise<string | null> {
+  try {
+    const silhouette = generateStructureSilhouette(
+      promptInput.backdropItems ?? [],
+      promptInput.plinthSizes   ?? [],
+      (promptInput.balloonStyle ?? "none") as BalloonStyleId,
+      promptInput.balloonColors,
+    );
+
+    // Rasterize SVG → PNG via sharp (optional native module)
+    // new Function bypasses webpack static bundling and TypeScript type checking
+    // eslint-disable-next-line no-new-func
+    const sharpMod = await (new Function("m", "return import(m)"))("sharp")
+      .then((m: { default?: unknown }) => m.default ?? m) as
+        (buf: Buffer) => { png(): { toBuffer(): Promise<Buffer> } };
+
+    const svgBuffer = Buffer.from(silhouette.svg, "utf8");
+    const pngBuffer = await sharpMod(svgBuffer).png().toBuffer();
+    return `data:image/png;base64,${pngBuffer.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Builds the premium photorealistic prompt for the layout-reference edit path.
+ * Includes exact arch and plinth dimensions from sceneModel.
+ */
+function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
+  // Arch description — use first arch panel's actual dimensions
+  const archPanel    = sceneModel.panels.find((p) => p.type === "arch") ?? sceneModel.panels[0];
+  const archW        = archPanel?.widthCm  ?? 100;
+  const archH        = archPanel?.heightCm ?? 200;
+  const archDesc     = `single tall narrow cream-white arch backdrop, ${archW}cm wide by ${archH}cm tall, seamless matte surface`;
+
+  // Plinth description — use first configured plinth's actual dimensions
+  const plinth       = sceneModel.plinths[0];
+  const plinthDesc   = plinth
+    ? `one slim freestanding white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter, ` +
+      `fully visible from base to top, placed on the open side near the arch backdrop`
+    : "";
+  const noPlinthDesc = plinth ? "" : "No plinths. ";
+
+  // Balloon garland description
+  const balloonStyle = sceneModel.balloons.style;
+  const balloonColors = sceneModel.balloons.colors.length > 0
+    ? sceneModel.balloons.colors.slice(0, 4).join(", ")
+    : "icy blue, white, silver";
+  const garlandDesc  = balloonStyle === "none"
+    ? "No balloon garland. "
+    : `organic half balloon garland on the right side of the arch, dense and premium, ` +
+      `individual ${balloonColors} latex balloons cascading from the top corner to the floor`;
+
+  return (
+    // Art direction first — establishes lighting, color, and mood before describing objects
+    `Cool neutral daylight studio photography with soft natural light from the left, ` +
+    `gray textured plaster or concrete studio wall, polished light concrete or stone floor, ` +
+    `crisp clean whites, icy light blue and white balloon tones, neutral white balance, ` +
+    `fresh modern editorial event styling. ` +
+    `Transform this clean layout reference into a premium photorealistic indoor children's birthday event setup. ` +
+    `Wide full-body event photography — entire setup fully visible with breathing room, nothing cropped. ` +
+    `${archDesc}. ` +
+    (plinthDesc ? `${plinthDesc}. ` : noPlinthDesc) +
+    `${garlandDesc}. ` +
+    `Premium modern editorial event photography, neutral white balance, clean fresh color grading, ` +
+    `crisp white arch surface, no visible outline or border on the arch. ` +
+    // Structure negatives
+    `No text on backdrop. No people. No cake. No table. ` +
+    `No stage. No podium. No base platform. No floor riser. ` +
+    `No rectangular box plinth. No low round podium. No flat platform under plinth. ` +
+    `No extra side panel. No extra wall or slab. ` +
+    // Environment/lighting negatives
+    `No warm yellow lighting. No golden ambient light. No beige hotel interior. No yellow color cast. ` +
+    `No ornate luxury room. No cream or brown walls. No orange or yellow white balance. ` +
+    `No overly warm shadows. No dark moody room. ` +
+    `No plants. No furniture. No chairs. No mirrors. No doors. No visible support legs. No black stands.`
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Route handler
 // ---------------------------------------------------------------------------
 
@@ -706,14 +803,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ imageUrl, mode: "edit_existing", model: "fal-ai/flux-pro/kontext" });
     }
 
-    // ── First generate — pure text-to-image, NO image_url ─────────────────────
-    // Text is a frontend overlay — strip all panel text before building the AI prompt
-    // so the AI never receives or renders user text.
+    // ── First generate ─────────────────────────────────────────────────────────
+    // Text is a frontend overlay — strip all panel text before building the AI prompt.
     const renderTextInAi = false as const;
 
     const promptInputForAi: typeof promptInput = {
       ...promptInput,
-      // Clear backdrop text fields — AI must always render a blank/plain backdrop surface
       backdropText: promptInput.backdropText
         ? { ...promptInput.backdropText, enabled: false, name: "", customText: "" }
         : undefined,
@@ -725,11 +820,69 @@ export async function POST(req: NextRequest) {
 
     const { prompt: basePrompt } = generatePrompt(promptInputForAi);
     const finalPrompt            = buildFirstGenPrompt(sceneModel, basePrompt, promptInputForAi);
-    // Pass renderTextInAi (always false) so text-suppression negatives are always active
     const negativePrompt         = buildNegativePrompt(sceneModel.panels, renderTextInAi, hasGraphic, promptInputForAi, sceneModel);
 
+    // Diagnostics — resolved from sceneModel for both render paths
+    const firstPlinthDiag = sceneModel.plinths[0];
+    const firstArchDiag   = sceneModel.panels.find((p) => p.type === "arch") ?? sceneModel.panels[0];
+    const diagInfo = {
+      selectedPlinthSize:       firstPlinthDiag?.size       ?? null,
+      resolvedPlinthHeightCm:   firstPlinthDiag?.heightCm   ?? null,
+      resolvedPlinthDiameterCm: firstPlinthDiag?.diameterCm ?? null,
+      selectedArchSize:         firstArchDiag?.sizeId        ?? null,
+      resolvedArchWidthCm:      firstArchDiag?.widthCm       ?? null,
+      resolvedArchHeightCm:     firstArchDiag?.heightCm      ?? null,
+    };
+
+    // ── Primary path: layout-reference edit ────────────────────────────────
+    // Generate a clean SVG/PNG layout reference and pass it to fal-ai/flux-2-pro/edit.
+    // Falls back to T2I if PNG generation fails or the edit call returns no image.
+    const layoutReferenceDataUrl = await generateLayoutReferencePng(sceneModel, promptInputForAi);
+    const layoutRefPrompt        = buildLayoutRefEditPrompt(sceneModel);
+
+    if (layoutReferenceDataUrl) {
+      try {
+        console.log("[generate-controlled-render] → trying fal-ai/flux-2-pro/edit (layout-reference)");
+
+        const editResult = await fal.subscribe(FAL_EDIT_MODEL_ID, {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          input: {
+            prompt:        layoutRefPrompt,
+            image_urls:    [layoutReferenceDataUrl],
+            image_size:    renderAspectRatio,
+            seed:          FINAL_RENDER_SEED,
+            output_format: "jpeg",
+          } as any,
+          logs:        false,
+          abortSignal: AbortSignal.timeout(80_000), // leaves buffer within maxDuration=90
+        });
+
+        const editImageUrl = (editResult.data as Record<string, unknown>)?.["images"] as { url?: string }[] | undefined;
+        const imageUrl     = editImageUrl?.[0]?.url ?? null;
+
+        if (imageUrl) {
+          console.log("[generate-controlled-render] layout-reference edit succeeded:", imageUrl);
+          return NextResponse.json({
+            imageUrl,
+            mode:             "first_generate",
+            renderMode:       "first_generate_layout_reference_edit",
+            referenceUsed:    true,
+            referenceVersion: "clean-layout-reference-v1",
+            modelId:          FAL_EDIT_MODEL_ID,
+            ...diagInfo,
+          });
+        }
+        console.warn("[generate-controlled-render] layout-reference edit returned no image, falling back");
+      } catch (editErr) {
+        console.error("[generate-controlled-render] layout-reference edit failed, falling back:", String(editErr));
+      }
+    } else {
+      console.log("[generate-controlled-render] layout-reference PNG unavailable (sharp not installed?), using T2I");
+    }
+
+    // ── Fallback: pure text-to-image ────────────────────────────────────────
     if (process.env.NODE_ENV === "development") {
-      console.log("[generate-controlled-render] → calling fal-ai/flux-2-pro (text-to-image)");
+      console.log("[generate-controlled-render] → calling fal-ai/flux-2-pro (text-to-image fallback)");
       console.log("[generate-controlled-render] prompt:", finalPrompt);
       console.log("[generate-controlled-render] negative:", negativePrompt);
     }
@@ -740,10 +893,10 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         prompt:          finalPrompt,
         negative_prompt: negativePrompt,
-        image_size:      renderAspectRatio,   // dynamic from panel dimensions — preserved
+        image_size:      renderAspectRatio,
         output_format:   "jpeg",
         num_images:      1,
-        seed:            FINAL_RENDER_SEED,   // fixed seed for reproducible studio environment
+        seed:            FINAL_RENDER_SEED,
       }),
     });
 
@@ -758,8 +911,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       imageUrl,
-      mode:  "first_generate",
-      model: "fal-ai/flux-2-pro",
+      mode:             "first_generate",
+      renderMode:       "first_generate_text_to_image_fallback",
+      referenceUsed:    false,
+      referenceVersion: null,
+      modelId:          "fal-ai/flux-2-pro",
+      ...diagInfo,
     });
 
   } catch (err) {
