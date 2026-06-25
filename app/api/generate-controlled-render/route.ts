@@ -691,14 +691,59 @@ async function generateLayoutReferencePng(
  * Builds the premium photorealistic prompt for the layout-reference edit path.
  * Includes exact arch and plinth dimensions from sceneModel.
  */
-function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
-  // Arch description — use first arch panel's actual dimensions
-  const archPanel    = sceneModel.panels.find((p) => p.type === "arch") ?? sceneModel.panels[0];
-  const archW        = archPanel?.widthCm  ?? 100;
-  const archH        = archPanel?.heightCm ?? 200;
-  const archDesc     = `single tall narrow cream-white arch backdrop, ${archW}cm wide by ${archH}cm tall, seamless matte surface`;
+// Maps panel type id to a readable label for prompts
+function panelTypeLabel(type: string): string {
+  switch (type) {
+    case "arch":         return "rounded arch";
+    case "rect":         return "rectangular flat";
+    case "shimmer_wall": return "rectangular shimmer-wall";
+    case "round":        return "round circular";
+    case "wavy":         return "wavy-top";
+    default:             return type;
+  }
+}
 
-  // Plinth description — use first configured plinth's actual dimensions
+function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
+  const panelCount  = sceneModel.panels.length;
+  const isMulti     = panelCount > 1;
+
+  // ── Backdrop description ──────────────────────────────────────────────────
+  let backdropDesc: string;
+
+  if (!isMulti) {
+    // Single panel: existing proven wording
+    const p    = sceneModel.panels[0];
+    backdropDesc =
+      `single ${panelTypeLabel(p.type)} cream-white backdrop board, ` +
+      `${p.widthCm}cm wide by ${p.heightCm}cm tall, solid freestanding board, seamless matte surface`;
+  } else {
+    // Multi-panel: describe every panel explicitly by number, type, dimensions, position
+    const positions = ["left", "center", "right"];
+    const posLabels = panelCount === 2
+      ? ["left", "right"]
+      : panelCount === 3
+        ? ["left", "center", "right"]
+        : sceneModel.panels.map((_, i) => positions[i] ?? `panel ${i + 1}`);
+
+    const panelDescs = sceneModel.panels.map((p, i) => {
+      const wRatio = (p.widthCm / p.heightCm).toFixed(2);
+      return (
+        `Panel ${i + 1} (${posLabels[i]}): ${panelTypeLabel(p.type)} backdrop board, ` +
+        `${p.widthCm}cm wide by ${p.heightCm}cm tall (width-to-height ratio ${wRatio}), ` +
+        `full-width solid opaque cream-white freestanding backdrop board with broad visible surface, ` +
+        `not compressed, not narrow, not a tower, correctly proportioned`
+      );
+    });
+    backdropDesc =
+      `exactly ${panelCount} separate freestanding backdrop boards arranged side by side, ` +
+      `each fully solid, opaque, and rendered at its correct width. ` +
+      `Both panels are full-size physical event backdrop boards with broad visible surfaces ` +
+      `and correct width-to-height proportions. ` +
+      `The total setup should feel wide and substantial, not skinny or compressed. ` +
+      panelDescs.join(". ") + ".";
+  }
+
+  // ── Plinth description ────────────────────────────────────────────────────
   const plinth       = sceneModel.plinths[0];
   const plinthDesc   = plinth
     ? `one slim freestanding white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter, ` +
@@ -706,15 +751,26 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
     : "";
   const noPlinthDesc = plinth ? "" : "No plinths. ";
 
-  // Balloon garland description
-  const balloonStyle = sceneModel.balloons.style;
+  // ── Balloon garland description ───────────────────────────────────────────
+  const balloonStyle  = sceneModel.balloons.style;
   const balloonColors = sceneModel.balloons.colors.length > 0
     ? sceneModel.balloons.colors.slice(0, 4).join(", ")
     : "icy blue, white, silver";
-  const garlandDesc  = balloonStyle === "none"
+  const garlandDesc   = balloonStyle === "none"
     ? "No balloon garland. "
-    : `organic half balloon garland on the right side of the arch, dense and premium, ` +
+    : `organic half balloon garland on the right side, dense and premium, ` +
       `individual ${balloonColors} latex balloons cascading from the top corner to the floor`;
+
+  // ── Multi-panel negatives ─────────────────────────────────────────────────
+  const multiPanelNegs = isMulti
+    ? `Do not merge panels into one. Do not omit any panel. No extra panels beyond ${panelCount}. ` +
+      `No outline-only arch. No wire-frame backdrop. No thin frame backdrop. ` +
+      `No transparent backdrop board. No decorative line structure. ` +
+      `Every selected panel must appear as a full solid opaque backdrop board. ` +
+      `No skinny panels. No narrow tower-like panels. No compressed backdrop boards. ` +
+      `No thin vertical strips. No overly narrow arch. No overly narrow rectangular board. ` +
+      `Do not shrink panel widths. Do not turn panels into slim columns. `
+    : "";
 
   return (
     // Art direction first — establishes lighting, color, and mood before describing objects
@@ -724,9 +780,10 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
     `fresh modern editorial event styling. ` +
     `Transform this clean layout reference into a premium photorealistic indoor children's birthday event setup. ` +
     `Wide full-body event photography — entire setup fully visible with breathing room, nothing cropped. ` +
-    `${archDesc}. ` +
+    `${backdropDesc}. ` +
     (plinthDesc ? `${plinthDesc}. ` : noPlinthDesc) +
     `${garlandDesc}. ` +
+    multiPanelNegs +
     `Premium modern editorial event photography, neutral white balance, clean fresh color grading, ` +
     `crisp white arch surface, no visible outline or border on the arch. ` +
     // Structure negatives

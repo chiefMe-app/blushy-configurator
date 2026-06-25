@@ -41,9 +41,14 @@ export interface SilhouetteResult {
 // SVG helpers
 // ---------------------------------------------------------------------------
 
+// Distinct fills for multi-panel setups — subtle hue differences so the edit model
+// can distinguish each board even when panels overlap.
+const MULTI_PANEL_FILLS = ["#EDE8E2", "#E2EAF0", "#EAE2F0"] as const;
+
 function panelPathOrShape(
   cx: number, pw: number, apexY: number, floorY: number,
   shape: BackdropShapeId,
+  fillColor = "#F0ECE8",
 ): string {
   const r     = pw / 2;
   const left  = cx - r;
@@ -54,12 +59,12 @@ function panelPathOrShape(
 
   if (shape === "round") {
     const centerY = apexY + r;
-    return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="#F0ECE8" ${stroke}/>`;
+    return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="${fillColor}" ${stroke}/>`;
   }
 
   if (shape === "rect" || shape === "shimmer_wall") {
     const h = floorY - apexY;
-    return `<rect x="${left}" y="${apexY}" width="${pw}" height="${h}" fill="#F0ECE8" ${stroke}/>`;
+    return `<rect x="${left}" y="${apexY}" width="${pw}" height="${h}" fill="${fillColor}" ${stroke}/>`;
   }
 
   if (shape === "wavy") {
@@ -75,10 +80,10 @@ function panelPathOrShape(
       pts.push(`Q ${x1.toFixed(1)},${y1.toFixed(1)} ${x2.toFixed(1)},${(topY + amp).toFixed(1)}`);
     }
     pts.push(`L ${right},${floorY}`, "Z");
-    return `<path d="${pts.join(" ")}" fill="#F0ECE8" ${stroke}/>`;
+    return `<path d="${pts.join(" ")}" fill="${fillColor}" ${stroke}/>`;
   }
 
-  // arch — the most important case for Canny structure guidance
+  // arch — the most important case for structure guidance
   const springY = apexY + r;
   const d = [
     `M ${left},${floorY}`,
@@ -87,7 +92,7 @@ function panelPathOrShape(
     `L ${right},${floorY}`,
     "Z",
   ].join(" ");
-  return `<path d="${d}" fill="#F0ECE8" ${stroke}/>`;
+  return `<path d="${d}" fill="${fillColor}" ${stroke}/>`;
 }
 
 // v3: Cylindrical plinth — top ellipse is the dominant Canny cue.
@@ -191,7 +196,14 @@ export function generateStructureSilhouette(
   balloonColors?: string[],
 ): SilhouetteResult {
   const { falImageSize } = calculateRenderAspectRatio(backdropItems);
-  const [W, H]           = VIEWBOX[falImageSize];
+  const [Wbase, H]       = VIEWBOX[falImageSize];
+
+  // For multi-panel setups, widen the layout canvas so calculateExactLayout's
+  // maxPwByCount cap (0.42 × canvasW) doesn't compress panel widths below their
+  // true aspect ratio. A 1.4× wider virtual canvas gives each panel enough
+  // room to render at its configured widthCm / heightCm ratio.
+  const isMultiPanel = backdropItems.length > 1;
+  const W = isMultiPanel ? Math.round(Wbase * 1.4) : Wbase;
 
   const layout = calculateExactLayout(backdropItems, plinthSizes, W, H);
 
@@ -214,13 +226,20 @@ export function generateStructureSilhouette(
   // v4: pure white background — no fills, no color signals, edge map only
   bgLines.push(`<rect width="${W}" height="${H}" fill="#FFFFFF"/>`);
 
-  // v4: Arch outline only — no fill, no base line, no panel thickness
+  // Single panel: v4 edge-only (proven to work well for single-panel).
+  // Multi-panel: filled with distinct per-panel hues so the edit model can distinguish
+  // each board as a separate physical object and not merge or omit panels.
   const sorted = [...layout.panels].sort((a, b) => a.zOrder - b.zOrder);
-  for (const panel of sorted) {
+  sorted.forEach((panel, sortedIdx) => {
     const item  = backdropItems[panel.idx];
     const shape = (item?.type ?? "arch") as BackdropShapeId;
-    content.push(panelEdgeOnly(panel.cx, panel.pw, panel.apexY, panel.floorY, shape));
-  }
+    if (isMultiPanel) {
+      const fill = MULTI_PANEL_FILLS[sortedIdx % MULTI_PANEL_FILLS.length];
+      content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, fill));
+    } else {
+      content.push(panelEdgeOnly(panel.cx, panel.pw, panel.apexY, panel.floorY, shape));
+    }
+  });
 
   // v4: Cylindrical plinth edge guide — no fill, no block
   for (const p of layout.plinths) {
