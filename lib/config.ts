@@ -200,7 +200,7 @@ export const PACKAGES: Package[] = [
     bestFor: "Intimate home setups",
     defaultDecor: {
       backdropItems: [
-        { id: "arch_66ft", type: "arch", sizeId: "arch_66ft", widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "medium", type: "arch", sizeId: "medium", widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
       balloonStyle: "half",
       plinths: 1,
@@ -220,8 +220,8 @@ export const PACKAGES: Package[] = [
     bestFor: "Villa gardens, restaurant corners",
     defaultDecor: {
       backdropItems: [
-        { id: "arch_72ft", type: "arch", sizeId: "arch_72ft", widthCm: 110, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
-        { id: "arch_6ft",  type: "arch", sizeId: "arch_6ft",  widthCm: 90,  heightCm: 180, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "large", type: "arch", sizeId: "large", widthCm: 120, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "small", type: "arch", sizeId: "small", widthCm: 80,  heightCm: 180, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
       balloonStyle: "full",
       plinths: 2,
@@ -245,9 +245,9 @@ export const PACKAGES: Package[] = [
     bestFor: "Full venue takeovers",
     defaultDecor: {
       backdropItems: [
-        { id: "arch_72ft", type: "arch", sizeId: "arch_72ft", widthCm: 110, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
-        { id: "arch_66ft", type: "arch", sizeId: "arch_66ft", widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
-        { id: "wavy",      type: "wavy",                      widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "large",  type: "arch", sizeId: "large",  widthCm: 120, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "medium", type: "arch", sizeId: "medium", widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "wavy",   type: "wavy",                   widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
       balloonStyle: "premium",
       plinths: 3,
@@ -269,30 +269,20 @@ export type BackdropShapeId =
   | "shimmer_wall"
   | "wavy";
 
-export type ArchSizeId =
-  | "arch_4ft"
-  | "arch_5ft"
-  | "arch_6ft"
-  | "arch_66ft"
-  | "arch_72ft";
+export type ArchSizeId = "small" | "medium" | "large";
 
 export interface ArchSize {
-  id: ArchSizeId;
-  label: string;
-  heightFt: number;
-  heightM: number;
+  id:       ArchSizeId;
+  label:    string;
+  ftLabel:  string;
+  widthCm:  number;
   heightCm: number;
-  /** Approximate panel width (arch is wider than it is deep). */
-  widthCm: number;
 }
 
 export const ARCH_SIZES: ArchSize[] = [
-  // widthCm = heightCm / 2 (portrait arch, narrow panel, width is half of height)
-  { id: "arch_4ft",  label: "4FT / 1.2M",   heightFt: 4,   heightM: 1.2, heightCm: 120, widthCm: 60  },
-  { id: "arch_5ft",  label: "5FT / 1.5M",   heightFt: 5,   heightM: 1.5, heightCm: 150, widthCm: 75  },
-  { id: "arch_6ft",  label: "6FT / 1.8M",   heightFt: 6,   heightM: 1.8, heightCm: 180, widthCm: 90  },
-  { id: "arch_66ft", label: "6.6FT / 2M",   heightFt: 6.6, heightM: 2.0, heightCm: 200, widthCm: 100 },
-  { id: "arch_72ft", label: "7.2FT / 2.2M", heightFt: 7.2, heightM: 2.2, heightCm: 220, widthCm: 110 },
+  { id: "small",  label: "Small",             ftLabel: "2.6 x 5.9 ft", widthCm: 80,  heightCm: 180 },
+  { id: "medium", label: "Medium / Standard", ftLabel: "3.3 x 6.6 ft", widthCm: 100, heightCm: 200 },
+  { id: "large",  label: "Large",             ftLabel: "4.0 x 7.2 ft", widthCm: 120, heightCm: 220 },
 ];
 
 export type RectSizeId = "rect_100x200" | "rect_80x180";

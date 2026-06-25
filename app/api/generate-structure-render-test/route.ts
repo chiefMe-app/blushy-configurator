@@ -231,7 +231,7 @@ export async function POST(req: NextRequest) {
   // Shared variables for any fal call — computed once, used by both fal-test and fal-queue-test
   const controlDataUri = pngDataUri ?? "";
   const promptSummary =
-    "Photorealistic premium event setup. Tall narrow arch backdrop (100×200cm), " +
+    "Photorealistic premium event setup. Tall narrow arch backdrop (medium: 100cm wide × 200cm tall), " +
     "tall slim white cylindrical plinth on the open left side, " +
     "half balloon garland on the right side reaching the floor in a compact base cluster. " +
     "Frozen palette: icy blue, white, silver latex balloons. " +
@@ -319,7 +319,7 @@ export async function POST(req: NextRequest) {
     const replicateInput = {
       prompt:
         "Professional event photography, photorealistic studio render. " +
-        "Single tall cream-white arch backdrop, 100cm wide by 200cm tall, narrow and portrait-oriented. " +
+        "Single tall cream-white arch backdrop, 100cm wide by 200cm tall (medium size: 100 x 200 cm), narrow and portrait-oriented. " +
         "One slim freestanding white cylindrical display plinth on the open left side, " +
         "clearly visible from base to top, tall and narrow, not a podium or cake stand. " +
         "Organic half balloon garland on the right side only, reaching from the top corner continuously down to the floor. " +

@@ -6,11 +6,9 @@
  */
 
 export const ARCH_DIMS = {
-  arch_4ft:  { label: "4FT / 1.2M",   widthCm: 60,  heightCm: 120 },
-  arch_5ft:  { label: "5FT / 1.5M",   widthCm: 75,  heightCm: 150 },
-  arch_6ft:  { label: "6FT / 1.8M",   widthCm: 90,  heightCm: 180 },
-  arch_66ft: { label: "6.6FT / 2M",   widthCm: 100, heightCm: 200 },
-  arch_72ft: { label: "7.2FT / 2.2M", widthCm: 110, heightCm: 220 },
+  small:  { label: "Small",            widthCm: 80,  heightCm: 180, ftLabel: "2.6 x 5.9 ft" },
+  medium: { label: "Medium / Standard",widthCm: 100, heightCm: 200, ftLabel: "3.3 x 6.6 ft" },
+  large:  { label: "Large",            widthCm: 120, heightCm: 220, ftLabel: "4.0 x 7.2 ft" },
 } as const;
 
 export const RECT_DIMS = {
@@ -29,13 +27,28 @@ export type ArchDimKey  = keyof typeof ARCH_DIMS;
 export type RectDimKey  = keyof typeof RECT_DIMS;
 export type PlinthDimKey = keyof typeof PLINTH_DIMS;
 
+/** Maps legacy arch sizeIds (arch_4ft … arch_72ft) to the nearest new ID. */
+const LEGACY_ARCH_MAP: Record<string, ArchDimKey> = {
+  arch_4ft:  "small",
+  arch_5ft:  "small",
+  arch_6ft:  "small",
+  arch_66ft: "medium",
+  arch_72ft: "large",
+};
+
+export function normalizeArchSizeId(sizeId: string): ArchDimKey {
+  if (sizeId in ARCH_DIMS)       return sizeId as ArchDimKey;
+  if (sizeId in LEGACY_ARCH_MAP) return LEGACY_ARCH_MAP[sizeId];
+  return "medium"; // safe fallback
+}
+
 /** Resolve production width/height for any panel type + sizeId. */
 export function getPanelDimensions(
   type: string,
   sizeId?: string,
 ): { widthCm: number; heightCm: number } {
-  if (type === "arch" && sizeId && sizeId in ARCH_DIMS) {
-    return ARCH_DIMS[sizeId as ArchDimKey];
+  if (type === "arch" && sizeId) {
+    return ARCH_DIMS[normalizeArchSizeId(sizeId)];
   }
   if (type === "rect" && sizeId && sizeId in RECT_DIMS) {
     return RECT_DIMS[sizeId as RectDimKey];

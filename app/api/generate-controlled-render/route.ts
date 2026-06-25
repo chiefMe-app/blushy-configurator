@@ -249,17 +249,19 @@ function buildFirstGenPrompt(
     `Clean event backdrop scene: only the configured items listed above.`;
 
   // Scale reference: helps AI understand backdrop width relative to the plinth
-  const firstPlinth = sceneModel.plinths[0];
+  const firstPlinth    = sceneModel.plinths[0];
+  const firstArchPanel = sceneModel.panels.find((p) => p.type === "arch");
+  const archWidthCm    = firstArchPanel?.widthCm ?? 100;
   const scaleRefClause = hasArch && plinthCount > 0 && firstPlinth
     ? (() => {
-        const d = firstPlinth.diameterCm;
-        const h = firstPlinth.heightCm;
-        const ratio = Math.round(100 / d * 10) / 10;
+        const d     = firstPlinth.diameterCm;
+        const h     = firstPlinth.heightCm;
+        const ratio = Math.round(archWidthCm / d * 10) / 10;
         return (
           `SCALE REFERENCE: the white cylindrical plinth is ${d}cm diameter and ${h}cm tall. ` +
           `Height (${h}cm) is much greater than diameter (${d}cm) — it is a tall, slim, upright column, ` +
           `NOT a low disk or round platform. ` +
-          `The arch backdrop panel is approximately 100cm wide — about ${ratio} times the plinth diameter. ` +
+          `The arch backdrop panel is ${archWidthCm}cm wide — about ${ratio} times the plinth diameter. ` +
           `Use this ratio to judge the correct arch panel width in the scene. ` +
           `The arch must NOT appear wider than ${ratio} plinths placed side by side.`
         );
