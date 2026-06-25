@@ -631,35 +631,60 @@ function buildNegativePrompt(
 // Layout-reference edit helpers
 // ---------------------------------------------------------------------------
 
+interface LayoutRefPngResult {
+  dataUri:  string | null;
+  error:    string | null;
+  stage:    string | null;  // "svg-generation" | "sharp-import" | "rasterization"
+  bytes:    number | null;
+}
+
 /**
  * Generates a clean SVG layout reference and rasterizes it to a PNG data URI.
- * Uses sharp via dynamic import to avoid webpack bundling issues.
- * Returns null if sharp is not available or conversion fails.
+ * Returns a structured result so callers can report exactly why it failed.
+ * Same sharp import pattern as the proven test route (fal-layout-reference-test).
  */
 async function generateLayoutReferencePng(
-  sceneModel: SceneModel,
+  sceneModel:  SceneModel,
   promptInput: PromptInput,
-): Promise<string | null> {
+): Promise<LayoutRefPngResult> {
+  // Stage 1: SVG generation — derive plinth sizes from sceneModel for type safety
+  let silhouette: ReturnType<typeof generateStructureSilhouette>;
   try {
-    const silhouette = generateStructureSilhouette(
+    silhouette = generateStructureSilhouette(
       promptInput.backdropItems ?? [],
-      promptInput.plinthSizes   ?? [],
-      (promptInput.balloonStyle ?? "none") as BalloonStyleId,
-      promptInput.balloonColors,
+      sceneModel.plinths.map((p) => p.size),
+      (sceneModel.balloons.style ?? "none") as BalloonStyleId,
+      sceneModel.balloons.colors.length > 0 ? sceneModel.balloons.colors : promptInput.balloonColors,
     );
+  } catch (err) {
+    const msg = String(err);
+    console.error("[generate-controlled-render] SVG generation failed:", msg);
+    return { dataUri: null, error: msg, stage: "svg-generation", bytes: null };
+  }
 
-    // Rasterize SVG → PNG via sharp (optional native module)
-    // new Function bypasses webpack static bundling and TypeScript type checking
+  // Stage 2: sharp import (same new Function pattern as test route)
+  let sharpMod: (buf: Buffer) => { png(): { toBuffer(): Promise<Buffer> } };
+  try {
     // eslint-disable-next-line no-new-func
-    const sharpMod = await (new Function("m", "return import(m)"))("sharp")
-      .then((m: { default?: unknown }) => m.default ?? m) as
-        (buf: Buffer) => { png(): { toBuffer(): Promise<Buffer> } };
+    sharpMod = await (new Function("m", "return import(m)"))("sharp")
+      .then((m: { default?: unknown }) => m.default ?? m) as typeof sharpMod;
+  } catch (err) {
+    const msg = String(err);
+    console.error("[generate-controlled-render] sharp import failed:", msg);
+    return { dataUri: null, error: msg, stage: "sharp-import", bytes: null };
+  }
 
+  // Stage 3: rasterize SVG → PNG
+  try {
     const svgBuffer = Buffer.from(silhouette.svg, "utf8");
-    const pngBuffer = await sharpMod(svgBuffer).png().toBuffer();
-    return `data:image/png;base64,${pngBuffer.toString("base64")}`;
-  } catch {
-    return null;
+    const pngBuffer = await sharpMod(svgBuffer).png().toBuffer() as Buffer;
+    const dataUri   = `data:image/png;base64,${pngBuffer.toString("base64")}`;
+    console.log("[generate-controlled-render] layout reference PNG ready, bytes:", pngBuffer.length);
+    return { dataUri, error: null, stage: null, bytes: pngBuffer.length };
+  } catch (err) {
+    const msg = String(err);
+    console.error("[generate-controlled-render] rasterization failed:", msg);
+    return { dataUri: null, error: msg, stage: "rasterization", bytes: null };
   }
 }
 
@@ -835,30 +860,52 @@ export async function POST(req: NextRequest) {
     };
 
     // ── Primary path: layout-reference edit ────────────────────────────────
-    // Generate a clean SVG/PNG layout reference and pass it to fal-ai/flux-2-pro/edit.
-    // Falls back to T2I if PNG generation fails or the edit call returns no image.
-    const layoutReferenceDataUrl = await generateLayoutReferencePng(sceneModel, promptInputForAi);
-    const layoutRefPrompt        = buildLayoutRefEditPrompt(sceneModel);
+    // Same proven pattern as fal-layout-reference-test in the structure test route.
+    const pngResult       = await generateLayoutReferencePng(sceneModel, promptInputForAi);
+    const layoutRefPrompt = buildLayoutRefEditPrompt(sceneModel);
 
-    if (layoutReferenceDataUrl) {
+    let fallbackReason:       string | null = null;
+    let fallbackStage:        string | null = null;
+    let fallbackErrorMessage: string | null = null;
+
+    if (!pngResult.dataUri) {
+      fallbackReason       = "layout-reference PNG generation failed";
+      fallbackStage        = pngResult.stage;
+      fallbackErrorMessage = pngResult.error;
+      console.error("[generate-controlled-render] PNG failed at stage:", pngResult.stage, pngResult.error);
+    } else {
+      // AbortController + setTimeout — exact pattern from proven test route
+      const abortController = new AbortController();
+      const timeoutHandle   = setTimeout(() => abortController.abort(), 80_000);
+
       try {
-        console.log("[generate-controlled-render] → trying fal-ai/flux-2-pro/edit (layout-reference)");
+        console.log("[generate-controlled-render] → fal-ai/flux-2-pro/edit (layout-reference), pngBytes:", pngResult.bytes);
 
-        const editResult = await fal.subscribe(FAL_EDIT_MODEL_ID, {
+        const falResult = await fal.subscribe(FAL_EDIT_MODEL_ID, {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           input: {
             prompt:        layoutRefPrompt,
-            image_urls:    [layoutReferenceDataUrl],
+            image_urls:    [pngResult.dataUri],
             image_size:    renderAspectRatio,
             seed:          FINAL_RENDER_SEED,
             output_format: "jpeg",
           } as any,
-          logs:        false,
-          abortSignal: AbortSignal.timeout(80_000), // leaves buffer within maxDuration=90
+          logs:        true,
+          abortSignal: abortController.signal,
+          onQueueUpdate: (status) => {
+            console.log("[generate-controlled-render] queue:", status.status,
+              status.status === "IN_QUEUE" ? `pos=${status.queue_position}` : "");
+          },
         });
 
-        const editImageUrl = (editResult.data as Record<string, unknown>)?.["images"] as { url?: string }[] | undefined;
-        const imageUrl     = editImageUrl?.[0]?.url ?? null;
+        // Defensive image URL extraction (same as test route)
+        const d         = falResult.data as Record<string, unknown>;
+        const imagesArr = Array.isArray(d?.["images"]) ? (d["images"] as Record<string, unknown>[]) : null;
+        const imageUrl  =
+          (imagesArr?.[0]?.["url"] as string | undefined) ??
+          ((d?.["image"] as Record<string, unknown> | undefined)?.["url"] as string | undefined) ??
+          (d?.["url"] as string | undefined) ??
+          null;
 
         if (imageUrl) {
           console.log("[generate-controlled-render] layout-reference edit succeeded:", imageUrl);
@@ -869,15 +916,25 @@ export async function POST(req: NextRequest) {
             referenceUsed:    true,
             referenceVersion: "clean-layout-reference-v1",
             modelId:          FAL_EDIT_MODEL_ID,
+            layoutReferencePngGenerated: true,
+            layoutReferencePngBytes:     pngResult.bytes,
+            layoutReferencePrefix:       pngResult.dataUri.slice(0, 40),
             ...diagInfo,
           });
         }
-        console.warn("[generate-controlled-render] layout-reference edit returned no image, falling back");
+        fallbackReason       = "fal edit returned no image url";
+        fallbackStage        = "fal-edit-no-url";
+        fallbackErrorMessage = `response keys: ${Object.keys(d).join(", ")}`;
+        console.warn("[generate-controlled-render] edit returned no image, falling back:", fallbackErrorMessage);
       } catch (editErr) {
-        console.error("[generate-controlled-render] layout-reference edit failed, falling back:", String(editErr));
+        const isTimeout = abortController.signal.aborted;
+        fallbackReason       = isTimeout ? "fal edit timed out" : "fal edit threw";
+        fallbackStage        = "fal-edit-error";
+        fallbackErrorMessage = String(editErr);
+        console.error("[generate-controlled-render] edit failed, falling back:", fallbackErrorMessage);
+      } finally {
+        clearTimeout(timeoutHandle);
       }
-    } else {
-      console.log("[generate-controlled-render] layout-reference PNG unavailable (sharp not installed?), using T2I");
     }
 
     // ── Fallback: pure text-to-image ────────────────────────────────────────
@@ -916,6 +973,12 @@ export async function POST(req: NextRequest) {
       referenceUsed:    false,
       referenceVersion: null,
       modelId:          "fal-ai/flux-2-pro",
+      fallbackReason,
+      fallbackStage,
+      fallbackErrorMessage,
+      layoutReferencePngGenerated: pngResult.dataUri !== null,
+      layoutReferencePngBytes:     pngResult.bytes,
+      layoutReferencePrefix:       pngResult.dataUri ? pngResult.dataUri.slice(0, 40) : null,
       ...diagInfo,
     });
 
