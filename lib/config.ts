@@ -247,7 +247,7 @@ export const PACKAGES: Package[] = [
       backdropItems: [
         { id: "large",  type: "arch", sizeId: "large",  widthCm: 120, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
         { id: "medium", type: "arch", sizeId: "medium", widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
-        { id: "wavy",   type: "wavy",                   widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "small",  type: "arch", sizeId: "small",  widthCm: 80,  heightCm: 180, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
       balloonStyle: "premium",
       plinths: 3,
@@ -495,7 +495,7 @@ export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   { id: "round",        label: "Round Backdrop",       price: 0 },
   { id: "rect",         label: "Rectangular Backdrop", price: 0 },
   { id: "shimmer_wall", label: "Shimmer Wall",         price: 80 },
-  { id: "wavy",         label: "Wavy Backdrop",        price: 0 },
+  // "wavy" removed from product — not selectable. Kept in BackdropShapeId for backward compat.
 ];
 
 export const BALLOON_STYLES: Option<BalloonStyleId>[] = [
