@@ -756,22 +756,31 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
     const sc    = sceneModel.shimmerColor ?? "silver";
     const p     = sceneModel.panels[0];
 
-    // Plinth: include if configured
+    // Plinth: centered in front of the shimmer wall
     const plinth    = sceneModel.plinths[0];
     const plinthStr = plinth
       ? `Keep one slim freestanding white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter, ` +
-        `fully visible from base to top, placed on the open side near the shimmer wall. Do not omit the plinth.`
+        `fully visible from base to rounded top, positioned centered in front of the shimmer wall. Do not omit the plinth.`
       : "";
 
-    // Balloon garland: include if selected
+    // Balloon garland: dense organic with mixed sizes, and silver chrome for silver shimmer
     const bStyle    = sceneModel.balloons.style;
     const bColors   = sceneModel.balloons.colors.length > 0
       ? sceneModel.balloons.colors.slice(0, 4).join(", ")
-      : "the selected palette";
+      : sc === "silver" ? "silver, white, pearl" : "the selected palette";
+    const chromeBalloonNote = sc === "silver"
+      ? `Include some large chrome silver mirror balloons mixed into the garland for a premium reflective look. `
+      : sc === "gold"
+        ? `Include some large chrome gold mirror balloons mixed into the garland for a premium reflective look. `
+        : "";
     const garlandStr = bStyle !== "none"
-      ? `Keep the selected organic balloon garland (${bStyle}) visible along the right edge and top corner ` +
-        `of the shimmer wall, using the selected balloon colors (${bColors}). ` +
-        `The garland should cascade from the top-right corner down the right side. Do not omit the balloon garland.`
+      ? `Keep a full dense organic balloon garland (${bStyle}) starting at the top-right corner of the shimmer wall ` +
+        `and cascading richly down the right side to the floor. ` +
+        `The garland must be full, lush, and premium — not sparse or thin. ` +
+        `Use a mix of large, medium, and small balloons in varied sizes for organic depth. ` +
+        `Balloon colors: ${bColors}. ` +
+        chromeBalloonNote +
+        `Do not omit the balloon garland. Do not make it sparse or flat.`
       : "No balloon garland.";
 
     return (
