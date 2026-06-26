@@ -1,5 +1,8 @@
 "use client";
 
+import { Plus_Jakarta_Sans } from "next/font/google";
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["500", "600", "700", "800"] });
+
 import { useMemo, useState } from "react";
 import {
   EVENT_TYPES,
@@ -598,6 +601,7 @@ function DecorStep({
   patchDecor: (p: Partial<DecorConfig>) => void;
 }) {
   const [printFile, setPrintFile] = useState<File | null>(null);
+  const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
 
   const d = config.decor;
   const theme = themeById(config.theme)!;
@@ -767,256 +771,349 @@ function DecorStep({
   });
 
   return (
-    <div>
-      {/* BACKDROP SETUP */}
-      <div style={card}>
-        {secLabel("Backdrop Setup")}
-        {secSub("Select backdrop type(s) — up to 3 panels")}
-
-        {/* Arch Backdrop card */}
-        {(() => {
-          const archPanelIndex = d.backdropItems.findIndex((i) => i.type === "arch");
-          const shimmerInItems = d.backdropItems.filter((i) => i.type === "shimmer_wall").length;
-          const archCount = d.backdropItems.filter((i) => i.type === "arch").length;
-          return (
-            <div style={{ marginBottom: 8 }}>
-              <button
-                type="button"
-                onClick={toggleArchType}
-                style={{
-                  position: "relative", width: "100%",
-                  border: hasArch ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
-                  background: hasArch ? accent + "10" : "white",
-                  borderRadius: 12, padding: "10px 12px", textAlign: "left", transition: "all 0.15s",
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: hasArch ? accent : "#1A1A2E" }}>
-                    Arch Backdrop
-                  </div>
-                  <span style={{
-                    marginTop: 4, fontSize: 11, fontWeight: 700, display: "inline-block",
-                    color: hasArch ? accent : "#666",
-                    background: hasArch ? accent + "18" : "rgba(0,0,0,0.06)",
-                    padding: "2px 8px", borderRadius: 20,
-                  }}>
-                    {hasArch
-                      ? archPanelIndex === 0
-                        ? `${archCount} arch${archCount > 1 ? "es" : ""} — Included`
-                        : `+${formatAED(archCount * PER_BACKDROP)}`
-                      : `+${formatAED(PER_BACKDROP)}`}
-                  </span>
-                </div>
-                {hasArch && (
-                  <span style={{
-                    width: 18, height: 18, borderRadius: "50%", background: accent, color: "white",
-                    fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0,
-                  }}>✓</span>
-                )}
-              </button>
-
-              {/* Arch size selector */}
-              {hasArch && (
-                <div style={{
-                  marginTop: 6, padding: "10px 12px",
-                  background: accent + "08", borderRadius: 10,
-                  border: `1px solid ${accent}28`,
-                }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#444", marginBottom: 8 }}>
-                    Select arch size(s) — add up to {3 - d.backdropItems.filter((i) => i.type !== "arch").length - d.backdropItems.filter((i) => i.type === "arch").length + d.backdropItems.filter((i) => i.type === "arch").length} arch{d.backdropItems.filter((i) => i.type === "arch").length !== 1 ? "es" : ""}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {ARCH_SIZES.map((size) => {
-                      const isActive = selectedArchSizeIds.includes(size.id);
-                      return (
-                        <button
-                          key={size.id}
-                          type="button"
-                          onClick={() => toggleArchSize(size.id)}
-                          style={{
-                            border: isActive ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.15)",
-                            background: isActive ? accent : "white",
-                            color: isActive ? "white" : "#333",
-                            borderRadius: 8, padding: "5px 10px",
-                            fontSize: 11, fontWeight: 600, transition: "all 0.15s",
-                          }}
-                        >
-                          {size.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {selectedArchSizeIds.length > 0 && (
-                    <div style={{ marginTop: 6, fontSize: 11, color: "#666" }}>
-                      {selectedArchSizeIds.length} arch{selectedArchSizeIds.length > 1 ? "es" : ""} selected:{" "}
-                      {selectedArchSizeIds
-                        .map((id) => ARCH_SIZES.find((s) => s.id === id)?.label ?? id)
-                        .join(", ")}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* Rectangular Backdrop — size-family card (same pattern as Arch) */}
-        {(() => {
-          const rectPanelIndex = d.backdropItems.findIndex((i) => i.type === "rect");
-          const rectCount = d.backdropItems.filter((i) => i.type === "rect").length;
-          return (
-            <div style={{ marginBottom: 8 }}>
-              <button
-                type="button"
-                onClick={toggleRectType}
-                style={{
-                  position: "relative", width: "100%",
-                  border: hasRect ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
-                  background: hasRect ? accent + "10" : "white",
-                  borderRadius: 12, padding: "10px 12px", textAlign: "left", transition: "all 0.15s",
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: hasRect ? accent : "#1A1A2E" }}>
-                    Rectangular Backdrop
-                  </div>
-                  <span style={{
-                    marginTop: 4, fontSize: 11, fontWeight: 700, display: "inline-block",
-                    color: hasRect ? accent : "#666",
-                    background: hasRect ? accent + "18" : "rgba(0,0,0,0.06)",
-                    padding: "2px 8px", borderRadius: 20,
-                  }}>
-                    {hasRect
-                      ? rectPanelIndex === 0 ? `${rectCount} rect${rectCount > 1 ? "s" : ""} — Included` : `+${formatAED(rectCount * PER_BACKDROP)}`
-                      : `+${formatAED(PER_BACKDROP)}`}
-                  </span>
-                </div>
-                {hasRect && (
-                  <span style={{ width: 18, height: 18, borderRadius: "50%", background: accent, color: "white", fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0 }}>✓</span>
-                )}
-              </button>
-
-              {hasRect && (
-                <div style={{ marginTop: 6, padding: "10px 12px", background: accent + "08", borderRadius: 10, border: `1px solid ${accent}28` }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#444", marginBottom: 8 }}>Select size(s)</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {RECT_SIZES.map((size) => {
-                      const isActive = selectedRectSizeIds.includes(size.id);
-                      return (
-                        <button
-                          key={size.id}
-                          type="button"
-                          onClick={() => toggleRectSize(size.id)}
-                          style={{
-                            border: isActive ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.15)",
-                            background: isActive ? accent : "white",
-                            color: isActive ? "white" : "#333",
-                            borderRadius: 8, padding: "5px 10px",
-                            fontSize: 11, fontWeight: 600, transition: "all 0.15s",
-                          }}
-                        >
-                          {size.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {selectedRectSizeIds.length > 0 && (
-                    <div style={{ marginTop: 6, fontSize: 11, color: "#666" }}>
-                      {selectedRectSizeIds.map((id) => RECT_SIZES.find((s) => s.id === id)?.label ?? id).join(", ")}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* Non-sized backdrop type cards: round, shimmer_wall, wavy */}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {BACKDROP_SHAPES.filter((s) => s.id !== "arch" && s.id !== "rect").map((shape) => {
-            const isSelected = d.backdropItems.some((i) => i.type === shape.id);
-            const panelIndex = d.backdropItems.findIndex((i) => i.type === shape.id);
-            const shimmerExtra = shape.id === "shimmer_wall" ? 80 : 0;
-            const priceNote = isSelected
-              ? panelIndex === 0 && shimmerExtra > 0
-                ? `+${formatAED(shimmerExtra)}`
-                : panelIndex === 0
-                  ? "Included"
-                  : `+${formatAED(PER_BACKDROP + shimmerExtra)}`
-              : `+${formatAED(PER_BACKDROP + shimmerExtra)}`;
-            return (
-              <button
-                key={shape.id}
-                type="button"
-                onClick={() => toggleNonSizedType(shape.id as BackdropShapeId)}
-                style={{
-                  position: "relative",
-                  border: isSelected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
-                  background: isSelected ? accent + "10" : "white",
-                  borderRadius: 12, padding: "10px 12px", textAlign: "left", transition: "all 0.15s",
-                }}
-              >
-                {isSelected && (
-                  <span style={{
-                    position: "absolute", top: 5, right: 5, width: 16, height: 16,
-                    borderRadius: "50%", background: accent, color: "white",
-                    fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700,
-                  }}>✓</span>
-                )}
-                <div style={{ fontSize: 12, fontWeight: 600, color: isSelected ? accent : "#1A1A2E" }}>{shape.label}</div>
-                <span style={{
-                  marginTop: 5, fontSize: 11, fontWeight: 700, display: "inline-block",
-                  color: isSelected ? accent : "#666",
-                  background: isSelected ? accent + "18" : "rgba(0,0,0,0.06)",
-                  padding: "2px 8px", borderRadius: 20,
-                }}>{priceNote}</span>
-              </button>
-            );
-          })}
+    <div className={jakarta.className}>
+      {/* ══ BACKDROP SECTION ══════════════════════════════════ */}
+      <div style={{ background: "#F7F1FF", border: "1px solid #D8B4FE", borderRadius: 20, padding: "14px 12px", marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <div style={{ width: 4, height: 20, borderRadius: 2, background: "#8B5CF6", flexShrink: 0 }} />
+          <span style={{ fontSize: 13, fontWeight: 800, color: "#7C3AED", letterSpacing: "0.02em" }}>BACKDROP</span>
         </div>
 
-        {/* Shimmer Wall color selector — only shown when a shimmer wall is active */}
-        {d.backdropItems.some((i) => i.type === "shimmer_wall") && (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>
-              Shimmer Wall Color
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {SHIMMER_COLORS.map((sc) => {
-                const isActive = (d.shimmerColor ?? "silver") === sc.id;
-                return (
-                  <button
-                    key={sc.id}
-                    type="button"
-                    onClick={() => patchDecor({ shimmerColor: sc.id as ShimmerColorId })}
-                    style={{
-                      padding: "5px 12px",
-                      borderRadius: 20,
-                      fontSize: 12,
-                      fontWeight: isActive ? 700 : 500,
-                      border: isActive ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
-                      background: isActive ? accent + "15" : "white",
-                      color: isActive ? accent : "#333",
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {sc.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+      {/* BACKDROP TYPE — Vertical list */}
+      <div style={card}>
+        {secLabel("Choose your backdrop")}
+        {secSub("Select a backdrop type — you can add up to 3")}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* ARCH CARD */}
+          {(() => {
+            const archItems = d.backdropItems.filter(i => i.type === "arch");
+            const hasArchCard = archItems.length > 0;
+            const firstArchItem = archItems[0];
+            return (
+              <div style={{
+                border: hasArchCard ? `2.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
+                background: hasArchCard ? accent + "12" : "white",
+                borderRadius: 14,
+                overflow: "hidden",
+                boxShadow: hasArchCard ? `0 2px 12px ${accent}22` : "none",
+                transition: "all 0.15s",
+              }}>
+                {/* Card header row */}
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}
+                  onClick={() => {
+                    if (!hasArchCard) {
+                      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("arch")] });
+                    }
+                  }}
+                >
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 10, flexShrink: 0,
+                    background: hasArchCard ? accent + "20" : "#F3F0FF",
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
+                  }}>🔮</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: hasArchCard ? accent : "#1A1A2E" }}>Arch Backdrop</div>
+                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Rounded event backdrop</div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
+                      background: hasArchCard ? accent : "rgba(0,0,0,0.06)",
+                      color: hasArchCard ? "white" : "#555",
+                    }}>
+                      {archItems.length === 0 ? "+AED 350" : archItems.length === 1 && d.backdropItems.indexOf(archItems[0]) === 0 ? "Included" : "+AED 350"}
+                    </span>
+                    {hasArchCard && <span style={{ fontSize: 16 }}>✓</span>}
+                  </div>
+                </div>
+
+                {/* Expanded: arch size options */}
+                {hasArchCard && (
+                  <div style={{ borderTop: `1px solid ${accent}30`, padding: "12px 16px", background: accent + "06" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 8 }}>Choose size:</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {ARCH_SIZES.map((size) => {
+                        const isSelected = firstArchItem?.sizeId === size.id;
+                        return (
+                          <button
+                            key={size.id}
+                            type="button"
+                            onClick={() => {
+                              const updated = d.backdropItems.map(item =>
+                                item.type === "arch" && item.id === firstArchItem?.id
+                                  ? { ...item, sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm }
+                                  : item
+                              );
+                              patchDecor({ backdropItems: updated });
+                            }}
+                            style={{
+                              display: "flex", justifyContent: "space-between", alignItems: "center",
+                              padding: "10px 14px", borderRadius: 10, border: isSelected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
+                              background: isSelected ? accent + "12" : "white", cursor: "pointer", transition: "all 0.15s",
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? accent : "#1A1A2E" }}>{size.label}</div>
+                              <div style={{ fontSize: 11, color: "#999" }}>{size.widthCm} × {size.heightCm} cm</div>
+                            </div>
+                            {isSelected && <span style={{ color: accent, fontWeight: 700, fontSize: 16 }}>✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* Remove arch button */}
+                    <button
+                      type="button"
+                      onClick={() => patchDecor({ backdropItems: d.backdropItems.filter(i => i.id !== firstArchItem?.id) })}
+                      style={{ marginTop: 10, fontSize: 11, color: "#999", background: "none", border: "none", cursor: "pointer" }}
+                    >
+                      Remove this backdrop
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* RECTANGULAR CARD */}
+          {(() => {
+            const rectItems = d.backdropItems.filter(i => i.type === "rect");
+            const hasRectCard = rectItems.length > 0;
+            const firstRectItem = rectItems[0];
+            return (
+              <div style={{
+                border: hasRectCard ? `2.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
+                background: hasRectCard ? accent + "12" : "white",
+                borderRadius: 14,
+                overflow: "hidden",
+                boxShadow: hasRectCard ? `0 2px 12px ${accent}22` : "none",
+                transition: "all 0.15s",
+              }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}
+                  onClick={() => {
+                    if (!hasRectCard) {
+                      if (d.backdropItems.length >= 3) return;
+                      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("rect")] });
+                    }
+                  }}
+                >
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 10, flexShrink: 0,
+                    background: hasRectCard ? accent + "20" : "#FFF8F0",
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
+                  }}>🟫</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: hasRectCard ? accent : "#1A1A2E" }}>Rectangular Backdrop</div>
+                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Classic straight backdrop</div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
+                      background: hasRectCard ? accent : "rgba(0,0,0,0.06)",
+                      color: hasRectCard ? "white" : "#555",
+                    }}>
+                      {rectItems.length > 0 && d.backdropItems.indexOf(rectItems[0]) === 0 ? "Included" : "+AED 350"}
+                    </span>
+                    {hasRectCard && <span style={{ fontSize: 16 }}>✓</span>}
+                  </div>
+                </div>
+
+                {hasRectCard && (
+                  <div style={{ borderTop: `1px solid ${accent}30`, padding: "12px 16px", background: accent + "06" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 8 }}>Choose size:</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {RECT_SIZES.map((size) => {
+                        const isSelected = firstRectItem?.sizeId === size.id;
+                        return (
+                          <button
+                            key={size.id}
+                            type="button"
+                            onClick={() => {
+                              const updated = d.backdropItems.map(item =>
+                                item.type === "rect" && item.id === firstRectItem?.id
+                                  ? { ...item, sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm }
+                                  : item
+                              );
+                              patchDecor({ backdropItems: updated });
+                            }}
+                            style={{
+                              display: "flex", justifyContent: "space-between", alignItems: "center",
+                              padding: "10px 14px", borderRadius: 10, border: isSelected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
+                              background: isSelected ? accent + "12" : "white", cursor: "pointer", transition: "all 0.15s",
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? accent : "#1A1A2E" }}>{size.label}</div>
+                              <div style={{ fontSize: 11, color: "#999" }}>{size.widthCm} × {size.heightCm} cm</div>
+                            </div>
+                            {isSelected && <span style={{ color: accent, fontWeight: 700, fontSize: 16 }}>✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => patchDecor({ backdropItems: d.backdropItems.filter(i => i.id !== firstRectItem?.id) })}
+                      style={{ marginTop: 10, fontSize: 11, color: "#999", background: "none", border: "none", cursor: "pointer" }}
+                    >
+                      Remove this backdrop
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* ROUND CARD */}
+          {(() => {
+            const roundItems = d.backdropItems.filter(i => i.type === "round");
+            const hasRound = roundItems.length > 0;
+            return (
+              <div
+                style={{
+                  border: hasRound ? `2.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
+                  background: hasRound ? accent + "12" : "white",
+                  borderRadius: 14,
+                  boxShadow: hasRound ? `0 2px 12px ${accent}22` : "none",
+                  transition: "all 0.15s",
+                  display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer",
+                }}
+                onClick={() => {
+                  if (hasRound) {
+                    patchDecor({ backdropItems: d.backdropItems.filter(i => i.type !== "round") });
+                  } else {
+                    if (d.backdropItems.length >= 3) return;
+                    patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("round")] });
+                  }
+                }}
+              >
+                <div style={{
+                  width: 44, height: 44, borderRadius: 10, flexShrink: 0,
+                  background: hasRound ? accent + "20" : "#F0FDF4",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
+                }}>⭕</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: hasRound ? accent : "#1A1A2E" }}>Round Backdrop</div>
+                  <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Soft circular photo backdrop</div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
+                    background: hasRound ? accent : "rgba(0,0,0,0.06)",
+                    color: hasRound ? "white" : "#555",
+                  }}>
+                    {hasRound && d.backdropItems.indexOf(roundItems[0]) === 0 ? "Included" : "+AED 350"}
+                  </span>
+                  {hasRound && <span style={{ fontSize: 16 }}>✓</span>}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* SHIMMER WALL CARD */}
+          {(() => {
+            const shimmerItems = d.backdropItems.filter(i => i.type === "shimmer_wall");
+            const hasShimmer = shimmerItems.length > 0;
+            return (
+              <div style={{
+                border: hasShimmer ? `2.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
+                background: hasShimmer ? accent + "12" : "white",
+                borderRadius: 14,
+                overflow: "hidden",
+                boxShadow: hasShimmer ? `0 2px 12px ${accent}22` : "none",
+                transition: "all 0.15s",
+              }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}
+                  onClick={() => {
+                    if (!hasShimmer) {
+                      if (d.backdropItems.length >= 3) return;
+                      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("shimmer_wall")] });
+                    }
+                  }}
+                >
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 10, flexShrink: 0,
+                    background: hasShimmer ? accent + "20" : "#F0F9FF",
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
+                  }}>✨</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: hasShimmer ? accent : "#1A1A2E" }}>Shimmer Wall</div>
+                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Sparkly sequin wall · 200 × 200 cm</div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
+                      background: hasShimmer ? accent : "rgba(0,0,0,0.06)",
+                      color: hasShimmer ? "white" : "#555",
+                    }}>
+                      {hasShimmer && d.backdropItems.indexOf(shimmerItems[0]) === 0 ? "Included" : "+AED 430"}
+                    </span>
+                    {hasShimmer && <span style={{ fontSize: 16 }}>✓</span>}
+                  </div>
+                </div>
+
+                {hasShimmer && (
+                  <div style={{ borderTop: `1px solid ${accent}30`, padding: "12px 16px", background: accent + "06" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 8 }}>Choose shimmer color:</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {SHIMMER_COLORS.map((sc) => {
+                        const isActive = (d.shimmerColor ?? "silver") === sc.id;
+                        return (
+                          <button
+                            key={sc.id}
+                            type="button"
+                            onClick={() => patchDecor({ shimmerColor: sc.id as ShimmerColorId })}
+                            style={{
+                              padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: isActive ? 700 : 500,
+                              border: isActive ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
+                              background: isActive ? accent + "15" : "white",
+                              color: isActive ? accent : "#333", cursor: "pointer", transition: "all 0.15s",
+                            }}
+                          >
+                            {sc.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => patchDecor({ backdropItems: d.backdropItems.filter(i => i.type !== "shimmer_wall") })}
+                      style={{ marginTop: 10, fontSize: 11, color: "#999", background: "none", border: "none", cursor: "pointer" }}
+                    >
+                      Remove shimmer wall
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
       </div>
 
       {/* PANEL SETTINGS — per-panel color, text, graphic */}
       {d.backdropItems.length > 0 && (
+        <>
+          <button
+            type="button"
+            onClick={() => setShowAdvancedPanel((v) => !v)}
+            style={{
+              display: "flex", alignItems: "center", gap: 6, width: "100%",
+              background: "none", border: "none", cursor: "pointer",
+              padding: "6px 0", marginBottom: showAdvancedPanel ? 6 : 0,
+              color: "#7C3AED", fontSize: 13, fontWeight: 700,
+            }}
+          >
+            <span style={{ fontSize: 11, transform: showAdvancedPanel ? "rotate(90deg)" : "none", display: "inline-block", transition: "transform 0.15s" }}>▶</span>
+            {showAdvancedPanel ? "Hide backdrop settings" : "Customize each backdrop ▸ color, text, design"}
+          </button>
+          {showAdvancedPanel && (
         <div style={card}>
-          {secLabel("Panel Settings")}
-          {secSub("Configure each panel's color, text, and graphic individually")}
+          {secLabel("Customize each backdrop")}
+          {secSub("Fine-tune color, text, and design for each backdrop")}
 
           {d.backdropItems.map((item, idx) => {
             const typeLabel = BACKDROP_SHAPES.find((s) => s.id === item.type)?.label ?? item.type;
@@ -1033,7 +1130,7 @@ function DecorStep({
               <div key={item.id} style={{ border: `1.5px solid ${accent}28`, borderRadius: 14, padding: 14, marginBottom: 10, background: "#FAFAFA" }}>
                 {/* Header */}
                 <div style={{ fontSize: 12, fontWeight: 700, color: accent, marginBottom: 12 }}>
-                  Panel {idx + 1} — {typeLabel}{sizeLabel ? ` · ${sizeLabel}` : ""}
+                  Backdrop {idx + 1} — {typeLabel}{sizeLabel ? ` · ${sizeLabel}` : ""}
                 </div>
 
                 {/* Color */}
@@ -1224,11 +1321,22 @@ function DecorStep({
             </div>
           )}
         </div>
+          )}
+        </>
       )}
+
+      </div>{/* ── end BACKDROP section ── */}
+
+      {/* ══ BALLOONS SECTION ══════════════════════════════════ */}
+      <div style={{ background: "#EFF8FF", border: "1px solid #BFDBFE", borderRadius: 20, padding: "14px 12px", marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <div style={{ width: 4, height: 20, borderRadius: 2, background: "#3B82F6", flexShrink: 0 }} />
+          <span style={{ fontSize: 13, fontWeight: 800, color: "#1D4ED8", letterSpacing: "0.02em" }}>BALLOONS</span>
+        </div>
 
       {/* BALLOON STYLE */}
       <div style={card}>
-        {secLabel("Balloon style")}
+        {secLabel("Choose your balloons")}
         <div className="flex flex-wrap gap-2">
           {BALLOON_STYLES.map((o) => {
             const active = o.id === d.balloonStyle;
@@ -1246,6 +1354,44 @@ function DecorStep({
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* BALLOON COLORS */}
+      <div style={card}>
+        {secLabel("Balloon colors")}
+        {secSub("Select up to 5 shades — Sempertex palette confirmed with your stylist")}
+        <div className="flex flex-wrap items-center gap-2">
+          {theme.balloonColors.map((hex) => (
+            <button
+              key={hex}
+              type="button"
+              onClick={() => toggleBalloon(hex)}
+              className={swatch(d.balloonColors.includes(hex))}
+              style={{ backgroundColor: hex }}
+              title={hex}
+            />
+          ))}
+          {d.balloonColors
+            .filter((c) => !theme.balloonColors.includes(c))
+            .map((hex) => (
+              <button
+                key={hex}
+                type="button"
+                onClick={() => toggleBalloon(hex)}
+                className={swatch(true)}
+                style={{ backgroundColor: hex }}
+                title={hex}
+              />
+            ))}
+          <label className="flex h-9 cursor-pointer items-center gap-1 rounded-full border border-dashed border-black/25 px-3 text-xs text-black/55">
+            Custom
+            <input
+              type="color"
+              onChange={(e) => toggleBalloon(e.target.value)}
+              className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0"
+            />
+          </label>
         </div>
       </div>
 
@@ -1277,8 +1423,8 @@ function DecorStep({
 
       {/* BACKDROP PRINT */}
       <div style={card}>
-        {secLabel("Backdrop Print")}
-        {secSub("Printed graphic or design on your backdrop panel")}
+        {secLabel("Add text or design")}
+        {secSub("Add a printed graphic or text to your backdrop")}
         <div className="grid grid-cols-2 gap-2">
           {BACKDROP_PRINTS.map((opt) => {
             const selected = print.type === opt.id;
@@ -1387,48 +1533,18 @@ function DecorStep({
         )}
       </div>
 
-      {/* BALLOON COLORS */}
-      <div style={card}>
-        {secLabel("Balloon colors")}
-        {secSub("Select up to 5 shades — Sempertex palette confirmed with your stylist")}
-        <div className="flex flex-wrap items-center gap-2">
-          {theme.balloonColors.map((hex) => (
-            <button
-              key={hex}
-              type="button"
-              onClick={() => toggleBalloon(hex)}
-              className={swatch(d.balloonColors.includes(hex))}
-              style={{ backgroundColor: hex }}
-              title={hex}
-            />
-          ))}
-          {d.balloonColors
-            .filter((c) => !theme.balloonColors.includes(c))
-            .map((hex) => (
-              <button
-                key={hex}
-                type="button"
-                onClick={() => toggleBalloon(hex)}
-                className={swatch(true)}
-                style={{ backgroundColor: hex }}
-                title={hex}
-              />
-            ))}
-          <label className="flex h-9 cursor-pointer items-center gap-1 rounded-full border border-dashed border-black/25 px-3 text-xs text-black/55">
-            Custom
-            <input
-              type="color"
-              onChange={(e) => toggleBalloon(e.target.value)}
-              className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0"
-            />
-          </label>
-        </div>
-      </div>
+      </div>{/* ── end BALLOONS section ── */}
 
+      {/* ══ EXTRAS SECTION ════════════════════════════════════ */}
+      <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 20, padding: "14px 12px", marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <div style={{ width: 4, height: 20, borderRadius: 2, background: "#F97316", flexShrink: 0 }} />
+          <span style={{ fontSize: 13, fontWeight: 800, color: "#B45309", letterSpacing: "0.02em" }}>EXTRAS</span>
+        </div>
 
       {/* CHARACTER CUTOUTS */}
       <div style={card}>
-        {secLabel("Character Cutouts")}
+        {secLabel("Character standees")}
         {secSub("Theme-matched character cutouts for your setup")}
         <div className="space-y-2">
           {/* No cutouts option */}
@@ -1513,7 +1629,7 @@ function DecorStep({
 
       {/* PLINTHS */}
       <div style={card}>
-        {secLabel("Plinths")}
+        {secLabel("Cake stands")}
         <div className="flex flex-wrap gap-2">
           {[0, 1, 2, 3].map((n) => {
             const active = d.plinths === n;
@@ -1563,7 +1679,7 @@ function DecorStep({
 
       {/* CAKE TABLE */}
       <div style={card}>
-        {secLabel("Cake / dessert table styling")}
+        {secLabel("Dessert table")}
         <div className="flex flex-wrap gap-2">
           {[
             { id: "no", label: "No" },
@@ -1586,6 +1702,7 @@ function DecorStep({
           })}
         </div>
       </div>
+      </div>{/* ── end EXTRAS section ── */}
     </div>
   );
 }
