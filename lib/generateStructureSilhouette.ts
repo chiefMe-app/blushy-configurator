@@ -231,11 +231,48 @@ export function generateStructureSilhouette(
   // each board as a separate physical object and not merge or omit panels.
   const sorted = [...layout.panels].sort((a, b) => a.zOrder - b.zOrder);
   sorted.forEach((panel, sortedIdx) => {
-    const item  = backdropItems[panel.idx];
-    const shape = (item?.type ?? "arch") as BackdropShapeId;
+    const item      = backdropItems[panel.idx];
+    const shape     = (item?.type ?? "arch") as BackdropShapeId;
+    const isShimmer = shape === "shimmer_wall";
+
     if (isMultiPanel) {
-      const fill = MULTI_PANEL_FILLS[sortedIdx % MULTI_PANEL_FILLS.length];
-      content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, fill));
+      const baseFill = MULTI_PANEL_FILLS[sortedIdx % MULTI_PANEL_FILLS.length];
+
+      if (isShimmer) {
+        // Shimmer wall: high-contrast square tile grid so the edit model reads it
+        // as a tiled sequin wall, not a matte board.
+        const patId    = `shimmerTile_${sortedIdx}`;
+        const tileSize = Math.max(10, Math.round(panel.pw * 0.05)); // ~20 tiles across the panel
+        content.push([
+          `<defs>`,
+          `  <pattern id="${patId}" patternUnits="userSpaceOnUse" width="${tileSize}" height="${tileSize}">`,
+          `    <rect width="${tileSize}" height="${tileSize}" fill="#D8D8E4"/>`,
+          `    <rect width="${tileSize}" height="${tileSize}" fill="none" stroke="rgba(60,60,90,0.50)" stroke-width="0.7"/>`,
+          `  </pattern>`,
+          `</defs>`,
+        ].join("\n    "));
+        content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, `url(#${patId})`));
+      } else {
+        content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, MULTI_PANEL_FILLS[sortedIdx % MULTI_PANEL_FILLS.length]));
+      }
+    } else if (isShimmer) {
+      // Single shimmer wall: force a clean rectangle (never arch edges) with tile grid.
+      // Using <rect> directly avoids any arch-like path the panelEdgeOnly/panelPathOrShape
+      // functions might generate, which could mislead the edit model into adding an arch.
+      const patId    = `shimmerTileSingle`;
+      const tileSize = Math.max(10, Math.round(panel.pw * 0.05));
+      const left     = panel.cx - panel.pw / 2;
+      const panelH   = panel.floorY - panel.apexY;
+      content.push([
+        `<defs>`,
+        `  <pattern id="${patId}" patternUnits="userSpaceOnUse" width="${tileSize}" height="${tileSize}">`,
+        `    <rect width="${tileSize}" height="${tileSize}" fill="#D8D8E4"/>`,
+        `    <rect width="${tileSize}" height="${tileSize}" fill="none" stroke="rgba(60,60,90,0.50)" stroke-width="0.7"/>`,
+        `  </pattern>`,
+        `</defs>`,
+        // Explicit rectangle — no arch path, no rounded top, clean square silhouette
+        `<rect x="${left.toFixed(1)}" y="${panel.apexY.toFixed(1)}" width="${panel.pw.toFixed(1)}" height="${panelH.toFixed(1)}" fill="url(#${patId})" stroke="rgba(100,100,130,0.35)" stroke-width="1"/>`,
+      ].join("\n    "));
     } else {
       content.push(panelEdgeOnly(panel.cx, panel.pw, panel.apexY, panel.floorY, shape));
     }

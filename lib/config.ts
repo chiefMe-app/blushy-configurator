@@ -354,7 +354,7 @@ export function makeBackdropItem(
   } else if (type === "round") {
     widthCm = 120; heightCm = 120;
   } else if (type === "shimmer_wall") {
-    widthCm = 80; heightCm = 210;
+    widthCm = 200; heightCm = 200;
   }
   return {
     id:      sizeId ?? type,
@@ -462,6 +462,18 @@ export interface ExtraBalloonCluster {
   source:          "user_prompt";
 }
 
+export type ShimmerColorId = "gold" | "silver" | "black" | "pink" | "iridescent" | "blue" | "red";
+
+export const SHIMMER_COLORS: Option<ShimmerColorId>[] = [
+  { id: "gold",       label: "Gold",       price: 0 },
+  { id: "silver",     label: "Silver",     price: 0 },
+  { id: "black",      label: "Black",      price: 0 },
+  { id: "pink",       label: "Pink",       price: 0 },
+  { id: "iridescent", label: "Iridescent", price: 0 },
+  { id: "blue",       label: "Blue",       price: 0 },
+  { id: "red",        label: "Red",        price: 0 },
+];
+
 export interface DecorConfig {
   /** Source of truth for all backdrop panels — type, count, and arch sizes. */
   backdropItems: BackdropItem[];
@@ -476,6 +488,8 @@ export interface DecorConfig {
   backdropPrint: BackdropPrint;
   backdropText: BackdropText;
   cakeTable: boolean;
+  /** Selected shimmer wall color/material — only relevant when a shimmer_wall is in backdropItems. */
+  shimmerColor?: ShimmerColorId;
   /**
    * Extra balloon clusters from natural language / customer edits.
    * Extra balloon clusters from natural language edits are stored in scene state
@@ -494,7 +508,7 @@ export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   { id: "arch",         label: "Arch Backdrop",        price: 0 },
   { id: "round",        label: "Round Backdrop",       price: 0 },
   { id: "rect",         label: "Rectangular Backdrop", price: 0 },
-  { id: "shimmer_wall", label: "Shimmer Wall",         price: 80 },
+  { id: "shimmer_wall", label: "Shimmer Wall · 200 × 200 cm", price: 80 },
   // "wavy" removed from product — not selectable. Kept in BackdropShapeId for backward compat.
 ];
 

@@ -52,6 +52,8 @@ import {
   type FontStyle,
   type TextColor,
   type TextAlign,
+  SHIMMER_COLORS,
+  type ShimmerColorId,
 } from "@/lib/config";
 import SetupPreview, { useSetupPreview } from "@/components/SetupPreview";
 import StepNavigation from "@/components/StepNavigation";
@@ -974,6 +976,40 @@ function DecorStep({
             );
           })}
         </div>
+
+        {/* Shimmer Wall color selector — only shown when a shimmer wall is active */}
+        {d.backdropItems.some((i) => i.type === "shimmer_wall") && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>
+              Shimmer Wall Color
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {SHIMMER_COLORS.map((sc) => {
+                const isActive = (d.shimmerColor ?? "silver") === sc.id;
+                return (
+                  <button
+                    key={sc.id}
+                    type="button"
+                    onClick={() => patchDecor({ shimmerColor: sc.id as ShimmerColorId })}
+                    style={{
+                      padding: "5px 12px",
+                      borderRadius: 20,
+                      fontSize: 12,
+                      fontWeight: isActive ? 700 : 500,
+                      border: isActive ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
+                      background: isActive ? accent + "15" : "white",
+                      color: isActive ? accent : "#333",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {sc.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* PANEL SETTINGS — per-panel color, text, graphic */}

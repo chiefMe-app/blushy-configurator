@@ -21,6 +21,7 @@ import type {
   PlinthSize,
   CutoutSize,
   CutoutPosition,
+  ShimmerColorId,
 } from "./config";
 import { getPlinthDimensions } from "./layoutDimensions";
 
@@ -82,6 +83,12 @@ export interface SceneModel {
   cutouts:    SceneCutouts;
   /** Estimated total price in AED — from config.estimatedTotal */
   totalPrice: number;
+  /**
+   * Shimmer wall color — set when a shimmer_wall panel is in the scene.
+   * Null when no shimmer wall is selected. Defaults to "silver" if shimmer wall
+   * is present but no color has been chosen (backward compat for old saved state).
+   */
+  shimmerColor: ShimmerColorId | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -136,13 +143,17 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
     position: d.cutouts.position,
   };
 
+  const hasShimmer = d.backdropItems.some((item) => item.type === "shimmer_wall");
+
   return {
-    theme:      config.theme,
+    theme:        config.theme,
     panels,
     balloons,
     plinths,
     cutouts,
-    totalPrice: config.estimatedTotal,
+    totalPrice:   config.estimatedTotal,
+    // Default to "silver" when shimmer wall is present but no color chosen (backward compat)
+    shimmerColor: hasShimmer ? (d.shimmerColor ?? "silver") : null,
   };
 }
 
@@ -189,9 +200,10 @@ export function buildSceneModelFromItems(
   return {
     theme,
     panels,
-    balloons: { style: balloonStyle, colors: balloonColors },
+    balloons:     { style: balloonStyle, colors: balloonColors },
     plinths,
-    cutouts:  { size: cutoutSize, position: cutoutPosition },
-    totalPrice: 0,
+    cutouts:      { size: cutoutSize, position: cutoutPosition },
+    totalPrice:   0,
+    shimmerColor: items.some((i) => i.type === "shimmer_wall") ? "silver" : null,
   };
 }

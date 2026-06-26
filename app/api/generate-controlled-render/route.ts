@@ -297,6 +297,30 @@ function buildFirstGenPrompt(
       `Keep a clear floor area around the plinth so it remains fully visible as a separate object.`
     : "";
 
+  // Shimmer wall clause — fires when a shimmer wall panel is configured.
+  const shimmerColor = sceneModel.shimmerColor;
+  const isSingleShimmer = sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "shimmer_wall";
+  const shimmerWidthCm  = shimmerColor ? 200 : null;
+  const shimmerHeightCm = shimmerColor ? 200 : null;
+  const shimmerClause = shimmerColor
+    ? (isSingleShimmer
+        ? `[Single Square Shimmer Wall — Only Backdrop]: This setup contains exactly ONE backdrop panel: ` +
+          `a single freestanding square shimmer wall, ${shimmerWidthCm}cm wide and ${shimmerHeightCm}cm tall. ` +
+          `It is a flat front-facing rectangular event panel with a full square silhouette and NO cutouts or openings. ` +
+          `The entire visible surface is covered edge-to-edge with small square ${shimmerColor} sequin tiles in a neat regular grid. ` +
+          `This is a sequin shimmer wall rental panel. ` +
+          `It is NOT an arch, NOT a rounded-top board, NOT a niche, NOT a frame, NOT a cutout, ` +
+          `NOT a layered composition, and NOT a panel behind another panel. ` +
+          `Do not add an arch. Do not add any other backdrop panel.`
+        : `[Shimmer Wall — Required Appearance]: The shimmer wall must be rendered as a freestanding ` +
+          `${shimmerWidthCm}cm wide x ${shimmerHeightCm}cm tall square event shimmer wall ` +
+          `made of a regular neat grid of small flat square ${shimmerColor} sequin tiles. ` +
+          `The tile grid must be clearly visible — flat, orderly, consistent rows and columns of square tiles. ` +
+          `Clean reflective sparkle, neat flat tiled sequin surface, ${shimmerColor} shimmer finish. ` +
+          `NOT a matte board. NOT a plain cream backdrop. NOT crumpled foil. NOT wrinkled metal. ` +
+          `NOT embossed or hammered texture. The tiles must be flat and orderly, not crinkled or chaotic.`)
+    : "";
+
   // balloonLockClause and plinthLockClause are disabled since text is overlay-only.
   const balloonLockClause       = "";
   const plinthLockClause        = "";
@@ -316,6 +340,7 @@ function buildFirstGenPrompt(
     balloonClause,
     frozenPaletteLockClause,
     halfGarlandContainmentClause,
+    shimmerClause,
     plinthClause,
     plinthCount > 0 ? PLINTH_VISIBILITY_CLAUSE : "",
     plinthGeometryLockClause,
@@ -498,6 +523,18 @@ function buildNegativePrompt(
     "squat cylinder, wide cylinder, flat cylinder, disk plinth, drum table, round stool, " +
     "short round stand, wide display stand" + plinthCountNeg;
 
+  // Shimmer wall negatives — fire when a shimmer wall is in the scene
+  const hasShimmerWall = (sceneModel?.panels ?? []).some((p) => p.type === "shimmer_wall");
+  const shimmerNeg = hasShimmerWall
+    ? ", no crumpled aluminum foil, no wrinkled foil, no embossed metal sheet, " +
+      "no hammered metal texture, no irregular crinkled texture, no chaotic foil surface, " +
+      "no plain matte shimmer wall, no smooth cream panel for shimmer wall, " +
+      "no solid backdrop board for shimmer wall, no missing square tile grid, " +
+      "no flat off-white panel instead of shimmer, no wrong shimmer color, " +
+      "no untextured shimmer wall, shimmer wall must not become a cream board, " +
+      "no merged shimmer panel"
+    : "";
+
   // Unselected-prop negatives — block everything not in the scene config
   const extrasList  = promptInput?.extras ?? [];
   const selCutouts  = sceneModel?.cutouts?.size !== "none";
@@ -624,6 +661,7 @@ function buildNegativePrompt(
     halfGarlandNeg,
     plinthOmissionNeg,
     platformBaseNeg,
+    shimmerNeg,
   ].map(strip).filter(Boolean).join(", ");
 }
 
@@ -710,12 +748,46 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
   // ── Backdrop description ──────────────────────────────────────────────────
   let backdropDesc: string;
 
+  const isSingleShimmerOnly = panelCount === 1 && sceneModel.panels[0]?.type === "shimmer_wall";
+
+  if (isSingleShimmerOnly) {
+    // Dedicated shimmer-only prompt — overrides generic single-panel path entirely
+    const sc = sceneModel.shimmerColor ?? "silver";
+    const p  = sceneModel.panels[0];
+    return (
+      `Cool neutral daylight studio photography with soft natural light from the left, ` +
+      `gray textured plaster or concrete studio wall, polished light concrete or stone floor, ` +
+      `neutral white balance, fresh modern editorial event styling. ` +
+      `Transform this layout reference into a premium photorealistic indoor event setup. ` +
+      `The setup contains exactly ONE backdrop panel: a single freestanding square shimmer wall, ` +
+      `${p.widthCm}cm wide and ${p.heightCm}cm tall. ` +
+      `It is a flat front-facing rectangular event panel with a full square silhouette and no cutouts or openings. ` +
+      `The entire visible surface is covered edge-to-edge with small square ${sc} sequin tiles arranged in a neat regular grid. ` +
+      `This is a sequin shimmer wall rental panel. ` +
+      `It is NOT an arch, NOT a rounded-top board, NOT a niche, NOT a frame, NOT a cutout, ` +
+      `NOT a layered composition, and NOT a panel behind another panel. ` +
+      `No arch. No opening. No cutout. No niche. No layered backdrop. No second panel. ` +
+      `No arch shape. No window-like opening. No inset reflective panel. No panel behind another panel. ` +
+      `No aluminum foil. No wrinkled metal sheet. No crumpled texture. ` +
+      `No matte board. No cream backdrop. No missing tile grid. No wrong shimmer color.`
+    );
+  }
+
   if (!isMulti) {
-    // Single panel: existing proven wording
-    const p    = sceneModel.panels[0];
-    backdropDesc =
-      `single ${panelTypeLabel(p.type)} cream-white backdrop board, ` +
-      `${p.widthCm}cm wide by ${p.heightCm}cm tall, solid freestanding board, seamless matte surface`;
+    const p = sceneModel.panels[0];
+    if (p.type === "shimmer_wall") {
+      // Shimmer-only (unreachable now, kept for safety)
+      const sc = sceneModel.shimmerColor ?? "silver";
+      backdropDesc =
+        `one freestanding square shimmer wall, ${p.widthCm}cm wide x ${p.heightCm}cm tall, ` +
+        `${sc} shimmer finish, regular neat grid of small flat square ${sc} sequin tiles, ` +
+        `clean reflective sparkle, flat tiled sequin surface, ` +
+        `NOT a matte board, NOT a cream backdrop, NOT crumpled foil`;
+    } else {
+      backdropDesc =
+        `single ${panelTypeLabel(p.type)} cream-white backdrop board, ` +
+        `${p.widthCm}cm wide by ${p.heightCm}cm tall, solid freestanding board, seamless matte surface`;
+    }
   } else {
     // Multi-panel: describe every panel explicitly by number, type, dimensions, position
     const positions = ["left", "center", "right"];
@@ -727,11 +799,18 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
 
     const panelDescs = sceneModel.panels.map((p, i) => {
       const wRatio = (p.widthCm / p.heightCm).toFixed(2);
+      const isShimmer = p.type === "shimmer_wall";
+      const shimmerC  = sceneModel.shimmerColor ?? "silver";
+      const surfaceDesc = isShimmer
+        ? `freestanding square event shimmer wall (200cm x 200cm) — ` +
+          `regular neat grid of small flat square ${shimmerC} sequin tiles, ` +
+          `clean reflective sparkle, flat tiled surface, ${shimmerC} shimmer finish, ` +
+          `NOT crumpled foil, NOT a matte board, NOT a cream panel`
+        : `full-width solid opaque cream-white freestanding backdrop board with broad visible surface`;
       return (
         `Panel ${i + 1} (${posLabels[i]}): ${panelTypeLabel(p.type)} backdrop board, ` +
         `${p.widthCm}cm wide by ${p.heightCm}cm tall (width-to-height ratio ${wRatio}), ` +
-        `full-width solid opaque cream-white freestanding backdrop board with broad visible surface, ` +
-        `not compressed, not narrow, not a tower, correctly proportioned`
+        `${surfaceDesc}, not compressed, not narrow, not a tower, correctly proportioned`
       );
     });
     backdropDesc =
@@ -762,6 +841,14 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
       `individual ${balloonColors} latex balloons cascading from the top corner to the floor`;
 
   // ── Multi-panel negatives ─────────────────────────────────────────────────
+  const hasShimmerInMulti = isMulti && sceneModel.panels.some((p) => p.type === "shimmer_wall");
+  const shimmerMultiNegs = hasShimmerInMulti
+    ? `The shimmer wall must remain a tiled metallic sequin wall — ` +
+      `do not turn it into a plain matte board or cream panel. ` +
+      `No missing tile texture on shimmer wall. No flat off-white panel instead of shimmer. ` +
+      `No wrong shimmer color. No smooth cream board for shimmer wall. `
+    : "";
+
   const multiPanelNegs = isMulti
     ? `Do not merge panels into one. Do not omit any panel. No extra panels beyond ${panelCount}. ` +
       `No outline-only arch. No wire-frame backdrop. No thin frame backdrop. ` +
@@ -769,7 +856,8 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
       `Every selected panel must appear as a full solid opaque backdrop board. ` +
       `No skinny panels. No narrow tower-like panels. No compressed backdrop boards. ` +
       `No thin vertical strips. No overly narrow arch. No overly narrow rectangular board. ` +
-      `Do not shrink panel widths. Do not turn panels into slim columns. `
+      `Do not shrink panel widths. Do not turn panels into slim columns. ` +
+      shimmerMultiNegs
     : "";
 
   return (
@@ -913,6 +1001,12 @@ export async function POST(req: NextRequest) {
       selectedArchSize:         firstArchDiag?.sizeId        ?? null,
       resolvedArchWidthCm:      firstArchDiag?.widthCm       ?? null,
       resolvedArchHeightCm:     firstArchDiag?.heightCm      ?? null,
+      selectedShimmerColor:     sceneModel.shimmerColor      ?? null,
+      resolvedShimmerWidthCm:   sceneModel.shimmerColor ? 200 : null,
+      resolvedShimmerHeightCm:  sceneModel.shimmerColor ? 200 : null,
+      selectedBackdropTypes:    sceneModel.panels.map((p) => p.type),
+      isSingleShimmerOnly:      sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "shimmer_wall",
+      panelCount:               sceneModel.panels.length,
     };
 
     // ── Primary path: layout-reference edit ────────────────────────────────
