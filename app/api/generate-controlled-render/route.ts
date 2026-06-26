@@ -756,31 +756,34 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
     const sc    = sceneModel.shimmerColor ?? "silver";
     const p     = sceneModel.panels[0];
 
-    // Plinth: centered in front of the shimmer wall
+    // Plinth: deterministically centered in front of the shimmer wall
     const plinth    = sceneModel.plinths[0];
     const plinthStr = plinth
-      ? `Keep one slim freestanding white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter, ` +
-        `fully visible from base to rounded top, positioned centered in front of the shimmer wall. Do not omit the plinth.`
+      ? `One slim freestanding white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter, ` +
+        `fully visible from base to rounded top, centered horizontally in front of the shimmer wall, ` +
+        `aligned to the horizontal center of the shimmer wall. ` +
+        `Do not place the plinth on the left or right side. Do not omit the plinth.`
       : "";
 
-    // Balloon garland: dense organic with mixed sizes, and silver chrome for silver shimmer
+    // Balloon garland: dense premium organic, chrome balloons for silver/gold shimmer
     const bStyle    = sceneModel.balloons.style;
     const bColors   = sceneModel.balloons.colors.length > 0
       ? sceneModel.balloons.colors.slice(0, 4).join(", ")
-      : sc === "silver" ? "silver, white, pearl" : "the selected palette";
-    const chromeBalloonNote = sc === "silver"
-      ? `Include some large chrome silver mirror balloons mixed into the garland for a premium reflective look. `
-      : sc === "gold"
-        ? `Include some large chrome gold mirror balloons mixed into the garland for a premium reflective look. `
-        : "";
+      : sc === "silver" ? "silver chrome, white, pearl white"
+      : sc === "gold"   ? "gold chrome, white, cream"
+      : "the selected palette";
+    const chromeBalloonNote =
+      sc === "silver" ? `Include large chrome silver mirror balloons mixed with medium white and small pearl balloons. ` :
+      sc === "gold"   ? `Include large chrome gold mirror balloons mixed with medium white and cream balloons. ` :
+      "";
     const garlandStr = bStyle !== "none"
-      ? `Keep a full dense organic balloon garland (${bStyle}) starting at the top-right corner of the shimmer wall ` +
-        `and cascading richly down the right side to the floor. ` +
-        `The garland must be full, lush, and premium — not sparse or thin. ` +
-        `Use a mix of large, medium, and small balloons in varied sizes for organic depth. ` +
-        `Balloon colors: ${bColors}. ` +
+      ? `Full dense premium organic balloon half-garland starting at the top-right corner of the shimmer wall ` +
+        `and cascading richly all the way down the right side to the floor. ` +
+        `The garland must be lush, full volume, and layered — not sparse, thin, or flat. ` +
+        `Mix large, medium, and small balloons for maximum organic depth and texture. ` +
+        `Balloon palette: ${bColors}. ` +
         chromeBalloonNote +
-        `Do not omit the balloon garland. Do not make it sparse or flat.`
+        `Do not omit the balloon garland. Do not reduce the garland volume.`
       : "No balloon garland.";
 
     return (
@@ -789,18 +792,18 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
       `neutral white balance, fresh modern editorial event styling. ` +
       `Transform this layout reference into a premium photorealistic indoor event setup. ` +
       `The setup contains exactly ONE backdrop panel plus selected decorative items. ` +
-      `Backdrop: a single freestanding square shimmer wall, ${p.widthCm}cm wide and ${p.heightCm}cm tall. ` +
-      `It is a flat front-facing rectangular event panel with a full square silhouette and no cutouts or openings. ` +
-      `The entire visible surface is covered edge-to-edge with small square ${sc} sequin tiles arranged in a neat regular grid. ` +
-      `This is a sequin shimmer wall rental panel. ` +
+      `Backdrop: a freestanding ${p.widthCm}cm × ${p.heightCm}cm square event shimmer wall. ` +
+      `Clean straight outer edges, full square silhouette, no cutouts or openings. ` +
+      `The entire surface is covered edge-to-edge with a regular grid of small uniform reflective ${sc} shimmer tiles ` +
+      `arranged in neat rows and columns — a realistic event rental shimmer wall surface. ` +
+      `Reflective ${sc} finish with clean sparkle. Clearly a shimmer sequin wall, not a matte board. ` +
       (plinthStr ? `${plinthStr} ` : "") +
       `${garlandStr} ` +
-      `It is NOT an arch, NOT a rounded-top board, NOT a niche, NOT a frame, NOT a cutout, ` +
-      `NOT a layered composition, and NOT a panel behind another panel. ` +
-      `No arch. No opening. No cutout. No niche. No layered backdrop. No second backdrop panel. ` +
-      `No arch shape. No window-like opening. No inset reflective panel. No panel behind another panel. ` +
-      `No aluminum foil. No wrinkled metal sheet. No crumpled texture. ` +
-      `No matte board. No cream backdrop. No missing tile grid. No wrong shimmer color.`
+      `NOT an arch. NOT a rounded-top board. NOT a niche or frame. NOT a cutout. ` +
+      `NOT a layered backdrop. No second backdrop panel. No panel behind another panel. ` +
+      `No crumpled foil. No wrinkled aluminum. No hammered metal. No irregular mirror mosaic. ` +
+      `No noisy abstract reflective texture. No chaotic crinkled surface. ` +
+      `No matte board. No cream board. No missing tile grid. No wrong shimmer color.`
     );
   }
 

@@ -279,10 +279,13 @@ export function generateStructureSilhouette(
   });
 
   // v4: Cylindrical plinth edge guide — no fill, no block
+  const singleShimmer = backdropItems.length === 1 && backdropItems[0]?.type === "shimmer_wall";
   for (const p of layout.plinths) {
-    const plinthCx = balloonStyle === "half"
-      ? Math.round(W * 0.28)   // open left side, away from right-side garland
-      : p.cx;
+    const plinthCx = singleShimmer
+      ? Math.round(W * 0.50)   // centered in front of the shimmer wall
+      : balloonStyle === "half"
+        ? Math.round(W * 0.28) // open left side, away from right-side garland
+        : p.cx;
     content.push(plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
   }
 
