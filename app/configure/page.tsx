@@ -636,78 +636,6 @@ function DecorStep({
     sizes[i] = size;
     patchDecor({ plinthSizes: sizes, plinths: sizes.length });
   }
-  // Arch state
-  const hasArch = d.backdropItems.some((i) => i.type === "arch");
-  const selectedArchSizeIds = d.backdropItems
-    .filter((i) => i.type === "arch")
-    .map((i) => i.sizeId)
-    .filter((id): id is ArchSizeId => !!id);
-
-  // Rect state
-  const hasRect = d.backdropItems.some((i) => i.type === "rect");
-  const selectedRectSizeIds = d.backdropItems
-    .filter((i) => i.type === "rect")
-    .map((i) => i.sizeId)
-    .filter((id): id is RectSizeId => !!id);
-
-  function toggleNonSizedType(type: BackdropShapeId) {
-    const hasType = d.backdropItems.some((i) => i.type === type);
-    if (hasType) {
-      const next = d.backdropItems.filter((i) => i.type !== type);
-      if (next.length === 0) return;
-      patchDecor({ backdropItems: next });
-    } else {
-      if (d.backdropItems.length >= 3) return;
-      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem(type)] });
-    }
-  }
-
-  function toggleArchType() {
-    if (hasArch) {
-      const next = d.backdropItems.filter((i) => i.type !== "arch");
-      if (next.length === 0) return;
-      patchDecor({ backdropItems: next });
-    } else {
-      if (d.backdropItems.length >= 3) return;
-      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("arch", "arch_66ft")] });
-    }
-  }
-
-  function toggleArchSize(sizeId: ArchSizeId) {
-    const hasSize = d.backdropItems.some((i) => i.type === "arch" && i.sizeId === sizeId);
-    if (hasSize) {
-      const next = d.backdropItems.filter((i) => !(i.type === "arch" && i.sizeId === sizeId));
-      if (next.length === 0) return;
-      patchDecor({ backdropItems: next });
-    } else {
-      if (d.backdropItems.length >= 3) return;
-      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("arch", sizeId)] });
-    }
-  }
-
-  function toggleRectType() {
-    if (hasRect) {
-      const next = d.backdropItems.filter((i) => i.type !== "rect");
-      if (next.length === 0) return;
-      patchDecor({ backdropItems: next });
-    } else {
-      if (d.backdropItems.length >= 3) return;
-      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("rect", "rect_100x200")] });
-    }
-  }
-
-  function toggleRectSize(sizeId: RectSizeId) {
-    const hasSize = d.backdropItems.some((i) => i.type === "rect" && i.sizeId === sizeId);
-    if (hasSize) {
-      const next = d.backdropItems.filter((i) => !(i.type === "rect" && i.sizeId === sizeId));
-      if (next.length === 0) return;
-      patchDecor({ backdropItems: next });
-    } else {
-      if (d.backdropItems.length >= 3) return;
-      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("rect", sizeId)] });
-    }
-  }
-
   // Per-panel patch helpers
   function patchItem(idx: number, patch: Partial<BackdropItem>) {
     const next = d.backdropItems.map((item, i) => i === idx ? { ...item, ...patch } : item);
@@ -770,6 +698,123 @@ function DecorStep({
     fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700,
   });
 
+  // Toggle a specific arch size (multi-select, max 3 total)
+  function toggleArchSize(size: (typeof ARCH_SIZES)[0]) {
+    const existing = d.backdropItems.find(i => i.type === "arch" && i.sizeId === size.id);
+    if (existing) {
+      patchDecor({ backdropItems: d.backdropItems.filter(i => i.id !== existing.id) });
+    } else {
+      if (d.backdropItems.filter(i => i.type !== "round").length >= 3) return;
+      const hasRound = d.backdropItems.some(i => i.type === "round");
+      if (hasRound) {
+        const newItem = { ...makeBackdropItem("arch"), sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm, id: size.id };
+        patchDecor({ backdropItems: [newItem] });
+      } else {
+        const newItem = { ...makeBackdropItem("arch"), sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm, id: `arch-${size.id}` };
+        patchDecor({ backdropItems: [...d.backdropItems, newItem] });
+      }
+    }
+  }
+
+  // Toggle round — exclusive (removes all others)
+  function toggleRound() {
+    const hasRound = d.backdropItems.some(i => i.type === "round");
+    if (hasRound) {
+      patchDecor({ backdropItems: [] });
+    } else {
+      patchDecor({ backdropItems: [makeBackdropItem("round")] });
+    }
+  }
+
+  // Toggle non-arch/non-round types (rect, shimmer) — removes round if present
+  function toggleOtherType(type: BackdropShapeId) {
+    const hasThis = d.backdropItems.some(i => i.type === type);
+    if (hasThis) {
+      patchDecor({ backdropItems: d.backdropItems.filter(i => i.type !== type) });
+    } else {
+      if (d.backdropItems.length >= 3) return;
+      const withoutRound = d.backdropItems.filter(i => i.type !== "round");
+      patchDecor({ backdropItems: [...withoutRound, makeBackdropItem(type)] });
+    }
+  }
+
+  function ItemCustomization({ item, itemIdx }: { item: BackdropItem; itemIdx: number }) {
+    return (
+      <div style={{ borderTop: `1px solid ${accent}25`, paddingTop: 12, marginTop: 10 }}>
+        {/* Color */}
+        <div style={{ marginBottom: 10 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Backdrop color</span>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+            {theme.backdropColors.map((hex) => (
+              <button key={hex} type="button" onClick={() => patchItem(itemIdx, { color: hex })}
+                style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: hex, border: item.color === hex ? `2.5px solid ${accent}` : "2px solid rgba(0,0,0,0.12)", cursor: "pointer", transition: "all 0.15s" }} title={hex} />
+            ))}
+            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#888", cursor: "pointer" }}>
+              Custom
+              <input type="color" value={item.color || d.backdropColor || "#FFFFFF"}
+                onChange={(e) => patchItem(itemIdx, { color: e.target.value })}
+                style={{ width: 20, height: 20, border: "none", background: "transparent", cursor: "pointer", padding: 0 }} />
+            </label>
+          </div>
+        </div>
+
+        {/* Add-ons */}
+        <span style={{ fontSize: 11, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Add-ons for this backdrop</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {/* Name Text */}
+          <div onClick={() => patchItemText(itemIdx, { enabled: !item.text.enabled })}
+            style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
+              border: item.text.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
+              background: item.text.enabled ? accent + "0E" : "white", transition: "all 0.15s" }}>
+            <span style={{ fontSize: 18 }}>✍️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: item.text.enabled ? accent : "#1A1A2E" }}>Name Text</div>
+              <div style={{ fontSize: 11, color: "#999" }}>Add child's name or short message</div>
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
+              background: item.text.enabled ? accent : "rgba(0,0,0,0.06)", color: item.text.enabled ? "white" : "#555" }}>+AED 80</span>
+          </div>
+          {item.text.enabled && (
+            <div style={{ padding: "10px 12px", background: "#FAFAFA", borderRadius: 10, border: "1px solid rgba(0,0,0,0.06)" }}>
+              <textarea rows={2} value={item.text.value}
+                onChange={(e) => patchItemText(itemIdx, { value: e.target.value })}
+                placeholder="Type the name or message..."
+                style={{ width: "100%", resize: "none", borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", padding: "8px 10px", fontSize: 13, outline: "none" }} />
+            </div>
+          )}
+
+          {/* Theme Graphic */}
+          <div onClick={() => patchItemGraphic(itemIdx, { enabled: !item.graphic.enabled })}
+            style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
+              border: item.graphic.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
+              background: item.graphic.enabled ? accent + "0E" : "white", transition: "all 0.15s" }}>
+            <span style={{ fontSize: 18 }}>🎨</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: item.graphic.enabled ? accent : "#1A1A2E" }}>Theme Graphic</div>
+              <div style={{ fontSize: 11, color: "#999" }}>Add a printed theme illustration</div>
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
+              background: item.graphic.enabled ? accent : "rgba(0,0,0,0.06)", color: item.graphic.enabled ? "white" : "#555" }}>+AED 150</span>
+          </div>
+
+          {/* Custom Design */}
+          <div onClick={() => setPrint(print.type === "custom_upload" ? "none" : "custom_upload")}
+            style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
+              border: print.type === "custom_upload" ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
+              background: print.type === "custom_upload" ? accent + "0E" : "white", transition: "all 0.15s" }}>
+            <span style={{ fontSize: 18 }}>📎</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: print.type === "custom_upload" ? accent : "#1A1A2E" }}>Custom Design</div>
+              <div style={{ fontSize: 11, color: "#999" }}>Upload your own design</div>
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
+              background: print.type === "custom_upload" ? accent : "rgba(0,0,0,0.06)", color: print.type === "custom_upload" ? "white" : "#555" }}>+AED 200</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={jakarta.className}>
       {/* ══ BACKDROP SECTION ══════════════════════════════════ */}
@@ -782,97 +827,66 @@ function DecorStep({
       {/* BACKDROP TYPE — Vertical list */}
       <div style={card}>
         {secLabel("Choose your backdrop")}
-        {secSub("Select a backdrop type — you can add up to 3")}
+        {d.backdropItems.length === 0
+          ? <div style={{ fontSize: 13, color: "#888", fontStyle: "italic", marginBottom: 10, padding: "8px 0" }}>Choose a backdrop to start ↓</div>
+          : <div style={{ fontSize: 12, color: "#666", marginBottom: 10 }}>You can mix up to 3 arch, rectangular, or shimmer pieces. Round works on its own.</div>
+        }
+
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {/* ARCH CARD */}
+          {/* ARCH BACKDROP */}
           {(() => {
             const archItems = d.backdropItems.filter(i => i.type === "arch");
-            const hasArchCard = archItems.length > 0;
-            const firstArchItem = archItems[0];
+            const hasArch = archItems.length > 0;
             return (
-              <div style={{
-                border: hasArchCard ? `2.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
-                background: hasArchCard ? accent + "12" : "white",
-                borderRadius: 14,
-                overflow: "hidden",
-                boxShadow: hasArchCard ? `0 2px 12px ${accent}22` : "none",
-                transition: "all 0.15s",
-              }}>
-                {/* Card header row */}
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}
-                  onClick={() => {
-                    if (!hasArchCard) {
-                      patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("arch")] });
-                    }
-                  }}
-                >
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 10, flexShrink: 0,
-                    background: hasArchCard ? accent + "20" : "#F3F0FF",
-                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
-                  }}>🔮</div>
+              <div style={{ border: hasArch ? `2.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)", borderRadius: 14, overflow: "hidden", background: hasArch ? accent + "08" : "white", transition: "all 0.15s" }}>
+                {/* Header */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 10, background: hasArch ? accent + "20" : "#F3F0FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🔮</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: hasArchCard ? accent : "#1A1A2E" }}>Arch Backdrop</div>
-                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Rounded event backdrop</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: hasArch ? accent : "#1A1A2E" }}>Arch Backdrop</div>
+                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Rounded event backdrop · select 1–3 sizes</div>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
-                      background: hasArchCard ? accent : "rgba(0,0,0,0.06)",
-                      color: hasArchCard ? "white" : "#555",
-                    }}>
-                      {archItems.length === 0 ? "+AED 350" : archItems.length === 1 && d.backdropItems.indexOf(archItems[0]) === 0 ? "Included" : "+AED 350"}
-                    </span>
-                    {hasArchCard && <span style={{ fontSize: 16 }}>✓</span>}
-                  </div>
+                  {hasArch && <span style={{ fontSize: 18, color: accent }}>✓</span>}
                 </div>
-
-                {/* Expanded: arch size options */}
-                {hasArchCard && (
-                  <div style={{ borderTop: `1px solid ${accent}30`, padding: "12px 16px", background: accent + "06" }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 8 }}>Choose size:</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {ARCH_SIZES.map((size) => {
-                        const isSelected = firstArchItem?.sizeId === size.id;
-                        return (
-                          <button
-                            key={size.id}
-                            type="button"
-                            onClick={() => {
-                              const updated = d.backdropItems.map(item =>
-                                item.type === "arch" && item.id === firstArchItem?.id
-                                  ? { ...item, sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm }
-                                  : item
-                              );
-                              patchDecor({ backdropItems: updated });
-                            }}
-                            style={{
-                              display: "flex", justifyContent: "space-between", alignItems: "center",
-                              padding: "10px 14px", borderRadius: 10, border: isSelected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
-                              background: isSelected ? accent + "12" : "white", cursor: "pointer", transition: "all 0.15s",
-                            }}
-                          >
-                            <div>
+                {/* Size options — always visible */}
+                <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", padding: "10px 14px 14px", background: "rgba(0,0,0,0.01)" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {ARCH_SIZES.map((size) => {
+                      const archItem = d.backdropItems.find(i => i.type === "arch" && i.sizeId === size.id);
+                      const isSelected = !!archItem;
+                      const itemIdx = isSelected ? d.backdropItems.findIndex(i => i.id === archItem?.id) : -1;
+                      return (
+                        <div key={size.id}>
+                          <button type="button"
+                            onClick={() => toggleArchSize(size)}
+                            disabled={!isSelected && d.backdropItems.length >= 3}
+                            style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+                              padding: "10px 14px", borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
+                              border: isSelected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
+                              background: isSelected ? accent + "12" : "white",
+                              opacity: !isSelected && d.backdropItems.length >= 3 ? 0.4 : 1 }}>
+                            <div style={{ textAlign: "left" }}>
                               <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? accent : "#1A1A2E" }}>{size.label}</div>
                               <div style={{ fontSize: 11, color: "#999" }}>{size.widthCm} × {size.heightCm} cm</div>
                             </div>
-                            {isSelected && <span style={{ color: accent, fontWeight: 700, fontSize: 16 }}>✓</span>}
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
+                                background: isSelected ? accent : "rgba(0,0,0,0.06)", color: isSelected ? "white" : "#555" }}>
+                                {isSelected && itemIdx === 0 ? "Included" : "+AED 350"}
+                              </span>
+                              {isSelected && <span style={{ color: accent, fontSize: 14 }}>✓</span>}
+                            </div>
                           </button>
-                        );
-                      })}
-                    </div>
-                    {/* Remove arch button */}
-                    <button
-                      type="button"
-                      onClick={() => patchDecor({ backdropItems: d.backdropItems.filter(i => i.id !== firstArchItem?.id) })}
-                      style={{ marginTop: 10, fontSize: 11, color: "#999", background: "none", border: "none", cursor: "pointer" }}
-                    >
-                      Remove this backdrop
-                    </button>
+                          {/* Inline customization for this arch item */}
+                          {isSelected && archItem && itemIdx >= 0 && (
+                            <ItemCustomization item={archItem} itemIdx={itemIdx} />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
               </div>
             );
           })()}
@@ -967,48 +981,34 @@ function DecorStep({
             );
           })()}
 
-          {/* ROUND CARD */}
+          {/* ROUND BACKDROP */}
           {(() => {
             const roundItems = d.backdropItems.filter(i => i.type === "round");
             const hasRound = roundItems.length > 0;
+            const roundItem = roundItems[0];
+            const itemIdx = hasRound ? d.backdropItems.findIndex(i => i.id === roundItem?.id) : -1;
             return (
-              <div
-                style={{
-                  border: hasRound ? `2.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
-                  background: hasRound ? accent + "12" : "white",
-                  borderRadius: 14,
-                  boxShadow: hasRound ? `0 2px 12px ${accent}22` : "none",
-                  transition: "all 0.15s",
-                  display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer",
-                }}
-                onClick={() => {
-                  if (hasRound) {
-                    patchDecor({ backdropItems: d.backdropItems.filter(i => i.type !== "round") });
-                  } else {
-                    if (d.backdropItems.length >= 3) return;
-                    patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("round")] });
-                  }
-                }}
-              >
-                <div style={{
-                  width: 44, height: 44, borderRadius: 10, flexShrink: 0,
-                  background: hasRound ? accent + "20" : "#F0FDF4",
-                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
-                }}>⭕</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: hasRound ? accent : "#1A1A2E" }}>Round Backdrop</div>
-                  <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Soft circular photo backdrop</div>
+              <div style={{ border: hasRound ? `2.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)", borderRadius: 14, overflow: "hidden", background: hasRound ? accent + "08" : "white", transition: "all 0.15s" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}
+                  onClick={toggleRound}>
+                  <div style={{ width: 44, height: 44, borderRadius: 10, background: hasRound ? accent + "20" : "#F0FDF4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>⭕</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: hasRound ? accent : "#1A1A2E" }}>Round Backdrop</div>
+                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Soft circular backdrop · used alone · 120 × 120 cm</div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: hasRound ? accent : "rgba(0,0,0,0.06)", color: hasRound ? "white" : "#555" }}>
+                      {hasRound && itemIdx === 0 ? "Included" : "+AED 350"}
+                    </span>
+                    {hasRound && <span style={{ fontSize: 16 }}>✓</span>}
+                  </div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
-                    background: hasRound ? accent : "rgba(0,0,0,0.06)",
-                    color: hasRound ? "white" : "#555",
-                  }}>
-                    {hasRound && d.backdropItems.indexOf(roundItems[0]) === 0 ? "Included" : "+AED 350"}
-                  </span>
-                  {hasRound && <span style={{ fontSize: 16 }}>✓</span>}
-                </div>
+                {/* Inline customization */}
+                {hasRound && roundItem && itemIdx >= 0 && (
+                  <div style={{ padding: "0 14px 14px" }}>
+                    <ItemCustomization item={roundItem} itemIdx={itemIdx} />
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -1094,26 +1094,12 @@ function DecorStep({
         </div>
       </div>
 
-      {/* PANEL SETTINGS — per-panel color, text, graphic */}
-      {d.backdropItems.length > 0 && (
+      {/* PER-BACKDROP CUSTOMIZATION — REMOVED: inline per card now */}
+      {false && d.backdropItems.length > 0 && (
         <>
-          <button
-            type="button"
-            onClick={() => setShowAdvancedPanel((v) => !v)}
-            style={{
-              display: "flex", alignItems: "center", gap: 6, width: "100%",
-              background: "none", border: "none", cursor: "pointer",
-              padding: "6px 0", marginBottom: showAdvancedPanel ? 6 : 0,
-              color: "#7C3AED", fontSize: 13, fontWeight: 700,
-            }}
-          >
-            <span style={{ fontSize: 11, transform: showAdvancedPanel ? "rotate(90deg)" : "none", display: "inline-block", transition: "transform 0.15s" }}>▶</span>
-            {showAdvancedPanel ? "Hide backdrop settings" : "Customize each backdrop ▸ color, text, design"}
-          </button>
-          {showAdvancedPanel && (
         <div style={card}>
           {secLabel("Customize each backdrop")}
-          {secSub("Fine-tune color, text, and design for each backdrop")}
+          {secSub("Color and add-ons for each backdrop")}
 
           {d.backdropItems.map((item, idx) => {
             const typeLabel = BACKDROP_SHAPES.find((s) => s.id === item.type)?.label ?? item.type;
@@ -1170,24 +1156,32 @@ function DecorStep({
                   </div>
                 </div>
 
-                {/* Text */}
-                <div style={{ marginBottom: 12 }}>
-                  <div className="mb-2 flex items-center gap-2">
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Text</span>
-                    <button
-                      type="button"
+                {/* Add-ons for this backdrop */}
+                <div style={{ marginBottom: 0 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#555", display: "block", marginBottom: 8 }}>Add-ons for this backdrop</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+
+                    {/* Name Text card */}
+                    <div
                       onClick={() => patchItemText(idx, { enabled: !item.text.enabled })}
                       style={{
-                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, cursor: "pointer",
-                        background: item.text.enabled ? accent + "20" : "rgba(0,0,0,0.06)",
-                        color: item.text.enabled ? accent : "#999",
-                        border: `1px solid ${item.text.enabled ? accent + "40" : "rgba(0,0,0,0.12)"}`,
+                        cursor: "pointer", borderRadius: 12, padding: "12px 14px",
+                        border: item.text.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
+                        background: item.text.enabled ? accent + "10" : "white",
+                        display: "flex", alignItems: "center", gap: 12, transition: "all 0.15s",
                       }}
                     >
-                      {item.text.enabled ? "On" : "Off"}
-                    </button>
-                  </div>
-                  {item.text.enabled && (
+                      <div style={{ fontSize: 22 }}>✍️</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: item.text.enabled ? accent : "#1A1A2E" }}>Name Text</div>
+                        <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>Add child's name or short message</div>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: item.text.enabled ? accent : "rgba(0,0,0,0.06)", color: item.text.enabled ? "white" : "#555" }}>+AED 80</span>
+                        {item.text.enabled && <span style={{ fontSize: 14 }}>✓</span>}
+                      </div>
+                    </div>
+                    {item.text.enabled && (
                     <div className="space-y-2 pl-1">
                       <textarea
                         rows={2}
@@ -1228,42 +1222,81 @@ function DecorStep({
                       </div>
                     </div>
                   )}
-                </div>
 
-                {/* Graphic */}
-                <div>
-                  <div className="mb-2 flex items-center gap-2">
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>Theme Graphic</span>
-                    <button
-                      type="button"
+                    {/* Theme Graphic card */}
+                    <div
                       onClick={() => patchItemGraphic(idx, { enabled: !item.graphic.enabled })}
                       style={{
-                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, cursor: "pointer",
-                        background: item.graphic.enabled ? accent + "20" : "rgba(0,0,0,0.06)",
-                        color: item.graphic.enabled ? accent : "#999",
-                        border: `1px solid ${item.graphic.enabled ? accent + "40" : "rgba(0,0,0,0.12)"}`,
+                        cursor: "pointer", borderRadius: 12, padding: "12px 14px",
+                        border: item.graphic.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
+                        background: item.graphic.enabled ? accent + "10" : "white",
+                        display: "flex", alignItems: "center", gap: 12, transition: "all 0.15s",
                       }}
                     >
-                      {item.graphic.enabled ? "On" : "Off"}
-                    </button>
-                  </div>
-                  {item.graphic.enabled && (
-                    <div className="flex flex-wrap gap-1.5 pl-1">
-                      {GRAPHIC_STYLES.map((s) => (
-                        <button
-                          key={s.id}
-                          type="button"
-                          title={s.desc}
-                          onClick={() => patchItemGraphic(idx, { style: s.id as GraphicStyle })}
-                          className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
-                            item.graphic.style === s.id ? "border-accent bg-accent text-white" : "border-black/15 bg-white text-black/60"
-                          }`}
-                        >
-                          {s.label}
-                        </button>
-                      ))}
+                      <div style={{ fontSize: 22 }}>🎨</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: item.graphic.enabled ? accent : "#1A1A2E" }}>Theme Graphic</div>
+                        <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>Add a printed theme illustration</div>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: item.graphic.enabled ? accent : "rgba(0,0,0,0.06)", color: item.graphic.enabled ? "white" : "#555" }}>+AED 150</span>
+                        {item.graphic.enabled && <span style={{ fontSize: 14 }}>✓</span>}
+                      </div>
                     </div>
-                  )}
+                    {/* Graphic style sub-options when enabled */}
+                    {item.graphic.enabled && (
+                      <div className="flex flex-wrap gap-1.5 pl-1 pt-2 pb-1">
+                        {GRAPHIC_STYLES.map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            title={s.desc}
+                            onClick={(e) => { e.stopPropagation(); patchItemGraphic(idx, { style: s.id as GraphicStyle }); }}
+                            className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                              item.graphic.style === s.id ? "border-accent bg-accent text-white" : "border-black/15 bg-white text-black/60"
+                            }`}
+                          >
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Custom Design card — global setting, surfaced per-backdrop */}
+                    <div
+                      onClick={() => setPrint(print.type === "custom_upload" ? "none" : "custom_upload")}
+                      style={{
+                        cursor: "pointer", borderRadius: 12, padding: "12px 14px",
+                        border: print.type === "custom_upload" ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
+                        background: print.type === "custom_upload" ? accent + "10" : "white",
+                        display: "flex", alignItems: "center", gap: 12, transition: "all 0.15s",
+                      }}
+                    >
+                      <div style={{ fontSize: 22 }}>📎</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: print.type === "custom_upload" ? accent : "#1A1A2E" }}>Custom Design</div>
+                        <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>Upload your own design</div>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: print.type === "custom_upload" ? accent : "rgba(0,0,0,0.06)", color: print.type === "custom_upload" ? "white" : "#555" }}>+AED 200</span>
+                        {print.type === "custom_upload" && <span style={{ fontSize: 14 }}>✓</span>}
+                      </div>
+                    </div>
+                    {print.type === "custom_upload" && (
+                      <div className="rounded-xl border border-dashed border-black/20 p-3">
+                        <label className="block cursor-pointer">
+                          <span className="text-[11px] font-medium text-black/60">Upload design or inspiration image</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setPrintFile(e.target.files?.[0] ?? null)}
+                            className="mt-1 block w-full text-xs text-black/50 file:mr-2 file:rounded-full file:border-0 file:bg-accent-soft file:px-3 file:py-1 file:text-[11px] file:font-medium file:text-accent"
+                          />
+                          {printFile != null && <span className="mt-1 block text-[11px] text-accent">{(printFile as File).name}</span>}
+                        </label>
+                      </div>
+                    )}
+                  </div>{/* ── end add-ons div */}
                 </div>
               </div>
             );
@@ -1321,7 +1354,6 @@ function DecorStep({
             </div>
           )}
         </div>
-          )}
         </>
       )}
 
@@ -1421,8 +1453,8 @@ function DecorStep({
         </div>
       </div>
 
-      {/* BACKDROP PRINT */}
-      <div style={card}>
+      {/* BACKDROP PRINT — moved to Customize each backdrop */}
+      {false && <div style={card}>
         {secLabel("Add text or design")}
         {secSub("Add a printed graphic or text to your backdrop")}
         <div className="grid grid-cols-2 gap-2">
@@ -1522,8 +1554,8 @@ function DecorStep({
                 onChange={(e) => setPrintFile(e.target.files?.[0] ?? null)}
                 className="mt-1.5 block w-full text-xs text-black/50 file:mr-2 file:rounded-full file:border-0 file:bg-accent-soft file:px-3 file:py-1 file:text-[11px] file:font-medium file:text-accent"
               />
-              {printFile && (
-                <span className="mt-1 block text-[11px] text-accent">{printFile.name}</span>
+              {printFile != null && (
+                <span className="mt-1 block text-[11px] text-accent">{(printFile as File).name}</span>
               )}
             </label>
             <p className="mt-1.5 text-[11px] text-black/40">
@@ -1531,7 +1563,7 @@ function DecorStep({
             </p>
           </div>
         )}
-      </div>
+      </div>}
 
       </div>{/* ── end BALLOONS section ── */}
 
