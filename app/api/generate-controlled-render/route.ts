@@ -751,22 +751,44 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
   const isSingleShimmerOnly = panelCount === 1 && sceneModel.panels[0]?.type === "shimmer_wall";
 
   if (isSingleShimmerOnly) {
-    // Dedicated shimmer-only prompt — overrides generic single-panel path entirely
-    const sc = sceneModel.shimmerColor ?? "silver";
-    const p  = sceneModel.panels[0];
+    // Dedicated shimmer-only prompt — correctly describes ONE backdrop panel
+    // PLUS any selected decorative items (balloons, plinths).
+    const sc    = sceneModel.shimmerColor ?? "silver";
+    const p     = sceneModel.panels[0];
+
+    // Plinth: include if configured
+    const plinth    = sceneModel.plinths[0];
+    const plinthStr = plinth
+      ? `Keep one slim freestanding white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter, ` +
+        `fully visible from base to top, placed on the open side near the shimmer wall. Do not omit the plinth.`
+      : "";
+
+    // Balloon garland: include if selected
+    const bStyle    = sceneModel.balloons.style;
+    const bColors   = sceneModel.balloons.colors.length > 0
+      ? sceneModel.balloons.colors.slice(0, 4).join(", ")
+      : "the selected palette";
+    const garlandStr = bStyle !== "none"
+      ? `Keep the selected organic balloon garland (${bStyle}) visible along the right edge and top corner ` +
+        `of the shimmer wall, using the selected balloon colors (${bColors}). ` +
+        `The garland should cascade from the top-right corner down the right side. Do not omit the balloon garland.`
+      : "No balloon garland.";
+
     return (
       `Cool neutral daylight studio photography with soft natural light from the left, ` +
       `gray textured plaster or concrete studio wall, polished light concrete or stone floor, ` +
       `neutral white balance, fresh modern editorial event styling. ` +
       `Transform this layout reference into a premium photorealistic indoor event setup. ` +
-      `The setup contains exactly ONE backdrop panel: a single freestanding square shimmer wall, ` +
-      `${p.widthCm}cm wide and ${p.heightCm}cm tall. ` +
+      `The setup contains exactly ONE backdrop panel plus selected decorative items. ` +
+      `Backdrop: a single freestanding square shimmer wall, ${p.widthCm}cm wide and ${p.heightCm}cm tall. ` +
       `It is a flat front-facing rectangular event panel with a full square silhouette and no cutouts or openings. ` +
       `The entire visible surface is covered edge-to-edge with small square ${sc} sequin tiles arranged in a neat regular grid. ` +
       `This is a sequin shimmer wall rental panel. ` +
+      (plinthStr ? `${plinthStr} ` : "") +
+      `${garlandStr} ` +
       `It is NOT an arch, NOT a rounded-top board, NOT a niche, NOT a frame, NOT a cutout, ` +
       `NOT a layered composition, and NOT a panel behind another panel. ` +
-      `No arch. No opening. No cutout. No niche. No layered backdrop. No second panel. ` +
+      `No arch. No opening. No cutout. No niche. No layered backdrop. No second backdrop panel. ` +
       `No arch shape. No window-like opening. No inset reflective panel. No panel behind another panel. ` +
       `No aluminum foil. No wrinkled metal sheet. No crumpled texture. ` +
       `No matte board. No cream backdrop. No missing tile grid. No wrong shimmer color.`
@@ -1007,6 +1029,11 @@ export async function POST(req: NextRequest) {
       selectedBackdropTypes:    sceneModel.panels.map((p) => p.type),
       isSingleShimmerOnly:      sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "shimmer_wall",
       panelCount:               sceneModel.panels.length,
+      selectedBalloonStyle:     sceneModel.balloons.style,
+      balloonColorCount:        sceneModel.balloons.colors.length,
+      plinthCount:              sceneModel.plinths.length,
+      isBalloonGarlandExpected: sceneModel.balloons.style !== "none",
+      isPlinthExpected:         sceneModel.plinths.length > 0,
     };
 
     // ── Primary path: layout-reference edit ────────────────────────────────
