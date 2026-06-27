@@ -1113,11 +1113,16 @@ export default function SetupPreview({
               <span className="text-[11px] text-black/40">Generating final render…</span>
             </div>
           ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2 text-black/30">
-              <span className="text-3xl">✦</span>
-              <span className="text-[11px]">
-                Click &ldquo;Generate Final Render&rdquo; to create the design visual
-              </span>
+            /* Empty state — clean pastel placeholder, no AI call, no state change */
+            <div style={{
+              height: "100%", display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              background: "linear-gradient(160deg, #FFF5F8 0%, #FBF0FF 50%, #F0F5FF 100%)",
+              padding: 28, textAlign: "center",
+            }}>
+              <div style={{ width: 80, height: 80, borderRadius: 20, background: "#FFE8F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, marginBottom: 20 }}>✦</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1A2E", marginBottom: 8 }}>Start your design to see preview</div>
+              <div style={{ fontSize: 13, color: "#888", lineHeight: 1.5 }}>Your live preview will appear here<br/>after you choose your decor.</div>
             </div>
           )}
 

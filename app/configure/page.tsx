@@ -675,6 +675,13 @@ function DecorStep({
     marginBottom: 12,
     boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
   };
+  const numBadge = (n: number) => (
+    <div style={{
+      width: 28, height: 28, borderRadius: "50%", background: "#FF6B9D",
+      color: "white", fontSize: 14, fontWeight: 800,
+      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+    }}>{n}</div>
+  );
   const secLabel = (text: string) => (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
       <span style={{ width: 3, height: 16, borderRadius: 2, background: accent, display: "inline-block", flexShrink: 0 }} />
@@ -684,6 +691,34 @@ function DecorStep({
   const secSub = (text: string) => (
     <p style={{ fontSize: 12, color: "#888", marginTop: 2, marginBottom: 10 }}>{text}</p>
   );
+
+  function BackdropShapePreview({ type, color = "#F2D4E0" }: { type: string; color?: string }) {
+    if (type === "arch") return (
+      <svg width="60" height="80" viewBox="0 0 60 80">
+        <rect x="5" y="40" width="50" height="35" rx="4" fill={color}/>
+        <ellipse cx="30" cy="40" rx="25" ry="25" fill={color}/>
+      </svg>
+    );
+    if (type === "rect") return (
+      <svg width="60" height="80" viewBox="0 0 60 80">
+        <rect x="8" y="10" width="44" height="60" rx="4" fill={color}/>
+      </svg>
+    );
+    if (type === "round") return (
+      <svg width="60" height="80" viewBox="0 0 60 80">
+        <circle cx="30" cy="40" r="28" fill={color}/>
+      </svg>
+    );
+    if (type === "shimmer_wall") return (
+      <svg width="60" height="80" viewBox="0 0 60 80">
+        <rect x="5" y="10" width="50" height="60" rx="4" fill={color}/>
+        {[0,1,2,3,4].map(r => [0,1,2,3].map(c => (
+          <rect key={`${r}-${c}`} x={7+c*12} y={12+r*12} width="10" height="10" rx="2" fill="rgba(255,255,255,0.5)"/>
+        )))}
+      </svg>
+    );
+    return null;
+  }
   const chip = (label: string, active: boolean): React.CSSProperties => ({
     fontSize: 11, fontWeight: 700,
     color: active ? "rgba(255,255,255,0.85)" : accent,
@@ -819,19 +854,105 @@ function DecorStep({
     <div className={jakarta.className}>
       {/* ══ BACKDROP SECTION ══════════════════════════════════ */}
       <div style={{ background: "#F7F1FF", border: "1px solid #D8B4FE", borderRadius: 20, padding: "14px 12px", marginBottom: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div style={{ width: 4, height: 20, borderRadius: 2, background: "#8B5CF6", flexShrink: 0 }} />
-          <span style={{ fontSize: 13, fontWeight: 800, color: "#7C3AED", letterSpacing: "0.02em" }}>BACKDROP</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          {numBadge(1)}
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1A2E" }}>Pick your backdrop</div>
+            <div style={{ fontSize: 13, color: "#888", marginTop: 2 }}>Choose the perfect backdrop style and size for your celebration.</div>
+          </div>
         </div>
 
-      {/* BACKDROP TYPE — Vertical list */}
+      {/* BACKDROP TYPE — 4-card horizontal grid */}
       <div style={card}>
-        {secLabel("Choose your backdrop")}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
+          {/* ARCH card */}
+          {(() => {
+            const hasArch = d.backdropItems.some(i => i.type === "arch");
+            return (
+              <div
+                onClick={() => toggleArchSize(ARCH_SIZES[1])}
+                style={{
+                  border: hasArch ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.08)",
+                  borderRadius: 16, padding: "16px 12px", textAlign: "center",
+                  background: hasArch ? "#FFF0F5" : "white", cursor: "pointer",
+                  position: "relative", transition: "all 0.15s", minHeight: 140,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                {hasArch && <span style={{ position: "absolute", top: 8, right: 8, background: "#FF6B9D", color: "white", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>✓</span>}
+                <span style={{ position: "absolute", top: 8, left: 8, background: "#FFE8F0", color: "#FF6B9D", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20 }}>Most popular</span>
+                <BackdropShapePreview type="arch" color={hasArch ? "#FF6B9D" : "#F2D4E0"} />
+                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 8, color: hasArch ? "#FF6B9D" : "#1A1A2E" }}>Arch</div>
+              </div>
+            );
+          })()}
+          {/* RECT card */}
+          {(() => {
+            const hasRect = d.backdropItems.some(i => i.type === "rect");
+            return (
+              <div
+                onClick={() => toggleOtherType("rect")}
+                style={{
+                  border: hasRect ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.08)",
+                  borderRadius: 16, padding: "16px 12px", textAlign: "center",
+                  background: hasRect ? "#FFF0F5" : "white", cursor: "pointer",
+                  position: "relative", transition: "all 0.15s", minHeight: 140,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                {hasRect && <span style={{ position: "absolute", top: 8, right: 8, background: "#FF6B9D", color: "white", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>✓</span>}
+                <BackdropShapePreview type="rect" color={hasRect ? "#FF6B9D" : "#F2D4E0"} />
+                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 8, color: hasRect ? "#FF6B9D" : "#1A1A2E" }}>Rect</div>
+              </div>
+            );
+          })()}
+          {/* ROUND card */}
+          {(() => {
+            const hasRound = d.backdropItems.some(i => i.type === "round");
+            return (
+              <div
+                onClick={toggleRound}
+                style={{
+                  border: hasRound ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.08)",
+                  borderRadius: 16, padding: "16px 12px", textAlign: "center",
+                  background: hasRound ? "#FFF0F5" : "white", cursor: "pointer",
+                  position: "relative", transition: "all 0.15s", minHeight: 140,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                {hasRound && <span style={{ position: "absolute", top: 8, right: 8, background: "#FF6B9D", color: "white", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>✓</span>}
+                <BackdropShapePreview type="round" color={hasRound ? "#FF6B9D" : "#F2D4E0"} />
+                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 8, color: hasRound ? "#FF6B9D" : "#1A1A2E" }}>Round</div>
+              </div>
+            );
+          })()}
+          {/* SHIMMER WALL card */}
+          {(() => {
+            const hasShimmer = d.backdropItems.some(i => i.type === "shimmer_wall");
+            return (
+              <div
+                onClick={() => toggleOtherType("shimmer_wall")}
+                style={{
+                  border: hasShimmer ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.08)",
+                  borderRadius: 16, padding: "16px 12px", textAlign: "center",
+                  background: hasShimmer ? "#FFF0F5" : "white", cursor: "pointer",
+                  position: "relative", transition: "all 0.15s", minHeight: 140,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                {hasShimmer && <span style={{ position: "absolute", top: 8, right: 8, background: "#FF6B9D", color: "white", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>✓</span>}
+                <span style={{ position: "absolute", top: 8, left: 8, background: "#FFE8F0", color: "#FF6B9D", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20 }}>✨ Glam pick</span>
+                <BackdropShapePreview type="shimmer_wall" color={hasShimmer ? "#FF6B9D" : "#F2D4E0"} />
+                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 8, color: hasShimmer ? "#FF6B9D" : "#1A1A2E" }}>Shimmer</div>
+              </div>
+            );
+          })()}
+        </div>
+
         {d.backdropItems.length === 0
-          ? <div style={{ fontSize: 13, color: "#888", fontStyle: "italic", marginBottom: 10, padding: "8px 0" }}>Choose a backdrop to start ↓</div>
+          ? <div style={{ fontSize: 13, color: "#888", fontStyle: "italic", marginBottom: 10, padding: "8px 0" }}>Choose a backdrop to start ↑</div>
           : <div style={{ fontSize: 12, color: "#666", marginBottom: 10 }}>You can mix up to 3 arch, rectangular, or shimmer pieces. Round works on its own.</div>
         }
-
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {/* ARCH BACKDROP */}
@@ -864,7 +985,11 @@ function DecorStep({
                             style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
                               padding: "10px 14px", borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
                               border: isSelected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
-                              background: isSelected ? accent + "12" : "white",
+                              background: isSelected ? accent + "12"
+                                : size.id === "small"  ? "#FFF8F4"
+                                : size.id === "medium" ? "#FFF0F5"
+                                : size.id === "large"  ? "#F5F0FF"
+                                : "white",
                               opacity: !isSelected && d.backdropItems.length >= 3 ? 0.4 : 1 }}>
                             <div style={{ textAlign: "left" }}>
                               <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? accent : "#1A1A2E" }}>{size.label}</div>
@@ -1361,97 +1486,80 @@ function DecorStep({
 
       {/* ══ BALLOONS SECTION ══════════════════════════════════ */}
       <div style={{ background: "#EFF8FF", border: "1px solid #BFDBFE", borderRadius: 20, padding: "14px 12px", marginBottom: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div style={{ width: 4, height: 20, borderRadius: 2, background: "#3B82F6", flexShrink: 0 }} />
-          <span style={{ fontSize: 13, fontWeight: 800, color: "#1D4ED8", letterSpacing: "0.02em" }}>BALLOONS</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          {numBadge(2)}
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1A2E" }}>Add balloons</div>
+            <div style={{ fontSize: 13, color: "#888", marginTop: 2 }}>Pick a style and color palette to bring your backdrop to life.</div>
+          </div>
         </div>
 
-      {/* BALLOON STYLE */}
+      {/* BALLOON STYLE + COLORS — side by side */}
       <div style={card}>
-        {secLabel("Choose your balloons")}
-        <div className="flex flex-wrap gap-2">
-          {BALLOON_STYLES.map((o) => {
-            const active = o.id === d.balloonStyle;
-            return (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => patchDecor({ balloonStyle: o.id })}
-                style={active
-                  ? { background: accent, color: "white", border: `2px solid ${accent}`, borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500, transition: "all 0.15s" }
-                  : { background: "white", color: "rgba(0,0,0,0.6)", border: "1.5px solid rgba(0,0,0,0.15)", borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500, transition: "all 0.15s" }}
-              >
-                {o.label}
-                {o.price > 0 && <span style={chip(`+${o.price}`, active)}>+{o.price}</span>}
-              </button>
-            );
-          })}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 16, alignItems: "start" }}>
+          {/* Style cards */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#555", marginBottom: 8 }}>Style</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+              {(() => {
+                const BALLOON_META: Record<string, { icon: string; desc: string; badge?: string }> = {
+                  none:    { icon: "🫧", desc: "Keep it minimal" },
+                  half:    { icon: "🎈", desc: "Balloons on one side", badge: "Most popular" },
+                  full:    { icon: "🎪", desc: "Balloons all around", badge: "Best impact" },
+                  premium: { icon: "🌸", desc: "Luxury balloon styling", badge: "Luxury finish" },
+                };
+                const BG: Record<string, string> = { none: "#F9FAFB", half: "#EFF6FF", full: "#F5F3FF", premium: "#FFF7ED" };
+                return BALLOON_STYLES.map((o) => {
+                  const active = o.id === d.balloonStyle;
+                  const meta = BALLOON_META[o.id] ?? { icon: "🎈", desc: "" };
+                  return (
+                    <div key={o.id} onClick={() => patchDecor({ balloonStyle: o.id })}
+                      style={{
+                        cursor: "pointer", borderRadius: 14, padding: "12px 10px", textAlign: "center", position: "relative",
+                        border: active ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.08)",
+                        background: active ? "#FFF0F5" : BG[o.id] ?? "white",
+                        transition: "all 0.15s", minHeight: 90,
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+                      }}>
+                      {active && <span style={{ position: "absolute", top: 6, right: 6, background: "#FF6B9D", color: "white", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>✓</span>}
+                      {meta.badge && <span style={{ position: "absolute", top: 6, left: 6, background: active ? "#FF6B9D" : "#FFE8F0", color: active ? "white" : "#FF6B9D", fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 20 }}>🚀 {meta.badge}</span>}
+                      <span style={{ fontSize: 24, marginTop: meta.badge ? 12 : 0 }}>{meta.icon}</span>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: active ? "#FF6B9D" : "#1A1A2E" }}>{o.label}</div>
+                      <div style={{ fontSize: 10, color: "#999" }}>{meta.desc}</div>
+                      {o.price > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: active ? "#FF6B9D" : "#888" }}>+AED {o.price}</div>}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+          {/* Color palette */}
+          <div style={{ minWidth: 110 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#555", marginBottom: 8 }}>Choose your colors</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, maxWidth: 130 }}>
+              {theme.balloonColors.map((hex) => (
+                <button key={hex} type="button" onClick={() => toggleBalloon(hex)}
+                  style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: hex, cursor: "pointer", transition: "all 0.12s",
+                    border: d.balloonColors.includes(hex) ? "3px solid #FF6B9D" : "2px solid rgba(0,0,0,0.12)",
+                    boxShadow: d.balloonColors.includes(hex) ? "0 0 0 2px white, 0 0 0 4px #FF6B9D" : "none" }}
+                  title={hex} />
+              ))}
+              {d.balloonColors.filter(c => !theme.balloonColors.includes(c)).map((hex) => (
+                <button key={hex} type="button" onClick={() => toggleBalloon(hex)}
+                  style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: hex, cursor: "pointer",
+                    border: "3px solid #FF6B9D", boxShadow: "0 0 0 2px white, 0 0 0 4px #FF6B9D" }} title={hex} />
+              ))}
+              <label style={{ width: 28, height: 28, borderRadius: "50%", border: "2px dashed rgba(0,0,0,0.20)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: "#ccc" }}>
+                +<input type="color" onChange={(e) => toggleBalloon(e.target.value)} style={{ opacity: 0, position: "absolute", width: 1, height: 1 }} />
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* BALLOON COLORS */}
-      <div style={card}>
-        {secLabel("Balloon colors")}
-        {secSub("Select up to 5 shades — Sempertex palette confirmed with your stylist")}
-        <div className="flex flex-wrap items-center gap-2">
-          {theme.balloonColors.map((hex) => (
-            <button
-              key={hex}
-              type="button"
-              onClick={() => toggleBalloon(hex)}
-              className={swatch(d.balloonColors.includes(hex))}
-              style={{ backgroundColor: hex }}
-              title={hex}
-            />
-          ))}
-          {d.balloonColors
-            .filter((c) => !theme.balloonColors.includes(c))
-            .map((hex) => (
-              <button
-                key={hex}
-                type="button"
-                onClick={() => toggleBalloon(hex)}
-                className={swatch(true)}
-                style={{ backgroundColor: hex }}
-                title={hex}
-              />
-            ))}
-          <label className="flex h-9 cursor-pointer items-center gap-1 rounded-full border border-dashed border-black/25 px-3 text-xs text-black/55">
-            Custom
-            <input
-              type="color"
-              onChange={(e) => toggleBalloon(e.target.value)}
-              className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0"
-            />
-          </label>
-        </div>
-      </div>
+      {/* Balloon colors merged into style card above */}
 
-      {/* BACKDROP COLOR */}
-      <div style={card}>
-        {secLabel("Backdrop color")}
-        <div className="flex flex-wrap items-center gap-2">
-          {theme.backdropColors.map((hex) => (
-            <button
-              key={hex}
-              type="button"
-              onClick={() => patchDecor({ backdropColor: hex })}
-              className={swatch(d.backdropColor.toLowerCase() === hex.toLowerCase())}
-              style={{ backgroundColor: hex }}
-              title={hex}
-            />
-          ))}
-          <label className="flex h-9 cursor-pointer items-center gap-1 rounded-full border border-dashed border-black/25 px-3 text-xs text-black/55">
-            Custom
-            <input
-              type="color"
-              value={d.backdropColor}
-              onChange={(e) => patchDecor({ backdropColor: e.target.value })}
-              className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0"
-            />
-          </label>
-        </div>
-      </div>
+      {/* Global backdrop color removed — color is now set per-backdrop inside each selected card */}
 
       {/* BACKDROP PRINT — moved to Customize each backdrop */}
       {false && <div style={card}>
@@ -1569,9 +1677,12 @@ function DecorStep({
 
       {/* ══ EXTRAS SECTION ════════════════════════════════════ */}
       <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 20, padding: "14px 12px", marginBottom: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div style={{ width: 4, height: 20, borderRadius: 2, background: "#F97316", flexShrink: 0 }} />
-          <span style={{ fontSize: 13, fontWeight: 800, color: "#B45309", letterSpacing: "0.02em" }}>EXTRAS</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          {numBadge(3)}
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1A2E" }}>Add extra magic</div>
+            <div style={{ fontSize: 13, color: "#888", marginTop: 2 }}>Enhance your setup with props and finishing touches.</div>
+          </div>
         </div>
 
       {/* CHARACTER CUTOUTS */}

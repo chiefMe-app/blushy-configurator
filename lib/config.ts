@@ -724,6 +724,7 @@ export function defaultConfig(): BuilderConfig {
     servicePackageId: "design_only",
     decor: {
       ...pkg.defaultDecor,
+      backdropItems: [],        // no default backdrop — user chooses
       backdropColor: theme.backdropColors[0],
       balloonColors: theme.balloonColors.slice(0, 5),
     },
