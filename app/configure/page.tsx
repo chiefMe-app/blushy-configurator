@@ -288,23 +288,85 @@ export default function ConfigurePage() {
   return (
     <main style={accentStyle} className="min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-black/5 bg-warmwhite/90 px-4 py-3 backdrop-blur">
-        <div>
-          <h1 className="text-base font-bold leading-none">Blushy Birthday Builder</h1>
-          <p className="text-[11px] text-black/45">Design your party setup in minutes</p>
+      <header className="sticky top-0 z-30 border-b border-black/5 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #FF6B9D, #C44BC4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>✦</div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#1A1A2E", lineHeight: 1 }}>Blushy</div>
+              <div style={{ fontSize: 9, fontWeight: 600, color: "#FF6B9D", letterSpacing: "0.08em", lineHeight: 1 }}>BIRTHDAY BUILDER</div>
+            </div>
+          </div>
+
+          {/* Step navigation — centered pills */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {STEPS.map((s, i) => {
+              const done = i < step;
+              const active = i === step;
+              return (
+                <button
+                  key={i}
+                  onClick={() => i <= step && setStep(i)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5, padding: "5px 12px",
+                    borderRadius: 999, fontSize: 12, fontWeight: active ? 700 : 500,
+                    background: active ? "#FF6B9D" : done ? "#FFF0F5" : "transparent",
+                    color: active ? "white" : done ? "#FF6B9D" : "rgba(0,0,0,0.4)",
+                    border: active ? "none" : done ? "1.5px solid #FFB8D1" : "1.5px solid rgba(0,0,0,0.1)",
+                    cursor: i <= step ? "pointer" : "default",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <span style={{
+                    width: 18, height: 18, borderRadius: "50%", fontSize: 10, fontWeight: 800,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: active ? "rgba(255,255,255,0.25)" : done ? "#FF6B9D" : "rgba(0,0,0,0.08)",
+                    color: active ? "white" : done ? "white" : "rgba(0,0,0,0.4)",
+                  }}>
+                    {done ? "✓" : i + 1}
+                  </span>
+                  {s}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Total */}
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 11, color: "#999", fontWeight: 500 }}>ESTIMATED TOTAL</div>
+            <TotalBadge config={config} />
+          </div>
         </div>
-        <TotalBadge config={config} />
       </header>
 
-      <div className="mx-auto max-w-6xl lg:flex lg:gap-8 lg:px-6 lg:py-6">
+      <div className="mx-auto max-w-7xl lg:flex lg:gap-8 lg:px-6 lg:py-6">
         {/* Left: preview (sticky on desktop) */}
-        <div className="px-4 pt-4 lg:w-1/2 lg:px-0 lg:pt-0">
-          <div className="lg:sticky lg:top-24">{Preview}</div>
+        <div className="px-4 pt-4 lg:w-[35%] lg:px-0 lg:pt-0">
+          <div className="lg:sticky lg:top-24">
+            <div className="space-y-3">
+              <div className="relative overflow-hidden rounded-2xl" style={{ background: "linear-gradient(135deg, #FFF5F9 0%, #FAF0FF 100%)", minHeight: 300 }}>
+                {/* Decorative elements */}
+                <div style={{ position: "absolute", top: 20, left: 30, width: 8, height: 8, borderRadius: 2, background: "#FFB8D1", opacity: 0.6, transform: "rotate(45deg)" }} />
+                <div style={{ position: "absolute", top: 60, right: 25, width: 6, height: 6, borderRadius: "50%", background: "#C4B5FD", opacity: 0.5 }} />
+                <div style={{ position: "absolute", bottom: 40, left: 20, width: 10, height: 4, borderRadius: 2, background: "#93C5FD", opacity: 0.5, transform: "rotate(-30deg)" }} />
+                <div style={{ position: "absolute", bottom: 80, right: 35, width: 6, height: 6, borderRadius: 2, background: "#FCA5A5", opacity: 0.5, transform: "rotate(20deg)" }} />
+                <SetupPreview
+                  config={config}
+                  status={preview.status}
+                  imageUrl={preview.imageUrl}
+                  isIncremental={preview.isIncremental}
+                  onRegenerate={preview.regenerate}
+                  onPatchDecor={patchDecor}
+                />
+              </div>
+              <PriceSummary config={config} className="hidden lg:block" />
+            </div>
+          </div>
         </div>
 
         {/* Right: steps */}
-        <div className="px-4 pb-32 pt-5 lg:w-1/2 lg:px-0 lg:pb-24 lg:pt-0">
-          <StepNavigation steps={STEPS} current={step} onSelect={setStep} />
+        <div className="px-4 pb-32 pt-5 lg:w-[65%] lg:px-0 lg:pb-24 lg:pt-0">
 
           <div className="mt-6">
             {step === 0 && (
@@ -344,9 +406,9 @@ export default function ConfigurePage() {
             )}
 
             {step === 2 && (
-              <StepShell title="Customize your decor">
+              <div style={{ background: "white", borderRadius: 20, boxShadow: "0 4px 24px rgba(0,0,0,0.08)", padding: 24 }}>
                 <DecorStep config={config} patchDecor={patchDecor} />
-              </StepShell>
+              </div>
             )}
 
             {step === 3 && (
@@ -862,99 +924,153 @@ function DecorStep({
           </div>
         </div>
 
-      {/* BACKDROP TYPE — 4-card horizontal grid */}
+      {/* ── UNIFIED BACKDROP SELECTOR ────────────────────────── */}
       <div style={card}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
-          {/* ARCH card */}
-          {(() => {
-            const hasArch = d.backdropItems.some(i => i.type === "arch");
+        {/* 4 type cards in a row */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+          {[
+            { type: "arch" as const, label: "Arch Backdrop", badge: "Most popular", bg: "white", click: () => { const hasArch = d.backdropItems.some(i=>i.type==="arch"); if(!hasArch) toggleArchSize(ARCH_SIZES[1]); else patchDecor({ backdropItems: d.backdropItems.filter(i=>i.type!=="arch") }); } },
+            { type: "rect" as const, label: "Rectangular Backdrop", badge: null, bg: "white", click: () => toggleOtherType("rect") },
+            { type: "round" as const, label: "Round Backdrop", badge: null, bg: "white", click: () => toggleRound() },
+            { type: "shimmer_wall" as const, label: "Shimmer Wall", badge: "Glam pick", bg: "white", click: () => toggleOtherType("shimmer_wall") },
+          ].map(({ type, label, badge, click }) => {
+            const isSelected = type === "arch"
+              ? d.backdropItems.some(i => i.type === "arch")
+              : d.backdropItems.some(i => i.type === type);
             return (
-              <div
-                onClick={() => toggleArchSize(ARCH_SIZES[1])}
-                style={{
-                  border: hasArch ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.08)",
-                  borderRadius: 16, padding: "16px 12px", textAlign: "center",
-                  background: hasArch ? "#FFF0F5" : "white", cursor: "pointer",
-                  position: "relative", transition: "all 0.15s", minHeight: 140,
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                }}
-              >
-                {hasArch && <span style={{ position: "absolute", top: 8, right: 8, background: "#FF6B9D", color: "white", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>✓</span>}
-                <span style={{ position: "absolute", top: 8, left: 8, background: "#FFE8F0", color: "#FF6B9D", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20 }}>Most popular</span>
-                <BackdropShapePreview type="arch" color={hasArch ? "#FF6B9D" : "#F2D4E0"} />
-                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 8, color: hasArch ? "#FF6B9D" : "#1A1A2E" }}>Arch</div>
+              <div key={type} onClick={click} style={{
+                border: isSelected ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.08)",
+                borderRadius: 16, padding: "20px 10px 14px", textAlign: "center",
+                background: isSelected ? "#FFF0F5" : "white", cursor: "pointer",
+                position: "relative", transition: "all 0.15s", minHeight: 160,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+              }}>
+                {isSelected && <span style={{ position: "absolute", top: 8, right: 8, background: "#FF6B9D", color: "white", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>✓</span>}
+                {badge && <span style={{ position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: isSelected ? "#FF6B9D" : "#FFE8F0", color: isSelected ? "white" : "#FF6B9D", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>🚀 {badge}</span>}
+                <div style={{ marginTop: badge ? 8 : 0 }}>
+                  <BackdropShapePreview type={type} color={isSelected ? "#FF6B9D" : "#E8D5E8"} />
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: isSelected ? "#FF6B9D" : "#1A1A2E", marginTop: 2, lineHeight: 1.3 }}>{label}</div>
               </div>
             );
-          })()}
-          {/* RECT card */}
-          {(() => {
-            const hasRect = d.backdropItems.some(i => i.type === "rect");
-            return (
-              <div
-                onClick={() => toggleOtherType("rect")}
-                style={{
-                  border: hasRect ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.08)",
-                  borderRadius: 16, padding: "16px 12px", textAlign: "center",
-                  background: hasRect ? "#FFF0F5" : "white", cursor: "pointer",
-                  position: "relative", transition: "all 0.15s", minHeight: 140,
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                }}
-              >
-                {hasRect && <span style={{ position: "absolute", top: 8, right: 8, background: "#FF6B9D", color: "white", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>✓</span>}
-                <BackdropShapePreview type="rect" color={hasRect ? "#FF6B9D" : "#F2D4E0"} />
-                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 8, color: hasRect ? "#FF6B9D" : "#1A1A2E" }}>Rect</div>
-              </div>
-            );
-          })()}
-          {/* ROUND card */}
-          {(() => {
-            const hasRound = d.backdropItems.some(i => i.type === "round");
-            return (
-              <div
-                onClick={toggleRound}
-                style={{
-                  border: hasRound ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.08)",
-                  borderRadius: 16, padding: "16px 12px", textAlign: "center",
-                  background: hasRound ? "#FFF0F5" : "white", cursor: "pointer",
-                  position: "relative", transition: "all 0.15s", minHeight: 140,
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                }}
-              >
-                {hasRound && <span style={{ position: "absolute", top: 8, right: 8, background: "#FF6B9D", color: "white", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>✓</span>}
-                <BackdropShapePreview type="round" color={hasRound ? "#FF6B9D" : "#F2D4E0"} />
-                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 8, color: hasRound ? "#FF6B9D" : "#1A1A2E" }}>Round</div>
-              </div>
-            );
-          })()}
-          {/* SHIMMER WALL card */}
-          {(() => {
-            const hasShimmer = d.backdropItems.some(i => i.type === "shimmer_wall");
-            return (
-              <div
-                onClick={() => toggleOtherType("shimmer_wall")}
-                style={{
-                  border: hasShimmer ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.08)",
-                  borderRadius: 16, padding: "16px 12px", textAlign: "center",
-                  background: hasShimmer ? "#FFF0F5" : "white", cursor: "pointer",
-                  position: "relative", transition: "all 0.15s", minHeight: 140,
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                }}
-              >
-                {hasShimmer && <span style={{ position: "absolute", top: 8, right: 8, background: "#FF6B9D", color: "white", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>✓</span>}
-                <span style={{ position: "absolute", top: 8, left: 8, background: "#FFE8F0", color: "#FF6B9D", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20 }}>✨ Glam pick</span>
-                <BackdropShapePreview type="shimmer_wall" color={hasShimmer ? "#FF6B9D" : "#F2D4E0"} />
-                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 8, color: hasShimmer ? "#FF6B9D" : "#1A1A2E" }}>Shimmer</div>
-              </div>
-            );
-          })()}
+          })}
         </div>
 
-        {d.backdropItems.length === 0
-          ? <div style={{ fontSize: 13, color: "#888", fontStyle: "italic", marginBottom: 10, padding: "8px 0" }}>Choose a backdrop to start ↑</div>
-          : <div style={{ fontSize: 12, color: "#666", marginBottom: 10 }}>You can mix up to 3 arch, rectangular, or shimmer pieces. Round works on its own.</div>
-        }
+        {/* Arch size selector — horizontal row, shown when arch is selected */}
+        {d.backdropItems.some(i => i.type === "arch") && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 8 }}>Choose size</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+              {ARCH_SIZES.map((size) => {
+                const archItem = d.backdropItems.find(i => i.type === "arch" && i.sizeId === size.id);
+                const isSelected = !!archItem;
+                const itemIdx = isSelected ? d.backdropItems.findIndex(i => i.id === archItem?.id) : -1;
+                const isMedium = size.id === "medium";
+                return (
+                  <div key={size.id}>
+                    <button type="button" onClick={() => toggleArchSize(size)}
+                      disabled={!isSelected && d.backdropItems.length >= 3}
+                      style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+                        padding: "12px 14px", borderRadius: 12, cursor: "pointer", transition: "all 0.15s",
+                        border: isSelected ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.10)",
+                        background: isSelected ? "#FFF0F5" : size.id === "small" ? "#FFF8F4" : size.id === "medium" ? "#FFF0F5" : "#F5F0FF",
+                        opacity: !isSelected && d.backdropItems.length >= 3 ? 0.4 : 1 }}>
+                      <div style={{ textAlign: "left" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "#FF6B9D" : "#1A1A2E" }}>{size.label}</div>
+                        <div style={{ fontSize: 11, color: "#999" }}>{size.widthCm} × {size.heightCm} cm</div>
+                      </div>
+                      <div style={{ width: 18, height: 18, borderRadius: "50%", border: isSelected ? "none" : "1.5px solid rgba(0,0,0,0.20)", background: isSelected ? "#FF6B9D" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {isSelected && <span style={{ color: "white", fontSize: 11, fontWeight: 700 }}>✓</span>}
+                      </div>
+                    </button>
+                    {isSelected && archItem && itemIdx >= 0 && (
+                      <ItemCustomization item={archItem} itemIdx={itemIdx} />
+                    )}
+                    {isMedium && !d.backdropItems.some(i => i.type === "arch") && (
+                      <div style={{ marginTop: 6, padding: "8px 12px", background: "#F8F0FF", borderRadius: 10, border: "1px solid #D8B4FE", display: "flex", gap: 6, alignItems: "center" }}>
+                        <span style={{ fontSize: 14 }}>✨</span>
+                        <div style={{ fontSize: 11, color: "#666" }}><span style={{ fontWeight: 700, color: "#7C3AED" }}>Pro tip:</span> Medium is our most popular size.</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Rect size selector */}
+        {d.backdropItems.some(i => i.type === "rect") && (() => {
+          const rectItems = d.backdropItems.filter(i => i.type === "rect");
+          const rectItem = rectItems[0];
+          const itemIdx = rectItem ? d.backdropItems.findIndex(i => i.id === rectItem.id) : -1;
+          return rectItem ? (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 8 }}>Choose size</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                {RECT_SIZES.map(size => {
+                  const isSel = rectItem.sizeId === size.id;
+                  return (
+                    <button key={size.id} type="button"
+                      onClick={() => patchDecor({ backdropItems: d.backdropItems.map(i => i.id === rectItem.id ? { ...i, sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm } : i) })}
+                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderRadius: 12, cursor: "pointer",
+                        border: isSel ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.10)",
+                        background: isSel ? "#FFF0F5" : "white", transition: "all 0.15s" }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: isSel ? "#FF6B9D" : "#1A1A2E" }}>{size.label}</div>
+                        <div style={{ fontSize: 11, color: "#999" }}>{size.widthCm} × {size.heightCm} cm</div>
+                      </div>
+                      <div style={{ width: 18, height: 18, borderRadius: "50%", border: isSel ? "none" : "1.5px solid rgba(0,0,0,0.20)", background: isSel ? "#FF6B9D" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {isSel && <span style={{ color: "white", fontSize: 11, fontWeight: 700 }}>✓</span>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <ItemCustomization item={rectItem} itemIdx={itemIdx} />
+            </div>
+          ) : null;
+        })()}
+
+        {/* Round customization */}
+        {d.backdropItems.some(i => i.type === "round") && (() => {
+          const roundItem = d.backdropItems.find(i => i.type === "round");
+          const itemIdx = roundItem ? d.backdropItems.findIndex(i => i.id === roundItem.id) : -1;
+          return roundItem && itemIdx >= 0 ? <div style={{ marginTop: 10 }}><ItemCustomization item={roundItem} itemIdx={itemIdx} /></div> : null;
+        })()}
+
+        {/* Shimmer color selector + customization */}
+        {d.backdropItems.some(i => i.type === "shimmer_wall") && (() => {
+          const shimmerItem = d.backdropItems.find(i => i.type === "shimmer_wall");
+          const itemIdx = shimmerItem ? d.backdropItems.findIndex(i => i.id === shimmerItem.id) : -1;
+          return (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 8 }}>Shimmer color</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                {SHIMMER_COLORS.map(sc => {
+                  const isActive = (d.shimmerColor ?? "silver") === sc.id;
+                  return (
+                    <button key={sc.id} type="button" onClick={() => patchDecor({ shimmerColor: sc.id as ShimmerColorId })}
+                      style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: isActive ? 700 : 500,
+                        border: isActive ? "2px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.12)",
+                        background: isActive ? "#FFF0F5" : "white", color: isActive ? "#FF6B9D" : "#333", cursor: "pointer" }}>
+                      {sc.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {shimmerItem && itemIdx >= 0 && <ItemCustomization item={shimmerItem} itemIdx={itemIdx} />}
+            </div>
+          );
+        })()}
+
+        {d.backdropItems.length === 0 && (
+          <div style={{ textAlign: "center", padding: "8px 0 4px", fontSize: 13, color: "#AAA", fontStyle: "italic" }}>Choose a backdrop above to get started</div>
+        )}
+      </div>{/* ── end unified backdrop card ── */}
+
+      {/* Old expandable cards removed — unified above. Dead placeholder: */}
+      {false && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {/* ARCH BACKDROP */}
           {(() => {
             const archItems = d.backdropItems.filter(i => i.type === "arch");
@@ -1216,8 +1332,7 @@ function DecorStep({
               </div>
             );
           })()}
-        </div>
-      </div>
+        </div>}
 
       {/* PER-BACKDROP CUSTOMIZATION — REMOVED: inline per card now */}
       {false && d.backdropItems.length > 0 && (
@@ -1481,7 +1596,6 @@ function DecorStep({
         </div>
         </>
       )}
-
       </div>{/* ── end BACKDROP section ── */}
 
       {/* ══ BALLOONS SECTION ══════════════════════════════════ */}
