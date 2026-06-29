@@ -346,10 +346,10 @@ export default function ConfigurePage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl lg:flex lg:gap-8 lg:px-6 lg:py-6">
-        {/* Left: preview (sticky on desktop) */}
-        <div className="px-4 pt-4 lg:w-[35%] lg:px-0 lg:pt-0">
-          <div className="lg:sticky lg:top-24">
+      <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 32px 0", display: "flex", gap: 32, alignItems: "flex-start" }}>
+        {/* Left: preview rail — fixed 380px */}
+        <div style={{ width: 380, flexShrink: 0 }}>
+          <div className="lg:sticky" style={{ top: 88 }}>
             <div className="space-y-3">
               {/* Preview card — overflow hidden keeps confetti contained */}
               <div style={{ position: "relative", overflow: "hidden", minHeight: 460, borderRadius: 22, border: "1.5px solid #F1D8E2", boxShadow: "0 18px 40px rgba(39,40,68,0.06)", background: "linear-gradient(150deg, #FFF7FB 0%, #FBF2FF 50%, #FFF9F5 100%)" }}>
@@ -377,10 +377,10 @@ export default function ConfigurePage() {
           </div>
         </div>
 
-        {/* Right: steps */}
-        <div className="px-4 pb-32 pt-4 lg:w-[65%] lg:px-0 lg:pb-24 lg:pt-0">
+        {/* Right: steps — flex 1, min 720px */}
+        <div style={{ flex: 1, minWidth: 720, paddingBottom: 120 }}>
 
-          <div className="mt-0">
+          <div>
             {step === 0 && (
               <StepShell title="What are we celebrating?">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
