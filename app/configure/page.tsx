@@ -675,6 +675,10 @@ function DecorStep({
 }) {
   const [printFile, setPrintFile] = useState<File | null>(null);
   const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
+  // Tracks which backdrop item IDs have their Customize panel open
+  const [openCustomizeIds, setOpenCustomizeIds] = useState<Set<string>>(new Set());
+  const toggleCustomize = (id: string) =>
+    setOpenCustomizeIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const d = config.decor;
   const theme = themeById(config.theme)!;
@@ -848,6 +852,38 @@ function DecorStep({
     }
   }
 
+  // Readable type labels for summaries
+  const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", shimmer_wall: "Shimmer Wall" };
+
+  // Collapsible customize row — shows summary + button, expands on demand
+  function BackdropCustomizeRow({ item, itemIdx }: { item: BackdropItem; itemIdx: number }) {
+    const sizeLabelMap = Object.fromEntries([...ARCH_SIZES, ...RECT_SIZES].map(s => [s.id, s.label]));
+    const sizeStr = item.sizeId ? (sizeLabelMap[item.sizeId] ?? `${item.widthCm} × ${item.heightCm} cm`) : `${item.widthCm} × ${item.heightCm} cm`;
+    const summaryLabel = `Backdrop ${itemIdx + 1} — ${TYPE_LABEL[item.type] ?? item.type} · ${sizeStr}`;
+    const isOpen = openCustomizeIds.has(item.id);
+    return (
+      <div style={{ marginTop: 10, borderRadius: 12, border: "1px solid #ECEAF1", background: "#FAFAFA", overflow: "hidden" }}>
+        {/* Summary row */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: "#EC4F91", background: "rgba(236,79,145,0.10)", padding: "2px 7px", borderRadius: 20, letterSpacing: "0.03em" }}>✓</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#12162F", letterSpacing: "-0.1px" }}>{summaryLabel}</span>
+          </div>
+          <button type="button" onClick={() => toggleCustomize(item.id)}
+            style={{ fontSize: 11, fontWeight: 700, color: isOpen ? "#EC4F91" : "#727386", background: isOpen ? "rgba(236,79,145,0.08)" : "rgba(0,0,0,0.04)", border: "none", borderRadius: 20, padding: "4px 12px", cursor: "pointer", transition: "all 0.15s" }}>
+            {isOpen ? "Done ✕" : "Customize ▸"}
+          </button>
+        </div>
+        {/* Expanded customization */}
+        {isOpen && (
+          <div style={{ borderTop: "1px solid #ECEAF1", background: "white" }}>
+            <ItemCustomization item={item} itemIdx={itemIdx} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   function ItemCustomization({ item, itemIdx }: { item: BackdropItem; itemIdx: number }) {
     // Build the label: "Backdrop N — Type · Size"
     const typeLabel: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", shimmer_wall: "Shimmer Wall" };
@@ -856,17 +892,8 @@ function DecorStep({
     const selectionLabel = `Backdrop ${itemIdx + 1} — ${typeLabel[item.type] ?? item.type} · ${sizeStr}`;
 
     return (
-      <div style={{ marginTop: 10, borderRadius: 14, border: "1.5px solid #ECEAF1", background: "white", overflow: "hidden", boxShadow: "0 2px 8px rgba(18,22,47,0.05)" }}>
-        {/* Selected backdrop identifier */}
-        <div style={{ padding: "10px 14px", background: "linear-gradient(135deg, #FFF7FB 0%, #F8F4FF 100%)", borderBottom: "1px solid #ECEAF1", display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: "#EC4F91", background: "rgba(236,79,145,0.10)", padding: "2px 8px", borderRadius: 20, letterSpacing: "0.03em", whiteSpace: "nowrap" }}>SELECTED</span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#12162F", letterSpacing: "-0.1px" }}>{selectionLabel}</span>
-        </div>
-        {/* Customize label */}
-        <div style={{ padding: "10px 14px 0" }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#727386", letterSpacing: "0.06em", marginBottom: 10, textTransform: "uppercase" }}>Customize this backdrop</div>
-        </div>
-        <div style={{ padding: "0 14px 14px" }}>
+      <div>
+        <div style={{ padding: "14px 14px 14px" }}>
         {/* Color */}
         <div style={{ marginBottom: 12 }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: "#12162F", display: "block", marginBottom: 6 }}>Backdrop color</span>
@@ -1019,7 +1046,7 @@ function DecorStep({
                       </div>
                     </button>
                     {isSelected && archItem && itemIdx >= 0 && (
-                      <ItemCustomization item={archItem} itemIdx={itemIdx} />
+                      <BackdropCustomizeRow item={archItem} itemIdx={itemIdx} />
                     )}
                     {isMedium && !d.backdropItems.some(i => i.type === "arch") && (
                       <div style={{ marginTop: 6, padding: "8px 12px", background: "#F8F0FF", borderRadius: 10, border: "1px solid #D8B4FE", display: "flex", gap: 6, alignItems: "center" }}>
@@ -1062,7 +1089,7 @@ function DecorStep({
                   );
                 })}
               </div>
-              <ItemCustomization item={rectItem} itemIdx={itemIdx} />
+              <BackdropCustomizeRow item={rectItem} itemIdx={itemIdx} />
             </div>
           ) : null;
         })()}
@@ -1071,7 +1098,7 @@ function DecorStep({
         {d.backdropItems.some(i => i.type === "round") && (() => {
           const roundItem = d.backdropItems.find(i => i.type === "round");
           const itemIdx = roundItem ? d.backdropItems.findIndex(i => i.id === roundItem.id) : -1;
-          return roundItem && itemIdx >= 0 ? <div style={{ marginTop: 10 }}><ItemCustomization item={roundItem} itemIdx={itemIdx} /></div> : null;
+          return roundItem && itemIdx >= 0 ? <BackdropCustomizeRow item={roundItem} itemIdx={itemIdx} /> : null;
         })()}
 
         {/* Shimmer color selector + customization */}
@@ -1094,7 +1121,7 @@ function DecorStep({
                   );
                 })}
               </div>
-              {shimmerItem && itemIdx >= 0 && <ItemCustomization item={shimmerItem} itemIdx={itemIdx} />}
+              {shimmerItem && itemIdx >= 0 && <BackdropCustomizeRow item={shimmerItem} itemIdx={itemIdx} />}
             </div>
           );
         })()}
