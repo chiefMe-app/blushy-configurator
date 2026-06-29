@@ -386,15 +386,24 @@ export default function ConfigurePage() {
               <div>
                 {/* Intro band */}
                 <div style={{ background: "white", border: "1.5px solid #F1D8E2", borderRadius: 18, padding: "16px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 14, boxShadow: "0 2px 10px rgba(39,40,68,0.04)" }}>
-                  <span style={{ fontSize: 28, lineHeight: 1 }}></span>
+                  {/* Sparkle icon */}
+                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}>
+                    <path d="M14 4L16 11L23 13L16 15L14 22L12 15L5 13L12 11Z" fill="#EC4D8D" opacity="0.8"/>
+                    <circle cx="6" cy="6" r="1.2" fill="#F7A7C8"/>
+                    <circle cx="22" cy="21" r="1.2" fill="#F7A7C8"/>
+                  </svg>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "#15182E" }}>Let's bring your celebration to life</div>
                     <div style={{ fontSize: 12, color: "#73778A", marginTop: 2 }}>Choose the event so we can tailor ideas and styling just for you.</div>
                   </div>
                   <div style={{ marginLeft: "auto", display: "flex", gap: 18, flexShrink: 0 }}>
-                    {[["*", "Personalized ideas"], ["|", "Saves you time"], ["+", "Stress-free planning"]].map(([icon, text]) => (
+                    {([
+                      [<svg key="a" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#EC4D8D" strokeWidth="1.5"/><path d="M5 8l2 2 4-4" stroke="#EC4D8D" strokeWidth="1.5" strokeLinecap="round"/></svg>, "Personalized ideas"],
+                       [<svg key="b" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#FFE8F0"/><path d="M8 4v4l3 2" stroke="#EC4D8D" strokeWidth="1.5" strokeLinecap="round"/></svg>, "Saves you time"],
+                       [<svg key="c" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#FFE8F0"/><path d="M8 5l1 3H12l-2.5 1.8.9 3L8 11.3l-2.4 1.5.9-3L4 8h3z" fill="#EC4D8D"/></svg>, "Stress-free planning"],
+                    ] as [React.ReactNode, string][]).map(([icon, text]) => (
                       <div key={text} style={{ textAlign: "center" }}>
-                        <div style={{ fontSize: 14 }}>{icon}</div>
+                        <div style={{ display: "flex", justifyContent: "center" }}>{icon}</div>
                         <div style={{ fontSize: 10, color: "#73778A", fontWeight: 600, marginTop: 2, whiteSpace: "nowrap" }}>{text}</div>
                       </div>
                     ))}
@@ -422,9 +431,18 @@ export default function ConfigurePage() {
                           transition: "all 0.18s",
                         }}>
                         {sel && (
-                          <span style={{ position: "absolute", top: 10, right: 10, width: 22, height: 22, borderRadius: "50%", background: "#EC4D8D", color: "white", fontSize: 12, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>v</span>
+                          <span style={{ position: "absolute", top: 10, right: 10, width: 22, height: 22, borderRadius: "50%", background: "#EC4D8D", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </span>
                         )}
-                        <div style={{ fontSize: 36, marginBottom: 10 }}>{e.emoji}</div>
+                        {/* Event icon — inline SVG per type */}
+                        <div style={{ fontSize: 36, marginBottom: 10, display: "flex", justifyContent: "center" }}>
+                          {e.id === "birthday" && <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="8" y="20" width="24" height="14" rx="4" fill="#FBCFE8"/><rect x="12" y="15" width="16" height="7" rx="2" fill="#F9A8D4"/><path d="M15 15c0-3 2-5 2-5s2 2 2 5" stroke="#EC4D8D" strokeWidth="1.5" strokeLinecap="round"/><path d="M21 15c0-3 2-5 2-5s2 2 2 5" stroke="#EC4D8D" strokeWidth="1.5" strokeLinecap="round"/><circle cx="20" cy="12" r="2" fill="#EC4D8D"/></svg>}
+                          {e.id === "baby_shower" && <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><ellipse cx="20" cy="22" rx="9" ry="11" fill="#BAE6FD"/><path d="M20 11c-4-6-10-4-10 0 0 3 3 5 6 4" stroke="#7DD3FC" strokeWidth="1.5" strokeLinecap="round"/><circle cx="20" cy="11" r="2" fill="#7DD3FC"/></svg>}
+                          {e.id === "bridal_shower" && <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="10" stroke="#F9A8D4" strokeWidth="2.5" fill="none"/><circle cx="20" cy="20" r="4" stroke="#EC4D8D" strokeWidth="2" fill="none"/><rect x="18" y="8" width="4" height="4" rx="1" fill="#EC4D8D"/></svg>}
+                          {e.id === "boutique_wedding" && <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M20 8 L22 14 L28 14 L23 18 L25 24 L20 20 L15 24 L17 18 L12 14 L18 14 Z" fill="#FBCFE8" stroke="#EC4D8D" strokeWidth="1"/></svg>}
+                          {e.id === "corporate_mini" && <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="10" y="14" width="20" height="18" rx="2" fill="#E0F2FE"/><rect x="15" y="10" width="10" height="6" rx="1" fill="#BAE6FD"/><rect x="14" y="22" width="4" height="4" rx="1" fill="#7DD3FC"/><rect x="22" y="22" width="4" height="4" rx="1" fill="#7DD3FC"/><rect x="14" y="18" width="4" height="3" rx="1" fill="#7DD3FC"/><rect x="22" y="18" width="4" height="3" rx="1" fill="#7DD3FC"/></svg>}
+                        </div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: sel ? "#EC4D8D" : "#15182E", marginBottom: 4 }}>{e.label}</div>
                         <div style={{ fontSize: 12, color: "#73778A" }}>{e.description}</div>
                         {e.id === "birthday" && !sel && (
@@ -437,7 +455,7 @@ export default function ConfigurePage() {
 
                 {/* Bottom hint */}
                 <div style={{ marginTop: 20, padding: "12px 16px", background: "#FFF7F0", borderRadius: 12, fontSize: 12, color: "#73778A", display: "flex", alignItems: "center", gap: 8 }}>
-                  <span>i</span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><circle cx="8" cy="8" r="7" fill="#FED7AA"/><rect x="7" y="6" width="2" height="6" rx="1" fill="#EA580C"/><circle cx="8" cy="4.5" r="1" fill="#EA580C"/></svg>
                   Not sure? You can update your event anytime, and we'll re-tailor the suggestions for you.
                 </div>
               </div>
@@ -503,7 +521,7 @@ export default function ConfigurePage() {
                           <ul className="space-y-1.5">
                             {p.includes.map((line) => (
                               <li key={line} className="flex items-start gap-2 text-xs text-black/65">
-                                <span className="mt-[3px] text-accent">v</span>
+                                <span className="mt-[3px] text-accent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
                                 <span>{line}</span>
                               </li>
                             ))}
@@ -540,7 +558,7 @@ export default function ConfigurePage() {
                           <ul className="space-y-1.5">
                             {p.includes.map((line) => (
                               <li key={line} className="flex items-start gap-2 text-xs text-black/65">
-                                <span className="mt-[3px] text-accent">v</span>
+                                <span className="mt-[3px] text-accent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
                                 <span>{line}</span>
                               </li>
                             ))}
@@ -952,7 +970,7 @@ function DecorStep({
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#EC4D8D", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ color: "white", fontSize: 12, fontWeight: 900, lineHeight: 1 }}>v</span>
+              <span style={{ color: "white", fontSize: 12, fontWeight: 900, lineHeight: 1 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
             </div>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#15182E", letterSpacing: "-0.1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{summaryLabel}</span>
           </div>
@@ -1092,7 +1110,7 @@ function DecorStep({
               }}>
                 {/* Elegant check -no SELECTED text */}
                 {isSelected && (
-                  <span style={{ position: "absolute", top: 9, right: 9, background: "#EC4D8D", color: "white", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900 }}>v</span>
+                  <span style={{ position: "absolute", top: 9, right: 9, background: "#EC4D8D", color: "white", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
                 )}
                 {badge && <span style={{ position: "absolute", top: 9, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: isSelected ? "#EC4D8D" : "#FFE8F0", color: isSelected ? "white" : "#EC4D8D", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>{badge}</span>}
                 <div style={{ marginTop: badge ? 10 : 0 }}>
@@ -1129,7 +1147,7 @@ function DecorStep({
                         <div style={{ fontSize: 11, color: "#73778A", marginTop: 1 }}>{size.widthCm} x{size.heightCm} cm</div>
                       </div>
                       <div style={{ width: 20, height: 20, borderRadius: "50%", border: isSelected ? "none" : "1.5px solid #ECEAF1", background: isSelected ? "#EC4D8D" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        {isSelected && <span style={{ color: "white", fontSize: 12, fontWeight: 900 }}>v</span>}
+                        {isSelected && <span style={{ color: "white", fontSize: 12, fontWeight: 900 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                       </div>
                     </button>
                     {isSelected && archItem && itemIdx >= 0 && (
@@ -1170,7 +1188,7 @@ function DecorStep({
                         <div style={{ fontSize: 11, color: "#73778A", marginTop: 1 }}>{size.widthCm} x{size.heightCm} cm</div>
                       </div>
                       <div style={{ width: 20, height: 20, borderRadius: "50%", border: isSel ? "none" : "1.5px solid #ECEAF1", background: isSel ? "#EC4D8D" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {isSel && <span style={{ color: "white", fontSize: 12, fontWeight: 900 }}>v</span>}
+                        {isSel && <span style={{ color: "white", fontSize: 12, fontWeight: 900 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                       </div>
                     </button>
                   );
@@ -1233,7 +1251,7 @@ function DecorStep({
                     <div style={{ fontSize: 15, fontWeight: 700, color: hasArch ? accent : "#1A1A2E" }}>Arch Backdrop</div>
                     <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Rounded event backdrop -select 1--"3 sizes</div>
                   </div>
-                  {hasArch && <span style={{ fontSize: 18, color: accent }}>v</span>}
+                  {hasArch && <span style={{ fontSize: 18, color: accent }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                 </div>
                 {/* Size options -always visible */}
                 <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", padding: "10px 14px 14px", background: "rgba(0,0,0,0.01)" }}>
@@ -1265,7 +1283,7 @@ function DecorStep({
                                 background: isSelected ? accent : "rgba(0,0,0,0.06)", color: isSelected ? "white" : "#555" }}>
                                 {isSelected && itemIdx === 0 ? "Included" : "+AED 350"}
                               </span>
-                              {isSelected && <span style={{ color: accent, fontSize: 14 }}>v</span>}
+                              {isSelected && <span style={{ color: accent, fontSize: 14 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                             </div>
                           </button>
                           {/* Inline customization for this arch item */}
@@ -1321,7 +1339,7 @@ function DecorStep({
                     }}>
                       {rectItems.length > 0 && d.backdropItems.indexOf(rectItems[0]) === 0 ? "Included" : "+AED 350"}
                     </span>
-                    {hasRectCard && <span style={{ fontSize: 16 }}>v</span>}
+                    {hasRectCard && <span style={{ fontSize: 16 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                   </div>
                 </div>
 
@@ -1353,7 +1371,7 @@ function DecorStep({
                               <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? accent : "#1A1A2E" }}>{size.label}</div>
                               <div style={{ fontSize: 11, color: "#999" }}>{size.widthCm} x{size.heightCm} cm</div>
                             </div>
-                            {isSelected && <span style={{ color: accent, fontWeight: 700, fontSize: 16 }}>v</span>}
+                            {isSelected && <span style={{ color: accent, fontWeight: 700, fontSize: 16 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                           </button>
                         );
                       })}
@@ -1390,7 +1408,7 @@ function DecorStep({
                     <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: hasRound ? accent : "rgba(0,0,0,0.06)", color: hasRound ? "white" : "#555" }}>
                       {hasRound && itemIdx === 0 ? "Included" : "+AED 350"}
                     </span>
-                    {hasRound && <span style={{ fontSize: 16 }}>v</span>}
+                    {hasRound && <span style={{ fontSize: 16 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                   </div>
                 </div>
                 {/* Inline customization */}
@@ -1442,7 +1460,7 @@ function DecorStep({
                     }}>
                       {hasShimmer && d.backdropItems.indexOf(shimmerItems[0]) === 0 ? "Included" : "+AED 430"}
                     </span>
-                    {hasShimmer && <span style={{ fontSize: 16 }}>v</span>}
+                    {hasShimmer && <span style={{ fontSize: 16 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                   </div>
                 </div>
 
@@ -1567,7 +1585,7 @@ function DecorStep({
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: item.text.enabled ? accent : "rgba(0,0,0,0.06)", color: item.text.enabled ? "white" : "#555" }}>+AED 80</span>
-                        {item.text.enabled && <span style={{ fontSize: 14 }}>v</span>}
+                        {item.text.enabled && <span style={{ fontSize: 14 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                       </div>
                     </div>
                     {item.text.enabled && (
@@ -1629,7 +1647,7 @@ function DecorStep({
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: item.graphic.enabled ? accent : "rgba(0,0,0,0.06)", color: item.graphic.enabled ? "white" : "#555" }}>+AED 150</span>
-                        {item.graphic.enabled && <span style={{ fontSize: 14 }}>v</span>}
+                        {item.graphic.enabled && <span style={{ fontSize: 14 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                       </div>
                     </div>
                     {/* Graphic style sub-options when enabled */}
@@ -1668,7 +1686,7 @@ function DecorStep({
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: print.type === "custom_upload" ? accent : "rgba(0,0,0,0.06)", color: print.type === "custom_upload" ? "white" : "#555" }}>+AED 200</span>
-                        {print.type === "custom_upload" && <span style={{ fontSize: 14 }}>v</span>}
+                        {print.type === "custom_upload" && <span style={{ fontSize: 14 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                       </div>
                     </div>
                     {print.type === "custom_upload" && (
@@ -1847,7 +1865,7 @@ function DecorStep({
                           border: sel ? "2px solid #EC4D8D" : "1.5px solid #ECEAF1",
                           background: sel ? "#FFF7FB" : "white",
                           opacity: maxed ? 0.42 : 1, transition: "all 0.15s", position: "relative", textAlign: "left" }}>
-                        {sel && <span style={{ position: "absolute", top: 5, right: 5, width: 16, height: 16, borderRadius: "50%", background: "#EC4D8D", color: "white", fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>v</span>}
+                        {sel && <span style={{ position: "absolute", top: 5, right: 5, width: 16, height: 16, borderRadius: "50%", background: "#EC4D8D", color: "white", fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                         <span style={{ width: 30, height: 30, borderRadius: "50%", background: c.hex, border: "1.5px solid rgba(0,0,0,0.10)", flexShrink: 0, display: "block" }} />
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: 800, color: sel ? "#EC4D8D" : "#15182E" }}>{c.code}</div>
@@ -1888,7 +1906,7 @@ function DecorStep({
                     position: "absolute", top: 5, right: 5, width: 16, height: 16,
                     borderRadius: "50%", background: accent, color: "white",
                     fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700,
-                  }}>v</span>
+                  }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
                 )}
                 <div style={{ fontSize: 12, fontWeight: 600, color: selected ? accent : "#1A1A2E" }}>{opt.label}</div>
                 <div style={{ marginTop: 2, fontSize: 11, color: "rgba(0,0,0,0.5)" }}>{opt.desc}</div>
@@ -2008,7 +2026,7 @@ function DecorStep({
               <div style={{ fontSize: 12, fontWeight: 600, color: cut.size === "none" ? accent : "#1A1A2E" }}>No Cutouts</div>
               <div className="text-[11px] text-black/50">Skip cutouts for this setup</div>
             </div>
-            <span style={checkBadge(cut.size === "none")}>v</span>
+            <span style={checkBadge(cut.size === "none")}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
           </button>
 
           {/* Paid cutout set options */}
@@ -2038,7 +2056,7 @@ function DecorStep({
                       color: accent, background: accent + "18", padding: "2px 8px", borderRadius: 20,
                     }}>+AED {set.price}</span>
                   </div>
-                  <span style={checkBadge(selected)}>v</span>
+                  <span style={checkBadge(selected)}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
                 </button>
 
                 {selected && (
