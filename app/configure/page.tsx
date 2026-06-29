@@ -382,20 +382,64 @@ export default function ConfigurePage() {
 
           <div>
             {step === 0 && (
-              <StepShell title="What are we celebrating?">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {EVENT_TYPES.map((e) => (
-                    <OptionCard
-                      key={e.id}
-                      selected={config.eventType === e.id}
-                      onClick={() => setEventType(e.id)}
-                      emoji={e.emoji}
-                      title={e.label}
-                      subtitle={e.description}
-                    />
-                  ))}
+              <div>
+                {/* Intro band */}
+                <div style={{ background: "white", border: "1.5px solid #F1D8E2", borderRadius: 18, padding: "16px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 14, boxShadow: "0 2px 10px rgba(39,40,68,0.04)" }}>
+                  <span style={{ fontSize: 28, lineHeight: 1 }}>🎉</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#15182E" }}>Let's bring your celebration to life</div>
+                    <div style={{ fontSize: 12, color: "#73778A", marginTop: 2 }}>Choose the event so we can tailor ideas and styling just for you.</div>
+                  </div>
+                  <div style={{ marginLeft: "auto", display: "flex", gap: 18, flexShrink: 0 }}>
+                    {[["✦", "Personalized ideas"], ["⏱", "Saves you time"], ["💛", "Stress-free planning"]].map(([icon, text]) => (
+                      <div key={text} style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: 14 }}>{icon}</div>
+                        <div style={{ fontSize: 10, color: "#73778A", fontWeight: 600, marginTop: 2, whiteSpace: "nowrap" }}>{text}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </StepShell>
+
+                {/* Section heading */}
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "#15182E", letterSpacing: "-0.4px" }}>What are we celebrating?</div>
+                  <div style={{ fontSize: 13, color: "#73778A", marginTop: 4, fontWeight: 500 }}>Pick the event that best describes your celebration. You can always change it later.</div>
+                </div>
+
+                {/* Event cards — 3 col desktop, premium pastel */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+                  {EVENT_TYPES.map((e) => {
+                    const sel = config.eventType === e.id;
+                    return (
+                      <button key={e.id} type="button" onClick={() => setEventType(e.id)}
+                        style={{
+                          position: "relative", textAlign: "center", cursor: "pointer",
+                          borderRadius: 18, padding: "28px 16px 22px",
+                          border: sel ? "2px solid #F7A7C8" : "1.5px solid #ECEAF1",
+                          background: sel ? "linear-gradient(145deg,#FFF7FB 0%,#FFFFFF 100%)" : "white",
+                          boxShadow: sel ? "0 8px 28px rgba(236,77,141,0.10)" : "0 2px 8px rgba(39,40,68,0.04)",
+                          transition: "all 0.18s",
+                        }}>
+                        {sel && (
+                          <span style={{ position: "absolute", top: 10, right: 10, width: 22, height: 22, borderRadius: "50%", background: "#EC4D8D", color: "white", fontSize: 12, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>✓</span>
+                        )}
+                        <div style={{ fontSize: 36, marginBottom: 10 }}>{e.emoji}</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: sel ? "#EC4D8D" : "#15182E", marginBottom: 4 }}>{e.label}</div>
+                        <div style={{ fontSize: 12, color: "#73778A" }}>{e.description}</div>
+                        {e.id === "birthday" && !sel && (
+                          <div style={{ marginTop: 10, fontSize: 10, fontWeight: 700, color: "#EC4D8D", background: "#FFE8F0", padding: "2px 10px", borderRadius: 20, display: "inline-block" }}>Most popular</div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Bottom hint */}
+                <div style={{ marginTop: 20, padding: "12px 16px", background: "#FFF7F0", borderRadius: 12, fontSize: 12, color: "#73778A", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span>💡</span>
+                  Not sure? You can update your event anytime, and we'll re-tailor the suggestions for you.
+                </div>
+              </div>
             )}
 
             {step === 1 && (
