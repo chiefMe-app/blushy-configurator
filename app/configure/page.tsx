@@ -354,15 +354,24 @@ export default function ConfigurePage() {
             <div className="space-y-3">
               {/* Preview card -overflow hidden keeps confetti contained */}
               <div style={{ position: "relative", overflow: "hidden", minHeight: 460, borderRadius: 22, border: "1.5px solid #F1D8E2", boxShadow: "0 18px 40px rgba(39,40,68,0.06)", background: "linear-gradient(150deg, #FFF7FB 0%, #FBF2FF 50%, #FFF9F5 100%)" }}>
-                {/* Confetti -pointer-events none, confined inside */}
-                <div aria-hidden style={{ pointerEvents: "none" }}>
-                  <div style={{ position: "absolute", top: 18, left: 28, width: 8, height: 8, borderRadius: 3, background: "#FFB8D1", opacity: 0.55, transform: "rotate(45deg)" }} />
-                  <div style={{ position: "absolute", top: 48, right: 24, width: 6, height: 6, borderRadius: "50%", background: "#C4B5FD", opacity: 0.45 }} />
-                  <div style={{ position: "absolute", top: 95, left: 18, width: 10, height: 4, borderRadius: 2, background: "#93C5FD", opacity: 0.38, transform: "rotate(-28deg)" }} />
-                  <div style={{ position: "absolute", top: 140, right: 32, width: 5, height: 12, borderRadius: 2, background: "#FBBF84", opacity: 0.35, transform: "rotate(18deg)" }} />
-                  <div style={{ position: "absolute", bottom: 110, left: 22, width: 7, height: 7, borderRadius: 2, background: "#F9A8D4", opacity: 0.42, transform: "rotate(10deg)" }} />
-                  <div style={{ position: "absolute", bottom: 65, right: 22, width: 9, height: 4, borderRadius: 2, background: "#A5B4FC", opacity: 0.38, transform: "rotate(-15deg)" }} />
-                  <div style={{ position: "absolute", bottom: 32, left: 42, width: 5, height: 5, borderRadius: "50%", background: "#FCA5A5", opacity: 0.42 }} />
+                {/* Confetti — pointer-events none, confined inside overflow:hidden */}
+                <div aria-hidden style={{ pointerEvents: "none", position: "absolute", inset: 0 }}>
+                  {/* Dots */}
+                  <div style={{ position: "absolute", top: 16, left: 26, width: 8, height: 8, borderRadius: "50%", background: "#FFB8D1", opacity: 0.6 }} />
+                  <div style={{ position: "absolute", top: 52, right: 22, width: 6, height: 6, borderRadius: "50%", background: "#C4B5FD", opacity: 0.5 }} />
+                  <div style={{ position: "absolute", bottom: 32, left: 40, width: 5, height: 5, borderRadius: "50%", background: "#FCA5A5", opacity: 0.45 }} />
+                  <div style={{ position: "absolute", top: 190, right: 16, width: 7, height: 7, borderRadius: "50%", background: "#86EFAC", opacity: 0.4 }} />
+                  <div style={{ position: "absolute", bottom: 95, right: 30, width: 5, height: 5, borderRadius: "50%", background: "#FBBF24", opacity: 0.35 }} />
+                  {/* Rectangles / confetti */}
+                  <div style={{ position: "absolute", top: 92, left: 16, width: 12, height: 4, borderRadius: 2, background: "#93C5FD", opacity: 0.42, transform: "rotate(-28deg)" }} />
+                  <div style={{ position: "absolute", top: 135, right: 28, width: 5, height: 14, borderRadius: 2, background: "#FBBF84", opacity: 0.38, transform: "rotate(22deg)" }} />
+                  <div style={{ position: "absolute", bottom: 68, right: 20, width: 11, height: 4, borderRadius: 2, background: "#A5B4FC", opacity: 0.4, transform: "rotate(-15deg)" }} />
+                  <div style={{ position: "absolute", bottom: 108, left: 20, width: 8, height: 3, borderRadius: 2, background: "#F9A8D4", opacity: 0.45, transform: "rotate(12deg)" }} />
+                  <div style={{ position: "absolute", top: 248, left: 14, width: 6, height: 10, borderRadius: 2, background: "#C4B5FD", opacity: 0.35, transform: "rotate(-10deg)" }} />
+                  {/* Small sparkle SVGs */}
+                  <svg style={{ position: "absolute", top: 38, left: 52, opacity: 0.35 }} width="10" height="10" viewBox="0 0 10 10"><path d="M5 1l.9 2.8L8.8 5 5.9 6.2 5 9l-.9-2.8L1.2 5l2.9-1.2z" fill="#EC4D8D"/></svg>
+                  <svg style={{ position: "absolute", bottom: 48, left: 18, opacity: 0.3 }} width="10" height="10" viewBox="0 0 10 10"><path d="M5 1l.9 2.8L8.8 5 5.9 6.2 5 9l-.9-2.8L1.2 5l2.9-1.2z" fill="#A78BFA"/></svg>
+                  <svg style={{ position: "absolute", top: 310, right: 18, opacity: 0.3 }} width="8" height="8" viewBox="0 0 10 10"><path d="M5 1l.9 2.8L8.8 5 5.9 6.2 5 9l-.9-2.8L1.2 5l2.9-1.2z" fill="#F472B6"/></svg>
                 </div>
                 <SetupPreview
                   config={config}
@@ -464,18 +473,54 @@ export default function ConfigurePage() {
             {step === 1 && (
               <StepShell title="Pick your theme">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {THEMES.map((t) => (
-                    <OptionCard
-                      key={t.id}
-                      selected={config.theme === t.id}
-                      onClick={() => setTheme(t.id)}
-                      emoji={t.emoji}
-                      title={t.name}
-                      subtitle={t.desc}
-                      swatches={t.balloonColors}
-                      priceBadge={t.priceModifier > 0 ? `+AED ${t.priceModifier}` : "Included"}
-                    />
-                  ))}
+                  {THEMES.map((t) => {
+                    const sel = config.theme === t.id;
+                    // Per-theme SVG icon — pure inline SVG, no emoji
+                    const THEME_ICONS: Record<string, React.ReactNode> = {
+                      frozen: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><line x1="11" y1="2" x2="11" y2="20" stroke="#7DD3FC" strokeWidth="2" strokeLinecap="round"/><line x1="2" y1="11" x2="20" y2="11" stroke="#7DD3FC" strokeWidth="2" strokeLinecap="round"/><line x1="4.5" y1="4.5" x2="17.5" y2="17.5" stroke="#BAE6FD" strokeWidth="1.5" strokeLinecap="round"/><line x1="17.5" y1="4.5" x2="4.5" y2="17.5" stroke="#BAE6FD" strokeWidth="1.5" strokeLinecap="round"/><circle cx="11" cy="11" r="2" fill="#38BDF8"/></svg>,
+                      unicorn: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3l1.2 3.6L16 8l-3.8 1.4L11 13l-1.2-3.6L6 8l3.8-1.4z" fill="#C084FC"/><circle cx="4" cy="4" r="1.5" fill="#F9A8D4"/><circle cx="18" cy="17" r="1.5" fill="#86EFAC"/><circle cx="17" cy="5" r="1" fill="#FDE68A"/></svg>,
+                      dinosaur: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><ellipse cx="11" cy="13" rx="6" ry="5" fill="#86EFAC"/><path d="M7 8 Q11 4 15 8" stroke="#4ADE80" strokeWidth="1.5" fill="none" strokeLinecap="round"/><circle cx="9" cy="11" r="1" fill="#15803D"/><circle cx="13" cy="11" r="1" fill="#15803D"/></svg>,
+                      safari: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7" fill="#FDE68A"/><path d="M11 4v3M11 15v3M4 11h3M15 11h3" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round"/><circle cx="11" cy="11" r="2.5" fill="#D97706"/></svg>,
+                      princess: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 14h12l-2-6-4 4-4-4-2 6z" fill="#F9A8D4"/><path d="M7 10V6l4 3 4-3v4" stroke="#EC4D8D" strokeWidth="1.2" fill="none" strokeLinejoin="round"/><circle cx="11" cy="5" r="1.5" fill="#EC4D8D"/><circle cx="6" cy="9" r="1" fill="#FBCFE8"/><circle cx="16" cy="9" r="1" fill="#FBCFE8"/></svg>,
+                      superhero: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3l2.5 6 6 .5-4.5 4 1.5 6L11 17l-5.5 2.5 1.5-6-4.5-4 6-.5z" fill="#FDE68A" stroke="#D97706" strokeWidth="0.8"/></svg>,
+                      barbie: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 4l1.5 4.5H20l-5.5 4 2 5.5L11 15l-5.5 3 2-5.5L2 8.5h7.5z" fill="#FF69B4" opacity="0.8"/></svg>,
+                      bluey: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7" fill="#93C5FD"/><circle cx="8" cy="9" r="1.5" fill="#1D4ED8"/><circle cx="14" cy="9" r="1.5" fill="#1D4ED8"/><path d="M8 14 Q11 17 14 14" stroke="#1D4ED8" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>,
+                      pokemon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="#EF4444" strokeWidth="2.5"/><rect x="3" y="9.5" width="16" height="3" fill="white"/><rect x="3" y="9.5" width="16" height="3" fill="#EF4444" opacity="0.5"/><circle cx="11" cy="11" r="2.5" fill="white" stroke="#EF4444" strokeWidth="1.5"/></svg>,
+                      stitch: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="12" r="7" fill="#60A5FA"/><ellipse cx="8" cy="9" rx="1.5" ry="2" fill="#1D4ED8"/><ellipse cx="14" cy="9" rx="1.5" ry="2" fill="#1D4ED8"/><path d="M8 15 Q11 18 14 15" stroke="#1D4ED8" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>,
+                      mermaid: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 18 Q11 12 18 18" stroke="#2DD4BF" strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M6 14 Q11 8 16 14" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.7"/><circle cx="11" cy="7" r="3" fill="#67E8F9" opacity="0.8"/></svg>,
+                      space: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="14" cy="10" r="5" fill="#818CF8"/><circle cx="14" cy="10" r="3" fill="#312E81"/><ellipse cx="14" cy="10" rx="8" ry="2.5" stroke="#A5B4FC" strokeWidth="1.2" fill="none"/><circle cx="5" cy="5" r="1" fill="#FDE68A"/><circle cx="18" cy="17" r="1.2" fill="#FDE68A"/><circle cx="4" cy="16" r="0.8" fill="white" opacity="0.7"/></svg>,
+                      football: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" fill="#4ADE80"/><path d="M3 11h16M11 3v16" stroke="white" strokeWidth="1.2" opacity="0.5"/></svg>,
+                      lego: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="4" y="8" width="14" height="10" rx="2" fill="#EF4444"/><circle cx="8" cy="8" r="2" fill="#DC2626"/><circle cx="14" cy="8" r="2" fill="#DC2626"/></svg>,
+                      kpop: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 4l1.2 3.6L16 8l-3.8 1.4L11 13l-1.2-3.6L6 8l3.8-1.4z" fill="#E879F9"/><circle cx="4" cy="15" r="1.5" fill="#C084FC"/><circle cx="18" cy="15" r="1.5" fill="#F472B6"/><circle cx="11" cy="18" r="1" fill="#A78BFA"/></svg>,
+                      encanto: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="4" fill="#FDE68A"/><path d="M11 3 Q14 7 11 11 Q8 7 11 3z" fill="#4ADE80"/><path d="M11 11 Q15 8 19 11 Q15 14 11 11z" fill="#F97316"/><path d="M11 19 Q14 15 11 11 Q8 15 11 19z" fill="#EC4899"/><path d="M11 11 Q7 8 3 11 Q7 14 11 11z" fill="#A78BFA"/></svg>,
+                      cocomelon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="12" r="7" fill="#86EFAC"/><path d="M8 10 Q11 8 14 10" stroke="#15803D" strokeWidth="1.5" strokeLinecap="round" fill="none"/><path d="M8 14 Q11 16 14 14" stroke="#15803D" strokeWidth="1.2" strokeLinecap="round" fill="none"/></svg>,
+                      teddy_bear: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="13" r="6" fill="#D4A574"/><circle cx="6" cy="7" r="3" fill="#C8956C"/><circle cx="16" cy="7" r="3" fill="#C8956C"/><circle cx="9" cy="12" r="1" fill="#7B3F00"/><circle cx="13" cy="12" r="1" fill="#7B3F00"/><path d="M9 15 Q11 17 13 15" stroke="#7B3F00" strokeWidth="1.2" strokeLinecap="round" fill="none"/></svg>,
+                      pineapple_tropical: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><ellipse cx="11" cy="14" rx="5" ry="6" fill="#FDE68A"/><path d="M9 8 Q11 4 13 8" stroke="#4ADE80" strokeWidth="1.5" fill="none" strokeLinecap="round"/><path d="M7 7 Q11 3 15 7" stroke="#86EFAC" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>,
+                      blush_garden: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="4" fill="#F9A8D4"/><circle cx="11" cy="6" r="2.5" fill="#FBCFE8"/><circle cx="16" cy="11" r="2.5" fill="#FBCFE8"/><circle cx="11" cy="16" r="2.5" fill="#FBCFE8"/><circle cx="6" cy="11" r="2.5" fill="#FBCFE8"/></svg>,
+                      luxury_neutral: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="5" y="14" width="12" height="4" rx="1.5" fill="#D4B896"/><rect x="7" y="10" width="8" height="5" rx="1" fill="#EDE0D0"/><path d="M11 3l1.5 6-1.5 1-1.5-1z" fill="#FFD54F" stroke="#D97706" strokeWidth="0.5"/></svg>,
+                    };
+                    const icon = THEME_ICONS[t.id] ?? <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 4l1.2 3.6L16 8l-3.8 1.4L11 13l-1.2-3.6L6 8l3.8-1.4z" fill="#F9A8D4"/></svg>;
+                    return (
+                      <button key={t.id} type="button" onClick={() => setTheme(t.id)} aria-pressed={sel}
+                        className={`relative flex w-full flex-col gap-2 rounded-2xl border p-4 text-left transition ${sel ? "border-accent bg-accent-soft/60 shadow-sm" : "border-black/10 bg-white hover:border-accent/40"}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span>{icon}</span>
+                            <span className="text-sm font-semibold">{t.name}</span>
+                          </div>
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${sel ? "bg-accent text-white" : "bg-black/5 text-black/60"}`}>
+                            {t.priceModifier > 0 ? `+AED ${t.priceModifier}` : "Included"}
+                          </span>
+                        </div>
+                        {t.balloonColors.length > 0 && (
+                          <div className="flex -space-x-1">
+                            {t.balloonColors.slice(0, 5).map((c, i) => <span key={i} className="h-5 w-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: c }}/>)}
+                          </div>
+                        )}
+                        <span className="text-xs leading-snug text-black/50">{t.desc}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </StepShell>
             )}
