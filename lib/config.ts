@@ -22,7 +22,7 @@ export interface EventType {
 
 export const EVENT_TYPES: EventType[] = [
   { id: "birthday", label: "Birthday", emoji: "🎂", description: "The classic celebration" },
-  { id: "baby_shower", label: "Baby Shower", emoji: "🍼", description: "Welcome the little one" },
+  { id: "baby_shower", label: "Baby Shower", emoji: "🎈", description: "Welcome the little one" },
   { id: "bridal_shower", label: "Bridal Shower", emoji: "💍", description: "Celebrate the bride" },
   { id: "boutique_wedding", label: "Boutique Wedding Corner", emoji: "💐", description: "Intimate wedding styling" },
   { id: "corporate_mini", label: "Corporate Mini Setup", emoji: "🏢", description: "Branded & polished" },
