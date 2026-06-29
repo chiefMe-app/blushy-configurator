@@ -286,16 +286,23 @@ export default function ConfigurePage() {
   );
 
   return (
-    <main style={accentStyle} className="min-h-screen">
+    <main style={accentStyle} className={`min-h-screen ${jakarta.className}`}>
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-black/5 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #FF6B9D, #C44BC4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>✦</div>
+          <div className="flex items-center gap-3">
+            {/* Brand mark — sparkle star in soft pink circle */}
+            <div style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(145deg, #FFE4F0 0%, #FFD0E8 100%)", border: "1.5px solid #F7A7C8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 2L11.8 7.2L17 9L11.8 10.8L10 16L8.2 10.8L3 9L8.2 7.2L10 2Z" fill="#EC4D8D" stroke="#EC4D8D" strokeWidth="0.5" strokeLinejoin="round"/>
+                <circle cx="3.5" cy="3.5" r="1" fill="#EC4D8D" opacity="0.4"/>
+                <circle cx="16.5" cy="15.5" r="1" fill="#EC4D8D" opacity="0.4"/>
+              </svg>
+            </div>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: "#1A1A2E", lineHeight: 1 }}>Blushy</div>
-              <div style={{ fontSize: 9, fontWeight: 600, color: "#FF6B9D", letterSpacing: "0.08em", lineHeight: 1 }}>BIRTHDAY BUILDER</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: "#15182E", lineHeight: 1, letterSpacing: "-0.6px", fontFamily: "inherit" }}>Blushy</div>
+              <div style={{ fontSize: 8.5, fontWeight: 800, color: "#EC4D8D", letterSpacing: "0.22em", lineHeight: 1, marginTop: 2, textTransform: "uppercase" }}>Birthday Builder</div>
             </div>
           </div>
 
@@ -334,7 +341,7 @@ export default function ConfigurePage() {
 
           {/* Total */}
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 11, color: "#999", fontWeight: 500 }}>ESTIMATED TOTAL</div>
+            <div style={{ fontSize: 10, color: "#A1A3B4", fontWeight: 800, letterSpacing: "0.10em" }}>ESTIMATED TOTAL</div>
             <TotalBadge config={config} />
           </div>
         </div>
@@ -345,12 +352,16 @@ export default function ConfigurePage() {
         <div className="px-4 pt-4 lg:w-[35%] lg:px-0 lg:pt-0">
           <div className="lg:sticky lg:top-24">
             <div className="space-y-3">
-              <div className="relative overflow-hidden rounded-2xl" style={{ background: "linear-gradient(135deg, #FFF5F9 0%, #FAF0FF 100%)", minHeight: 300 }}>
-                {/* Decorative elements */}
-                <div style={{ position: "absolute", top: 20, left: 30, width: 8, height: 8, borderRadius: 2, background: "#FFB8D1", opacity: 0.6, transform: "rotate(45deg)" }} />
-                <div style={{ position: "absolute", top: 60, right: 25, width: 6, height: 6, borderRadius: "50%", background: "#C4B5FD", opacity: 0.5 }} />
-                <div style={{ position: "absolute", bottom: 40, left: 20, width: 10, height: 4, borderRadius: 2, background: "#93C5FD", opacity: 0.5, transform: "rotate(-30deg)" }} />
-                <div style={{ position: "absolute", bottom: 80, right: 35, width: 6, height: 6, borderRadius: 2, background: "#FCA5A5", opacity: 0.5, transform: "rotate(20deg)" }} />
+              <div className="relative overflow-hidden" style={{ background: "linear-gradient(150deg, #FFF7FB 0%, #FBF2FF 50%, #FFF9F5 100%)", minHeight: 460, borderRadius: 22, border: "1.5px solid #F1D8E2", boxShadow: "0 18px 40px rgba(39,40,68,0.06)" }}>
+                {/* Confetti decorative elements — scattered per reference */}
+                <div style={{ position: "absolute", top: 18, left: 28, width: 9, height: 9, borderRadius: 3, background: "#FFB8D1", opacity: 0.65, transform: "rotate(45deg)" }} />
+                <div style={{ position: "absolute", top: 44, right: 22, width: 7, height: 7, borderRadius: "50%", background: "#C4B5FD", opacity: 0.55 }} />
+                <div style={{ position: "absolute", top: 90, left: 16, width: 12, height: 4, borderRadius: 2, background: "#93C5FD", opacity: 0.45, transform: "rotate(-30deg)" }} />
+                <div style={{ position: "absolute", top: 130, right: 30, width: 5, height: 14, borderRadius: 2, background: "#FBBF84", opacity: 0.4, transform: "rotate(20deg)" }} />
+                <div style={{ position: "absolute", bottom: 100, left: 24, width: 8, height: 8, borderRadius: 2, background: "#F9A8D4", opacity: 0.5, transform: "rotate(12deg)" }} />
+                <div style={{ position: "absolute", bottom: 60, right: 20, width: 10, height: 5, borderRadius: 2, background: "#A5B4FC", opacity: 0.45, transform: "rotate(-18deg)" }} />
+                <div style={{ position: "absolute", bottom: 30, left: 40, width: 6, height: 6, borderRadius: "50%", background: "#FCA5A5", opacity: 0.5 }} />
+                <div style={{ position: "absolute", top: 200, right: 14, width: 7, height: 7, borderRadius: 2, background: "#6EE7B7", opacity: 0.35, transform: "rotate(35deg)" }} />
                 <SetupPreview
                   config={config}
                   status={preview.status}
@@ -366,9 +377,9 @@ export default function ConfigurePage() {
         </div>
 
         {/* Right: steps */}
-        <div className="px-4 pb-32 pt-5 lg:w-[65%] lg:px-0 lg:pb-24 lg:pt-0">
+        <div className="px-4 pb-32 pt-4 lg:w-[65%] lg:px-0 lg:pb-24 lg:pt-0">
 
-          <div className="mt-6">
+          <div className="mt-0">
             {step === 0 && (
               <StepShell title="What are we celebrating?">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -732,26 +743,28 @@ function DecorStep({
   const accent = theme.accent;
   const card: React.CSSProperties = {
     background: "white",
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 18,
+    padding: "18px 16px",
     marginBottom: 12,
-    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+    boxShadow: "0 1px 4px rgba(18,22,47,0.05), 0 4px 16px rgba(18,22,47,0.04)",
+    border: "1px solid #ECEAF1",
   };
   const numBadge = (n: number) => (
     <div style={{
-      width: 28, height: 28, borderRadius: "50%", background: "#FF6B9D",
-      color: "white", fontSize: 14, fontWeight: 800,
+      width: 32, height: 32, borderRadius: "50%", background: "#EC4F91",
+      color: "white", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px",
       display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+      boxShadow: "0 4px 10px rgba(236,79,145,0.30)",
     }}>{n}</div>
   );
   const secLabel = (text: string) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-      <span style={{ width: 3, height: 16, borderRadius: 2, background: accent, display: "inline-block", flexShrink: 0 }} />
-      <span style={{ fontSize: 15, fontWeight: 800, color: "#1A1A2E", letterSpacing: "-0.2px" }}>{text}</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+      <span style={{ width: 3, height: 18, borderRadius: 2, background: accent, display: "inline-block", flexShrink: 0 }} />
+      <span style={{ fontSize: 16, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>{text}</span>
     </div>
   );
   const secSub = (text: string) => (
-    <p style={{ fontSize: 12, color: "#888", marginTop: 2, marginBottom: 10 }}>{text}</p>
+    <p style={{ fontSize: 13, color: "#727386", marginTop: 2, marginBottom: 12, fontWeight: 500 }}>{text}</p>
   );
 
   function BackdropShapePreview({ type, color = "#F2D4E0" }: { type: string; color?: string }) {
@@ -836,11 +849,27 @@ function DecorStep({
   }
 
   function ItemCustomization({ item, itemIdx }: { item: BackdropItem; itemIdx: number }) {
+    // Build the label: "Backdrop N — Type · Size"
+    const typeLabel: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", shimmer_wall: "Shimmer Wall" };
+    const sizeLabelMap = Object.fromEntries([...ARCH_SIZES, ...RECT_SIZES].map(s => [s.id, s.label]));
+    const sizeStr = item.sizeId ? (sizeLabelMap[item.sizeId] ?? `${item.widthCm} × ${item.heightCm} cm`) : `${item.widthCm} × ${item.heightCm} cm`;
+    const selectionLabel = `Backdrop ${itemIdx + 1} — ${typeLabel[item.type] ?? item.type} · ${sizeStr}`;
+
     return (
-      <div style={{ borderTop: `1px solid ${accent}25`, paddingTop: 12, marginTop: 10 }}>
+      <div style={{ marginTop: 10, borderRadius: 14, border: "1.5px solid #ECEAF1", background: "white", overflow: "hidden", boxShadow: "0 2px 8px rgba(18,22,47,0.05)" }}>
+        {/* Selected backdrop identifier */}
+        <div style={{ padding: "10px 14px", background: "linear-gradient(135deg, #FFF7FB 0%, #F8F4FF 100%)", borderBottom: "1px solid #ECEAF1", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: "#EC4F91", background: "rgba(236,79,145,0.10)", padding: "2px 8px", borderRadius: 20, letterSpacing: "0.03em", whiteSpace: "nowrap" }}>SELECTED</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#12162F", letterSpacing: "-0.1px" }}>{selectionLabel}</span>
+        </div>
+        {/* Customize label */}
+        <div style={{ padding: "10px 14px 0" }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#727386", letterSpacing: "0.06em", marginBottom: 10, textTransform: "uppercase" }}>Customize this backdrop</div>
+        </div>
+        <div style={{ padding: "0 14px 14px" }}>
         {/* Color */}
-        <div style={{ marginBottom: 10 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Backdrop color</span>
+        <div style={{ marginBottom: 12 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#12162F", display: "block", marginBottom: 6 }}>Backdrop color</span>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
             {theme.backdropColors.map((hex) => (
               <button key={hex} type="button" onClick={() => patchItem(itemIdx, { color: hex })}
@@ -908,6 +937,7 @@ function DecorStep({
               background: print.type === "custom_upload" ? accent : "rgba(0,0,0,0.06)", color: print.type === "custom_upload" ? "white" : "#555" }}>+AED 200</span>
           </div>
         </div>
+        </div>
       </div>
     );
   }
@@ -919,8 +949,8 @@ function DecorStep({
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(1)}
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1A2E" }}>Pick your backdrop</div>
-            <div style={{ fontSize: 13, color: "#888", marginTop: 2 }}>Choose the perfect backdrop style and size for your celebration.</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#12162F", letterSpacing: "-0.4px" }}>Pick your backdrop</div>
+            <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Choose the perfect backdrop style and size for your celebration.</div>
           </div>
         </div>
 
@@ -939,18 +969,22 @@ function DecorStep({
               : d.backdropItems.some(i => i.type === type);
             return (
               <div key={type} onClick={click} style={{
-                border: isSelected ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.08)",
-                borderRadius: 16, padding: "20px 10px 14px", textAlign: "center",
+                border: isSelected ? "3px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.08)",
+                borderRadius: 16, padding: "22px 10px 16px", textAlign: "center",
                 background: isSelected ? "#FFF0F5" : "white", cursor: "pointer",
-                position: "relative", transition: "all 0.15s", minHeight: 160,
+                position: "relative", transition: "all 0.15s", minHeight: 172,
+                boxShadow: isSelected ? "0 0 0 4px rgba(255,107,157,0.12), 0 4px 16px rgba(255,107,157,0.18)" : "0 1px 4px rgba(0,0,0,0.04)",
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
               }}>
-                {isSelected && <span style={{ position: "absolute", top: 8, right: 8, background: "#FF6B9D", color: "white", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>✓</span>}
+                {isSelected && (
+                  <span style={{ position: "absolute", top: 8, right: 8, background: "#FF6B9D", color: "white", borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, boxShadow: "0 2px 6px rgba(255,107,157,0.4)" }}>✓</span>
+                )}
                 {badge && <span style={{ position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: isSelected ? "#FF6B9D" : "#FFE8F0", color: isSelected ? "white" : "#FF6B9D", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>🚀 {badge}</span>}
-                <div style={{ marginTop: badge ? 8 : 0 }}>
-                  <BackdropShapePreview type={type} color={isSelected ? "#FF6B9D" : "#E8D5E8"} />
+                <div style={{ marginTop: badge ? 10 : 0 }}>
+                  <BackdropShapePreview type={type} color={isSelected ? "#FF6B9D" : "#DBC8E0"} />
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: isSelected ? "#FF6B9D" : "#1A1A2E", marginTop: 2, lineHeight: 1.3 }}>{label}</div>
+                <div style={{ fontSize: 12, fontWeight: isSelected ? 800 : 700, color: isSelected ? "#FF6B9D" : "#1A1A2E", marginTop: 4, lineHeight: 1.3 }}>{label}</div>
+                {isSelected && <div style={{ fontSize: 9, fontWeight: 700, color: "#FF6B9D", background: "rgba(255,107,157,0.12)", padding: "1px 6px", borderRadius: 10, marginTop: 2 }}>SELECTED</div>}
               </div>
             );
           })}
@@ -971,16 +1005,17 @@ function DecorStep({
                     <button type="button" onClick={() => toggleArchSize(size)}
                       disabled={!isSelected && d.backdropItems.length >= 3}
                       style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
-                        padding: "12px 14px", borderRadius: 12, cursor: "pointer", transition: "all 0.15s",
-                        border: isSelected ? "2.5px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.10)",
+                        padding: "13px 16px", borderRadius: 12, cursor: "pointer", transition: "all 0.15s",
+                        border: isSelected ? "3px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.10)",
                         background: isSelected ? "#FFF0F5" : size.id === "small" ? "#FFF8F4" : size.id === "medium" ? "#FFF0F5" : "#F5F0FF",
+                        boxShadow: isSelected ? "0 0 0 3px rgba(255,107,157,0.12)" : "none",
                         opacity: !isSelected && d.backdropItems.length >= 3 ? 0.4 : 1 }}>
                       <div style={{ textAlign: "left" }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "#FF6B9D" : "#1A1A2E" }}>{size.label}</div>
-                        <div style={{ fontSize: 11, color: "#999" }}>{size.widthCm} × {size.heightCm} cm</div>
+                        <div style={{ fontSize: 13, fontWeight: isSelected ? 800 : 700, color: isSelected ? "#FF6B9D" : "#1A1A2E" }}>{size.label}</div>
+                        <div style={{ fontSize: 11, color: isSelected ? "rgba(255,107,157,0.7)" : "#999" }}>{size.widthCm} × {size.heightCm} cm</div>
                       </div>
-                      <div style={{ width: 18, height: 18, borderRadius: "50%", border: isSelected ? "none" : "1.5px solid rgba(0,0,0,0.20)", background: isSelected ? "#FF6B9D" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {isSelected && <span style={{ color: "white", fontSize: 11, fontWeight: 700 }}>✓</span>}
+                      <div style={{ width: 22, height: 22, borderRadius: "50%", border: isSelected ? "none" : "1.5px solid rgba(0,0,0,0.20)", background: isSelected ? "#FF6B9D" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isSelected ? "0 2px 6px rgba(255,107,157,0.35)" : "none", flexShrink: 0 }}>
+                        {isSelected && <span style={{ color: "white", fontSize: 13, fontWeight: 900 }}>✓</span>}
                       </div>
                     </button>
                     {isSelected && archItem && itemIdx >= 0 && (
@@ -1603,8 +1638,8 @@ function DecorStep({
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(2)}
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1A2E" }}>Add balloons</div>
-            <div style={{ fontSize: 13, color: "#888", marginTop: 2 }}>Pick a style and color palette to bring your backdrop to life.</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#12162F", letterSpacing: "-0.4px" }}>Add balloons</div>
+            <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Pick a style and color palette to bring your backdrop to life.</div>
           </div>
         </div>
 
@@ -1794,8 +1829,8 @@ function DecorStep({
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(3)}
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1A2E" }}>Add extra magic</div>
-            <div style={{ fontSize: 13, color: "#888", marginTop: 2 }}>Enhance your setup with props and finishing touches.</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#12162F", letterSpacing: "-0.4px" }}>Add extra magic</div>
+            <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Enhance your setup with props and finishing touches.</div>
           </div>
         </div>
 

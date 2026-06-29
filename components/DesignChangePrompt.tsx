@@ -166,18 +166,23 @@ export default function DesignChangePrompt({
       : "text-black/60 bg-black/4 border-black/10";
 
   return (
-    <div className="mt-3 rounded-2xl border border-black/10 bg-white p-3">
-      <p className="mb-2 text-[11px] font-semibold text-black/60">Ask for a change</p>
+    <div className="mt-3 rounded-2xl bg-white p-4" style={{ border: "1.5px solid #F1D8E2", boxShadow: "0 4px 16px rgba(39,40,68,0.05)" }}>
+      {/* Header row */}
+      <div className="mb-3 flex items-center gap-2">
+        <span className="text-base">✦</span>
+        <p className="text-[12px] font-800 text-[#15182E]" style={{ fontWeight: 800 }}>Ask for a change</p>
+      </div>
 
       {/* Quick chips */}
-      <div className="mb-2 flex flex-wrap gap-1.5">
+      <div className="mb-3 flex flex-wrap gap-1.5">
         {QUICK_CHIPS.map((chip) => (
           <button
             key={chip}
             type="button"
             onClick={() => applyChange(chip)}
             disabled={processing}
-            className="rounded-full border border-black/12 bg-white px-2.5 py-1 text-[10px] font-medium text-black/55 transition hover:border-accent/40 hover:text-accent disabled:opacity-50"
+            className="rounded-full border px-3 py-1 text-[11px] font-medium transition hover:border-accent/40 hover:text-accent disabled:opacity-50"
+            style={{ borderColor: "#F1D8E2", color: "#73778A", background: "#FFF7FB" }}
           >
             {chip}
           </button>

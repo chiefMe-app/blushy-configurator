@@ -57,8 +57,11 @@ export default function PriceSummary({
   const addonLines   = lines.filter((l) => l.section === "addons");
 
   return (
-    <div className={`rounded-2xl border border-black/10 bg-white p-4 ${className}`}>
-      <h3 className="mb-4 text-sm font-semibold">Estimated total</h3>
+    <div className={`rounded-2xl bg-white p-4 ${className}`} style={{ border: "1.5px solid #F1D8E2", boxShadow: "0 4px 16px rgba(39,40,68,0.05)" }}>
+      <div className="mb-4 flex items-center gap-2">
+        <span className="text-sm" style={{ color: "#EC4D8D" }}>▣</span>
+        <h3 className="text-[13px] font-extrabold" style={{ color: "#15182E", letterSpacing: "-0.2px" }}>Estimated total</h3>
+      </div>
 
       <div className="space-y-4">
         <SectionGroup title="Service Package" lines={packageLines} />

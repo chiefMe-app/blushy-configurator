@@ -1113,16 +1113,39 @@ export default function SetupPreview({
               <span className="text-[11px] text-black/40">Generating final render…</span>
             </div>
           ) : (
-            /* Empty state — clean pastel placeholder, no AI call, no state change */
+            /* Empty state — premium pastel placeholder per MD spec, no AI call, no state change */
             <div style={{
-              height: "100%", display: "flex", flexDirection: "column",
+              height: "100%", minHeight: 380,
+              display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center",
-              background: "linear-gradient(160deg, #FFF5F8 0%, #FBF0FF 50%, #F0F5FF 100%)",
-              padding: 28, textAlign: "center",
+              background: "transparent",
+              padding: "36px 32px", textAlign: "center",
             }}>
-              <div style={{ width: 80, height: 80, borderRadius: 20, background: "#FFE8F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, marginBottom: 20 }}>✦</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1A2E", marginBottom: 8 }}>Start your design to see preview</div>
-              <div style={{ fontSize: 13, color: "#888", lineHeight: 1.5 }}>Your live preview will appear here<br/>after you choose your decor.</div>
+              {/* Sparkle icon in soft pink rounded square — per MD spec */}
+              <div style={{
+                width: 72, height: 72, borderRadius: 18,
+                background: "linear-gradient(145deg, #FFE4F0 0%, #FFD6E8 100%)",
+                border: "1.5px solid #F7A7C8",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                marginBottom: 22,
+                boxShadow: "0 8px 24px rgba(236,77,141,0.12)",
+              }}>
+                <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+                  <path d="M17 4L20.1 12.9L29 16L20.1 19.1L17 28L13.9 19.1L5 16L13.9 12.9L17 4Z" fill="#EC4D8D" stroke="#EC4D8D" strokeWidth="0.8" strokeLinejoin="round"/>
+                  <circle cx="6" cy="6" r="1.5" fill="#EC4D8D" opacity="0.35"/>
+                  <circle cx="28" cy="27" r="1.5" fill="#EC4D8D" opacity="0.35"/>
+                  <circle cx="28" cy="6" r="1" fill="#F7A7C8" opacity="0.5"/>
+                  <circle cx="6" cy="27" r="1" fill="#F7A7C8" opacity="0.5"/>
+                </svg>
+              </div>
+              {/* Title — per MD spec */}
+              <div style={{ fontSize: 17, fontWeight: 800, color: "#15182E", marginBottom: 10, letterSpacing: "-0.3px", lineHeight: 1.25 }}>
+                Start your design to see preview
+              </div>
+              {/* Body — per MD spec exact copy */}
+              <div style={{ fontSize: 13, color: "#73778A", lineHeight: 1.6, maxWidth: 220, fontWeight: 500 }}>
+                Your live preview will appear here after you choose your event and decor.
+              </div>
             </div>
           )}
 
