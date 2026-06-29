@@ -1,5 +1,5 @@
 /**
- * Sempertex Balloon Colour Catalogue — Sample Data
+ * Sempertex Balloon Colour Catalogue - Sample Data
  *
  * Source: Sempertex color chart (85 colors).
  *
@@ -20,7 +20,7 @@ export interface SempertexColor {
   colorName: string;
   finish: string;
   family: string;
-  /** Approximate hex preview only — physical color follows Sempertex chart/samples */
+  /** Approximate hex preview only - physical color follows Sempertex chart/samples */
   hex: string;
   /** TODO: Replace with official per-SKU size availability from supplier */
   availableSizes: string[];

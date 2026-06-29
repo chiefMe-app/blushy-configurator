@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// Blushy Birthday Builder — single source of truth for all options + pricing.
+// Blushy Birthday Builder - single source of truth for all options + pricing.
 // Shared by the client UI and the server-side API routes so they never drift.
-// NEVER hardcode prices in components — derive everything from here.
+// NEVER hardcode prices in components - derive everything from here.
 // ---------------------------------------------------------------------------
 
-// =====================  STEP — EVENT TYPE  =================================
+// =====================  STEP - EVENT TYPE  =================================
 
 export type EventTypeId =
   | "birthday"
@@ -21,14 +21,14 @@ export interface EventType {
 }
 
 export const EVENT_TYPES: EventType[] = [
-  { id: "birthday", label: "Birthday", emoji: "🎂", description: "The classic celebration" },
-  { id: "baby_shower", label: "Baby Shower", emoji: "🎈", description: "Welcome the little one" },
-  { id: "bridal_shower", label: "Bridal Shower", emoji: "💍", description: "Celebrate the bride" },
-  { id: "boutique_wedding", label: "Boutique Wedding Corner", emoji: "💐", description: "Intimate wedding styling" },
-  { id: "corporate_mini", label: "Corporate Mini Setup", emoji: "🏢", description: "Branded & polished" },
+  { id: "birthday", label: "Birthday", emoji: "-", description: "The classic celebration" },
+  { id: "baby_shower", label: "Baby Shower", emoji: "-", description: "Welcome the little one" },
+  { id: "bridal_shower", label: "Bridal Shower", emoji: "-", description: "Celebrate the bride" },
+  { id: "boutique_wedding", label: "Boutique Wedding Corner", emoji: "-", description: "Intimate wedding styling" },
+  { id: "corporate_mini", label: "Corporate Mini Setup", emoji: "-", description: "Branded & polished" },
 ];
 
-// =====================  STEP — THEME  ======================================
+// =====================  STEP - THEME  ======================================
 
 export type ThemeId =
   | "frozen"
@@ -63,35 +63,35 @@ export interface Theme {
   /** Suggested balloon palette (Sempertex). */
   balloonColors: string[];
   priceModifier: number;
-  /** UI accent (hex) — chosen for good contrast on a white background. */
+  /** UI accent (hex) - chosen for good contrast on a white background. */
   accent: string;
 }
 
 export const THEMES: Theme[] = [
-  { id: "frozen", name: "Frozen", emoji: "❄️", desc: "Icy blues, silver, snowflakes", backdropColors: ["#E8F4FD", "#B3D9F2", "#FFFFFF"], balloonColors: ["#B3D9F2", "#E8F4FD", "#C8E6FA", "#FFFFFF", "#A8D4EF"], priceModifier: 50, accent: "#4A90D9" },
-  { id: "unicorn", name: "Unicorn", emoji: "🦄", desc: "Pastels, iridescent, rainbow magic", backdropColors: ["#F9D5DF", "#E8C8F0", "#FFFFFF"], balloonColors: ["#F9D5DF", "#C4F0E8", "#E8C8F0", "#FFF0A0", "#FFFFFF"], priceModifier: 50, accent: "#C77DD6" },
-  { id: "dinosaur", name: "Dinosaur", emoji: "🦕", desc: "Earthy greens, terracotta, jungle", backdropColors: ["#E8F5E9", "#C8DFC8", "#F5F0E8"], balloonColors: ["#80CBC4", "#A5D6A7", "#BCAAA4", "#EF9A9A", "#78909C"], priceModifier: 30, accent: "#4CAF82" },
-  { id: "safari", name: "Safari", emoji: "🦁", desc: "Warm browns, animal print, jungle", backdropColors: ["#FFF8E1", "#FFE0B2", "#F5F0E8"], balloonColors: ["#FFCC80", "#A5D6A7", "#FFAB40", "#8D6E63", "#FFF176"], priceModifier: 30, accent: "#B5762A" },
-  { id: "princess", name: "Princess", emoji: "👑", desc: "Pink, gold, castle, crown", backdropColors: ["#FCE4EC", "#FFF9C4", "#FFFFFF"], balloonColors: ["#F48FB1", "#CE93D8", "#FFD54F", "#FFFFFF", "#F8BBD0"], priceModifier: 50, accent: "#E84F8B" },
-  { id: "superhero", name: "Superhero", emoji: "🦸", desc: "Bold primaries, action, pow!", backdropColors: ["#E3F2FD", "#FFEBEE", "#F3E5F5"], balloonColors: ["#EF5350", "#1565C0", "#FDD835", "#43A047", "#9C27B0"], priceModifier: 40, accent: "#1565C0" },
-  { id: "barbie", name: "Barbie", emoji: "💗", desc: "Hot pink, fuchsia, glam", backdropColors: ["#FF69B4", "#FFB6C1", "#FFFFFF"], balloonColors: ["#FF69B4", "#FF1493", "#FFB6C1", "#FFFFFF", "#FF69B4"], priceModifier: 60, accent: "#FF1493" },
-  { id: "bluey", name: "Bluey", emoji: "🐾", desc: "Blue heeler, family fun, playful", backdropColors: ["#E3F2FD", "#BBDEFB", "#FFFFFF"], balloonColors: ["#42A5F5", "#EF5350", "#FFF176", "#81C784", "#FFFFFF"], priceModifier: 40, accent: "#2E86DE" },
-  { id: "pokemon", name: "Pokémon", emoji: "⚡", desc: "Yellow, red Pokéball, adventure", backdropColors: ["#FFFDE7", "#FFF9C4", "#FFFFFF"], balloonColors: ["#FDD835", "#EF5350", "#1565C0", "#FFFFFF", "#FF8F00"], priceModifier: 50, accent: "#E0382B" },
-  { id: "stitch", name: "Stitch", emoji: "💙", desc: "Blue, tropical, Hawaiian", backdropColors: ["#E3F2FD", "#B3E5FC", "#E8F5E9"], balloonColors: ["#42A5F5", "#1565C0", "#81C784", "#FFFFFF", "#29B6F6"], priceModifier: 40, accent: "#2196D6" },
-  { id: "mermaid", name: "Mermaid", emoji: "🧜‍♀️", desc: "Teals, iridescent, ocean magic", backdropColors: ["#E0F7FA", "#B2EBF2", "#F3E5F5"], balloonColors: ["#80DEEA", "#4DD0E1", "#CE93D8", "#B2EBF2", "#FFFFFF"], priceModifier: 50, accent: "#1FB6C4" },
-  { id: "space", name: "Space", emoji: "🚀", desc: "Deep navy, stars, planets", backdropColors: ["#1A237E", "#283593", "#311B92"], balloonColors: ["#9FA8DA", "#7986CB", "#B39DDB", "#FFD54F", "#FFFFFF"], priceModifier: 60, accent: "#3949AB" },
-  { id: "football", name: "Football", emoji: "⚽", desc: "Team colors, grass green, sporty", backdropColors: ["#E8F5E9", "#FFFFFF", "#F5F5F5"], balloonColors: ["#43A047", "#FFFFFF", "#1565C0", "#EF5350", "#FDD835"], priceModifier: 30, accent: "#2E9E4F" },
-  { id: "lego", name: "Lego", emoji: "🧱", desc: "Bright primary colors, brick fun", backdropColors: ["#FFFFFF", "#EF5350", "#1565C0"], balloonColors: ["#EF5350", "#1565C0", "#FDD835", "#43A047", "#FFFFFF"], priceModifier: 40, accent: "#1565C0" },
-  { id: "kpop", name: "K-Pop", emoji: "🎤", desc: "Neon, sparkle, idol vibes", backdropColors: ["#F3E5F5", "#E8EAF6", "#FCE4EC"], balloonColors: ["#CE93D8", "#9FA8DA", "#F48FB1", "#FFFFFF", "#80DEEA"], priceModifier: 70, accent: "#B14FD8" },
-  { id: "encanto", name: "Encanto", emoji: "🌺", desc: "Vibrant Colombian colors, magical", backdropColors: ["#FFF8E1", "#FCE4EC", "#E8F5E9"], balloonColors: ["#FF8F00", "#E91E63", "#43A047", "#FFD54F", "#9C27B0"], priceModifier: 50, accent: "#E0561E" },
-  { id: "cocomelon", name: "Cocomelon", emoji: "🍉", desc: "Bright primaries, watermelon, fun", backdropColors: ["#E8F5E9", "#E3F2FD", "#FFFFFF"], balloonColors: ["#EF5350", "#43A047", "#42A5F5", "#FDD835", "#FFFFFF"], priceModifier: 30, accent: "#3AA655" },
-  { id: "teddy_bear", name: "Teddy Bear", emoji: "🧸", desc: "Soft beige, dusty pink, cozy", backdropColors: ["#F5EDE0", "#F2C4CE", "#EDE0D4"], balloonColors: ["#D4A574", "#F2C4CE", "#C4A882", "#FFFFFF", "#E8D5C4"], priceModifier: 30, accent: "#C08552" },
-  { id: "pineapple_tropical", name: "Tropical 🍍", emoji: "🌺", desc: "Pineapple, palm leaves, vibrant", backdropColors: ["#FFF9C4", "#FCE4EC", "#FFFFFF"], balloonColors: ["#FDD835", "#CE93D8", "#F48FB1", "#A5D6A7", "#FFFFFF"], priceModifier: 40, accent: "#E0561E" },
-  { id: "blush_garden", name: "Blush Garden", emoji: "🌸", desc: "Soft pinks, florals, romantic", backdropColors: ["#FCE4EC", "#F8BBD0", "#FFFFFF"], balloonColors: ["#F48FB1", "#F8BBD0", "#FFFFFF", "#CE93D8", "#FFE0B2"], priceModifier: 0, accent: "#E5739A" },
-  { id: "luxury_neutral", name: "Luxury Neutral", emoji: "🤍", desc: "Beige, champagne, gold, ivory", backdropColors: ["#F5F0E8", "#EDE0D0", "#FFFFFF"], balloonColors: ["#D4B896", "#EDE0D0", "#FFD54F", "#FFFFFF", "#C8A882"], priceModifier: 80, accent: "#B08D57" },
+  { id: "frozen", name: "Frozen", emoji: "--", desc: "Icy blues, silver, snowflakes", backdropColors: ["#E8F4FD", "#B3D9F2", "#FFFFFF"], balloonColors: ["#B3D9F2", "#E8F4FD", "#C8E6FA", "#FFFFFF", "#A8D4EF"], priceModifier: 50, accent: "#4A90D9" },
+  { id: "unicorn", name: "Unicorn", emoji: "-", desc: "Pastels, iridescent, rainbow magic", backdropColors: ["#F9D5DF", "#E8C8F0", "#FFFFFF"], balloonColors: ["#F9D5DF", "#C4F0E8", "#E8C8F0", "#FFF0A0", "#FFFFFF"], priceModifier: 50, accent: "#C77DD6" },
+  { id: "dinosaur", name: "Dinosaur", emoji: "-", desc: "Earthy greens, terracotta, jungle", backdropColors: ["#E8F5E9", "#C8DFC8", "#F5F0E8"], balloonColors: ["#80CBC4", "#A5D6A7", "#BCAAA4", "#EF9A9A", "#78909C"], priceModifier: 30, accent: "#4CAF82" },
+  { id: "safari", name: "Safari", emoji: "-", desc: "Warm browns, animal print, jungle", backdropColors: ["#FFF8E1", "#FFE0B2", "#F5F0E8"], balloonColors: ["#FFCC80", "#A5D6A7", "#FFAB40", "#8D6E63", "#FFF176"], priceModifier: 30, accent: "#B5762A" },
+  { id: "princess", name: "Princess", emoji: "-", desc: "Pink, gold, castle, crown", backdropColors: ["#FCE4EC", "#FFF9C4", "#FFFFFF"], balloonColors: ["#F48FB1", "#CE93D8", "#FFD54F", "#FFFFFF", "#F8BBD0"], priceModifier: 50, accent: "#E84F8B" },
+  { id: "superhero", name: "Superhero", emoji: "-", desc: "Bold primaries, action, pow!", backdropColors: ["#E3F2FD", "#FFEBEE", "#F3E5F5"], balloonColors: ["#EF5350", "#1565C0", "#FDD835", "#43A047", "#9C27B0"], priceModifier: 40, accent: "#1565C0" },
+  { id: "barbie", name: "Barbie", emoji: "-", desc: "Hot pink, fuchsia, glam", backdropColors: ["#FF69B4", "#FFB6C1", "#FFFFFF"], balloonColors: ["#FF69B4", "#FF1493", "#FFB6C1", "#FFFFFF", "#FF69B4"], priceModifier: 60, accent: "#FF1493" },
+  { id: "bluey", name: "Bluey", emoji: "-", desc: "Blue heeler, family fun, playful", backdropColors: ["#E3F2FD", "#BBDEFB", "#FFFFFF"], balloonColors: ["#42A5F5", "#EF5350", "#FFF176", "#81C784", "#FFFFFF"], priceModifier: 40, accent: "#2E86DE" },
+  { id: "pokemon", name: "Pok-mon", emoji: "-", desc: "Yellow, red Pok-ball, adventure", backdropColors: ["#FFFDE7", "#FFF9C4", "#FFFFFF"], balloonColors: ["#FDD835", "#EF5350", "#1565C0", "#FFFFFF", "#FF8F00"], priceModifier: 50, accent: "#E0382B" },
+  { id: "stitch", name: "Stitch", emoji: "-", desc: "Blue, tropical, Hawaiian", backdropColors: ["#E3F2FD", "#B3E5FC", "#E8F5E9"], balloonColors: ["#42A5F5", "#1565C0", "#81C784", "#FFFFFF", "#29B6F6"], priceModifier: 40, accent: "#2196D6" },
+  { id: "mermaid", name: "Mermaid", emoji: "----", desc: "Teals, iridescent, ocean magic", backdropColors: ["#E0F7FA", "#B2EBF2", "#F3E5F5"], balloonColors: ["#80DEEA", "#4DD0E1", "#CE93D8", "#B2EBF2", "#FFFFFF"], priceModifier: 50, accent: "#1FB6C4" },
+  { id: "space", name: "Space", emoji: "-", desc: "Deep navy, stars, planets", backdropColors: ["#1A237E", "#283593", "#311B92"], balloonColors: ["#9FA8DA", "#7986CB", "#B39DDB", "#FFD54F", "#FFFFFF"], priceModifier: 60, accent: "#3949AB" },
+  { id: "football", name: "Football", emoji: "-", desc: "Team colors, grass green, sporty", backdropColors: ["#E8F5E9", "#FFFFFF", "#F5F5F5"], balloonColors: ["#43A047", "#FFFFFF", "#1565C0", "#EF5350", "#FDD835"], priceModifier: 30, accent: "#2E9E4F" },
+  { id: "lego", name: "Lego", emoji: "-", desc: "Bright primary colors, brick fun", backdropColors: ["#FFFFFF", "#EF5350", "#1565C0"], balloonColors: ["#EF5350", "#1565C0", "#FDD835", "#43A047", "#FFFFFF"], priceModifier: 40, accent: "#1565C0" },
+  { id: "kpop", name: "K-Pop", emoji: "-", desc: "Neon, sparkle, idol vibes", backdropColors: ["#F3E5F5", "#E8EAF6", "#FCE4EC"], balloonColors: ["#CE93D8", "#9FA8DA", "#F48FB1", "#FFFFFF", "#80DEEA"], priceModifier: 70, accent: "#B14FD8" },
+  { id: "encanto", name: "Encanto", emoji: "-", desc: "Vibrant Colombian colors, magical", backdropColors: ["#FFF8E1", "#FCE4EC", "#E8F5E9"], balloonColors: ["#FF8F00", "#E91E63", "#43A047", "#FFD54F", "#9C27B0"], priceModifier: 50, accent: "#E0561E" },
+  { id: "cocomelon", name: "Cocomelon", emoji: "-", desc: "Bright primaries, watermelon, fun", backdropColors: ["#E8F5E9", "#E3F2FD", "#FFFFFF"], balloonColors: ["#EF5350", "#43A047", "#42A5F5", "#FDD835", "#FFFFFF"], priceModifier: 30, accent: "#3AA655" },
+  { id: "teddy_bear", name: "Teddy Bear", emoji: "-", desc: "Soft beige, dusty pink, cozy", backdropColors: ["#F5EDE0", "#F2C4CE", "#EDE0D4"], balloonColors: ["#D4A574", "#F2C4CE", "#C4A882", "#FFFFFF", "#E8D5C4"], priceModifier: 30, accent: "#C08552" },
+  { id: "pineapple_tropical", name: "Tropical -", emoji: "-", desc: "Pineapple, palm leaves, vibrant", backdropColors: ["#FFF9C4", "#FCE4EC", "#FFFFFF"], balloonColors: ["#FDD835", "#CE93D8", "#F48FB1", "#A5D6A7", "#FFFFFF"], priceModifier: 40, accent: "#E0561E" },
+  { id: "blush_garden", name: "Blush Garden", emoji: "-", desc: "Soft pinks, florals, romantic", backdropColors: ["#FCE4EC", "#F8BBD0", "#FFFFFF"], balloonColors: ["#F48FB1", "#F8BBD0", "#FFFFFF", "#CE93D8", "#FFE0B2"], priceModifier: 0, accent: "#E5739A" },
+  { id: "luxury_neutral", name: "Luxury Neutral", emoji: "-", desc: "Beige, champagne, gold, ivory", backdropColors: ["#F5F0E8", "#EDE0D0", "#FFFFFF"], balloonColors: ["#D4B896", "#EDE0D0", "#FFD54F", "#FFFFFF", "#C8A882"], priceModifier: 80, accent: "#B08D57" },
 ];
 
-// =====================  STEP — SERVICE PACKAGE  ============================
+// =====================  STEP - SERVICE PACKAGE  ============================
 
 /**
  * Service packages define what the customer receives and how the setup is
@@ -114,7 +114,7 @@ export interface ServicePackage {
 }
 
 export const SERVICE_PACKAGES: ServicePackage[] = [
-  // ── Design Packages ───────────────────────────────────────────────────
+  // -- Design Packages ---------------------------------------------------
   {
     id:    "design_only",
     group: "design",
@@ -141,7 +141,7 @@ export const SERVICE_PACKAGES: ServicePackage[] = [
       "Complete item & spec summary",
     ],
   },
-  // ── Execution Packages ────────────────────────────────────────────────
+  // -- Execution Packages ------------------------------------------------
   {
     id:    "delivery_backdrop",
     group: "execution",
@@ -174,7 +174,7 @@ export function servicePackageById(id: ServicePackageId): ServicePackage | undef
   return SERVICE_PACKAGES.find((p) => p.id === id);
 }
 
-// =====================  STEP — PACKAGE (legacy, kept for order compat) ===
+// =====================  STEP - PACKAGE (legacy, kept for order compat) ===
 
 export type PackageId = "mini" | "signature" | "luxury";
 
@@ -260,7 +260,7 @@ export const PACKAGES: Package[] = [
   },
 ];
 
-// =====================  STEP — DECOR  ======================================
+// =====================  STEP - DECOR  ======================================
 
 export type BackdropShapeId =
   | "arch"
@@ -295,8 +295,8 @@ export interface RectSize {
 }
 
 export const RECT_SIZES: RectSize[] = [
-  { id: "rect_100x200", label: "100 × 200 cm", widthCm: 100, heightCm: 200 },
-  { id: "rect_80x180",  label: "80 × 180 cm",  widthCm: 80,  heightCm: 180 },
+  { id: "rect_100x200", label: "100 - 200 cm", widthCm: 100, heightCm: 200 },
+  { id: "rect_80x180",  label: "80 - 180 cm",  widthCm: 80,  heightCm: 180 },
 ];
 
 export interface BackdropItemText {
@@ -313,7 +313,7 @@ export interface BackdropItemGraphic {
 }
 
 /**
- * Source of truth for a single backdrop panel — shape, exact dimensions,
+ * Source of truth for a single backdrop panel - shape, exact dimensions,
  * per-panel color, text, and graphic settings.
  */
 export interface BackdropItem {
@@ -407,7 +407,7 @@ export interface BackdropPrintOption {
 }
 
 export const BACKDROP_PRINTS: BackdropPrintOption[] = [
-  { id: "none", label: "Plain — No Print", price: 0, desc: "Solid color only" },
+  { id: "none", label: "Plain - No Print", price: 0, desc: "Solid color only" },
   { id: "name_only", label: "Name Only", price: 80, desc: "Child's name in elegant font" },
   { id: "theme_print", label: "Theme Graphic", price: 150, desc: "Full themed illustration printed on backdrop" },
   { id: "custom_upload", label: "Custom Design", price: 200, desc: "Upload your own design" },
@@ -420,13 +420,13 @@ export interface BackdropText {
   customText: string;
   fontStyle: FontStyle;
   color: TextColor;
-  /** 1–10 scale; maps to CSS font-size. Default 4. */
+  /** 1-10 scale; maps to CSS font-size. Default 4. */
   fontSize: number;
-  /** 100–250; divide by 100 for CSS line-height. Default 140. */
+  /** 100-250; divide by 100 for CSS line-height. Default 140. */
   lineHeight: number;
-  /** 0–100; vertical position within the backdrop safe area. Default 30. */
+  /** 0-100; vertical position within the backdrop safe area. Default 30. */
   verticalOffset: number;
-  /** 0–100; horizontal center of the text block within the safe area. Default 50. */
+  /** 0-100; horizontal center of the text block within the safe area. Default 50. */
   horizontalOffset: number;
   align: TextAlign;
 }
@@ -475,12 +475,12 @@ export const SHIMMER_COLORS: Option<ShimmerColorId>[] = [
 ];
 
 export interface DecorConfig {
-  /** Source of truth for all backdrop panels — type, count, and arch sizes. */
+  /** Source of truth for all backdrop panels - type, count, and arch sizes. */
   backdropItems: BackdropItem[];
   balloonStyle: BalloonStyleId;
-  /** User-chosen backdrop color (hex) — defaults to the theme suggestion. */
+  /** User-chosen backdrop color (hex) - defaults to the theme suggestion. */
   backdropColor: string;
-  /** User-chosen balloon colors (hex, up to 5) — defaults to the theme palette. */
+  /** User-chosen balloon colors (hex, up to 5) - defaults to the theme palette. */
   balloonColors: string[];
   plinths: number;
   plinthSizes: PlinthSize[];
@@ -488,7 +488,7 @@ export interface DecorConfig {
   backdropPrint: BackdropPrint;
   backdropText: BackdropText;
   cakeTable: boolean;
-  /** Selected shimmer wall color/material — only relevant when a shimmer_wall is in backdropItems. */
+  /** Selected shimmer wall color/material - only relevant when a shimmer_wall is in backdropItems. */
   shimmerColor?: ShimmerColorId;
   /**
    * Extra balloon clusters from natural language / customer edits.
@@ -508,8 +508,8 @@ export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   { id: "arch",         label: "Arch Backdrop",        price: 0 },
   { id: "round",        label: "Round Backdrop",       price: 0 },
   { id: "rect",         label: "Rectangular Backdrop", price: 0 },
-  { id: "shimmer_wall", label: "Shimmer Wall · 200 × 200 cm", price: 80 },
-  // "wavy" removed from product — not selectable. Kept in BackdropShapeId for backward compat.
+  { id: "shimmer_wall", label: "Shimmer Wall - 200 x 200 cm", price: 80 },
+  // "wavy" removed from product - not selectable. Kept in BackdropShapeId for backward compat.
 ];
 
 export const BALLOON_STYLES: Option<BalloonStyleId>[] = [
@@ -520,12 +520,12 @@ export const BALLOON_STYLES: Option<BalloonStyleId>[] = [
 ];
 
 export const PLINTH_SIZES: Option<PlinthSize>[] = [
-  { id: "small",  label: "S — 60cm",  price: 60  },
-  { id: "medium", label: "M — 75cm",  price: 80  },
-  { id: "large",  label: "L — 90cm",  price: 110 },
+  { id: "small",  label: "S - 60cm",  price: 60  },
+  { id: "medium", label: "M - 75cm",  price: 80  },
+  { id: "large",  label: "L - 90cm",  price: 110 },
 ];
 
-/** Cutout sets — shown as cards in the Add-ons step. */
+/** Cutout sets - shown as cards in the Add-ons step. */
 export interface CutoutSet {
   size: Exclude<CutoutSize, "none">;
   label: string;
@@ -562,7 +562,7 @@ export const TEXT_COLORS: { id: TextColor; label: string; swatch: string }[] = [
   { id: "accent", label: "Theme accent", swatch: "" },
 ];
 
-// =====================  STEP — ADD-ONS  ====================================
+// =====================  STEP - ADD-ONS  ====================================
 
 export type AddOnId =
   | "bouncy_castle"
@@ -602,7 +602,7 @@ const GUEST_COUNT: SubOption = {
   type: "choice",
   choices: [
     { value: "under_20", label: "Under 20" },
-    { value: "20_50", label: "20–50" },
+    { value: "20_50", label: "20-50" },
     { value: "50_plus", label: "50+" },
   ],
 };
@@ -628,7 +628,7 @@ export const ADDONS: AddOn[] = [
     subOptions: [
       { key: "placement", label: "Indoor or outdoor", type: "choice", choices: [{ value: "indoor", label: "Indoor" }, { value: "outdoor", label: "Outdoor" }] },
       { key: "space", label: "Space available", type: "text" },
-      { key: "age", label: "Child age range", type: "choice", choices: [{ value: "3_5", label: "3–5" }, { value: "5_10", label: "5–10" }, { value: "mixed", label: "Mixed" }] },
+      { key: "age", label: "Child age range", type: "choice", choices: [{ value: "3_5", label: "3-5" }, { value: "5_10", label: "5-10" }, { value: "mixed", label: "Mixed" }] },
     ],
   },
   { id: "soft_play", label: "Soft Play", description: "Safe padded play zone for toddlers.", basePrice: 380, priceLabel: "from AED 380" },
@@ -642,7 +642,7 @@ export const ADDONS: AddOn[] = [
     basePrice: 350,
     priceLabel: "AED 350",
     recommend: { themes: ["safari", "princess"] },
-    subOptions: [{ key: "children", label: "Number of children", type: "choice", choices: [{ value: "under_10", label: "Under 10" }, { value: "10_20", label: "10–20" }, { value: "20_plus", label: "20+" }] }],
+    subOptions: [{ key: "children", label: "Number of children", type: "choice", choices: [{ value: "under_10", label: "Under 10" }, { value: "10_20", label: "10-20" }, { value: "20_plus", label: "20+" }] }],
   },
   { id: "mascot", label: "Mascot / Entertainer", description: "Costumed character or host.", basePrice: 650, priceLabel: "from AED 650" },
   { id: "photographer", label: "Photographer", description: "Capture the day professionally.", basePrice: 750, priceLabel: "from AED 750", recommend: { packages: ["luxury"] }, subOptions: [DURATION] },
@@ -694,9 +694,9 @@ export interface CustomerDetails {
 export interface BuilderConfig {
   eventType: EventTypeId;
   theme: ThemeId;
-  /** Legacy field — kept for order compatibility. Does not reset decor. */
+  /** Legacy field - kept for order compatibility. Does not reset decor. */
   package: PackageId;
-  /** User-selected service package — defines what they receive, not their design. */
+  /** User-selected service package - defines what they receive, not their design. */
   servicePackageId: ServicePackageId;
   decor: DecorConfig;
   addOns: SelectedAddOn[];
@@ -724,7 +724,7 @@ export function defaultConfig(): BuilderConfig {
     servicePackageId: "design_only",
     decor: {
       ...pkg.defaultDecor,
-      backdropItems: [],        // no default backdrop — user chooses
+      backdropItems: [],        // no default backdrop - user chooses
       backdropColor: theme.backdropColors[0],
       balloonColors: theme.balloonColors.slice(0, 5),
     },
@@ -790,19 +790,19 @@ export function priceBreakdown(config: BuilderConfig): {
   const lines: PriceLine[] = [];
   const d = config.decor;
 
-  // ── Service package ────────────────────────────────────────────────────
-  // Defines what the customer receives — separate from the design items below.
+  // -- Service package ----------------------------------------------------
+  // Defines what the customer receives - separate from the design items below.
   const svcPkg = servicePackageById(config.servicePackageId) ?? SERVICE_PACKAGES[0];
   lines.push({ label: svcPkg.name, amount: svcPkg.price, section: "package" });
 
-  // ── Design / decor items ────────────────────────────────────────────────
+  // -- Design / decor items ------------------------------------------------
   const theme = themeById(config.theme);
   if (theme && theme.priceModifier > 0) {
     lines.push({ label: `${theme.name} theme`, amount: theme.priceModifier, section: "design" });
   }
 
   // Backdrop panel pricing: each selected panel costs PER_BACKDROP.
-  // Service packages no longer include a free backdrop — panels are priced individually.
+  // Service packages no longer include a free backdrop - panels are priced individually.
   for (let i = 0; i < d.backdropItems.length; i++) {
     const item = d.backdropItems[i];
     const sInfo = shapeById(item.type);
@@ -810,7 +810,7 @@ export function priceBreakdown(config: BuilderConfig): {
     const shimmerExtra = item.type === "shimmer_wall" ? 80 : 0;
     const cost = PER_BACKDROP + shimmerExtra;
     lines.push({
-      label: d.backdropItems.length === 1 ? `${sLabel} backdrop` : `${sLabel} — panel ${i + 1}`,
+      label: d.backdropItems.length === 1 ? `${sLabel} backdrop` : `${sLabel} - panel ${i + 1}`,
       amount: cost,
       section: "design",
     });
@@ -818,7 +818,7 @@ export function priceBreakdown(config: BuilderConfig): {
 
   const style = balloonStyleById(d.balloonStyle);
   if (style && style.price > 0) {
-    lines.push({ label: `Balloons — ${style.label}`, amount: style.price, section: "design" });
+    lines.push({ label: `Balloons - ${style.label}`, amount: style.price, section: "design" });
   }
 
   const plinthSum = plinthsTotal(d.plinthSizes);
@@ -840,8 +840,8 @@ export function priceBreakdown(config: BuilderConfig): {
     lines.push({ label: "Cake / dessert table", amount: CAKE_TABLE_PRICE, section: "design" });
   }
 
-  // ── Add-ons ─────────────────────────────────────────────────────────────
-  // Available for all service packages — never cleared by package selection.
+  // -- Add-ons -------------------------------------------------------------
+  // Available for all service packages - never cleared by package selection.
   for (const sel of config.addOns) {
     const addon = addOnById(sel.id);
     if (!addon) continue;

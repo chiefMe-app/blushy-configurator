@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Plus_Jakarta_Sans } from "next/font/google";
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["500", "600", "700", "800"] });
@@ -138,7 +138,7 @@ export default function ConfigurePage() {
     }));
   }
   /**
-   * Selecting a service package only updates the service level â€” it never
+   * Selecting a service package only updates the service level -it never
    * touches the user's design (backdropItems, colors, text, graphics, etc.).
    */
   function setServicePackage(id: ServicePackageId) {
@@ -193,7 +193,7 @@ export default function ConfigurePage() {
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
-      // Route logs payload if no table is configured â€” still treat as success.
+      // Route logs payload if no table is configured -still treat as success.
       const designId: string =
         data?.order?.id ??
         data?.designId ??
@@ -219,7 +219,7 @@ export default function ConfigurePage() {
       <main style={accentStyle} className="mx-auto min-h-screen max-w-xl px-4 pb-16">
         <div className="py-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft text-3xl">
-            ðŸŽ‰
+            
           </div>
           <h1 className="text-2xl font-bold">Request received!</h1>
           <p className="mx-auto mt-2 max-w-sm text-sm text-black/60">
@@ -257,7 +257,7 @@ export default function ConfigurePage() {
               </div>
             </div>
             <p className="rounded-xl bg-black/[0.03] p-3 text-center text-sm text-black/65">
-              ðŸ“± We will contact you on WhatsApp to confirm venue, availability and final quote.
+              [phone] We will contact you on WhatsApp to confirm venue, availability and final quote.
             </p>
           </div>
         </div>
@@ -293,7 +293,7 @@ export default function ConfigurePage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            {/* Clean sparkle mark â€” no circle, just the star SVG */}
+            {/* Clean sparkle mark -no circle, just the star SVG */}
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}>
               <path d="M14 3L16.5 10.5L24 13L16.5 15.5L14 23L11.5 15.5L4 13L11.5 10.5L14 3Z" fill="#EC4D8D"/>
               <circle cx="5" cy="5" r="1.2" fill="#F7A7C8"/>
@@ -306,7 +306,7 @@ export default function ConfigurePage() {
             </div>
           </div>
 
-          {/* Step navigation â€” centered pills */}
+          {/* Step navigation -centered pills */}
           <nav className="hidden lg:flex items-center gap-1">
             {STEPS.map((s, i) => {
               const done = i < step;
@@ -331,7 +331,7 @@ export default function ConfigurePage() {
                     background: active ? "rgba(255,255,255,0.25)" : done ? "#FF6B9D" : "rgba(0,0,0,0.08)",
                     color: active ? "white" : done ? "white" : "rgba(0,0,0,0.4)",
                   }}>
-                    {done ? "âœ“" : i + 1}
+                    {done ? "v" : i + 1}
                   </span>
                   {s}
                 </button>
@@ -348,13 +348,13 @@ export default function ConfigurePage() {
       </header>
 
       <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 32px 0", display: "flex", gap: 32, alignItems: "flex-start" }}>
-        {/* Left: preview rail â€” fixed 380px */}
+        {/* Left: preview rail -fixed 380px */}
         <div style={{ width: 380, flexShrink: 0 }}>
           <div className="lg:sticky" style={{ top: 88 }}>
             <div className="space-y-3">
-              {/* Preview card â€” overflow hidden keeps confetti contained */}
+              {/* Preview card -overflow hidden keeps confetti contained */}
               <div style={{ position: "relative", overflow: "hidden", minHeight: 460, borderRadius: 22, border: "1.5px solid #F1D8E2", boxShadow: "0 18px 40px rgba(39,40,68,0.06)", background: "linear-gradient(150deg, #FFF7FB 0%, #FBF2FF 50%, #FFF9F5 100%)" }}>
-                {/* Confetti â€” pointer-events none, confined inside */}
+                {/* Confetti -pointer-events none, confined inside */}
                 <div aria-hidden style={{ pointerEvents: "none" }}>
                   <div style={{ position: "absolute", top: 18, left: 28, width: 8, height: 8, borderRadius: 3, background: "#FFB8D1", opacity: 0.55, transform: "rotate(45deg)" }} />
                   <div style={{ position: "absolute", top: 48, right: 24, width: 6, height: 6, borderRadius: "50%", background: "#C4B5FD", opacity: 0.45 }} />
@@ -378,7 +378,7 @@ export default function ConfigurePage() {
           </div>
         </div>
 
-        {/* Right: steps â€” flex 1, min 720px */}
+        {/* Right: steps -flex 1, min 720px */}
         <div style={{ flex: 1, minWidth: 720, paddingBottom: 120 }}>
 
           <div>
@@ -386,13 +386,13 @@ export default function ConfigurePage() {
               <div>
                 {/* Intro band */}
                 <div style={{ background: "white", border: "1.5px solid #F1D8E2", borderRadius: 18, padding: "16px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 14, boxShadow: "0 2px 10px rgba(39,40,68,0.04)" }}>
-                  <span style={{ fontSize: 28, lineHeight: 1 }}>ðŸŽ‰</span>
+                  <span style={{ fontSize: 28, lineHeight: 1 }}></span>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "#15182E" }}>Let's bring your celebration to life</div>
                     <div style={{ fontSize: 12, color: "#73778A", marginTop: 2 }}>Choose the event so we can tailor ideas and styling just for you.</div>
                   </div>
                   <div style={{ marginLeft: "auto", display: "flex", gap: 18, flexShrink: 0 }}>
-                    {[["âœ¦", "Personalized ideas"], ["â±", "Saves you time"], ["ðŸ’›", "Stress-free planning"]].map(([icon, text]) => (
+                    {[["*", "Personalized ideas"], ["|", "Saves you time"], ["+", "Stress-free planning"]].map(([icon, text]) => (
                       <div key={text} style={{ textAlign: "center" }}>
                         <div style={{ fontSize: 14 }}>{icon}</div>
                         <div style={{ fontSize: 10, color: "#73778A", fontWeight: 600, marginTop: 2, whiteSpace: "nowrap" }}>{text}</div>
@@ -407,7 +407,7 @@ export default function ConfigurePage() {
                   <div style={{ fontSize: 13, color: "#73778A", marginTop: 4, fontWeight: 500 }}>Pick the event that best describes your celebration. You can always change it later.</div>
                 </div>
 
-                {/* Event cards â€” 3 col desktop, premium pastel */}
+                {/* Event cards -3 col desktop, premium pastel */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
                   {EVENT_TYPES.map((e) => {
                     const sel = config.eventType === e.id;
@@ -422,7 +422,7 @@ export default function ConfigurePage() {
                           transition: "all 0.18s",
                         }}>
                         {sel && (
-                          <span style={{ position: "absolute", top: 10, right: 10, width: 22, height: 22, borderRadius: "50%", background: "#EC4D8D", color: "white", fontSize: 12, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>âœ“</span>
+                          <span style={{ position: "absolute", top: 10, right: 10, width: 22, height: 22, borderRadius: "50%", background: "#EC4D8D", color: "white", fontSize: 12, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>v</span>
                         )}
                         <div style={{ fontSize: 36, marginBottom: 10 }}>{e.emoji}</div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: sel ? "#EC4D8D" : "#15182E", marginBottom: 4 }}>{e.label}</div>
@@ -437,7 +437,7 @@ export default function ConfigurePage() {
 
                 {/* Bottom hint */}
                 <div style={{ marginTop: 20, padding: "12px 16px", background: "#FFF7F0", borderRadius: 12, fontSize: 12, color: "#73778A", display: "flex", alignItems: "center", gap: 8 }}>
-                  <span>ðŸ’¡</span>
+                  <span>i</span>
                   Not sure? You can update your event anytime, and we'll re-tailor the suggestions for you.
                 </div>
               </div>
@@ -471,7 +471,7 @@ export default function ConfigurePage() {
             {step === 3 && (
               <StepShell
                 title="Choose your service package"
-                subtitle="Your design is ready â€” now choose how you want to use it."
+                subtitle="Your design is ready -now choose how you want to use it."
               >
                 <p className="mb-5 rounded-xl bg-black/4 px-4 py-3 text-xs text-black/55">
                   Packages do not change your design. They define what you receive and how the setup is handled.
@@ -503,7 +503,7 @@ export default function ConfigurePage() {
                           <ul className="space-y-1.5">
                             {p.includes.map((line) => (
                               <li key={line} className="flex items-start gap-2 text-xs text-black/65">
-                                <span className="mt-[3px] text-accent">âœ“</span>
+                                <span className="mt-[3px] text-accent">v</span>
                                 <span>{line}</span>
                               </li>
                             ))}
@@ -540,7 +540,7 @@ export default function ConfigurePage() {
                           <ul className="space-y-1.5">
                             {p.includes.map((line) => (
                               <li key={line} className="flex items-start gap-2 text-xs text-black/65">
-                                <span className="mt-[3px] text-accent">âœ“</span>
+                                <span className="mt-[3px] text-accent">v</span>
                                 <span>{line}</span>
                               </li>
                             ))}
@@ -712,7 +712,7 @@ const PLINTH_SHORT: Record<string, string> = {
   xl: "XL",
 };
 
-// Sempertex catalogue â€” imported from lib/sempertexCatalog.ts
+// Sempertex catalogue -imported from lib/sempertexCatalog.ts
 // TODO: Replace catalogue with full official Sempertex supplier data when available
 
 const SEMPERTEX_THEME_DEFAULTS: Record<string, string[]> = {
@@ -738,7 +738,7 @@ function DecorStep({
   const [printFile, setPrintFile] = useState<File | null>(null);
   const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
   const [openCustomizeIds, setOpenCustomizeIds] = useState<Set<string>>(new Set());
-  // Sempertex picker â€” UI only, does not affect pricing/render
+  // Sempertex picker -UI only, does not affect pricing/render
   const [sempertexIds, setSempertexIds] = useState<string[]>(() => getThemeDefault(config.theme));
   const [sempertexManual, setSempertexManual] = useState(false); // true once user manually changes
   const [showSempertexBrowser, setShowSempertexBrowser] = useState(false);
@@ -915,7 +915,7 @@ function DecorStep({
     }
   }
 
-  // Toggle round â€” exclusive (removes all others)
+  // Toggle round -exclusive (removes all others)
   function toggleRound() {
     const hasRound = d.backdropItems.some(i => i.type === "round");
     if (hasRound) {
@@ -925,7 +925,7 @@ function DecorStep({
     }
   }
 
-  // Toggle non-arch/non-round types (rect, shimmer) â€” removes round if present
+  // Toggle non-arch/non-round types (rect, shimmer) -removes round if present
   function toggleOtherType(type: BackdropShapeId) {
     const hasThis = d.backdropItems.some(i => i.type === type);
     if (hasThis) {
@@ -940,19 +940,19 @@ function DecorStep({
   // Readable type labels for summaries
   const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", shimmer_wall: "Shimmer Wall" };
 
-  // Collapsible customize row â€” shows summary + button, expands on demand
+  // Collapsible customize row -shows summary + button, expands on demand
   function BackdropCustomizeRow({ item, itemIdx }: { item: BackdropItem; itemIdx: number }) {
     const sizeLabelMap = Object.fromEntries([...ARCH_SIZES, ...RECT_SIZES].map(s => [s.id, s.label]));
-    const sizeStr = item.sizeId ? (sizeLabelMap[item.sizeId] ?? `${item.widthCm} Ã— ${item.heightCm} cm`) : `${item.widthCm} Ã— ${item.heightCm} cm`;
-    const summaryLabel = `Backdrop ${itemIdx + 1} â€” ${TYPE_LABEL[item.type] ?? item.type} Â ·  ${sizeStr}`;
+    const sizeStr = item.sizeId ? (sizeLabelMap[item.sizeId] ?? `${item.widthCm} x${item.heightCm} cm`) : `${item.widthCm} x${item.heightCm} cm`;
+    const summaryLabel = `Backdrop ${itemIdx + 1} -${TYPE_LABEL[item.type] ?? item.type} -${sizeStr}`;
     const isOpen = openCustomizeIds.has(item.id);
     return (
       <div style={{ marginTop: 12, borderRadius: 12, border: "1.5px solid #F1D8E2", background: "white", overflow: "hidden" }}>
-        {/* Summary row â€” full-width, readable */}
+        {/* Summary row -full-width, readable */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#EC4D8D", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ color: "white", fontSize: 12, fontWeight: 900, lineHeight: 1 }}>âœ“</span>
+              <span style={{ color: "white", fontSize: 12, fontWeight: 900, lineHeight: 1 }}>v</span>
             </div>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#15182E", letterSpacing: "-0.1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{summaryLabel}</span>
           </div>
@@ -972,11 +972,11 @@ function DecorStep({
   }
 
   function ItemCustomization({ item, itemIdx }: { item: BackdropItem; itemIdx: number }) {
-    // Build the label: "Backdrop N â€” Type Â ·  Size"
+    // Build the label: "Backdrop N -Type -Size"
     const typeLabel: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", shimmer_wall: "Shimmer Wall" };
     const sizeLabelMap = Object.fromEntries([...ARCH_SIZES, ...RECT_SIZES].map(s => [s.id, s.label]));
-    const sizeStr = item.sizeId ? (sizeLabelMap[item.sizeId] ?? `${item.widthCm} Ã— ${item.heightCm} cm`) : `${item.widthCm} Ã— ${item.heightCm} cm`;
-    const selectionLabel = `Backdrop ${itemIdx + 1} â€” ${typeLabel[item.type] ?? item.type} Â ·  ${sizeStr}`;
+    const sizeStr = item.sizeId ? (sizeLabelMap[item.sizeId] ?? `${item.widthCm} x${item.heightCm} cm`) : `${item.widthCm} x${item.heightCm} cm`;
+    const selectionLabel = `Backdrop ${itemIdx + 1} -${typeLabel[item.type] ?? item.type} -${sizeStr}`;
 
     return (
       <div>
@@ -1006,7 +1006,7 @@ function DecorStep({
             style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
               border: item.text.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
               background: item.text.enabled ? accent + "0E" : "white", transition: "all 0.15s" }}>
-            <span style={{ fontSize: 18 }}>âœï¸</span>
+            <span style={{ fontSize: 18 }}></span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: item.text.enabled ? accent : "#1A1A2E" }}>Name Text</div>
               <div style={{ fontSize: 11, color: "#999" }}>Add child's name or short message</div>
@@ -1028,7 +1028,7 @@ function DecorStep({
             style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
               border: item.graphic.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
               background: item.graphic.enabled ? accent + "0E" : "white", transition: "all 0.15s" }}>
-            <span style={{ fontSize: 18 }}>ðŸŽ¨</span>
+            <span style={{ fontSize: 18 }}></span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: item.graphic.enabled ? accent : "#1A1A2E" }}>Theme Graphic</div>
               <div style={{ fontSize: 11, color: "#999" }}>Add a printed theme illustration</div>
@@ -1042,7 +1042,7 @@ function DecorStep({
             style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
               border: print.type === "custom_upload" ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
               background: print.type === "custom_upload" ? accent + "0E" : "white", transition: "all 0.15s" }}>
-            <span style={{ fontSize: 18 }}>ðŸ“Ž</span>
+            <span style={{ fontSize: 18 }}></span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: print.type === "custom_upload" ? accent : "#1A1A2E" }}>Custom Design</div>
               <div style={{ fontSize: 11, color: "#999" }}>Upload your own design</div>
@@ -1058,7 +1058,7 @@ function DecorStep({
 
   return (
     <div className={jakarta.className}>
-      {/* â•â• BACKDROP SECTION â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* == BACKDROP SECTION ================================== */}
       <div style={{ background: "white", border: "1.5px solid #F1D8E2", borderRadius: 22, padding: "20px 18px", marginBottom: 24, boxShadow: "0 4px 20px rgba(39,40,68,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(1)}
@@ -1068,7 +1068,7 @@ function DecorStep({
           </div>
         </div>
 
-      {/* â”€â”€ UNIFIED BACKDROP SELECTOR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* -"--"- UNIFIED BACKDROP SELECTOR -"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"- */}
       <div style={{ background: "white", borderRadius: 16, padding: "16px", marginBottom: 0, border: "1px solid #F1D8E2" }}>
         {/* 4 type cards in a row */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
@@ -1090,9 +1090,9 @@ function DecorStep({
                 minHeight: 160, boxShadow: isSelected ? "0 8px 24px rgba(236,77,141,0.10)" : "none",
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
               }}>
-                {/* Elegant check â€” no SELECTED text */}
+                {/* Elegant check -no SELECTED text */}
                 {isSelected && (
-                  <span style={{ position: "absolute", top: 9, right: 9, background: "#EC4D8D", color: "white", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900 }}>âœ“</span>
+                  <span style={{ position: "absolute", top: 9, right: 9, background: "#EC4D8D", color: "white", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900 }}>v</span>
                 )}
                 {badge && <span style={{ position: "absolute", top: 9, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: isSelected ? "#EC4D8D" : "#FFE8F0", color: isSelected ? "white" : "#EC4D8D", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>{badge}</span>}
                 <div style={{ marginTop: badge ? 10 : 0 }}>
@@ -1104,7 +1104,7 @@ function DecorStep({
           })}
         </div>
 
-        {/* Arch size selector â€” shown when arch is selected */}
+        {/* Arch size selector -shown when arch is selected */}
         {d.backdropItems.some(i => i.type === "arch") && (
           <div style={{ marginTop: 16, padding: "14px 16px", background: "#FFF7FB", borderRadius: 12, border: "1px solid #F1D8E2" }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#73778A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>Choose size</div>
@@ -1126,10 +1126,10 @@ function DecorStep({
                         opacity: !isSelected && d.backdropItems.length >= 3 ? 0.4 : 1 }}>
                       <div style={{ textAlign: "left" }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "#EC4D8D" : "#15182E" }}>{size.label}</div>
-                        <div style={{ fontSize: 11, color: "#73778A", marginTop: 1 }}>{size.widthCm} Ã— {size.heightCm} cm</div>
+                        <div style={{ fontSize: 11, color: "#73778A", marginTop: 1 }}>{size.widthCm} x{size.heightCm} cm</div>
                       </div>
                       <div style={{ width: 20, height: 20, borderRadius: "50%", border: isSelected ? "none" : "1.5px solid #ECEAF1", background: isSelected ? "#EC4D8D" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        {isSelected && <span style={{ color: "white", fontSize: 12, fontWeight: 900 }}>âœ“</span>}
+                        {isSelected && <span style={{ color: "white", fontSize: 12, fontWeight: 900 }}>v</span>}
                       </div>
                     </button>
                     {isSelected && archItem && itemIdx >= 0 && (
@@ -1137,7 +1137,7 @@ function DecorStep({
                     )}
                     {isMedium && !d.backdropItems.some(i => i.type === "arch") && (
                       <div style={{ marginTop: 6, padding: "8px 12px", background: "#F8F0FF", borderRadius: 10, border: "1px solid #D8B4FE", display: "flex", gap: 6, alignItems: "center" }}>
-                        <span style={{ fontSize: 14 }}>âœ¨</span>
+                        <span style={{ fontSize: 14 }}></span>
                         <div style={{ fontSize: 11, color: "#666" }}><span style={{ fontWeight: 700, color: "#7C3AED" }}>Pro tip:</span> Medium is our most popular size.</div>
                       </div>
                     )}
@@ -1167,10 +1167,10 @@ function DecorStep({
                         background: "white", boxShadow: isSel ? "0 2px 10px rgba(236,77,141,0.12)" : "none", transition: "all 0.15s" }}>
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: isSel ? "#EC4D8D" : "#15182E" }}>{size.label}</div>
-                        <div style={{ fontSize: 11, color: "#73778A", marginTop: 1 }}>{size.widthCm} Ã— {size.heightCm} cm</div>
+                        <div style={{ fontSize: 11, color: "#73778A", marginTop: 1 }}>{size.widthCm} x{size.heightCm} cm</div>
                       </div>
                       <div style={{ width: 20, height: 20, borderRadius: "50%", border: isSel ? "none" : "1.5px solid #ECEAF1", background: isSel ? "#EC4D8D" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {isSel && <span style={{ color: "white", fontSize: 12, fontWeight: 900 }}>âœ“</span>}
+                        {isSel && <span style={{ color: "white", fontSize: 12, fontWeight: 900 }}>v</span>}
                       </div>
                     </button>
                   );
@@ -1216,9 +1216,9 @@ function DecorStep({
         {d.backdropItems.length === 0 && (
           <div style={{ textAlign: "center", padding: "8px 0 4px", fontSize: 13, color: "#AAA", fontStyle: "italic" }}>Choose a backdrop above to get started</div>
         )}
-      </div>{/* â”€â”€ end unified backdrop card â”€â”€ */}
+      </div>{/* -"--"- end unified backdrop card -"--"- */}
 
-      {/* Old expandable cards removed â€” unified above. Dead placeholder: */}
+      {/* Old expandable cards removed -unified above. Dead placeholder: */}
       {false && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {/* ARCH BACKDROP */}
           {(() => {
@@ -1228,14 +1228,14 @@ function DecorStep({
               <div style={{ border: hasArch ? `2.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)", borderRadius: 14, overflow: "hidden", background: hasArch ? accent + "08" : "white", transition: "all 0.15s" }}>
                 {/* Header */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px" }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 10, background: hasArch ? accent + "20" : "#F3F0FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>ðŸ”®</div>
+                  <div style={{ width: 44, height: 44, borderRadius: 10, background: hasArch ? accent + "20" : "#F3F0FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>-"</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: hasArch ? accent : "#1A1A2E" }}>Arch Backdrop</div>
-                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Rounded event backdrop Â ·  select 1â€“3 sizes</div>
+                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Rounded event backdrop -select 1--"3 sizes</div>
                   </div>
-                  {hasArch && <span style={{ fontSize: 18, color: accent }}>âœ“</span>}
+                  {hasArch && <span style={{ fontSize: 18, color: accent }}>v</span>}
                 </div>
-                {/* Size options â€” always visible */}
+                {/* Size options -always visible */}
                 <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", padding: "10px 14px 14px", background: "rgba(0,0,0,0.01)" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {ARCH_SIZES.map((size) => {
@@ -1258,14 +1258,14 @@ function DecorStep({
                               opacity: !isSelected && d.backdropItems.length >= 3 ? 0.4 : 1 }}>
                             <div style={{ textAlign: "left" }}>
                               <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? accent : "#1A1A2E" }}>{size.label}</div>
-                              <div style={{ fontSize: 11, color: "#999" }}>{size.widthCm} Ã— {size.heightCm} cm</div>
+                              <div style={{ fontSize: 11, color: "#999" }}>{size.widthCm} x{size.heightCm} cm</div>
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                               <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
                                 background: isSelected ? accent : "rgba(0,0,0,0.06)", color: isSelected ? "white" : "#555" }}>
                                 {isSelected && itemIdx === 0 ? "Included" : "+AED 350"}
                               </span>
-                              {isSelected && <span style={{ color: accent, fontSize: 14 }}>âœ“</span>}
+                              {isSelected && <span style={{ color: accent, fontSize: 14 }}>v</span>}
                             </div>
                           </button>
                           {/* Inline customization for this arch item */}
@@ -1308,7 +1308,7 @@ function DecorStep({
                     width: 44, height: 44, borderRadius: 10, flexShrink: 0,
                     background: hasRectCard ? accent + "20" : "#FFF8F0",
                     display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
-                  }}>ðŸŸ«</div>
+                  }}>-</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: hasRectCard ? accent : "#1A1A2E" }}>Rectangular Backdrop</div>
                     <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Classic straight backdrop</div>
@@ -1321,7 +1321,7 @@ function DecorStep({
                     }}>
                       {rectItems.length > 0 && d.backdropItems.indexOf(rectItems[0]) === 0 ? "Included" : "+AED 350"}
                     </span>
-                    {hasRectCard && <span style={{ fontSize: 16 }}>âœ“</span>}
+                    {hasRectCard && <span style={{ fontSize: 16 }}>v</span>}
                   </div>
                 </div>
 
@@ -1351,9 +1351,9 @@ function DecorStep({
                           >
                             <div>
                               <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? accent : "#1A1A2E" }}>{size.label}</div>
-                              <div style={{ fontSize: 11, color: "#999" }}>{size.widthCm} Ã— {size.heightCm} cm</div>
+                              <div style={{ fontSize: 11, color: "#999" }}>{size.widthCm} x{size.heightCm} cm</div>
                             </div>
-                            {isSelected && <span style={{ color: accent, fontWeight: 700, fontSize: 16 }}>âœ“</span>}
+                            {isSelected && <span style={{ color: accent, fontWeight: 700, fontSize: 16 }}>v</span>}
                           </button>
                         );
                       })}
@@ -1381,16 +1381,16 @@ function DecorStep({
               <div style={{ border: hasRound ? `2.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)", borderRadius: 14, overflow: "hidden", background: hasRound ? accent + "08" : "white", transition: "all 0.15s" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}
                   onClick={toggleRound}>
-                  <div style={{ width: 44, height: 44, borderRadius: 10, background: hasRound ? accent + "20" : "#F0FDF4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>â­•</div>
+                  <div style={{ width: 44, height: 44, borderRadius: 10, background: hasRound ? accent + "20" : "#F0FDF4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>--</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: hasRound ? accent : "#1A1A2E" }}>Round Backdrop</div>
-                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Soft circular backdrop Â ·  used alone Â ·  120 Ã— 120 cm</div>
+                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Soft circular backdrop -used alone -120 x120 cm</div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
                     <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: hasRound ? accent : "rgba(0,0,0,0.06)", color: hasRound ? "white" : "#555" }}>
                       {hasRound && itemIdx === 0 ? "Included" : "+AED 350"}
                     </span>
-                    {hasRound && <span style={{ fontSize: 16 }}>âœ“</span>}
+                    {hasRound && <span style={{ fontSize: 16 }}>v</span>}
                   </div>
                 </div>
                 {/* Inline customization */}
@@ -1429,10 +1429,10 @@ function DecorStep({
                     width: 44, height: 44, borderRadius: 10, flexShrink: 0,
                     background: hasShimmer ? accent + "20" : "#F0F9FF",
                     display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
-                  }}>âœ¨</div>
+                  }}></div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: hasShimmer ? accent : "#1A1A2E" }}>Shimmer Wall</div>
-                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Sparkly sequin wall Â ·  200 Ã— 200 cm</div>
+                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Sparkly sequin wall -200 x200 cm</div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                     <span style={{
@@ -1442,7 +1442,7 @@ function DecorStep({
                     }}>
                       {hasShimmer && d.backdropItems.indexOf(shimmerItems[0]) === 0 ? "Included" : "+AED 430"}
                     </span>
-                    {hasShimmer && <span style={{ fontSize: 16 }}>âœ“</span>}
+                    {hasShimmer && <span style={{ fontSize: 16 }}>v</span>}
                   </div>
                 </div>
 
@@ -1483,7 +1483,7 @@ function DecorStep({
           })()}
         </div>}
 
-      {/* PER-BACKDROP CUSTOMIZATION â€” REMOVED: inline per card now */}
+      {/* PER-BACKDROP CUSTOMIZATION -REMOVED: inline per card now */}
       {false && d.backdropItems.length > 0 && (
         <>
         <div style={card}>
@@ -1498,14 +1498,14 @@ function DecorStep({
                 : item.type === "rect"
                   ? (RECT_SIZES.find((s) => s.id === item.sizeId)?.label ?? "")
                   : item.widthCm
-                    ? `${item.widthCm} Ã— ${item.heightCm} cm`
+                    ? `${item.widthCm} x${item.heightCm} cm`
                     : "";
 
             return (
               <div key={item.id} style={{ border: `1.5px solid ${accent}28`, borderRadius: 14, padding: 14, marginBottom: 10, background: "#FAFAFA" }}>
                 {/* Header */}
                 <div style={{ fontSize: 12, fontWeight: 700, color: accent, marginBottom: 12 }}>
-                  Backdrop {idx + 1} â€” {typeLabel}{sizeLabel ? ` Â ·  ${sizeLabel}` : ""}
+                  Backdrop {idx + 1} -{typeLabel}{sizeLabel ? ` -${sizeLabel}` : ""}
                 </div>
 
                 {/* Color */}
@@ -1560,14 +1560,14 @@ function DecorStep({
                         display: "flex", alignItems: "center", gap: 12, transition: "all 0.15s",
                       }}
                     >
-                      <div style={{ fontSize: 22 }}>âœï¸</div>
+                      <div style={{ fontSize: 22 }}></div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: item.text.enabled ? accent : "#1A1A2E" }}>Name Text</div>
                         <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>Add child's name or short message</div>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: item.text.enabled ? accent : "rgba(0,0,0,0.06)", color: item.text.enabled ? "white" : "#555" }}>+AED 80</span>
-                        {item.text.enabled && <span style={{ fontSize: 14 }}>âœ“</span>}
+                        {item.text.enabled && <span style={{ fontSize: 14 }}>v</span>}
                       </div>
                     </div>
                     {item.text.enabled && (
@@ -1622,14 +1622,14 @@ function DecorStep({
                         display: "flex", alignItems: "center", gap: 12, transition: "all 0.15s",
                       }}
                     >
-                      <div style={{ fontSize: 22 }}>ðŸŽ¨</div>
+                      <div style={{ fontSize: 22 }}></div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: item.graphic.enabled ? accent : "#1A1A2E" }}>Theme Graphic</div>
                         <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>Add a printed theme illustration</div>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: item.graphic.enabled ? accent : "rgba(0,0,0,0.06)", color: item.graphic.enabled ? "white" : "#555" }}>+AED 150</span>
-                        {item.graphic.enabled && <span style={{ fontSize: 14 }}>âœ“</span>}
+                        {item.graphic.enabled && <span style={{ fontSize: 14 }}>v</span>}
                       </div>
                     </div>
                     {/* Graphic style sub-options when enabled */}
@@ -1651,7 +1651,7 @@ function DecorStep({
                       </div>
                     )}
 
-                    {/* Custom Design card â€” global setting, surfaced per-backdrop */}
+                    {/* Custom Design card -global setting, surfaced per-backdrop */}
                     <div
                       onClick={() => setPrint(print.type === "custom_upload" ? "none" : "custom_upload")}
                       style={{
@@ -1661,14 +1661,14 @@ function DecorStep({
                         display: "flex", alignItems: "center", gap: 12, transition: "all 0.15s",
                       }}
                     >
-                      <div style={{ fontSize: 22 }}>ðŸ“Ž</div>
+                      <div style={{ fontSize: 22 }}></div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: print.type === "custom_upload" ? accent : "#1A1A2E" }}>Custom Design</div>
                         <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>Upload your own design</div>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: print.type === "custom_upload" ? accent : "rgba(0,0,0,0.06)", color: print.type === "custom_upload" ? "white" : "#555" }}>+AED 200</span>
-                        {print.type === "custom_upload" && <span style={{ fontSize: 14 }}>âœ“</span>}
+                        {print.type === "custom_upload" && <span style={{ fontSize: 14 }}>v</span>}
                       </div>
                     </div>
                     {print.type === "custom_upload" && (
@@ -1685,13 +1685,13 @@ function DecorStep({
                         </label>
                       </div>
                     )}
-                  </div>{/* â”€â”€ end add-ons div */}
+                  </div>{/* -"--"- end add-ons div */}
                 </div>
               </div>
             );
           })}
 
-          {/* Shared text layout controls â€” visible only when any panel has text on */}
+          {/* Shared text layout controls -visible only when any panel has text on */}
           {d.backdropItems.some((i) => i.text.enabled) && (
             <div style={{ marginTop: 6, padding: 12, background: accent + "06", borderRadius: 12, border: `1px solid ${accent}20` }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: "#555", display: "block", marginBottom: 10 }}>Text Layout</span>
@@ -1718,7 +1718,7 @@ function DecorStep({
                 <div>
                   <div className="mb-1 flex items-center justify-between">
                     <span className="text-[11px] font-medium text-black/50">Line spacing</span>
-                    <span className="text-[11px] text-black/40">{(t.lineHeight / 100).toFixed(1)}Ã—</span>
+                    <span className="text-[11px] text-black/40">{(t.lineHeight / 100).toFixed(1)}--</span>
                   </div>
                   <input type="range" min={100} max={240} step={10} value={t.lineHeight}
                     onChange={(e) => setText({ lineHeight: Number(e.target.value) })} className="w-full accent-accent" />
@@ -1745,9 +1745,9 @@ function DecorStep({
         </div>
         </>
       )}
-      </div>{/* â”€â”€ end BACKDROP section â”€â”€ */}
+      </div>{/* -"--"- end BACKDROP section -"--"- */}
 
-      {/* â•â• BALLOONS SECTION â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* == BALLOONS SECTION ================================== */}
       <div style={{ background: "#EFF8FF", border: "1px solid #BFDBFE", borderRadius: 20, padding: "14px 12px", marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(2)}
@@ -1757,14 +1757,14 @@ function DecorStep({
           </div>
         </div>
 
-      {/* SEMPERTEX PICKER â€” default: chips only; expanded: full browser */}
+      {/* SEMPERTEX PICKER -default: chips only; expanded: full browser */}
       <div style={card}>
         {/* Garland note */}
         <div style={{ marginBottom: 14, padding: "8px 14px", background: "#F0F9FF", borderRadius: 10, border: "1px solid #BAE6FD", fontSize: 12, color: "#0369A1", fontWeight: 600 }}>
-          âœ¦ Garland style is included in your package â€” this step only selects production colors.
+          * Garland style is included in your package -this step only selects production colors.
         </div>
 
-        {/* Selected chips row â€” always visible */}
+        {/* Selected chips row -always visible */}
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#73778A", letterSpacing: "0.06em", textTransform: "uppercase" }}>
@@ -1785,7 +1785,7 @@ function DecorStep({
           {/* Chips */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, minHeight: 34 }}>
             {sempertexIds.length === 0 && (
-              <span style={{ fontSize: 12, color: "#A1A3B4", fontStyle: "italic" }}>No colors selected â€” click "Change colors" to pick.</span>
+              <span style={{ fontSize: 12, color: "#A1A3B4", fontStyle: "italic" }}>No colors selected -click "Change colors" to pick.</span>
             )}
             {sempertexIds.map(id => {
               const c = SEMPERTEX_CATALOG.find(s => s.id === id);
@@ -1794,8 +1794,8 @@ function DecorStep({
                 <button key={id} type="button" onClick={() => toggleSempertex(id)}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px 4px 6px", borderRadius: 999, border: "1.5px solid #F7A7C8", background: "#FFF7FB", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#15182E" }}>
                   <span style={{ width: 14, height: 14, borderRadius: "50%", background: c.hex, border: "1px solid rgba(0,0,0,0.12)", flexShrink: 0, display: "inline-block" }} />
-                  {c.code} Â ·  {c.colorName}
-                  <span style={{ marginLeft: 2, color: "#EC4D8D", fontWeight: 900 }}>âœ•</span>
+                  {c.code} -{c.colorName}
+                  <span style={{ marginLeft: 2, color: "#EC4D8D", fontWeight: 900 }}>-</span>
                 </button>
               );
             })}
@@ -1847,7 +1847,7 @@ function DecorStep({
                           border: sel ? "2px solid #EC4D8D" : "1.5px solid #ECEAF1",
                           background: sel ? "#FFF7FB" : "white",
                           opacity: maxed ? 0.42 : 1, transition: "all 0.15s", position: "relative", textAlign: "left" }}>
-                        {sel && <span style={{ position: "absolute", top: 5, right: 5, width: 16, height: 16, borderRadius: "50%", background: "#EC4D8D", color: "white", fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>âœ“</span>}
+                        {sel && <span style={{ position: "absolute", top: 5, right: 5, width: 16, height: 16, borderRadius: "50%", background: "#EC4D8D", color: "white", fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>v</span>}
                         <span style={{ width: 30, height: 30, borderRadius: "50%", background: c.hex, border: "1.5px solid rgba(0,0,0,0.10)", flexShrink: 0, display: "block" }} />
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: 800, color: sel ? "#EC4D8D" : "#15182E" }}>{c.code}</div>
@@ -1864,7 +1864,7 @@ function DecorStep({
         )}
       </div>
 
-      {/* BACKDROP PRINT â€” moved to Customize each backdrop */}
+      {/* BACKDROP PRINT -moved to Customize each backdrop */}
       {false && <div style={card}>
         {secLabel("Add text or design")}
         {secSub("Add a printed graphic or text to your backdrop")}
@@ -1888,7 +1888,7 @@ function DecorStep({
                     position: "absolute", top: 5, right: 5, width: 16, height: 16,
                     borderRadius: "50%", background: accent, color: "white",
                     fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700,
-                  }}>âœ“</span>
+                  }}>v</span>
                 )}
                 <div style={{ fontSize: 12, fontWeight: 600, color: selected ? accent : "#1A1A2E" }}>{opt.label}</div>
                 <div style={{ marginTop: 2, fontSize: 11, color: "rgba(0,0,0,0.5)" }}>{opt.desc}</div>
@@ -1976,9 +1976,9 @@ function DecorStep({
         )}
       </div>}
 
-      </div>{/* â”€â”€ end BALLOONS section â”€â”€ */}
+      </div>{/* -"--"- end BALLOONS section -"--"- */}
 
-      {/* â•â• EXTRAS SECTION â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* == EXTRAS SECTION ==================================== */}
       <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 20, padding: "14px 12px", marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(3)}
@@ -2008,7 +2008,7 @@ function DecorStep({
               <div style={{ fontSize: 12, fontWeight: 600, color: cut.size === "none" ? accent : "#1A1A2E" }}>No Cutouts</div>
               <div className="text-[11px] text-black/50">Skip cutouts for this setup</div>
             </div>
-            <span style={checkBadge(cut.size === "none")}>âœ“</span>
+            <span style={checkBadge(cut.size === "none")}>v</span>
           </button>
 
           {/* Paid cutout set options */}
@@ -2038,7 +2038,7 @@ function DecorStep({
                       color: accent, background: accent + "18", padding: "2px 8px", borderRadius: 20,
                     }}>+AED {set.price}</span>
                   </div>
-                  <span style={checkBadge(selected)}>âœ“</span>
+                  <span style={checkBadge(selected)}>v</span>
                 </button>
 
                 {selected && (
@@ -2148,7 +2148,7 @@ function DecorStep({
           })}
         </div>
       </div>
-      </div>{/* â”€â”€ end EXTRAS section â”€â”€ */}
+      </div>{/* -"--"- end EXTRAS section -"--"- */}
     </div>
   );
 }
