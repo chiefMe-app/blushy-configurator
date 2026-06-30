@@ -895,6 +895,7 @@ export function useFinalRender(config: BuilderConfig) {
           renderMode:          "first_generate",
           force:               true,
           currentSceneHash:    liveHash,
+          structureHash:       liveStructureHash,
           // Exact selected Sempertex balloon palette (code/colorName/finish/family) —
           // empty/undefined lets the route fall back to the theme balloon palette.
           sempertexSelection:  d.sempertexSelection ?? [],
@@ -953,6 +954,8 @@ export function useFinalRender(config: BuilderConfig) {
           previousFinalRenderUrl: currentFinalRenderUrl.current,
           renderMode:            "edit_existing",
           editDescription,
+          currentSceneHash:      computeSceneHash(configRef.current),
+          structureHash:         computeStructureHash(configRef.current),
           // Exact selected Sempertex palette — lets the route apply a strict
           // BALLOON COLOR LOCK even for in-place recolor edits.
           sempertexSelection:    configRef.current.decor.sempertexSelection ?? [],

@@ -62,6 +62,8 @@ interface RequestBody {
   editDescription?:        string;
   force?:                  boolean;
   currentSceneHash?:       string;
+  /** Client-computed structure hash (scene hash minus balloon colors) — echoed back in diagnostics. */
+  structureHash?:          string;
   renderAspectRatio?:      FalImageSize; // dynamic image_size from real panel dimensions
   /** Exact selected Sempertex balloon palette — empty/undefined falls back to theme palette. */
   sempertexSelection?:     SempertexSelectionItem[];
@@ -1047,7 +1049,9 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
       ? `No wrong balloon colors. No unrelated balloon colors. No theme-default balloon colors. ` +
         `No unselected balloon colors. No ignoring selected palette. No changing backdrop size when color changes. ` +
         `No orange balloons when not selected. No yellow balloons when not selected. ` +
-        `No green balloons when not selected. No blue balloons when not selected. `
+        `No green balloons when not selected. No blue balloons when not selected. ` +
+        `No unrelated metallic balloons. No unselected gold balloons. No unselected rose gold balloons. ` +
+        `No unselected yellow balloons. `
       : "") +
     `No balloons all the same size. No mostly small balloons. No garland without 36 inch balloons. ` +
     `No tiny-only garland. No micro-balloon chain.`
@@ -1078,6 +1082,7 @@ export async function POST(req: NextRequest) {
     renderMode, editDescription,
     force             = false,
     currentSceneHash,
+    structureHash,
     renderAspectRatio = "landscape_4_3",  // default fallback if not sent
     sempertexSelection,
   } = body;
@@ -1185,6 +1190,12 @@ export async function POST(req: NextRequest) {
       plinthCount:              sceneModel.plinths.length,
       isBalloonGarlandExpected: sceneModel.balloons.style !== "none",
       isPlinthExpected:         sceneModel.plinths.length > 0,
+      // Single source of truth for balloon color — exactly what the prompt used.
+      effectiveSempertexSelection: sempertexSelection ?? [],
+      effectiveBalloonColors:      sceneModel.balloons.colors ?? [],
+      requestedRenderMode:         renderMode ?? null,
+      structureHash:               structureHash ?? null,
+      sceneHash:                   currentSceneHash ?? null,
     };
 
     // ── Primary path: layout-reference edit ────────────────────────────────
