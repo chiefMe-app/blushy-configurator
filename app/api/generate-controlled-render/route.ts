@@ -485,7 +485,8 @@ function buildNegativePrompt(
 
   const hasRoundPanel = items.some((p) => p.type === "round");
   const roundPropNeg = hasRoundPanel
-    ? ", wall-mounted circle, flat painted circle on wall, tiny round backdrop, no support stand"
+    ? ", wall-mounted circle, flat painted circle on wall, tiny round backdrop, no support stand, " +
+      "detached loose floor balloons, random isolated balloons on the floor"
     : "";
 
   const structureNeg =
@@ -493,8 +494,14 @@ function buildNegativePrompt(
     "changed panel silhouette, wrong panel proportions, oversized backdrop wall" +
     archPropNeg + roundPropNeg;
 
+  const archBalloonNeg = hasArchPanel
+    ? ", tiny balloons, sparse garland, thin single-file balloon chain, evenly spaced small balloons, " +
+      "weak floor volume, detached floor balloons, floating balloons, gap between balloons and arch"
+    : "";
+
   const balloonNeg = "bead-like balloons, uniform balloon sizes, fake balloons, " +
-    "gap between balloons and backdrop, detached garland, floating balloon cluster, separated balloons";
+    "gap between balloons and backdrop, detached garland, floating balloon cluster, separated balloons" +
+    archBalloonNeg;
 
   // Balloon color fidelity — active when a palette is configured
   const hasBalloonColors = (sceneModel?.balloons?.colors?.length ?? 0) > 0;
@@ -882,12 +889,19 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
   const balloonColors = sceneModel.balloons.colors.length > 0
     ? sceneModel.balloons.colors.slice(0, 4).join(", ")
     : "icy blue, white, silver";
+  const hasArchPanelInScene = sceneModel.panels.some((p) => p.type === "arch");
+  const archGarlandExtra = hasArchPanelInScene
+    ? ` Premium organic balloon garland with large, medium, and small balloons nested together ` +
+      `in lush clustered bunches; fuller volume at the bottom on the floor; ` +
+      `balloons wrap tightly around the arch edge with no visible gap; not a thin single-file chain.`
+    : "";
   const garlandDesc   = balloonStyle === "none"
     ? "No balloon garland. "
     : `organic half balloon garland on the right side, dense and premium, ` +
       `individual ${balloonColors} latex balloons cascading from the top corner to the floor. ` +
       `The balloon garland must be attached directly to the backdrop edge with no visible gap. ` +
-      `Balloons must closely follow the backdrop contour and look professionally installed onto the structure.`;
+      `Balloons must closely follow the backdrop contour and look professionally installed onto the structure.` +
+      archGarlandExtra;
 
   // ── Multi-panel negatives ─────────────────────────────────────────────────
   const hasShimmerInMulti = isMulti && sceneModel.panels.some((p) => p.type === "shimmer_wall");
