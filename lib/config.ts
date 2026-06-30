@@ -508,6 +508,7 @@ export interface SempertexSelection {
   colorName: string;
   finish: string;
   family: string;
+  hex: string;
 }
 
 export interface Option<T extends string> {

@@ -50,6 +50,7 @@ interface SempertexSelectionItem {
   colorName: string;
   finish:    string;
   family:    string;
+  hex?:      string;
 }
 
 interface RequestBody {
@@ -527,8 +528,15 @@ function buildNegativePrompt(
   const balloonColorNeg = hasBalloonColors
     ? ", mostly white balloons, all-white garland, desaturated balloons, " +
       "colorless balloon garland, washed-out balloon colors, faded balloon palette, " +
-      "wrong balloon colors, ignoring selected palette, changing backdrop size when color changes"
+      "wrong balloon colors, unrelated balloon colors, theme-default balloon colors, " +
+      "ignoring selected palette, changing backdrop size when color changes, " +
+      "orange balloons when not selected, yellow balloons when not selected, " +
+      "green balloons when not selected, blue balloons when not selected"
     : "";
+
+  const balloonSizeStructureNeg =
+    ", all balloons same size, mostly small balloons, no 36 inch balloons, " +
+    "tiny-only garland, micro-balloon chain";
 
   const promptProbeForTheme = promptInput ? JSON.stringify(promptInput).toLowerCase() : "";
   const balloonColorProbe = (sceneModel?.balloons?.colors ?? []).join(" ").toLowerCase();
@@ -681,6 +689,7 @@ function buildNegativePrompt(
     structureNeg,
     balloonNeg,
     balloonColorNeg,
+    balloonSizeStructureNeg,
     frozenPaletteNeg,
     plinthNeg,
     plinthGeometryNeg,
@@ -913,9 +922,14 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
 
   // ── Balloon garland description ───────────────────────────────────────────
   const balloonStyle  = sceneModel.balloons.style;
-  const balloonColors = sceneModel.balloons.colors.length > 0
-    ? sceneModel.balloons.colors.slice(0, 4).join(", ")
-    : "icy blue, white, silver";
+  const hasSempertexLock = balloonStyle !== "none" && !!sempertexSelection && sempertexSelection.length > 0;
+  // When a Sempertex palette is selected it fully overrides the theme palette —
+  // never blend in theme defaults like "icy blue, white, silver".
+  const balloonColors = hasSempertexLock
+    ? sempertexSelection!.map((c) => c.colorName).join(", ")
+    : sceneModel.balloons.colors.length > 0
+      ? sceneModel.balloons.colors.slice(0, 4).join(", ")
+      : "icy blue, white, silver";
   const hasArchPanelInScene = sceneModel.panels.some((p) => p.type === "arch");
   const archGarlandExtra = hasArchPanelInScene
     ? ` Premium organic balloon garland with large, medium, and small balloons nested together ` +
@@ -932,15 +946,17 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
       `floor buildup directly in front of the arch face.`
     : "";
   const balloonSizeDesc =
-    ` Use a clear mix of balloon sizes: several larger ~36 inch focal statement balloons, medium ~12 inch ` +
-    `balloons, and small ~5 inch filler balloons, nested together in rich clustered bunches for a full, ` +
-    `premium, intentional look — not a thin chain of same-size balloons. ` +
+    ` Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
+    `standard balloons, and small 5 inch filler balloons. Include at least 5 visible 36 inch statement ` +
+    `balloons distributed through the garland at the top, side, and base. 36 inch balloons must be clearly ` +
+    `larger than all others. 5 inch balloons only appear as small filler clusters attached to larger balloons. ` +
     `Any balloons resting on the floor must be part of the garland's base cluster, visually connected to ` +
     `and touching the main garland — never scattered, detached, or floating separately on the floor.`;
-  const sempertexClause = balloonStyle !== "none" && sempertexSelection && sempertexSelection.length > 0
-    ? ` Use this exact selected Sempertex balloon palette for all balloons: ` +
-      sempertexSelection.map((c) => `${c.code} - ${c.colorName} - ${c.finish}`).join(", ") +
-      `. Do not substitute unrelated colors.`
+  const sempertexClause = hasSempertexLock
+    ? ` BALLOON COLOR LOCK: Use ONLY these selected Sempertex balloon colors for every balloon: ` +
+      sempertexSelection!.map((c) => `${c.code} - ${c.colorName} - ${c.finish} - ${c.hex ?? ""}`).join(", ") +
+      `. Do not invent, substitute, blend, or add any other balloon colors. ` +
+      `Ignore theme palette for balloons when selected Sempertex palette exists.`
     : "";
   const garlandDesc   = balloonStyle === "none"
     ? "No balloon garland. "
@@ -1013,7 +1029,14 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
     `No ornate luxury room. No cream or brown walls. No orange or yellow white balance. ` +
     `No overly warm shadows. No dark moody room. ` +
     `No plants. No furniture. No chairs. No mirrors. No doors. No visible support legs. No black stands. ` +
-    (sempertexClause ? `No wrong balloon colors. No ignoring selected palette. No changing backdrop size when color changes.` : "")
+    (sempertexClause
+      ? `No wrong balloon colors. No unrelated balloon colors. No theme-default balloon colors. ` +
+        `No ignoring selected palette. No changing backdrop size when color changes. ` +
+        `No orange balloons when not selected. No yellow balloons when not selected. ` +
+        `No green balloons when not selected. No blue balloons when not selected. `
+      : "") +
+    `No balloons all the same size. No mostly small balloons. No garland without 36 inch balloons. ` +
+    `No tiny-only garland. No micro-balloon chain.`
   );
 }
 

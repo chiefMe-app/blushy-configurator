@@ -828,7 +828,7 @@ function DecorStep({
     if (selected.length > 0) {
       patchDecor({
         balloonColors: selected.map((c) => c.hex),
-        sempertexSelection: selected.map((c) => ({ code: c.code, colorName: c.colorName, finish: c.finish, family: c.family })),
+        sempertexSelection: selected.map((c) => ({ code: c.code, colorName: c.colorName, finish: c.finish, family: c.family, hex: c.hex })),
       });
     } else {
       const t = themeById(config.theme);
