@@ -1131,7 +1131,7 @@ export default function SetupPreview({
               src={finalUrl}
               alt="Final design render"
               style={{ opacity: finalOpacity, transition: "opacity 0.4s ease" }}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain object-center"
             />
           ) : finalIsLoading ? (
             <div className="flex h-full flex-col items-center justify-center gap-3">

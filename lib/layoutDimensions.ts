@@ -54,7 +54,7 @@ export function getPanelDimensions(
     return RECT_DIMS[sizeId as RectDimKey];
   }
   // Defaults for unsized types
-  if (type === "round")        return { widthCm: 120, heightCm: 120 };
+  if (type === "round")        return { widthCm: 200, heightCm: 200 };
   if (type === "shimmer_wall") return { widthCm: 200, heightCm: 200 };
   if (type === "wavy")         return { widthCm: 100, heightCm: 200 };
   return { widthCm: 100, heightCm: 200 };

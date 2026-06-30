@@ -1007,8 +1007,8 @@ function DecorStep({
   // Collapsible customize row -shows summary + button, expands on demand
   function BackdropCustomizeRow({ item, itemIdx }: { item: BackdropItem; itemIdx: number }) {
     const sizeLabelMap = Object.fromEntries([...ARCH_SIZES, ...RECT_SIZES].map(s => [s.id, s.label]));
-    const sizeStr = item.sizeId ? (sizeLabelMap[item.sizeId] ?? `${item.widthCm} x${item.heightCm} cm`) : `${item.widthCm} x${item.heightCm} cm`;
-    const summaryLabel = `Backdrop ${itemIdx + 1} -${TYPE_LABEL[item.type] ?? item.type} -${sizeStr}`;
+    const sizeStr = item.sizeId ? (sizeLabelMap[item.sizeId] ?? `${item.widthCm} x ${item.heightCm} cm`) : `${item.widthCm} x ${item.heightCm} cm`;
+    const summaryLabel = `Backdrop ${itemIdx + 1} - ${TYPE_LABEL[item.type] ?? item.type} - ${sizeStr}`;
     const isOpen = openCustomizeIds.has(item.id);
     return (
       <div style={{ marginTop: 12, borderRadius: 12, border: "1.5px solid #F1D8E2", background: "white", overflow: "hidden" }}>
@@ -1039,8 +1039,8 @@ function DecorStep({
     // Build the label: "Backdrop N -Type -Size"
     const typeLabel: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", shimmer_wall: "Shimmer Wall" };
     const sizeLabelMap = Object.fromEntries([...ARCH_SIZES, ...RECT_SIZES].map(s => [s.id, s.label]));
-    const sizeStr = item.sizeId ? (sizeLabelMap[item.sizeId] ?? `${item.widthCm} x${item.heightCm} cm`) : `${item.widthCm} x${item.heightCm} cm`;
-    const selectionLabel = `Backdrop ${itemIdx + 1} -${typeLabel[item.type] ?? item.type} -${sizeStr}`;
+    const sizeStr = item.sizeId ? (sizeLabelMap[item.sizeId] ?? `${item.widthCm} x ${item.heightCm} cm`) : `${item.widthCm} x ${item.heightCm} cm`;
+    const selectionLabel = `Backdrop ${itemIdx + 1} - ${typeLabel[item.type] ?? item.type} - ${sizeStr}`;
 
     return (
       <div>
@@ -1448,7 +1448,7 @@ function DecorStep({
                   <div style={{ width: 44, height: 44, borderRadius: 10, background: hasRound ? accent + "20" : "#F0FDF4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>--</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: hasRound ? accent : "#1A1A2E" }}>Round Backdrop</div>
-                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Soft circular backdrop -used alone -120 x120 cm</div>
+                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Soft circular backdrop - used alone - 200 x 200 cm</div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
                     <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: hasRound ? accent : "rgba(0,0,0,0.06)", color: hasRound ? "white" : "#555" }}>

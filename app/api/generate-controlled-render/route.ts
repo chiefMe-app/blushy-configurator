@@ -483,12 +483,18 @@ function buildNegativePrompt(
       "wide rounded wall, giant arch, oversized event wall, backdrop wider than configured size"
     : "";
 
+  const hasRoundPanel = items.some((p) => p.type === "round");
+  const roundPropNeg = hasRoundPanel
+    ? ", wall-mounted circle, flat painted circle on wall, tiny round backdrop, no support stand"
+    : "";
+
   const structureNeg =
     "wrong number of panels, extra backdrop panel, missing backdrop panel, " +
     "changed panel silhouette, wrong panel proportions, oversized backdrop wall" +
-    archPropNeg;
+    archPropNeg + roundPropNeg;
 
-  const balloonNeg = "bead-like balloons, uniform balloon sizes, fake balloons";
+  const balloonNeg = "bead-like balloons, uniform balloon sizes, fake balloons, " +
+    "gap between balloons and backdrop, detached garland, floating balloon cluster, separated balloons";
 
   // Balloon color fidelity — active when a palette is configured
   const hasBalloonColors = (sceneModel?.balloons?.colors?.length ?? 0) > 0;
@@ -781,6 +787,8 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
         `and cascading richly all the way down the right side to the floor. ` +
         `The garland must be lush, full volume, and layered — not sparse, thin, or flat. ` +
         `Mix large, medium, and small balloons for maximum organic depth and texture. ` +
+        `The balloon garland must be attached directly to the backdrop edge with no visible gap. ` +
+        `Balloons must closely follow the backdrop contour and look professionally installed onto the structure. ` +
         `Balloon palette: ${bColors}. ` +
         chromeBalloonNote +
         `Do not omit the balloon garland. Do not reduce the garland volume.`
@@ -817,6 +825,11 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
         `${sc} shimmer finish, regular neat grid of small flat square ${sc} sequin tiles, ` +
         `clean reflective sparkle, flat tiled sequin surface, ` +
         `NOT a matte board, NOT a cream backdrop, NOT crumpled foil`;
+    } else if (p.type === "round") {
+      backdropDesc =
+        `freestanding circular event backdrop panel, ${p.widthCm}cm x ${p.heightCm}cm, ` +
+        `supported by its own metal stand and base feet, positioned slightly in front of the wall, ` +
+        `not wall-mounted or painted on the wall`;
     } else {
       backdropDesc =
         `single ${panelTypeLabel(p.type)} cream-white backdrop board, ` +
@@ -872,7 +885,9 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
   const garlandDesc   = balloonStyle === "none"
     ? "No balloon garland. "
     : `organic half balloon garland on the right side, dense and premium, ` +
-      `individual ${balloonColors} latex balloons cascading from the top corner to the floor`;
+      `individual ${balloonColors} latex balloons cascading from the top corner to the floor. ` +
+      `The balloon garland must be attached directly to the backdrop edge with no visible gap. ` +
+      `Balloons must closely follow the backdrop contour and look professionally installed onto the structure.`;
 
   // ── Multi-panel negatives ─────────────────────────────────────────────────
   const hasShimmerInMulti = isMulti && sceneModel.panels.some((p) => p.type === "shimmer_wall");

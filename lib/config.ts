@@ -352,7 +352,7 @@ export function makeBackdropItem(
     const s = RECT_SIZES.find((r) => r.id === sizeId);
     if (s) { widthCm = s.widthCm; heightCm = s.heightCm; }
   } else if (type === "round") {
-    widthCm = 120; heightCm = 120;
+    widthCm = 200; heightCm = 200;
   } else if (type === "shimmer_wall") {
     widthCm = 200; heightCm = 200;
   }
