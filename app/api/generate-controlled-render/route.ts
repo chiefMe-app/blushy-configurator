@@ -29,15 +29,48 @@ import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
 import { generateStructureSilhouette } from "@/lib/generateStructureSilhouette";
 import { type BalloonStyleId } from "@/lib/config";
 
-// first_generate (no layout guide): pure text-to-image fallback
-const FAL_T2I_ENDPOINT = "https://fal.run/fal-ai/flux-2-pro";
+// ── Model routing ────────────────────────────────────────────────────────
+// AI_RENDER_MODEL_MODE controls cost: turbo (default, cheapest) | dev | pro.
+// Used for first_generate (layout-reference edit), edit_existing (color-only
+// / style-tweak recolor), and the pure text-to-image fallback — so the whole
+// pipeline scales cost together under one switch.
+type ModelMode = "turbo" | "dev" | "pro";
 
-// first_generate (primary): clean layout reference → premium edit
-// Verified schema: image_urls (array, base64 data URIs accepted), prompt, image_size, seed, output_format
-const FAL_EDIT_MODEL_ID = "fal-ai/flux-2-pro/edit";
+function getModelMode(): ModelMode {
+  const raw = (process.env.AI_RENDER_MODEL_MODE || "turbo").toLowerCase();
+  return raw === "pro" || raw === "dev" ? raw : "turbo";
+}
 
-// first_generate (with layout guide) + edit_existing: image-guided Kontext
-const KONTEXT_ENDPOINT = "https://fal.run/fal-ai/flux-pro/kontext";
+function getEditModelId(mode: ModelMode): string {
+  if (mode === "pro") return "fal-ai/flux-2-pro/edit";
+  if (mode === "dev") return "fal-ai/flux-2/edit";
+  return "fal-ai/flux-2/turbo/edit";
+}
+
+// first_generate (no layout guide): pure text-to-image fallback — same mode switch
+function getT2IModelId(mode: ModelMode): string {
+  if (mode === "pro") return "fal-ai/flux-2-pro";
+  if (mode === "dev") return "fal-ai/flux-2";
+  return "fal-ai/flux-2/turbo";
+}
+function getT2IEndpoint(mode: ModelMode): string {
+  return `https://fal.run/${getT2IModelId(mode)}`;
+}
+
+// ── Simple in-memory render cache ───────────────────────────────────────
+// Keyed by sceneHash:requestedRenderMode:modelMode. Only successful results
+// are cached. Persists for the lifetime of the server process (sufficient
+// for a single-instance/dev deployment — not a distributed cache).
+interface RenderCacheEntry {
+  imageUrl: string;
+  diagInfo: Record<string, unknown>;
+  extra:    Record<string, unknown>;
+}
+const renderCache = new Map<string, RenderCacheEntry>();
+
+function buildCacheKey(sceneHash: string | undefined, requestedRenderMode: string, modelMode: ModelMode): string {
+  return `${sceneHash ?? "nohash"}:${requestedRenderMode}:${modelMode}`;
+}
 
 export const runtime  = "nodejs";
 export const dynamic  = "force-dynamic"; // prevent Next.js from caching route responses
@@ -1115,6 +1148,23 @@ export async function POST(req: NextRequest) {
   const hasText    = sceneModel.panels.some((p) => p.text.enabled && p.text.value.trim());
   const hasGraphic = sceneModel.panels.some((p) => p.graphic.enabled);
 
+  // ── Model routing + cache lookup ──────────────────────────────────────
+  const modelMode    = getModelMode();
+  const editModelId  = getEditModelId(modelMode);
+  const cacheKey     = buildCacheKey(currentSceneHash, renderMode, modelMode);
+  const cached       = renderCache.get(cacheKey);
+  if (cached) {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[generate-controlled-render] cache hit:", cacheKey);
+    }
+    return NextResponse.json({
+      imageUrl: cached.imageUrl,
+      ...cached.extra,
+      ...cached.diagInfo,
+      cacheHit: true,
+    });
+  }
+
   if (process.env.NODE_ENV === "development") {
     console.group("[generate-controlled-render] incoming request");
     console.log("renderMode:              ", renderMode);
@@ -1134,40 +1184,77 @@ export async function POST(req: NextRequest) {
 
   fal.config({ credentials: falKey });
 
+  // Diagnostics — resolved from sceneModel, shared by every render path.
+  // IMPORTANT: each panel-type diagnostic is sourced from a panel of that EXACT
+  // type only — never a generic "first panel" fallback mislabeled as arch/round.
+  const firstPlinthDiag = sceneModel.plinths[0];
+  const firstArchDiag   = sceneModel.panels.find((p) => p.type === "arch");
+  const firstRoundDiag  = sceneModel.panels.find((p) => p.type === "round");
+  const diagInfo = {
+    selectedPlinthSize:       firstPlinthDiag?.size       ?? null,
+    resolvedPlinthHeightCm:   firstPlinthDiag?.heightCm   ?? null,
+    resolvedPlinthDiameterCm: firstPlinthDiag?.diameterCm ?? null,
+    selectedArchSize:         firstArchDiag?.sizeId        ?? null,
+    resolvedArchWidthCm:      firstArchDiag?.widthCm       ?? null,
+    resolvedArchHeightCm:     firstArchDiag?.heightCm      ?? null,
+    selectedRoundSize:        firstRoundDiag ? "medium" : null,
+    resolvedRoundDiameterCm:  firstRoundDiag?.widthCm       ?? null,
+    selectedShimmerColor:     sceneModel.shimmerColor      ?? null,
+    resolvedShimmerWidthCm:   sceneModel.shimmerColor ? 200 : null,
+    resolvedShimmerHeightCm:  sceneModel.shimmerColor ? 200 : null,
+    selectedBackdropTypes:    sceneModel.panels.map((p) => p.type),
+    isSingleShimmerOnly:      sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "shimmer_wall",
+    panelCount:               sceneModel.panels.length,
+    selectedBalloonStyle:     sceneModel.balloons.style,
+    balloonColorCount:        sceneModel.balloons.colors.length,
+    plinthCount:              sceneModel.plinths.length,
+    isBalloonGarlandExpected: sceneModel.balloons.style !== "none",
+    isPlinthExpected:         sceneModel.plinths.length > 0,
+    // Single source of truth for balloon color — exactly what the prompt used.
+    effectiveSempertexSelection: sempertexSelection ?? [],
+    effectiveBalloonColors:      sceneModel.balloons.colors ?? [],
+    requestedRenderMode:         renderMode ?? null,
+    structureHash:               structureHash ?? null,
+    sceneHash:                   currentSceneHash ?? null,
+    modelMode,
+  };
+
   try {
-    // ── Edit existing render — Kontext on the previous photorealistic render ──
+    // ── Edit existing render — color-only / style-tweak recolor on the previous render ──
     if (renderMode === "edit_existing" && previousFinalRenderUrl) {
       const editPrompt =
         editDescription
           ? `${editDescription}. Preserve the room, camera angle, floor, lighting, balloon arrangement, backdrop count, panel shapes, and plinth positions exactly.`
           : `Refine the design while keeping all structural and atmospheric elements identical.`;
 
-      const falRes = await fetch(KONTEXT_ENDPOINT, {
-        method: "POST",
-        headers: { Authorization: `Key ${falKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const falResult = await fal.subscribe(editModelId, {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        input: {
           prompt:        editPrompt,
-          image_url:     previousFinalRenderUrl,
+          image_urls:    [previousFinalRenderUrl],
           image_size:    renderAspectRatio,   // dynamic from panel dimensions — preserved
-          output_format: "jpeg",
-          num_images:    1,
           seed:          FINAL_RENDER_SEED,   // fixed seed for consistent studio environment
-        }),
+          output_format: "jpeg",
+        } as any,
+        logs: true,
       });
 
-      if (!falRes.ok) {
-        const detail = await falRes.text();
-        return NextResponse.json({ error: "Edit render failed", detail }, { status: 502 });
-      }
-
-      const result   = await falRes.json();
-      const imageUrl = result?.images?.[0]?.url as string | undefined;
+      const d         = falResult.data as Record<string, unknown>;
+      const imagesArr = Array.isArray(d?.["images"]) ? (d["images"] as Record<string, unknown>[]) : null;
+      const imageUrl  =
+        (imagesArr?.[0]?.["url"] as string | undefined) ??
+        ((d?.["image"] as Record<string, unknown> | undefined)?.["url"] as string | undefined) ??
+        (d?.["url"] as string | undefined) ??
+        null;
       if (!imageUrl) return NextResponse.json({ error: "No image returned" }, { status: 502 });
 
       if (process.env.NODE_ENV === "development") {
         console.log("[generate-controlled-render] edit done:", imageUrl);
       }
-      return NextResponse.json({ imageUrl, mode: "edit_existing", model: "fal-ai/flux-pro/kontext" });
+
+      const extra = { mode: "edit_existing", modelId: editModelId, fallbackUsed: false };
+      renderCache.set(cacheKey, { imageUrl, diagInfo, extra });
+      return NextResponse.json({ imageUrl, ...extra, ...diagInfo, cacheHit: false });
     }
 
     // ── First generate ─────────────────────────────────────────────────────────
@@ -1189,40 +1276,6 @@ export async function POST(req: NextRequest) {
     const finalPrompt            = buildFirstGenPrompt(sceneModel, basePrompt, promptInputForAi);
     const negativePrompt         = buildNegativePrompt(sceneModel.panels, renderTextInAi, hasGraphic, promptInputForAi, sceneModel);
 
-    // Diagnostics — resolved from sceneModel for both render paths.
-    // IMPORTANT: each panel-type diagnostic is sourced from a panel of that EXACT
-    // type only — never a generic "first panel" fallback mislabeled as arch/round.
-    const firstPlinthDiag = sceneModel.plinths[0];
-    const firstArchDiag   = sceneModel.panels.find((p) => p.type === "arch");
-    const firstRoundDiag  = sceneModel.panels.find((p) => p.type === "round");
-    const diagInfo = {
-      selectedPlinthSize:       firstPlinthDiag?.size       ?? null,
-      resolvedPlinthHeightCm:   firstPlinthDiag?.heightCm   ?? null,
-      resolvedPlinthDiameterCm: firstPlinthDiag?.diameterCm ?? null,
-      selectedArchSize:         firstArchDiag?.sizeId        ?? null,
-      resolvedArchWidthCm:      firstArchDiag?.widthCm       ?? null,
-      resolvedArchHeightCm:     firstArchDiag?.heightCm      ?? null,
-      selectedRoundSize:        firstRoundDiag ? "medium" : null,
-      resolvedRoundDiameterCm:  firstRoundDiag?.widthCm       ?? null,
-      selectedShimmerColor:     sceneModel.shimmerColor      ?? null,
-      resolvedShimmerWidthCm:   sceneModel.shimmerColor ? 200 : null,
-      resolvedShimmerHeightCm:  sceneModel.shimmerColor ? 200 : null,
-      selectedBackdropTypes:    sceneModel.panels.map((p) => p.type),
-      isSingleShimmerOnly:      sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "shimmer_wall",
-      panelCount:               sceneModel.panels.length,
-      selectedBalloonStyle:     sceneModel.balloons.style,
-      balloonColorCount:        sceneModel.balloons.colors.length,
-      plinthCount:              sceneModel.plinths.length,
-      isBalloonGarlandExpected: sceneModel.balloons.style !== "none",
-      isPlinthExpected:         sceneModel.plinths.length > 0,
-      // Single source of truth for balloon color — exactly what the prompt used.
-      effectiveSempertexSelection: sempertexSelection ?? [],
-      effectiveBalloonColors:      sceneModel.balloons.colors ?? [],
-      requestedRenderMode:         renderMode ?? null,
-      structureHash:               structureHash ?? null,
-      sceneHash:                   currentSceneHash ?? null,
-    };
-
     // ── Primary path: layout-reference edit ────────────────────────────────
     // Same proven pattern as fal-layout-reference-test in the structure test route.
     const pngResult       = await generateLayoutReferencePng(sceneModel, promptInputForAi);
@@ -1243,9 +1296,9 @@ export async function POST(req: NextRequest) {
       const timeoutHandle   = setTimeout(() => abortController.abort(), 80_000);
 
       try {
-        console.log("[generate-controlled-render] → fal-ai/flux-2-pro/edit (layout-reference), pngBytes:", pngResult.bytes);
+        console.log(`[generate-controlled-render] → ${editModelId} (layout-reference), pngBytes:`, pngResult.bytes);
 
-        const falResult = await fal.subscribe(FAL_EDIT_MODEL_ID, {
+        const falResult = await fal.subscribe(editModelId, {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           input: {
             prompt:        layoutRefPrompt,
@@ -1273,18 +1326,19 @@ export async function POST(req: NextRequest) {
 
         if (imageUrl) {
           console.log("[generate-controlled-render] layout-reference edit succeeded:", imageUrl);
-          return NextResponse.json({
-            imageUrl,
+          const extra = {
             mode:             "first_generate",
             renderMode:       "first_generate_layout_reference_edit",
             referenceUsed:    true,
             referenceVersion: "clean-layout-reference-v1",
-            modelId:          FAL_EDIT_MODEL_ID,
+            modelId:          editModelId,
+            fallbackUsed:     false,
             layoutReferencePngGenerated: true,
             layoutReferencePngBytes:     pngResult.bytes,
             layoutReferencePrefix:       pngResult.dataUri.slice(0, 40),
-            ...diagInfo,
-          });
+          };
+          renderCache.set(cacheKey, { imageUrl, diagInfo, extra });
+          return NextResponse.json({ imageUrl, ...extra, ...diagInfo, cacheHit: false });
         }
         fallbackReason       = "fal edit returned no image url";
         fallbackStage        = "fal-edit-no-url";
@@ -1302,13 +1356,15 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Fallback: pure text-to-image ────────────────────────────────────────
+    const t2iModelId  = getT2IModelId(modelMode);
+    const t2iEndpoint = getT2IEndpoint(modelMode);
     if (process.env.NODE_ENV === "development") {
-      console.log("[generate-controlled-render] → calling fal-ai/flux-2-pro (text-to-image fallback)");
+      console.log(`[generate-controlled-render] → calling ${t2iModelId} (text-to-image fallback)`);
       console.log("[generate-controlled-render] prompt:", finalPrompt);
       console.log("[generate-controlled-render] negative:", negativePrompt);
     }
 
-    const falRes = await fetch(FAL_T2I_ENDPOINT, {
+    const falRes = await fetch(t2iEndpoint, {
       method:  "POST",
       headers: { Authorization: `Key ${falKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1330,21 +1386,22 @@ export async function POST(req: NextRequest) {
     const imageUrl = result?.images?.[0]?.url as string | undefined;
     if (!imageUrl) return NextResponse.json({ error: "No image returned", result }, { status: 502 });
 
-    return NextResponse.json({
-      imageUrl,
+    const t2iExtra = {
       mode:             "first_generate",
       renderMode:       "first_generate_text_to_image_fallback",
       referenceUsed:    false,
       referenceVersion: null,
-      modelId:          "fal-ai/flux-2-pro",
+      modelId:          t2iModelId,
+      fallbackUsed:     true,
       fallbackReason,
       fallbackStage,
       fallbackErrorMessage,
       layoutReferencePngGenerated: pngResult.dataUri !== null,
       layoutReferencePngBytes:     pngResult.bytes,
       layoutReferencePrefix:       pngResult.dataUri ? pngResult.dataUri.slice(0, 40) : null,
-      ...diagInfo,
-    });
+    };
+    renderCache.set(cacheKey, { imageUrl, diagInfo, extra: t2iExtra });
+    return NextResponse.json({ imageUrl, ...t2iExtra, ...diagInfo, cacheHit: false });
 
   } catch (err) {
     return NextResponse.json({ error: "Unexpected error", detail: String(err) }, { status: 500 });

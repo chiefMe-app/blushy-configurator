@@ -814,6 +814,11 @@ export function useFinalRender(config: BuilderConfig) {
   const pendingChangeNote               = useRef<string | null>(null);
   const [appliedChangeLabel, setAppliedChangeLabel] = useState<string | null>(null);
 
+  // In-flight guard — prevents a second fal call from starting while one is
+  // already running (e.g. rapid double-clicks before React re-renders the
+  // disabled button state, or the pending-change auto-apply chain).
+  const isRequestPending = useRef(false);
+
   // Keep ref current on every render
   configRef.current = config;
 
@@ -827,6 +832,7 @@ export function useFinalRender(config: BuilderConfig) {
     currentSceneHash !== currentFinalRenderSceneHash.current;
 
   async function generateFinalRender() {
+    if (isRequestPending.current) return;
     // Always read from the ref so we get the absolute latest config
     const liveConfig  = configRef.current;
     const liveHash    = computeSceneHash(liveConfig);
@@ -842,11 +848,20 @@ export function useFinalRender(config: BuilderConfig) {
       liveStructureHash === currentFinalRenderStructureHash.current &&
       liveHash !== currentFinalRenderSceneHash.current;
 
-    if (isColorOnlyChange) {
-      await requestRenderEdit(buildColorLockEditDescription(liveConfig.decor));
-      return;
-    }
+    isRequestPending.current = true;
+    try {
+      if (isColorOnlyChange) {
+        await requestRenderEdit(buildColorLockEditDescription(liveConfig.decor));
+        return;
+      }
 
+      await runFirstGenerate(liveConfig, liveHash, liveStructureHash);
+    } finally {
+      isRequestPending.current = false;
+    }
+  }
+
+  async function runFirstGenerate(liveConfig: BuilderConfig, liveHash: string, liveStructureHash: string) {
     setStatus("loading");
     try {
       // Edge-only structure map (reserved for future ControlNet use).
@@ -940,6 +955,12 @@ export function useFinalRender(config: BuilderConfig) {
       setAppliedChangeLabel(editDescription);
       return;
     }
+    // If generateFinalRender already holds the in-flight lock (color-only
+    // delegation, or the pending-change auto-apply chain), don't re-guard —
+    // just do the work and let the outer caller release the lock when it's
+    // done. Otherwise (called directly, e.g. "Ask for a change"), own it here.
+    const ownsLock = !isRequestPending.current;
+    if (ownsLock) isRequestPending.current = true;
     setStatus("loading");
     try {
       const res = await fetch("/api/generate-controlled-render", {
@@ -974,6 +995,8 @@ export function useFinalRender(config: BuilderConfig) {
       }
     } catch {
       setStatus("error");
+    } finally {
+      if (ownsLock) isRequestPending.current = false;
     }
   }
 
