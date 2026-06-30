@@ -22,6 +22,8 @@ interface Props {
   onPatchDecor:         (patch: Partial<DecorConfig>) => void;
   onRenderEdit:         (editPrompt: string) => Promise<void>;
   onMarkStale:          () => void;
+  /** Latest applied change request — shown as a small confirmation chip. */
+  appliedChangeLabel?:  string | null;
 }
 
 export default function DesignChangePrompt({
@@ -32,6 +34,7 @@ export default function DesignChangePrompt({
   onPatchDecor,
   onRenderEdit,
   onMarkStale,
+  appliedChangeLabel,
 }: Props) {
   const [prompt, setPrompt]       = useState("");
   const [processing, setProc]     = useState(false);
@@ -93,12 +96,14 @@ export default function DesignChangePrompt({
         }
 
         case "render_style_edit": {
-          if (!finalUrl) {
-            setMessage({ text: "Generate a Final Render first, then apply style changes.", type: "warn" });
-            break;
-          }
           if (result.renderEditPrompt) {
-            setMessage({ text: "Applying style edit…", type: "info" });
+            const hadRender = !!finalUrl;
+            setMessage({
+              text: hadRender ? "Applying style edit…" : "Saved — will apply to your next Final Render.",
+              type: "info",
+            });
+            // If no render exists yet, onRenderEdit stashes this and applies it
+            // automatically right after the next Generate Final Render.
             await onRenderEdit(result.renderEditPrompt);
             setMessage({ text: result.summary, type: "success" });
           }
@@ -121,13 +126,16 @@ export default function DesignChangePrompt({
             extraBalloonClusters: [...currentExtraClusters, newCluster],
           });
 
-          // 2. Edit the existing render to show the change visually
-          if (finalUrl && result.renderEditPrompt) {
-            setMessage({ text: "Applying balloon placement…", type: "info" });
+          // 2. Edit (or stash, if no render exists yet) to show the change visually
+          if (result.renderEditPrompt) {
+            const hadRender = !!finalUrl;
+            setMessage({ text: hadRender ? "Applying balloon placement…" : "Saved — will apply to your next Final Render.", type: "info" });
             try {
               await onRenderEdit(result.renderEditPrompt);
               setMessage({
-                text: `${result.summary} Added as a design instruction and visual edit. Exact production count is saved in the design specs.`,
+                text: hadRender
+                  ? `${result.summary} Added as a design instruction and visual edit. Exact production count is saved in the design specs.`
+                  : `${result.summary} Saved for your next Final Render. Exact production count is saved in the design specs.`,
                 type: "success",
               });
             } catch {
@@ -172,6 +180,19 @@ export default function DesignChangePrompt({
         <span className="text-base">✦</span>
         <p className="text-[12px] font-800 text-[#15182E]" style={{ fontWeight: 800 }}>Ask for a change</p>
       </div>
+
+      {/* Applied change chip — confirms the latest request was saved */}
+      {appliedChangeLabel && (
+        <div
+          className="mb-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium"
+          style={{ background: "#FFF0F5", border: "1px solid #F7A7C8", color: "#EC4D8D" }}
+        >
+          <span style={{ fontWeight: 800 }}>Applied change:</span>
+          <span style={{ color: "#15182E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {appliedChangeLabel.length > 60 ? `${appliedChangeLabel.slice(0, 60)}…` : appliedChangeLabel}
+          </span>
+        </div>
+      )}
 
       {/* Quick chips */}
       <div className="mb-3 flex flex-wrap gap-1.5">

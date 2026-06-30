@@ -756,6 +756,11 @@ export function useFinalRender(config: BuilderConfig) {
   const currentFinalRenderUrl           = useRef<string | null>(null);
   const currentFinalRenderSceneHash     = useRef<string | null>(null);
 
+  // Latest "Ask for a change" request not yet visually applied — applied
+  // automatically right after the next Final Render is generated.
+  const pendingChangeNote               = useRef<string | null>(null);
+  const [appliedChangeLabel, setAppliedChangeLabel] = useState<string | null>(null);
+
   // Keep ref current on every render
   configRef.current = config;
 
@@ -834,6 +839,14 @@ export function useFinalRender(config: BuilderConfig) {
       currentFinalRenderSceneHash.current     = liveHash;
       setFinalUrl(data.imageUrl);
       setStatus("done");
+
+      // If the user applied a change request before any render existed,
+      // apply it now on the freshly generated image so it actually reflects it.
+      if (pendingChangeNote.current) {
+        const note = pendingChangeNote.current;
+        pendingChangeNote.current = null;
+        await requestRenderEdit(note);
+      }
     } catch (err) {
       console.error("[useFinalRender]", err);
       setStatus("error");
@@ -843,10 +856,16 @@ export function useFinalRender(config: BuilderConfig) {
   /**
    * Apply a style edit to the existing final render using Kontext (img2img).
    * Keeps the same composition — only the requested style change is applied.
+   * If no final render exists yet, the request is stashed and automatically
+   * applied right after the next Generate Final Render completes.
    * TODO: Later: route small edits through image-to-image/Kontext.
    */
   async function requestRenderEdit(editDescription: string) {
-    if (!currentFinalRenderUrl.current) return;
+    if (!currentFinalRenderUrl.current) {
+      pendingChangeNote.current = editDescription;
+      setAppliedChangeLabel(editDescription);
+      return;
+    }
     setStatus("loading");
     try {
       const res = await fetch("/api/generate-controlled-render", {
@@ -869,6 +888,7 @@ export function useFinalRender(config: BuilderConfig) {
         currentFinalRenderSceneHash.current     = computeSceneHash(configRef.current);
         setFinalUrl(data.imageUrl);
         setStatus("done");
+        setAppliedChangeLabel(editDescription);
       } else {
         setStatus("error");
       }
@@ -883,7 +903,7 @@ export function useFinalRender(config: BuilderConfig) {
     currentFinalRenderSceneHash.current = null;
   }
 
-  return { status, finalUrl, generateFinalRender, isStale, requestRenderEdit, markStale };
+  return { status, finalUrl, generateFinalRender, isStale, requestRenderEdit, markStale, appliedChangeLabel };
 }
 
 // ---------------------------------------------------------------------------
@@ -1016,6 +1036,7 @@ export default function SetupPreview({
     isStale,
     requestRenderEdit,
     markStale,
+    appliedChangeLabel,
   } = useFinalRender(config);
 
   // Dynamic aspect ratio from real panel dimensions — updates when backdrop changes
@@ -1095,8 +1116,13 @@ export default function SetupPreview({
         </div>
 
         <div
-          className="relative w-full overflow-hidden rounded-2xl bg-black/5 shadow-inner"
-          style={{ aspectRatio: cssAspectRatio, transition: "aspect-ratio 0.35s ease" }}
+          className="relative w-full overflow-hidden rounded-2xl shadow-inner"
+          style={{
+            aspectRatio: (finalUrl || finalIsLoading) ? cssAspectRatio : undefined,
+            minHeight: (finalUrl || finalIsLoading) ? undefined : 360,
+            background: (finalUrl || finalIsLoading) ? "rgba(0,0,0,0.05)" : "transparent",
+            transition: "aspect-ratio 0.35s ease",
+          }}
         >
           {finalUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -1113,24 +1139,34 @@ export default function SetupPreview({
               <span className="text-[11px] text-black/40">Generating final render…</span>
             </div>
           ) : (
-            /* Empty state — premium pastel placeholder per MD spec, no AI call, no state change */
+            /* Empty state — premium pastel placeholder, no AI call, no state change.
+               No aspect-ratio/gray-bg constraint here so icon+copy center cleanly. */
             <div style={{
-              height: "100%", minHeight: 380,
+              position: "relative", overflow: "hidden",
+              minHeight: 360, height: "100%",
               display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center",
               background: "transparent",
-              padding: "36px 32px", textAlign: "center",
+              padding: "32px 28px", textAlign: "center",
             }}>
-              {/* Sparkle icon in soft pink rounded square — per MD spec */}
+              {/* Self-contained confetti — clipped by parent overflow:hidden */}
+              <div aria-hidden style={{ pointerEvents: "none", position: "absolute", inset: 0 }}>
+                <div style={{ position: "absolute", top: 22, left: 24, width: 7, height: 7, borderRadius: "50%", background: "#FFB8D1", opacity: 0.55 }} />
+                <div style={{ position: "absolute", top: 40, right: 28, width: 6, height: 6, borderRadius: 2, background: "#C4B5FD", opacity: 0.45, transform: "rotate(20deg)" }} />
+                <div style={{ position: "absolute", bottom: 36, left: 32, width: 5, height: 5, borderRadius: "50%", background: "#86EFAC", opacity: 0.4 }} />
+                <div style={{ position: "absolute", bottom: 26, right: 30, width: 9, height: 4, borderRadius: 2, background: "#FBBF84", opacity: 0.4, transform: "rotate(-15deg)" }} />
+                <svg style={{ position: "absolute", top: 70, right: 50, opacity: 0.3 }} width="9" height="9" viewBox="0 0 10 10"><path d="M5 1l.9 2.8L8.8 5 5.9 6.2 5 9l-.9-2.8L1.2 5l2.9-1.2z" fill="#EC4D8D"/></svg>
+              </div>
+              {/* Sparkle icon in soft pink rounded square */}
               <div style={{
-                width: 72, height: 72, borderRadius: 18,
+                width: 68, height: 68, borderRadius: 17,
                 background: "linear-gradient(145deg, #FFE4F0 0%, #FFD6E8 100%)",
                 border: "1.5px solid #F7A7C8",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                marginBottom: 22,
-                boxShadow: "0 8px 24px rgba(236,77,141,0.12)",
+                marginBottom: 18,
+                boxShadow: "0 8px 24px rgba(236,77,141,0.14)",
               }}>
-                <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+                <svg width="32" height="32" viewBox="0 0 34 34" fill="none">
                   <path d="M17 4L20.1 12.9L29 16L20.1 19.1L17 28L13.9 19.1L5 16L13.9 12.9L17 4Z" fill="#EC4D8D" stroke="#EC4D8D" strokeWidth="0.8" strokeLinejoin="round"/>
                   <circle cx="6" cy="6" r="1.5" fill="#EC4D8D" opacity="0.35"/>
                   <circle cx="28" cy="27" r="1.5" fill="#EC4D8D" opacity="0.35"/>
@@ -1138,12 +1174,10 @@ export default function SetupPreview({
                   <circle cx="6" cy="27" r="1" fill="#F7A7C8" opacity="0.5"/>
                 </svg>
               </div>
-              {/* Title — per MD spec */}
-              <div style={{ fontSize: 17, fontWeight: 800, color: "#15182E", marginBottom: 10, letterSpacing: "-0.3px", lineHeight: 1.25 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#15182E", marginBottom: 8, letterSpacing: "-0.3px", lineHeight: 1.25 }}>
                 Start your design to see preview
               </div>
-              {/* Body — per MD spec exact copy */}
-              <div style={{ fontSize: 13, color: "#73778A", lineHeight: 1.6, maxWidth: 220, fontWeight: 500 }}>
+              <div style={{ fontSize: 12.5, color: "#73778A", lineHeight: 1.6, maxWidth: 210, fontWeight: 500 }}>
                 Your live preview will appear here after you choose your event and decor.
               </div>
             </div>
@@ -1213,6 +1247,7 @@ export default function SetupPreview({
           onPatchDecor={onPatchDecor}
           onRenderEdit={requestRenderEdit}
           onMarkStale={markStale}
+          appliedChangeLabel={appliedChangeLabel}
         />
       )}
 

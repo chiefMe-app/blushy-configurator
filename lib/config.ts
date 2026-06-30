@@ -694,6 +694,8 @@ export interface CustomerDetails {
 export interface BuilderConfig {
   eventType: EventTypeId;
   theme: ThemeId;
+  /** True once the user has manually picked a theme. Gates theme pricing/selected UI. */
+  themeSelected: boolean;
   /** Legacy field - kept for order compatibility. Does not reset decor. */
   package: PackageId;
   /** User-selected service package - defines what they receive, not their design. */
@@ -720,6 +722,7 @@ export function defaultConfig(): BuilderConfig {
   const cfg: BuilderConfig = {
     eventType: "birthday",
     theme: theme.id,
+    themeSelected: false, // no theme selected by default - user must choose
     package: pkg.id,
     servicePackageId: "design_only",
     decor: {
@@ -797,7 +800,7 @@ export function priceBreakdown(config: BuilderConfig): {
 
   // -- Design / decor items ------------------------------------------------
   const theme = themeById(config.theme);
-  if (theme && theme.priceModifier > 0) {
+  if (config.themeSelected && theme && theme.priceModifier > 0) {
     lines.push({ label: `${theme.name} theme`, amount: theme.priceModifier, section: "design" });
   }
 

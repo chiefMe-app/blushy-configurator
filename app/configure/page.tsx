@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Plus_Jakarta_Sans } from "next/font/google";
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["500", "600", "700", "800"] });
@@ -128,6 +128,7 @@ export default function ConfigurePage() {
     setConfig((c) => ({
       ...c,
       theme: id,
+      themeSelected: true,
       decor: t
         ? {
             ...c.decor,
@@ -290,7 +291,7 @@ export default function ConfigurePage() {
     <main style={accentStyle} className={`min-h-screen ${jakarta.className}`}>
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-black/5 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-2">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
             {/* Clean sparkle mark -no circle, just the star SVG */}
@@ -347,14 +348,14 @@ export default function ConfigurePage() {
         </div>
       </header>
 
-      <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 32px 0", display: "flex", gap: 32, alignItems: "flex-start" }}>
-        {/* Left: preview rail -fixed 380px */}
-        <div style={{ width: 380, flexShrink: 0 }}>
-          <div className="lg:sticky" style={{ top: 88 }}>
+      <div style={{ maxWidth: 1360, margin: "0 auto", padding: "20px 28px 0", display: "flex", gap: 26, alignItems: "flex-start" }}>
+        {/* Left: preview rail - fixed 356px */}
+        <div style={{ width: 356, flexShrink: 0 }}>
+          <div className="lg:sticky" style={{ top: 72 }}>
             <div className="space-y-3">
               {/* Preview card -overflow hidden keeps confetti contained */}
-              <div style={{ position: "relative", overflow: "hidden", minHeight: 460, borderRadius: 22, border: "1.5px solid #F1D8E2", boxShadow: "0 18px 40px rgba(39,40,68,0.06)", background: "linear-gradient(150deg, #FFF7FB 0%, #FBF2FF 50%, #FFF9F5 100%)" }}>
-                {/* Confetti — pointer-events none, confined inside overflow:hidden */}
+              <div style={{ position: "relative", overflow: "hidden", minHeight: 408, borderRadius: 20, border: "1.5px solid #F1D8E2", boxShadow: "0 14px 32px rgba(39,40,68,0.06)", background: "linear-gradient(150deg, #FFF7FB 0%, #FBF2FF 50%, #FFF9F5 100%)" }}>
+                {/* Confetti - pointer-events none, confined inside overflow:hidden */}
                 <div aria-hidden style={{ pointerEvents: "none", position: "absolute", inset: 0 }}>
                   {/* Dots */}
                   <div style={{ position: "absolute", top: 16, left: 26, width: 8, height: 8, borderRadius: "50%", background: "#FFB8D1", opacity: 0.6 }} />
@@ -388,7 +389,7 @@ export default function ConfigurePage() {
         </div>
 
         {/* Right: steps -flex 1, min 720px */}
-        <div style={{ flex: 1, minWidth: 720, paddingBottom: 120 }}>
+        <div style={{ flex: 1, minWidth: 680, paddingBottom: 96 }}>
 
           <div>
             {step === 0 && (
@@ -444,7 +445,7 @@ export default function ConfigurePage() {
                             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                           </span>
                         )}
-                        {/* Event icon — inline SVG per type */}
+                        {/* Event icon - inline SVG per type */}
                         <div style={{ fontSize: 36, marginBottom: 10, display: "flex", justifyContent: "center" }}>
                           {e.id === "birthday" && <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="8" y="20" width="24" height="14" rx="4" fill="#FBCFE8"/><rect x="12" y="15" width="16" height="7" rx="2" fill="#F9A8D4"/><path d="M15 15c0-3 2-5 2-5s2 2 2 5" stroke="#EC4D8D" strokeWidth="1.5" strokeLinecap="round"/><path d="M21 15c0-3 2-5 2-5s2 2 2 5" stroke="#EC4D8D" strokeWidth="1.5" strokeLinecap="round"/><circle cx="20" cy="12" r="2" fill="#EC4D8D"/></svg>}
                           {e.id === "baby_shower" && <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><ellipse cx="20" cy="22" rx="9" ry="11" fill="#BAE6FD"/><path d="M20 11c-4-6-10-4-10 0 0 3 3 5 6 4" stroke="#7DD3FC" strokeWidth="1.5" strokeLinecap="round"/><circle cx="20" cy="11" r="2" fill="#7DD3FC"/></svg>}
@@ -474,8 +475,8 @@ export default function ConfigurePage() {
               <StepShell title="Pick your theme">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {THEMES.map((t) => {
-                    const sel = config.theme === t.id;
-                    // Per-theme SVG icon — pure inline SVG, no emoji
+                    const sel = config.themeSelected && config.theme === t.id;
+                    // Per-theme SVG icon - pure inline SVG, no emoji
                     const THEME_ICONS: Record<string, React.ReactNode> = {
                       frozen: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><line x1="11" y1="2" x2="11" y2="20" stroke="#7DD3FC" strokeWidth="2" strokeLinecap="round"/><line x1="2" y1="11" x2="20" y2="11" stroke="#7DD3FC" strokeWidth="2" strokeLinecap="round"/><line x1="4.5" y1="4.5" x2="17.5" y2="17.5" stroke="#BAE6FD" strokeWidth="1.5" strokeLinecap="round"/><line x1="17.5" y1="4.5" x2="4.5" y2="17.5" stroke="#BAE6FD" strokeWidth="1.5" strokeLinecap="round"/><circle cx="11" cy="11" r="2" fill="#38BDF8"/></svg>,
                       unicorn: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3l1.2 3.6L16 8l-3.8 1.4L11 13l-1.2-3.6L6 8l3.8-1.4z" fill="#C084FC"/><circle cx="4" cy="4" r="1.5" fill="#F9A8D4"/><circle cx="18" cy="17" r="1.5" fill="#86EFAC"/><circle cx="17" cy="5" r="1" fill="#FDE68A"/></svg>,
@@ -895,28 +896,28 @@ function DecorStep({
   const accent = theme.accent;
   const card: React.CSSProperties = {
     background: "white",
-    borderRadius: 18,
-    padding: "18px 16px",
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: "14px 14px",
+    marginBottom: 10,
     boxShadow: "0 1px 4px rgba(18,22,47,0.05), 0 4px 16px rgba(18,22,47,0.04)",
     border: "1px solid #ECEAF1",
   };
   const numBadge = (n: number) => (
     <div style={{
-      width: 32, height: 32, borderRadius: "50%", background: "#EC4F91",
-      color: "white", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px",
+      width: 28, height: 28, borderRadius: "50%", background: "#EC4F91",
+      color: "white", fontSize: 13, fontWeight: 800, letterSpacing: "-0.3px",
       display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
       boxShadow: "0 4px 10px rgba(236,79,145,0.30)",
     }}>{n}</div>
   );
   const secLabel = (text: string) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-      <span style={{ width: 3, height: 18, borderRadius: 2, background: accent, display: "inline-block", flexShrink: 0 }} />
-      <span style={{ fontSize: 16, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>{text}</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+      <span style={{ width: 3, height: 16, borderRadius: 2, background: accent, display: "inline-block", flexShrink: 0 }} />
+      <span style={{ fontSize: 14, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>{text}</span>
     </div>
   );
   const secSub = (text: string) => (
-    <p style={{ fontSize: 13, color: "#727386", marginTop: 2, marginBottom: 12, fontWeight: 500 }}>{text}</p>
+    <p style={{ fontSize: 12, color: "#727386", marginTop: 2, marginBottom: 10, fontWeight: 500 }}>{text}</p>
   );
 
   function BackdropShapePreview({ type, color = "#F2D4E0" }: { type: string; color?: string }) {
@@ -1122,11 +1123,11 @@ function DecorStep({
   return (
     <div className={jakarta.className}>
       {/* == BACKDROP SECTION ================================== */}
-      <div style={{ background: "white", border: "1.5px solid #F1D8E2", borderRadius: 22, padding: "20px 18px", marginBottom: 24, boxShadow: "0 4px 20px rgba(39,40,68,0.06)" }}>
+      <div style={{ background: "white", border: "1.5px solid #F1D8E2", borderRadius: 18, padding: "16px 14px", marginBottom: 18, boxShadow: "0 4px 20px rgba(39,40,68,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(1)}
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#12162F", letterSpacing: "-0.4px" }}>Pick your backdrop</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>Pick your backdrop</div>
             <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Choose the perfect backdrop style and size for your celebration.</div>
           </div>
         </div>
@@ -1811,11 +1812,11 @@ function DecorStep({
       </div>{/* -"--"- end BACKDROP section -"--"- */}
 
       {/* == BALLOONS SECTION ================================== */}
-      <div style={{ background: "#EFF8FF", border: "1px solid #BFDBFE", borderRadius: 20, padding: "14px 12px", marginBottom: 24 }}>
+      <div style={{ background: "#EFF8FF", border: "1px solid #BFDBFE", borderRadius: 18, padding: "12px 10px", marginBottom: 18 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(2)}
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#12162F", letterSpacing: "-0.4px" }}>Sempertex balloon colors</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>Sempertex balloon colors</div>
             <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>We selected a palette for your theme. You can adjust up to 5 shades.</div>
           </div>
         </div>
@@ -2042,11 +2043,11 @@ function DecorStep({
       </div>{/* -"--"- end BALLOONS section -"--"- */}
 
       {/* == EXTRAS SECTION ==================================== */}
-      <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 20, padding: "14px 12px", marginBottom: 24 }}>
+      <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 18, padding: "12px 10px", marginBottom: 18 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(3)}
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#12162F", letterSpacing: "-0.4px" }}>Add extra magic</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>Add extra magic</div>
             <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Enhance your setup with props and finishing touches.</div>
           </div>
         </div>
@@ -2215,6 +2216,7 @@ function DecorStep({
     </div>
   );
 }
+
 
 
 
