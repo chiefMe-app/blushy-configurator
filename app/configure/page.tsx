@@ -813,34 +813,30 @@ function DecorStep({
   // Auto-apply theme default when theme changes (unless user manually changed)
   if (config.theme !== lastTheme) {
     setLastTheme(config.theme);
-    if (!sempertexManual) {
-      const next = getThemeDefault(config.theme);
-      setSempertexIds(next);
-      applySempertexToDecor(next);
-    }
+    if (!sempertexManual) setSempertexIds(getThemeDefault(config.theme));
   }
 
   const [sempertexExceeded, setSempertexExceeded] = useState(false);
 
-  // Keep decor state (balloonColors + sempertexSelection) in sync with the
-  // displayed chips on mount, so chips/payload/stale-detection/prompt all
-  // share the same effective palette from the very first render.
-  useEffect(() => {
-    applySempertexToDecor(sempertexIds);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Sync selected Sempertex colors into decor state so they actually drive the
-  // render (hex colors) and the render prompt (exact code/colorName/finish/family).
-  // Empty selection falls back to the theme's hex palette, per existing behavior.
-  function applySempertexToDecor(ids: string[]) {
-    const selected = ids
+  // ── Single source of truth ────────────────────────────────────────────
+  // effectiveSempertexSelection: manual selection if the user edited colors,
+  // otherwise the theme-mapped Sempertex colors. Every consumer — chips,
+  // render payload, stale detection, and the render prompt — reads this same
+  // derived value (via the decor sync effect below), so they can never diverge.
+  const effectiveSempertexSelection = useMemo(
+    () => sempertexIds
       .map((id) => SEMPERTEX_CATALOG.find((c) => c.id === id))
-      .filter((c): c is typeof SEMPERTEX_CATALOG[number] => !!c);
-    if (selected.length > 0) {
+      .filter((c): c is typeof SEMPERTEX_CATALOG[number] => !!c),
+    [sempertexIds]
+  );
+
+  // Push the single source of truth into decor state whenever it changes.
+  // Empty selection falls back to the theme's hex palette.
+  useEffect(() => {
+    if (effectiveSempertexSelection.length > 0) {
       patchDecor({
-        balloonColors: selected.map((c) => c.hex),
-        sempertexSelection: selected.map((c) => ({ code: c.code, colorName: c.colorName, finish: c.finish, family: c.family, hex: c.hex })),
+        balloonColors: effectiveSempertexSelection.map((c) => c.hex),
+        sempertexSelection: effectiveSempertexSelection.map((c) => ({ code: c.code, colorName: c.colorName, finish: c.finish, family: c.family, hex: c.hex })),
       });
     } else {
       const t = themeById(config.theme);
@@ -849,25 +845,22 @@ function DecorStep({
         sempertexSelection: [],
       });
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveSempertexSelection]);
 
   const toggleSempertex = (id: string) => {
     setSempertexManual(true);
     setSempertexIds(prev => {
-      let next: string[];
-      if (prev.includes(id)) { setSempertexExceeded(false); next = prev.filter(x => x !== id); }
-      else if (prev.length >= 5) { setSempertexExceeded(true); return prev; }
-      else { setSempertexExceeded(false); next = [...prev, id]; }
-      applySempertexToDecor(next);
-      return next;
+      if (prev.includes(id)) { setSempertexExceeded(false); return prev.filter(x => x !== id); }
+      if (prev.length >= 5) { setSempertexExceeded(true); return prev; }
+      setSempertexExceeded(false);
+      return [...prev, id];
     });
   };
   const resetToThemePalette = () => {
-    const next = getThemeDefault(config.theme);
-    setSempertexIds(next);
+    setSempertexIds(getThemeDefault(config.theme));
     setSempertexManual(false);
     setSempertexExceeded(false);
-    applySempertexToDecor(next);
   };
   const toggleCustomize = (id: string) =>
     setOpenCustomizeIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -1875,7 +1868,7 @@ function DecorStep({
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#73778A", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              {sempertexManual ? `Selected colors (${sempertexIds.length}/5)` : `Theme palette selected (${sempertexIds.length}/5)`}
+              {sempertexManual ? `Selected colors (${effectiveSempertexSelection.length}/5)` : `Theme palette selected (${effectiveSempertexSelection.length}/5)`}
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               <button type="button" onClick={resetToThemePalette}
@@ -1889,23 +1882,19 @@ function DecorStep({
             </div>
           </div>
 
-          {/* Chips */}
+          {/* Chips — rendered directly from effectiveSempertexSelection (single source of truth) */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, minHeight: 34 }}>
-            {sempertexIds.length === 0 && (
+            {effectiveSempertexSelection.length === 0 && (
               <span style={{ fontSize: 12, color: "#A1A3B4", fontStyle: "italic" }}>No colors selected -click "Change colors" to pick.</span>
             )}
-            {sempertexIds.map(id => {
-              const c = SEMPERTEX_CATALOG.find(s => s.id === id);
-              if (!c) return null;
-              return (
-                <button key={id} type="button" onClick={() => toggleSempertex(id)}
-                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px 4px 6px", borderRadius: 999, border: "1.5px solid #F7A7C8", background: "#FFF7FB", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#15182E" }}>
-                  <span style={{ width: 14, height: 14, borderRadius: "50%", background: c.hex, border: "1px solid rgba(0,0,0,0.12)", flexShrink: 0, display: "inline-block" }} />
-                  {c.code} -{c.colorName}
-                  <span style={{ marginLeft: 2, color: "#EC4D8D", fontWeight: 900 }}>-</span>
-                </button>
-              );
-            })}
+            {effectiveSempertexSelection.map(c => (
+              <button key={c.id} type="button" onClick={() => toggleSempertex(c.id)}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px 4px 6px", borderRadius: 999, border: "1.5px solid #F7A7C8", background: "#FFF7FB", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#15182E" }}>
+                <span style={{ width: 14, height: 14, borderRadius: "50%", background: c.hex, border: "1px solid rgba(0,0,0,0.12)", flexShrink: 0, display: "inline-block" }} />
+                {c.code} -{c.colorName}
+                <span style={{ marginLeft: 2, color: "#EC4D8D", fontWeight: 900 }}>-</span>
+              </button>
+            ))}
           </div>
           {sempertexExceeded && (
             <div style={{ marginTop: 6, fontSize: 11, color: "#EC4D8D", fontWeight: 600 }}>Maximum 5 colors selected. Remove one to add another.</div>

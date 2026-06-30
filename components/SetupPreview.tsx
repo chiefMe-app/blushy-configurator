@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type {
   BuilderConfig,
+  DecorConfig,
   PlinthSize,
   FontStyle,
   TextColor,
@@ -738,6 +739,54 @@ function computeSceneHash(config: BuilderConfig): string {
 }
 
 /**
+ * Same as computeSceneHash but EXCLUDES balloon color fields (balloonColors,
+ * sempertexSelection). Used to detect "only the balloon colors changed" so a
+ * color change can be routed through edit_existing (recolor in place) instead
+ * of a full first_generate that would recompose the whole scene.
+ */
+function computeStructureHash(config: BuilderConfig): string {
+  const d = config.decor;
+  return JSON.stringify({
+    theme:         config.theme,
+    eventType:     config.eventType,
+    backdropItems: d.backdropItems.map((i) => ({
+      id: i.id, type: i.type, sizeId: i.sizeId,
+      widthCm: i.widthCm, heightCm: i.heightCm, color: i.color,
+      graphic: { enabled: i.graphic.enabled, style: i.graphic.style },
+    })),
+    backdropColor: d.backdropColor,
+    balloonStyle:  d.balloonStyle,
+    // balloonColors / sempertexSelection intentionally excluded
+    plinthSizes:   d.plinthSizes,
+    backdropPrint: d.backdropPrint,
+    cutouts:       d.cutouts,
+    cakeTable:     d.cakeTable,
+  });
+}
+
+/**
+ * Builds the edit instruction for a color-only recolor pass: a strict
+ * BALLOON COLOR LOCK clause plus a strict structure-preservation clause.
+ * Used when only balloon colors changed, so Kontext recolors in place
+ * instead of recomposing the scene.
+ */
+function buildColorLockEditDescription(d: DecorConfig): string {
+  const palette = d.sempertexSelection ?? [];
+  const colorLock = palette.length > 0
+    ? `BALLOON COLOR LOCK: Use ONLY these selected Sempertex balloon colors for every balloon: ` +
+      palette.map((c) => `${c.code} - ${c.colorName} - ${c.finish} - ${c.hex}`).join(", ") +
+      `. Do not invent, substitute, blend, or add any other balloon colors. Ignore the theme palette for balloons.`
+    : `BALLOON COLOR LOCK: Recolor the balloons to exactly these colors: ${d.balloonColors.join(", ")}. ` +
+      `Do not invent, substitute, blend, or add any other balloon colors.`;
+  const structureLock =
+    `Change ONLY the balloon colors. Preserve the exact existing composition: ` +
+    `backdrop type, backdrop size, plinth position, balloon count, balloon sizes, garland layout, ` +
+    `attachment points, camera angle, room, floor, and lighting must all stay exactly as they are. ` +
+    `Do not recompose or restructure the scene.`;
+  return `${colorLock} ${structureLock}`;
+}
+
+/**
  * Generates the Final Design Render.
  *
  * TODO: Later: route small edits through image-to-image/Kontext.
@@ -755,6 +804,10 @@ export function useFinalRender(config: BuilderConfig) {
   const configRef                       = useRef(config);
   const currentFinalRenderUrl           = useRef<string | null>(null);
   const currentFinalRenderSceneHash     = useRef<string | null>(null);
+  // Structure hash (everything except balloon colors) of the currently rendered
+  // image — used to detect "only colors changed" so a color edit can reuse the
+  // existing composition instead of triggering a full recompose.
+  const currentFinalRenderStructureHash = useRef<string | null>(null);
 
   // Latest "Ask for a change" request not yet visually applied — applied
   // automatically right after the next Final Render is generated.
@@ -777,6 +830,22 @@ export function useFinalRender(config: BuilderConfig) {
     // Always read from the ref so we get the absolute latest config
     const liveConfig  = configRef.current;
     const liveHash    = computeSceneHash(liveConfig);
+
+    // Color-only change detection: if a render already exists and the structure
+    // (backdrop type/size, plinth, balloon count/style, etc.) is unchanged but
+    // the balloon colors changed, recolor the existing render in place instead
+    // of recomposing the whole scene from scratch.
+    const liveStructureHash = computeStructureHash(liveConfig);
+    const isColorOnlyChange =
+      currentFinalRenderUrl.current !== null &&
+      currentFinalRenderStructureHash.current !== null &&
+      liveStructureHash === currentFinalRenderStructureHash.current &&
+      liveHash !== currentFinalRenderSceneHash.current;
+
+    if (isColorOnlyChange) {
+      await requestRenderEdit(buildColorLockEditDescription(liveConfig.decor));
+      return;
+    }
 
     setStatus("loading");
     try {
@@ -840,6 +909,7 @@ export function useFinalRender(config: BuilderConfig) {
 
       currentFinalRenderUrl.current           = data.imageUrl;
       currentFinalRenderSceneHash.current     = liveHash;
+      currentFinalRenderStructureHash.current = liveStructureHash;
       setFinalUrl(data.imageUrl);
       setStatus("done");
 
@@ -883,12 +953,16 @@ export function useFinalRender(config: BuilderConfig) {
           previousFinalRenderUrl: currentFinalRenderUrl.current,
           renderMode:            "edit_existing",
           editDescription,
+          // Exact selected Sempertex palette — lets the route apply a strict
+          // BALLOON COLOR LOCK even for in-place recolor edits.
+          sempertexSelection:    configRef.current.decor.sempertexSelection ?? [],
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.imageUrl) {
         currentFinalRenderUrl.current           = data.imageUrl;
         currentFinalRenderSceneHash.current     = computeSceneHash(configRef.current);
+        currentFinalRenderStructureHash.current = computeStructureHash(configRef.current);
         setFinalUrl(data.imageUrl);
         setStatus("done");
         setAppliedChangeLabel(editDescription);

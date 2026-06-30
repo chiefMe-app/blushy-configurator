@@ -1159,9 +1159,12 @@ export async function POST(req: NextRequest) {
     const finalPrompt            = buildFirstGenPrompt(sceneModel, basePrompt, promptInputForAi);
     const negativePrompt         = buildNegativePrompt(sceneModel.panels, renderTextInAi, hasGraphic, promptInputForAi, sceneModel);
 
-    // Diagnostics — resolved from sceneModel for both render paths
+    // Diagnostics — resolved from sceneModel for both render paths.
+    // IMPORTANT: each panel-type diagnostic is sourced from a panel of that EXACT
+    // type only — never a generic "first panel" fallback mislabeled as arch/round.
     const firstPlinthDiag = sceneModel.plinths[0];
-    const firstArchDiag   = sceneModel.panels.find((p) => p.type === "arch") ?? sceneModel.panels[0];
+    const firstArchDiag   = sceneModel.panels.find((p) => p.type === "arch");
+    const firstRoundDiag  = sceneModel.panels.find((p) => p.type === "round");
     const diagInfo = {
       selectedPlinthSize:       firstPlinthDiag?.size       ?? null,
       resolvedPlinthHeightCm:   firstPlinthDiag?.heightCm   ?? null,
@@ -1169,6 +1172,8 @@ export async function POST(req: NextRequest) {
       selectedArchSize:         firstArchDiag?.sizeId        ?? null,
       resolvedArchWidthCm:      firstArchDiag?.widthCm       ?? null,
       resolvedArchHeightCm:     firstArchDiag?.heightCm      ?? null,
+      selectedRoundSize:        firstRoundDiag ? "medium" : null,
+      resolvedRoundDiameterCm:  firstRoundDiag?.widthCm       ?? null,
       selectedShimmerColor:     sceneModel.shimmerColor      ?? null,
       resolvedShimmerWidthCm:   sceneModel.shimmerColor ? 200 : null,
       resolvedShimmerHeightCm:  sceneModel.shimmerColor ? 200 : null,
