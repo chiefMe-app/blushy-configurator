@@ -485,7 +485,8 @@ function buildNegativePrompt(
 
   const hasRoundPanel = items.some((p) => p.type === "round");
   const roundPropNeg = hasRoundPanel
-    ? ", wall-mounted circle, flat painted circle on wall, tiny round backdrop, no support stand, " +
+    ? ", visible stand, wheels, metal frame, wall-mounted circle, flat painted circle on wall, " +
+      "undersized round backdrop, tiny round backdrop, " +
       "detached loose floor balloons, random isolated balloons on the floor"
     : "";
 
@@ -495,8 +496,10 @@ function buildNegativePrompt(
     archPropNeg + roundPropNeg;
 
   const archBalloonNeg = hasArchPanel
-    ? ", tiny balloons, sparse garland, thin single-file balloon chain, evenly spaced small balloons, " +
-      "weak floor volume, detached floor balloons, floating balloons, gap between balloons and arch"
+    ? ", tiny balloons only, same-size balloons, sparse garland, thin garland, " +
+      "thin single-file balloon chain, evenly spaced small balloons, " +
+      "weak floor volume, detached floor balloons, floating balloons, floating gap, " +
+      "gap between balloons and arch, balloons in front of arch face, random loose floor balloons"
     : "";
 
   const balloonNeg = "bead-like balloons, uniform balloon sizes, fake balloons, " +
@@ -834,9 +837,10 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
         `NOT a matte board, NOT a cream backdrop, NOT crumpled foil`;
     } else if (p.type === "round") {
       backdropDesc =
-        `freestanding circular event backdrop panel, ${p.widthCm}cm x ${p.heightCm}cm, ` +
-        `supported by its own metal stand and base feet, positioned slightly in front of the wall, ` +
-        `not wall-mounted or painted on the wall`;
+        `freestanding circular event backdrop panel, exactly ${p.widthCm}cm x ${p.heightCm}cm, ` +
+        `the bottom edge of the panel touches the floor or sits no more than 5cm above the floor, ` +
+        `positioned slightly in front of the wall, not wall-mounted, not painted on the wall. ` +
+        `No visible wheels, no visible stand, no visible frame — the panel reads as a clean solid circular surface.`;
     } else {
       backdropDesc =
         `single ${panelTypeLabel(p.type)} cream-white backdrop board, ` +
@@ -893,13 +897,21 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
   const archGarlandExtra = hasArchPanelInScene
     ? ` Premium organic balloon garland with large, medium, and small balloons nested together ` +
       `in lush clustered bunches; fuller volume at the bottom on the floor; ` +
-      `balloons wrap tightly around the arch edge with no visible gap; not a thin single-file chain.`
+      `balloons wrap tightly around the outer edge of the arch only, with no visible gap; ` +
+      `not a thin single-file chain. ` +
+      `The arch face and center opening must stay clean and unobstructed — no balloons crossing in front of ` +
+      `the arch panel and no balloon pile or floor buildup directly in front of the arch face.`
     : "";
+  const balloonSizeDesc =
+    ` Use a clear mix of balloon sizes: several 36 inch statement balloons, medium 12 inch balloons, ` +
+    `and small 5 inch accent balloons, nested together in rich clustered bunches — not a thin chain of ` +
+    `same-size balloons.`;
   const garlandDesc   = balloonStyle === "none"
     ? "No balloon garland. "
     : `organic half balloon garland on the right side, dense and premium, ` +
-      `individual ${balloonColors} latex balloons cascading from the top corner to the floor. ` +
-      `The balloon garland must be attached directly to the backdrop edge with no visible gap. ` +
+      `individual ${balloonColors} latex balloons cascading from the top corner to the floor.` +
+      balloonSizeDesc +
+      ` The balloon garland must be attached directly to the backdrop edge with no visible gap. ` +
       `Balloons must closely follow the backdrop contour and look professionally installed onto the structure.` +
       archGarlandExtra;
 
