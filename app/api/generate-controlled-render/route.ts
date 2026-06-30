@@ -485,8 +485,10 @@ function buildNegativePrompt(
 
   const hasRoundPanel = items.some((p) => p.type === "round");
   const roundPropNeg = hasRoundPanel
-    ? ", visible stand, wheels, metal frame, wall-mounted circle, flat painted circle on wall, " +
-      "undersized round backdrop, tiny round backdrop, " +
+    ? ", visible stand, wheels, metal frame, support hardware, support legs, " +
+      "wall-mounted circle, flat painted circle on wall, circle attached to wall, no gap from wall, " +
+      "undersized round backdrop, tiny round backdrop, wrong scale round backdrop, not 200cm round backdrop, " +
+      "plinth set too far forward, plinth far from backdrop, " +
       "detached loose floor balloons, random isolated balloons on the floor"
     : "";
 
@@ -496,14 +498,17 @@ function buildNegativePrompt(
     archPropNeg + roundPropNeg;
 
   const archBalloonNeg = hasArchPanel
-    ? ", tiny balloons only, same-size balloons, sparse garland, thin garland, " +
-      "thin single-file balloon chain, evenly spaced small balloons, " +
-      "weak floor volume, detached floor balloons, floating balloons, floating gap, " +
-      "gap between balloons and arch, balloons in front of arch face, random loose floor balloons"
+    ? ", tiny balloons only, same-size balloons, sparse garland, thin garland, stringy garland, " +
+      "thin single-file balloon chain, evenly spaced small balloons, weak floor volume, " +
+      "balloons across the front of the arch, balloons covering the arch face, balloons in front of arch face, " +
+      "balloons crossing the arch opening, balloon pile in front of arch, floor buildup in front of arch face, " +
+      "balloons on left side of arch, garland on both sides of arch"
     : "";
 
   const balloonNeg = "bead-like balloons, uniform balloon sizes, fake balloons, " +
-    "gap between balloons and backdrop, detached garland, floating balloon cluster, separated balloons" +
+    "gap between balloons and backdrop, detached garland, floating balloon cluster, separated balloons, " +
+    "detached floor balloons, floating loose balloons, scattered floor balloons, " +
+    "broken-looking loose balloons, floor balloons disconnected from garland, floating gap" +
     archBalloonNeg;
 
   // Balloon color fidelity — active when a palette is configured
@@ -839,8 +844,10 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
       backdropDesc =
         `freestanding circular event backdrop panel, exactly ${p.widthCm}cm x ${p.heightCm}cm, ` +
         `the bottom edge of the panel touches the floor or sits no more than 5cm above the floor, ` +
-        `positioned slightly in front of the wall, not wall-mounted, not painted on the wall. ` +
-        `No visible wheels, no visible stand, no visible frame — the panel reads as a clean solid circular surface.`;
+        `clearly freestanding in front of the wall, with visible separation between the panel and the wall behind it. ` +
+        `Not wall-mounted, not attached to the wall, not painted on the wall. ` +
+        `No visible wheels, no visible stand, no visible frame, no visible support hardware of any kind — ` +
+        `the panel reads as a clean solid circular surface as if floating freestanding with no mechanism shown.`;
     } else {
       backdropDesc =
         `single ${panelTypeLabel(p.type)} cream-white backdrop board, ` +
@@ -882,9 +889,13 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
 
   // ── Plinth description ────────────────────────────────────────────────────
   const plinth       = sceneModel.plinths[0];
+  const hasRoundPanelInScene = sceneModel.panels.some((p) => p.type === "round");
   const plinthDesc   = plinth
     ? `one slim freestanding white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter, ` +
-      `fully visible from base to top, placed on the open side near the arch backdrop`
+      `fully visible from base to top, ` +
+      (hasRoundPanelInScene
+        ? `standing close to the round backdrop panel, not set too far forward into the room`
+        : `placed on the open side near the arch backdrop`)
     : "";
   const noPlinthDesc = plinth ? "" : "No plinths. ";
 
@@ -896,16 +907,21 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
   const hasArchPanelInScene = sceneModel.panels.some((p) => p.type === "arch");
   const archGarlandExtra = hasArchPanelInScene
     ? ` Premium organic balloon garland with large, medium, and small balloons nested together ` +
-      `in lush clustered bunches; fuller volume at the bottom on the floor; ` +
-      `balloons wrap tightly around the outer edge of the arch only, with no visible gap; ` +
-      `not a thin single-file chain. ` +
-      `The arch face and center opening must stay clean and unobstructed — no balloons crossing in front of ` +
-      `the arch panel and no balloon pile or floor buildup directly in front of the arch face.`
+      `in lush clustered bunches; the garland runs from the upper-right corner of the arch down along ` +
+      `the right outer edge to the base, staying attached to the outer right edge only. ` +
+      `Any floor-level balloon cluster must stay to the side/base of the arch next to the garland, ` +
+      `not spread across the front of the panel. ` +
+      `Not a thin single-file chain. ` +
+      `The arch front face and center opening must stay completely clean and fully visible — no balloons ` +
+      `crossing in front of the arch panel, no balloons covering the arch face, and no balloon pile or ` +
+      `floor buildup directly in front of the arch face.`
     : "";
   const balloonSizeDesc =
-    ` Use a clear mix of balloon sizes: several 36 inch statement balloons, medium 12 inch balloons, ` +
-    `and small 5 inch accent balloons, nested together in rich clustered bunches — not a thin chain of ` +
-    `same-size balloons.`;
+    ` Use a clear mix of balloon sizes: several larger ~36 inch focal statement balloons, medium ~12 inch ` +
+    `balloons, and small ~5 inch filler balloons, nested together in rich clustered bunches for a full, ` +
+    `premium, intentional look — not a thin chain of same-size balloons. ` +
+    `Any balloons resting on the floor must be part of the garland's base cluster, visually connected to ` +
+    `and touching the main garland — never scattered, detached, or floating separately on the floor.`;
   const garlandDesc   = balloonStyle === "none"
     ? "No balloon garland. "
     : `organic half balloon garland on the right side, dense and premium, ` +
