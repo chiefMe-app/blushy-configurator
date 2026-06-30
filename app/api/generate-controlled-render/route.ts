@@ -57,10 +57,32 @@ function getT2IEndpoint(mode: ModelMode): string {
   return `https://fal.run/${getT2IModelId(mode)}`;
 }
 
+// ── T2I fallback gating ──────────────────────────────────────────────────
+// Inaccurate fallback renders (no layout reference → hallucinated props/
+// stage/base) are worse than an explicit error for this configurator.
+function isT2IFallbackAllowed(): boolean {
+  return (process.env.ALLOW_T2I_FALLBACK || "false").toLowerCase() === "true";
+}
+
+function isAuthOrBillingError(message: string | null): boolean {
+  if (!message) return false;
+  const m = message.toLowerCase();
+  return (
+    m.includes("forbidden") || m.includes("unauthorized") || m.includes(" 401") ||
+    m.includes(" 403") || m.includes("401 ") || m.includes("403 ") ||
+    m.includes("payment") || m.includes("credit") || m.includes("billing") ||
+    m.includes("authentication") || m.includes("model access") || m.includes("access denied")
+  );
+}
+
 // ── Simple in-memory render cache ───────────────────────────────────────
-// Keyed by sceneHash:requestedRenderMode:modelMode. Only successful results
-// are cached. Persists for the lifetime of the server process (sufficient
-// for a single-instance/dev deployment — not a distributed cache).
+// Keyed by RENDER_CACHE_VERSION:sceneHash:requestedRenderMode:modelMode. Only
+// successful results are cached. Persists for the lifetime of the server
+// process (sufficient for a single-instance/dev deployment — not a
+// distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
+// change should invalidate previously cached (now-stale) renders.
+const RENDER_CACHE_VERSION = "no-extra-stage-v2";
+
 interface RenderCacheEntry {
   imageUrl: string;
   diagInfo: Record<string, unknown>;
@@ -69,7 +91,7 @@ interface RenderCacheEntry {
 const renderCache = new Map<string, RenderCacheEntry>();
 
 function buildCacheKey(sceneHash: string | undefined, requestedRenderMode: string, modelMode: ModelMode): string {
-  return `${sceneHash ?? "nohash"}:${requestedRenderMode}:${modelMode}`;
+  return `${RENDER_CACHE_VERSION}:${sceneHash ?? "nohash"}:${requestedRenderMode}:${modelMode}`;
 }
 
 export const runtime  = "nodejs";
@@ -539,7 +561,11 @@ function buildNegativePrompt(
       "hazy, washed out, desaturated, grey filter, gray color cast, dull lighting, low contrast, " +
       "flat lighting, foggy look, distant camera, far away shot, small in frame, low energy, lifeless, " +
       "small round backdrop, undersized circle, decorative wall circle, round panel smaller than plinth scale, " +
-      "distant tiny round panel"
+      "distant tiny round panel, " +
+      "extra plinth, second plinth, duplicate plinth, low white platform, oval base, round base, stage, podium, " +
+      "riser, pedestal, support block, support disc, base cylinder, round backdrop base, display base, " +
+      "furniture base, extra cylinder, floating support, visible support bar, round backdrop on furniture, " +
+      "round backdrop mounted on stand"
     : "";
 
   const structureNeg =
@@ -904,17 +930,31 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
         `NOT a matte board, NOT a cream backdrop, NOT crumpled foil`;
     } else if (p.type === "round") {
       backdropDesc =
-        `freestanding circular event backdrop panel, exactly ${p.widthCm}cm x ${p.heightCm}cm, ` +
-        `the bottom edge of the panel touches the floor or sits no more than 5cm above the floor, ` +
-        `clearly freestanding in front of the wall, with visible separation between the panel and the wall behind it. ` +
+        `a thin circular backdrop panel, exactly ${p.widthCm}cm x ${p.heightCm}cm — not a furniture object, ` +
+        `not a platform, not a stage piece, not mounted on a display base. ` +
+        `The bottom edge of the panel sits directly on the floor, with at most 0-2cm visual gap between the ` +
+        `panel's lower edge and the floor surface. ` +
+        `Clearly freestanding in front of the wall, with visible separation between the panel and the wall behind it. ` +
         `Not wall-mounted, not attached to the wall, not painted on the wall. ` +
-        `No visible wheels, no visible stand, no visible frame, no visible support hardware of any kind — ` +
-        `the panel reads as a clean solid circular surface as if floating freestanding with no mechanism shown. ` +
+        `NO visible stand. NO visible feet. NO visible wheels. NO visible frame. NO visible support bar. ` +
+        `NO extra base of any kind beneath or around the panel. ` +
+        `If the panel is structurally supported, that support must be fully hidden directly behind the thin panel ` +
+        `and completely invisible in the photograph — the panel must read as a clean thin circular surface with ` +
+        `absolutely nothing visible beneath, around, or supporting it. ` +
+        `The ONLY cylinder allowed anywhere in this scene is the single selected vertical plinth — ` +
+        `do not add any other cylinder, disc, or rounded object near the panel. ` +
         `Round backdrop is exactly 200 cm diameter. It must visually appear about 2.6 times taller than the ` +
         `75 cm plinth and about 5 times wider than the 40 cm plinth diameter. The round panel should dominate ` +
         `the setup and fill most of the background composition. ` +
         `Do not shrink the round panel. Do not render it as a small decorative circle. ` +
-        `It must read as a full-size 2 meter event backdrop.`;
+        `It must read as a full-size 2 meter event backdrop, thin and flat like a sign board, never like a piece ` +
+        `of furniture or a display fixture. ` +
+        `Only one visible prop is allowed in the entire scene: the single selected vertical cylindrical plinth. ` +
+        `The round backdrop itself has no visible base, no stage, no platform, no pedestal, no riser, ` +
+        `no support block, no support disc, no display base, no furniture base, no stand, no feet, ` +
+        `and no second plinth. Do not invent any extra white cylinder, oval base, round base, or low platform ` +
+        `under or beside the round panel — the floor beneath and around the panel must be completely bare ` +
+        `except for the one selected plinth and the balloon garland.`;
     } else if (p.type === "arch") {
       backdropDesc =
         `single rounded arch backdrop, ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
@@ -1101,7 +1141,12 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
       : "") +
     (hasRoundPanelInScene
       ? `No small round backdrop. No undersized circle. No decorative wall circle. ` +
-        `No round panel smaller than plinth scale. No distant tiny round panel. `
+        `No round panel smaller than plinth scale. No distant tiny round panel. ` +
+        `No extra plinth. No second plinth. No duplicate plinth. No low white platform. No oval base. ` +
+        `No round base. No stage. No podium. No riser. No pedestal. No support block. No support disc. ` +
+        `No base cylinder. No round backdrop base. No display base. No furniture base. No extra cylinder. ` +
+        `No floating support. No visible stand. No visible feet. No visible wheels. No visible frame. ` +
+        `No visible support bar. No round backdrop on furniture. No round backdrop mounted on a stand. `
       : "") +
     (sempertexClause
       ? `No wrong balloon colors. No unrelated balloon colors. No theme-default balloon colors. ` +
@@ -1353,6 +1398,40 @@ export async function POST(req: NextRequest) {
       } finally {
         clearTimeout(timeoutHandle);
       }
+    }
+
+    // ── Decide whether the T2I fallback may run at all ──────────────────────
+    // Inaccurate fallback renders (no layout reference) are worse than an
+    // explicit error for this configurator, so we gate hard before calling it.
+    const isGeometryCriticalScene =
+      sceneModel.panels.some((p) => p.type === "round") ||
+      sceneModel.panels.some((p) => p.type === "arch") ||
+      sceneModel.plinths.length > 0;
+    const authOrBillingError = isAuthOrBillingError(fallbackErrorMessage);
+    const t2iAllowed         = isT2IFallbackAllowed();
+
+    if (authOrBillingError || !t2iAllowed || isGeometryCriticalScene) {
+      const fallbackSkipReason = authOrBillingError
+        ? "auth_or_billing_error"
+        : !t2iAllowed
+          ? "fallback_disabled"
+          : "geometry_critical_scene";
+      console.error("[generate-controlled-render] T2I fallback skipped:", fallbackSkipReason, fallbackErrorMessage);
+      return NextResponse.json({
+        ok:                 false,
+        error:              "render_failed",
+        userMessage:        "AI render could not be generated. Please try again or check fal.ai credits/model access.",
+        fallbackUsed:       false,
+        fallbackSkipped:    true,
+        fallbackSkipReason,
+        fallbackReason,
+        fallbackStage,
+        fallbackErrorMessage,
+        referenceUsed:      false,
+        modelId:            editModelId,
+        ...diagInfo,
+        cacheHit:           false,
+      }, { status: 502 });
     }
 
     // ── Fallback: pure text-to-image ────────────────────────────────────────
