@@ -514,7 +514,10 @@ function buildNegativePrompt(
       "thin single-file balloon chain, evenly spaced small balloons, weak floor volume, " +
       "balloons across the front of the arch, balloons covering the arch face, balloons in front of arch face, " +
       "balloons crossing the arch opening, balloon pile in front of arch, floor buildup in front of arch face, " +
-      "balloons on left side of arch, garland on both sides of arch"
+      "balloons on left side of arch, garland on both sides of arch, " +
+      "balloons across the front face, balloons blocking the arch face, balloons covering the open center, " +
+      "floor balloon pile in front of panel, garland crossing inward over the panel face, " +
+      "disconnected floor balloon pile, balloons in front of plinth"
     : "";
 
   const balloonNeg = "bead-like balloons, uniform balloon sizes, fake balloons, " +
@@ -528,7 +531,7 @@ function buildNegativePrompt(
   const balloonColorNeg = hasBalloonColors
     ? ", mostly white balloons, all-white garland, desaturated balloons, " +
       "colorless balloon garland, washed-out balloon colors, faded balloon palette, " +
-      "wrong balloon colors, unrelated balloon colors, theme-default balloon colors, " +
+      "wrong balloon colors, unrelated balloon colors, theme-default balloon colors, unselected balloon colors, " +
       "ignoring selected palette, changing backdrop size when color changes, " +
       "orange balloons when not selected, yellow balloons when not selected, " +
       "green balloons when not selected, blue balloons when not selected"
@@ -933,17 +936,22 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
   const hasArchPanelInScene = sceneModel.panels.some((p) => p.type === "arch");
   const archGarlandExtra = hasArchPanelInScene
     ? ` Premium organic balloon garland with large, medium, and small balloons nested together ` +
-      `in lush clustered bunches, attached only to the RIGHT side of the arch. ` +
-      `The garland flows naturally and continuously starting at the top-right corner of the arch, ` +
-      `following the outer right edge downward, ending in a connected floor-level cluster at the base — ` +
-      `a single smooth top-to-bottom flow down the outer edge, never reversed, never starting from the bottom, ` +
-      `never doubling back, never feeling awkward or disconnected. ` +
-      `Any floor-level balloon cluster must stay at the base of the garland on the right side, ` +
-      `connected to and touching the garland above it — not spread across the front of the panel. ` +
+      `in lush clustered bunches, attached ONLY to ONE OUTER SIDE of the arch — the right outer edge — ` +
+      `and nowhere else on the structure. ` +
+      `The garland flows naturally and continuously starting at the top outer corner of the arch, ` +
+      `following the outer side edge downward, ending in a connected floor-level cluster at the outer ` +
+      `bottom corner/side — a single smooth top-to-bottom flow down the outer edge, never reversed, ` +
+      `never starting from the bottom, never doubling back, never feeling awkward or disconnected. ` +
+      `If there is a floor or base balloon cluster, it must stay directly connected to the garland at the ` +
+      `outer bottom side/corner only — never placed in front of the panel, never centered, never spread ` +
+      `across the base. ` +
       `Not a thin single-file chain. ` +
-      `The arch front face and center opening must stay completely clean and fully readable — no balloons ` +
-      `crossing in front of the arch panel, no balloons covering the arch face, and no balloon pile or ` +
-      `floor buildup directly in front of the arch face.`
+      `The arch front face, the open center opening, and the readable surface of the arch must stay ` +
+      `completely clean, unobstructed, and fully visible at all times — absolutely no balloons crossing ` +
+      `in front of the arch panel, no balloons covering the open center, no balloons blocking the arch face, ` +
+      `and no balloon pile or floor buildup directly in front of the arch face. ` +
+      `The plinth and the front floor area in front of the arch must remain completely clean and ` +
+      `unobstructed — no balloons in front of the plinth, no balloons crossing into the front floor area.`
     : "";
   const balloonSizeDesc =
     ` Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
@@ -956,7 +964,7 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
     ? ` BALLOON COLOR LOCK: Use ONLY these selected Sempertex balloon colors for every balloon: ` +
       sempertexSelection!.map((c) => `${c.code} - ${c.colorName} - ${c.finish} - ${c.hex ?? ""}`).join(", ") +
       `. Do not invent, substitute, blend, or add any other balloon colors. ` +
-      `Ignore theme palette for balloons when selected Sempertex palette exists.`
+      `Ignore the theme palette for balloons.`
     : "";
   const garlandDesc   = balloonStyle === "none"
     ? "No balloon garland. "
@@ -1029,9 +1037,15 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
     `No ornate luxury room. No cream or brown walls. No orange or yellow white balance. ` +
     `No overly warm shadows. No dark moody room. ` +
     `No plants. No furniture. No chairs. No mirrors. No doors. No visible support legs. No black stands. ` +
+    (hasArchPanelInScene
+      ? `No balloons across the front face. No balloons blocking the arch face. ` +
+        `No balloons covering the open center. No floor balloon pile in front of panel. ` +
+        `No garland crossing inward over the panel face. No disconnected floor balloon pile. ` +
+        `No balloons in front of plinth. `
+      : "") +
     (sempertexClause
       ? `No wrong balloon colors. No unrelated balloon colors. No theme-default balloon colors. ` +
-        `No ignoring selected palette. No changing backdrop size when color changes. ` +
+        `No unselected balloon colors. No ignoring selected palette. No changing backdrop size when color changes. ` +
         `No orange balloons when not selected. No yellow balloons when not selected. ` +
         `No green balloons when not selected. No blue balloons when not selected. `
       : "") +

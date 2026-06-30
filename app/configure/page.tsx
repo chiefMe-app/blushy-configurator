@@ -3,7 +3,7 @@
 import { Plus_Jakarta_Sans } from "next/font/google";
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["500", "600", "700", "800"] });
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   EVENT_TYPES,
   THEMES,
@@ -813,10 +813,22 @@ function DecorStep({
   // Auto-apply theme default when theme changes (unless user manually changed)
   if (config.theme !== lastTheme) {
     setLastTheme(config.theme);
-    if (!sempertexManual) setSempertexIds(getThemeDefault(config.theme));
+    if (!sempertexManual) {
+      const next = getThemeDefault(config.theme);
+      setSempertexIds(next);
+      applySempertexToDecor(next);
+    }
   }
 
   const [sempertexExceeded, setSempertexExceeded] = useState(false);
+
+  // Keep decor state (balloonColors + sempertexSelection) in sync with the
+  // displayed chips on mount, so chips/payload/stale-detection/prompt all
+  // share the same effective palette from the very first render.
+  useEffect(() => {
+    applySempertexToDecor(sempertexIds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Sync selected Sempertex colors into decor state so they actually drive the
   // render (hex colors) and the render prompt (exact code/colorName/finish/family).
