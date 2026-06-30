@@ -822,10 +822,13 @@ export function useFinalRender(config: BuilderConfig) {
         body: JSON.stringify({
           promptInput,
           sceneModel,
-          renderAspectRatio: falImageSize,   // dynamic image_size for fal.ai
-          renderMode:        "first_generate",
-          force:             true,
-          currentSceneHash:  liveHash,
+          renderAspectRatio:   falImageSize,   // dynamic image_size for fal.ai
+          renderMode:          "first_generate",
+          force:               true,
+          currentSceneHash:    liveHash,
+          // Exact selected Sempertex balloon palette (code/colorName/finish/family) —
+          // empty/undefined lets the route fall back to the theme balloon palette.
+          sempertexSelection:  d.sempertexSelection ?? [],
         }),
       });
 

@@ -496,6 +496,18 @@ export interface DecorConfig {
    * so production specs can reflect the requested quantity and placement.
    */
   extraBalloonClusters?: ExtraBalloonCluster[];
+  /**
+   * Selected Sempertex balloon colors (metadata, not just hex) - used to build an
+   * exact-palette render instruction. Empty/undefined falls back to theme palette.
+   */
+  sempertexSelection?: SempertexSelection[];
+}
+
+export interface SempertexSelection {
+  code: string;
+  colorName: string;
+  finish: string;
+  family: string;
 }
 
 export interface Option<T extends string> {

@@ -45,6 +45,13 @@ export const maxDuration = 90;
 
 type RenderMode = "first_generate" | "edit_existing";
 
+interface SempertexSelectionItem {
+  code:      string;
+  colorName: string;
+  finish:    string;
+  family:    string;
+}
+
 interface RequestBody {
   promptInput:             PromptInput;
   sceneModel:              SceneModel;
@@ -55,6 +62,8 @@ interface RequestBody {
   force?:                  boolean;
   currentSceneHash?:       string;
   renderAspectRatio?:      FalImageSize; // dynamic image_size from real panel dimensions
+  /** Exact selected Sempertex balloon palette — empty/undefined falls back to theme palette. */
+  sempertexSelection?:     SempertexSelectionItem[];
 }
 
 // ---------------------------------------------------------------------------
@@ -489,7 +498,9 @@ function buildNegativePrompt(
       "wall-mounted circle, flat painted circle on wall, circle attached to wall, no gap from wall, " +
       "undersized round backdrop, tiny round backdrop, wrong scale round backdrop, not 200cm round backdrop, " +
       "plinth set too far forward, plinth far from backdrop, " +
-      "detached loose floor balloons, random isolated balloons on the floor"
+      "detached loose floor balloons, random isolated balloons on the floor, " +
+      "hazy, washed out, desaturated, grey filter, gray color cast, dull lighting, low contrast, " +
+      "flat lighting, foggy look, distant camera, far away shot, small in frame, low energy, lifeless"
     : "";
 
   const structureNeg =
@@ -515,7 +526,8 @@ function buildNegativePrompt(
   const hasBalloonColors = (sceneModel?.balloons?.colors?.length ?? 0) > 0;
   const balloonColorNeg = hasBalloonColors
     ? ", mostly white balloons, all-white garland, desaturated balloons, " +
-      "colorless balloon garland, washed-out balloon colors, faded balloon palette"
+      "colorless balloon garland, washed-out balloon colors, faded balloon palette, " +
+      "wrong balloon colors, ignoring selected palette, changing backdrop size when color changes"
     : "";
 
   const promptProbeForTheme = promptInput ? JSON.stringify(promptInput).toLowerCase() : "";
@@ -762,7 +774,7 @@ function panelTypeLabel(type: string): string {
   }
 }
 
-function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
+function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: SempertexSelectionItem[]): string {
   const panelCount  = sceneModel.panels.length;
   const isMulti     = panelCount > 1;
 
@@ -907,12 +919,15 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
   const hasArchPanelInScene = sceneModel.panels.some((p) => p.type === "arch");
   const archGarlandExtra = hasArchPanelInScene
     ? ` Premium organic balloon garland with large, medium, and small balloons nested together ` +
-      `in lush clustered bunches; the garland runs from the upper-right corner of the arch down along ` +
-      `the right outer edge to the base, staying attached to the outer right edge only. ` +
-      `Any floor-level balloon cluster must stay to the side/base of the arch next to the garland, ` +
-      `not spread across the front of the panel. ` +
+      `in lush clustered bunches, attached only to the RIGHT side of the arch. ` +
+      `The garland flows naturally and continuously starting at the top-right corner of the arch, ` +
+      `following the outer right edge downward, ending in a connected floor-level cluster at the base — ` +
+      `a single smooth top-to-bottom flow down the outer edge, never reversed, never starting from the bottom, ` +
+      `never doubling back, never feeling awkward or disconnected. ` +
+      `Any floor-level balloon cluster must stay at the base of the garland on the right side, ` +
+      `connected to and touching the garland above it — not spread across the front of the panel. ` +
       `Not a thin single-file chain. ` +
-      `The arch front face and center opening must stay completely clean and fully visible — no balloons ` +
+      `The arch front face and center opening must stay completely clean and fully readable — no balloons ` +
       `crossing in front of the arch panel, no balloons covering the arch face, and no balloon pile or ` +
       `floor buildup directly in front of the arch face.`
     : "";
@@ -922,6 +937,11 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
     `premium, intentional look — not a thin chain of same-size balloons. ` +
     `Any balloons resting on the floor must be part of the garland's base cluster, visually connected to ` +
     `and touching the main garland — never scattered, detached, or floating separately on the floor.`;
+  const sempertexClause = balloonStyle !== "none" && sempertexSelection && sempertexSelection.length > 0
+    ? ` Use this exact selected Sempertex balloon palette for all balloons: ` +
+      sempertexSelection.map((c) => `${c.code} - ${c.colorName} - ${c.finish}`).join(", ") +
+      `. Do not substitute unrelated colors.`
+    : "";
   const garlandDesc   = balloonStyle === "none"
     ? "No balloon garland. "
     : `organic half balloon garland on the right side, dense and premium, ` +
@@ -929,7 +949,8 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
       balloonSizeDesc +
       ` The balloon garland must be attached directly to the backdrop edge with no visible gap. ` +
       `Balloons must closely follow the backdrop contour and look professionally installed onto the structure.` +
-      archGarlandExtra;
+      archGarlandExtra +
+      sempertexClause;
 
   // ── Multi-panel negatives ─────────────────────────────────────────────────
   const hasShimmerInMulti = isMulti && sceneModel.panels.some((p) => p.type === "shimmer_wall");
@@ -951,14 +972,31 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
       shimmerMultiNegs
     : "";
 
+  // Round backdrops render dull/distant with the default wide-shot wording — use a
+  // brighter, sharper, closer-framed photography clause for round scenes only.
+  const isRoundScene = hasRoundPanelInScene && !isMulti;
+  const photographyOpening = isRoundScene
+    ? `Bright, sharp, premium studio photography with clean natural daylight from the left, ` +
+      `gray textured plaster or concrete studio wall, polished light concrete or stone floor, ` +
+      `crisp clean whites, natural accurate color, normal punchy contrast, well-lit and clear — ` +
+      `NOT hazy, NOT desaturated, NOT grey-filtered, NOT washed out, NOT low-energy, NOT distant. ` +
+      `fresh modern editorial event styling. `
+    : `Cool neutral daylight studio photography with soft natural light from the left, ` +
+      `gray textured plaster or concrete studio wall, polished light concrete or stone floor, ` +
+      `crisp clean whites, icy light blue and white balloon tones, neutral white balance, ` +
+      `fresh modern editorial event styling. `;
+  const framingClause = isRoundScene
+    ? `Transform this clean layout reference into a premium photorealistic indoor children's birthday event setup. ` +
+      `Medium-close full-body event photography — the round backdrop, balloon garland, and plinth fill the frame ` +
+      `with strong visual presence and prominence, similar closeness and scale to a close-up arch backdrop photograph, ` +
+      `while still keeping the entire setup fully visible with minimal extra empty space around it. `
+    : `Transform this clean layout reference into a premium photorealistic indoor children's birthday event setup. ` +
+      `Wide full-body event photography — entire setup fully visible with breathing room, nothing cropped. `;
+
   return (
     // Art direction first — establishes lighting, color, and mood before describing objects
-    `Cool neutral daylight studio photography with soft natural light from the left, ` +
-    `gray textured plaster or concrete studio wall, polished light concrete or stone floor, ` +
-    `crisp clean whites, icy light blue and white balloon tones, neutral white balance, ` +
-    `fresh modern editorial event styling. ` +
-    `Transform this clean layout reference into a premium photorealistic indoor children's birthday event setup. ` +
-    `Wide full-body event photography — entire setup fully visible with breathing room, nothing cropped. ` +
+    photographyOpening +
+    framingClause +
     `${backdropDesc}. ` +
     (plinthDesc ? `${plinthDesc}. ` : noPlinthDesc) +
     `${garlandDesc}. ` +
@@ -974,7 +1012,8 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel): string {
     `No warm yellow lighting. No golden ambient light. No beige hotel interior. No yellow color cast. ` +
     `No ornate luxury room. No cream or brown walls. No orange or yellow white balance. ` +
     `No overly warm shadows. No dark moody room. ` +
-    `No plants. No furniture. No chairs. No mirrors. No doors. No visible support legs. No black stands.`
+    `No plants. No furniture. No chairs. No mirrors. No doors. No visible support legs. No black stands. ` +
+    (sempertexClause ? `No wrong balloon colors. No ignoring selected palette. No changing backdrop size when color changes.` : "")
   );
 }
 
@@ -1003,6 +1042,7 @@ export async function POST(req: NextRequest) {
     force             = false,
     currentSceneHash,
     renderAspectRatio = "landscape_4_3",  // default fallback if not sent
+    sempertexSelection,
   } = body;
 
   const hasText    = sceneModel.panels.some((p) => p.text.enabled && p.text.value.trim());
@@ -1108,7 +1148,7 @@ export async function POST(req: NextRequest) {
     // ── Primary path: layout-reference edit ────────────────────────────────
     // Same proven pattern as fal-layout-reference-test in the structure test route.
     const pngResult       = await generateLayoutReferencePng(sceneModel, promptInputForAi);
-    const layoutRefPrompt = buildLayoutRefEditPrompt(sceneModel);
+    const layoutRefPrompt = buildLayoutRefEditPrompt(sceneModel, sempertexSelection);
 
     let fallbackReason:       string | null = null;
     let fallbackStage:        string | null = null;

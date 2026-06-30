@@ -817,15 +817,46 @@ function DecorStep({
   }
 
   const [sempertexExceeded, setSempertexExceeded] = useState(false);
+
+  // Sync selected Sempertex colors into decor state so they actually drive the
+  // render (hex colors) and the render prompt (exact code/colorName/finish/family).
+  // Empty selection falls back to the theme's hex palette, per existing behavior.
+  function applySempertexToDecor(ids: string[]) {
+    const selected = ids
+      .map((id) => SEMPERTEX_CATALOG.find((c) => c.id === id))
+      .filter((c): c is typeof SEMPERTEX_CATALOG[number] => !!c);
+    if (selected.length > 0) {
+      patchDecor({
+        balloonColors: selected.map((c) => c.hex),
+        sempertexSelection: selected.map((c) => ({ code: c.code, colorName: c.colorName, finish: c.finish, family: c.family })),
+      });
+    } else {
+      const t = themeById(config.theme);
+      patchDecor({
+        balloonColors: t ? t.balloonColors.slice(0, 5) : [],
+        sempertexSelection: [],
+      });
+    }
+  }
+
   const toggleSempertex = (id: string) => {
     setSempertexManual(true);
     setSempertexIds(prev => {
-      if (prev.includes(id)) { setSempertexExceeded(false); return prev.filter(x => x !== id); }
-      if (prev.length >= 5) { setSempertexExceeded(true); return prev; }
-      setSempertexExceeded(false); return [...prev, id];
+      let next: string[];
+      if (prev.includes(id)) { setSempertexExceeded(false); next = prev.filter(x => x !== id); }
+      else if (prev.length >= 5) { setSempertexExceeded(true); return prev; }
+      else { setSempertexExceeded(false); next = [...prev, id]; }
+      applySempertexToDecor(next);
+      return next;
     });
   };
-  const resetToThemePalette = () => { setSempertexIds(getThemeDefault(config.theme)); setSempertexManual(false); setSempertexExceeded(false); };
+  const resetToThemePalette = () => {
+    const next = getThemeDefault(config.theme);
+    setSempertexIds(next);
+    setSempertexManual(false);
+    setSempertexExceeded(false);
+    applySempertexToDecor(next);
+  };
   const toggleCustomize = (id: string) =>
     setOpenCustomizeIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
@@ -1866,6 +1897,11 @@ function DecorStep({
           </div>
           {sempertexExceeded && (
             <div style={{ marginTop: 6, fontSize: 11, color: "#EC4D8D", fontWeight: 600 }}>Maximum 5 colors selected. Remove one to add another.</div>
+          )}
+          {sempertexManual && (
+            <div style={{ marginTop: 8, padding: "6px 10px", background: "#FFF7E6", border: "1px solid #FCD9A0", borderRadius: 8, fontSize: 11, color: "#92620A", fontWeight: 600 }}>
+              Balloon colors changed - regenerate to update preview.
+            </div>
           )}
         </div>
 
