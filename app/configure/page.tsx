@@ -784,7 +784,7 @@ const SEMPERTEX_THEME_DEFAULTS: Record<string, string[]> = {
   blush_garden: ["pastel-matte-609-pink","silk-809-pink-blossom","fashion-005-white","metallic-570-gold"],
   princess:     ["pastel-matte-609-pink","silk-809-pink-blossom","fashion-005-white","metallic-570-gold"],
   baby_blue:    ["fashion-005-white","pastel-matte-630-green","pastel-matte-650-lilac","silk-806-oyster-white"],
-  frozen:       ["fashion-005-white","pastel-matte-630-green","silk-826-cool-mint","reflex-909-pink"],
+  frozen:       ["fashion-005-white","silk-806-oyster-white","pastel-matte-640-blue","silk-850-light-amethyst","reflex-981-silver"],
   bridal:       ["fashion-005-white","reflex-970-gold","reflex-968-rose-gold","pastel-matte-650-lilac"],
   corporate:    ["fashion-005-white","fashion-080-black","reflex-981-silver"],
   default:      ["fashion-005-white","pastel-matte-609-pink","pastel-matte-650-lilac"],

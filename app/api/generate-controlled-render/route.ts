@@ -492,7 +492,8 @@ function buildNegativePrompt(
     ? ", wide arch wall, oversized arch panel, 150 cm wide arch, 180 cm wide arch, " +
       "2 meter wide arch, wall-sized backdrop, architectural wall arch, permanent arch wall, " +
       "extra-wide panel, panel width similar to height, arch wider than 120 cm, " +
-      "wide rounded wall, giant arch, oversized event wall, backdrop wider than configured size"
+      "wide rounded wall, giant arch, oversized event wall, backdrop wider than configured size, " +
+      "hollow arch, open doorway arch, arch frame, cut-out center, empty opening, see-through arch, doorway frame"
     : "";
 
   const hasRoundPanel = items.some((p) => p.type === "round");
@@ -874,6 +875,13 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
         `Not wall-mounted, not attached to the wall, not painted on the wall. ` +
         `No visible wheels, no visible stand, no visible frame, no visible support hardware of any kind — ` +
         `the panel reads as a clean solid circular surface as if floating freestanding with no mechanism shown.`;
+    } else if (p.type === "arch") {
+      backdropDesc =
+        `single rounded arch backdrop, ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
+        `a solid filled freestanding arch backdrop panel with a fully opaque surface. ` +
+        `The entire arch face is one continuous solid board, seamless matte cream-white surface, ` +
+        `no cut-out opening, no hollow doorway, no empty arch frame — the full solid panel face must be visible. ` +
+        `This is a solid event backdrop board shaped like an arch, not a doorway or passage you can see or walk through.`;
     } else {
       backdropDesc =
         `single ${panelTypeLabel(p.type)} cream-white backdrop board, ` +
@@ -891,13 +899,17 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
     const panelDescs = sceneModel.panels.map((p, i) => {
       const wRatio = (p.widthCm / p.heightCm).toFixed(2);
       const isShimmer = p.type === "shimmer_wall";
+      const isArch    = p.type === "arch";
       const shimmerC  = sceneModel.shimmerColor ?? "silver";
       const surfaceDesc = isShimmer
         ? `freestanding square event shimmer wall (200cm x 200cm) — ` +
           `regular neat grid of small flat square ${shimmerC} sequin tiles, ` +
           `clean reflective sparkle, flat tiled surface, ${shimmerC} shimmer finish, ` +
           `NOT crumpled foil, NOT a matte board, NOT a cream panel`
-        : `full-width solid opaque cream-white freestanding backdrop board with broad visible surface`;
+        : isArch
+          ? `solid filled freestanding arch backdrop panel, fully opaque surface, seamless matte cream-white surface, ` +
+            `no cut-out opening, no hollow doorway, no empty arch frame, full solid panel face visible`
+          : `full-width solid opaque cream-white freestanding backdrop board with broad visible surface`;
       return (
         `Panel ${i + 1} (${posLabels[i]}): ${panelTypeLabel(p.type)} backdrop board, ` +
         `${p.widthCm}cm wide by ${p.heightCm}cm tall (width-to-height ratio ${wRatio}), ` +
@@ -1043,7 +1055,9 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
       ? `No balloons across the front face. No balloons blocking the arch face. ` +
         `No balloons covering the open center. No floor balloon pile in front of panel. ` +
         `No garland crossing inward over the panel face. No disconnected floor balloon pile. ` +
-        `No balloons in front of plinth. `
+        `No balloons in front of plinth. ` +
+        `No hollow arch. No open doorway arch. No arch frame. No cut-out center. ` +
+        `No empty opening. No see-through arch. No doorway frame. `
       : "") +
     (sempertexClause
       ? `No wrong balloon colors. No unrelated balloon colors. No theme-default balloon colors. ` +
