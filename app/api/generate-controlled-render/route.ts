@@ -504,7 +504,9 @@ function buildNegativePrompt(
       "plinth set too far forward, plinth far from backdrop, " +
       "detached loose floor balloons, random isolated balloons on the floor, " +
       "hazy, washed out, desaturated, grey filter, gray color cast, dull lighting, low contrast, " +
-      "flat lighting, foggy look, distant camera, far away shot, small in frame, low energy, lifeless"
+      "flat lighting, foggy look, distant camera, far away shot, small in frame, low energy, lifeless, " +
+      "small round backdrop, undersized circle, decorative wall circle, round panel smaller than plinth scale, " +
+      "distant tiny round panel"
     : "";
 
   const structureNeg =
@@ -874,7 +876,12 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
         `clearly freestanding in front of the wall, with visible separation between the panel and the wall behind it. ` +
         `Not wall-mounted, not attached to the wall, not painted on the wall. ` +
         `No visible wheels, no visible stand, no visible frame, no visible support hardware of any kind — ` +
-        `the panel reads as a clean solid circular surface as if floating freestanding with no mechanism shown.`;
+        `the panel reads as a clean solid circular surface as if floating freestanding with no mechanism shown. ` +
+        `Round backdrop is exactly 200 cm diameter. It must visually appear about 2.6 times taller than the ` +
+        `75 cm plinth and about 5 times wider than the 40 cm plinth diameter. The round panel should dominate ` +
+        `the setup and fill most of the background composition. ` +
+        `Do not shrink the round panel. Do not render it as a small decorative circle. ` +
+        `It must read as a full-size 2 meter event backdrop.`;
     } else if (p.type === "arch") {
       backdropDesc =
         `single rounded arch backdrop, ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
@@ -1058,6 +1065,10 @@ function buildLayoutRefEditPrompt(sceneModel: SceneModel, sempertexSelection?: S
         `No balloons in front of plinth. ` +
         `No hollow arch. No open doorway arch. No arch frame. No cut-out center. ` +
         `No empty opening. No see-through arch. No doorway frame. `
+      : "") +
+    (hasRoundPanelInScene
+      ? `No small round backdrop. No undersized circle. No decorative wall circle. ` +
+        `No round panel smaller than plinth scale. No distant tiny round panel. `
       : "") +
     (sempertexClause
       ? `No wrong balloon colors. No unrelated balloon colors. No theme-default balloon colors. ` +
