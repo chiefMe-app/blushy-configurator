@@ -58,7 +58,8 @@ function panelPathOrShape(
   const stroke = `stroke="rgba(150,150,150,0.14)" stroke-width="1"`;
 
   if (shape === "round") {
-    const centerY = apexY + r;
+    // Bottom of circle must touch floorY exactly — no floating gap
+    const centerY = floorY - r;
     return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="${fillColor}" ${stroke}/>`;
   }
 
@@ -131,7 +132,8 @@ function panelEdgeOnly(
   const edgeStroke = `fill="none" stroke="rgba(95,95,95,0.45)" stroke-width="2" stroke-linecap="round"`;
 
   if (shape === "round") {
-    const centerY = apexY + r;
+    // Bottom of circle must touch floorY exactly — no floating gap
+    const centerY = floorY - r;
     return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="none" stroke="rgba(95,95,95,0.42)" stroke-width="2"/>`;
   }
   if (shape === "rect" || shape === "shimmer_wall") {
@@ -207,9 +209,40 @@ export function generateStructureSilhouette(
 
   const layout = calculateExactLayout(backdropItems, plinthSizes, W, H);
 
-  const colors: string[] = (balloonColors && balloonColors.length > 0)
-    ? balloonColors.slice(0, 4)
-    : ["#C8D8E8", "#E8EEF4", "#B0C8DC"];
+  // When selected hex colors are provided, build a weighted guide sequence that makes
+  // white and the primary pastel dominant, and pushes warm/saturated accents (yellow,
+  // gold) to appear only once — at the end.  Warmth is measured as R+G-B*2 so that
+  // pure yellows score highest and are reliably placed last in the cycling order.
+  const colors: string[] = (() => {
+    if (!balloonColors || balloonColors.length === 0) {
+      return ["#C8D8E8", "#E8EEF4", "#B0C8DC"];
+    }
+    const raw = balloonColors.slice(0, 5);
+    if (raw.length === 1) return raw;
+
+    const warmth = (hex: string): number => {
+      const h = hex.replace(/^#/, "");
+      if (h.length < 6) return 0;
+      return parseInt(h.slice(0,2),16) + parseInt(h.slice(2,4),16) - parseInt(h.slice(4,6),16)*2;
+    };
+
+    const wh  = raw.find(c => c.toLowerCase() === "#ffffff" || c.toLowerCase() === "#fff") ?? null;
+    const pri = raw.find(c => c.toLowerCase() !== "#ffffff" && c.toLowerCase() !== "#fff") ?? raw[0];
+    // Rest sorted by warmth ascending — warmest (yellow/gold) goes last
+    const rest = raw
+      .filter(c => c !== wh && c !== pri)
+      .sort((a, b) => warmth(a) - warmth(b));
+
+    const W = wh ?? pri;
+    // Pattern: white+primary dominant (4+3 slots), accents once each, warmest accent last
+    const seq: string[] = [W, pri, W, pri];
+    if (rest[0]) seq.push(rest[0]);
+    seq.push(W);
+    if (rest[1]) seq.push(rest[1]);
+    seq.push(pri, W);
+    if (rest.length > 0) seq.push(rest[rest.length - 1]);
+    return seq;
+  })();
 
   // Zoomed-out composition: scale the scene to 80% of the canvas to create margins
   // on all sides. This ensures the full arch, plinth, and garland are fully visible
@@ -280,13 +313,27 @@ export function generateStructureSilhouette(
 
   // v4: Cylindrical plinth edge guide — no fill, no block
   const singleShimmer = backdropItems.length === 1 && backdropItems[0]?.type === "shimmer_wall";
+  const singleRound   = backdropItems.length === 1 && backdropItems[0]?.type === "round";
   for (const p of layout.plinths) {
-    const plinthCx = singleShimmer
-      ? Math.round(W * 0.50)   // centered in front of the shimmer wall
-      : balloonStyle === "half"
-        ? Math.round(W * 0.28) // open left side, away from right-side garland
-        : p.cx;
-    content.push(plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
+    let plinthCx: number;
+    if (singleShimmer) {
+      plinthCx = Math.round(W * 0.50); // centered in front of shimmer wall
+    } else if (singleRound && balloonStyle === "half" && layout.panels.length === 1) {
+      // Left side of the round circle, clear of the right-arc garland
+      const rPanel = layout.panels[0];
+      plinthCx = Math.round(rPanel.cx - rPanel.pw * 0.40);
+    } else if (balloonStyle === "half") {
+      plinthCx = Math.round(W * 0.28); // open left side, away from right-side garland
+    } else {
+      plinthCx = p.cx;
+    }
+    // Round scenes: use filled cylinder so the plinth reads as a clear solid object,
+    // not just outline edges that the model may skip or merge with the background.
+    if (singleRound) {
+      content.push(plinthCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
+    } else {
+      content.push(plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
+    }
   }
 
   // v4: Individual balloon circles — no filled blob, organic circles follow right-side path.
@@ -297,53 +344,110 @@ export function generateStructureSilhouette(
     const groupTop   = Math.min(...layout.panels.map((p) => p.apexY));
     const floorY     = layout.floorY;
     const dy         = floorY - groupTop;
-    const primary    = colors[0];
-    const secondary  = colors[1] ?? colors[0];
+    // When selected hex colors are passed, render guide dots with actual palette colors
+    // at 0.75 opacity so the AI color reference in the guide image matches exactly.
+    // White (#FFFFFF) gets a gray stroke so it remains visible on the white background.
+    const hasSelectedColors = !!(balloonColors && balloonColors.length > 0);
 
-    // Individual balloon circles along the configured path — no blobs, no slabs
-    const balloonStroke = `stroke="rgba(85,85,85,0.30)" stroke-width="1"`;
-    const balloonFill   = `fill="rgba(200,218,235,0.08)"`;
+    const hexToRgba = (hex: string, alpha: number): string => {
+      const h = hex.replace("#", "");
+      const r = parseInt(h.slice(0, 2), 16);
+      const g = parseInt(h.slice(2, 4), 16);
+      const b = parseInt(h.slice(4, 6), 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    };
+
+    const balloonAttrs = (idx: number): string => {
+      if (!hasSelectedColors) {
+        return `fill="rgba(200,218,235,0.08)" stroke="rgba(85,85,85,0.30)" stroke-width="1"`;
+      }
+      const hex     = colors[idx % colors.length] ?? colors[0];
+      const isWhite = hex.toLowerCase() === "#ffffff" || hex.toLowerCase() === "#fff";
+      const fill    = hexToRgba(hex, 0.76);
+      const stroke  = isWhite
+        ? `stroke="rgba(160,160,160,0.72)" stroke-width="1.4"`
+        : `stroke="rgba(55,55,55,0.22)" stroke-width="1"`;
+      return `fill="${fill}" ${stroke}`;
+    };
 
     if (balloonStyle === "half") {
-      // Right-side half garland: circles from top-right corner to floor
-      // Positioned outside the panel right edge with organic jitter
-      const outerOffset = Math.round(W * 0.055);
-      const numBalloons = 22;
+      // Detect single round panel — needs an arc garland, not a vertical side garland.
+      // A vertical line of circles next to a circle reads as a support pillar or full ring to the model.
+      const isRoundScene =
+        backdropItems.length === 1 &&
+        (backdropItems[0]?.type ?? "") === "round" &&
+        layout.panels.length === 1;
 
-      for (let i = 0; i < numBalloons; i++) {
-        const t   = i / (numBalloons - 1);
-        // Sine-wave horizontal jitter — avoids straight vertical line of circles
-        const jx  = Math.sin(t * Math.PI * 2.1 + 0.4) * Math.round(W * 0.022);
-        // Smaller vertical jitter for organic overlap
-        const jy  = (((i * 11) % 28) - 14);
-        const bx  = groupRight + outerOffset + jx;
-        const by  = groupTop + t * dy + jy;
-        // Varied radii: large cluster at top, varied in middle, compact at floor
-        const r   = i < 3 ? 20 + ((i * 5) % 7) : i > numBalloons - 4 ? 16 + ((i * 3) % 6) : 12 + ((i * 7) % 9);
-        content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonFill} ${balloonStroke}/>`);
+      if (isRoundScene) {
+        // Round panel: arc garland along the outer right perimeter only.
+        // From 11 o'clock (SVG -120°) clockwise through 12 → 3 → to just past 5 o'clock (SVG +75°).
+        // Makes the layout reference unambiguously a partial arc, not a full ring.
+        const rPanel   = layout.panels[0];
+        const circR    = rPanel.pw / 2;
+        const circleCx = rPanel.cx;
+        // Anchor to floor so circle bottom == floorY (no floating gap → no invented base)
+        const circleCy = rPanel.floorY - circR;
+        const outerR   = circR + Math.round(W * 0.038);
+
+        // Right-side arc only: -65° (~1 o'clock, upper-right) to 80° (~5 o'clock, lower-right).
+        // Hard guard removes any balloon that falls left of circleCx + circR*0.15
+        // so no guide dot can bleed onto the upper-left, left, or lower-left quadrant.
+        const startAngleDeg = -65; // ~1 o'clock: upper-right of circle
+        const endAngleDeg   =  80; // ~5 o'clock: lower-right, approaching floor
+        const numBalloons   = 18;
+
+        for (let i = 0; i < numBalloons; i++) {
+          const t        = i / (numBalloons - 1);
+          const angleDeg = startAngleDeg + t * (endAngleDeg - startAngleDeg);
+          const angleRad = (angleDeg * Math.PI) / 180;
+          const radVar   = outerR + (i % 2 === 0 ? Math.round(W * 0.012) : -Math.round(W * 0.006));
+          const bx       = circleCx + radVar * Math.cos(angleRad);
+          const by       = circleCy + radVar * Math.sin(angleRad);
+          // Hard guard: skip any dot left of 15% past circle center — prevents left-side leakage
+          if (bx < circleCx + circR * 0.15) continue;
+          const br       = i < 3 ? 22 : i > numBalloons - 4 ? 16 : 12 + ((i * 7) % 10);
+          content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br}" ${balloonAttrs(i)}/>`);
+        }
+      } else {
+        // Arch / rect / other: right-side vertical garland from top-right corner to floor
+        const outerOffset = Math.round(W * 0.055);
+        const numBalloons = 22;
+
+        for (let i = 0; i < numBalloons; i++) {
+          const t   = i / (numBalloons - 1);
+          // Sine-wave horizontal jitter — avoids straight vertical line of circles
+          const jx  = Math.sin(t * Math.PI * 2.1 + 0.4) * Math.round(W * 0.022);
+          // Smaller vertical jitter for organic overlap
+          const jy  = (((i * 11) % 28) - 14);
+          const bx  = groupRight + outerOffset + jx;
+          const by  = groupTop + t * dy + jy;
+          // Varied radii: large cluster at top, varied in middle, compact at floor
+          const r   = i < 3 ? 20 + ((i * 5) % 7) : i > numBalloons - 4 ? 16 + ((i * 3) % 6) : 12 + ((i * 7) % 9);
+          content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonAttrs(i)}/>`);
+        }
       }
 
     } else if (balloonStyle === "full" || balloonStyle === "premium") {
       const numPerSide = balloonStyle === "premium" ? 14 : 10;
       const offset     = Math.round(W * 0.05);
 
-      const drawSide = (edgeX: number, dir: 1 | -1) => {
+      const drawSide = (edgeX: number, dir: 1 | -1, colorOffset = 0) => {
         for (let i = 0; i < numPerSide; i++) {
           const t  = i / (numPerSide - 1);
           const bx = edgeX + dir * (offset + (((i * 5) % 14)));
           const by = groupTop + t * dy;
           const r  = 12 + ((i * 7) % 9);
-          content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonFill} ${balloonStroke}/>`);
+          content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonAttrs(colorOffset + i)}/>`);
         }
       };
-      drawSide(groupRight,  1);
-      drawSide(groupLeft,  -1);
+      drawSide(groupRight,  1, 0);
+      drawSide(groupLeft,  -1, numPerSide);
       // Top arc circles
       for (let i = 0; i < numPerSide; i++) {
         const t  = i / (numPerSide - 1);
         const bx = groupLeft + t * (groupRight - groupLeft);
         const by = groupTop - offset + (((i * 5) % 12));
-        content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${12 + ((i * 3) % 7)}" ${balloonFill} ${balloonStroke}/>`);
+        content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${12 + ((i * 3) % 7)}" ${balloonAttrs(numPerSide * 2 + i)}/>`);
       }
     }
   }
