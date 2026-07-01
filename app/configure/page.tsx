@@ -59,6 +59,7 @@ import {
   type ShimmerColorId,
 } from "@/lib/config";
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
+import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS } from "@/lib/themeCatalog";
 import SetupPreview, { useSetupPreview } from "@/components/SetupPreview";
 import StepNavigation from "@/components/StepNavigation";
 import OptionCard from "@/components/OptionCard";
@@ -97,6 +98,8 @@ export default function ConfigurePage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [result, setResult] = useState<SubmitResult | null>(null);
+  const [customThemeText, setCustomThemeText] = useState("");
+  const [showCustomThemeInput, setShowCustomThemeInput] = useState(false);
 
   const theme = themeById(config.theme) ?? THEMES[0];
   const accentStyle = useMemo(
@@ -522,6 +525,30 @@ export default function ConfigurePage() {
                       </button>
                     );
                   })}
+
+                  {/* Custom Theme placeholder */}
+                  <button type="button"
+                    onClick={() => setShowCustomThemeInput(v => !v)}
+                    className="relative flex w-full flex-col gap-2 rounded-2xl border border-dashed border-black/20 bg-white p-4 text-left transition hover:border-accent/40">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="#C084FC" strokeWidth="1.5" strokeDasharray="3 2"/><path d="M11 7v4M11 13v2" stroke="#C084FC" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                        <span className="text-sm font-semibold text-black/70">Custom Theme</span>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-medium text-black/40">Coming soon</span>
+                    </div>
+                    <span className="text-xs leading-snug text-black/40">Describe your own theme for a fully personalized setup</span>
+                    {showCustomThemeInput && (
+                      <textarea
+                        value={customThemeText}
+                        onChange={e => setCustomThemeText(e.target.value)}
+                        placeholder="e.g. Under the sea with teal and coral colors, starfish, seashells..."
+                        onClick={e => e.stopPropagation()}
+                        rows={2}
+                        className="mt-1 w-full rounded-lg border border-black/10 p-2 text-xs outline-none focus:border-accent/50"
+                      />
+                    )}
+                  </button>
                 </div>
               </StepShell>
             )}
@@ -776,22 +803,13 @@ const PLINTH_SHORT: Record<string, string> = {
   xl: "XL",
 };
 
-// Sempertex catalogue -imported from lib/sempertexCatalog.ts
-// TODO: Replace catalogue with full official Sempertex supplier data when available
+const DEFAULT_SEMPERTEX_IDS = ["fashion-005-white", "pastel-matte-609-pink", "pastel-matte-650-lilac"];
 
-const SEMPERTEX_THEME_DEFAULTS: Record<string, string[]> = {
-  unicorn:      ["pastel-matte-609-pink","pastel-matte-620-yellow","pastel-matte-630-green","fashion-005-white","reflex-968-rose-gold"],
-  blush_garden: ["pastel-matte-609-pink","silk-809-pink-blossom","fashion-005-white","metallic-570-gold"],
-  princess:     ["pastel-matte-609-pink","silk-809-pink-blossom","fashion-005-white","metallic-570-gold"],
-  baby_blue:    ["fashion-005-white","pastel-matte-630-green","pastel-matte-650-lilac","silk-806-oyster-white"],
-  frozen:       ["fashion-005-white","silk-806-oyster-white","pastel-matte-640-blue","silk-850-light-amethyst","reflex-981-silver"],
-  barbie:       ["fashion-005-white","pastel-matte-609-pink","reflex-909-pink","reflex-912-fuchsia","reflex-968-rose-gold"],
-  bridal:       ["fashion-005-white","reflex-970-gold","reflex-968-rose-gold","pastel-matte-650-lilac"],
-  corporate:    ["fashion-005-white","fashion-080-black","reflex-981-silver"],
-  default:      ["fashion-005-white","pastel-matte-609-pink","pastel-matte-650-lilac"],
+const getThemeDefault = (themeId: string): string[] => {
+  const entry = getThemeCatalogEntry(themeId);
+  if (entry && entry.sempertexPaletteIds.length > 0) return entry.sempertexPaletteIds;
+  return DEFAULT_SEMPERTEX_IDS;
 };
-const getThemeDefault = (themeId: string) =>
-  SEMPERTEX_THEME_DEFAULTS[themeId] ?? SEMPERTEX_THEME_DEFAULTS.default;
 
 function DecorStep({
   config,
@@ -814,7 +832,8 @@ function DecorStep({
   // Auto-apply theme default when theme changes (unless user manually changed)
   if (config.theme !== lastTheme) {
     setLastTheme(config.theme);
-    if (!sempertexManual) setSempertexIds(getThemeDefault(config.theme));
+    setSempertexManual(false);
+    setSempertexIds(getThemeDefault(config.theme));
   }
 
   const [sempertexExceeded, setSempertexExceeded] = useState(false);
@@ -1009,9 +1028,11 @@ function DecorStep({
       if (hasRound) {
         const newItem = { ...makeBackdropItem("arch"), sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm, id: size.id };
         patchDecor({ backdropItems: [newItem] });
+        setOpenCustomizeIds(prev => { const n = new Set(prev); n.add(newItem.id); return n; });
       } else {
         const newItem = { ...makeBackdropItem("arch"), sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm, id: `arch-${size.id}` };
         patchDecor({ backdropItems: [...d.backdropItems, newItem] });
+        setOpenCustomizeIds(prev => { const n = new Set(prev); n.add(newItem.id); return n; });
       }
     }
   }
@@ -1022,7 +1043,9 @@ function DecorStep({
     if (hasRound) {
       patchDecor({ backdropItems: [] });
     } else {
-      patchDecor({ backdropItems: [makeBackdropItem("round")] });
+      const newItem = makeBackdropItem("round");
+      patchDecor({ backdropItems: [newItem] });
+      setOpenCustomizeIds(prev => { const n = new Set(prev); n.add(newItem.id); return n; });
     }
   }
 
@@ -1034,7 +1057,9 @@ function DecorStep({
     } else {
       if (d.backdropItems.length >= 3) return;
       const withoutRound = d.backdropItems.filter(i => i.type !== "round");
-      patchDecor({ backdropItems: [...withoutRound, makeBackdropItem(type)] });
+      const newItem = makeBackdropItem(type);
+      patchDecor({ backdropItems: [...withoutRound, newItem] });
+      setOpenCustomizeIds(prev => { const n = new Set(prev); n.add(newItem.id); return n; });
     }
   }
 
@@ -1137,6 +1162,24 @@ function DecorStep({
             <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
               background: item.graphic.enabled ? accent : "rgba(0,0,0,0.06)", color: item.graphic.enabled ? "white" : "#555" }}>+AED 150</span>
           </div>
+          {item.graphic.enabled && (() => {
+            const catalogEntry = getThemeCatalogEntry(config.theme);
+            const presets = catalogEntry?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
+            return (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingLeft: 4, paddingTop: 4 }}>
+                {presets.map(p => (
+                  <button key={p.id} type="button" title={p.desc}
+                    onClick={(e) => { e.stopPropagation(); patchItemGraphic(itemIdx, { theme: p.id }); }}
+                    style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                      border: item.graphic.theme === p.id ? `1.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
+                      background: item.graphic.theme === p.id ? accent + "12" : "white",
+                      color: item.graphic.theme === p.id ? accent : "#555" }}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
 
           {/* Custom Design */}
           <div onClick={() => setPrint(print.type === "custom_upload" ? "none" : "custom_upload")}
@@ -1733,24 +1776,28 @@ function DecorStep({
                         {item.graphic.enabled && <span style={{ fontSize: 14 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                       </div>
                     </div>
-                    {/* Graphic style sub-options when enabled */}
-                    {item.graphic.enabled && (
-                      <div className="flex flex-wrap gap-1.5 pl-1 pt-2 pb-1">
-                        {GRAPHIC_STYLES.map((s) => (
-                          <button
-                            key={s.id}
-                            type="button"
-                            title={s.desc}
-                            onClick={(e) => { e.stopPropagation(); patchItemGraphic(idx, { style: s.id as GraphicStyle }); }}
-                            className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
-                              item.graphic.style === s.id ? "border-accent bg-accent text-white" : "border-black/15 bg-white text-black/60"
-                            }`}
-                          >
-                            {s.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    {/* Graphic preset sub-options when enabled */}
+                    {item.graphic.enabled && (() => {
+                      const catalogEntry = getThemeCatalogEntry(config.theme);
+                      const presets = catalogEntry?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
+                      return (
+                        <div className="flex flex-wrap gap-1.5 pl-1 pt-2 pb-1">
+                          {presets.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              title={p.desc}
+                              onClick={(e) => { e.stopPropagation(); patchItemGraphic(idx, { theme: p.id }); }}
+                              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                                item.graphic.theme === p.id ? "border-accent bg-accent text-white" : "border-black/15 bg-white text-black/60"
+                              }`}
+                            >
+                              {p.label}
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
 
                     {/* Custom Design card -global setting, surfaced per-backdrop */}
                     <div

@@ -28,6 +28,7 @@ import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
 import { generateStructureSilhouette } from "@/lib/generateStructureSilhouette";
 import { type BalloonStyleId } from "@/lib/config";
 import { SEMPERTEX_CATALOG, type SempertexColor } from "@/lib/sempertexCatalog";
+import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { type SempertexSelectionItem } from "@/lib/renderPrompts/types";
 import { getVisualLabel } from "@/lib/renderPrompts/colorLabels";
 import { buildNegativePrompt } from "@/lib/renderPrompts/buildNegativePrompt";
@@ -61,62 +62,12 @@ function getT2IModelId(mode: ModelMode): string {
 function getT2IEndpoint(mode: ModelMode): string {
   return `https://fal.run/${getT2IModelId(mode)}`;
 }
-const THEME_SEMPERTEX_DEFAULT_CODES: Record<string, string[]> = {
-  frozen: ["002", "540", "537", "534", "145"],
-  barbie: ["002", "174", "141", "156", "147"],
-
-  // Existing working fallback examples — keep for now
-  unicorn: ["609", "620", "630", "005", "968"],
-};
-
-function resolveThemeSempertexCodes(themeValue: unknown): string[] {
-  const themeKey = String(themeValue ?? "").trim().toLowerCase();
-
-  if (THEME_SEMPERTEX_DEFAULT_CODES[themeKey]) {
-    return THEME_SEMPERTEX_DEFAULT_CODES[themeKey];
-  }
-
-  // Robust aliases in case frontend sends labels like "Frozen Princess"
-  if (
-    themeKey.includes("frozen") ||
-    themeKey.includes("ice") ||
-    themeKey.includes("snow")
-  ) {
-    return THEME_SEMPERTEX_DEFAULT_CODES.frozen;
-  }
-
-  if (
-    themeKey.includes("barbie") ||
-    themeKey.includes("pink") ||
-    themeKey.includes("glam")
-  ) {
-    return THEME_SEMPERTEX_DEFAULT_CODES.barbie;
-  }
-
-  if (
-    themeKey.includes("unicorn") ||
-    themeKey.includes("rainbow")
-  ) {
-    return THEME_SEMPERTEX_DEFAULT_CODES.unicorn;
-  }
-
-  return [];
-}
-
-function getThemeSempertexDefaults(themeValue: unknown): SempertexColor[] {
-  const codes = resolveThemeSempertexCodes(themeValue);
-
-  const byCode = new Map<string, SempertexColor>();
-
-  for (const color of SEMPERTEX_CATALOG) {
-    if (!byCode.has(color.code)) {
-      byCode.set(color.code, color);
-    }
-  }
-
-  return codes
-    .map((code) => byCode.get(code))
-    .filter((color): color is SempertexColor => Boolean(color))
+function getThemeSempertexDefaults(themeId: string): SempertexColor[] {
+  const entry = THEME_CATALOG.find((t) => t.id === themeId);
+  if (!entry || entry.sempertexPaletteIds.length === 0) return [];
+  return entry.sempertexPaletteIds
+    .map((id) => SEMPERTEX_CATALOG.find((c) => c.id === id))
+    .filter((c): c is SempertexColor => Boolean(c))
     .slice(0, 5);
 }
 
@@ -144,7 +95,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "neutral-positive-only-v1";
+const RENDER_CACHE_VERSION = "backdrop-color-graphic-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -683,20 +634,16 @@ const modelMode = getModelMode();
 const hasArchPanelInScene = sceneModel.panels.some((p) => p.type === "arch");
 const hasRoundPanelInScene = sceneModel.panels.some((p) => p.type === "round");
 
-const bodyForTheme = body as unknown as {
-  theme?: string;
-  themeId?: string;
-  selectedTheme?: string;
-};
+const selectedThemeId = String(sceneModel.theme ?? "").trim().toLowerCase();
+const themeEntry = THEME_CATALOG.find((t) => t.id === selectedThemeId);
+const missingThemePalette = !themeEntry || themeEntry.sempertexPaletteIds.length === 0;
+const missingThemePaletteId = missingThemePalette ? selectedThemeId : null;
 
-const selectedThemeKey = String(
-  bodyForTheme.theme ??
-  bodyForTheme.themeId ??
-  bodyForTheme.selectedTheme ??
-  ""
-).trim().toLowerCase();
+const themeDefaultSempertexSelection = getThemeSempertexDefaults(selectedThemeId);
 
-const themeDefaultSempertexSelection = getThemeSempertexDefaults(selectedThemeKey);
+const selectedBackdropGraphicAssetId = (promptInput.backdropItems ?? []).find(
+  (item) => item.graphic?.enabled && item.graphic?.theme
+)?.graphic?.theme ?? null;
 
 const effectiveSempertexSelection: SempertexSelectionItem[] =
   (sempertexSelection?.length ?? 0) > 0
@@ -704,7 +651,7 @@ const effectiveSempertexSelection: SempertexSelectionItem[] =
     : themeDefaultSempertexSelection;
 
 if (process.env.NODE_ENV === "development") {
-  console.log("[generate-controlled-render] selectedThemeKey:", selectedThemeKey);
+  console.log("[generate-controlled-render] selectedThemeId:", selectedThemeId, "missingThemePalette:", missingThemePalette);
   console.log(
     "[generate-controlled-render] effectiveSempertexSelection:",
     effectiveSempertexSelection.map((c) => `${c.code}-${c.colorName}-${c.finish}`)
@@ -873,6 +820,13 @@ forbiddenBalloonColorLabels: hasSempertexLock
   roundPrimaryPromptColorOverrideApplied:   hasRoundPanelInScene && effectiveBalloonHexColors.length > 0,
   roundHalfGarlandGuideApplied:             hasRoundPanelInScene && sceneModel.balloons.style === "half",
   plinthGuideProtected:                     sceneModel.plinths.length > 0,
+
+  // Theme catalog diagnostics
+  selectedThemeId,
+  selectedThemePaletteIds:    themeEntry?.sempertexPaletteIds ?? [],
+  missingThemePalette,
+  missingThemePaletteId,
+  selectedBackdropGraphicAssetId,
 };
 
   try {
