@@ -49,6 +49,8 @@ export interface ScenePanel {
   graphic: {
     enabled: boolean;
     style:   GraphicStyle;
+    source?: "preset" | "custom";
+    assetId?: string;
   };
 }
 
@@ -123,6 +125,8 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
       graphic: {
         enabled: item.graphic.enabled,
         style:   item.graphic.style,
+        source:  item.graphic.source,
+        assetId: item.graphic.assetId,
       },
     }));
 
@@ -189,6 +193,8 @@ export function buildSceneModelFromItems(
     graphic: {
       enabled: item.graphic.enabled,
       style:   item.graphic.style,
+      source:  item.graphic.source,
+      assetId: item.graphic.assetId,
     },
   }));
 

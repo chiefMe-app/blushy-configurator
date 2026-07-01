@@ -641,9 +641,10 @@ const missingThemePaletteId = missingThemePalette ? selectedThemeId : null;
 
 const themeDefaultSempertexSelection = getThemeSempertexDefaults(selectedThemeId);
 
-const selectedBackdropGraphicAssetId = (promptInput.backdropItems ?? []).find(
-  (item) => item.graphic?.enabled && item.graphic?.theme
-)?.graphic?.theme ?? null;
+const firstGraphicPanel = sceneModel.panels.find(p => p.graphic.enabled);
+const selectedBackdropGraphicEnabled = !!firstGraphicPanel;
+const selectedBackdropGraphicSource  = firstGraphicPanel?.graphic.source ?? null;
+const selectedBackdropGraphicAssetId = firstGraphicPanel?.graphic.assetId ?? null;
 
 const effectiveSempertexSelection: SempertexSelectionItem[] =
   (sempertexSelection?.length ?? 0) > 0
@@ -826,6 +827,8 @@ forbiddenBalloonColorLabels: hasSempertexLock
   selectedThemePaletteIds:    themeEntry?.sempertexPaletteIds ?? [],
   missingThemePalette,
   missingThemePaletteId,
+  selectedBackdropGraphicEnabled,
+  selectedBackdropGraphicSource,
   selectedBackdropGraphicAssetId,
 };
 

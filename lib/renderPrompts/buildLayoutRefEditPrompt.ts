@@ -1,6 +1,13 @@
 import { type SceneModel } from "@/lib/buildSceneModel";
 import type { SempertexSelectionItem } from "./types";
 import { getVisualLabel, renderSafeBalloonLabel, getPositiveLabel } from "./colorLabels";
+import { THEME_CATALOG } from "@/lib/themeCatalog";
+
+function backdropColorLabel(color: string): string {
+  const c = (color || "").toLowerCase().trim();
+  if (!c || c === "#fff" || c === "#ffffff") return "cream-white";
+  return color;
+}
 
 function panelTypeLabel(type: string): string {
   switch (type) {
@@ -107,7 +114,7 @@ export function buildLayoutRefEditPrompt(
         `NOT a matte board, NOT a cream backdrop, NOT crumpled foil`;
     } else if (p.type === "round") {
       backdropDesc =
-        `a thin circular backdrop panel, exactly ${p.widthCm}cm x ${p.heightCm}cm — not a furniture object, ` +
+        `a thin circular backdrop panel, ${backdropColorLabel(p.color)} colored, exactly ${p.widthCm}cm x ${p.heightCm}cm — not a furniture object, ` +
         `not a platform, not a stage piece, not mounted on a display base. ` +
         `The bottom edge of the panel sits directly on the floor, with at most 0-2cm visual gap between the ` +
         `panel's lower edge and the floor surface. ` +
@@ -136,12 +143,12 @@ export function buildLayoutRefEditPrompt(
       backdropDesc =
         `single rounded arch backdrop, ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
         `a solid filled freestanding arch backdrop panel with a fully opaque surface. ` +
-        `The entire arch face is one continuous solid board, seamless matte cream-white surface, ` +
+        `The entire arch face is one continuous solid board, seamless matte ${backdropColorLabel(p.color)} surface, ` +
         `no cut-out opening, no hollow doorway, no empty arch frame — the full solid panel face must be visible. ` +
         `This is a solid event backdrop board shaped like an arch, not a doorway or passage you can see or walk through.`;
     } else {
       backdropDesc =
-        `single ${panelTypeLabel(p.type)} cream-white backdrop board, ` +
+        `single ${panelTypeLabel(p.type)} ${backdropColorLabel(p.color)} backdrop board, ` +
         `${p.widthCm}cm wide by ${p.heightCm}cm tall, solid freestanding board, seamless matte surface`;
     }
   } else {
@@ -157,15 +164,16 @@ export function buildLayoutRefEditPrompt(
       const isShimmer = p.type === "shimmer_wall";
       const isArch    = p.type === "arch";
       const shimmerC  = sceneModel.shimmerColor ?? "silver";
+      const pColor = backdropColorLabel(p.color);
       const surfaceDesc = isShimmer
         ? `freestanding square event shimmer wall (200cm x 200cm) — ` +
           `regular neat grid of small flat square ${shimmerC} sequin tiles, ` +
           `clean reflective sparkle, flat tiled surface, ${shimmerC} shimmer finish, ` +
           `NOT crumpled foil, NOT a matte board, NOT a cream panel`
         : isArch
-          ? `solid filled freestanding arch backdrop panel, fully opaque surface, seamless matte cream-white surface, ` +
+          ? `solid filled freestanding arch backdrop panel, fully opaque surface, seamless matte ${pColor} surface, ` +
             `no cut-out opening, no hollow doorway, no empty arch frame, full solid panel face visible`
-          : `full-width solid opaque cream-white freestanding backdrop board with broad visible surface`;
+          : `full-width solid opaque ${pColor} freestanding backdrop board with broad visible surface`;
       return (
         `Panel ${i + 1} (${posLabels[i]}): ${panelTypeLabel(p.type)} backdrop board, ` +
         `${p.widthCm}cm wide by ${p.heightCm}cm tall (width-to-height ratio ${wRatio}), ` +
@@ -351,6 +359,17 @@ export function buildLayoutRefEditPrompt(
       shimmerMultiNegs
     : "";
 
+  // Theme graphic clause — included when any panel has a printed graphic enabled
+  const panelsWithGraphic = sceneModel.panels.filter(p => p.graphic.enabled);
+  const firstGraphicPanel = panelsWithGraphic[0];
+  const themeEntry = THEME_CATALOG.find(t => t.id === String(sceneModel.theme ?? "").toLowerCase());
+  const selectedPreset = themeEntry?.graphicPresets.find(p => p.assetId === firstGraphicPanel?.graphic.assetId);
+  const presetDesc = selectedPreset?.desc ?? null;
+  const themeGraphicClause = panelsWithGraphic.length > 0
+    ? `The backdrop has a printed theme illustration graphic on its surface — a large decorative illustrated print design centered on the backdrop board, rendered as a printed graphic applied to the backdrop surface.` +
+      (presetDesc ? ` The graphic depicts: ${presetDesc}.` : "") + ` `
+    : "";
+
   const isRoundScene = hasRoundPanelInScene && !isMulti;
   // When Sempertex palette is locked, use neutral product photography style cues so the
   // model renders color-accurately instead of applying a warm tinted global style.
@@ -387,6 +406,7 @@ export function buildLayoutRefEditPrompt(
     photographyOpening +
     framingClause +
     `${backdropDesc}. ` +
+    themeGraphicClause +
     (plinthDesc ? `${plinthDesc}. ` : noPlinthDesc) +
     `${garlandDesc}. ` +
     multiPanelNegs +

@@ -1150,7 +1150,17 @@ function DecorStep({
           )}
 
           {/* Theme Graphic */}
-          <div onClick={() => patchItemGraphic(itemIdx, { enabled: !item.graphic.enabled })}
+          <div onClick={() => {
+            const enabling = !item.graphic.enabled;
+            if (enabling && !item.graphic.assetId) {
+              const catalogEntry = getThemeCatalogEntry(config.theme);
+              const presets = catalogEntry?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
+              const first = presets[0];
+              patchItemGraphic(itemIdx, { enabled: true, theme: first.id, source: "preset", assetId: first.assetId });
+            } else {
+              patchItemGraphic(itemIdx, { enabled: enabling });
+            }
+          }}
             style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
               border: item.graphic.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
               background: item.graphic.enabled ? accent + "0E" : "white", transition: "all 0.15s" }}>
@@ -1169,11 +1179,11 @@ function DecorStep({
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingLeft: 4, paddingTop: 4 }}>
                 {presets.map(p => (
                   <button key={p.id} type="button" title={p.desc}
-                    onClick={(e) => { e.stopPropagation(); patchItemGraphic(itemIdx, { theme: p.id }); }}
+                    onClick={(e) => { e.stopPropagation(); patchItemGraphic(itemIdx, { theme: p.id, source: "preset", assetId: p.assetId }); }}
                     style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                      border: item.graphic.theme === p.id ? `1.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
-                      background: item.graphic.theme === p.id ? accent + "12" : "white",
-                      color: item.graphic.theme === p.id ? accent : "#555" }}>
+                      border: item.graphic.assetId === p.assetId ? `1.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
+                      background: item.graphic.assetId === p.assetId ? accent + "12" : "white",
+                      color: item.graphic.assetId === p.assetId ? accent : "#555" }}>
                     {p.label}
                   </button>
                 ))}
@@ -1758,7 +1768,17 @@ function DecorStep({
 
                     {/* Theme Graphic card */}
                     <div
-                      onClick={() => patchItemGraphic(idx, { enabled: !item.graphic.enabled })}
+                      onClick={() => {
+                        const enabling = !item.graphic.enabled;
+                        if (enabling && !item.graphic.assetId) {
+                          const catalogEntry = getThemeCatalogEntry(config.theme);
+                          const presets = catalogEntry?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
+                          const first = presets[0];
+                          patchItemGraphic(idx, { enabled: true, theme: first.id, source: "preset", assetId: first.assetId });
+                        } else {
+                          patchItemGraphic(idx, { enabled: enabling });
+                        }
+                      }}
                       style={{
                         cursor: "pointer", borderRadius: 12, padding: "12px 14px",
                         border: item.graphic.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
@@ -1787,9 +1807,9 @@ function DecorStep({
                               key={p.id}
                               type="button"
                               title={p.desc}
-                              onClick={(e) => { e.stopPropagation(); patchItemGraphic(idx, { theme: p.id }); }}
+                              onClick={(e) => { e.stopPropagation(); patchItemGraphic(idx, { theme: p.id, source: "preset", assetId: p.assetId }); }}
                               className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
-                                item.graphic.theme === p.id ? "border-accent bg-accent text-white" : "border-black/15 bg-white text-black/60"
+                                item.graphic.assetId === p.assetId ? "border-accent bg-accent text-white" : "border-black/15 bg-white text-black/60"
                               }`}
                             >
                               {p.label}

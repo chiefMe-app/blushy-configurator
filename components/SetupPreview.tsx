@@ -726,7 +726,7 @@ function computeSceneHash(config: BuilderConfig): string {
       id: i.id, type: i.type, sizeId: i.sizeId,
       widthCm: i.widthCm, heightCm: i.heightCm, color: i.color,
       // text excluded: text changes update the overlay instantly — no AI regen needed
-      graphic: { enabled: i.graphic.enabled, style: i.graphic.style },
+      graphic: { enabled: i.graphic.enabled, style: i.graphic.style, assetId: i.graphic.assetId },
     })),
     backdropColor: d.backdropColor,
     balloonStyle:  d.balloonStyle,
@@ -752,7 +752,7 @@ function computeStructureHash(config: BuilderConfig): string {
     backdropItems: d.backdropItems.map((i) => ({
       id: i.id, type: i.type, sizeId: i.sizeId,
       widthCm: i.widthCm, heightCm: i.heightCm, color: i.color,
-      graphic: { enabled: i.graphic.enabled, style: i.graphic.style },
+      graphic: { enabled: i.graphic.enabled, style: i.graphic.style, assetId: i.graphic.assetId },
     })),
     backdropColor: d.backdropColor,
     balloonStyle:  d.balloonStyle,

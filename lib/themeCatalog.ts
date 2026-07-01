@@ -12,6 +12,8 @@ export interface ThemeGraphicPreset {
   id: string;
   label: string;
   desc: string;
+  /** Stable asset ID used in render payload, e.g. "bluey-01" */
+  assetId: string;
 }
 
 export interface ThemeCatalogEntry {
@@ -26,6 +28,11 @@ export interface ThemeCatalogEntry {
   graphicPresets: [ThemeGraphicPreset, ThemeGraphicPreset, ThemeGraphicPreset];
 }
 
+/** Compute stable asset ID: "{themeId with _ → -}-01/02/03" */
+export function getPresetAssetId(themeId: string, presetIndex: number): string {
+  return `${themeId.replace(/_/g, "-")}-0${presetIndex + 1}`;
+}
+
 export const THEME_CATALOG: ThemeCatalogEntry[] = [
   {
     id: "frozen",
@@ -37,9 +44,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-005-white", "silk-839-arctic-blue", "pastel-matte-640-blue", "silk-850-light-amethyst", "reflex-981-silver"],
     renderDescription: "Frozen winter wonderland theme with icy blues, white, and silver; snowflake and ice crystal motifs",
     graphicPresets: [
-      { id: "frozen_castle", label: "Frozen Castle", desc: "Arendelle castle with snowflakes" },
-      { id: "frozen_elsa", label: "Elsa & Anna", desc: "Silhouettes of Elsa and Anna" },
-      { id: "frozen_snowflake", label: "Snowflake Pattern", desc: "Repeating ice crystal pattern" },
+      { id: "frozen_castle",    assetId: "frozen-01", label: "Frozen Castle",    desc: "Arendelle castle with snowflakes" },
+      { id: "frozen_elsa",      assetId: "frozen-02", label: "Elsa & Anna",      desc: "Silhouettes of Elsa and Anna" },
+      { id: "frozen_snowflake", assetId: "frozen-03", label: "Snowflake Pattern", desc: "Repeating ice crystal pattern" },
     ],
   },
   {
@@ -52,9 +59,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["pastel-matte-609-pink", "pastel-matte-620-yellow", "pastel-matte-630-green", "fashion-005-white", "reflex-968-rose-gold"],
     renderDescription: "Magical unicorn theme with pastel rainbow colors, iridescent shimmer, and sparkle magic",
     graphicPresets: [
-      { id: "unicorn_face", label: "Unicorn Portrait", desc: "Unicorn face with gold horn and flower crown" },
-      { id: "unicorn_full", label: "Full Unicorn", desc: "Prancing unicorn with rainbow mane" },
-      { id: "unicorn_rainbow", label: "Rainbow Magic", desc: "Rainbow with clouds and glitter stars" },
+      { id: "unicorn_face",    assetId: "unicorn-01", label: "Unicorn Portrait", desc: "Unicorn face with gold horn and flower crown" },
+      { id: "unicorn_full",    assetId: "unicorn-02", label: "Full Unicorn",     desc: "Prancing unicorn with rainbow mane" },
+      { id: "unicorn_rainbow", assetId: "unicorn-03", label: "Rainbow Magic",    desc: "Rainbow with clouds and glitter stars" },
     ],
   },
   {
@@ -67,9 +74,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["pastel-matte-630-green", "silk-826-cool-mint", "fashion-030-green", "fashion-073-latte", "fashion-005-white"],
     renderDescription: "Fun dinosaur theme with jungle greens, earthy terracotta tones, and tropical foliage",
     graphicPresets: [
-      { id: "dino_trex", label: "T-Rex", desc: "Roaring T-Rex with jungle palms" },
-      { id: "dino_stegosaurus", label: "Stegosaurus", desc: "Stegosaurus in tropical greenery" },
-      { id: "dino_pattern", label: "Dino Pattern", desc: "Cute repeating dinosaur pattern" },
+      { id: "dino_trex",        assetId: "dinosaur-01", label: "T-Rex",          desc: "Roaring T-Rex with jungle palms" },
+      { id: "dino_stegosaurus", assetId: "dinosaur-02", label: "Stegosaurus",    desc: "Stegosaurus in tropical greenery" },
+      { id: "dino_pattern",     assetId: "dinosaur-03", label: "Dino Pattern",   desc: "Cute repeating dinosaur pattern" },
     ],
   },
   {
@@ -82,9 +89,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-021-honey-yellow", "pastel-matte-663-melon", "fashion-073-latte", "pastel-matte-630-green", "fashion-005-white"],
     renderDescription: "Safari adventure theme with warm sandy yellows, animal prints, and African savanna imagery",
     graphicPresets: [
-      { id: "safari_giraffe", label: "Giraffe", desc: "Giraffe with acacia trees" },
-      { id: "safari_lion", label: "Lion", desc: "Lion pride on African savanna" },
-      { id: "safari_pattern", label: "Animal Print", desc: "Repeating animal print pattern" },
+      { id: "safari_giraffe", assetId: "safari-01", label: "Giraffe",       desc: "Giraffe with acacia trees" },
+      { id: "safari_lion",    assetId: "safari-02", label: "Lion",          desc: "Lion pride on African savanna" },
+      { id: "safari_pattern", assetId: "safari-03", label: "Animal Print",  desc: "Repeating animal print pattern" },
     ],
   },
   {
@@ -97,9 +104,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["pastel-matte-609-pink", "silk-809-pink-blossom", "fashion-005-white", "metallic-570-gold", "pastel-matte-650-lilac"],
     renderDescription: "Royal princess theme with soft pinks, gold crowns, castle turrets, and fairy-tale magic",
     graphicPresets: [
-      { id: "princess_castle", label: "Castle", desc: "Fairy tale castle with turrets" },
-      { id: "princess_crown", label: "Crown & Stars", desc: "Golden crown with sparkling stars" },
-      { id: "princess_carriage", label: "Carriage", desc: "Cinderella carriage with horses" },
+      { id: "princess_castle",   assetId: "princess-01", label: "Castle",        desc: "Fairy tale castle with turrets" },
+      { id: "princess_crown",    assetId: "princess-02", label: "Crown & Stars", desc: "Golden crown with sparkling stars" },
+      { id: "princess_carriage", assetId: "princess-03", label: "Carriage",      desc: "Cinderella carriage with horses" },
     ],
   },
   {
@@ -112,9 +119,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-015-red", "fashion-041-royal-blue", "fashion-020-yellow", "fashion-080-black", "fashion-005-white"],
     renderDescription: "Bold superhero theme with primary comic-book colors, action bursts, and hero silhouettes",
     graphicPresets: [
-      { id: "superhero_shield", label: "Shield", desc: "Superhero shield and lightning bolt" },
-      { id: "superhero_silhouette", label: "Hero Silhouette", desc: "Superhero in flight silhouette" },
-      { id: "superhero_comic", label: "Comic Burst", desc: "Comic burst with action words" },
+      { id: "superhero_shield",     assetId: "superhero-01", label: "Shield",          desc: "Superhero shield and lightning bolt" },
+      { id: "superhero_silhouette", assetId: "superhero-02", label: "Hero Silhouette", desc: "Superhero in flight silhouette" },
+      { id: "superhero_comic",      assetId: "superhero-03", label: "Comic Burst",     desc: "Comic burst with action words" },
     ],
   },
   {
@@ -127,9 +134,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-012-fuchsia", "reflex-912-fuchsia", "pastel-matte-609-pink", "fashion-005-white", "reflex-968-rose-gold"],
     renderDescription: "Glamorous Barbie theme with hot pink, fuchsia, dreamy pink tones, and iconic Barbie styling",
     graphicPresets: [
-      { id: "barbie_logo", label: "Barbie Logo", desc: "Classic Barbie logo in pink" },
-      { id: "barbie_doll", label: "Barbie Portrait", desc: "Barbie fashion illustration" },
-      { id: "barbie_dreamhouse", label: "Dreamhouse", desc: "Pink Dreamhouse and accessories" },
+      { id: "barbie_logo",       assetId: "barbie-01", label: "Barbie Logo",   desc: "Classic Barbie logo in pink" },
+      { id: "barbie_doll",       assetId: "barbie-02", label: "Barbie Portrait", desc: "Barbie fashion illustration" },
+      { id: "barbie_dreamhouse", assetId: "barbie-03", label: "Dreamhouse",    desc: "Pink Dreamhouse and accessories" },
     ],
   },
   {
@@ -142,9 +149,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-041-royal-blue", "fashion-061-orange", "fashion-020-yellow", "pastel-matte-630-green", "fashion-005-white"],
     renderDescription: "Bluey Blue Heeler theme with bright blue tones, playful family scenes, and Aussie sunshine energy",
     graphicPresets: [
-      { id: "bluey_family", label: "Bluey Family", desc: "Bluey and Bingo with the family" },
-      { id: "bluey_portrait", label: "Bluey Portrait", desc: "Bluey character close-up" },
-      { id: "bluey_pattern", label: "Paw Pattern", desc: "Bluey paw prints and star pattern" },
+      { id: "bluey_family",   assetId: "bluey-01", label: "Bluey Family",  desc: "Bluey and Bingo with the family" },
+      { id: "bluey_portrait", assetId: "bluey-02", label: "Bluey Portrait", desc: "Bluey character close-up" },
+      { id: "bluey_pattern",  assetId: "bluey-03", label: "Paw Pattern",   desc: "Bluey paw prints and star pattern" },
     ],
   },
   {
@@ -157,9 +164,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-020-yellow", "fashion-015-red", "fashion-005-white", "fashion-041-royal-blue", "fashion-061-orange"],
     renderDescription: "Pokémon adventure theme with Pikachu yellow, Pokéball red, and exciting trainer energy",
     graphicPresets: [
-      { id: "pokemon_pikachu", label: "Pikachu", desc: "Pikachu with lightning bolt" },
-      { id: "pokemon_pokeball", label: "Pokéball", desc: "Classic Pokéball design" },
-      { id: "pokemon_starters", label: "Starter Pokémon", desc: "Charizard, Squirtle, and Bulbasaur" },
+      { id: "pokemon_pikachu",  assetId: "pokemon-01", label: "Pikachu",         desc: "Pikachu with lightning bolt" },
+      { id: "pokemon_pokeball", assetId: "pokemon-02", label: "Pokéball",        desc: "Classic Pokéball design" },
+      { id: "pokemon_starters", assetId: "pokemon-03", label: "Starter Pokémon", desc: "Charizard, Squirtle, and Bulbasaur" },
     ],
   },
   {
@@ -172,9 +179,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-041-royal-blue", "fashion-040-blue", "fashion-037-aquamarine", "pastel-matte-630-green", "fashion-005-white"],
     renderDescription: "Lilo and Stitch Hawaiian theme with ocean blues, tropical island vibes, and aloha spirit",
     graphicPresets: [
-      { id: "stitch_portrait", label: "Stitch Portrait", desc: "Stitch with big ears and blue eyes" },
-      { id: "stitch_tropical", label: "Tropical Hawaii", desc: "Stitch with Hawaiian flowers and palms" },
-      { id: "stitch_aloha", label: "Aloha Stitch", desc: "Stitch surfing on a tropical wave" },
+      { id: "stitch_portrait", assetId: "stitch-01", label: "Stitch Portrait",  desc: "Stitch with big ears and blue eyes" },
+      { id: "stitch_tropical", assetId: "stitch-02", label: "Tropical Hawaii",  desc: "Stitch with Hawaiian flowers and palms" },
+      { id: "stitch_aloha",    assetId: "stitch-03", label: "Aloha Stitch",     desc: "Stitch surfing on a tropical wave" },
     ],
   },
   {
@@ -187,9 +194,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-037-aquamarine", "fashion-035-deep-teal", "silk-826-cool-mint", "pastel-matte-650-lilac", "fashion-005-white"],
     renderDescription: "Magical mermaid theme with iridescent teals, aquamarine, pearl whites, and enchanting underwater ocean magic",
     graphicPresets: [
-      { id: "mermaid_portrait", label: "Mermaid", desc: "Beautiful mermaid with pearl crown" },
-      { id: "mermaid_underwater", label: "Under the Sea", desc: "Coral reef with fish and seahorses" },
-      { id: "mermaid_scales", label: "Scale Pattern", desc: "Iridescent mermaid scale pattern" },
+      { id: "mermaid_portrait",    assetId: "mermaid-01", label: "Mermaid",       desc: "Beautiful mermaid with pearl crown" },
+      { id: "mermaid_underwater",  assetId: "mermaid-02", label: "Under the Sea", desc: "Coral reef with fish and seahorses" },
+      { id: "mermaid_scales",      assetId: "mermaid-03", label: "Scale Pattern", desc: "Iridescent mermaid scale pattern" },
     ],
   },
   {
@@ -202,9 +209,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-044-navy-blue", "fashion-051-violet", "metallic-570-gold", "reflex-981-silver", "fashion-005-white"],
     renderDescription: "Deep space theme with dark navy, cosmic purple, glowing golden stars, and mysterious planets",
     graphicPresets: [
-      { id: "space_rocket", label: "Rocket Launch", desc: "Rocket launching through space with planets" },
-      { id: "space_astronaut", label: "Astronaut", desc: "Astronaut floating in space" },
-      { id: "space_galaxy", label: "Galaxy", desc: "Milky Way with stars and nebula" },
+      { id: "space_rocket",     assetId: "space-01", label: "Rocket Launch", desc: "Rocket launching through space with planets" },
+      { id: "space_astronaut",  assetId: "space-02", label: "Astronaut",     desc: "Astronaut floating in space" },
+      { id: "space_galaxy",     assetId: "space-03", label: "Galaxy",        desc: "Milky Way with stars and nebula" },
     ],
   },
   {
@@ -217,9 +224,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-030-green", "fashion-005-white", "fashion-041-royal-blue", "fashion-015-red", "fashion-020-yellow"],
     renderDescription: "Football sports theme with vibrant green pitch, football motifs, and energetic team spirit",
     graphicPresets: [
-      { id: "football_ball", label: "Football", desc: "Football with grass pitch" },
-      { id: "football_stadium", label: "Stadium", desc: "Stadium with goal and crowd" },
-      { id: "football_trophy", label: "Trophy", desc: "Champion trophy with ribbons" },
+      { id: "football_ball",    assetId: "football-01", label: "Football",  desc: "Football with grass pitch" },
+      { id: "football_stadium", assetId: "football-02", label: "Stadium",   desc: "Stadium with goal and crowd" },
+      { id: "football_trophy",  assetId: "football-03", label: "Trophy",    desc: "Champion trophy with ribbons" },
     ],
   },
   {
@@ -232,9 +239,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-015-red", "fashion-041-royal-blue", "fashion-020-yellow", "fashion-030-green", "fashion-005-white"],
     renderDescription: "Colorful LEGO theme with bold primary brick colors and building adventure creativity",
     graphicPresets: [
-      { id: "lego_city", label: "LEGO City", desc: "LEGO city skyline with bricks" },
-      { id: "lego_minifig", label: "Minifigure", desc: "LEGO minifigure characters" },
-      { id: "lego_bricks", label: "Brick Pattern", desc: "Repeating LEGO brick pattern" },
+      { id: "lego_city",    assetId: "lego-01", label: "LEGO City",   desc: "LEGO city skyline with bricks" },
+      { id: "lego_minifig", assetId: "lego-02", label: "Minifigure",  desc: "LEGO minifigure characters" },
+      { id: "lego_bricks",  assetId: "lego-03", label: "Brick Pattern", desc: "Repeating LEGO brick pattern" },
     ],
   },
   {
@@ -247,9 +254,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-056-purple-orchid", "pastel-matte-650-lilac", "pastel-matte-609-pink", "fashion-005-white", "reflex-981-silver"],
     renderDescription: "K-Pop idol theme with neon purple, sparkling stage lights, fan light sticks, and glam concert energy",
     graphicPresets: [
-      { id: "kpop_stage", label: "Concert Stage", desc: "K-Pop concert stage with lights" },
-      { id: "kpop_idol", label: "Idol Silhouette", desc: "Idol silhouette with sparkle effects" },
-      { id: "kpop_lightstick", label: "Light Sticks", desc: "Fan light sticks and star confetti" },
+      { id: "kpop_stage",      assetId: "kpop-01", label: "Concert Stage",  desc: "K-Pop concert stage with lights" },
+      { id: "kpop_idol",       assetId: "kpop-02", label: "Idol Silhouette", desc: "Idol silhouette with sparkle effects" },
+      { id: "kpop_lightstick", assetId: "kpop-03", label: "Light Sticks",   desc: "Fan light sticks and star confetti" },
     ],
   },
   {
@@ -262,9 +269,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-061-orange", "fashion-020-yellow", "fashion-015-red", "fashion-030-green", "fashion-056-purple-orchid"],
     renderDescription: "Magical Encanto theme with vibrant Colombian colors, tropical flowers, casita magic, and Madrigal family charm",
     graphicPresets: [
-      { id: "encanto_casita", label: "La Casita", desc: "The magical Madrigal house" },
-      { id: "encanto_mirabel", label: "Mirabel", desc: "Mirabel with glowing magic" },
-      { id: "encanto_flowers", label: "Tropical Blooms", desc: "Colombian flowers and butterflies" },
+      { id: "encanto_casita",  assetId: "encanto-01", label: "La Casita",      desc: "The magical Madrigal house" },
+      { id: "encanto_mirabel", assetId: "encanto-02", label: "Mirabel",        desc: "Mirabel with glowing magic" },
+      { id: "encanto_flowers", assetId: "encanto-03", label: "Tropical Blooms", desc: "Colombian flowers and butterflies" },
     ],
   },
   {
@@ -277,9 +284,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-015-red", "fashion-030-green", "fashion-040-blue", "fashion-020-yellow", "fashion-005-white"],
     renderDescription: "Bright Cocomelon nursery theme with watermelon colors, cheerful baby vibes, and playful JJ energy",
     graphicPresets: [
-      { id: "cocomelon_jj", label: "JJ", desc: "JJ the baby with big smile" },
-      { id: "cocomelon_watermelon", label: "Watermelon", desc: "Watermelon with leaves and vines" },
-      { id: "cocomelon_pattern", label: "Nursery Pattern", desc: "Watermelon slice repeating pattern" },
+      { id: "cocomelon_jj",          assetId: "cocomelon-01", label: "JJ",             desc: "JJ the baby with big smile" },
+      { id: "cocomelon_watermelon",   assetId: "cocomelon-02", label: "Watermelon",    desc: "Watermelon with leaves and vines" },
+      { id: "cocomelon_pattern",      assetId: "cocomelon-03", label: "Nursery Pattern", desc: "Watermelon slice repeating pattern" },
     ],
   },
   {
@@ -292,9 +299,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-073-latte", "pastel-matte-609-pink", "silk-873-cream-pearl", "fashion-060-peach-blush", "fashion-005-white"],
     renderDescription: "Cozy teddy bear theme with soft beige, dusty pink, warm cream tones, and plush toy charm",
     graphicPresets: [
-      { id: "teddy_classic", label: "Teddy Bear", desc: "Classic plush teddy bear with bow" },
-      { id: "teddy_picnic", label: "Teddy Picnic", desc: "Teddy bear tea party scene" },
-      { id: "teddy_pattern", label: "Bear Pattern", desc: "Cute teddy bear repeating pattern" },
+      { id: "teddy_classic", assetId: "teddy-bear-01", label: "Teddy Bear",   desc: "Classic plush teddy bear with bow" },
+      { id: "teddy_picnic",  assetId: "teddy-bear-02", label: "Teddy Picnic", desc: "Teddy bear tea party scene" },
+      { id: "teddy_pattern", assetId: "teddy-bear-03", label: "Bear Pattern", desc: "Cute teddy bear repeating pattern" },
     ],
   },
   {
@@ -307,9 +314,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["fashion-020-yellow", "pastel-matte-609-pink", "pastel-matte-650-lilac", "pastel-matte-630-green", "fashion-005-white"],
     renderDescription: "Tropical summer theme with pineapples, palm leaves, bright sunshine yellows, and vibrant tropical pinks",
     graphicPresets: [
-      { id: "tropical_pineapple", label: "Pineapple", desc: "Tropical pineapple with palm leaves" },
-      { id: "tropical_flamingo", label: "Flamingo", desc: "Pink flamingo in tropical setting" },
-      { id: "tropical_pattern", label: "Tropical Pattern", desc: "Palm leaves and tropical fruit pattern" },
+      { id: "tropical_pineapple", assetId: "pineapple-tropical-01", label: "Pineapple",        desc: "Tropical pineapple with palm leaves" },
+      { id: "tropical_flamingo",  assetId: "pineapple-tropical-02", label: "Flamingo",         desc: "Pink flamingo in tropical setting" },
+      { id: "tropical_pattern",   assetId: "pineapple-tropical-03", label: "Tropical Pattern", desc: "Palm leaves and tropical fruit pattern" },
     ],
   },
   {
@@ -322,9 +329,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["pastel-matte-609-pink", "silk-809-pink-blossom", "fashion-005-white", "pastel-matte-650-lilac", "reflex-971-champagne"],
     renderDescription: "Romantic blush garden theme with soft floral pinks, botanical greenery, and delicate garden elegance",
     graphicPresets: [
-      { id: "garden_roses", label: "Rose Garden", desc: "Full-bloom garden roses arrangement" },
-      { id: "garden_botanical", label: "Botanical Arch", desc: "Greenery and blush botanical frame" },
-      { id: "garden_floral", label: "Floral Pattern", desc: "Delicate floral repeating pattern" },
+      { id: "garden_roses",     assetId: "blush-garden-01", label: "Rose Garden",    desc: "Full-bloom garden roses arrangement" },
+      { id: "garden_botanical", assetId: "blush-garden-02", label: "Botanical Arch", desc: "Greenery and blush botanical frame" },
+      { id: "garden_floral",    assetId: "blush-garden-03", label: "Floral Pattern", desc: "Delicate floral repeating pattern" },
     ],
   },
   {
@@ -337,9 +344,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     sempertexPaletteIds: ["reflex-971-champagne", "satin-406-pearl", "metallic-570-gold", "fashion-005-white", "fashion-073-latte"],
     renderDescription: "Sophisticated luxury neutral theme with champagne, ivory pearl, and burnished gold elegance",
     graphicPresets: [
-      { id: "luxury_wreath", label: "Gold Wreath", desc: "Golden leaf wreath with monogram" },
-      { id: "luxury_marble", label: "Marble & Gold", desc: "Marble texture with gold accents" },
-      { id: "luxury_pattern", label: "Luxury Pattern", desc: "Damask or herringbone gold pattern" },
+      { id: "luxury_wreath",  assetId: "luxury-neutral-01", label: "Gold Wreath",    desc: "Golden leaf wreath with monogram" },
+      { id: "luxury_marble",  assetId: "luxury-neutral-02", label: "Marble & Gold",  desc: "Marble texture with gold accents" },
+      { id: "luxury_pattern", assetId: "luxury-neutral-03", label: "Luxury Pattern", desc: "Damask or herringbone gold pattern" },
     ],
   },
 ];
@@ -349,7 +356,7 @@ export function getThemeCatalogEntry(id: string): ThemeCatalogEntry | undefined 
 }
 
 export const FALLBACK_GRAPHIC_PRESETS: [ThemeGraphicPreset, ThemeGraphicPreset, ThemeGraphicPreset] = [
-  { id: "illustrated_scene", label: "Illustrated Scene", desc: "Themed character illustration" },
-  { id: "pattern_print", label: "Pattern Print", desc: "Repeating theme pattern" },
-  { id: "minimal_logo", label: "Minimal Logo", desc: "Clean minimal theme graphic" },
+  { id: "illustrated_scene", assetId: "generic-01", label: "Illustrated Scene", desc: "Themed character illustration" },
+  { id: "pattern_print",     assetId: "generic-02", label: "Pattern Print",     desc: "Repeating theme pattern" },
+  { id: "minimal_logo",      assetId: "generic-03", label: "Minimal Logo",      desc: "Clean minimal theme graphic" },
 ];

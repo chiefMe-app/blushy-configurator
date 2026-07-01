@@ -310,6 +310,8 @@ export interface BackdropItemGraphic {
   enabled: boolean;
   theme: string;
   style: GraphicStyle;
+  source?: "preset" | "custom";
+  assetId?: string;
 }
 
 /**
