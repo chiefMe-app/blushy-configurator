@@ -31,10 +31,18 @@ const VIEWBOX: Record<FalImageSize, [number, number]> = {
 };
 
 export interface SilhouetteResult {
-  svg:          string;
-  viewBoxW:     number;
-  viewBoxH:     number;
-  falImageSize: FalImageSize;
+  svg:                      string;
+  viewBoxW:                 number;
+  viewBoxH:                 number;
+  falImageSize:             FalImageSize;
+  cutoutPlaceholderCount:   number;
+  cutoutPlaceholderHeightsCm: number[];
+}
+
+/** One size tier of standee cutout to draw in the guide. */
+export interface CutoutGuideItem {
+  heightCm: number;
+  quantity: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -188,14 +196,42 @@ function plinthEdge(cx: number, bottomY: number, heightPx: number, diameterPx: n
 }
 
 // ---------------------------------------------------------------------------
+// Cutout standee placeholder — dashed rounded silhouette + base foot + label
+// ---------------------------------------------------------------------------
+
+function standeeGuide(cx: number, bottomY: number, heightPx: number, label: string): string {
+  const widthPx  = Math.max(28, Math.round(heightPx * 0.22));
+  const rx       = widthPx / 2;
+  const topY     = bottomY - heightPx;
+  const cornerR  = Math.round(widthPx * 0.30); // rounded head top
+  const baseRy   = Math.max(4, Math.round(widthPx * 0.15));
+  const fontSize = Math.max(9, Math.min(13, Math.round(widthPx * 0.55)));
+
+  return [
+    // Body silhouette — light fill, dashed outline so it reads as a guide placeholder
+    `<rect x="${(cx - rx).toFixed(1)}" y="${topY.toFixed(1)}" width="${widthPx.toFixed(1)}" height="${heightPx.toFixed(1)}" ` +
+      `rx="${cornerR}" ry="${cornerR}" ` +
+      `fill="#F4F4F4" stroke="#999999" stroke-width="1.2" stroke-dasharray="5,3"/>`,
+    // Base foot ellipse — suggests the standee rests on the floor
+    `<ellipse cx="${cx.toFixed(1)}" cy="${bottomY.toFixed(1)}" ` +
+      `rx="${(rx * 1.3).toFixed(1)}" ry="${baseRy.toFixed(1)}" ` +
+      `fill="#E4E4E4" stroke="#AAAAAA" stroke-width="0.8"/>`,
+    // Size label below the base
+    `<text x="${cx.toFixed(1)}" y="${(bottomY + baseRy + fontSize + 2).toFixed(1)}" ` +
+      `text-anchor="middle" font-size="${fontSize}" font-family="sans-serif" fill="#777777">${label}</text>`,
+  ].join("\n    ");
+}
+
+// ---------------------------------------------------------------------------
 // Main export
 // ---------------------------------------------------------------------------
 
 export function generateStructureSilhouette(
-  backdropItems:  BackdropItem[],
-  plinthSizes:    PlinthSize[],
-  balloonStyle:   BalloonStyleId,
-  balloonColors?: string[],
+  backdropItems:    BackdropItem[],
+  plinthSizes:      PlinthSize[],
+  balloonStyle:     BalloonStyleId,
+  balloonColors?:   string[],
+  cutoutGuideItems?: CutoutGuideItem[],
 ): SilhouetteResult {
   const { falImageSize } = calculateRenderAspectRatio(backdropItems);
   const [Wbase, H]       = VIEWBOX[falImageSize];
@@ -452,6 +488,48 @@ export function generateStructureSilhouette(
     }
   }
 
+  // ── Cutout standee placeholders ──────────────────────────────────────────
+  // Draw one dashed silhouette per selected standee, to the LEFT of the backdrop
+  // group (opposite side from the typical right-side half garland).  Heights are
+  // scaled relative to the reference backdrop panel so proportions are accurate.
+  const cutoutPlaceholderHeightsCm: number[] = [];
+
+  const activeCutouts = (cutoutGuideItems ?? []).filter(i => i.quantity > 0);
+  if (activeCutouts.length > 0 && layout.panels.length > 0) {
+    const refPanel      = layout.panels[0];
+    const refItem       = backdropItems[refPanel.idx];
+    const refHeightCm   = (refItem as { heightCm?: number })?.heightCm ?? 200;
+    const pxPerCm       = (refPanel.floorY - refPanel.apexY) / refHeightCm;
+    const floorY        = layout.floorY;
+    const groupLeft     = Math.min(...layout.panels.map((p) => p.cx - p.pw / 2));
+
+    // Build flat list sorted tallest first
+    const standeesToDraw: { heightCm: number; label: string }[] = [];
+    for (const item of activeCutouts) {
+      for (let q = 0; q < item.quantity; q++) {
+        standeesToDraw.push({ heightCm: item.heightCm, label: `${item.quantity > 1 ? `${item.quantity}x ` : ""}${item.heightCm}cm` });
+      }
+    }
+    standeesToDraw.sort((a, b) => b.heightCm - a.heightCm);
+
+    const standeeGap = Math.round(W * 0.03); // gap between backdrop and first standee
+    const betweenGap = Math.round(W * 0.012); // gap between consecutive standees
+    let curRight = groupLeft - standeeGap; // right edge of next standee placement
+
+    for (const standee of standeesToDraw) {
+      const heightPx = Math.round(standee.heightCm * pxPerCm);
+      const widthPx  = Math.max(28, Math.round(heightPx * 0.22));
+      const cx       = curRight - widthPx / 2;
+
+      // Don't draw off the left canvas edge
+      if (cx - widthPx / 2 < 4) break;
+
+      content.push(standeeGuide(cx, floorY, heightPx, standee.label));
+      cutoutPlaceholderHeightsCm.push(standee.heightCm);
+      curRight = cx - widthPx / 2 - betweenGap;
+    }
+  }
+
   // Assemble SVG: full-canvas background + scaled content group
   const svg = [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`,
@@ -462,5 +540,12 @@ export function generateStructureSilhouette(
     `</svg>`,
   ].join("\n");
 
-  return { svg, viewBoxW: W, viewBoxH: H, falImageSize };
+  return {
+    svg,
+    viewBoxW:   W,
+    viewBoxH:   H,
+    falImageSize,
+    cutoutPlaceholderCount:      cutoutPlaceholderHeightsCm.length,
+    cutoutPlaceholderHeightsCm,
+  };
 }

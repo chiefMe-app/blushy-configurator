@@ -25,7 +25,7 @@ import {
 } from "@/lib/generatePrompt";
 import { type SceneModel } from "@/lib/buildSceneModel";
 import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
-import { generateStructureSilhouette } from "@/lib/generateStructureSilhouette";
+import { generateStructureSilhouette, type CutoutGuideItem } from "@/lib/generateStructureSilhouette";
 import { type BalloonStyleId } from "@/lib/config";
 import { SEMPERTEX_CATALOG, type SempertexColor } from "@/lib/sempertexCatalog";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
@@ -95,7 +95,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "cutouts-no-legacy-premium-v1";
+const RENDER_CACHE_VERSION = "cutout-layout-guide-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -548,6 +548,7 @@ async function generateLayoutReferencePng(
   sceneModel:        SceneModel,
   promptInput:       PromptInput,
   selectedHexColors: string[] = [],
+  cutoutGuideItems:  CutoutGuideItem[] = [],
 ): Promise<LayoutRefPngResult> {
   // Stage 1: SVG generation — derive plinth sizes from sceneModel for type safety
   let silhouette: ReturnType<typeof generateStructureSilhouette>;
@@ -561,6 +562,7 @@ async function generateLayoutReferencePng(
         : sceneModel.balloons.colors.length > 0
           ? sceneModel.balloons.colors
           : promptInput.balloonColors,
+      cutoutGuideItems,
     );
   } catch (err) {
     const msg = String(err);
@@ -758,6 +760,12 @@ if (cached) {
   const cutouts = sceneModel.cutouts;
 const cutoutItems = cutouts?.items?.filter((item: any) => item.quantity > 0) ?? [];
 const resolvedCutoutTotalCount = cutoutItems.reduce((sum: number, item: any) => sum + item.quantity, 0);
+const cutoutGuideItems: CutoutGuideItem[] = (cutouts as any)?.mode === "standees"
+  ? cutoutItems.map((item: any) => ({ heightCm: item.heightCm as number, quantity: item.quantity as number }))
+  : [];
+const layoutGuideCutoutPlaceholdersApplied = cutoutGuideItems.length > 0;
+const layoutGuideCutoutPlaceholderCount    = cutoutGuideItems.reduce((s, i) => s + i.quantity, 0);
+const layoutGuideCutoutHeightsCm           = cutoutGuideItems.flatMap(i => Array<number>(i.quantity).fill(i.heightCm));
 
   const diagInfo = {
   selectedPlinthSize:       firstPlinthDiag?.size       ?? null,
@@ -834,6 +842,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
   roundPrimaryPromptColorOverrideApplied:   hasRoundPanelInScene && effectiveBalloonHexColors.length > 0,
   roundHalfGarlandGuideApplied:             hasRoundPanelInScene && sceneModel.balloons.style === "half",
   plinthGuideProtected:                     sceneModel.plinths.length > 0,
+  layoutGuideCutoutPlaceholdersApplied,
+  layoutGuideCutoutPlaceholderCount,
+  layoutGuideCutoutHeightsCm,
 
   // Theme catalog diagnostics
   selectedThemeId,
@@ -904,7 +915,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
 
     // ── Primary path: layout-reference edit ────────────────────────────────
     // Same proven pattern as fal-layout-reference-test in the structure test route.
-    const pngResult       = await generateLayoutReferencePng(sceneModel, promptInputForAi, effectiveBalloonHexColors);
+    const pngResult       = await generateLayoutReferencePng(sceneModel, promptInputForAi, effectiveBalloonHexColors, cutoutGuideItems);
     const layoutRefPrompt = buildLayoutRefEditPrompt(sceneModel, effectiveSempertexSelection);
 
     // Debug shortcut: return the layout reference PNG without calling fal.
