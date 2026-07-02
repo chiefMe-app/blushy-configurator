@@ -18,6 +18,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import path from "path";
+import fs from "fs";
 import { fal } from "@fal-ai/client";
 import {
   generatePrompt,
@@ -95,7 +97,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "cutout-placeholder-polish-v1";
+const RENDER_CACHE_VERSION = "cutout-real-asset-overlay-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1135,6 +1137,8 @@ forbiddenBalloonColorLabels: hasSempertexLock
   let cutoutOverlayApplied   = false;
   let cutoutOverlayCount     = 0;
   let cutoutOverlayHeightsCm: number[] = [];
+  let cutoutOverlayAssetUsed = false;
+  let cutoutOverlayAssetPaths: string[] = [];
 
   if (cutoutGuideItems.length > 0) {
     try {
@@ -1147,12 +1151,68 @@ forbiddenBalloonColorLabels: hasSempertexLock
         const imgW      = meta.width  ?? 1024;
         const imgH      = meta.height ?? 1024;
 
-        const presetId   = (cutouts as any)?.presetAssetId as string ?? "";
-        const overlaySvg = buildStandeeOverlaySvg(cutoutGuideItems, imgW, imgH, presetId);
-        const svgBuf     = Buffer.from(overlaySvg, "utf8");
+        const presetId = (cutouts as any)?.presetAssetId as string ?? "";
 
-        const compBuf    = await (sharpFn2(imgBuf)
-          .composite([{ input: svgBuf, blend: "over" }])
+        // ── Try real PNG cutout asset first ─────────────────────────────────
+        // public/cutouts/[themeId]/[presetAssetId].png — same asset scaled per
+        // selected height for now; later separate files like frozen-01-large.png.
+        const themeIdForAsset = String(selectedThemeId ?? "").toLowerCase();
+        let composites: { input: Buffer; left?: number; top?: number; blend: "over" }[] = [];
+
+        const assetFilePath = path.join(process.cwd(), "public", "cutouts", themeIdForAsset, `${presetId}.png`);
+        if (presetId && themeIdForAsset && fs.existsSync(assetFilePath)) {
+          try {
+            const assetBuf = fs.readFileSync(assetFilePath);
+
+            // Flat list of heights, exact count only, tallest first —
+            // large far right, then medium/small stepping left/lower.
+            const flatHeights = cutoutGuideItems
+              .flatMap(i => Array<number>(i.quantity).fill(i.heightCm))
+              .sort((a, b) => b - a);
+
+            // Visual height as fraction of final image height per physical size
+            const heightFrac = (cm: number): number =>
+              cm >= 150 ? 0.41 : cm >= 100 ? 0.31 : 0.21;
+
+            const floorY   = Math.round(imgH * 0.90);
+            const maxW     = Math.round(imgW * 0.28); // don't cover balloons — shrink wide assets
+            let  rightEdge = Math.round(imgW * 0.98);
+
+            for (const cm of flatHeights) {
+              const targetH = Math.round(imgH * heightFrac(cm));
+              // Resize preserving aspect ratio and PNG transparency
+              let resizedBuf = await (sharpFn2(assetBuf).resize({ height: targetH }).png().toBuffer()) as Buffer;
+              let rMeta      = await sharpFn2(resizedBuf).metadata() as { width?: number; height?: number };
+              if ((rMeta.width ?? 0) > maxW) {
+                // Wide asset: scale down by width instead of covering the garland
+                resizedBuf = await (sharpFn2(assetBuf).resize({ width: maxW }).png().toBuffer()) as Buffer;
+                rMeta      = await sharpFn2(resizedBuf).metadata() as { width?: number; height?: number };
+              }
+              const rw   = rMeta.width  ?? targetH;
+              const rh   = rMeta.height ?? targetH;
+              const left = Math.max(0, rightEdge - rw);
+              const top  = Math.max(0, floorY - rh);
+              composites.push({ input: resizedBuf, left, top, blend: "over" });
+              cutoutOverlayAssetPaths.push(`/cutouts/${themeIdForAsset}/${presetId}.png`);
+              rightEdge = left - Math.round(imgW * 0.02);
+            }
+            cutoutOverlayAssetUsed = composites.length > 0;
+          } catch (assetErr) {
+            console.warn("[generate-controlled-render] cutout asset load failed (falling back to placeholder SVG):", String(assetErr));
+            composites = [];
+            cutoutOverlayAssetPaths = [];
+            cutoutOverlayAssetUsed  = false;
+          }
+        }
+
+        // ── Fallback: placeholder SVG when no real asset is available ───────
+        if (!cutoutOverlayAssetUsed) {
+          const overlaySvg = buildStandeeOverlaySvg(cutoutGuideItems, imgW, imgH, presetId);
+          composites = [{ input: Buffer.from(overlaySvg, "utf8"), blend: "over" }];
+        }
+
+        const compBuf = await (sharpFn2(imgBuf)
+          .composite(composites)
           .jpeg({ quality: 92 })
           .toBuffer()) as Buffer;
 
@@ -1161,7 +1221,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
         cutoutOverlayHeightsCm = cutoutGuideItems.flatMap(i => Array<number>(i.quantity).fill(i.heightCm));
         cutoutOverlayCount     = cutoutOverlayHeightsCm.length;
         if (process.env.NODE_ENV === "development") {
-          console.log("[generate-controlled-render] cutout overlay applied, standees:", cutoutOverlayCount, "compBytes:", compBuf.length);
+          console.log("[generate-controlled-render] cutout overlay applied, standees:", cutoutOverlayCount, "assetUsed:", cutoutOverlayAssetUsed, "compBytes:", compBuf.length);
         }
       }
     } catch (overlayErr) {
@@ -1183,6 +1243,8 @@ forbiddenBalloonColorLabels: hasSempertexLock
     cutoutOverlayApplied,
     cutoutOverlayCount,
     cutoutOverlayHeightsCm,
+    cutoutOverlayAssetUsed,
+    cutoutOverlayAssetPaths,
     layoutReferencePngGenerated: true,
     layoutReferencePngBytes: pngResult.bytes,
     layoutReferencePrefix: pngResult.dataUri.slice(0, 40),
