@@ -28,6 +28,7 @@ import {
 import { type SceneModel } from "@/lib/buildSceneModel";
 import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
 import { generateStructureSilhouette, type CutoutGuideItem } from "@/lib/generateStructureSilhouette";
+import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems, type LayoutZone } from "@/lib/setupLayoutCatalog";
 import { type BalloonStyleId } from "@/lib/config";
 import { SEMPERTEX_CATALOG, type SempertexColor } from "@/lib/sempertexCatalog";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
@@ -97,7 +98,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "cutout-asset-height-authoritative-v1";
+const RENDER_CACHE_VERSION = "setup-layout-zones-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -847,6 +848,11 @@ const layoutGuideCutoutPlaceholdersApplied = cutoutGuideItems.length > 0;
 const layoutGuideCutoutPlaceholderCount    = cutoutGuideItems.reduce((s, i) => s + i.quantity, 0);
 const layoutGuideCutoutHeightsCm           = cutoutGuideItems.flatMap(i => Array<number>(i.quantity).fill(i.heightCm));
 
+// Controlled setup layout template — inferred from selected backdrop types.
+// Drives prompt garland/panel instructions and locked standee overlay zones.
+const setupLayoutTemplateId = inferSetupLayoutTemplateIdFromBackdropItems(sceneModel.panels);
+const setupLayoutTemplate   = setupLayoutTemplateId ? getSetupLayoutTemplate(setupLayoutTemplateId) : undefined;
+
   const diagInfo = {
   selectedPlinthSize:       firstPlinthDiag?.size       ?? null,
   resolvedPlinthHeightCm:   firstPlinthDiag?.heightCm   ?? null,
@@ -925,6 +931,12 @@ forbiddenBalloonColorLabels: hasSempertexLock
   layoutGuideCutoutPlaceholdersApplied,
   layoutGuideCutoutPlaceholderCount,
   layoutGuideCutoutHeightsCm,
+
+  // Controlled setup layout template diagnostics
+  selectedSetupLayoutTemplateId:   setupLayoutTemplateId,
+  selectedSetupLayoutTemplateName: setupLayoutTemplate?.name ?? null,
+  layoutTemplateGuideApplied:      !!setupLayoutTemplate,
+  layoutTemplateGarlandGuideApplied: !!setupLayoutTemplate && sceneModel.balloons.style !== "none",
   cutoutAiGenerationSuppressed: cutoutGuideItems.length > 0,
 
   // Theme catalog diagnostics
@@ -1142,6 +1154,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
   let cutoutOverlayRenderedAssetWidthPx:  number | null = null;
   let cutoutOverlayRenderedAssetHeightPx: number | null = null;
   let cutoutOverlayScaleReason: "height" | "width_cap" | "fallback" = "fallback";
+  const standeeOverlayZonesUsed: string[] = [];
 
   if (cutoutGuideItems.length > 0) {
     try {
@@ -1203,9 +1216,28 @@ forbiddenBalloonColorLabels: hasSempertexLock
             const floorY   = Math.round(imgH * 0.92);
             let  rightEdge = Math.round(imgW * 0.99);
 
+            // Locked standee zones from the setup layout template, keyed by size.
+            const sizeKey = (cm: number): "large" | "medium" | "small" =>
+              cm >= 150 ? "large" : cm >= 100 ? "medium" : "small";
+            const zoneUseCount: Record<"large" | "medium" | "small", number> = { large: 0, medium: 0, small: 0 };
+
             for (const cm of flatHeights) {
-              const targetH = Math.round(imgH * heightFrac(cm));
-              const maxW    = Math.round(imgW * widthCapFrac(cm));
+              // Zone lock: template zone overrides the generic fractions
+              let zone: LayoutZone | null = null;
+              let zoneIdx = 0;
+              let zoneOverflow = 0;
+              if (setupLayoutTemplate) {
+                const key   = sizeKey(cm);
+                const zones = setupLayoutTemplate.standeeZones[key];
+                const used  = zoneUseCount[key];
+                zoneIdx      = Math.min(used, zones.length - 1);
+                zoneOverflow = Math.max(0, used - (zones.length - 1));
+                zone         = zones[zoneIdx] ?? null;
+                zoneUseCount[key] = used + 1;
+              }
+
+              const targetH = Math.round(imgH * (zone ? zone.maxHeightFraction : heightFrac(cm)));
+              const maxW    = Math.round(imgW * (zone ? zone.maxWidthFraction : widthCapFrac(cm)));
               let scaleReason: "height" | "width_cap" = "height";
 
               // Resize by height first, preserving aspect ratio and transparency
@@ -1233,10 +1265,51 @@ forbiddenBalloonColorLabels: hasSempertexLock
                 scaleReason = "width_cap";
               }
 
-              const rw   = rMeta.width  ?? targetH;
-              const rh   = rMeta.height ?? targetH;
-              const left = Math.max(0, rightEdge - rw);
-              const top  = Math.max(0, floorY - rh);
+              const rw = rMeta.width  ?? targetH;
+              const rh = rMeta.height ?? targetH;
+
+              let left: number;
+              let bottom: number;
+              if (zone) {
+                // Zone-locked placement: x anchors the outer edge; the asset
+                // extends inward from the preferred side.
+                const anchorX = Math.round(zone.x * imgW);
+                left   = zone.preferredSide === "left" ? anchorX : anchorX - rw;
+                bottom = Math.round(zone.bottomY * imgH);
+                // Extra instances of the same size step inward so they don't stack
+                if (zoneOverflow > 0) {
+                  const step = zoneOverflow * (rw + Math.round(imgW * 0.02));
+                  left += zone.preferredSide === "left" ? step : -step;
+                }
+                standeeOverlayZonesUsed.push(`${sizeKey(cm)}[${zoneIdx}]:${zone.preferredSide ?? "right"}`);
+              } else {
+                // Generic fallback: step leftward from the right edge
+                left   = rightEdge - rw;
+                bottom = floorY;
+              }
+              left = Math.max(0, Math.min(left, imgW - rw));
+              const top = Math.max(0, bottom - rh);
+
+              // Soft floor shadow ellipse under the asset — grounds the PNG
+              // so it reads as a freestanding standee, not a pasted sticker.
+              const shW = Math.round(rw * 1.05);
+              const shH = Math.max(10, Math.round(rw * 0.14));
+              const shadowSvg =
+                `<svg xmlns="http://www.w3.org/2000/svg" width="${shW}" height="${shH}" viewBox="0 0 ${shW} ${shH}">` +
+                `<defs><radialGradient id="sh" cx="50%" cy="50%" r="50%">` +
+                `<stop offset="0%" stop-color="rgba(0,0,0,0.22)"/>` +
+                `<stop offset="70%" stop-color="rgba(0,0,0,0.10)"/>` +
+                `<stop offset="100%" stop-color="rgba(0,0,0,0)"/>` +
+                `</radialGradient></defs>` +
+                `<ellipse cx="${shW / 2}" cy="${shH / 2}" rx="${shW / 2}" ry="${shH / 2}" fill="url(#sh)"/>` +
+                `</svg>`;
+              composites.push({
+                input: Buffer.from(shadowSvg, "utf8"),
+                left:  Math.max(0, left + Math.round((rw - shW) / 2)),
+                top:   Math.max(0, (top + rh) - Math.round(shH / 2)),
+                blend: "over",
+              });
+
               composites.push({ input: resizedBuf, left, top, blend: "over" });
               cutoutOverlayAssetPaths.push(`/cutouts/${themeIdForAsset}/${presetId}.png`);
               // Report the first (tallest) asset's rendered dimensions
@@ -1256,6 +1329,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
             cutoutOverlayRenderedAssetWidthPx  = null;
             cutoutOverlayRenderedAssetHeightPx = null;
             cutoutOverlayScaleReason           = "fallback";
+            standeeOverlayZonesUsed.length     = 0;
           }
         }
 
@@ -1302,6 +1376,8 @@ forbiddenBalloonColorLabels: hasSempertexLock
     cutoutOverlayRenderedAssetWidthPx,
     cutoutOverlayRenderedAssetHeightPx,
     cutoutOverlayScaleReason,
+    standeeZoneLockApplied: !!setupLayoutTemplate && standeeOverlayZonesUsed.length > 0,
+    standeeOverlayZonesUsed,
     layoutReferencePngGenerated: true,
     layoutReferencePngBytes: pngResult.bytes,
     layoutReferencePrefix: pngResult.dataUri.slice(0, 40),

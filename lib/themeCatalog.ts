@@ -17,6 +17,20 @@ export interface ThemeGraphicPreset {
   promptDescription?: string;
 }
 
+/**
+ * Character standee / cutout preset backed by a real PNG asset in
+ * public/cutouts/[themeId]/[assetId].png. Separate concept from
+ * ThemeGraphicPreset (printed backdrop graphics) — do not reuse one
+ * for the other.
+ */
+export interface ThemeCutoutPreset {
+  id: string;
+  assetId: string;
+  label: string;
+  desc: string;
+  previewUrl: string;
+}
+
 export interface ThemeCatalogEntry {
   id: ThemeId;
   name: string;
@@ -27,6 +41,8 @@ export interface ThemeCatalogEntry {
   sempertexPaletteIds: string[];
   renderDescription: string;
   graphicPresets: [ThemeGraphicPreset, ThemeGraphicPreset, ThemeGraphicPreset];
+  /** Real-asset standee presets; themes without assets omit this. */
+  cutoutPresets?: ThemeCutoutPreset[];
 }
 
 /** Compute stable asset ID: "{themeId with _ → -}-01/02/03" */
@@ -48,6 +64,12 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
       { id: "frozen_castle",    assetId: "frozen-01", label: "Frozen Castle",    desc: "Arendelle castle with snowflakes" },
       { id: "frozen_elsa",      assetId: "frozen-02", label: "Elsa & Anna",      desc: "Silhouettes of Elsa and Anna" },
       { id: "frozen_snowflake", assetId: "frozen-03", label: "Snowflake Pattern", desc: "Repeating ice crystal pattern" },
+    ],
+    cutoutPresets: [
+      { id: "frozen-01", assetId: "frozen-01", label: "Elsa & Anna Duo",     desc: "Two-character feature standee", previewUrl: "/cutouts/frozen/frozen-01.png" },
+      { id: "frozen-02", assetId: "frozen-02", label: "Elsa & Anna Classic", desc: "Main character duo standee",     previewUrl: "/cutouts/frozen/frozen-02.png" },
+      { id: "frozen-03", assetId: "frozen-03", label: "Elsa Solo",           desc: "Single Elsa feature standee",    previewUrl: "/cutouts/frozen/frozen-03.png" },
+      { id: "frozen-04", assetId: "frozen-04", label: "Anna Solo",           desc: "Single Anna feature standee",    previewUrl: "/cutouts/frozen/frozen-04.png" },
     ],
   },
   {
@@ -361,6 +383,15 @@ export const FALLBACK_GRAPHIC_PRESETS: [ThemeGraphicPreset, ThemeGraphicPreset, 
   { id: "pattern_print",     assetId: "generic-02", label: "Pattern Print",     desc: "Repeating theme pattern" },
   { id: "minimal_logo",      assetId: "generic-03", label: "Minimal Logo",      desc: "Clean minimal theme graphic" },
 ];
+
+/**
+ * Real-asset cutout presets for a theme, or null when the theme has no
+ * PNG assets yet (callers fall back to generic text-only preset cards).
+ */
+export function getThemeCutoutPresets(themeId: string): ThemeCutoutPreset[] | null {
+  const theme = THEME_CATALOG.find((t) => t.id === themeId);
+  return theme?.cutoutPresets?.length ? theme.cutoutPresets : null;
+}
 
 export function getThemeGraphicPresets(themeId: string): ThemeGraphicPreset[] {
   const safeThemeId = themeId || "default";

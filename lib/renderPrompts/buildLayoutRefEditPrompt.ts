@@ -2,6 +2,7 @@ import { type SceneModel } from "@/lib/buildSceneModel";
 import type { SempertexSelectionItem } from "./types";
 import { getVisualLabel, renderSafeBalloonLabel, getPositiveLabel } from "./colorLabels";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
+import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 
 function backdropColorLabel(color: string): string {
   const c = (color || "").toLowerCase().trim();
@@ -415,10 +416,24 @@ const cutoutClause = cutouts?.mode === "standees" && cutoutTotal > 0
     `Keep the floor clear of any character figures or themed standee objects. `
   : "";
 
+// Controlled setup layout template — locks panel arrangement and keeps the
+// garland organic and connected, especially for 2-backdrop scenes.
+const setupTemplateId = inferSetupLayoutTemplateIdFromBackdropItems(sceneModel.panels);
+const setupTemplate   = setupTemplateId ? getSetupLayoutTemplate(setupTemplateId) : undefined;
+const hasGarland      = sceneModel.balloons.style !== "none";
+const setupTemplateClause = setupTemplate
+  ? `Use the selected setup layout: ${setupTemplate.name}. ${setupTemplate.panelInstruction} ` +
+    (hasGarland ? `${setupTemplate.garlandInstruction} ` : "") +
+    (hasGarland && sceneModel.panels.length >= 2
+      ? `Preserve a lush organic balloon garland following the selected setup layout. Do not replace it with loose balloon bouquets or simple balloon clusters. `
+      : "")
+  : "";
+
   return (
     photographyOpening +
     framingClause +
     `${backdropDesc}. ` +
+    setupTemplateClause +
     themeGraphicClause +
     cutoutClause+
     (plinthDesc ? `${plinthDesc}. ` : noPlinthDesc) +

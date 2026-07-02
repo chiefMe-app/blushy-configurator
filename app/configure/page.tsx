@@ -66,8 +66,12 @@ cutoutTotalCount,
   type ShimmerColorId,
 } from "@/lib/config";
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
-import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS } from "@/lib/themeCatalog";
+import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS, getThemeCutoutPresets } from "@/lib/themeCatalog";
+import { SETUP_LAYOUT_TEMPLATES, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 import SetupPreview, { useSetupPreview } from "@/components/SetupPreview";
+
+// Controlled render limit: at most 2 backdrop pieces per setup.
+const MAX_BACKDROP_ITEMS = 2;
 import StepNavigation from "@/components/StepNavigation";
 import OptionCard from "@/components/OptionCard";
 import PackageCard from "@/components/PackageCard";
@@ -897,7 +901,17 @@ function DecorStep({
   const t = d.backdropText;
   const cut = d.cutouts;
   const normalizedCut = normalizeCutouts(cut);
-const cutoutPresetOptions = getThemeGraphicPresets(config.theme);
+// Real-asset cutout presets (with PNG previews) when the theme has them;
+// otherwise fall back to the generic text-only preset cards.
+const themeCutoutPresets = getThemeCutoutPresets(config.theme);
+const cutoutPresetOptions = themeCutoutPresets
+  ?? getThemeGraphicPresets(config.theme).map((p) => ({
+       id: p.id,
+       assetId: p.assetId ?? p.id,
+       label: p.label,
+       desc: (p as any).description ?? (p as any).desc ?? p.label,
+       previewUrl: "",
+     }));
 const selectedCutoutPresetId =
   normalizedCut.presetAssetId ?? cutoutPresetOptions[0]?.assetId ?? `${config.theme}-01`;
 
@@ -1068,7 +1082,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
     if (existing) {
       patchDecor({ backdropItems: d.backdropItems.filter(i => i.id !== existing.id) });
     } else {
-      if (d.backdropItems.filter(i => i.type !== "round").length >= 3) return;
+      if (d.backdropItems.length >= MAX_BACKDROP_ITEMS) return;
       const hasRound = d.backdropItems.some(i => i.type === "round");
       if (hasRound) {
         const newItem = { ...makeBackdropItem("arch"), sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm, id: size.id };
@@ -1100,13 +1114,37 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
     if (hasThis) {
       patchDecor({ backdropItems: d.backdropItems.filter(i => i.type !== type) });
     } else {
-      if (d.backdropItems.length >= 3) return;
+      if (d.backdropItems.length >= MAX_BACKDROP_ITEMS) return;
       const withoutRound = d.backdropItems.filter(i => i.type !== "round");
       const newItem = makeBackdropItem(type);
       patchDecor({ backdropItems: [...withoutRound, newItem] });
       setOpenCustomizeIds(prev => { const n = new Set(prev); n.add(newItem.id); return n; });
     }
   }
+
+  // Apply a curated backdrop set template — replaces current backdropItems
+  // with the template's exact panels (max 2, controlled render layouts).
+  function applySetupTemplate(templateId: string) {
+    const archMedium = ARCH_SIZES[1]; // medium 100x200
+    const makeArch = () => ({
+      ...makeBackdropItem("arch"),
+      sizeId: archMedium.id, widthCm: archMedium.widthCm, heightCm: archMedium.heightCm,
+      id: "arch-medium",
+    });
+    let panels: BackdropItem[];
+    switch (templateId) {
+      case "single_arch":   panels = [makeArch()]; break;
+      case "single_round":  panels = [makeBackdropItem("round")]; break;
+      case "arch_shimmer":  panels = [makeArch(), makeBackdropItem("shimmer_wall")]; break;
+      case "arch_round":    panels = [makeArch(), makeBackdropItem("round")]; break;
+      case "round_shimmer": panels = [makeBackdropItem("round"), makeBackdropItem("shimmer_wall")]; break;
+      default: return;
+    }
+    patchDecor({ backdropItems: panels });
+    setOpenCustomizeIds(new Set(panels.map(p => p.id)));
+  }
+
+  const activeSetupTemplateId = inferSetupLayoutTemplateIdFromBackdropItems(d.backdropItems);
 
   // Readable type labels for summaries
   const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", shimmer_wall: "Shimmer Wall" };
@@ -1269,6 +1307,30 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
 
       {/* -"--"- UNIFIED BACKDROP SELECTOR -"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"- */}
       <div style={{ background: "white", borderRadius: 16, padding: "16px", marginBottom: 0, border: "1px solid #F1D8E2" }}>
+        {/* Curated backdrop set templates — controlled render layouts */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#73778A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>Choose setup layout</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
+            {SETUP_LAYOUT_TEMPLATES.map((tpl) => {
+              const active = activeSetupTemplateId === tpl.id;
+              return (
+                <button key={tpl.id} type="button" onClick={() => applySetupTemplate(tpl.id)}
+                  style={{ padding: "10px 8px", borderRadius: 12, cursor: "pointer", textAlign: "center", transition: "all 0.15s",
+                    border: active ? "2px solid #EC4D8D" : "1.5px solid #ECEAF1",
+                    background: active ? "linear-gradient(145deg, #FFF7FB 0%, #FFFFFF 100%)" : "#FAFAFA" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: active ? "#EC4D8D" : "#15182E", lineHeight: 1.25 }}>{tpl.name}</div>
+                  <div style={{ fontSize: 10, color: "#73778A", marginTop: 3, lineHeight: 1.3 }}>{tpl.description}</div>
+                </button>
+              );
+            })}
+          </div>
+          {d.backdropItems.length >= MAX_BACKDROP_ITEMS && (
+            <div style={{ marginTop: 8, fontSize: 11, color: "#73778A", fontWeight: 500 }}>
+              You can select up to 2 backdrop pieces for a controlled render.
+            </div>
+          )}
+        </div>
+
         {/* 4 type cards in a row */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
           {[
@@ -1316,13 +1378,13 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                 return (
                   <div key={size.id}>
                     <button type="button" onClick={() => toggleArchSize(size)}
-                      disabled={!isSelected && d.backdropItems.length >= 3}
+                      disabled={!isSelected && d.backdropItems.length >= MAX_BACKDROP_ITEMS}
                       style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
                         padding: "11px 14px", borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
                         border: isSelected ? "2px solid #EC4D8D" : "1.5px solid #ECEAF1",
                         background: isSelected ? "white" : "white",
                         boxShadow: isSelected ? "0 2px 10px rgba(236,77,141,0.12)" : "none",
-                        opacity: !isSelected && d.backdropItems.length >= 3 ? 0.4 : 1 }}>
+                        opacity: !isSelected && d.backdropItems.length >= MAX_BACKDROP_ITEMS ? 0.4 : 1 }}>
                       <div style={{ textAlign: "left" }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "#EC4D8D" : "#15182E" }}>{size.label}</div>
                         <div style={{ fontSize: 11, color: "#73778A", marginTop: 1 }}>{size.widthCm} x{size.heightCm} cm</div>
@@ -1445,7 +1507,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                         <div key={size.id}>
                           <button type="button"
                             onClick={() => toggleArchSize(size)}
-                            disabled={!isSelected && d.backdropItems.length >= 3}
+                            disabled={!isSelected && d.backdropItems.length >= MAX_BACKDROP_ITEMS}
                             style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
                               padding: "10px 14px", borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
                               border: isSelected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
@@ -1454,7 +1516,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                                 : size.id === "medium" ? "#FFF0F5"
                                 : size.id === "large"  ? "#F5F0FF"
                                 : "white",
-                              opacity: !isSelected && d.backdropItems.length >= 3 ? 0.4 : 1 }}>
+                              opacity: !isSelected && d.backdropItems.length >= MAX_BACKDROP_ITEMS ? 0.4 : 1 }}>
                             <div style={{ textAlign: "left" }}>
                               <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? accent : "#1A1A2E" }}>{size.label}</div>
                               <div style={{ fontSize: 11, color: "#999" }}>{size.widthCm} x{size.heightCm} cm</div>
@@ -1498,7 +1560,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                   style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}
                   onClick={() => {
                     if (!hasRectCard) {
-                      if (d.backdropItems.length >= 3) return;
+                      if (d.backdropItems.length >= MAX_BACKDROP_ITEMS) return;
                       patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("rect")] });
                     }
                   }}
@@ -1619,7 +1681,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                   style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}
                   onClick={() => {
                     if (!hasShimmer) {
-                      if (d.backdropItems.length >= 3) return;
+                      if (d.backdropItems.length >= MAX_BACKDROP_ITEMS) return;
                       patchDecor({ backdropItems: [...d.backdropItems, makeBackdropItem("shimmer_wall")] });
                     }
                   }}
@@ -2311,7 +2373,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
           <div className="text-[11px] text-black/50">Theme-matched preset options. Later these can become real uploaded assets.</div>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className={`grid grid-cols-2 gap-2 ${cutoutPresetOptions.length === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
           {cutoutPresetOptions.map((preset) => {
             const selected = selectedCutoutPresetId === preset.assetId;
 
@@ -2334,6 +2396,16 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                     : "border-black/10 bg-white hover:border-accent/40"
                 }`}
               >
+                {(preset as any).previewUrl ? (
+                  <div className="mb-2 flex h-24 items-center justify-center overflow-hidden rounded-[10px] bg-black/5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={(preset as any).previewUrl}
+                      alt={preset.label}
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                ) : null}
                 <div className="text-[12px] font-extrabold text-[#12162F]">{preset.label}</div>
                 <div className="mt-1 line-clamp-3 text-[11px] leading-snug text-black/50">
                   {(preset as any).description ?? (preset as any).promptDescription ?? (preset as any).desc ?? preset.label}
