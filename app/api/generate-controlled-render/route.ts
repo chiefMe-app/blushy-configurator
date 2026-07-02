@@ -97,7 +97,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "cutout-real-asset-overlay-v1";
+const RENDER_CACHE_VERSION = "cutout-asset-scale-placement-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1170,13 +1170,16 @@ forbiddenBalloonColorLabels: hasSempertexLock
               .flatMap(i => Array<number>(i.quantity).fill(i.heightCm))
               .sort((a, b) => b - a);
 
-            // Visual height as fraction of final image height per physical size
+            // Visual height as fraction of final image height per physical size.
+            // Calibrated so a 150cm prop reads clearly large next to a 200cm arch.
             const heightFrac = (cm: number): number =>
-              cm >= 150 ? 0.41 : cm >= 100 ? 0.31 : 0.21;
+              cm >= 150 ? 0.52 : cm >= 100 ? 0.36 : 0.24;
 
-            const floorY   = Math.round(imgH * 0.90);
-            const maxW     = Math.round(imgW * 0.28); // don't cover balloons — shrink wide assets
-            let  rightEdge = Math.round(imgW * 0.98);
+            const floorY   = Math.round(imgH * 0.915);
+            // Wide prop assets (castle) may take up to 36% of image width —
+            // still clear of the central backdrop opening on the right side.
+            const maxW     = Math.round(imgW * 0.36);
+            let  rightEdge = Math.round(imgW * 0.99);
 
             for (const cm of flatHeights) {
               const targetH = Math.round(imgH * heightFrac(cm));
