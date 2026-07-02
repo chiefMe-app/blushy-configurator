@@ -97,7 +97,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "cutout-asset-scale-placement-v1";
+const RENDER_CACHE_VERSION = "cutout-asset-height-authoritative-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1139,6 +1139,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
   let cutoutOverlayHeightsCm: number[] = [];
   let cutoutOverlayAssetUsed = false;
   let cutoutOverlayAssetPaths: string[] = [];
+  let cutoutOverlayRenderedAssetWidthPx:  number | null = null;
+  let cutoutOverlayRenderedAssetHeightPx: number | null = null;
+  let cutoutOverlayScaleReason: "height" | "width_cap" | "fallback" = "fallback";
 
   if (cutoutGuideItems.length > 0) {
     try {
@@ -1162,7 +1165,22 @@ forbiddenBalloonColorLabels: hasSempertexLock
         const assetFilePath = path.join(process.cwd(), "public", "cutouts", themeIdForAsset, `${presetId}.png`);
         if (presetId && themeIdForAsset && fs.existsSync(assetFilePath)) {
           try {
-            const assetBuf = fs.readFileSync(assetFilePath);
+            const rawAssetBuf = fs.readFileSync(assetFilePath);
+
+            // Trim transparent canvas padding so the visible artwork — not the
+            // PNG canvas — is what gets scaled to the target height. A castle
+            // exported with generous transparent margins otherwise reads far
+            // smaller than its selected physical size.
+            let assetBuf: Buffer = rawAssetBuf;
+            try {
+              assetBuf = await (sharpFn2(rawAssetBuf)
+                .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                .png()
+                .toBuffer()) as Buffer;
+            } catch (trimErr) {
+              console.warn("[generate-controlled-render] asset trim failed, using original buffer:", String(trimErr));
+              assetBuf = rawAssetBuf;
+            }
 
             // Flat list of heights, exact count only, tallest first —
             // large far right, then medium/small stepping left/lower.
@@ -1170,33 +1188,63 @@ forbiddenBalloonColorLabels: hasSempertexLock
               .flatMap(i => Array<number>(i.quantity).fill(i.heightCm))
               .sort((a, b) => b - a);
 
-            // Visual height as fraction of final image height per physical size.
-            // Calibrated so a 150cm prop reads clearly large next to a 200cm arch.
+            // Height is authoritative: a 150cm cutout beside a 200cm arch
+            // should read as ~75% of the arch — approximated via image height.
             const heightFrac = (cm: number): number =>
-              cm >= 150 ? 0.52 : cm >= 100 ? 0.36 : 0.24;
+              cm >= 150 ? 0.60 : cm >= 100 ? 0.42 : 0.26;
+            // Per-size width caps — generous for large props (castle) so the
+            // cap doesn't undo the height scaling.
+            const widthCapFrac = (cm: number): number =>
+              cm >= 150 ? 0.48 : cm >= 100 ? 0.38 : 0.28;
+            // Large must not shrink below this height even when width-capped,
+            // unless honoring it would crop the asset off-canvas.
+            const minLargeH = Math.round(imgH * 0.54);
 
-            const floorY   = Math.round(imgH * 0.915);
-            // Wide prop assets (castle) may take up to 36% of image width —
-            // still clear of the central backdrop opening on the right side.
-            const maxW     = Math.round(imgW * 0.36);
+            const floorY   = Math.round(imgH * 0.92);
             let  rightEdge = Math.round(imgW * 0.99);
 
             for (const cm of flatHeights) {
               const targetH = Math.round(imgH * heightFrac(cm));
-              // Resize preserving aspect ratio and PNG transparency
+              const maxW    = Math.round(imgW * widthCapFrac(cm));
+              let scaleReason: "height" | "width_cap" = "height";
+
+              // Resize by height first, preserving aspect ratio and transparency
               let resizedBuf = await (sharpFn2(assetBuf).resize({ height: targetH }).png().toBuffer()) as Buffer;
               let rMeta      = await sharpFn2(resizedBuf).metadata() as { width?: number; height?: number };
+
               if ((rMeta.width ?? 0) > maxW) {
-                // Wide asset: scale down by width instead of covering the garland
-                resizedBuf = await (sharpFn2(assetBuf).resize({ width: maxW }).png().toBuffer()) as Buffer;
-                rMeta      = await sharpFn2(resizedBuf).metadata() as { width?: number; height?: number };
+                // Width-capped: resize by width instead
+                let cappedBuf  = await (sharpFn2(assetBuf).resize({ width: maxW }).png().toBuffer()) as Buffer;
+                let cappedMeta = await sharpFn2(cappedBuf).metadata() as { width?: number; height?: number };
+
+                // For large standees, don't let the cap collapse the height below
+                // minLargeH — re-resize to the minimum height unless the resulting
+                // width would be cropped off the canvas.
+                if (cm >= 150 && (cappedMeta.height ?? 0) < minLargeH) {
+                  const rescueBuf  = await (sharpFn2(assetBuf).resize({ height: minLargeH }).png().toBuffer()) as Buffer;
+                  const rescueMeta = await sharpFn2(rescueBuf).metadata() as { width?: number; height?: number };
+                  if ((rescueMeta.width ?? 0) <= imgW) {
+                    cappedBuf  = rescueBuf;
+                    cappedMeta = rescueMeta;
+                  }
+                }
+                resizedBuf  = cappedBuf;
+                rMeta       = cappedMeta;
+                scaleReason = "width_cap";
               }
+
               const rw   = rMeta.width  ?? targetH;
               const rh   = rMeta.height ?? targetH;
               const left = Math.max(0, rightEdge - rw);
               const top  = Math.max(0, floorY - rh);
               composites.push({ input: resizedBuf, left, top, blend: "over" });
               cutoutOverlayAssetPaths.push(`/cutouts/${themeIdForAsset}/${presetId}.png`);
+              // Report the first (tallest) asset's rendered dimensions
+              if (cutoutOverlayRenderedAssetWidthPx === null) {
+                cutoutOverlayRenderedAssetWidthPx  = rw;
+                cutoutOverlayRenderedAssetHeightPx = rh;
+                cutoutOverlayScaleReason           = scaleReason;
+              }
               rightEdge = left - Math.round(imgW * 0.02);
             }
             cutoutOverlayAssetUsed = composites.length > 0;
@@ -1205,6 +1253,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
             composites = [];
             cutoutOverlayAssetPaths = [];
             cutoutOverlayAssetUsed  = false;
+            cutoutOverlayRenderedAssetWidthPx  = null;
+            cutoutOverlayRenderedAssetHeightPx = null;
+            cutoutOverlayScaleReason           = "fallback";
           }
         }
 
@@ -1248,6 +1299,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
     cutoutOverlayHeightsCm,
     cutoutOverlayAssetUsed,
     cutoutOverlayAssetPaths,
+    cutoutOverlayRenderedAssetWidthPx,
+    cutoutOverlayRenderedAssetHeightPx,
+    cutoutOverlayScaleReason,
     layoutReferencePngGenerated: true,
     layoutReferencePngBytes: pngResult.bytes,
     layoutReferencePrefix: pngResult.dataUri.slice(0, 40),
