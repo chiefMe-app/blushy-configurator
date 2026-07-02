@@ -4,6 +4,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["500", "600", "700", "800"] });
 
 import { useEffect, useMemo, useState } from "react";
+import { getThemeGraphicPresets } from "@/lib/themeCatalog";
 import {
   EVENT_TYPES,
   THEMES,
@@ -15,6 +16,11 @@ import {
   BALLOON_STYLES,
   PLINTH_SIZES,
   CUTOUT_SETS,
+  CUTOUT_STANDEE_OPTIONS,
+emptyCutoutStandees,
+normalizeCutouts,
+cutoutPrice,
+cutoutTotalCount,
   BACKDROP_PRINTS,
   GRAPHIC_STYLES,
   FONT_STYLES,
@@ -32,6 +38,7 @@ import {
   isAddOnRecommended,
   hexToRgbTriplet,
   softTriplet,
+  type CutoutStandeeItem,
   type BuilderConfig,
   type DecorConfig,
   type VenueDetails,
@@ -889,6 +896,44 @@ function DecorStep({
   const theme = themeById(config.theme)!;
   const t = d.backdropText;
   const cut = d.cutouts;
+  const normalizedCut = normalizeCutouts(cut);
+const cutoutPresetOptions = getThemeGraphicPresets(config.theme);
+const selectedCutoutPresetId =
+  normalizedCut.presetAssetId ?? cutoutPresetOptions[0]?.assetId ?? `${config.theme}-01`;
+
+function patchCutouts(next: Partial<typeof normalizedCut>) {
+  patchDecor({
+    cutouts: {
+      ...normalizedCut,
+      ...next,
+    },
+  });
+}
+
+function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
+  const currentItems =
+    normalizedCut.items?.length ? normalizedCut.items : emptyCutoutStandees();
+
+  const nextItems = currentItems.map((item) =>
+    item.size === size
+      ? { ...item, quantity: Math.max(0, Math.min(9, quantity)) }
+      : item,
+  );
+
+  const total = nextItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  patchDecor({
+    cutouts: {
+      ...normalizedCut,
+      mode: total > 0 ? "standees" : "none",
+      size: total > 0 ? "premium" : "none",
+      position: "floor",
+      source: "preset",
+      presetAssetId: selectedCutoutPresetId,
+      items: nextItems,
+    },
+  });
+}
   const print = d.backdropPrint ?? { type: "none" as BackdropPrintType };
 
   function setText(patch: Partial<DecorConfig["backdropText"]>) {
@@ -2157,90 +2202,155 @@ function DecorStep({
           </div>
         </div>
 
-      {/* CHARACTER CUTOUTS */}
-      <div style={card}>
-        {secLabel("Character standees")}
-        {secSub("Theme-matched character cutouts for your setup")}
-        <div className="space-y-2">
-          {/* No cutouts option */}
-          <button
-            type="button"
-            onClick={() => patchDecor({ cutouts: { size: "none", position: cut.position } })}
-            style={{
-              width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-              border: cut.size === "none" ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
-              background: cut.size === "none" ? accent + "10" : "white",
-              borderRadius: 14, padding: 12, textAlign: "left", transition: "all 0.15s",
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: cut.size === "none" ? accent : "#1A1A2E" }}>No Cutouts</div>
-              <div className="text-[11px] text-black/50">Skip cutouts for this setup</div>
-            </div>
-            <span style={checkBadge(cut.size === "none")}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
-          </button>
+      {/* CHARACTER STANDEES */}
+<div style={card}>
+  {secLabel("Character standees")}
+  {secSub("Freestanding printed foam-board cutouts for your setup")}
 
-          {/* Paid cutout set options */}
-          {CUTOUT_SETS.map((set) => {
-            const selected = cut.size === set.size;
-            return (
-              <div
-                key={set.size}
-                style={{
-                  border: selected ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
-                  background: selected ? accent + "10" : "white",
-                  borderRadius: 14, transition: "all 0.15s",
-                }}
-              >
+  <div className="space-y-3">
+    <button
+      type="button"
+      onClick={() =>
+        patchDecor({
+          cutouts: {
+            size: "none",
+            mode: "none",
+            position: "floor",
+            source: "preset",
+            presetAssetId: selectedCutoutPresetId,
+            items: emptyCutoutStandees(),
+          },
+        })
+      }
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        border: cutoutTotalCount(normalizedCut) === 0 ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
+        background: cutoutTotalCount(normalizedCut) === 0 ? accent + "10" : "white",
+        borderRadius: 14,
+        padding: 12,
+        textAlign: "left",
+        transition: "all 0.15s",
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: cutoutTotalCount(normalizedCut) === 0 ? accent : "#1A1A2E" }}>
+          No standees
+        </div>
+        <div className="text-[11px] text-black/50">Skip freestanding cutouts for this setup</div>
+      </div>
+      <span style={checkBadge(cutoutTotalCount(normalizedCut) === 0)}>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </span>
+    </button>
+
+    <div className="rounded-[16px] border border-black/10 bg-white p-3">
+      <div className="mb-3">
+        <div className="text-[12px] font-extrabold text-[#12162F]">Choose standalone cutout sizes</div>
+        <div className="text-[11px] text-black/50">
+          Add 150 cm, 100 cm, and 60 cm foam-board standees. Price updates per item.
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {CUTOUT_STANDEE_OPTIONS.map((option) => {
+          const item =
+            normalizedCut.items?.find((i) => i.size === option.size) ??
+            { ...option, quantity: 0 };
+
+          return (
+            <div
+              key={option.size}
+              className="flex items-center justify-between gap-3 rounded-[14px] border border-black/10 bg-white px-3 py-3"
+            >
+              <div>
+                <div className="text-[12px] font-bold text-[#12162F]">{option.label}</div>
+                <div className="text-[11px] text-black/50">{option.heightCm} cm tall standalone character cutout</div>
+                <div className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-600">
+                  +AED {option.unitPrice} each
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() =>
-                    patchDecor({ cutouts: { size: set.size, position: cut.position } })
-                  }
-                  className="flex w-full items-center justify-between gap-3 p-3 text-left"
+                  onClick={() => setCutoutQuantity(option.size, item.quantity - 1)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-black/15 bg-white text-lg font-bold text-black/60"
                 >
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: selected ? accent : "#1A1A2E" }}>{set.label}</div>
-                    <div className="text-[11px] text-black/50">{set.desc}</div>
-                    <span style={{
-                      marginTop: 6, fontSize: 11, fontWeight: 700, display: "inline-block",
-                      color: accent, background: accent + "18", padding: "2px 8px", borderRadius: 20,
-                    }}>+AED {set.price}</span>
-                  </div>
-                  <span style={checkBadge(selected)}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                  −
                 </button>
+                <div className="w-7 text-center text-sm font-extrabold text-[#12162F]">{item.quantity}</div>
+                <button
+                  type="button"
+                  onClick={() => setCutoutQuantity(option.size, item.quantity + 1)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-black/15 bg-white text-lg font-bold text-black/60"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
+      {cutoutTotalCount(normalizedCut) > 0 && (
+        <div className="mt-3 rounded-[12px] bg-accent/10 px-3 py-2 text-[12px] font-bold text-accent">
+          {cutoutTotalCount(normalizedCut)} standee(s) selected · +AED {cutoutPrice(normalizedCut)}
+        </div>
+      )}
+    </div>
+
+    {cutoutTotalCount(normalizedCut) > 0 && (
+      <div className="rounded-[16px] border border-black/10 bg-white p-3">
+        <div className="mb-2">
+          <div className="text-[12px] font-extrabold text-[#12162F]">Choose character style</div>
+          <div className="text-[11px] text-black/50">Theme-matched preset options. Later these can become real uploaded assets.</div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {cutoutPresetOptions.map((preset) => {
+            const selected = selectedCutoutPresetId === preset.assetId;
+
+            return (
+              <button
+                key={preset.assetId}
+                type="button"
+                onClick={() =>
+                  patchCutouts({
+                    mode: "standees",
+                    size: "premium",
+                    position: "floor",
+                    source: "preset",
+                    presetAssetId: preset.assetId,
+                  })
+                }
+                className={`rounded-[14px] border p-3 text-left transition ${
+                  selected
+                    ? "border-accent bg-accent/10"
+                    : "border-black/10 bg-white hover:border-accent/40"
+                }`}
+              >
+                <div className="text-[12px] font-extrabold text-[#12162F]">{preset.label}</div>
+                <div className="mt-1 line-clamp-3 text-[11px] leading-snug text-black/50">
+                  {(preset as any).description ?? (preset as any).promptDescription ?? (preset as any).desc ?? preset.label}
+                </div>
                 {selected && (
-                  <div className="border-t border-accent/15 px-3 pb-3 pt-2">
-                    <span className="mb-1.5 block text-[11px] font-medium text-black/55">Position</span>
-                    <div className="flex gap-2">
-                      {[
-                        { v: "floor", l: "On floor beside backdrop" },
-                        { v: "backdrop", l: "Mounted on backdrop" },
-                      ].map((o) => (
-                        <button
-                          key={o.v}
-                          type="button"
-                          onClick={() =>
-                            patchDecor({ cutouts: { size: set.size, position: o.v as CutoutPosition } })
-                          }
-                          className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                            cut.position === o.v
-                              ? "bg-accent text-white"
-                              : "bg-white text-black/60 border border-black/15"
-                          }`}
-                        >
-                          {o.l}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="mt-2 inline-flex rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-white">
+                    Selected
                   </div>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
       </div>
+    )}
+  </div>
+</div>
 
       {/* PLINTHS */}
       <div style={card}>

@@ -401,12 +401,31 @@ export function buildLayoutRefEditPrompt(
       `while still keeping the entire setup fully visible with minimal extra empty space around it. `
     : `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
       `Wide full-body event photography — entire setup fully visible with breathing room, nothing cropped. `;
+    
+const cutouts = sceneModel.cutouts;
+const cutoutItems = cutouts?.items?.filter((item) => item.quantity > 0) ?? [];
+const cutoutTotal = cutoutItems.reduce((sum, item) => sum + item.quantity, 0);
+const cutoutPromptApplied = cutoutTotal > 0;
+
+const cutoutClause = cutoutPromptApplied
+  ? [
+      `Add ${cutoutTotal} freestanding printed character cutout standees on the floor.`,
+      `These are physical foam-board standees with visible bases, not printed on the backdrop surface.`,
+      `Use the selected theme and selected cutout preset ${cutouts?.presetAssetId ?? "default preset"}.`,
+      ...cutoutItems.map(
+        (item) => `${item.quantity} piece(s) should be approximately ${item.heightCm}cm tall.`
+      ),
+      `Place taller 150cm cutouts beside the backdrop, 100cm cutouts near the plinth, and 60cm cutouts low/front as accent pieces.`,
+      `Keep cutouts clear of the main plinth and make them look like real printed event props.`,
+    ].join(" ") + " "
+  : "";
 
   return (
     photographyOpening +
     framingClause +
     `${backdropDesc}. ` +
     themeGraphicClause +
+    cutoutClause+
     (plinthDesc ? `${plinthDesc}. ` : noPlinthDesc) +
     `${garlandDesc}. ` +
     multiPanelNegs +

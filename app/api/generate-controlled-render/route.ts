@@ -755,10 +755,23 @@ if (cached) {
   const firstPlinthDiag = sceneModel.plinths[0];
   const firstArchDiag   = sceneModel.panels.find((p) => p.type === "arch");
   const firstRoundDiag  = sceneModel.panels.find((p) => p.type === "round");
+  const cutouts = sceneModel.cutouts;
+const cutoutItems = cutouts?.items?.filter((item: any) => item.quantity > 0) ?? [];
+const resolvedCutoutTotalCount = cutoutItems.reduce((sum: number, item: any) => sum + item.quantity, 0);
+
   const diagInfo = {
   selectedPlinthSize:       firstPlinthDiag?.size       ?? null,
   resolvedPlinthHeightCm:   firstPlinthDiag?.heightCm   ?? null,
   resolvedPlinthDiameterCm: firstPlinthDiag?.diameterCm ?? null,
+
+  selectedCutoutMode: cutouts?.mode ?? "none",
+selectedCutoutPosition: cutouts?.position ?? "floor",
+selectedCutoutSource: cutouts?.source ?? null,
+selectedCutoutPresetAssetId: cutouts?.presetAssetId ?? null,
+resolvedCutoutItems: cutoutItems,
+resolvedCutoutTotalCount,
+isCutoutExpected: resolvedCutoutTotalCount > 0,
+cutoutPromptApplied: resolvedCutoutTotalCount > 0,
 
   selectedArchSize:         firstArchDiag?.sizeId       ?? null,
   resolvedArchWidthCm:      firstArchDiag?.widthCm      ?? null,

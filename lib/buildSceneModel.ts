@@ -16,6 +16,7 @@ import type {
   BackdropShapeId,
   BalloonStyleId,
   FontStyle,
+  DecorConfig,
   TextColor,
   GraphicStyle,
   PlinthSize,
@@ -24,6 +25,7 @@ import type {
   ShimmerColorId,
 } from "./config";
 import { getPlinthDimensions } from "./layoutDimensions";
+import { normalizeCutouts } from "@/lib/config";
 
 // ---------------------------------------------------------------------------
 // Scene model types
@@ -67,10 +69,7 @@ export interface ScenePlinth {
   heightCm:   number;
 }
 
-export interface SceneCutouts {
-  size:     CutoutSize;
-  position: CutoutPosition;
-}
+export type SceneCutouts = DecorConfig["cutouts"];
 
 /**
  * Fully resolved, consumer-ready scene description.
@@ -142,10 +141,7 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
       return { idx: i, size, diameterCm: dims.diameterCm, heightCm: dims.heightCm };
     });
 
-  const cutouts: SceneCutouts = {
-    size:     d.cutouts.size,
-    position: d.cutouts.position,
-  };
+  const cutouts: SceneCutouts = normalizeCutouts(d.cutouts);
 
   const hasShimmer = d.backdropItems.some((item) => item.type === "shimmer_wall");
 
@@ -202,14 +198,19 @@ export function buildSceneModelFromItems(
     const dims = getPlinthDimensions(size);
     return { idx: i, size, diameterCm: dims.diameterCm, heightCm: dims.heightCm };
   });
+  
+  const cutouts: SceneCutouts = normalizeCutouts({
+  size: cutoutSize,
+  position: cutoutPosition,
+});
 
   return {
-    theme,
-    panels,
-    balloons:     { style: balloonStyle, colors: balloonColors },
-    plinths,
-    cutouts:      { size: cutoutSize, position: cutoutPosition },
-    totalPrice:   0,
-    shimmerColor: items.some((i) => i.type === "shimmer_wall") ? "silver" : null,
-  };
+  theme,
+  panels,
+  balloons: { style: balloonStyle, colors: balloonColors },
+  plinths,
+  cutouts,
+  totalPrice: 0,
+  shimmerColor: items.some((i) => i.type === "shimmer_wall") ? "silver" : null,
+};
 }

@@ -7,6 +7,8 @@ import {
   shapeById,
   balloonStyleById,
   plinthSizeById,
+  cutoutTotalCount,
+  cutoutPrice,
   cutoutSetBySize,
   backdropPrintById,
   resolveBackdropText,
@@ -75,12 +77,12 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
         <Row
           k="Cutouts"
           v={
-            decor.cutouts.size === "none"
-              ? "None"
-              : `${cutoutSetBySize(decor.cutouts.size)?.label} (${
-                  decor.cutouts.position === "backdrop" ? "on backdrop" : "on floor"
-                })`
-          }
+  cutoutTotalCount(decor.cutouts) === 0
+    ? "None"
+    : `${cutoutTotalCount(decor.cutouts)} character standee(s) · AED ${cutoutPrice(decor.cutouts)} (${
+        decor.cutouts.position === "backdrop" ? "on backdrop" : "on floor"
+      })`
+}
         />
         <Row
           k="Backdrop print"

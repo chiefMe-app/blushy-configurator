@@ -373,8 +373,32 @@ export function makeBackdropItem(
 export type BalloonStyleId = "none" | "half" | "full" | "premium";
 
 export type PlinthSize = "small" | "medium" | "large";
-export type CutoutSize = "none" | "small" | "medium" | "premium";
+export type CutoutSize = "none" | "small" | "medium" | "premium"; // legacy compatibility
 export type CutoutPosition = "floor" | "backdrop";
+
+export type CutoutMode = "none" | "standees";
+export type CutoutStandeeSize = "large" | "medium" | "small";
+export type CutoutSource = "preset" | "custom";
+
+export interface CutoutStandeeItem {
+  size: CutoutStandeeSize;
+  label: string;
+  heightCm: 150 | 100 | 60;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface CutoutSelection {
+  /** Legacy set model. Keep temporarily for existing package defaults / old code paths. */
+  size: CutoutSize;
+  position: CutoutPosition;
+
+  /** New quantity-based production model. */
+  mode?: CutoutMode;
+  source?: CutoutSource;
+  presetAssetId?: string;
+  items?: CutoutStandeeItem[];
+}
 export type BackdropTextType = "birthday" | "custom";
 export type FontStyle = "script" | "block" | "elegant";
 export type TextColor = "white" | "gold" | "black" | "accent";
@@ -540,7 +564,7 @@ export const PLINTH_SIZES: Option<PlinthSize>[] = [
   { id: "large",  label: "L - 90cm",  price: 110 },
 ];
 
-/** Cutout sets - shown as cards in the Add-ons step. */
+/** Legacy cutout sets - kept only for backward compatibility. */
 export interface CutoutSet {
   size: Exclude<CutoutSize, "none">;
   label: string;
@@ -553,6 +577,78 @@ export const CUTOUT_SETS: CutoutSet[] = [
   { size: "medium", label: "Medium Set", desc: "4 character cutouts", price: 250 },
   { size: "premium", label: "Premium Set", desc: "6 cutouts + large feature piece", price: 420 },
 ];
+
+export const CUTOUT_STANDEE_OPTIONS: Omit<CutoutStandeeItem, "quantity">[] = [
+  { size: "large", label: "Large standalone cutout", heightCm: 150, unitPrice: 180 },
+  { size: "medium", label: "Medium standalone cutout", heightCm: 100, unitPrice: 120 },
+  { size: "small", label: "Small standalone cutout", heightCm: 60, unitPrice: 70 },
+];
+
+export function emptyCutoutStandees(): CutoutStandeeItem[] {
+  return CUTOUT_STANDEE_OPTIONS.map((o) => ({ ...o, quantity: 0 }));
+}
+
+export function normalizeCutouts(cutouts: CutoutSelection): CutoutSelection {
+  if (cutouts.mode === "standees") {
+    return {
+      ...cutouts,
+      size: cutouts.size ?? "premium",
+      position: cutouts.position ?? "floor",
+      source: cutouts.source ?? "preset",
+      items: cutouts.items?.length ? cutouts.items : emptyCutoutStandees(),
+    };
+  }
+
+  if (cutouts.size && cutouts.size !== "none") {
+    const legacyItems =
+      cutouts.size === "small"
+        ? [
+            { ...CUTOUT_STANDEE_OPTIONS[1], quantity: 1 },
+            { ...CUTOUT_STANDEE_OPTIONS[2], quantity: 1 },
+          ]
+        : cutouts.size === "medium"
+          ? [
+              { ...CUTOUT_STANDEE_OPTIONS[0], quantity: 1 },
+              { ...CUTOUT_STANDEE_OPTIONS[1], quantity: 2 },
+              { ...CUTOUT_STANDEE_OPTIONS[2], quantity: 1 },
+            ]
+          : [
+              { ...CUTOUT_STANDEE_OPTIONS[0], quantity: 2 },
+              { ...CUTOUT_STANDEE_OPTIONS[1], quantity: 2 },
+              { ...CUTOUT_STANDEE_OPTIONS[2], quantity: 2 },
+            ];
+
+    return {
+      ...cutouts,
+      mode: "standees",
+      source: "preset",
+      items: legacyItems,
+    };
+  }
+
+  return {
+    size: "none",
+    mode: "none",
+    position: cutouts.position ?? "floor",
+    source: "preset",
+    items: emptyCutoutStandees(),
+  };
+}
+
+export function cutoutTotalCount(cutouts: CutoutSelection): number {
+  return normalizeCutouts(cutouts).items?.reduce((sum, item) => sum + Math.max(0, item.quantity), 0) ?? 0;
+}
+
+export function cutoutHasStandees(cutouts: CutoutSelection): boolean {
+  return cutoutTotalCount(cutouts) > 0;
+}
+
+export function cutoutStandeePrice(cutouts: CutoutSelection): number {
+  return normalizeCutouts(cutouts).items?.reduce(
+    (sum, item) => sum + Math.max(0, item.quantity) * item.unitPrice,
+    0,
+  ) ?? 0;
+}
 
 export const CAKE_TABLE_PRICE = 300;
 
@@ -679,8 +775,11 @@ export const cutoutSetBySize = (size: string) => CUTOUT_SETS.find((c) => c.size 
 export const backdropPrintById = (id: string) => BACKDROP_PRINTS.find((p) => p.id === id);
 export const addOnById = (id: string) => ADDONS.find((a) => a.id === id);
 
-export function cutoutPrice(size: CutoutSize): number {
-  return cutoutSetBySize(size)?.price ?? 0;
+export function cutoutPrice(input: CutoutSize | CutoutSelection): number {
+  if (typeof input === "string") {
+    return cutoutSetBySize(input)?.price ?? 0;
+  }
+  return cutoutStandeePrice(input);
 }
 
 // =====================  STATE SHAPE  =======================================

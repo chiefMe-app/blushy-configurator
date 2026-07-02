@@ -10,10 +10,11 @@ import type { ThemeId } from "./config";
 
 export interface ThemeGraphicPreset {
   id: string;
+  assetId?: string;
   label: string;
   desc: string;
-  /** Stable asset ID used in render payload, e.g. "bluey-01" */
-  assetId: string;
+  description?: string;
+  promptDescription?: string;
 }
 
 export interface ThemeCatalogEntry {
@@ -360,3 +361,39 @@ export const FALLBACK_GRAPHIC_PRESETS: [ThemeGraphicPreset, ThemeGraphicPreset, 
   { id: "pattern_print",     assetId: "generic-02", label: "Pattern Print",     desc: "Repeating theme pattern" },
   { id: "minimal_logo",      assetId: "generic-03", label: "Minimal Logo",      desc: "Clean minimal theme graphic" },
 ];
+
+export function getThemeGraphicPresets(themeId: string): ThemeGraphicPreset[] {
+  const safeThemeId = themeId || "default";
+  const theme = THEME_CATALOG.find((t) => t.id === safeThemeId);
+
+  if (theme?.graphicPresets?.length) {
+    return theme.graphicPresets;
+  }
+
+  return [
+    {
+  id: `${safeThemeId}-01`,
+  assetId: `${safeThemeId}-01`,
+  label: "Main Character",
+  desc: "Main illustrated theme character style",
+  description: "Main illustrated theme character style",
+  promptDescription: `main illustrated ${safeThemeId} birthday theme character cutout style`,
+},
+    {
+  id: `${safeThemeId}-02`,
+  assetId: `${safeThemeId}-02`,
+  label: "Scene Style",
+  desc: "Themed scenic illustration style",
+  description: "Themed scenic illustration style",
+  promptDescription: `${safeThemeId} themed scenic birthday illustration cutout style`,
+},
+{
+  id: `${safeThemeId}-03`,
+  assetId: `${safeThemeId}-03`,
+  label: "Pattern Style",
+  desc: "Themed icon and pattern style",
+  description: "Themed icon and pattern style",
+  promptDescription: `${safeThemeId} themed pattern and icon birthday cutout style`,
+},
+  ];
+}

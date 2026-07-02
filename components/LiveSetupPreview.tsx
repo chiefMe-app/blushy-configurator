@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import {
   themeById,
   resolveBackdropText,
+  cutoutTotalCount,
   type BuilderConfig,
   type BackdropItem,
   type BackdropShapeId,
@@ -281,8 +282,14 @@ function renderScene(
   const refApexY   = H * 0.05;               // apex y for tallest panel (heightRatio = 1)
   const pxPerCm    = (floorY - refApexY) / maxHeightCm;
   drawPlinths(ctx, W, floorY, config.decor.plinthSizes, pxPerCm);
-  if (config.decor.cutouts.size !== "none")
-    drawCutouts(ctx, W, floorY, config.decor.cutouts.size, palette);
+  const liveCutoutSize =
+  config.decor.cutouts.mode === "standees" && cutoutTotalCount(config.decor.cutouts) > 0
+    ? "premium"
+    : (config.decor.cutouts.size ?? "none");
+
+if (liveCutoutSize !== "none") {
+  drawCutouts(ctx, W, floorY, liveCutoutSize, palette);
+}
   if (config.decor.cakeTable) drawCakeTable(ctx, W, floorY, accent);
 }
 

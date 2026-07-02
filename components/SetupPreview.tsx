@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { cutoutTotalCount } from "@/lib/config";
 import type {
   BuilderConfig,
   DecorConfig,
@@ -1129,7 +1130,12 @@ export default function SetupPreview({
   const themeAccent = THEMES.find((t) => t.id === config.theme)?.accent ?? "#C77DD6";
 
   // Fetch AI-generated cutout assets (cached per theme+size, no base-render side-effect)
-  const { assets: cutoutAssets } = useCutoutAssets(config.theme, config.decor.cutouts.size);
+  const previewCutoutSize =
+  config.decor.cutouts.mode === "standees" && cutoutTotalCount(config.decor.cutouts) > 0
+    ? "premium"
+    : (config.decor.cutouts.size ?? "none");
+
+const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize);
 
   // Controlled Final Design Render — text-to-image from latest sceneModel.
   const {
@@ -1378,9 +1384,9 @@ export default function SetupPreview({
           )}
 
           {/* Cutout overlay — AI transparent assets when ready, SVG fallback */}
-          {config.decor.cutouts.size !== "none" && (
+          {cutoutTotalCount(config.decor.cutouts) > 0 && (
             <CutoutOverlay
-              size={config.decor.cutouts.size}
+              size={previewCutoutSize}
               position={config.decor.cutouts.position}
               themeAccent={themeAccent}
               themeId={config.theme}
