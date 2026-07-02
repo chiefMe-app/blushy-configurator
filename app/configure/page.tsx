@@ -72,6 +72,51 @@ import SetupPreview, { useSetupPreview } from "@/components/SetupPreview";
 
 // Controlled render limit: at most 2 backdrop pieces per setup.
 const MAX_BACKDROP_ITEMS = 2;
+
+// Playful mini illustration for setup layout cards — pastel shapes, no text.
+function SetupMiniPreview({ shapes }: { shapes: string[] }) {
+  const els: JSX.Element[] = [];
+  const drawShapes = shapes.filter(s => s !== "balloons");
+  const hasBalloons = shapes.includes("balloons");
+  const n = drawShapes.length;
+  drawShapes.forEach((shape, i) => {
+    // Lay out 1 shape centered, 2 shapes side by side
+    const cx = n === 1 ? 44 : i === 0 ? 28 : 62;
+    const key = `${shape}-${i}`;
+    if (shape === "arch" || shape === "arch_large" || shape === "arch_small") {
+      const w = shape === "arch_large" ? 30 : shape === "arch_small" ? 20 : 26;
+      const top = shape === "arch_large" ? 8 : shape === "arch_small" ? 20 : 12;
+      const r = w / 2;
+      els.push(<path key={key} d={`M ${cx - r},44 L ${cx - r},${top + r} A ${r},${r} 0 0 1 ${cx + r},${top + r} L ${cx + r},44 Z`} fill="#F5BAD3" />);
+    } else if (shape === "round") {
+      els.push(<circle key={key} cx={cx} cy={28} r={16} fill="#BFD9F2" />);
+    } else if (shape === "shimmer") {
+      els.push(
+        <g key={key}>
+          <rect x={cx - 14} y={14} width={28} height={30} rx={2} fill="#DCCDF0" />
+          {[21, 28, 35].map(y => <line key={`h${y}`} x1={cx - 14} y1={y} x2={cx + 14} y2={y} stroke="white" strokeWidth={1} opacity={0.7} />)}
+          {[-7, 0, 7].map(dx => <line key={`v${dx}`} x1={cx + dx} y1={14} x2={cx + dx} y2={44} stroke="white" strokeWidth={1} opacity={0.7} />)}
+        </g>
+      );
+    } else if (shape === "open_frame") {
+      const r = 12;
+      els.push(
+        <path key={key} d={`M ${cx - r},44 L ${cx - r},${18 + r} A ${r},${r} 0 0 1 ${cx + r},${18 + r} L ${cx + r},44`}
+          fill="none" stroke="#EC4D8D" strokeWidth={3.5} strokeLinecap="round" opacity={0.75} />
+      );
+    }
+  });
+  if (hasBalloons) {
+    els.push(
+      <g key="balloons">
+        <circle cx={58} cy={10} r={4.5} fill="#F7A7C8" />
+        <circle cx={66} cy={15} r={3.5} fill="#C9E4F5" />
+        <circle cx={72} cy={9} r={3} fill="#F9DFA9" />
+      </g>
+    );
+  }
+  return <svg width={88} height={48} viewBox="0 0 88 48" aria-hidden="true">{els}</svg>;
+}
 import StepNavigation from "@/components/StepNavigation";
 import OptionCard from "@/components/OptionCard";
 import PackageCard from "@/components/PackageCard";
@@ -832,6 +877,8 @@ function DecorStep({
   const [printFile, setPrintFile] = useState<File | null>(null);
   const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
   const [openCustomizeIds, setOpenCustomizeIds] = useState<Set<string>>(new Set());
+  // Manual shape cards are secondary — hidden behind "Change pieces manually"
+  const [showManualPieces, setShowManualPieces] = useState(false);
   // Sempertex picker -UI only, does not affect pricing/render
   const [sempertexIds, setSempertexIds] = useState<string[]>(() => getThemeDefault(config.theme));
   const [sempertexManual, setSempertexManual] = useState(false); // true once user manually changes
@@ -1125,19 +1172,19 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
   // Apply a curated backdrop set template — replaces current backdropItems
   // with the template's exact panels (max 2, controlled render layouts).
   function applySetupTemplate(templateId: string) {
-    const archMedium = ARCH_SIZES[1]; // medium 100x200
-    const makeArch = () => ({
-      ...makeBackdropItem("arch"),
-      sizeId: archMedium.id, widthCm: archMedium.widthCm, heightCm: archMedium.heightCm,
-      id: "arch-medium",
-    });
+    const makeArch = (sizeId: ArchSizeId, id: string) => {
+      const s = ARCH_SIZES.find(a => a.id === sizeId) ?? ARCH_SIZES[1];
+      return { ...makeBackdropItem("arch"), sizeId: s.id, widthCm: s.widthCm, heightCm: s.heightCm, id };
+    };
     let panels: BackdropItem[];
     switch (templateId) {
-      case "single_arch":   panels = [makeArch()]; break;
-      case "single_round":  panels = [makeBackdropItem("round")]; break;
-      case "arch_shimmer":  panels = [makeArch(), makeBackdropItem("shimmer_wall")]; break;
-      case "arch_round":    panels = [makeArch(), makeBackdropItem("round")]; break;
-      case "round_shimmer": panels = [makeBackdropItem("round"), makeBackdropItem("shimmer_wall")]; break;
+      case "single_arch":        panels = [makeArch("medium", "arch-medium")]; break;
+      case "single_round":       panels = [makeBackdropItem("round")]; break;
+      case "single_shimmer":     panels = [makeBackdropItem("shimmer_wall")]; break;
+      case "arch_shimmer":       panels = [makeArch("medium", "arch-medium"), makeBackdropItem("shimmer_wall")]; break;
+      case "double_arch":        panels = [makeArch("large", "arch-large"), makeArch("small", "arch-small")]; break;
+      case "arch_open_frame":    panels = [makeArch("medium", "arch-medium"), makeBackdropItem("open_arch_frame")]; break;
+      case "shimmer_open_frame": panels = [makeBackdropItem("shimmer_wall"), makeBackdropItem("open_arch_frame")]; break;
       default: return;
     }
     patchDecor({ backdropItems: panels });
@@ -1147,7 +1194,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
   const activeSetupTemplateId = inferSetupLayoutTemplateIdFromBackdropItems(d.backdropItems);
 
   // Readable type labels for summaries
-  const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", shimmer_wall: "Shimmer Wall" };
+  const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", shimmer_wall: "Shimmer Wall", open_arch_frame: "Open Arch Frame" };
 
   // Collapsible customize row -shows summary + button, expands on demand
   function BackdropCustomizeRow({ item, itemIdx }: { item: BackdropItem; itemIdx: number }) {
@@ -1274,19 +1321,6 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
             );
           })()}
 
-          {/* Custom Design */}
-          <div onClick={() => setPrint(print.type === "custom_upload" ? "none" : "custom_upload")}
-            style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
-              border: print.type === "custom_upload" ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
-              background: print.type === "custom_upload" ? accent + "0E" : "white", transition: "all 0.15s" }}>
-            <span style={{ fontSize: 18 }}></span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: print.type === "custom_upload" ? accent : "#1A1A2E" }}>Custom Design</div>
-              <div style={{ fontSize: 11, color: "#999" }}>Upload your own design</div>
-            </div>
-            <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
-              background: print.type === "custom_upload" ? accent : "rgba(0,0,0,0.06)", color: print.type === "custom_upload" ? "white" : "#555" }}>+AED 200</span>
-          </div>
         </div>
         </div>
       </div>
@@ -1307,31 +1341,50 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
 
       {/* -"--"- UNIFIED BACKDROP SELECTOR -"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"- */}
       <div style={{ background: "white", borderRadius: 16, padding: "16px", marginBottom: 0, border: "1px solid #F1D8E2" }}>
-        {/* Curated backdrop set templates — controlled render layouts */}
+        {/* Curated setup layouts — playful visual cards */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#73778A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>Choose setup layout</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#12162F", marginBottom: 2 }}>Pick your setup ✨</div>
+          <div style={{ fontSize: 11, color: "#73778A", marginBottom: 10 }}>Tap a layout and we&apos;ll arrange the pieces for you.</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(128px, 1fr))", gap: 10 }}>
             {SETUP_LAYOUT_TEMPLATES.map((tpl) => {
               const active = activeSetupTemplateId === tpl.id;
               return (
                 <button key={tpl.id} type="button" onClick={() => applySetupTemplate(tpl.id)}
-                  style={{ padding: "10px 8px", borderRadius: 12, cursor: "pointer", textAlign: "center", transition: "all 0.15s",
+                  style={{ position: "relative", padding: "14px 8px 10px", borderRadius: 16, cursor: "pointer", textAlign: "center", transition: "all 0.18s",
                     border: active ? "2px solid #EC4D8D" : "1.5px solid #ECEAF1",
-                    background: active ? "linear-gradient(145deg, #FFF7FB 0%, #FFFFFF 100%)" : "#FAFAFA" }}>
+                    background: active ? "linear-gradient(145deg, #FFF7FB 0%, #FFFFFF 100%)" : "#FAFAFA",
+                    boxShadow: active ? "0 8px 24px rgba(236,77,141,0.10)" : "none",
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  {tpl.badge && (
+                    <span style={{ position: "absolute", top: 7, right: 7, background: active ? "#EC4D8D" : "#FFE8F0", color: active ? "white" : "#EC4D8D",
+                      fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20 }}>{tpl.badge}</span>
+                  )}
+                  <SetupMiniPreview shapes={tpl.miniPreview} />
                   <div style={{ fontSize: 12, fontWeight: 700, color: active ? "#EC4D8D" : "#15182E", lineHeight: 1.25 }}>{tpl.name}</div>
-                  <div style={{ fontSize: 10, color: "#73778A", marginTop: 3, lineHeight: 1.3 }}>{tpl.description}</div>
+                  <div style={{ fontSize: 10, color: "#8A8DA0", lineHeight: 1.3 }}>{tpl.description}</div>
                 </button>
               );
             })}
           </div>
+          {d.backdropItems.length > 0 && (
+            <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF0F6", border: "1px solid #F7C9DD", borderRadius: 20, padding: "4px 12px", fontSize: 11, fontWeight: 700, color: "#EC4D8D" }}>
+              <span>🎀</span>
+              <span>Your set: {d.backdropItems.map(i => TYPE_LABEL[i.type] ?? i.type).join(" + ")}</span>
+            </div>
+          )}
           {d.backdropItems.length >= MAX_BACKDROP_ITEMS && (
             <div style={{ marginTop: 8, fontSize: 11, color: "#73778A", fontWeight: 500 }}>
               You can select up to 2 backdrop pieces for a controlled render.
             </div>
           )}
+          <button type="button" onClick={() => setShowManualPieces(v => !v)}
+            style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: "#8A8DA0", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+            {showManualPieces ? "Hide manual piece options" : "Change pieces manually"}
+          </button>
         </div>
 
-        {/* 4 type cards in a row */}
+        {/* 4 type cards in a row — secondary, behind "Change pieces manually" */}
+        {showManualPieces && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
           {[
             { type: "arch" as const, label: "Arch Backdrop", badge: "Most popular", click: () => { const hasArch = d.backdropItems.some(i=>i.type==="arch"); if(!hasArch) toggleArchSize(ARCH_SIZES[1]); else patchDecor({ backdropItems: d.backdropItems.filter(i=>i.type!=="arch") }); } },
@@ -1364,6 +1417,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
             );
           })}
         </div>
+        )}
 
         {/* Arch size selector -shown when arch is selected */}
         {d.backdropItems.some(i => i.type === "arch") && (
@@ -1926,40 +1980,6 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                       );
                     })()}
 
-                    {/* Custom Design card -global setting, surfaced per-backdrop */}
-                    <div
-                      onClick={() => setPrint(print.type === "custom_upload" ? "none" : "custom_upload")}
-                      style={{
-                        cursor: "pointer", borderRadius: 12, padding: "12px 14px",
-                        border: print.type === "custom_upload" ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",
-                        background: print.type === "custom_upload" ? accent + "10" : "white",
-                        display: "flex", alignItems: "center", gap: 12, transition: "all 0.15s",
-                      }}
-                    >
-                      <div style={{ fontSize: 22 }}></div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: print.type === "custom_upload" ? accent : "#1A1A2E" }}>Custom Design</div>
-                        <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>Upload your own design</div>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: print.type === "custom_upload" ? accent : "rgba(0,0,0,0.06)", color: print.type === "custom_upload" ? "white" : "#555" }}>+AED 200</span>
-                        {print.type === "custom_upload" && <span style={{ fontSize: 14 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
-                      </div>
-                    </div>
-                    {print.type === "custom_upload" && (
-                      <div className="rounded-xl border border-dashed border-black/20 p-3">
-                        <label className="block cursor-pointer">
-                          <span className="text-[11px] font-medium text-black/60">Upload design or inspiration image</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setPrintFile(e.target.files?.[0] ?? null)}
-                            className="mt-1 block w-full text-xs text-black/50 file:mr-2 file:rounded-full file:border-0 file:bg-accent-soft file:px-3 file:py-1 file:text-[11px] file:font-medium file:text-accent"
-                          />
-                          {printFile != null && <span className="mt-1 block text-[11px] text-accent">{(printFile as File).name}</span>}
-                        </label>
-                      </div>
-                    )}
                   </div>{/* -"--"- end add-ons div */}
                 </div>
               </div>

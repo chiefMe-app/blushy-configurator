@@ -195,6 +195,35 @@ function plinthEdge(cx: number, bottomY: number, heightPx: number, diameterPx: n
   ].join("\n    ");
 }
 
+// Open arch frame — hollow arch outline: outer + inner arch paths, no fill.
+// Reads as a freestanding empty arch frame prop, never a solid panel.
+function openArchFramePath(cx: number, pw: number, apexY: number, floorY: number): string {
+  const drawArch = (r: number, left: number, right: number, topY: number): string => {
+    const springY = topY + r;
+    return `M ${left},${floorY} L ${left},${springY} A ${r},${r} 0 0 1 ${right},${springY} L ${right},${floorY}`;
+  };
+  const rOuter = pw / 2;
+  const frameT = Math.max(8, Math.round(pw * 0.12)); // visible frame thickness
+  const rInner = rOuter - frameT;
+  const stroke = `fill="none" stroke="rgba(95,95,95,0.50)" stroke-width="2.5" stroke-linecap="round"`;
+  return [
+    `<path d="${drawArch(rOuter, cx - rOuter, cx + rOuter, apexY)}" ${stroke}/>`,
+    `<path d="${drawArch(rInner, cx - rInner, cx + rInner, apexY + frameT)}" ${stroke}/>`,
+  ].join("\n    ");
+}
+
+// Low-opacity theme-graphic guide area on the panel surface — helps the edit
+// model bake the printed illustration into the backdrop, not paste a sticker.
+function themeGraphicGuideArea(cx: number, pw: number, apexY: number, floorY: number): string {
+  const panelH = floorY - apexY;
+  const gw = pw * 0.55;
+  const gh = panelH * 0.35;
+  const gx = cx - gw / 2;
+  const gy = apexY + panelH * 0.32;
+  return `<rect x="${gx.toFixed(1)}" y="${gy.toFixed(1)}" width="${gw.toFixed(1)}" height="${gh.toFixed(1)}" rx="${Math.round(gw * 0.06)}" ` +
+    `fill="rgba(175,175,200,0.14)" stroke="rgba(130,130,160,0.22)" stroke-width="1" stroke-dasharray="4,3"/>`;
+}
+
 // ---------------------------------------------------------------------------
 // Cutout standee placeholder — dashed rounded silhouette + base foot + label
 // ---------------------------------------------------------------------------
@@ -304,6 +333,13 @@ export function generateStructureSilhouette(
     const shape     = (item?.type ?? "arch") as BackdropShapeId;
     const isShimmer = shape === "shimmer_wall";
 
+    // Open arch frame: always drawn as a hollow outline — never filled —
+    // in both single and multi-panel setups.
+    if (shape === "open_arch_frame") {
+      content.push(openArchFramePath(panel.cx, panel.pw, panel.apexY, panel.floorY));
+      return;
+    }
+
     if (isMultiPanel) {
       const baseFill = MULTI_PANEL_FILLS[sortedIdx % MULTI_PANEL_FILLS.length];
 
@@ -344,6 +380,12 @@ export function generateStructureSilhouette(
       ].join("\n    "));
     } else {
       content.push(panelEdgeOnly(panel.cx, panel.pw, panel.apexY, panel.floorY, shape));
+    }
+
+    // Theme graphic guide area — faint print zone on the panel surface so the
+    // edit model bakes the illustration into the backdrop (not a sticker).
+    if (item?.graphic?.enabled && !isShimmer) {
+      content.push(themeGraphicGuideArea(panel.cx, panel.pw, panel.apexY, panel.floorY));
     }
   });
 

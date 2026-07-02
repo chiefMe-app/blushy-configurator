@@ -15,6 +15,8 @@ export interface ThemeGraphicPreset {
   desc: string;
   description?: string;
   promptDescription?: string;
+  /** Optional preview image shown on the graphic preset card. */
+  previewUrl?: string;
 }
 
 /**

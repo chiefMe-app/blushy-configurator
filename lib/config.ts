@@ -267,6 +267,7 @@ export type BackdropShapeId =
   | "round"
   | "rect"
   | "shimmer_wall"
+  | "open_arch_frame"
   | "wavy";
 
 export type ArchSizeId = "small" | "medium" | "large";
@@ -357,6 +358,9 @@ export function makeBackdropItem(
     widthCm = 200; heightCm = 200;
   } else if (type === "shimmer_wall") {
     widthCm = 200; heightCm = 200;
+  } else if (type === "open_arch_frame") {
+    // Hollow open arch frame prop — arch-like footprint
+    widthCm = 100; heightCm = 200;
   }
   return {
     id:      sizeId ?? type,

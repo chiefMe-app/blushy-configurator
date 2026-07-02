@@ -98,7 +98,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "setup-layout-zones-v1";
+const RENDER_CACHE_VERSION = "curated-layout-ui-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;

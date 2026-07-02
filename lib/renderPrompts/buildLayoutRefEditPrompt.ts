@@ -12,12 +12,13 @@ function backdropColorLabel(color: string): string {
 
 function panelTypeLabel(type: string): string {
   switch (type) {
-    case "arch":         return "rounded arch";
-    case "rect":         return "rectangular flat";
-    case "shimmer_wall": return "rectangular shimmer-wall";
-    case "round":        return "round circular";
-    case "wavy":         return "wavy-top";
-    default:             return type;
+    case "arch":            return "rounded arch";
+    case "rect":            return "rectangular flat";
+    case "shimmer_wall":    return "rectangular shimmer-wall";
+    case "round":           return "round circular";
+    case "open_arch_frame": return "hollow open arch frame";
+    case "wavy":            return "wavy-top";
+    default:                return type;
   }
 }
 
@@ -160,10 +161,12 @@ export function buildLayoutRefEditPrompt(
         ? ["left", "center", "right"]
         : sceneModel.panels.map((_, i) => positions[i] ?? `panel ${i + 1}`);
 
+    const hasOpenFrame = sceneModel.panels.some((p) => p.type === "open_arch_frame");
     const panelDescs = sceneModel.panels.map((p, i) => {
       const wRatio = (p.widthCm / p.heightCm).toFixed(2);
-      const isShimmer = p.type === "shimmer_wall";
-      const isArch    = p.type === "arch";
+      const isShimmer   = p.type === "shimmer_wall";
+      const isArch      = p.type === "arch";
+      const isOpenFrame = p.type === "open_arch_frame";
       const shimmerC  = sceneModel.shimmerColor ?? "silver";
       const pColor = backdropColorLabel(p.color);
       const surfaceDesc = isShimmer
@@ -171,21 +174,27 @@ export function buildLayoutRefEditPrompt(
           `regular neat grid of small flat square ${shimmerC} sequin tiles, ` +
           `clean reflective sparkle, flat tiled surface, ${shimmerC} shimmer finish, ` +
           `NOT crumpled foil, NOT a matte board, NOT a cream panel`
-        : isArch
-          ? `solid filled freestanding arch backdrop panel, fully opaque surface, seamless matte ${pColor} surface, ` +
-            `no cut-out opening, no hollow doorway, no empty arch frame, full solid panel face visible`
-          : `full-width solid opaque ${pColor} freestanding backdrop board with broad visible surface`;
+        : isOpenFrame
+          ? `freestanding hollow open arch frame, pastel painted foam/wood frame, ` +
+            `empty center opening, no solid backdrop surface inside — you can see straight through ` +
+            `the arch opening to whatever is behind it. A clean arch-shaped outline frame prop, ` +
+            `NOT a filled panel, NOT a solid board, NOT a doorway with a door`
+          : isArch
+            ? `solid filled freestanding arch backdrop panel, fully opaque surface, seamless matte ${pColor} surface, ` +
+              `no cut-out opening, no hollow doorway, full solid panel face visible`
+            : `full-width solid opaque ${pColor} freestanding backdrop board with broad visible surface`;
       return (
-        `Panel ${i + 1} (${posLabels[i]}): ${panelTypeLabel(p.type)} backdrop board, ` +
+        `Panel ${i + 1} (${posLabels[i]}): ${panelTypeLabel(p.type)}${isOpenFrame ? "" : " backdrop board"}, ` +
         `${p.widthCm}cm wide by ${p.heightCm}cm tall (width-to-height ratio ${wRatio}), ` +
         `${surfaceDesc}, not compressed, not narrow, not a tower, correctly proportioned`
       );
     });
     backdropDesc =
-      `exactly ${panelCount} separate freestanding backdrop boards arranged side by side, ` +
-      `each fully solid, opaque, and rendered at its correct width. ` +
-      `Both panels are full-size physical event backdrop boards with broad visible surfaces ` +
-      `and correct width-to-height proportions. ` +
+      `exactly ${panelCount} separate freestanding backdrop pieces arranged side by side, ` +
+      (hasOpenFrame
+        ? `one solid piece and one hollow open arch frame, each rendered at its correct width. `
+        : `each fully solid, opaque, and rendered at its correct width. `) +
+      `Both pieces are full-size physical event structures with correct width-to-height proportions. ` +
       `The total setup should feel wide and substantial, not skinny or compressed. ` +
       panelDescs.join(". ") + ".";
   }
@@ -365,10 +374,14 @@ export function buildLayoutRefEditPrompt(
   const firstGraphicPanel = panelsWithGraphic[0];
   const themeEntry = THEME_CATALOG.find(t => t.id === String(sceneModel.theme ?? "").toLowerCase());
   const selectedPreset = themeEntry?.graphicPresets.find(p => p.assetId === firstGraphicPanel?.graphic.assetId);
-  const presetDesc = selectedPreset?.desc ?? null;
+  const presetDesc = (selectedPreset as { promptDescription?: string } | undefined)?.promptDescription
+    ?? selectedPreset?.desc ?? null;
   const themeGraphicClause = panelsWithGraphic.length > 0
-    ? `The backdrop has a printed theme illustration graphic on its surface — a large decorative illustrated print design centered on the backdrop board, rendered as a printed graphic applied to the backdrop surface.` +
-      (presetDesc ? ` The graphic depicts: ${presetDesc}.` : "") + ` `
+    ? `The backdrop has a printed theme illustration integrated directly onto the backdrop surface, ` +
+      `following the panel perspective and lighting, printed into the board material itself — ` +
+      `not a sticker, not a separate poster, not floating in front of the panel.` +
+      (presetDesc ? ` The printed illustration depicts: ${presetDesc}.` : "") + ` ` +
+      `No floating sticker. No separate poster. No decal peeling off. No rigid pasted rectangle. `
     : "";
 
   const isRoundScene = hasRoundPanelInScene && !isMulti;
@@ -423,9 +436,14 @@ const setupTemplate   = setupTemplateId ? getSetupLayoutTemplate(setupTemplateId
 const hasGarland      = sceneModel.balloons.style !== "none";
 const setupTemplateClause = setupTemplate
   ? `Use the selected setup layout: ${setupTemplate.name}. ${setupTemplate.panelInstruction} ` +
-    (hasGarland ? `${setupTemplate.garlandInstruction} ` : "") +
+    (hasGarland
+      ? `${setupTemplate.garlandInstruction} ` +
+        `The garland must be a lush organic balloon garland with varied balloon sizes, layered clusters, ` +
+        `natural asymmetry, dense premium event styling. `
+      : "") +
     (hasGarland && sceneModel.panels.length >= 2
-      ? `Preserve a lush organic balloon garland following the selected setup layout. Do not replace it with loose balloon bouquets or simple balloon clusters. `
+      ? `Preserve the organic garland following the selected setup layout path. ` +
+        `Do not replace it with loose balloon bouquets, simple balloon clusters, or floating balloons. `
       : "")
   : "";
 

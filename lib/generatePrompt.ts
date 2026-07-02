@@ -46,6 +46,8 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
     "NOT an arch, NOT a curved-top panel, NOT a rounded-top backdrop, NOT a semicircle top, NOT a tombstone shape, NOT a dome top",
   shimmer_wall:
     "one vertical shimmer wall panel with reflective fringe texture, standing directly on the floor",
+  open_arch_frame:
+    "one freestanding hollow open arch frame, pastel painted foam/wood frame, empty center opening, no solid backdrop surface inside, standing directly on the floor",
   wavy:
     "one wavy organic-shaped vertical backdrop panel with soft curved edges, standing directly on the floor",
 };
@@ -527,11 +529,12 @@ export function generatePrompt(input: PromptInput): {
     effectivePanels === 1 ? "ONE (1)" : effectivePanels === 2 ? "TWO (2)" : "THREE (3)";
 
   const SHAPE_LABEL: Record<BackdropShapeId, string> = {
-    arch:         "arch (semicircular top)",
-    round:        "round circular disc",
-    rect:         "flat rectangular",
-    shimmer_wall: "rectangular shimmer wall",
-    wavy:         "wavy top",
+    arch:            "arch (semicircular top)",
+    round:           "round circular disc",
+    rect:            "flat rectangular",
+    shimmer_wall:    "rectangular shimmer wall",
+    open_arch_frame: "hollow open arch frame",
+    wavy:            "wavy top",
   };
 
   // Per-item label includes type + size for the strict requirements block
