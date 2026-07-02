@@ -926,7 +926,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
     cutouts: {
       ...normalizedCut,
       mode: total > 0 ? "standees" : "none",
-      size: total > 0 ? "premium" : "none",
+      size: "none",
       position: "floor",
       source: "preset",
       presetAssetId: selectedCutoutPresetId,
@@ -2322,7 +2322,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                 onClick={() =>
                   patchCutouts({
                     mode: "standees",
-                    size: "premium",
+                    size: "none",
                     position: "floor",
                     source: "preset",
                     presetAssetId: preset.assetId,

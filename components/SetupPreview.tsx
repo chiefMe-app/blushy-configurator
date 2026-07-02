@@ -1131,8 +1131,8 @@ export default function SetupPreview({
 
   // Fetch AI-generated cutout assets (cached per theme+size, no base-render side-effect)
   const previewCutoutSize =
-  config.decor.cutouts.mode === "standees" && cutoutTotalCount(config.decor.cutouts) > 0
-    ? "premium"
+  config.decor.cutouts.mode === "standees"
+    ? "none"
     : (config.decor.cutouts.size ?? "none");
 
 const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize);
@@ -1384,7 +1384,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
           )}
 
           {/* Cutout overlay — AI transparent assets when ready, SVG fallback */}
-          {cutoutTotalCount(config.decor.cutouts) > 0 && (
+          {previewCutoutSize !== "none" && (
             <CutoutOverlay
               size={previewCutoutSize}
               position={config.decor.cutouts.position}

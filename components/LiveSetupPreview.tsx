@@ -283,8 +283,8 @@ function renderScene(
   const pxPerCm    = (floorY - refApexY) / maxHeightCm;
   drawPlinths(ctx, W, floorY, config.decor.plinthSizes, pxPerCm);
   const liveCutoutSize =
-  config.decor.cutouts.mode === "standees" && cutoutTotalCount(config.decor.cutouts) > 0
-    ? "premium"
+  config.decor.cutouts.mode === "standees"
+    ? "none"
     : (config.decor.cutouts.size ?? "none");
 
 if (liveCutoutSize !== "none") {

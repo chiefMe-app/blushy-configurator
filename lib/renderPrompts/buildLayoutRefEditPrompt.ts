@@ -414,6 +414,8 @@ const cutoutClause = cutoutPromptApplied
       `Do not create extra small character stickers, extra mini cutouts, or additional characters beyond the selected quantity.`,
       `These must be physical foam-board standees with visible bases, standing on the floor, not printed on the backdrop panel and not printed on the plinth.`,
       `Use the selected cutout preset ${cutouts?.presetAssetId ?? "default preset"} and match the selected theme.`,
+      `If the selected total is 1, show one single standalone cutout only, placed on one side of the setup. Do not place cutouts on both sides. Do not create any additional mini character cutouts, small character stickers, plinth prints, or extra foam-board characters.`,
+`Preserve the organic balloon garland structure from the layout reference. Adding cutouts must not simplify, replace, or reorganize the balloon garland.`,
       ...cutoutItems.map(
         (item) =>
           item.quantity > 0

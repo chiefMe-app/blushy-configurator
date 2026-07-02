@@ -592,7 +592,7 @@ export function normalizeCutouts(cutouts: CutoutSelection): CutoutSelection {
   if (cutouts.mode === "standees") {
     return {
       ...cutouts,
-      size: cutouts.size ?? "premium",
+      size: "none",
       position: cutouts.position ?? "floor",
       source: cutouts.source ?? "preset",
       items: cutouts.items?.length ? cutouts.items : emptyCutoutStandees(),
