@@ -409,14 +409,19 @@ const cutoutPromptApplied = cutoutTotal > 0;
 
 const cutoutClause = cutoutPromptApplied
   ? [
-      `Add ${cutoutTotal} freestanding printed character cutout standees on the floor.`,
-      `These are physical foam-board standees with visible bases, not printed on the backdrop surface.`,
-      `Use the selected theme and selected cutout preset ${cutouts?.presetAssetId ?? "default preset"}.`,
+      `CUTOUT STANDEE REQUIREMENT: Add exactly ${cutoutTotal} freestanding printed character cutout standee${cutoutTotal === 1 ? "" : "s"} on the floor.`,
+      `Do not add more than ${cutoutTotal} standee${cutoutTotal === 1 ? "" : "s"}.`,
+      `Do not create extra small character stickers, extra mini cutouts, or additional characters beyond the selected quantity.`,
+      `These must be physical foam-board standees with visible bases, standing on the floor, not printed on the backdrop panel and not printed on the plinth.`,
+      `Use the selected cutout preset ${cutouts?.presetAssetId ?? "default preset"} and match the selected theme.`,
       ...cutoutItems.map(
-        (item) => `${item.quantity} piece(s) should be approximately ${item.heightCm}cm tall.`
-      ),
-      `Place taller 150cm cutouts beside the backdrop, 100cm cutouts near the plinth, and 60cm cutouts low/front as accent pieces.`,
-      `Keep cutouts clear of the main plinth and make them look like real printed event props.`,
+        (item) =>
+          item.quantity > 0
+            ? `Create exactly ${item.quantity} ${item.heightCm}cm tall ${item.label.toLowerCase()}${item.quantity === 1 ? "" : "s"}.`
+            : ""
+      ).filter(Boolean),
+      `Place 150cm standees beside the backdrop as tall feature pieces, 100cm standees near the side of the plinth, and 60cm standees low/front as small accent pieces only when those sizes are selected.`,
+      `Keep the main plinth clean white with no character print on it unless Custom Design explicitly requests a plinth wrap.`,
     ].join(" ") + " "
   : "";
 
