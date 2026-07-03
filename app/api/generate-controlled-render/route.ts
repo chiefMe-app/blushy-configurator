@@ -98,7 +98,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "open-frame-text-bake-v1";
+const RENDER_CACHE_VERSION = "custom-text-guide-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -841,6 +841,41 @@ if (cached) {
   const cutouts = sceneModel.cutouts;
 const cutoutItems = cutouts?.items?.filter((item: any) => item.quantity > 0) ?? [];
 const resolvedCutoutTotalCount = cutoutItems.reduce((sum: number, item: any) => sum + item.quantity, 0);
+
+// ── Multi-asset standee model ─────────────────────────────────────────────
+// selectedAssets: several designs, each with per-size quantities. Legacy
+// presetAssetId configs are mapped into selectedAssets by normalizeCutouts
+// client-side; a server-side fallback below covers raw legacy payloads.
+type SelectedCutoutAsset = {
+  assetId: string;
+  label?: string;
+  quantities: { large?: number; medium?: number; small?: number };
+};
+const SIZE_HEIGHT_CM = { large: 150, medium: 100, small: 60 } as const;
+let selectedCutoutAssets = (((cutouts as any)?.selectedAssets ?? []) as SelectedCutoutAsset[])
+  .filter((a) => a && a.assetId);
+if (selectedCutoutAssets.length === 0 && (cutouts as any)?.presetAssetId && resolvedCutoutTotalCount > 0) {
+  // Legacy single-asset payload → one selected asset with the item quantities
+  const q = (size: "large" | "medium" | "small") =>
+    Math.max(0, (cutouts?.items ?? []).find((i: any) => i.size === size)?.quantity ?? 0);
+  selectedCutoutAssets = [{
+    assetId: (cutouts as any).presetAssetId as string,
+    label: (cutouts as any).presetAssetId as string,
+    quantities: { large: q("large"), medium: q("medium"), small: q("small") },
+  }];
+}
+const resolvedCutoutOverlayItems = selectedCutoutAssets.flatMap((a) =>
+  (["large", "medium", "small"] as const)
+    .map((size) => ({
+      assetId:  a.assetId,
+      label:    a.label ?? a.assetId,
+      size,
+      heightCm: SIZE_HEIGHT_CM[size],
+      quantity: Math.max(0, a.quantities?.[size] ?? 0),
+    }))
+    .filter((x) => x.quantity > 0),
+);
+const selectedCutoutAssetIds = Array.from(new Set(resolvedCutoutOverlayItems.map((x) => x.assetId)));
 const cutoutGuideItems: CutoutGuideItem[] = (cutouts as any)?.mode === "standees"
   ? cutoutItems.map((item: any) => ({ heightCm: item.heightCm as number, quantity: item.quantity as number }))
   : [];
@@ -852,6 +887,15 @@ const layoutGuideCutoutHeightsCm           = cutoutGuideItems.flatMap(i => Array
 // Drives prompt garland/panel instructions and locked standee overlay zones.
 const setupLayoutTemplateId = inferSetupLayoutTemplateIdFromBackdropItems(sceneModel.panels);
 const setupLayoutTemplate   = setupLayoutTemplateId ? getSetupLayoutTemplate(setupLayoutTemplateId) : undefined;
+
+// ── Customized text diagnostics ───────────────────────────────────────────
+// Text is baked into the AI render via prompt + layout guide (no overlay).
+const customizedTextPanels = sceneModel.panels.filter(
+  (p) => p.text?.enabled && (p.text?.value ?? "").trim().length > 0,
+);
+const customizedTextSolidPanels = customizedTextPanels.filter(
+  (p) => p.type !== "shimmer_wall" && p.type !== "open_arch_frame",
+);
 
   const diagInfo = {
   selectedPlinthSize:       firstPlinthDiag?.size       ?? null,
@@ -866,6 +910,15 @@ resolvedCutoutItems: cutoutItems,
 resolvedCutoutTotalCount,
 isCutoutExpected: resolvedCutoutTotalCount > 0,
 cutoutPromptApplied: resolvedCutoutTotalCount > 0,
+selectedCutoutAssetIds,
+resolvedCutoutOverlayItems,
+
+// Customized text diagnostics
+customizedTextPromptApplied: customizedTextPanels.length > 0,
+customizedTextValue:         customizedTextPanels[0]?.text.value.trim() ?? null,
+customizedTextPanelIds:      customizedTextPanels.map((p) => p.id),
+customizedTextGuideApplied:  customizedTextSolidPanels.length > 0,
+renderTextInAi:              customizedTextPanels.length > 0,
 
   selectedArchSize:         firstArchDiag?.sizeId       ?? null,
   resolvedArchWidthCm:      firstArchDiag?.widthCm      ?? null,
@@ -997,13 +1050,12 @@ forbiddenBalloonColorLabels: hasSempertexLock
 
     const promptInputForAi: typeof promptInput = {
       ...promptInput,
+      // Legacy global text stays stripped; per-item customized text is KEPT —
+      // it drives both the prompt clause and the layout-reference text guide.
       backdropText: promptInput.backdropText
         ? { ...promptInput.backdropText, enabled: false, name: "", customText: "" }
         : undefined,
-      backdropItems: promptInput.backdropItems?.map((item) => ({
-        ...item,
-        text: { ...item.text, enabled: false, value: "" },
-      })),
+      backdropItems: promptInput.backdropItems,
     };
 
     const { prompt: basePrompt } = generatePrompt(promptInputForAi);
@@ -1173,37 +1225,49 @@ forbiddenBalloonColorLabels: hasSempertexLock
 
         const presetId = (cutouts as any)?.presetAssetId as string ?? "";
 
-        // ── Try real PNG cutout asset first ─────────────────────────────────
-        // public/cutouts/[themeId]/[presetAssetId].png — same asset scaled per
-        // selected height for now; later separate files like frozen-01-large.png.
+        // ── Try real PNG cutout assets first (multi-asset) ──────────────────
+        // Each selected design loads its own public/cutouts/[themeId]/[assetId].png.
         const themeIdForAsset = String(selectedThemeId ?? "").toLowerCase();
         let composites: { input: Buffer; left?: number; top?: number; blend: "over" }[] = [];
 
-        const assetFilePath = path.join(process.cwd(), "public", "cutouts", themeIdForAsset, `${presetId}.png`);
-        if (presetId && themeIdForAsset && fs.existsSync(assetFilePath)) {
+        // Flatten: one entry per physical standee — tallest first, then by
+        // selection order. Exact count only.
+        const flattenedStandees: { assetId: string; heightCm: number; order: number }[] =
+          resolvedCutoutOverlayItems.length > 0
+            ? resolvedCutoutOverlayItems.flatMap((it, order) =>
+                Array.from({ length: it.quantity }, () => ({ assetId: it.assetId, heightCm: it.heightCm, order })))
+            : presetId
+              ? cutoutGuideItems.flatMap((i) =>
+                  Array.from({ length: i.quantity }, () => ({ assetId: presetId, heightCm: i.heightCm, order: 0 })))
+              : [];
+        flattenedStandees.sort((a, b) => b.heightCm - a.heightCm || a.order - b.order);
+
+        const uniqueAssetIds = Array.from(new Set(flattenedStandees.map((s) => s.assetId)));
+        const assetPathFor   = (assetId: string) =>
+          path.join(process.cwd(), "public", "cutouts", themeIdForAsset, `${assetId}.png`);
+        const allAssetsExist = uniqueAssetIds.length > 0 && themeIdForAsset &&
+          uniqueAssetIds.every((id) => fs.existsSync(assetPathFor(id)));
+
+        if (allAssetsExist) {
           try {
-            const rawAssetBuf = fs.readFileSync(assetFilePath);
-
-            // Trim transparent canvas padding so the visible artwork — not the
-            // PNG canvas — is what gets scaled to the target height. A castle
-            // exported with generous transparent margins otherwise reads far
-            // smaller than its selected physical size.
-            let assetBuf: Buffer = rawAssetBuf;
-            try {
-              assetBuf = await (sharpFn2(rawAssetBuf)
-                .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
-                .png()
-                .toBuffer()) as Buffer;
-            } catch (trimErr) {
-              console.warn("[generate-controlled-render] asset trim failed, using original buffer:", String(trimErr));
-              assetBuf = rawAssetBuf;
+            // Load + trim each unique asset once. Trimming removes transparent
+            // canvas padding so the visible artwork — not the PNG canvas — is
+            // what gets scaled to the target height.
+            const trimmedBufs = new Map<string, Buffer>();
+            for (const id of uniqueAssetIds) {
+              const rawBuf = fs.readFileSync(assetPathFor(id));
+              let buf: Buffer = rawBuf;
+              try {
+                buf = await (sharpFn2(rawBuf)
+                  .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                  .png()
+                  .toBuffer()) as Buffer;
+              } catch (trimErr) {
+                console.warn("[generate-controlled-render] asset trim failed, using original buffer:", String(trimErr));
+                buf = rawBuf;
+              }
+              trimmedBufs.set(id, buf);
             }
-
-            // Flat list of heights, exact count only, tallest first —
-            // large far right, then medium/small stepping left/lower.
-            const flatHeights = cutoutGuideItems
-              .flatMap(i => Array<number>(i.quantity).fill(i.heightCm))
-              .sort((a, b) => b - a);
 
             // Height is authoritative: a 150cm cutout beside a 200cm arch
             // should read as ~75% of the arch — approximated via image height.
@@ -1225,7 +1289,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
               cm >= 150 ? "large" : cm >= 100 ? "medium" : "small";
             const zoneUseCount: Record<"large" | "medium" | "small", number> = { large: 0, medium: 0, small: 0 };
 
-            for (const cm of flatHeights) {
+            for (const standee of flattenedStandees) {
+              const cm       = standee.heightCm;
+              const assetBuf = trimmedBufs.get(standee.assetId)!;
               // Zone lock: template zone overrides the generic fractions
               let zone: LayoutZone | null = null;
               let zoneIdx = 0;
@@ -1315,7 +1381,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
               });
 
               composites.push({ input: resizedBuf, left, top, blend: "over" });
-              cutoutOverlayAssetPaths.push(`/cutouts/${themeIdForAsset}/${presetId}.png`);
+              cutoutOverlayAssetPaths.push(`/cutouts/${themeIdForAsset}/${standee.assetId}.png`);
               // Report the first (tallest) asset's rendered dimensions
               if (cutoutOverlayRenderedAssetWidthPx === null) {
                 cutoutOverlayRenderedAssetWidthPx  = rw;

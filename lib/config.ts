@@ -392,6 +392,20 @@ export interface CutoutStandeeItem {
   unitPrice: number;
 }
 
+export interface CutoutAssetQuantities {
+  large: number;
+  medium: number;
+  small: number;
+}
+
+/** One selected standee design with per-size quantities (multi-select model). */
+export interface CutoutSelectedAsset {
+  assetId: string;
+  label: string;
+  previewUrl?: string;
+  quantities: CutoutAssetQuantities;
+}
+
 export interface CutoutSelection {
   /** Legacy set model. Keep temporarily for existing package defaults / old code paths. */
   size: CutoutSize;
@@ -400,8 +414,12 @@ export interface CutoutSelection {
   /** New quantity-based production model. */
   mode?: CutoutMode;
   source?: CutoutSource;
+  /** Legacy single-asset selection — superseded by selectedAssets. */
   presetAssetId?: string;
+  /** Legacy per-size totals — kept in sync from selectedAssets for pricing/guides. */
   items?: CutoutStandeeItem[];
+  /** Multi-select model: several designs, each with its own size quantities. */
+  selectedAssets?: CutoutSelectedAsset[];
 }
 export type BackdropTextType = "birthday" | "custom";
 export type FontStyle = "script" | "block" | "elegant";
@@ -592,14 +610,51 @@ export function emptyCutoutStandees(): CutoutStandeeItem[] {
   return CUTOUT_STANDEE_OPTIONS.map((o) => ({ ...o, quantity: 0 }));
 }
 
+export function emptyCutoutQuantities(): CutoutAssetQuantities {
+  return { large: 0, medium: 0, small: 0 };
+}
+
+export function cutoutAssetTotal(asset: CutoutSelectedAsset): number {
+  return Math.max(0, asset.quantities.large) + Math.max(0, asset.quantities.medium) + Math.max(0, asset.quantities.small);
+}
+
 export function normalizeCutouts(cutouts: CutoutSelection): CutoutSelection {
-  if (cutouts.mode === "standees") {
+  // ── Multi-asset model ──────────────────────────────────────────────────
+  let selectedAssets = cutouts.selectedAssets ?? [];
+
+  // Back-compat: old single-asset configs (presetAssetId + items quantities)
+  // map to one selected asset so saved configs keep working.
+  const legacyItemTotal = cutouts.items?.reduce((s, i) => s + Math.max(0, i.quantity), 0) ?? 0;
+  if (selectedAssets.length === 0 && cutouts.presetAssetId && legacyItemTotal > 0) {
+    const q = (size: CutoutStandeeSize) =>
+      Math.max(0, cutouts.items?.find((i) => i.size === size)?.quantity ?? 0);
+    selectedAssets = [{
+      assetId: cutouts.presetAssetId,
+      label: cutouts.presetAssetId,
+      quantities: { large: q("large"), medium: q("medium"), small: q("small") },
+    }];
+  }
+
+  const assetTotal = selectedAssets.reduce((s, a) => s + cutoutAssetTotal(a), 0);
+
+  // Legacy items stay in sync as flattened per-size totals — pricing, layout
+  // guide counts, and older consumers all read from items.
+  const itemsFromAssets: CutoutStandeeItem[] = CUTOUT_STANDEE_OPTIONS.map((o) => ({
+    ...o,
+    quantity: selectedAssets.reduce((s, a) => s + Math.max(0, a.quantities[o.size] ?? 0), 0),
+  }));
+
+  if (cutouts.mode === "standees" || assetTotal > 0) {
     return {
       ...cutouts,
       size: "none",
+      mode: "standees",
       position: cutouts.position ?? "floor",
       source: cutouts.source ?? "preset",
-      items: cutouts.items?.length ? cutouts.items : emptyCutoutStandees(),
+      selectedAssets,
+      items: selectedAssets.length > 0
+        ? itemsFromAssets
+        : (cutouts.items?.length ? cutouts.items : emptyCutoutStandees()),
     };
   }
 
@@ -635,6 +690,7 @@ export function normalizeCutouts(cutouts: CutoutSelection): CutoutSelection {
     mode: "none",
     position: cutouts.position ?? "floor",
     source: "preset",
+    selectedAssets,
     items: emptyCutoutStandees(),
   };
 }

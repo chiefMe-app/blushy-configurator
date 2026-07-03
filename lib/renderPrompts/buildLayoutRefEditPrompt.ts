@@ -400,13 +400,23 @@ export function buildLayoutRefEditPrompt(
   const TEXT_FONT_LABEL: Record<string, string> = {
     script: "flowing script", block: "bold block", elegant: "elegant serif",
   };
+  const textPanelLabel = firstTextPanel
+    ? (firstTextPanel.type === "arch" ? "main solid arch backdrop" : `${panelTypeLabel(firstTextPanel.type)} backdrop`)
+    : "";
   const customTextClause = firstTextPanel
-    ? `The backdrop displays the custom text "${firstTextPanel.text.value.trim()}" printed directly into the backdrop board surface — ` +
-      `integrated into the backdrop material as part of the printed design, following the panel's perspective and surface angle, ` +
-      `matching the scene lighting and shadows, in ${TEXT_FONT_LABEL[firstTextPanel.text.fontStyle] ?? firstTextPanel.text.fontStyle} lettering, ` +
-      `${TEXT_COLOR_LABEL[firstTextPanel.text.color] ?? firstTextPanel.text.color} colored, centered on the upper portion of the panel face. ` +
-      `The lettering is printed into the board — not floating, not pasted on top, not a sticker, not a separate sign, not a decal peeling off. ` +
-      `Spell the text exactly as written, once, with no duplicate or extra words. `
+    ? (() => {
+        const v = firstTextPanel.text.value.trim();
+        return (
+          `The exact custom text "${v}" must appear once on the ${textPanelLabel} surface, ` +
+          `centered in the upper-middle area of the panel face. ` +
+          `It is printed directly into the board finish, perspective-aware and lighting-aware — ` +
+          `the lettering follows the panel's surface angle and receives the same scene lighting as the board itself. ` +
+          `Render it in ${TEXT_FONT_LABEL[firstTextPanel.text.fontStyle] ?? firstTextPanel.text.fontStyle} lettering, ` +
+          `${TEXT_COLOR_LABEL[firstTextPanel.text.color] ?? firstTextPanel.text.color} colored, clearly readable. ` +
+          `Not floating, not a sticker, not a separate overlay, not a hanging sign, not pasted on top. ` +
+          `Spell it exactly as "${v}" — once, correctly, with no duplicate, missing, or extra letters. `
+        );
+      })()
     : "";
 
   const isRoundScene = hasRoundPanelInScene && !isMulti;

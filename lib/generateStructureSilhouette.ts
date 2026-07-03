@@ -214,6 +214,37 @@ function openArchFramePath(cx: number, pw: number, apexY: number, floorY: number
   ].join("\n    ");
 }
 
+// Escape user text for safe embedding in SVG markup.
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+// Customized text guide — the exact selected text drawn faintly on the target
+// solid panel (upper-middle) so the edit model bakes it into the board surface.
+// Never drawn on shimmer walls or open arch frames.
+function customTextGuide(cx: number, pw: number, apexY: number, floorY: number, text: string): string {
+  const panelH   = floorY - apexY;
+  const y        = apexY + panelH * 0.30;
+  // Scale font to fit the panel width for the given string length
+  const fontSize = Math.max(12, Math.min(Math.round(pw * 0.12), Math.round((pw * 0.85) / Math.max(4, text.length) * 1.9)));
+  const safe     = escapeXml(text);
+  return (
+    // White halo stroke behind for contrast, then the gray fill copy on top —
+    // subtle but legible enough for the edit model to read and follow.
+    `<text x="${cx.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" ` +
+      `font-family="DejaVu Sans, Arial, sans-serif" font-weight="600" font-size="${fontSize}" ` +
+      `fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="4" stroke-linejoin="round">${safe}</text>` +
+    `<text x="${cx.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" ` +
+      `font-family="DejaVu Sans, Arial, sans-serif" font-weight="600" font-size="${fontSize}" ` +
+      `fill="rgba(110,110,110,0.65)">${safe}</text>`
+  );
+}
+
 // Low-opacity theme-graphic guide area on the panel surface — helps the edit
 // model bake the printed illustration into the backdrop, not paste a sticker.
 function themeGraphicGuideArea(cx: number, pw: number, apexY: number, floorY: number): string {
@@ -388,6 +419,13 @@ export function generateStructureSilhouette(
     // edit model bakes the illustration into the backdrop (not a sticker).
     if (item?.graphic?.enabled && !isShimmer) {
       content.push(themeGraphicGuideArea(panel.cx, panel.pw, panel.apexY, panel.floorY));
+    }
+
+    // Customized text guide — exact text, upper-middle of solid panels only.
+    // (Open arch frames return early above; shimmer walls are excluded here.)
+    const textValue = item?.text?.enabled ? (item.text.value ?? "").trim() : "";
+    if (textValue && !isShimmer) {
+      content.push(customTextGuide(panel.cx, panel.pw, panel.apexY, panel.floorY, textValue));
     }
   });
 

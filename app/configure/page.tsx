@@ -18,6 +18,7 @@ import {
   CUTOUT_SETS,
   CUTOUT_STANDEE_OPTIONS,
 emptyCutoutStandees,
+emptyCutoutQuantities,
 normalizeCutouts,
 cutoutPrice,
 cutoutTotalCount,
@@ -532,6 +533,9 @@ export default function ConfigurePage() {
 
             {step === 1 && (
               <StepShell title="Pick your theme">
+                <p className="-mt-2 mb-3 text-[13px] font-medium text-black/50">
+                  Choose a party world — we&apos;ll suggest matching balloons, graphics and standees. 🎈
+                </p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {THEMES.map((t) => {
                     const sel = config.themeSelected && config.theme === t.id;
@@ -964,39 +968,61 @@ const cutoutPresetOptions = themeCutoutPresets
        desc: (p as any).description ?? (p as any).desc ?? p.label,
        previewUrl: "",
      }));
-const selectedCutoutPresetId =
-  normalizedCut.presetAssetId ?? cutoutPresetOptions[0]?.assetId ?? `${config.theme}-01`;
+// Multi-select standee model — NOTHING is selected by default.
+const selectedCutoutAssets = normalizedCut.selectedAssets ?? [];
 
-function patchCutouts(next: Partial<typeof normalizedCut>) {
+function toggleCutoutAsset(preset: { assetId: string; label: string; previewUrl?: string }) {
+  const exists = selectedCutoutAssets.some((a) => a.assetId === preset.assetId);
+  const next = exists
+    ? selectedCutoutAssets.filter((a) => a.assetId !== preset.assetId)
+    : [...selectedCutoutAssets, {
+        assetId: preset.assetId,
+        label: preset.label,
+        previewUrl: preset.previewUrl,
+        quantities: emptyCutoutQuantities(),
+      }];
   patchDecor({
     cutouts: {
       ...normalizedCut,
-      ...next,
+      size: "none",
+      position: "floor",
+      source: "preset",
+      presetAssetId: undefined,
+      mode: next.length > 0 ? "standees" : "none",
+      selectedAssets: next,
     },
   });
 }
 
-function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
-  const currentItems =
-    normalizedCut.items?.length ? normalizedCut.items : emptyCutoutStandees();
-
-  const nextItems = currentItems.map((item) =>
-    item.size === size
-      ? { ...item, quantity: Math.max(0, Math.min(9, quantity)) }
-      : item,
+function setAssetQuantity(assetId: string, size: "large" | "medium" | "small", quantity: number) {
+  const next = selectedCutoutAssets.map((a) =>
+    a.assetId === assetId
+      ? { ...a, quantities: { ...a.quantities, [size]: Math.max(0, Math.min(9, quantity)) } }
+      : a,
   );
-
-  const total = nextItems.reduce((sum, item) => sum + item.quantity, 0);
-
   patchDecor({
     cutouts: {
       ...normalizedCut,
-      mode: total > 0 ? "standees" : "none",
       size: "none",
       position: "floor",
       source: "preset",
-      presetAssetId: selectedCutoutPresetId,
-      items: nextItems,
+      presetAssetId: undefined,
+      mode: "standees",
+      selectedAssets: next,
+    },
+  });
+}
+
+function clearAllStandees() {
+  patchDecor({
+    cutouts: {
+      size: "none",
+      mode: "none",
+      position: "floor",
+      source: "preset",
+      presetAssetId: undefined,
+      selectedAssets: [],
+      items: emptyCutoutStandees(),
     },
   });
 }
@@ -1348,7 +1374,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
         {/* Curated setup layouts — playful visual cards */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: "#12162F", marginBottom: 2 }}>Pick your setup ✨</div>
-          <div style={{ fontSize: 11, color: "#73778A", marginBottom: 10 }}>Tap a layout and we&apos;ll arrange the pieces for you.</div>
+          <div style={{ fontSize: 11, color: "#73778A", marginBottom: 10 }}>Start with a layout. We&apos;ll arrange the pieces for you.</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(128px, 1fr))", gap: 10 }}>
             {SETUP_LAYOUT_TEMPLATES.map((tpl) => {
               const active = activeSetupTemplateId === tpl.id;
@@ -1427,7 +1453,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
         {d.backdropItems.some(i => i.type === "arch") && (
           <div style={{ marginTop: 16, padding: "14px 16px", background: "#FFF7FB", borderRadius: 12, border: "1px solid #F1D8E2" }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: "#12162F", marginBottom: 2 }}>Size your pieces 📏</div>
-            <div style={{ fontSize: 11, color: "#73778A", marginBottom: 10 }}>Pick a size for each arch — add-ons unlock once it&apos;s sized.</div>
+            <div style={{ fontSize: 11, color: "#73778A", marginBottom: 10 }}>Choose the size for each backdrop before rendering — add-ons unlock once it&apos;s sized.</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {d.backdropItems.map((item, itemIdx) => {
                 if (item.type !== "arch") return null;
@@ -2052,7 +2078,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
           {numBadge(2)}
           <div>
             <div style={{ fontSize: 18, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>Style your setup 🎀</div>
-            <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Sempertex balloon colors — we picked a palette to match your theme. Adjust up to 5 shades.</div>
+            <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Pick production colors and optional printed details. We pre-picked a palette to match your theme — adjust up to 5 shades.</div>
           </div>
         </div>
 
@@ -2283,89 +2309,57 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(3)}
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>Add extra magic</div>
-            <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Enhance your setup with props and finishing touches.</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>Add extra magic ✨</div>
+            <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Add standees and cake plinths to complete the scene.</div>
           </div>
         </div>
 
       {/* CHARACTER STANDEES */}
 <div style={card}>
   {secLabel("Character standees")}
-  {secSub("Freestanding printed foam-board cutouts for your setup")}
+  {secSub("Pick who joins the party, then choose how tall each standee should be.")}
 
   <div className="space-y-3">
-    <button
-      type="button"
-      onClick={() =>
-        patchDecor({
-          cutouts: {
-            size: "none",
-            mode: "none",
-            position: "floor",
-            source: "preset",
-            presetAssetId: selectedCutoutPresetId,
-            items: emptyCutoutStandees(),
-          },
-        })
-      }
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        border: cutoutTotalCount(normalizedCut) === 0 ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.1)",
-        background: cutoutTotalCount(normalizedCut) === 0 ? accent + "10" : "white",
-        borderRadius: 14,
-        padding: 12,
-        textAlign: "left",
-        transition: "all 0.15s",
-      }}
-    >
-      <div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: cutoutTotalCount(normalizedCut) === 0 ? accent : "#1A1A2E" }}>
-          No standees
-        </div>
-        <div className="text-[11px] text-black/50">Skip freestanding cutouts for this setup</div>
-      </div>
-      <span style={checkBadge(cutoutTotalCount(normalizedCut) === 0)}>
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-          <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </span>
-    </button>
-
-    {/* 1 — Pick a character first (visual preset cards) */}
+    {/* 1 — Choose characters (multi-select, NOTHING preselected) */}
     <div className="rounded-[16px] border border-black/10 bg-white p-3">
-      <div className="mb-2">
-        <div className="text-[12px] font-extrabold text-[#12162F]">Pick your character 💖</div>
-        <div className="text-[11px] text-black/50">Choose who joins the party — then pick sizes below.</div>
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div>
+          <div className="text-[12px] font-extrabold text-[#12162F]">1. Choose characters 💖</div>
+          <div className="text-[11px] text-black/50">Choose one or more characters, then pick the sizes you want.</div>
+        </div>
+        {selectedCutoutAssets.length > 0 && (
+          <button
+            type="button"
+            onClick={clearAllStandees}
+            className="shrink-0 rounded-full border border-black/15 bg-white px-2.5 py-1 text-[10px] font-bold text-black/50 transition hover:border-accent/50 hover:text-accent"
+          >
+            No standees — clear all
+          </button>
+        )}
       </div>
 
       <div className={`grid grid-cols-2 gap-2 ${cutoutPresetOptions.length === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
         {cutoutPresetOptions.map((preset) => {
-          const selected = selectedCutoutPresetId === preset.assetId;
+          const selected = selectedCutoutAssets.some((a) => a.assetId === preset.assetId);
 
           return (
             <button
               key={preset.assetId}
               type="button"
-              onClick={() =>
-                patchCutouts({
-                  mode: cutoutTotalCount(normalizedCut) > 0 ? "standees" : normalizedCut.mode,
-                  size: "none",
-                  position: "floor",
-                  source: "preset",
-                  presetAssetId: preset.assetId,
-                })
-              }
-              className={`rounded-[14px] border p-2.5 text-left transition ${
+              onClick={() => toggleCutoutAsset({ assetId: preset.assetId, label: preset.label, previewUrl: (preset as any).previewUrl || undefined })}
+              className={`relative rounded-[16px] border p-2.5 text-left transition ${
                 selected
                   ? "border-accent bg-accent/10 shadow-sm"
                   : "border-black/10 bg-white hover:border-accent/40"
               }`}
             >
+              {selected && (
+                <span className="absolute -right-1.5 -top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-white shadow-md">
+                  <svg width="11" height="11" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
+              )}
               {(preset as any).previewUrl ? (
-                <div className={`mb-2 flex h-24 items-center justify-center overflow-hidden rounded-[10px] ${selected ? "bg-accent/10" : "bg-black/5"}`}>
+                <div className={`mb-2 flex h-28 items-center justify-center overflow-hidden rounded-[12px] ${selected ? "bg-accent/10" : "bg-[#FDF3F8]"}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={(preset as any).previewUrl}
@@ -2378,88 +2372,102 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
               <div className="mt-1 line-clamp-2 text-[11px] leading-snug text-black/50">
                 {(preset as any).description ?? (preset as any).promptDescription ?? (preset as any).desc ?? preset.label}
               </div>
-              {selected && (
-                <div className="mt-2 inline-flex rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-white">
-                  Selected ✓
-                </div>
-              )}
             </button>
           );
         })}
       </div>
+
+      {selectedCutoutAssets.length === 0 && (
+        <div className="mt-2 rounded-[12px] bg-black/[0.03] px-3 py-2 text-[11px] font-medium text-black/40">
+          No characters selected yet. Choose one or more designs above.
+        </div>
+      )}
     </div>
 
-    {/* 2 — Then choose sizes & quantities */}
-    <div className="rounded-[16px] border border-black/10 bg-white p-3">
-      <div className="mb-3">
-        <div className="text-[12px] font-extrabold text-[#12162F]">Choose sizes 📏</div>
-        <div className="text-[11px] text-black/50">
-          Mix 150 cm, 100 cm, and 60 cm foam-board standees. Price updates per item.
+    {/* 2 — Choose sizes per selected character */}
+    {selectedCutoutAssets.length > 0 && (
+      <div className="rounded-[16px] border border-black/10 bg-white p-3">
+        <div className="mb-3">
+          <div className="text-[12px] font-extrabold text-[#12162F]">2. Choose sizes 📏</div>
+          <div className="text-[11px] text-black/50">
+            Set how many of each height you want, per character.
+          </div>
         </div>
-      </div>
 
-      <div className="space-y-2">
-        {CUTOUT_STANDEE_OPTIONS.map((option) => {
-          const item =
-            normalizedCut.items?.find((i) => i.size === option.size) ??
-            { ...option, quantity: 0 };
-          const sizeBar = option.heightCm >= 150 ? "h-10" : option.heightCm >= 100 ? "h-7" : "h-4";
-
-          return (
-            <div
-              key={option.size}
-              className={`flex items-center justify-between gap-3 rounded-[14px] border px-3 py-3 transition ${item.quantity > 0 ? "border-accent/60 bg-accent/5" : "border-black/10 bg-white"}`}
-            >
-              <div className="flex items-end gap-3">
-                <div className="flex w-5 items-end justify-center">
-                  <div className={`w-3 rounded-t-full bg-accent/40 ${sizeBar}`} />
-                </div>
-                <div>
-                  <div className="text-[12px] font-bold text-[#12162F]">{option.heightCm} cm · {option.label.replace(" standalone cutout", "")}</div>
-                  <div className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-600">
-                    +AED {option.unitPrice} each
+        <div className="space-y-3">
+          {selectedCutoutAssets.map((asset) => (
+            <div key={asset.assetId} className="rounded-[14px] border border-accent/25 bg-[#FFF9FC] p-3">
+              <div className="mb-2 flex items-center gap-2">
+                {asset.previewUrl && (
+                  <div className="flex h-10 w-8 items-center justify-center overflow-hidden rounded-[8px] bg-white">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={asset.previewUrl} alt={asset.label} className="h-full w-full object-contain" />
                   </div>
-                </div>
+                )}
+                <div className="text-[12px] font-extrabold text-[#12162F]">{asset.label}</div>
               </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCutoutQuantity(option.size, item.quantity - 1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-black/15 bg-white text-lg font-bold text-black/60"
-                >
-                  −
-                </button>
-                <div className="w-7 text-center text-sm font-extrabold text-[#12162F]">{item.quantity}</div>
-                <button
-                  type="button"
-                  onClick={() => setCutoutQuantity(option.size, item.quantity + 1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-black/15 bg-white text-lg font-bold text-black/60"
-                >
-                  +
-                </button>
+              <div className="space-y-1.5">
+                {CUTOUT_STANDEE_OPTIONS.map((option) => {
+                  const qty = asset.quantities[option.size] ?? 0;
+                  const sizeBar = option.heightCm >= 150 ? "h-8" : option.heightCm >= 100 ? "h-6" : "h-3.5";
+                  return (
+                    <div
+                      key={option.size}
+                      className={`flex items-center justify-between gap-3 rounded-[12px] border px-3 py-2 transition ${qty > 0 ? "border-accent/60 bg-white" : "border-black/5 bg-white/60"}`}
+                    >
+                      <div className="flex items-end gap-2.5">
+                        <div className="flex w-4 items-end justify-center">
+                          <div className={`w-2.5 rounded-t-full bg-accent/40 ${sizeBar}`} />
+                        </div>
+                        <div>
+                          <span className="text-[12px] font-bold text-[#12162F]">{option.heightCm} cm</span>
+                          <span className="ml-1.5 text-[10px] font-bold text-blue-500">+AED {option.unitPrice}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setAssetQuantity(asset.assetId, option.size, qty - 1)}
+                          className="flex h-7 w-7 items-center justify-center rounded-full border border-black/15 bg-white text-base font-bold text-black/60"
+                        >
+                          −
+                        </button>
+                        <div className="w-6 text-center text-sm font-extrabold text-[#12162F]">{qty}</div>
+                        <button
+                          type="button"
+                          onClick={() => setAssetQuantity(asset.assetId, option.size, qty + 1)}
+                          className="flex h-7 w-7 items-center justify-center rounded-full border border-black/15 bg-white text-base font-bold text-black/60"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
-      {/* Live human-readable summary */}
-      {cutoutTotalCount(normalizedCut) > 0 && (() => {
-        const presetLabel = cutoutPresetOptions.find(p => p.assetId === selectedCutoutPresetId)?.label ?? "standee";
-        const lines = (normalizedCut.items ?? [])
-          .filter(i => i.quantity > 0)
-          .map(i => `${i.quantity} x ${i.heightCm} cm ${presetLabel}`);
-        return (
-          <div className="mt-3 rounded-[12px] bg-accent/10 px-3 py-2">
-            {lines.map(line => (
-              <div key={line} className="text-[12px] font-bold text-accent">🎈 {line}</div>
-            ))}
-            <div className="mt-1 text-[11px] font-semibold text-accent/80">Total +AED {cutoutPrice(normalizedCut)}</div>
-          </div>
-        );
-      })()}
-    </div>
+        {/* 3 — Live human-readable summary */}
+        {cutoutTotalCount(normalizedCut) > 0 && (() => {
+          const lines = selectedCutoutAssets.flatMap((asset) =>
+            CUTOUT_STANDEE_OPTIONS
+              .filter((o) => (asset.quantities[o.size] ?? 0) > 0)
+              .map((o) => `${asset.quantities[o.size]} x ${o.heightCm} cm ${asset.label}`),
+          );
+          return (
+            <div className="mt-3 rounded-[12px] bg-accent/10 px-3 py-2">
+              <div className="mb-1 text-[11px] font-extrabold text-accent">3. Your standee summary ✨</div>
+              {lines.map((line) => (
+                <div key={line} className="text-[12px] font-bold text-accent">🎈 {line}</div>
+              ))}
+              <div className="mt-1 text-[11px] font-semibold text-accent/80">Total +AED {cutoutPrice(normalizedCut)}</div>
+            </div>
+          );
+        })()}
+      </div>
+    )}
   </div>
 </div>
 
