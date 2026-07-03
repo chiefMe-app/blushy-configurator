@@ -1224,7 +1224,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
         {/* Expanded customization panel */}
         {isOpen && (
           <div style={{ borderTop: "1px solid #F1D8E2", background: "#FAFAFA" }}>
-            <ItemCustomization item={item} itemIdx={itemIdx} />
+            {ItemCustomization({ item, itemIdx })}
           </div>
         )}
       </div>
@@ -1261,15 +1261,15 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
         {/* Add-ons */}
         <span style={{ fontSize: 11, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Add-ons for this backdrop</span>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {/* Name Text */}
+          {/* Customized text */}
           <div onClick={() => patchItemText(itemIdx, { enabled: !item.text.enabled })}
             style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
               border: item.text.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
               background: item.text.enabled ? accent + "0E" : "white", transition: "all 0.15s" }}>
             <span style={{ fontSize: 18 }}></span>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: item.text.enabled ? accent : "#1A1A2E" }}>Name Text</div>
-              <div style={{ fontSize: 11, color: "#999" }}>Add child's name or short message</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: item.text.enabled ? accent : "#1A1A2E" }}>Customized text</div>
+              <div style={{ fontSize: 11, color: "#999" }}>A name or short message printed on the backdrop</div>
             </div>
             <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
               background: item.text.enabled ? accent : "rgba(0,0,0,0.06)", color: item.text.enabled ? "white" : "#555" }}>+AED 80</span>
@@ -1460,7 +1460,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                       })}
                     </div>
                     {sized
-                      ? <BackdropCustomizeRow item={item} itemIdx={itemIdx} />
+                      ? BackdropCustomizeRow({ item, itemIdx })
                       : <div style={{ marginTop: 8, fontSize: 11, color: "#B7A3AF", fontStyle: "italic" }}>Choose a size to unlock text &amp; graphic add-ons ✨</div>}
                   </div>
                 );
@@ -1497,7 +1497,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                   );
                 })}
               </div>
-              <BackdropCustomizeRow item={rectItem} itemIdx={itemIdx} />
+              {BackdropCustomizeRow({ item: rectItem, itemIdx })}
             </div>
           ) : null;
         })()}
@@ -1506,7 +1506,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
         {d.backdropItems.some(i => i.type === "round") && (() => {
           const roundItem = d.backdropItems.find(i => i.type === "round");
           const itemIdx = roundItem ? d.backdropItems.findIndex(i => i.id === roundItem.id) : -1;
-          return roundItem && itemIdx >= 0 ? <BackdropCustomizeRow item={roundItem} itemIdx={itemIdx} /> : null;
+          return roundItem && itemIdx >= 0 ? BackdropCustomizeRow({ item: roundItem, itemIdx }) : null;
         })()}
 
         {/* Shimmer color selector + customization */}
@@ -1529,7 +1529,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                   );
                 })}
               </div>
-              {shimmerItem && itemIdx >= 0 && <BackdropCustomizeRow item={shimmerItem} itemIdx={itemIdx} />}
+              {shimmerItem && itemIdx >= 0 && BackdropCustomizeRow({ item: shimmerItem, itemIdx })}
             </div>
           );
         })()}
@@ -1590,9 +1590,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                             </div>
                           </button>
                           {/* Inline customization for this arch item */}
-                          {isSelected && archItem && itemIdx >= 0 && (
-                            <ItemCustomization item={archItem} itemIdx={itemIdx} />
-                          )}
+                          {isSelected && archItem && itemIdx >= 0 && ItemCustomization({ item: archItem, itemIdx })}
                         </div>
                       );
                     })}
@@ -1717,7 +1715,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                 {/* Inline customization */}
                 {hasRound && roundItem && itemIdx >= 0 && (
                   <div style={{ padding: "0 14px 14px" }}>
-                    <ItemCustomization item={roundItem} itemIdx={itemIdx} />
+                    {ItemCustomization({ item: roundItem, itemIdx })}
                   </div>
                 )}
               </div>
@@ -1883,8 +1881,8 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
                     >
                       <div style={{ fontSize: 22 }}></div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: item.text.enabled ? accent : "#1A1A2E" }}>Name Text</div>
-                        <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>Add child's name or short message</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: item.text.enabled ? accent : "#1A1A2E" }}>Customized text</div>
+                        <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>A name or short message printed on the backdrop</div>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: item.text.enabled ? accent : "rgba(0,0,0,0.06)", color: item.text.enabled ? "white" : "#555" }}>+AED 80</span>

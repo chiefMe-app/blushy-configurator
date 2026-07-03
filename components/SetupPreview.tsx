@@ -727,7 +727,9 @@ function computeSceneHash(config: BuilderConfig): string {
     backdropItems: d.backdropItems.map((i) => ({
       id: i.id, type: i.type, sizeId: i.sizeId,
       widthCm: i.widthCm, heightCm: i.heightCm, color: i.color,
-      // text excluded: text changes update the overlay instantly — no AI regen needed
+      // text INCLUDED: customized text is baked into the AI render, so a text
+      // change must trigger a fresh render (no longer an instant overlay)
+      text:    { enabled: i.text.enabled, value: i.text.value.trim(), fontStyle: i.text.fontStyle, color: i.text.color },
       graphic: { enabled: i.graphic.enabled, style: i.graphic.style, assetId: i.graphic.assetId },
     })),
     backdropColor: d.backdropColor,
@@ -754,6 +756,7 @@ function computeStructureHash(config: BuilderConfig): string {
     backdropItems: d.backdropItems.map((i) => ({
       id: i.id, type: i.type, sizeId: i.sizeId,
       widthCm: i.widthCm, heightCm: i.heightCm, color: i.color,
+      text:    { enabled: i.text.enabled, value: i.text.value.trim(), fontStyle: i.text.fontStyle, color: i.text.color },
       graphic: { enabled: i.graphic.enabled, style: i.graphic.style, assetId: i.graphic.assetId },
     })),
     backdropColor: d.backdropColor,
@@ -835,6 +838,8 @@ export function useFinalRender(config: BuilderConfig) {
 
   async function generateFinalRender() {
     if (isRequestPending.current) return;
+    // Validation: every arch piece must have an explicit size before rendering
+    if (configRef.current.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId)) return;
     // Always read from the ref so we get the absolute latest config
     const liveConfig  = configRef.current;
     const liveHash    = computeSceneHash(liveConfig);
@@ -1177,7 +1182,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
           <div>
             <span className="text-[11px] font-semibold text-black/70">Final Design Render</span>
             <p className="text-[10px] text-black/40">
-              Physical scene render. Text updates instantly as an overlay — no regeneration needed.
+              Physical scene render. Customized text is printed into the backdrop — regenerate to see text changes.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -1199,7 +1204,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             <button
               type="button"
               onClick={generateFinalRender}
-              disabled={finalIsLoading}
+              disabled={finalIsLoading || config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}
               className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium text-white transition hover:opacity-90 disabled:opacity-60 ${
                 isStale ? "bg-amber-500" : "bg-accent"
               }`}
@@ -1224,6 +1229,13 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
           )}
           </div>
         </div>
+
+        {/* Validation: block rendering until every arch piece has a size */}
+        {showControls && config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId) && (
+          <div className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700">
+            ⚠️ Choose a size for every backdrop piece before generating the render.
+          </div>
+        )}
 
         <div
           className="relative w-full overflow-hidden rounded-2xl shadow-inner"
@@ -1293,30 +1305,9 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             </div>
           )}
 
-          {/* Deterministic text overlay — updates instantly, no AI regen.
-               Only shown when an image exists (not during loading/empty state).
-               One overlay per panel; unique key by item.id prevents duplicates.
-               MeasurementOverlay is rendered after this and therefore above it. */}
-          {finalUrl && !finalIsLoading && config.decor.backdropItems.map((item, idx) => {
-            if (!item.text.enabled || !item.text.value.trim()) return null;
-            return (
-              <TextOverlay
-                key={`final-text-${item.id}`}
-                text={item.text.value}
-                fontStyle={item.text.fontStyle}
-                color={item.text.color}
-                themeAccent={themeAccent}
-                fontSize={config.decor.backdropText.fontSize}
-                lineHeight={config.decor.backdropText.lineHeight}
-                verticalOffset={config.decor.backdropText.verticalOffset}
-                horizontalOffset={config.decor.backdropText.horizontalOffset}
-                align={config.decor.backdropText.align}
-                shape={item.type}
-                panelIndex={idx}
-                totalPanels={config.decor.backdropItems.length}
-              />
-            );
-          })}
+          {/* Customized text is now baked into the AI render (printed into the
+               backdrop surface by the prompt) — the deterministic overlay is
+               disabled on the final render to avoid double text. */}
 
           {/* Measurement overlay — exact dimensions from scene state, never from AI.
                Rendered above text overlay so measurement labels remain visible. */}

@@ -178,10 +178,12 @@ export function buildLayoutRefEditPrompt(
           `NOT a mirror slab, NOT a chrome wall, NOT a glitter print, ` +
           `NOT crumpled foil, NOT a matte board, NOT a cream panel`
         : isOpenFrame
-          ? `freestanding hollow open arch frame, pastel painted foam/wood frame, ` +
-            `empty center opening, no solid backdrop surface inside — you can see straight through ` +
-            `the arch opening to whatever is behind it. A clean arch-shaped outline frame prop, ` +
-            `NOT a filled panel, NOT a solid board, NOT a doorway with a door`
+          ? `thin freestanding open arch frame — a flat foam-board / MDF style arch outline, ` +
+            `front-facing, board about 1cm thick, with a slim frame band roughly 10-15cm wide, ` +
+            `pastel painted smooth finish, fully hollow center with no solid fill — you can see straight through ` +
+            `the arch opening to the room behind it. A clean slim arch-shaped outline frame prop. ` +
+            `NOT a filled panel, NOT a solid board, NOT chunky, NOT tubular, NOT inflatable, ` +
+            `NOT a deep tunnel, NOT a balloon arch, NOT a second backdrop panel, NOT a doorway with a door`
           : isArch
             ? `solid filled freestanding arch backdrop panel, fully opaque surface, seamless matte ${pColor} surface, ` +
               `no cut-out opening, no hollow doorway, full solid panel face visible`
@@ -387,6 +389,26 @@ export function buildLayoutRefEditPrompt(
       `No floating sticker. No separate poster. No decal peeling off. No rigid pasted rectangle. `
     : "";
 
+  // Customized text — baked directly into the backdrop surface, never an overlay/sticker
+  const panelsWithText = sceneModel.panels.filter(
+    (p) => p.text.enabled && p.text.value.trim().length > 0,
+  );
+  const firstTextPanel = panelsWithText[0];
+  const TEXT_COLOR_LABEL: Record<string, string> = {
+    white: "clean white", gold: "metallic gold", black: "deep black", accent: "theme accent pink",
+  };
+  const TEXT_FONT_LABEL: Record<string, string> = {
+    script: "flowing script", block: "bold block", elegant: "elegant serif",
+  };
+  const customTextClause = firstTextPanel
+    ? `The backdrop displays the custom text "${firstTextPanel.text.value.trim()}" printed directly into the backdrop board surface — ` +
+      `integrated into the backdrop material as part of the printed design, following the panel's perspective and surface angle, ` +
+      `matching the scene lighting and shadows, in ${TEXT_FONT_LABEL[firstTextPanel.text.fontStyle] ?? firstTextPanel.text.fontStyle} lettering, ` +
+      `${TEXT_COLOR_LABEL[firstTextPanel.text.color] ?? firstTextPanel.text.color} colored, centered on the upper portion of the panel face. ` +
+      `The lettering is printed into the board — not floating, not pasted on top, not a sticker, not a separate sign, not a decal peeling off. ` +
+      `Spell the text exactly as written, once, with no duplicate or extra words. `
+    : "";
+
   const isRoundScene = hasRoundPanelInScene && !isMulti;
   // When Sempertex palette is locked, use neutral product photography style cues so the
   // model renders color-accurately instead of applying a warm tinted global style.
@@ -457,10 +479,13 @@ const setupTemplateClause = setupTemplate
     (sceneModel.panels.some((p) => p.type === "open_arch_frame")
       ? `The open arch frame is completely hollow: no backdrop panel behind the frame, no solid surface inside the frame opening, ` +
         `no hidden second backdrop, no curtain or board filling the arch. The area inside and behind the frame opening shows only the room. ` +
+        `The frame itself is a thin flat board about 1cm thick with a slim frame band — not chunky, not tubular, not inflatable, not a deep tunnel. ` +
+        `Balloons must never fill, cross, or block the hollow opening — the opening stays fully clear. ` +
         `Exactly the listed pieces — do not add any extra panel. `
       : "") +
     setupTemplateClause +
     themeGraphicClause +
+    customTextClause +
     cutoutClause+
     (plinthDesc ? `${plinthDesc}. ` : noPlinthDesc) +
     `${garlandDesc}. ` +
@@ -470,7 +495,10 @@ const setupTemplateClause = setupTemplate
       ? `Neutral color-accurate event photography, neutral white balance. `
       : `Premium modern editorial event photography, neutral white balance, clean fresh color grading, `) +
     `crisp white arch surface, no visible outline or border on the arch. ` +
-    `No text on backdrop. No people. No cake. No table. ` +
+    (panelsWithText.length === 0
+      ? `No text on backdrop. `
+      : `No extra text beyond the specified custom text. No misspelled or duplicated lettering. `) +
+    `No people. No cake. No table. ` +
     `No stage. No podium. No base platform. No floor riser. ` +
     `No rectangular box plinth. No low round podium. No flat platform under plinth. ` +
     `No extra side panel. No extra wall or slab. ` +

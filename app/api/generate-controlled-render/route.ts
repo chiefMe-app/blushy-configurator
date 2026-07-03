@@ -98,7 +98,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "curated-layout-ui-v2";
+const RENDER_CACHE_VERSION = "open-frame-text-bake-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -988,8 +988,12 @@ forbiddenBalloonColorLabels: hasSempertexLock
     }
 
     // ── First generate ─────────────────────────────────────────────────────────
-    // Text is a frontend overlay — strip all panel text before building the AI prompt.
-    const renderTextInAi = false as const;
+    // Customized text is baked into the AI render (printed into the backdrop
+    // surface) — when any panel has text, drop the text negatives so the model
+    // can render it. Panels without text keep the strict no-text negatives.
+    const renderTextInAi = sceneModel.panels.some(
+      (p) => p.text?.enabled && (p.text?.value ?? "").trim().length > 0,
+    );
 
     const promptInputForAi: typeof promptInput = {
       ...promptInput,

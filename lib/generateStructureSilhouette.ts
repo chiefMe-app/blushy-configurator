@@ -203,9 +203,11 @@ function openArchFramePath(cx: number, pw: number, apexY: number, floorY: number
     return `M ${left},${floorY} L ${left},${springY} A ${r},${r} 0 0 1 ${right},${springY} L ${right},${floorY}`;
   };
   const rOuter = pw / 2;
-  const frameT = Math.max(8, Math.round(pw * 0.12)); // visible frame thickness
+  // Thin frame band — reads as a slim flat foam-board/MDF frame, not a chunky
+  // tubular arch. Narrow gap between outer and inner outlines is the key cue.
+  const frameT = Math.max(5, Math.round(pw * 0.07));
   const rInner = rOuter - frameT;
-  const stroke = `fill="none" stroke="rgba(95,95,95,0.50)" stroke-width="2.5" stroke-linecap="round"`;
+  const stroke = `fill="none" stroke="rgba(95,95,95,0.55)" stroke-width="2" stroke-linecap="round"`;
   return [
     `<path d="${drawArch(rOuter, cx - rOuter, cx + rOuter, apexY)}" ${stroke}/>`,
     `<path d="${drawArch(rInner, cx - rInner, cx + rInner, apexY + frameT)}" ${stroke}/>`,
@@ -487,21 +489,43 @@ export function generateStructureSilhouette(
           content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br}" ${balloonAttrs(i)}/>`);
         }
       } else {
-        // Arch / rect / other: right-side vertical garland from top-right corner to floor
-        const outerOffset = Math.round(W * 0.055);
-        const numBalloons = 22;
+        // Open-frame layouts: NO full-height garland column. Draw a compact
+        // accent cluster hugging the frame's top-right shoulder only, so the
+        // hollow frame silhouette stays visible and the opening stays clear.
+        const framePanel = layout.panels.find(
+          (p) => (backdropItems[p.idx]?.type ?? "") === "open_arch_frame",
+        );
+        if (framePanel) {
+          const r        = framePanel.pw / 2;
+          const springCy = framePanel.apexY + r; // arch arc center
+          const numBalloons = 8;
+          for (let i = 0; i < numBalloons; i++) {
+            const t        = i / (numBalloons - 1);
+            const angleDeg = -62 + t * 72; // top of crown → right shoulder, upper part only
+            const angleRad = (angleDeg * Math.PI) / 180;
+            const rr       = r + Math.round(W * 0.018) + (i % 2 === 0 ? 4 : -3);
+            const bx       = framePanel.cx + rr * Math.cos(angleRad);
+            const by       = springCy + rr * Math.sin(angleRad);
+            const br       = i < 2 ? 18 : 10 + ((i * 5) % 7);
+            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br}" ${balloonAttrs(i)}/>`);
+          }
+        } else {
+          // Arch / rect / other: right-side vertical garland from top-right corner to floor
+          const outerOffset = Math.round(W * 0.055);
+          const numBalloons = 22;
 
-        for (let i = 0; i < numBalloons; i++) {
-          const t   = i / (numBalloons - 1);
-          // Sine-wave horizontal jitter — avoids straight vertical line of circles
-          const jx  = Math.sin(t * Math.PI * 2.1 + 0.4) * Math.round(W * 0.022);
-          // Smaller vertical jitter for organic overlap
-          const jy  = (((i * 11) % 28) - 14);
-          const bx  = groupRight + outerOffset + jx;
-          const by  = groupTop + t * dy + jy;
-          // Varied radii: large cluster at top, varied in middle, compact at floor
-          const r   = i < 3 ? 20 + ((i * 5) % 7) : i > numBalloons - 4 ? 16 + ((i * 3) % 6) : 12 + ((i * 7) % 9);
-          content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonAttrs(i)}/>`);
+          for (let i = 0; i < numBalloons; i++) {
+            const t   = i / (numBalloons - 1);
+            // Sine-wave horizontal jitter — avoids straight vertical line of circles
+            const jx  = Math.sin(t * Math.PI * 2.1 + 0.4) * Math.round(W * 0.022);
+            // Smaller vertical jitter for organic overlap
+            const jy  = (((i * 11) % 28) - 14);
+            const bx  = groupRight + outerOffset + jx;
+            const by  = groupTop + t * dy + jy;
+            // Varied radii: large cluster at top, varied in middle, compact at floor
+            const r   = i < 3 ? 20 + ((i * 5) % 7) : i > numBalloons - 4 ? 16 + ((i * 3) % 6) : 12 + ((i * 7) % 9);
+            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonAttrs(i)}/>`);
+          }
         }
       }
 
