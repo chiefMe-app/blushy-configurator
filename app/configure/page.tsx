@@ -407,9 +407,9 @@ export default function ConfigurePage() {
         </div>
       </header>
 
-      <div style={{ maxWidth: 1360, margin: "0 auto", padding: "20px 28px 0", display: "flex", gap: 26, alignItems: "flex-start" }}>
-        {/* Left: preview rail - fixed 356px */}
-        <div style={{ width: 356, flexShrink: 0 }}>
+      <div style={{ maxWidth: 1360, margin: "0 auto", padding: "20px 28px 0", display: "flex", flexWrap: "wrap", gap: 26, alignItems: "flex-start" }}>
+        {/* Left: preview rail — 356px on wide screens, full-width when wrapped */}
+        <div style={{ flex: "1 1 340px", maxWidth: 480, minWidth: 300 }}>
           <div className="lg:sticky" style={{ top: 72 }}>
             <div className="space-y-3">
               {/* Preview card -overflow hidden keeps confetti contained */}
@@ -448,7 +448,7 @@ export default function ConfigurePage() {
         </div>
 
         {/* Right: steps -flex 1, min 720px */}
-        <div style={{ flex: 1, minWidth: 680, paddingBottom: 96 }}>
+        <div style={{ flex: "999 1 480px", minWidth: 0, paddingBottom: 120 }}>
 
           <div>
             {step === 0 && (
@@ -562,22 +562,27 @@ export default function ConfigurePage() {
                     const icon = THEME_ICONS[t.id] ?? <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 4l1.2 3.6L16 8l-3.8 1.4L11 13l-1.2-3.6L6 8l3.8-1.4z" fill="#F9A8D4"/></svg>;
                     return (
                       <button key={t.id} type="button" onClick={() => setTheme(t.id)} aria-pressed={sel}
-                        className={`relative flex w-full flex-col gap-2 rounded-2xl border p-4 text-left transition ${sel ? "border-accent bg-accent-soft/60 shadow-sm" : "border-black/10 bg-white hover:border-accent/40"}`}>
+                        className={`relative flex w-full flex-col gap-2.5 rounded-2xl border p-4 text-left transition ${sel ? "border-2 border-accent bg-accent-soft/60 shadow-md ring-2 ring-accent/15" : "border-black/10 bg-white hover:border-accent/40 hover:shadow-sm"}`}>
+                        {sel && (
+                          <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-white shadow-md">
+                            <svg width="11" height="11" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </span>
+                        )}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <span>{icon}</span>
-                            <span className="text-sm font-semibold">{t.name}</span>
+                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${sel ? "bg-white shadow-sm" : "bg-black/5"}`}>{icon}</span>
+                            <span className={`text-sm font-bold ${sel ? "text-accent" : "text-[#15182E]"}`}>{t.name}</span>
                           </div>
                           <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${sel ? "bg-accent text-white" : "bg-black/5 text-black/60"}`}>
                             {t.priceModifier > 0 ? `+AED ${t.priceModifier}` : "Included"}
                           </span>
                         </div>
                         {t.balloonColors.length > 0 && (
-                          <div className="flex -space-x-1">
-                            {t.balloonColors.slice(0, 5).map((c, i) => <span key={i} className="h-5 w-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: c }}/>)}
+                          <div className="flex -space-x-1.5">
+                            {t.balloonColors.slice(0, 5).map((c, i) => <span key={i} className="h-7 w-7 rounded-full border-2 border-white shadow" style={{ backgroundColor: c }}/>)}
                           </div>
                         )}
-                        <span className="text-xs leading-snug text-black/50">{t.desc}</span>
+                        <span className="text-xs leading-snug text-black/50">{sel ? `✨ ${t.desc}` : t.desc}</span>
                       </button>
                     );
                   })}
@@ -1172,18 +1177,17 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
   // Apply a curated backdrop set template — replaces current backdropItems
   // with the template's exact panels (max 2, controlled render layouts).
   function applySetupTemplate(templateId: string) {
-    const makeArch = (sizeId: ArchSizeId, id: string) => {
-      const s = ARCH_SIZES.find(a => a.id === sizeId) ?? ARCH_SIZES[1];
-      return { ...makeBackdropItem("arch"), sizeId: s.id, widthCm: s.widthCm, heightCm: s.heightCm, id };
-    };
+    // Arch pieces start UNSIZED — the user must explicitly pick a size before
+    // the row is complete. Default dims stay 100x200 for render safety.
+    const makeArchUnsized = (id: string) => ({ ...makeBackdropItem("arch"), sizeId: undefined, id });
     let panels: BackdropItem[];
     switch (templateId) {
-      case "single_arch":        panels = [makeArch("medium", "arch-medium")]; break;
+      case "single_arch":        panels = [makeArchUnsized("arch-1")]; break;
       case "single_round":       panels = [makeBackdropItem("round")]; break;
       case "single_shimmer":     panels = [makeBackdropItem("shimmer_wall")]; break;
-      case "arch_shimmer":       panels = [makeArch("medium", "arch-medium"), makeBackdropItem("shimmer_wall")]; break;
-      case "double_arch":        panels = [makeArch("large", "arch-large"), makeArch("small", "arch-small")]; break;
-      case "arch_open_frame":    panels = [makeArch("medium", "arch-medium"), makeBackdropItem("open_arch_frame")]; break;
+      case "arch_shimmer":       panels = [makeArchUnsized("arch-1"), makeBackdropItem("shimmer_wall")]; break;
+      case "double_arch":        panels = [makeArchUnsized("arch-1"), makeArchUnsized("arch-2")]; break;
+      case "arch_open_frame":    panels = [makeArchUnsized("arch-1"), makeBackdropItem("open_arch_frame")]; break;
       case "shimmer_open_frame": panels = [makeBackdropItem("shimmer_wall"), makeBackdropItem("open_arch_frame")]; break;
       default: return;
     }
@@ -1385,7 +1389,7 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
 
         {/* 4 type cards in a row — secondary, behind "Change pieces manually" */}
         {showManualPieces && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
           {[
             { type: "arch" as const, label: "Arch Backdrop", badge: "Most popular", click: () => { const hasArch = d.backdropItems.some(i=>i.type==="arch"); if(!hasArch) toggleArchSize(ARCH_SIZES[1]); else patchDecor({ backdropItems: d.backdropItems.filter(i=>i.type!=="arch") }); } },
             { type: "rect" as const, label: "Rectangular Backdrop", badge: null, click: () => toggleOtherType("rect") },
@@ -1422,40 +1426,42 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
         {/* Arch size selector -shown when arch is selected */}
         {d.backdropItems.some(i => i.type === "arch") && (
           <div style={{ marginTop: 16, padding: "14px 16px", background: "#FFF7FB", borderRadius: 12, border: "1px solid #F1D8E2" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#73778A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>Choose size</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-              {ARCH_SIZES.map((size) => {
-                const archItem = d.backdropItems.find(i => i.type === "arch" && i.sizeId === size.id);
-                const isSelected = !!archItem;
-                const itemIdx = isSelected ? d.backdropItems.findIndex(i => i.id === archItem?.id) : -1;
-                const isMedium = size.id === "medium";
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#12162F", marginBottom: 2 }}>Size your pieces 📏</div>
+            <div style={{ fontSize: 11, color: "#73778A", marginBottom: 10 }}>Pick a size for each arch — add-ons unlock once it&apos;s sized.</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {d.backdropItems.map((item, itemIdx) => {
+                if (item.type !== "arch") return null;
+                const archNumber = d.backdropItems.filter((i, k) => i.type === "arch" && k <= itemIdx).length;
+                const archCount  = d.backdropItems.filter(i => i.type === "arch").length;
+                const sized = !!item.sizeId;
                 return (
-                  <div key={size.id}>
-                    <button type="button" onClick={() => toggleArchSize(size)}
-                      disabled={!isSelected && d.backdropItems.length >= MAX_BACKDROP_ITEMS}
-                      style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
-                        padding: "11px 14px", borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
-                        border: isSelected ? "2px solid #EC4D8D" : "1.5px solid #ECEAF1",
-                        background: isSelected ? "white" : "white",
-                        boxShadow: isSelected ? "0 2px 10px rgba(236,77,141,0.12)" : "none",
-                        opacity: !isSelected && d.backdropItems.length >= MAX_BACKDROP_ITEMS ? 0.4 : 1 }}>
-                      <div style={{ textAlign: "left" }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "#EC4D8D" : "#15182E" }}>{size.label}</div>
-                        <div style={{ fontSize: 11, color: "#73778A", marginTop: 1 }}>{size.widthCm} x{size.heightCm} cm</div>
+                  <div key={item.id} style={{ background: "white", borderRadius: 12, padding: "12px 14px",
+                    border: sized ? "1.5px solid #F1D8E2" : "2px dashed #F0A8C8" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#15182E" }}>
+                        {archCount > 1 ? `Arch ${archNumber}` : "Arch Backdrop"}
+                        {archCount > 1 && archNumber === 1 && <span style={{ fontSize: 10, color: "#8A8DA0", fontWeight: 600 }}> · main</span>}
+                        {archCount > 1 && archNumber === 2 && <span style={{ fontSize: 10, color: "#8A8DA0", fontWeight: 600 }}> · secondary</span>}
                       </div>
-                      <div style={{ width: 20, height: 20, borderRadius: "50%", border: isSelected ? "none" : "1.5px solid #ECEAF1", background: isSelected ? "#EC4D8D" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        {isSelected && <span style={{ color: "white", fontSize: 12, fontWeight: 900 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
-                      </div>
-                    </button>
-                    {isSelected && archItem && itemIdx >= 0 && (
-                      <BackdropCustomizeRow item={archItem} itemIdx={itemIdx} />
-                    )}
-                    {isMedium && !d.backdropItems.some(i => i.type === "arch") && (
-                      <div style={{ marginTop: 6, padding: "8px 12px", background: "#F8F0FF", borderRadius: 10, border: "1px solid #D8B4FE", display: "flex", gap: 6, alignItems: "center" }}>
-                        <span style={{ fontSize: 14 }}></span>
-                        <div style={{ fontSize: 11, color: "#666" }}><span style={{ fontWeight: 700, color: "#7C3AED" }}>Pro tip:</span> Medium is our most popular size.</div>
-                      </div>
-                    )}
+                      {!sized && <span style={{ fontSize: 10, fontWeight: 700, color: "#EC4D8D", background: "#FFF0F6", borderRadius: 20, padding: "2px 8px" }}>Pick a size</span>}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {ARCH_SIZES.map((size) => {
+                        const isSel = item.sizeId === size.id;
+                        return (
+                          <button key={size.id} type="button"
+                            onClick={() => patchItem(itemIdx, { sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm })}
+                            style={{ padding: "8px 14px", borderRadius: 20, fontSize: 12, fontWeight: isSel ? 700 : 500, cursor: "pointer", transition: "all 0.15s",
+                              border: isSel ? "2px solid #EC4D8D" : "1.5px solid #ECEAF1",
+                              background: isSel ? "#FFF0F6" : "white", color: isSel ? "#EC4D8D" : "#555" }}>
+                            {size.label} · {size.widthCm}x{size.heightCm}cm
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {sized
+                      ? <BackdropCustomizeRow item={item} itemIdx={itemIdx} />
+                      : <div style={{ marginTop: 8, fontSize: 11, color: "#B7A3AF", fontStyle: "italic" }}>Choose a size to unlock text &amp; graphic add-ons ✨</div>}
                   </div>
                 );
               })}
@@ -2047,8 +2053,8 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(2)}
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>Sempertex balloon colors</div>
-            <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>We selected a palette for your theme. You can adjust up to 5 shades.</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>Style your setup 🎀</div>
+            <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Sempertex balloon colors — we picked a palette to match your theme. Adjust up to 5 shades.</div>
           </div>
         </div>
 
@@ -2330,11 +2336,67 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
       </span>
     </button>
 
+    {/* 1 — Pick a character first (visual preset cards) */}
+    <div className="rounded-[16px] border border-black/10 bg-white p-3">
+      <div className="mb-2">
+        <div className="text-[12px] font-extrabold text-[#12162F]">Pick your character 💖</div>
+        <div className="text-[11px] text-black/50">Choose who joins the party — then pick sizes below.</div>
+      </div>
+
+      <div className={`grid grid-cols-2 gap-2 ${cutoutPresetOptions.length === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
+        {cutoutPresetOptions.map((preset) => {
+          const selected = selectedCutoutPresetId === preset.assetId;
+
+          return (
+            <button
+              key={preset.assetId}
+              type="button"
+              onClick={() =>
+                patchCutouts({
+                  mode: cutoutTotalCount(normalizedCut) > 0 ? "standees" : normalizedCut.mode,
+                  size: "none",
+                  position: "floor",
+                  source: "preset",
+                  presetAssetId: preset.assetId,
+                })
+              }
+              className={`rounded-[14px] border p-2.5 text-left transition ${
+                selected
+                  ? "border-accent bg-accent/10 shadow-sm"
+                  : "border-black/10 bg-white hover:border-accent/40"
+              }`}
+            >
+              {(preset as any).previewUrl ? (
+                <div className={`mb-2 flex h-24 items-center justify-center overflow-hidden rounded-[10px] ${selected ? "bg-accent/10" : "bg-black/5"}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={(preset as any).previewUrl}
+                    alt={preset.label}
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+              ) : null}
+              <div className="text-[12px] font-extrabold text-[#12162F]">{preset.label}</div>
+              <div className="mt-1 line-clamp-2 text-[11px] leading-snug text-black/50">
+                {(preset as any).description ?? (preset as any).promptDescription ?? (preset as any).desc ?? preset.label}
+              </div>
+              {selected && (
+                <div className="mt-2 inline-flex rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-white">
+                  Selected ✓
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+
+    {/* 2 — Then choose sizes & quantities */}
     <div className="rounded-[16px] border border-black/10 bg-white p-3">
       <div className="mb-3">
-        <div className="text-[12px] font-extrabold text-[#12162F]">Choose standalone cutout sizes</div>
+        <div className="text-[12px] font-extrabold text-[#12162F]">Choose sizes 📏</div>
         <div className="text-[11px] text-black/50">
-          Add 150 cm, 100 cm, and 60 cm foam-board standees. Price updates per item.
+          Mix 150 cm, 100 cm, and 60 cm foam-board standees. Price updates per item.
         </div>
       </div>
 
@@ -2343,17 +2405,22 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
           const item =
             normalizedCut.items?.find((i) => i.size === option.size) ??
             { ...option, quantity: 0 };
+          const sizeBar = option.heightCm >= 150 ? "h-10" : option.heightCm >= 100 ? "h-7" : "h-4";
 
           return (
             <div
               key={option.size}
-              className="flex items-center justify-between gap-3 rounded-[14px] border border-black/10 bg-white px-3 py-3"
+              className={`flex items-center justify-between gap-3 rounded-[14px] border px-3 py-3 transition ${item.quantity > 0 ? "border-accent/60 bg-accent/5" : "border-black/10 bg-white"}`}
             >
-              <div>
-                <div className="text-[12px] font-bold text-[#12162F]">{option.label}</div>
-                <div className="text-[11px] text-black/50">{option.heightCm} cm tall standalone character cutout</div>
-                <div className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-600">
-                  +AED {option.unitPrice} each
+              <div className="flex items-end gap-3">
+                <div className="flex w-5 items-end justify-center">
+                  <div className={`w-3 rounded-t-full bg-accent/40 ${sizeBar}`} />
+                </div>
+                <div>
+                  <div className="text-[12px] font-bold text-[#12162F]">{option.heightCm} cm · {option.label.replace(" standalone cutout", "")}</div>
+                  <div className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-600">
+                    +AED {option.unitPrice} each
+                  </div>
                 </div>
               </div>
 
@@ -2379,74 +2446,42 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
         })}
       </div>
 
-      {cutoutTotalCount(normalizedCut) > 0 && (
-        <div className="mt-3 rounded-[12px] bg-accent/10 px-3 py-2 text-[12px] font-bold text-accent">
-          {cutoutTotalCount(normalizedCut)} standee(s) selected · +AED {cutoutPrice(normalizedCut)}
-        </div>
-      )}
+      {/* Live human-readable summary */}
+      {cutoutTotalCount(normalizedCut) > 0 && (() => {
+        const presetLabel = cutoutPresetOptions.find(p => p.assetId === selectedCutoutPresetId)?.label ?? "standee";
+        const lines = (normalizedCut.items ?? [])
+          .filter(i => i.quantity > 0)
+          .map(i => `${i.quantity} x ${i.heightCm} cm ${presetLabel}`);
+        return (
+          <div className="mt-3 rounded-[12px] bg-accent/10 px-3 py-2">
+            {lines.map(line => (
+              <div key={line} className="text-[12px] font-bold text-accent">🎈 {line}</div>
+            ))}
+            <div className="mt-1 text-[11px] font-semibold text-accent/80">Total +AED {cutoutPrice(normalizedCut)}</div>
+          </div>
+        );
+      })()}
     </div>
-
-    {cutoutTotalCount(normalizedCut) > 0 && (
-      <div className="rounded-[16px] border border-black/10 bg-white p-3">
-        <div className="mb-2">
-          <div className="text-[12px] font-extrabold text-[#12162F]">Choose character style</div>
-          <div className="text-[11px] text-black/50">Theme-matched preset options. Later these can become real uploaded assets.</div>
-        </div>
-
-        <div className={`grid grid-cols-2 gap-2 ${cutoutPresetOptions.length === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
-          {cutoutPresetOptions.map((preset) => {
-            const selected = selectedCutoutPresetId === preset.assetId;
-
-            return (
-              <button
-                key={preset.assetId}
-                type="button"
-                onClick={() =>
-                  patchCutouts({
-                    mode: "standees",
-                    size: "none",
-                    position: "floor",
-                    source: "preset",
-                    presetAssetId: preset.assetId,
-                  })
-                }
-                className={`rounded-[14px] border p-3 text-left transition ${
-                  selected
-                    ? "border-accent bg-accent/10"
-                    : "border-black/10 bg-white hover:border-accent/40"
-                }`}
-              >
-                {(preset as any).previewUrl ? (
-                  <div className="mb-2 flex h-24 items-center justify-center overflow-hidden rounded-[10px] bg-black/5">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={(preset as any).previewUrl}
-                      alt={preset.label}
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
-                ) : null}
-                <div className="text-[12px] font-extrabold text-[#12162F]">{preset.label}</div>
-                <div className="mt-1 line-clamp-3 text-[11px] leading-snug text-black/50">
-                  {(preset as any).description ?? (preset as any).promptDescription ?? (preset as any).desc ?? preset.label}
-                </div>
-                {selected && (
-                  <div className="mt-2 inline-flex rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-white">
-                    Selected
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    )}
   </div>
 </div>
 
       {/* PLINTHS */}
       <div style={card}>
-        {secLabel("Cake stands")}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+          {/* Mini plinth illustration — slim cylinder with a cake on top */}
+          <svg width="34" height="44" viewBox="0 0 34 44" aria-hidden="true">
+            <ellipse cx="17" cy="40" rx="9" ry="2.5" fill="#F3E2EA" />
+            <rect x="9" y="16" width="16" height="24" rx="1.5" fill="#FDF3F8" stroke="#E8C7D8" strokeWidth="1" />
+            <ellipse cx="17" cy="16" rx="8" ry="2.5" fill="#F9E3EE" stroke="#E8C7D8" strokeWidth="1" />
+            <rect x="12" y="8" width="10" height="7" rx="1.5" fill="#F7A7C8" />
+            <rect x="14" y="5" width="6" height="4" rx="1" fill="#FBD1E3" />
+            <circle cx="17" cy="3.5" r="1.3" fill="#EC4D8D" />
+          </svg>
+          <div>
+            {secLabel("Cake plinths")}
+            <div style={{ fontSize: 11, color: "#8A8DA0", marginTop: -4 }}>Slim display columns that hold your cake or desserts beside the backdrop</div>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2">
           {[0, 1, 2, 3].map((n) => {
             const active = d.plinths === n;
@@ -2494,31 +2529,6 @@ function setCutoutQuantity(size: CutoutStandeeItem["size"], quantity: number) {
         )}
       </div>
 
-      {/* CAKE TABLE */}
-      <div style={card}>
-        {secLabel("Dessert table")}
-        <div className="flex flex-wrap gap-2">
-          {[
-            { id: "no", label: "No" },
-            { id: "yes", label: "Yes" },
-          ].map((o) => {
-            const active = (d.cakeTable ? "yes" : "no") === o.id;
-            return (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => patchDecor({ cakeTable: o.id === "yes" })}
-                style={active
-                  ? { background: accent, color: "white", border: `2px solid ${accent}`, borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500, transition: "all 0.15s" }
-                  : { background: "white", color: "rgba(0,0,0,0.6)", border: "1.5px solid rgba(0,0,0,0.15)", borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500, transition: "all 0.15s" }}
-              >
-                {o.label}
-                {o.id === "yes" && <span style={chip(`+${CAKE_TABLE_PRICE}`, active)}>+{CAKE_TABLE_PRICE}</span>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
       </div>{/* -"--"- end EXTRAS section -"--"- */}
     </div>
   );

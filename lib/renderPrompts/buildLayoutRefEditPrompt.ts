@@ -92,9 +92,10 @@ export function buildLayoutRefEditPrompt(
       `The setup contains exactly ONE backdrop panel plus selected decorative items. ` +
       `Backdrop: a freestanding ${p.widthCm}cm × ${p.heightCm}cm square event shimmer wall. ` +
       `Clean straight outer edges, full square silhouette, no cutouts or openings. ` +
-      `The entire surface is covered edge-to-edge with a regular grid of small uniform reflective ${sc} shimmer tiles ` +
-      `arranged in neat rows and columns — a realistic event rental shimmer wall surface. ` +
-      `Reflective ${sc} finish with clean sparkle. Clearly a shimmer sequin wall, not a matte board. ` +
+      `The entire surface is covered edge-to-edge with a dense regular grid of small flat square reflective ${sc} sequin discs ` +
+      `arranged in neat rows and columns, each disc catching light individually with metallic sparkle — ` +
+      `a realistic event rental sequin shimmer wall surface. ` +
+      `Clearly a shimmer sequin wall — NOT a mirror slab, NOT a chrome wall, NOT a glitter print, not a matte board. ` +
       (plinthStr ? `${plinthStr} ` : "") +
       `${garlandStr} ` +
       `NOT an arch. NOT a rounded-top board. NOT a niche or frame. NOT a cutout. ` +
@@ -111,8 +112,9 @@ export function buildLayoutRefEditPrompt(
       const sc = sceneModel.shimmerColor ?? "silver";
       backdropDesc =
         `one freestanding square shimmer wall, ${p.widthCm}cm wide x ${p.heightCm}cm tall, ` +
-        `${sc} shimmer finish, regular neat grid of small flat square ${sc} sequin tiles, ` +
-        `clean reflective sparkle, flat tiled sequin surface, ` +
+        `a real event-rental sequin shimmer wall: dense regular grid of small flat square reflective ${sc} sequin discs, ` +
+        `each disc catching light individually with metallic sparkle, flat rectangular panel, ` +
+        `NOT a mirror slab, NOT a chrome wall, NOT a glitter print, ` +
         `NOT a matte board, NOT a cream backdrop, NOT crumpled foil`;
     } else if (p.type === "round") {
       backdropDesc =
@@ -170,9 +172,10 @@ export function buildLayoutRefEditPrompt(
       const shimmerC  = sceneModel.shimmerColor ?? "silver";
       const pColor = backdropColorLabel(p.color);
       const surfaceDesc = isShimmer
-        ? `freestanding square event shimmer wall (200cm x 200cm) — ` +
-          `regular neat grid of small flat square ${shimmerC} sequin tiles, ` +
-          `clean reflective sparkle, flat tiled surface, ${shimmerC} shimmer finish, ` +
+        ? `freestanding square event shimmer wall (200cm x 200cm) — a real event-rental sequin shimmer wall: ` +
+          `dense regular grid of small flat square reflective ${shimmerC} sequin discs, ` +
+          `each disc catching light individually with metallic sparkle, flat rectangular panel, ` +
+          `NOT a mirror slab, NOT a chrome wall, NOT a glitter print, ` +
           `NOT crumpled foil, NOT a matte board, NOT a cream panel`
         : isOpenFrame
           ? `freestanding hollow open arch frame, pastel painted foam/wood frame, ` +
@@ -451,6 +454,11 @@ const setupTemplateClause = setupTemplate
     photographyOpening +
     framingClause +
     `${backdropDesc}. ` +
+    (sceneModel.panels.some((p) => p.type === "open_arch_frame")
+      ? `The open arch frame is completely hollow: no backdrop panel behind the frame, no solid surface inside the frame opening, ` +
+        `no hidden second backdrop, no curtain or board filling the arch. The area inside and behind the frame opening shows only the room. ` +
+        `Exactly the listed pieces — do not add any extra panel. `
+      : "") +
     setupTemplateClause +
     themeGraphicClause +
     cutoutClause+
