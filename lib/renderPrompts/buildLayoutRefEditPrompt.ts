@@ -479,6 +479,10 @@ const setupTemplateClause = setupTemplate
     (hasGarland && sceneModel.panels.length >= 2
       ? `Preserve the organic garland following the selected setup layout path. ` +
         `Do not replace it with loose balloon bouquets, simple balloon clusters, or floating balloons. `
+      : "") +
+    // Double Arch: centered-plinth instruction is part of the locked layout
+    (setupTemplate.id === "double_arch" && sceneModel.plinths.length > 0
+      ? `${setupTemplate.plinthInstruction} `
       : "")
   : "";
 

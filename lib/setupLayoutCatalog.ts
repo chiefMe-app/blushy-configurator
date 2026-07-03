@@ -128,15 +128,36 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
   {
     id: "double_arch",
     name: "Double Arch",
-    description: "Two arches, layered and cute",
+    description: "Two arches, side by side",
     backdropTypes: ["arch", "arch"],
     maxBackdrops: 2,
     badge: "Popular",
     miniPreview: ["arch_large", "arch_small"],
-    panelInstruction: "Two solid arch backdrop panels as a curated pair: one larger main arch standing behind/left and one smaller secondary arch standing slightly in front on the right, partially overlapping — clearly layered as two separate physical boards of different heights.",
-    garlandInstruction: "Balloon design: one intentionally styled asymmetric garland — a dense feature cluster of large balloons sits exactly where the two arches visually overlap, flowing up over the main arch's crown to its upper-left and trailing down the smaller arch's right edge with progressively smaller balloons. The composition reads as one deliberate S-curve connecting the pair, not two separate decorations and not a random split.",
-    plinthInstruction: "Place cylinder plinths at the front-left of the set, clear of both arches.",
-    standeeZones: ZONES_TWO_PIECE,
+    panelInstruction:
+      "Use exactly two solid arch backdrop panels side-by-side, bases aligned on the same floor line. " +
+      "The larger arch is on the left and the smaller arch is on the right, both front-facing, " +
+      "with a small clean gap or slight edge touch between them. " +
+      "Do not overlap them front/back. Do not create a third panel. Do not place any panel behind another. " +
+      "No perspective tunnel — a curated flat pair of arches.",
+    garlandInstruction:
+      "Balloon design: mirrored organic garlands. The left garland starts at floor level at the left arch's outer base, " +
+      "climbs up the left outer edge, and ends at the crown of the left arch. " +
+      "The right garland mirrors it exactly: starting at floor level at the right arch's outer base, " +
+      "climbing the right outer edge, ending at the right arch's crown. " +
+      "No horizontal balloon bridge across both arches, no disconnected balloon columns, no floating balloon strings, no bouquets. " +
+      "Keep the center area between the arches clean.",
+    plinthInstruction:
+      "If there is one cake plinth, place it at the horizontal center of the full double-arch setup, " +
+      "in front of the gap between the two arches. Keep the center area clean for it.",
+    standeeZones: {
+      // 1 standee → right outer; 2 standees → left + right outer (mirrored)
+      large:  [{ x: 0.99, bottomY: 0.92, maxHeightFraction: 0.54, maxWidthFraction: 0.38, preferredSide: "right" },
+               { x: 0.01, bottomY: 0.92, maxHeightFraction: 0.54, maxWidthFraction: 0.38, preferredSide: "left" }],
+      medium: [{ x: 0.01, bottomY: 0.94, maxHeightFraction: 0.38, maxWidthFraction: 0.32, preferredSide: "left" },
+               { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.38, maxWidthFraction: 0.32, preferredSide: "right" }],
+      small:  [{ x: 0.97, bottomY: 0.96, maxHeightFraction: 0.24, maxWidthFraction: 0.24, preferredSide: "right" },
+               { x: 0.03, bottomY: 0.96, maxHeightFraction: 0.24, maxWidthFraction: 0.24, preferredSide: "left" }],
+    },
   },
   {
     id: "arch_open_frame",

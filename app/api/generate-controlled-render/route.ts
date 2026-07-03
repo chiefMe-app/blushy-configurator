@@ -98,7 +98,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "custom-text-guide-v1";
+const RENDER_CACHE_VERSION = "custom-text-composite-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -990,6 +990,11 @@ forbiddenBalloonColorLabels: hasSempertexLock
   selectedSetupLayoutTemplateName: setupLayoutTemplate?.name ?? null,
   layoutTemplateGuideApplied:      !!setupLayoutTemplate,
   layoutTemplateGarlandGuideApplied: !!setupLayoutTemplate && sceneModel.balloons.style !== "none",
+
+  // Double Arch lock diagnostics
+  doubleArchLayoutLocked:              setupLayoutTemplateId === "double_arch",
+  doubleArchMirrorGarlandGuideApplied: setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
+  centeredPlinthGuideApplied:          setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length === 1,
   cutoutAiGenerationSuppressed: cutoutGuideItems.length > 0,
 
   // Theme catalog diagnostics
@@ -1198,10 +1203,99 @@ forbiddenBalloonColorLabels: hasSempertexLock
     }
   }
 
+  // ── Deterministic post-render composites ─────────────────────────────────
+  // Order: AI final image → custom text composite → standee overlay.
+  // Text sits behind standees. Both stages share one working buffer.
+  let outputImageUrl         = finalImageUrl;
+  let workingImageBuf: Buffer | null = null;
+  const fetchFinalImage = async (): Promise<Buffer | null> => {
+    const resp = await fetch(finalImageUrl);
+    return resp.ok ? Buffer.from(await resp.arrayBuffer()) : null;
+  };
+
+  // ── Guaranteed custom text composite ─────────────────────────────────────
+  // Prompt + layout guide stay as soft signals; this composite guarantees the
+  // exact text appears, styled to read as printed into the board material.
+  let customTextCompositeApplied = false;
+  let customTextCompositeValue: string | null = null;
+  let customTextCompositeTargetPanelId: string | null = null;
+  let customTextCompositePosition: { x: number; y: number } | null = null;
+  let preTextCompositeImageUrl: string | null = null;
+
+  if (customizedTextSolidPanels.length > 0) {
+    try {
+      const baseBuf = await fetchFinalImage();
+      if (baseBuf) {
+        const sharpPkgT = await import("sharp");
+        const sharpFnT  = ((sharpPkgT as any).default ?? sharpPkgT) as (b: Buffer) => any;
+        const metaT     = await sharpFnT(baseBuf).metadata() as { width?: number; height?: number };
+        const imgW      = metaT.width  ?? 1024;
+        const imgH      = metaT.height ?? 1024;
+
+        // Target: first solid panel with text (arch preferred by panel order).
+        const targetPanel = customizedTextSolidPanels.find((p) => p.type === "arch") ?? customizedTextSolidPanels[0];
+        const textValue   = targetPanel.text.value.trim();
+
+        // Normalized panel anchor: single panel is centered; in 2-piece scenes
+        // panels sit roughly at 30% / 70% of image width (mirrors the guide).
+        const panelIdx = sceneModel.panels.findIndex((p) => p.id === targetPanel.id);
+        const xFrac = sceneModel.panels.length <= 1 ? 0.50 : panelIdx === 0 ? 0.30 : 0.70;
+        // Upper-middle of the arch face: arch spans ~20%..92% of image height.
+        const yFrac = 0.40;
+        const cx = Math.round(imgW * xFrac);
+        const cy = Math.round(imgH * yFrac);
+
+        const TEXT_HEX: Record<string, string> = {
+          white: "#FFFFFF", gold: "#D4AF6A", black: "#2A2A2A", accent: "#EC4D8D",
+        };
+        const fillHex = TEXT_HEX[targetPanel.text.color] ?? "#FFFFFF";
+        // Fit font to ~34% of image width for the string length, clamped.
+        const safeLen  = Math.max(4, textValue.length);
+        const fontSize = Math.max(18, Math.min(Math.round(imgW * 0.06), Math.round((imgW * 0.34) / safeLen * 1.9)));
+
+        const esc = (s: string) => s
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+        const safeText = esc(textValue);
+
+        // Printed-into-the-board look: soft blurred shadow only (never the main
+        // text), main text at ~0.86 opacity so board texture shows through
+        // faintly, plus a whisper-thin darker edge. No background rectangle.
+        const textSvg =
+          `<svg xmlns="http://www.w3.org/2000/svg" width="${imgW}" height="${imgH}" viewBox="0 0 ${imgW} ${imgH}">` +
+          `<defs><filter id="softsh" x="-30%" y="-30%" width="160%" height="160%">` +
+          `<feGaussianBlur stdDeviation="${Math.max(1.5, fontSize * 0.05)}"/></filter></defs>` +
+          // Blurred contact shadow — grounds the print into the surface
+          `<text x="${cx}" y="${cy + Math.round(fontSize * 0.06)}" text-anchor="middle" ` +
+            `font-family="DejaVu Sans, Arial, sans-serif" font-weight="600" font-size="${fontSize}" ` +
+            `fill="rgba(0,0,0,0.30)" filter="url(#softsh)">${safeText}</text>` +
+          // Main lettering — slightly translucent so it reads as printed ink
+          `<text x="${cx}" y="${cy}" text-anchor="middle" ` +
+            `font-family="DejaVu Sans, Arial, sans-serif" font-weight="600" font-size="${fontSize}" ` +
+            `fill="${fillHex}" fill-opacity="0.86" stroke="rgba(0,0,0,0.10)" stroke-width="0.6">${safeText}</text>` +
+          `</svg>`;
+
+        workingImageBuf = await (sharpFnT(baseBuf)
+          .composite([{ input: Buffer.from(textSvg, "utf8"), blend: "over" }])
+          .png()
+          .toBuffer()) as Buffer;
+
+        preTextCompositeImageUrl         = finalImageUrl;
+        customTextCompositeApplied       = true;
+        customTextCompositeValue         = textValue;
+        customTextCompositeTargetPanelId = targetPanel.id;
+        customTextCompositePosition      = { x: xFrac, y: yFrac };
+        outputImageUrl = `data:image/jpeg;base64,${(await (sharpFnT(workingImageBuf).jpeg({ quality: 92 }).toBuffer()) as Buffer).toString("base64")}`;
+      }
+    } catch (textErr) {
+      console.warn("[generate-controlled-render] custom text composite failed (continuing without):", String(textErr));
+      workingImageBuf = null;
+    }
+  }
+
   // ── Deterministic cutout standee overlay ─────────────────────────────────
   // Character standees are suppressed in the AI prompt and composited here
   // instead, so quantity and placement are always exact.
-  let outputImageUrl         = finalImageUrl;
   let cutoutOverlayApplied   = false;
   let cutoutOverlayCount     = 0;
   let cutoutOverlayHeightsCm: number[] = [];
@@ -1214,9 +1308,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
 
   if (cutoutGuideItems.length > 0) {
     try {
-      const imgResp = await fetch(finalImageUrl);
-      if (imgResp.ok) {
-        const imgBuf    = Buffer.from(await imgResp.arrayBuffer());
+      // Standees composite on top of the text-composited image when present
+      const imgBuf = workingImageBuf ?? await fetchFinalImage();
+      if (imgBuf) {
         const sharpPkg2 = await import("sharp");
         const sharpFn2  = ((sharpPkg2 as any).default ?? sharpPkg2) as (b: Buffer) => any;
         const meta      = await sharpFn2(imgBuf).metadata() as { width?: number; height?: number };
@@ -1438,6 +1532,11 @@ forbiddenBalloonColorLabels: hasSempertexLock
     strictCorrectionSkippedReason,
     primaryLayoutReferenceImageUrl: imageUrl,
     preOverlayImageUrl: finalImageUrl,
+    customTextCompositeApplied,
+    customTextCompositeValue,
+    customTextCompositeTargetPanelId,
+    customTextCompositePosition,
+    preTextCompositeImageUrl,
     cutoutOverlayApplied,
     cutoutOverlayCount,
     cutoutOverlayHeightsCm,

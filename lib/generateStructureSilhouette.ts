@@ -432,9 +432,16 @@ export function generateStructureSilhouette(
   // v4: Cylindrical plinth edge guide — no fill, no block
   const singleShimmer = backdropItems.length === 1 && backdropItems[0]?.type === "shimmer_wall";
   const singleRound   = backdropItems.length === 1 && backdropItems[0]?.type === "round";
+  const isDoubleArch  = backdropItems.length === 2 && backdropItems.every((i) => i.type === "arch");
   for (const p of layout.plinths) {
     let plinthCx: number;
-    if (singleShimmer) {
+    if (isDoubleArch && layout.plinths.length === 1 && layout.panels.length === 2) {
+      // Double arch + one plinth: centered in the full setup, in front of the
+      // gap between the two arches.
+      const gLeft  = Math.min(...layout.panels.map((pp) => pp.cx - pp.pw / 2));
+      const gRight = Math.max(...layout.panels.map((pp) => pp.cx + pp.pw / 2));
+      plinthCx = Math.round((gLeft + gRight) / 2);
+    } else if (singleShimmer) {
       plinthCx = Math.round(W * 0.50); // centered in front of shimmer wall
     } else if (singleRound && balloonStyle === "half" && layout.panels.length === 1) {
       // Left side of the round circle, clear of the right-arc garland
@@ -527,6 +534,31 @@ export function generateStructureSilhouette(
           content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br}" ${balloonAttrs(i)}/>`);
         }
       } else {
+        // Double arch: mirrored organic garlands — each climbs from the floor
+        // at its arch's OUTER base up the outer edge to that arch's crown.
+        // No bridge across the pair; the center stays clean.
+        const archPanels = layout.panels.filter(
+          (p) => (backdropItems[p.idx]?.type ?? "") === "arch",
+        );
+        if (archPanels.length === 2) {
+          const pair = [...archPanels].sort((a, b) => a.cx - b.cx);
+          const drawClimb = (p: typeof pair[0], side: "left" | "right", colorOffset: number) => {
+            const dir    = side === "left" ? -1 : 1;
+            const outerX = p.cx + dir * (p.pw / 2);
+            const n      = 12;
+            for (let i = 0; i < n; i++) {
+              const t  = i / (n - 1); // 0 = floor, 1 = crown
+              // Hug the outer edge low, curve inward toward the crown center up top
+              const bx = outerX + dir * Math.round(W * 0.02) * (1 - t * 0.4)
+                       + (p.cx - outerX) * Math.pow(t, 1.7);
+              const by = p.floorY - t * (p.floorY - p.apexY) + (((i * 7) % 18) - 9);
+              const r  = i < 2 ? 19 + ((i * 5) % 5) : t > 0.8 ? 16 + ((i * 3) % 6) : 11 + ((i * 5) % 8);
+              content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonAttrs(colorOffset + i)}/>`);
+            }
+          };
+          drawClimb(pair[0], "left", 0);
+          drawClimb(pair[1], "right", 6);
+        } else {
         // Open-frame layouts: NO full-height garland column. Draw a compact
         // accent cluster hugging the frame's top-right shoulder only, so the
         // hollow frame silhouette stays visible and the opening stays clear.
@@ -564,6 +596,7 @@ export function generateStructureSilhouette(
             const r   = i < 3 ? 20 + ((i * 5) % 7) : i > numBalloons - 4 ? 16 + ((i * 3) % 6) : 12 + ((i * 7) % 9);
             content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonAttrs(i)}/>`);
           }
+        }
         }
       }
 
