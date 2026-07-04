@@ -2,19 +2,33 @@
  * Controlled Final Design Render pipeline.
  *
  * Visible Production Layout Preview is NOT used as visual style reference for AI.
- * AI receives a hidden structure control map only — and for first_generate, structure
- * comes entirely from the text prompt (no image_url is passed so the model generates
- * a photorealistic scene from scratch guided by detailed panel/plinth/balloon descriptions).
+ * AI receives a hidden structure control map — a deterministic SVG→PNG layout
+ * reference (arch/round/panel outlines, plinth, garland guide dots, standee
+ * zones, custom-text guide) passed as image_url alongside the detailed prompt.
  *
- * first_generate → fal-ai/flux-2-pro (text-to-image, photorealistic, no image_url)
- * edit_existing  → fal-ai/flux-pro/kontext (img2img on the previous beautiful render)
+ * Actual model routing (see "Model routing" below and `resolvedEditModelId`):
+ *   - primary path (first_generate AND edit_existing) → an edit/img2img model
+ *     from the fal-ai/flux-2 family, selected per-scene:
+ *       - arch panel present, no round panel → fal-ai/flux-2/flash/edit
+ *       - round panel present                → fal-ai/flux-2/edit
+ *       - otherwise (shimmer/rect/frame only) → mode default
+ *         (turbo → fal-ai/flux-2/turbo/edit, dev → fal-ai/flux-2/edit,
+ *          pro → fal-ai/flux-2-pro/edit), controlled by AI_RENDER_MODEL_MODE
+ *   - strict correction pass (Sempertex color lock) reuses the same
+ *     resolvedEditModelId as an additional img2img call on its own output
+ *   - text-to-image fallback (only reached if the primary edit call fails,
+ *     the scene isn't geometry-critical, and fallback isn't disabled) →
+ *     fal-ai/flux-2{,-pro,/turbo} pure text-to-image, no layout reference
+ *
+ * There is no Kontext model anywhere in this pipeline — edit_existing and
+ * small style edits reuse the same fal-ai/flux-2 edit model as first_generate.
+ *
+ * Diagnostics `actualPrimaryModelId` / `actualModelReason` reflect the routing
+ * decision made before any fal call; `actualRenderPath` / `actualEditModelId` /
+ * `actualFirstGenerateModelId` reflect what actually executed for this response.
  *
  * Production Layout Preview and future export package use scene state as source
  * of truth. AI render is a visual preview, not the production measurement source.
- *
- * TODO: Small visual edits should use fal-ai/flux-pro/kontext with
- * currentFinalRenderUrl as image_url to preserve venue, camera, light,
- * balloons, and composition.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -782,14 +796,21 @@ const strictColorModelApplied =
 // Arch scenes use flash/edit because it is fast and looked good in testing.
 // Round scenes stay away from flash for now because flash added a base/stage.
 let resolvedEditModelId = getEditModelId(modelMode);
+let actualModelReason: string = `mode_default_${modelMode}`;
 
 if (hasArchPanelInScene && !hasRoundPanelInScene) {
   resolvedEditModelId = "fal-ai/flux-2/flash/edit";
+  actualModelReason   = "arch_scene_flash_edit";
 } else if (hasRoundPanelInScene) {
   resolvedEditModelId = "fal-ai/flux-2/edit";
+  actualModelReason   = "round_scene_edit";
 }
 
 const editModelId = resolvedEditModelId;
+// The routing decision made above, before any fal call is attempted — present
+// on every response path (cache hit, edit_existing, first_generate, fallback,
+// or hard failure) since it's computed unconditionally per-request.
+const actualPrimaryModelId = resolvedEditModelId;
 
 const cacheKey = buildCacheKey(
   currentSceneHash,
@@ -952,6 +973,12 @@ effectiveBalloonColors: sceneModel.balloons.colors ?? [],
 
   modelMode,
   resolvedEditModelId,
+  // Explicit "actual model path" diagnostics — see file-header comment for
+  // the full routing table. These reflect the routing decision made before
+  // any fal call; actualRenderPath/actualEditModelId/actualFirstGenerateModelId
+  // (added to each response's `extra`) reflect what actually executed.
+  actualPrimaryModelId,
+  actualModelReason,
   strictColorModelApplied,
   strictColorReason,
 
@@ -1040,7 +1067,14 @@ forbiddenBalloonColorLabels: hasSempertexLock
         console.log("[generate-controlled-render] edit done:", imageUrl);
       }
 
-      const extra = { mode: "edit_existing", modelId: editModelId, fallbackUsed: false };
+      const extra = {
+        mode: "edit_existing",
+        modelId: editModelId,
+        fallbackUsed: false,
+        actualRenderPath:           "edit_existing_recolor",
+        actualEditModelId:          editModelId,
+        actualFirstGenerateModelId: null,
+      };
       renderCache.set(cacheKey, { imageUrl, diagInfo, extra });
       return NextResponse.json({ imageUrl, ...extra, ...diagInfo, cacheHit: false });
     }
@@ -1530,6 +1564,11 @@ forbiddenBalloonColorLabels: hasSempertexLock
     fallbackUsed: false,
     strictCorrectionApplied,
     strictCorrectionSkippedReason,
+    actualRenderPath: strictCorrectionApplied
+      ? "first_generate_layout_reference_edit_with_strict_correction"
+      : "first_generate_layout_reference_edit",
+    actualEditModelId:          editModelId,
+    actualFirstGenerateModelId: editModelId,
     primaryLayoutReferenceImageUrl: imageUrl,
     preOverlayImageUrl: finalImageUrl,
     customTextCompositeApplied,
@@ -1600,6 +1639,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
         fallbackErrorMessage,
         referenceUsed:      false,
         modelId:            editModelId,
+        actualRenderPath:           "render_failed_no_fallback",
+        actualEditModelId:          editModelId,
+        actualFirstGenerateModelId: null,
         ...diagInfo,
         cacheHit:           false,
       }, { status: 502 });
@@ -1646,6 +1688,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
       fallbackReason,
       fallbackStage,
       fallbackErrorMessage,
+      actualRenderPath:           "first_generate_text_to_image_fallback",
+      actualEditModelId:          null,
+      actualFirstGenerateModelId: t2iModelId,
       layoutReferencePngGenerated: pngResult.dataUri !== null,
       layoutReferencePngBytes:     pngResult.bytes,
       layoutReferencePrefix:       pngResult.dataUri ? pngResult.dataUri.slice(0, 40) : null,

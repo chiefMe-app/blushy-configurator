@@ -772,8 +772,10 @@ function computeStructureHash(config: BuilderConfig): string {
 /**
  * Builds the edit instruction for a color-only recolor pass: a strict
  * BALLOON COLOR LOCK clause plus a strict structure-preservation clause.
- * Used when only balloon colors changed, so Kontext recolors in place
- * instead of recomposing the scene.
+ * Used when only balloon colors changed, so the server's edit_existing path
+ * (fal-ai/flux-2 edit-family model, chosen per-scene by the route — see
+ * app/api/generate-controlled-render/route.ts) recolors in place instead of
+ * recomposing the scene.
  */
 function buildColorLockEditDescription(d: DecorConfig): string {
   const palette = d.sempertexSelection ?? [];
@@ -794,12 +796,15 @@ function buildColorLockEditDescription(d: DecorConfig): string {
 /**
  * Generates the Final Design Render.
  *
- * TODO: Later: route small edits through image-to-image/Kontext.
- * For now, explicit Regenerate always refreshes Final Design Render from latest sceneModel.
+ * Explicit Regenerate always refreshes Final Design Render from latest sceneModel.
  *
- * Visible Production Layout Preview is NOT used as image_url for the AI.
- * Structure comes from the text prompt (panel count, dimensions, types).
- * first_generate → fal-ai/flux-2-pro text-to-image with detailed photorealistic prompt.
+ * Visible Production Layout Preview is NOT used as a visual style reference for
+ * the AI, but a deterministic layout-reference PNG (generated server-side) IS
+ * passed as image_url for the primary render path. The primary model is an
+ * fal-ai/flux-2 edit-family model chosen per-scene by the route (flash/edit for
+ * arch, edit for round, mode default otherwise) — pure text-to-image only runs
+ * as a fallback when that primary edit call fails. See the routing comment at
+ * the top of app/api/generate-controlled-render/route.ts for the full table.
  */
 export function useFinalRender(config: BuilderConfig) {
   const [status, setStatus]     = useState<FinalRenderStatus>("idle");
@@ -950,11 +955,13 @@ export function useFinalRender(config: BuilderConfig) {
   }
 
   /**
-   * Apply a style edit to the existing final render using Kontext (img2img).
+   * Apply a style edit to the existing final render via the server's
+   * edit_existing path (img2img on the previous render using the same
+   * fal-ai/flux-2 edit-family model the route resolves per-scene — no
+   * Kontext model is used anywhere in this pipeline).
    * Keeps the same composition — only the requested style change is applied.
    * If no final render exists yet, the request is stashed and automatically
    * applied right after the next Generate Final Render completes.
-   * TODO: Later: route small edits through image-to-image/Kontext.
    */
   async function requestRenderEdit(editDescription: string) {
     if (!currentFinalRenderUrl.current) {
@@ -1143,7 +1150,8 @@ export default function SetupPreview({
 
 const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize);
 
-  // Controlled Final Design Render — text-to-image from latest sceneModel.
+  // Controlled Final Design Render — layout-reference-guided edit model from
+  // latest sceneModel (text-to-image only as a same-request fallback).
   const {
     status:              finalStatus,
     finalUrl,
