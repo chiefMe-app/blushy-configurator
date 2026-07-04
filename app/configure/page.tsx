@@ -74,6 +74,9 @@ import SetupPreview, { useSetupPreview } from "@/components/SetupPreview";
 // Controlled render limit: at most 2 backdrop pieces per setup.
 const MAX_BACKDROP_ITEMS = 2;
 
+// Elegant serif for display headings — system fonts only (no external font risk).
+const SERIF = "Georgia, 'Palatino Linotype', 'Times New Roman', serif";
+
 // Playful mini illustration for setup layout cards — pastel shapes, no text.
 function SetupMiniPreview({ shapes }: { shapes: string[] }) {
   const els: JSX.Element[] = [];
@@ -362,7 +365,7 @@ export default function ConfigurePage() {
               <circle cx="23" cy="5" r="0.8" fill="#EC4D8D" opacity="0.4"/>
             </svg>
             <div style={{ lineHeight: 1 }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: "#15182E", letterSpacing: "-0.5px", lineHeight: 1.05 }}>Blushy</div>
+              <div style={{ fontSize: 25, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, letterSpacing: "-0.01em", lineHeight: 1.05 }}>Blushy</div>
               <div style={{ fontSize: 8, fontWeight: 800, color: "#EC4D8D", letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 2 }}>Birthday Builder</div>
             </div>
           </div>
@@ -414,7 +417,7 @@ export default function ConfigurePage() {
           <div className="lg:sticky" style={{ top: 72 }}>
             <div className="space-y-3">
               {/* Preview card -overflow hidden keeps confetti contained */}
-              <div style={{ position: "relative", overflow: "hidden", minHeight: 408, borderRadius: 20, border: "1.5px solid #F1D8E2", boxShadow: "0 14px 32px rgba(39,40,68,0.06)", background: "linear-gradient(150deg, #FFF7FB 0%, #FBF2FF 50%, #FFF9F5 100%)" }}>
+              <div style={{ position: "relative", overflow: "hidden", minHeight: 408, borderRadius: 22, border: "1.5px solid #F4DCE7", boxShadow: "0 14px 36px rgba(236,79,145,0.09)", background: "linear-gradient(150deg, #FFF7FB 0%, #FBF2FF 50%, #FFF9F5 100%)" }}>
                 {/* Confetti - pointer-events none, confined inside overflow:hidden */}
                 <div aria-hidden style={{ pointerEvents: "none", position: "absolute", inset: 0 }}>
                   {/* Dots */}
@@ -786,8 +789,8 @@ function StepShell({
 }) {
   return (
     <section>
-      <h2 className="text-lg font-semibold">{title}</h2>
-      {subtitle && <p className="mb-4 mt-0.5 text-xs text-black/50">{subtitle}</p>}
+      <h2 className="text-[22px] font-bold text-[#2B2040]" style={{ fontFamily: SERIF, letterSpacing: "-0.01em" }}>{title}</h2>
+      {subtitle && <p className="mb-4 mt-1 text-[13px] font-medium text-black/50">{subtitle}</p>}
       <div className={subtitle ? "" : "mt-4"}>{children}</div>
     </section>
   );
@@ -1089,24 +1092,25 @@ function clearAllStandees() {
   const accent = theme.accent;
   const card: React.CSSProperties = {
     background: "white",
-    borderRadius: 16,
-    padding: "14px 14px",
-    marginBottom: 10,
-    boxShadow: "0 1px 4px rgba(18,22,47,0.05), 0 4px 16px rgba(18,22,47,0.04)",
-    border: "1px solid #ECEAF1",
+    borderRadius: 18,
+    padding: "16px 16px",
+    marginBottom: 12,
+    boxShadow: "0 1px 4px rgba(43,32,64,0.04), 0 8px 24px rgba(236,79,145,0.06)",
+    border: "1px solid #F4DCE7",
   };
   const numBadge = (n: number) => (
     <div style={{
-      width: 28, height: 28, borderRadius: "50%", background: "#EC4F91",
+      width: 30, height: 30, borderRadius: "50%",
+      background: "linear-gradient(140deg, #F26FA8 0%, #EC4F91 60%, #E23A80 100%)",
       color: "white", fontSize: 13, fontWeight: 800, letterSpacing: "-0.3px",
       display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-      boxShadow: "0 4px 10px rgba(236,79,145,0.30)",
+      boxShadow: "0 4px 12px rgba(236,79,145,0.35)",
     }}>{n}</div>
   );
   const secLabel = (text: string) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
-      <span style={{ width: 3, height: 16, borderRadius: 2, background: accent, display: "inline-block", flexShrink: 0 }} />
-      <span style={{ fontSize: 14, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>{text}</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+      <span style={{ width: 3, height: 17, borderRadius: 2, background: accent, display: "inline-block", flexShrink: 0 }} />
+      <span style={{ fontSize: 16, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, letterSpacing: "-0.01em" }}>{text}</span>
     </div>
   );
   const secSub = (text: string) => (
@@ -1360,11 +1364,11 @@ function clearAllStandees() {
   return (
     <div className={jakarta.className}>
       {/* == BACKDROP SECTION ================================== */}
-      <div style={{ background: "white", border: "1.5px solid #F1D8E2", borderRadius: 18, padding: "16px 14px", marginBottom: 18, boxShadow: "0 4px 20px rgba(39,40,68,0.06)" }}>
+      <div style={{ background: "linear-gradient(160deg, #FFFFFF 0%, #FFF9FC 100%)", border: "1.5px solid #F4DCE7", borderRadius: 20, padding: "16px 14px", marginBottom: 18, boxShadow: "0 4px 20px rgba(236,79,145,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(1)}
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>Pick your backdrop</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, letterSpacing: "-0.01em" }}>Pick your backdrop</div>
             <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Choose the perfect backdrop style and size for your celebration.</div>
           </div>
         </div>
@@ -1373,7 +1377,7 @@ function clearAllStandees() {
       <div style={{ background: "white", borderRadius: 16, padding: "16px", marginBottom: 0, border: "1px solid #F1D8E2" }}>
         {/* Curated setup layouts — playful visual cards */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#12162F", marginBottom: 2 }}>Pick your setup ✨</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, marginBottom: 2 }}>Pick your setup ✨</div>
           <div style={{ fontSize: 11, color: "#73778A", marginBottom: 10 }}>Start with a layout. We&apos;ll arrange the pieces for you.</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(128px, 1fr))", gap: 10 }}>
             {SETUP_LAYOUT_TEMPLATES.map((tpl) => {
@@ -1452,7 +1456,7 @@ function clearAllStandees() {
         {/* Arch size selector -shown when arch is selected */}
         {d.backdropItems.some(i => i.type === "arch") && (
           <div style={{ marginTop: 16, padding: "14px 16px", background: "#FFF7FB", borderRadius: 12, border: "1px solid #F1D8E2" }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: "#12162F", marginBottom: 2 }}>Size your pieces 📏</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, marginBottom: 2 }}>Size your pieces 📏</div>
             <div style={{ fontSize: 11, color: "#73778A", marginBottom: 10 }}>Choose the size for each backdrop before rendering — add-ons unlock once it&apos;s sized.</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {d.backdropItems.map((item, itemIdx) => {
@@ -2073,11 +2077,11 @@ function clearAllStandees() {
       </div>{/* -"--"- end BACKDROP section -"--"- */}
 
       {/* == BALLOONS SECTION ================================== */}
-      <div style={{ background: "#EFF8FF", border: "1px solid #BFDBFE", borderRadius: 18, padding: "12px 10px", marginBottom: 18 }}>
+      <div style={{ background: "linear-gradient(160deg, #FFF7FB 0%, #FDF1F7 100%)", border: "1.5px solid #F4DCE7", borderRadius: 20, padding: "14px 12px", marginBottom: 18, boxShadow: "0 4px 20px rgba(236,79,145,0.05)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(2)}
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>Style your setup 🎀</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, letterSpacing: "-0.01em" }}>Style your setup 🎀</div>
             <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Pick production colors and optional printed details. We pre-picked a palette to match your theme — adjust up to 5 shades.</div>
           </div>
         </div>
@@ -2309,7 +2313,7 @@ function clearAllStandees() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           {numBadge(3)}
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#12162F", letterSpacing: "-0.3px" }}>Add extra magic ✨</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, letterSpacing: "-0.01em" }}>Add extra magic ✨</div>
             <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Add standees and cake plinths to complete the scene.</div>
           </div>
         </div>
@@ -2324,7 +2328,7 @@ function clearAllStandees() {
     <div className="rounded-[16px] border border-black/10 bg-white p-3">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
-          <div className="text-[12px] font-extrabold text-[#12162F]">1. Choose characters 💖</div>
+          <div className="text-[14px] font-bold text-[#2B2040]" style={{ fontFamily: SERIF }}>1. Choose characters 💖</div>
           <div className="text-[11px] text-black/50">Choose one or more characters, then pick the sizes you want.</div>
         </div>
         {selectedCutoutAssets.length > 0 && (
@@ -2388,7 +2392,7 @@ function clearAllStandees() {
     {selectedCutoutAssets.length > 0 && (
       <div className="rounded-[16px] border border-black/10 bg-white p-3">
         <div className="mb-3">
-          <div className="text-[12px] font-extrabold text-[#12162F]">2. Choose sizes 📏</div>
+          <div className="text-[14px] font-bold text-[#2B2040]" style={{ fontFamily: SERIF }}>2. Choose sizes 📏</div>
           <div className="text-[11px] text-black/50">
             Set how many of each height you want, per character.
           </div>
@@ -2458,7 +2462,7 @@ function clearAllStandees() {
           );
           return (
             <div className="mt-3 rounded-[12px] bg-accent/10 px-3 py-2">
-              <div className="mb-1 text-[11px] font-extrabold text-accent">3. Your standee summary ✨</div>
+              <div className="mb-1 text-[13px] font-bold text-accent" style={{ fontFamily: SERIF }}>3. Your standee summary ✨</div>
               {lines.map((line) => (
                 <div key={line} className="text-[12px] font-bold text-accent">🎈 {line}</div>
               ))}

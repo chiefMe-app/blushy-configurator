@@ -1188,9 +1188,9 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
       <div>
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <div>
-            <span className="text-[11px] font-semibold text-black/70">Final Design Render</span>
-            <p className="text-[10px] text-black/40">
-              Physical scene render. Customized text is printed into the backdrop — regenerate to see text changes.
+            <span className="text-[14px] font-bold text-[#2B2040]" style={{ fontFamily: "Georgia, 'Palatino Linotype', 'Times New Roman', serif" }}>Final Design Render</span>
+            <p className="text-[10.5px] text-black/45">
+              Your setup, photographed before it exists ✨ — regenerate to see text changes.
             </p>
           </div>
           <div className="flex items-center gap-2">
