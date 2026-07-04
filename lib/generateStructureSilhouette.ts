@@ -37,6 +37,9 @@ export interface SilhouetteResult {
   falImageSize:             FalImageSize;
   cutoutPlaceholderCount:   number;
   cutoutPlaceholderHeightsCm: number[];
+  /** Double Arch dense garland guide — balloons drawn per side (0 when not double arch). */
+  doubleArchGarlandBalloonsLeft:  number;
+  doubleArchGarlandBalloonsRight: number;
 }
 
 /** One size tier of standee cutout to draw in the guide. */
@@ -354,6 +357,11 @@ export function generateStructureSilhouette(
   // content: everything else — scaled and centered
   const content: string[] = [];
 
+  // Double Arch dense garland guide counters — set only in the double_arch
+  // mirrored garland branch, reported in the result for diagnostics.
+  let doubleArchGarlandBalloonsLeft  = 0;
+  let doubleArchGarlandBalloonsRight = 0;
+
   // v4: pure white background — no fills, no color signals, edge map only
   bgLines.push(`<rect width="${W}" height="${H}" fill="#FFFFFF"/>`);
 
@@ -534,30 +542,70 @@ export function generateStructureSilhouette(
           content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br}" ${balloonAttrs(i)}/>`);
         }
       } else {
-        // Double arch: mirrored organic garlands — each climbs from the floor
-        // at its arch's OUTER base up the outer edge to that arch's crown.
-        // No bridge across the pair; the center stays clean.
+        // Double arch: mirrored DENSE organic garlands. Each side is a thick
+        // layered band — floor/base cluster → staggered climb band up the
+        // outer edge → crown cluster over the top shoulder. Never a thin
+        // single-file row, never a bridge across the pair; center stays clean.
         const archPanels = layout.panels.filter(
           (p) => (backdropItems[p.idx]?.type ?? "") === "arch",
         );
         if (archPanels.length === 2) {
           const pair = [...archPanels].sort((a, b) => a.cx - b.cx);
-          const drawClimb = (p: typeof pair[0], side: "left" | "right", colorOffset: number) => {
-            const dir    = side === "left" ? -1 : 1;
-            const outerX = p.cx + dir * (p.pw / 2);
-            const n      = 12;
-            for (let i = 0; i < n; i++) {
-              const t  = i / (n - 1); // 0 = floor, 1 = crown
-              // Hug the outer edge low, curve inward toward the crown center up top
-              const bx = outerX + dir * Math.round(W * 0.02) * (1 - t * 0.4)
-                       + (p.cx - outerX) * Math.pow(t, 1.7);
-              const by = p.floorY - t * (p.floorY - p.apexY) + (((i * 7) % 18) - 9);
-              const r  = i < 2 ? 19 + ((i * 5) % 5) : t > 0.8 ? 16 + ((i * 3) % 6) : 11 + ((i * 5) % 8);
-              content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonAttrs(colorOffset + i)}/>`);
+          const drawDenseGarland = (p: typeof pair[0], side: "left" | "right", colorOffset: number): number => {
+            const dir   = side === "left" ? -1 : 1;
+            const edgeX = p.cx + dir * (p.pw / 2); // outer edge x
+            const Hp    = p.floorY - p.apexY;
+            let n = 0;
+            const put = (bx: number, by: number, br: number) => {
+              content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br}" ${balloonAttrs(colorOffset + n)}/>`);
+              n++;
+            };
+
+            // 1) Floor/base cluster — 10 balloons mounded at the outer base,
+            //    with large anchor balloons. Offsets are deterministic:
+            //    [outward-along-dir, up-from-floor, radius]
+            const BASE: [number, number, number][] = [
+              [  6, 12, 22], [ 30, 16, 18], [-14, 14, 16], [ 14, 34, 15],
+              [ -4, 38, 13], [ 40, 30, 12], [ 20, 52, 11], [ -8, 54, 10],
+              [ 46, 48,  9], [  8, 68,  8],
+            ];
+            for (const [ox, up, br] of BASE) put(edgeX + dir * ox, p.floorY - up, br);
+
+            // 2) Side climb — 16 balloons in a thick 4-lane staggered band
+            //    hugging the outer edge from above the base to the spring line.
+            const climbN = 16;
+            for (let i = 0; i < climbN; i++) {
+              const t = i / (climbN - 1);
+              const y = p.floorY - Hp * (0.20 + t * 0.55); // 20% → 75% panel height
+              const lane    = i % 4;                        // 4 lanes = band thickness
+              const laneOff = [-10, 4, 18, 30][lane];
+              const wobble  = ((i * 13) % 9) - 4;           // deterministic jitter
+              const x  = edgeX + dir * (laneOff + wobble);
+              const br = lane === 2 ? 15 : lane === 0 ? 8 : 11 + ((i * 5) % 4); // large/med/small/mini mix
+              put(x, y, br);
             }
+
+            // 3) Crown cluster — 12 balloons wrapping the outer shoulder over
+            //    the top of the arch arc, layered in/on/out of the arc line.
+            const rArc  = p.pw / 2;
+            const arcCx = p.cx;
+            const arcCy = p.apexY + rArc;
+            const angFrom = side === "left" ? 180 : 0;   // outer horizontal
+            const angTo   = side === "left" ? 255 : -75; // over the shoulder toward crown
+            const crownN = 12;
+            for (let i = 0; i < crownN; i++) {
+              const t   = i / (crownN - 1);
+              const ang = ((angFrom + (angTo - angFrom) * t) * Math.PI) / 180;
+              const rad = rArc + [-6, 8, 18][i % 3];      // 3 layered depth lanes
+              const x   = arcCx + rad * Math.cos(ang);
+              const y   = arcCy + rad * Math.sin(ang);
+              const br  = i % 5 === 0 ? 17 : i % 3 === 0 ? 13 : 9 + ((i * 7) % 4);
+              put(x, y, br);
+            }
+            return n;
           };
-          drawClimb(pair[0], "left", 0);
-          drawClimb(pair[1], "right", 6);
+          doubleArchGarlandBalloonsLeft  = drawDenseGarland(pair[0], "left", 0);
+          doubleArchGarlandBalloonsRight = drawDenseGarland(pair[1], "right", 7);
         } else {
         // Open-frame layouts: NO full-height garland column. Draw a compact
         // accent cluster hugging the frame's top-right shoulder only, so the
@@ -684,5 +732,7 @@ export function generateStructureSilhouette(
     falImageSize,
     cutoutPlaceholderCount:      cutoutPlaceholderHeightsCm.length,
     cutoutPlaceholderHeightsCm,
+    doubleArchGarlandBalloonsLeft,
+    doubleArchGarlandBalloonsRight,
   };
 }

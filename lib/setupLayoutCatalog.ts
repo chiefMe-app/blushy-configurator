@@ -140,12 +140,16 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
       "Do not overlap them front/back. Do not create a third panel. Do not place any panel behind another. " +
       "No perspective tunnel — a curated flat pair of arches.",
     garlandInstruction:
-      "Balloon design: mirrored organic garlands. The left garland starts at floor level at the left arch's outer base, " +
-      "climbs up the left outer edge, and ends at the crown of the left arch. " +
-      "The right garland mirrors it exactly: starting at floor level at the right arch's outer base, " +
-      "climbing the right outer edge, ending at the right arch's crown. " +
-      "No horizontal balloon bridge across both arches, no disconnected balloon columns, no floating balloon strings, no bouquets. " +
-      "Keep the center area between the arches clean.",
+      "Double Arch must have two thick, lush organic balloon garlands, one on each outer side of the arches. " +
+      "These are not thin rows. Each garland is a dense layered cluster with large, medium, small, and mini balloons, " +
+      "overlapping in 3D with natural depth. " +
+      "The left garland starts as a strong floor cluster at the left outer base, climbs the left outside edge as a " +
+      "thick organic band, and finishes in a full crown cluster over the top of the left arch. " +
+      "The right garland mirrors this exactly on the right outer edge, from a right floor cluster up to a right crown cluster. " +
+      "Keep the arch faces mostly visible and the center gap between the arches clean. " +
+      "No bead chain. No single-file balloon row. No sparse dotted vertical row. No pearl string. " +
+      "No floating balloon string. No balloon bouquet with strings. No detached balloon column. No thin garland line. " +
+      "No horizontal balloon bridge across both arches.",
     plinthInstruction:
       "If there is one cake plinth, place it at the horizontal center of the full double-arch setup, " +
       "in front of the gap between the two arches. Keep the center area clean for it.",

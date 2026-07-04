@@ -112,7 +112,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "custom-text-composite-v1";
+const RENDER_CACHE_VERSION = "double-arch-dense-garland-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -632,6 +632,9 @@ interface LayoutRefPngResult {
   error:    string | null;
   stage:    string | null;  // "svg-generation" | "sharp-import" | "rasterization"
   bytes:    number | null;
+  /** Double Arch dense garland guide balloon counts (0 when not double arch). */
+  doubleArchGarlandBalloonsLeft:  number;
+  doubleArchGarlandBalloonsRight: number;
 }
 
 /**
@@ -662,7 +665,7 @@ async function generateLayoutReferencePng(
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] SVG generation failed:", msg);
-    return { dataUri: null, error: msg, stage: "svg-generation", bytes: null };
+    return { dataUri: null, error: msg, stage: "svg-generation", bytes: null, doubleArchGarlandBalloonsLeft: 0, doubleArchGarlandBalloonsRight: 0 };
   }
 
   // Stage 2: sharp import — direct dynamic import so webpack/Vercel can trace and bundle it
@@ -673,7 +676,7 @@ async function generateLayoutReferencePng(
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] sharp import failed:", msg);
-    return { dataUri: null, error: msg, stage: "sharp-import", bytes: null };
+    return { dataUri: null, error: msg, stage: "sharp-import", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight };
   }
 
   // Stage 3: rasterize SVG → PNG
@@ -682,11 +685,15 @@ async function generateLayoutReferencePng(
     const pngBuffer = await sharpMod(svgBuffer).png().toBuffer() as Buffer;
     const dataUri   = `data:image/png;base64,${pngBuffer.toString("base64")}`;
     console.log("[generate-controlled-render] layout reference PNG ready, bytes:", pngBuffer.length);
-    return { dataUri, error: null, stage: null, bytes: pngBuffer.length };
+    return {
+      dataUri, error: null, stage: null, bytes: pngBuffer.length,
+      doubleArchGarlandBalloonsLeft:  silhouette.doubleArchGarlandBalloonsLeft,
+      doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight,
+    };
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] rasterization failed:", msg);
-    return { dataUri: null, error: msg, stage: "rasterization", bytes: null };
+    return { dataUri: null, error: msg, stage: "rasterization", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight };
   }
 }
 
@@ -1589,6 +1596,10 @@ forbiddenBalloonColorLabels: hasSempertexLock
     layoutReferencePngGenerated: true,
     layoutReferencePngBytes: pngResult.bytes,
     layoutReferencePrefix: pngResult.dataUri.slice(0, 40),
+    // Double Arch dense garland guide diagnostics
+    doubleArchDenseGarlandGuideApplied:      pngResult.doubleArchGarlandBalloonsLeft > 0,
+    doubleArchGarlandGuideBalloonCountLeft:  pngResult.doubleArchGarlandBalloonsLeft,
+    doubleArchGarlandGuideBalloonCountRight: pngResult.doubleArchGarlandBalloonsRight,
   };
 
   renderCache.set(cacheKey, { imageUrl: outputImageUrl, diagInfo, extra });
