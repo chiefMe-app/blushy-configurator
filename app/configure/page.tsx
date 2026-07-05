@@ -1,7 +1,9 @@
 ﻿"use client";
 
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Cormorant_Garamond } from "next/font/google";
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["500", "600", "700", "800"] });
+// Claude Design handoff: elegant serif display headings (self-hosted at build via next/font)
+const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["600", "700"] });
 
 import { useEffect, useMemo, useState } from "react";
 import { getThemeGraphicPresets } from "@/lib/themeCatalog";
@@ -74,8 +76,30 @@ import SetupPreview, { useSetupPreview } from "@/components/SetupPreview";
 // Controlled render limit: at most 2 backdrop pieces per setup.
 const MAX_BACKDROP_ITEMS = 2;
 
-// Elegant serif for display headings — system fonts only (no external font risk).
-const SERIF = "Georgia, 'Palatino Linotype', 'Times New Roman', serif";
+// Elegant serif for display headings — Cormorant Garamond per the Claude Design
+// handoff, with system serif fallbacks.
+const SERIF = `${cormorant.style.fontFamily}, Georgia, 'Times New Roman', serif`;
+
+// ── Claude Design handoff tokens ─────────────────────────────────────────
+const DC = {
+  pageBg:    "#FDF6F8",
+  cardBd:    "#F3D7E1",
+  innerBg:   "#FDF9FA",
+  rose:      "#D8548A",
+  roseDeep:  "#C24373",
+  plum:      "#46313B",
+  muted:     "#97808A",
+  faint:     "#B79AA6",
+  chipBg:    "#FBE9EF",
+  dashedBd:  "#E5BECF",
+  ctaGrad:   "linear-gradient(135deg,#E36A97,#D8548A)",
+  ctaShadow: "0 8px 22px rgba(216,84,138,.4)",
+  cardShadow: "0 8px 24px rgba(216,84,138,.08)",
+  selBorder: "2px solid #D8548A",
+  selShadow: "0 0 0 5px #FBE9EF, 0 10px 26px rgba(216,84,138,.16)",
+  amberBg:   "#FFF3D6",
+  amberFg:   "#A0761E",
+} as const;
 
 // Playful mini illustration for setup layout cards — pastel shapes, no text.
 function SetupMiniPreview({ shapes }: { shapes: string[] }) {
@@ -351,27 +375,19 @@ export default function ConfigurePage() {
   );
 
   return (
-    <main style={accentStyle} className={`min-h-screen ${jakarta.className}`}>
-      {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-black/5 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-2">
+    <main style={{ ...accentStyle, background: DC.pageBg }} className={`min-h-screen ${jakarta.className}`}>
+      {/* Header — Claude Design: white translucent bar, serif wordmark, step pills */}
+      <header className="sticky top-0 z-30 backdrop-blur" style={{ background: "rgba(255,255,255,.92)", borderBottom: `1px solid ${DC.cardBd}` }}>
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-2.5">
           {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            {/* Clean sparkle mark -no circle, just the star SVG */}
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}>
-              <path d="M14 3L16.5 10.5L24 13L16.5 15.5L14 23L11.5 15.5L4 13L11.5 10.5L14 3Z" fill="#EC4D8D"/>
-              <circle cx="5" cy="5" r="1.2" fill="#F7A7C8"/>
-              <circle cx="23" cy="22" r="1.2" fill="#F7A7C8"/>
-              <circle cx="23" cy="5" r="0.8" fill="#EC4D8D" opacity="0.4"/>
-            </svg>
-            <div style={{ lineHeight: 1 }}>
-              <div style={{ fontSize: 25, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, letterSpacing: "-0.01em", lineHeight: 1.05 }}>Blushy</div>
-              <div style={{ fontSize: 8, fontWeight: 800, color: "#EC4D8D", letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 2 }}>Birthday Builder</div>
-            </div>
+          <div className="flex items-baseline gap-2">
+            <span style={{ color: DC.rose, fontSize: 18, lineHeight: 1 }}>✦</span>
+            <span style={{ fontSize: 26, fontWeight: 700, color: DC.plum, fontFamily: SERIF, lineHeight: 1 }}>Blushy</span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: DC.rose, letterSpacing: "0.18em", textTransform: "uppercase" }}>Birthday Builder</span>
           </div>
 
           {/* Step navigation -centered pills */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1.5">
             {STEPS.map((s, i) => {
               const done = i < step;
               const active = i === step;
@@ -380,23 +396,16 @@ export default function ConfigurePage() {
                   key={i}
                   onClick={() => i <= step && setStep(i)}
                   style={{
-                    display: "flex", alignItems: "center", gap: 5, padding: "5px 12px",
-                    borderRadius: 999, fontSize: 12, fontWeight: active ? 700 : 500,
-                    background: active ? "#FF6B9D" : done ? "#FFF0F5" : "transparent",
-                    color: active ? "white" : done ? "#FF6B9D" : "rgba(0,0,0,0.4)",
-                    border: active ? "none" : done ? "1.5px solid #FFB8D1" : "1.5px solid rgba(0,0,0,0.1)",
+                    display: "flex", alignItems: "center", gap: 6, padding: "6px 13px",
+                    borderRadius: 999, fontSize: 12, fontWeight: 600,
+                    background: active ? DC.rose : done ? DC.chipBg : "#FFFFFF",
+                    color: active ? "#FFFFFF" : done ? DC.roseDeep : DC.faint,
+                    border: `1.5px solid ${active ? DC.rose : DC.cardBd}`,
                     cursor: i <= step ? "pointer" : "default",
                     transition: "all 0.15s",
                   }}
                 >
-                  <span style={{
-                    width: 18, height: 18, borderRadius: "50%", fontSize: 10, fontWeight: 800,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: active ? "rgba(255,255,255,0.25)" : done ? "#FF6B9D" : "rgba(0,0,0,0.08)",
-                    color: active ? "white" : done ? "white" : "rgba(0,0,0,0.4)",
-                  }}>
-                    {done ? "v" : i + 1}
-                  </span>
+                  <span style={{ fontSize: 10 }}>{done ? "✓" : i + 1}</span>
                   {s}
                 </button>
               );
@@ -405,8 +414,8 @@ export default function ConfigurePage() {
 
           {/* Total */}
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 10, color: "#A1A3B4", fontWeight: 800, letterSpacing: "0.10em" }}>ESTIMATED TOTAL</div>
-            <TotalBadge config={config} />
+            <div style={{ fontSize: 9, color: DC.faint, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>Your party so far</div>
+            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 22, color: DC.rose, lineHeight: 1.1 }}>AED {formatAED(priceBreakdown(config).total)}</div>
           </div>
         </div>
       </header>
@@ -417,7 +426,7 @@ export default function ConfigurePage() {
           <div className="lg:sticky" style={{ top: 72 }}>
             <div className="space-y-3">
               {/* Preview card -overflow hidden keeps confetti contained */}
-              <div style={{ position: "relative", overflow: "hidden", minHeight: 408, borderRadius: 22, border: "1.5px solid #F4DCE7", boxShadow: "0 14px 36px rgba(236,79,145,0.09)", background: "linear-gradient(150deg, #FFF7FB 0%, #FBF2FF 50%, #FFF9F5 100%)" }}>
+              <div style={{ position: "relative", overflow: "hidden", minHeight: 408, borderRadius: 24, border: `1px solid ${DC.cardBd}`, boxShadow: DC.cardShadow, background: "white" }}>
                 {/* Confetti - pointer-events none, confined inside overflow:hidden */}
                 <div aria-hidden style={{ pointerEvents: "none", position: "absolute", inset: 0 }}>
                   {/* Dots */}
@@ -535,9 +544,9 @@ export default function ConfigurePage() {
             )}
 
             {step === 1 && (
-              <StepShell title="Pick your theme">
-                <p className="-mt-2 mb-3 text-[13px] font-medium text-black/50">
-                  Choose a party world — we&apos;ll suggest matching balloons, graphics and standees. 🎈
+              <StepShell title="Pick your party world">
+                <p className="-mt-2 mb-3 text-[13.5px] font-medium" style={{ color: DC.muted, maxWidth: 520, lineHeight: 1.55 }}>
+                  Choose a party world — we&apos;ll suggest matching balloons, graphics and standees. You can change it anytime. 🎈
                 </p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {THEMES.map((t) => {
@@ -569,27 +578,34 @@ export default function ConfigurePage() {
                     const icon = THEME_ICONS[t.id] ?? <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 4l1.2 3.6L16 8l-3.8 1.4L11 13l-1.2-3.6L6 8l3.8-1.4z" fill="#F9A8D4"/></svg>;
                     return (
                       <button key={t.id} type="button" onClick={() => setTheme(t.id)} aria-pressed={sel}
-                        className={`relative flex w-full flex-col gap-2.5 rounded-2xl border p-4 text-left transition ${sel ? "border-2 border-accent bg-accent-soft/60 shadow-md ring-2 ring-accent/15" : "border-black/10 bg-white hover:border-accent/40 hover:shadow-sm"}`}>
-                        {sel && (
-                          <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-white shadow-md">
-                            <svg width="11" height="11" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                          </span>
-                        )}
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${sel ? "bg-white shadow-sm" : "bg-black/5"}`}>{icon}</span>
-                            <span className={`text-sm font-bold ${sel ? "text-accent" : "text-[#15182E]"}`}>{t.name}</span>
-                          </div>
-                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${sel ? "bg-accent text-white" : "bg-black/5 text-black/60"}`}>
-                            {t.priceModifier > 0 ? `+AED ${t.priceModifier}` : "Included"}
+                        className="relative flex w-full flex-col gap-2.5 p-3.5 text-left transition hover:-translate-y-0.5"
+                        style={{
+                          background: "white", borderRadius: 22,
+                          border: sel ? DC.selBorder : `1.5px solid ${DC.cardBd}`,
+                          boxShadow: sel ? DC.selShadow : "0 4px 14px rgba(216,84,138,.06)",
+                        }}>
+                        {/* Tinted art strip with icon + price pill */}
+                        <div className="relative flex h-[74px] items-center justify-center" style={{ borderRadius: 15, background: "#FBEFF4", border: "1px solid #F7E0E9" }}>
+                          <span className="scale-[1.6]">{icon}</span>
+                          <span className="absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                            style={{ background: t.priceModifier > 0 ? "rgba(255,255,255,.94)" : "#E5F3EB", color: t.priceModifier > 0 ? DC.roseDeep : "#3E9B6E" }}>
+                            {t.priceModifier > 0 ? `+ AED ${t.priceModifier}` : "Included"}
                           </span>
                         </div>
-                        {t.balloonColors.length > 0 && (
-                          <div className="flex -space-x-1.5">
-                            {t.balloonColors.slice(0, 5).map((c, i) => <span key={i} className="h-7 w-7 rounded-full border-2 border-white shadow" style={{ backgroundColor: c }}/>)}
-                          </div>
-                        )}
-                        <span className="text-xs leading-snug text-black/50">{sel ? `✨ ${t.desc}` : t.desc}</span>
+                        <div className="flex flex-col gap-0.5">
+                          <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 20, color: DC.plum, lineHeight: 1.1 }}>{t.name}</span>
+                          <span className="text-[11.5px] leading-snug" style={{ color: DC.muted }}>{t.desc}</span>
+                        </div>
+                        <div className="mt-auto flex items-center justify-between">
+                          {t.balloonColors.length > 0 && (
+                            <div className="flex gap-1">
+                              {t.balloonColors.slice(0, 5).map((c, i) => <span key={i} style={{ width: 15, height: 15, borderRadius: "50%", background: c, border: "1px solid rgba(70,49,59,.12)" }}/>)}
+                            </div>
+                          )}
+                          {sel && (
+                            <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold text-white" style={{ background: DC.rose }}>✓ In your party</span>
+                          )}
+                        </div>
                       </button>
                     );
                   })}
@@ -789,8 +805,8 @@ function StepShell({
 }) {
   return (
     <section>
-      <h2 className="text-[22px] font-bold text-[#2B2040]" style={{ fontFamily: SERIF, letterSpacing: "-0.01em" }}>{title}</h2>
-      {subtitle && <p className="mb-4 mt-1 text-[13px] font-medium text-black/50">{subtitle}</p>}
+      <h2 className="text-[30px] font-semibold text-[#46313B]" style={{ fontFamily: SERIF, lineHeight: 1.08 }}>{title}</h2>
+      {subtitle && <p className="mb-4 mt-1.5 text-[13.5px] font-medium text-[#97808A]">{subtitle}</p>}
       <div className={subtitle ? "" : "mt-4"}>{children}</div>
     </section>
   );
@@ -1090,21 +1106,20 @@ function clearAllStandees() {
     }`;
 
   const accent = theme.accent;
+  // Claude Design inner sub-card: #FDF9FA on white section cards
   const card: React.CSSProperties = {
-    background: "white",
-    borderRadius: 18,
-    padding: "16px 16px",
+    background: DC.innerBg,
+    borderRadius: 20,
+    padding: 18,
     marginBottom: 12,
-    boxShadow: "0 1px 4px rgba(43,32,64,0.04), 0 8px 24px rgba(236,79,145,0.06)",
-    border: "1px solid #F4DCE7",
+    border: `1.5px solid ${DC.cardBd}`,
   };
+  // Claude Design: soft rounded-square number chip (#FBE9EF / #C24373)
   const numBadge = (n: number) => (
     <div style={{
-      width: 30, height: 30, borderRadius: "50%",
-      background: "linear-gradient(140deg, #F26FA8 0%, #EC4F91 60%, #E23A80 100%)",
-      color: "white", fontSize: 13, fontWeight: 800, letterSpacing: "-0.3px",
+      width: 34, height: 34, borderRadius: 12, background: DC.chipBg,
+      color: DC.roseDeep, fontSize: 15, fontWeight: 700,
       display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-      boxShadow: "0 4px 12px rgba(236,79,145,0.35)",
     }}>{n}</div>
   );
   const secLabel = (text: string) => (
@@ -1363,39 +1378,47 @@ function clearAllStandees() {
 
   return (
     <div className={jakarta.className}>
-      {/* == BACKDROP SECTION ================================== */}
-      <div style={{ background: "linear-gradient(160deg, #FFFFFF 0%, #FFF9FC 100%)", border: "1.5px solid #F4DCE7", borderRadius: 20, padding: "16px 14px", marginBottom: 18, boxShadow: "0 4px 20px rgba(236,79,145,0.06)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-          {numBadge(1)}
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, letterSpacing: "-0.01em" }}>Pick your backdrop</div>
-            <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Choose the perfect backdrop style and size for your celebration.</div>
-          </div>
-        </div>
+      {/* == PAGE HEADING — Claude Design ====================== */}
+      <div style={{ margin: "4px 2px 20px" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", color: DC.rose, textTransform: "uppercase", marginBottom: 6 }}>Decor</div>
+        <h1 style={{ margin: 0, fontFamily: SERIF, fontWeight: 600, fontSize: 34, color: DC.plum, lineHeight: 1.05 }}>Build your dream backdrop</h1>
+        <p style={{ margin: "8px 0 0", fontSize: 14, color: DC.muted, maxWidth: 540, lineHeight: 1.55 }}>
+          Four little steps — we&apos;ve pre-styled everything to match your {theme.name} theme, so feel free to just glide through. 💖
+        </p>
+      </div>
 
-      {/* -"--"- UNIFIED BACKDROP SELECTOR -"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"--"- */}
-      <div style={{ background: "white", borderRadius: 16, padding: "16px", marginBottom: 0, border: "1px solid #F1D8E2" }}>
+      {/* == 1 · PICK YOUR SETUP =============================== */}
+      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 24, padding: 22, marginBottom: 18, boxShadow: DC.cardShadow }}>
+      <div>
         {/* Curated setup layouts — playful visual cards */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, marginBottom: 2 }}>Pick your setup ✨</div>
-          <div style={{ fontSize: 11, color: "#73778A", marginBottom: 10 }}>Start with a layout. We&apos;ll arrange the pieces for you.</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+            {numBadge(1)}
+            <div>
+              <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 23, color: DC.plum, lineHeight: 1.1 }}>Pick your setup ✨</div>
+              <div style={{ fontSize: 12.5, color: DC.muted }}>Start with a layout — we&apos;ll arrange the pieces for you.</div>
+            </div>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(128px, 1fr))", gap: 10 }}>
             {SETUP_LAYOUT_TEMPLATES.map((tpl) => {
               const active = activeSetupTemplateId === tpl.id;
               return (
                 <button key={tpl.id} type="button" onClick={() => applySetupTemplate(tpl.id)}
-                  style={{ position: "relative", padding: "14px 8px 10px", borderRadius: 16, cursor: "pointer", textAlign: "center", transition: "all 0.18s",
-                    border: active ? "2px solid #EC4D8D" : "1.5px solid #ECEAF1",
-                    background: active ? "linear-gradient(145deg, #FFF7FB 0%, #FFFFFF 100%)" : "#FAFAFA",
-                    boxShadow: active ? "0 8px 24px rgba(236,77,141,0.10)" : "none",
+                  style={{ position: "relative", padding: "14px 8px 10px", borderRadius: 18, cursor: "pointer", textAlign: "center", transition: "all 0.18s",
+                    border: active ? DC.selBorder : `1.5px solid ${DC.cardBd}`,
+                    background: DC.innerBg,
+                    boxShadow: active ? DC.selShadow : "none",
                     display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                  {tpl.badge && (
-                    <span style={{ position: "absolute", top: 7, right: 7, background: active ? "#EC4D8D" : "#FFE8F0", color: active ? "white" : "#EC4D8D",
-                      fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20 }}>{tpl.badge}</span>
+                  {tpl.badge && !active && (
+                    <span style={{ position: "absolute", top: 7, right: 7, background: DC.amberBg, color: DC.amberFg,
+                      fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>{tpl.badge}</span>
                   )}
                   <SetupMiniPreview shapes={tpl.miniPreview} />
-                  <div style={{ fontSize: 12, fontWeight: 700, color: active ? "#EC4D8D" : "#15182E", lineHeight: 1.25 }}>{tpl.name}</div>
-                  <div style={{ fontSize: 10, color: "#8A8DA0", lineHeight: 1.3 }}>{tpl.description}</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: DC.plum, lineHeight: 1.25 }}>{tpl.name}</div>
+                  <div style={{ fontSize: 10.5, color: "#A78E99", lineHeight: 1.35 }}>{tpl.description}</div>
+                  {active && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 9px", borderRadius: 999, background: DC.rose, color: "white", fontSize: 9.5, fontWeight: 700 }}>✓ Your setup</span>
+                  )}
                 </button>
               );
             })}
@@ -1453,11 +1476,22 @@ function clearAllStandees() {
         </div>
         )}
 
+      </div>
+      </div>{/* == end 1 · Pick your setup == */}
+
+      {/* == 2 · SIZE YOUR PIECES ============================== */}
+      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 24, padding: 22, marginBottom: 18, boxShadow: DC.cardShadow }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+          {numBadge(2)}
+          <div>
+            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 23, color: DC.plum, lineHeight: 1.1 }}>Size your pieces 📏</div>
+            <div style={{ fontSize: 12.5, color: DC.muted }}>Choose a size for each piece — add-ons unlock once it&apos;s sized.</div>
+          </div>
+        </div>
+
         {/* Arch size selector -shown when arch is selected */}
         {d.backdropItems.some(i => i.type === "arch") && (
-          <div style={{ marginTop: 16, padding: "14px 16px", background: "#FFF7FB", borderRadius: 12, border: "1px solid #F1D8E2" }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, marginBottom: 2 }}>Size your pieces 📏</div>
-            <div style={{ fontSize: 11, color: "#73778A", marginBottom: 10 }}>Choose the size for each backdrop before rendering — add-ons unlock once it&apos;s sized.</div>
+          <div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {d.backdropItems.map((item, itemIdx) => {
                 if (item.type !== "arch") return null;
@@ -2074,15 +2108,14 @@ function clearAllStandees() {
         </div>
         </>
       )}
-      </div>{/* -"--"- end BACKDROP section -"--"- */}
 
-      {/* == BALLOONS SECTION ================================== */}
-      <div style={{ background: "linear-gradient(160deg, #FFF7FB 0%, #FDF1F7 100%)", border: "1.5px solid #F4DCE7", borderRadius: 20, padding: "14px 12px", marginBottom: 18, boxShadow: "0 4px 20px rgba(236,79,145,0.05)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-          {numBadge(2)}
+      {/* == 3 · STYLE YOUR SETUP ============================== */}
+      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 24, padding: 22, marginBottom: 18, boxShadow: DC.cardShadow }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+          {numBadge(3)}
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, letterSpacing: "-0.01em" }}>Style your setup 🎀</div>
-            <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Pick production colors and optional printed details. We pre-picked a palette to match your theme — adjust up to 5 shades.</div>
+            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 23, color: DC.plum, lineHeight: 1.1 }}>Style your setup 🎀</div>
+            <div style={{ fontSize: 12.5, color: DC.muted }}>We pre-picked a {theme.name} palette — swap any shade you like, up to 5.</div>
           </div>
         </div>
 
@@ -2308,13 +2341,13 @@ function clearAllStandees() {
 
       </div>{/* -"--"- end BALLOONS section -"--"- */}
 
-      {/* == EXTRAS SECTION ==================================== */}
-      <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 18, padding: "12px 10px", marginBottom: 18 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-          {numBadge(3)}
+      {/* == 4 · ADD EXTRA MAGIC =============================== */}
+      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 24, padding: 22, marginBottom: 18, boxShadow: DC.cardShadow }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+          {numBadge(4)}
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, letterSpacing: "-0.01em" }}>Add extra magic ✨</div>
-            <div style={{ fontSize: 13, color: "#727386", marginTop: 3, fontWeight: 500 }}>Add standees and cake plinths to complete the scene.</div>
+            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 23, color: DC.plum, lineHeight: 1.1 }}>Add extra magic ✨</div>
+            <div style={{ fontSize: 12.5, color: DC.muted }}>Characters and cake plinths make the photos unforgettable.</div>
           </div>
         </div>
 
@@ -2328,8 +2361,8 @@ function clearAllStandees() {
     <div className="rounded-[16px] border border-black/10 bg-white p-3">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
-          <div className="text-[14px] font-bold text-[#2B2040]" style={{ fontFamily: SERIF }}>1. Choose characters 💖</div>
-          <div className="text-[11px] text-black/50">Choose one or more characters, then pick the sizes you want.</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>1 · Choose characters 💖</div>
+          <div className="text-[11px]" style={{ color: DC.muted }}>Choose one or more characters, then pick the sizes you want.</div>
         </div>
         {selectedCutoutAssets.length > 0 && (
           <button
@@ -2392,8 +2425,8 @@ function clearAllStandees() {
     {selectedCutoutAssets.length > 0 && (
       <div className="rounded-[16px] border border-black/10 bg-white p-3">
         <div className="mb-3">
-          <div className="text-[14px] font-bold text-[#2B2040]" style={{ fontFamily: SERIF }}>2. Choose sizes 📏</div>
-          <div className="text-[11px] text-black/50">
+          <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>2 · Choose sizes 📏</div>
+          <div className="text-[11px]" style={{ color: DC.muted }}>
             Set how many of each height you want, per character.
           </div>
         </div>
@@ -2453,20 +2486,26 @@ function clearAllStandees() {
           ))}
         </div>
 
-        {/* 3 — Live human-readable summary */}
+        {/* 3 — Live human-readable summary — Claude Design "standee squad" */}
         {cutoutTotalCount(normalizedCut) > 0 && (() => {
           const lines = selectedCutoutAssets.flatMap((asset) =>
             CUTOUT_STANDEE_OPTIONS
               .filter((o) => (asset.quantities[o.size] ?? 0) > 0)
-              .map((o) => `${asset.quantities[o.size]} x ${o.heightCm} cm ${asset.label}`),
+              .map((o) => ({
+                text:  `${asset.quantities[o.size]} × ${o.heightCm} cm ${asset.label}`,
+                price: `AED ${o.unitPrice * (asset.quantities[o.size] ?? 0)}`,
+              })),
           );
           return (
-            <div className="mt-3 rounded-[12px] bg-accent/10 px-3 py-2">
-              <div className="mb-1 text-[13px] font-bold text-accent" style={{ fontFamily: SERIF }}>3. Your standee summary ✨</div>
+            <div className="mt-3" style={{ background: "white", border: `1.5px dashed ${DC.dashedBd}`, borderRadius: 16, padding: "13px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>3 · Your standee squad ✨</div>
               {lines.map((line) => (
-                <div key={line} className="text-[12px] font-bold text-accent">🎈 {line}</div>
+                <div key={line.text} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <span style={{ fontSize: 12.5, color: DC.plum }}><span style={{ color: DC.rose }}>🎀</span> {line.text}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: DC.plum }}>{line.price}</span>
+                </div>
               ))}
-              <div className="mt-1 text-[11px] font-semibold text-accent/80">Total +AED {cutoutPrice(normalizedCut)}</div>
+              <div style={{ fontSize: 10.5, color: DC.faint }}>They&apos;ll appear in your render after you regenerate · Total +AED {cutoutPrice(normalizedCut)}</div>
             </div>
           );
         })()}
@@ -2488,11 +2527,12 @@ function clearAllStandees() {
             <circle cx="17" cy="3.5" r="1.3" fill="#EC4D8D" />
           </svg>
           <div>
-            {secLabel("Cake plinths")}
-            <div style={{ fontSize: 11, color: "#8A8DA0", marginTop: -4 }}>Slim display columns that hold your cake or desserts beside the backdrop</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: DC.plum }}>Cake plinths 🍰</div>
+            <div style={{ fontSize: 11.5, color: DC.muted }}>Elegant columns that put your cake center-stage beside the backdrop.</div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: DC.faint, textTransform: "uppercase", marginRight: 2 }}>How many?</span>
           {[0, 1, 2, 3].map((n) => {
             const active = d.plinths === n;
             return (
@@ -2500,11 +2540,16 @@ function clearAllStandees() {
                 key={n}
                 type="button"
                 onClick={() => setPlinthCount(n)}
-                style={active
-                  ? { background: accent, color: "white", border: `2px solid ${accent}`, borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500, transition: "all 0.15s" }
-                  : { background: "white", color: "rgba(0,0,0,0.6)", border: "1.5px solid rgba(0,0,0,0.15)", borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500, transition: "all 0.15s" }}
+                style={{
+                  width: 36, height: 36, borderRadius: "50%", fontSize: 13, fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.15s",
+                  background: active ? DC.rose : "white",
+                  border: `1.5px solid ${active ? DC.rose : DC.cardBd}`,
+                  color: active ? "white" : DC.faint,
+                  boxShadow: active ? "0 6px 14px rgba(216,84,138,.3)" : "none",
+                }}
               >
-                {n}
+                {n === 0 ? "0" : n}
               </button>
             );
           })}
@@ -2512,26 +2557,27 @@ function clearAllStandees() {
         {d.plinths > 0 && (
           <div className="mt-3 space-y-2">
             {Array.from({ length: d.plinths }).map((_, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="w-16 shrink-0 text-[11px] text-black/50">Plinth {i + 1}</span>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: "white", border: `1.5px solid ${DC.cardBd}`, borderRadius: 14, padding: "9px 13px" }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: DC.plum, minWidth: 56 }}>Plinth {i + 1}</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {PLINTH_SIZES.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setPlinthSize(i, s.id)}
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
-                        d.plinthSizes[i] === s.id
-                          ? "bg-accent text-white"
-                          : "bg-white text-black/60 border border-black/15"
-                      }`}
-                    >
-                      {PLINTH_SHORT[s.id] ?? s.label}
-                      <span className={d.plinthSizes[i] === s.id ? "text-white/80" : "text-black/40"}>
-                        {" "}+{s.price}
-                      </span>
-                    </button>
-                  ))}
+                  {PLINTH_SIZES.map((s) => {
+                    const sel = d.plinthSizes[i] === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setPlinthSize(i, s.id)}
+                        style={{
+                          padding: "5px 13px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, cursor: "pointer", transition: "all 0.15s",
+                          background: sel ? DC.chipBg : "white",
+                          border: `1.5px solid ${sel ? DC.dashedBd : DC.cardBd}`,
+                          color: sel ? DC.roseDeep : DC.muted,
+                        }}
+                      >
+                        {PLINTH_SHORT[s.id] ?? s.label} <span style={{ opacity: 0.7 }}>+{s.price}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}

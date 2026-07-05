@@ -24,29 +24,36 @@ export default function StickyBottomCTA({
 }) {
   const { total } = priceBreakdown(config);
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-black/5 bg-warmwhite/95 px-4 py-3 backdrop-blur lg:left-auto lg:right-0 lg:w-1/2">
-      <div className="mx-auto flex max-w-2xl items-center gap-3">
+    <div
+      className="fixed inset-x-0 bottom-0 z-30 px-4 py-3 backdrop-blur lg:left-auto lg:right-0 lg:w-1/2"
+      style={{ background: "rgba(255,255,255,.94)", borderTop: "1px solid #F3D7E1", boxShadow: "0 -8px 24px rgba(216,84,138,.07)" }}
+    >
+      <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
         {showBack && (
           <button
             type="button"
             onClick={onBack}
-            className="rounded-full border border-black/15 bg-white px-4 py-3 text-sm font-medium text-black/60 transition hover:border-black/30"
+            className="rounded-full px-5 py-2.5 text-[13px] font-semibold transition"
+            style={{ border: "1.5px solid #F3D7E1", background: "white", color: "#97808A" }}
           >
-            Back
+            ‹ Back
           </button>
         )}
-        <div className="hidden flex-col leading-tight sm:flex">
-          <span className="text-[10px] uppercase tracking-wide text-black/40">{stepName}</span>
-          <span className="text-sm font-semibold text-accent">AED {formatAED(total)}</span>
+        <div className="ml-auto flex items-center gap-3.5">
+          <div className="hidden flex-col text-right leading-tight sm:flex">
+            <span className="text-[10px] font-bold uppercase" style={{ color: "#B79AA6", letterSpacing: "0.1em" }}>{stepName}</span>
+            <span className="text-[13px] font-bold" style={{ color: "#46313B" }}>AED {formatAED(total)} so far</span>
+          </div>
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={disabled || busy}
+            className="rounded-full px-7 py-3 text-sm font-bold text-white transition active:scale-[0.99] disabled:opacity-50"
+            style={{ background: "linear-gradient(135deg,#E36A97,#D8548A)", boxShadow: "0 8px 22px rgba(216,84,138,.4)" }}
+          >
+            {busy ? "Please wait…" : `${ctaLabel} ✨`}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={disabled || busy}
-          className="flex-1 rounded-full bg-accent py-3 text-sm font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-50"
-        >
-          {busy ? "Please wait…" : `${ctaLabel} · AED ${formatAED(total)}`}
-        </button>
       </div>
     </div>
   );

@@ -1188,9 +1188,9 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
       <div>
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <div>
-            <span className="text-[14px] font-bold text-[#2B2040]" style={{ fontFamily: "Georgia, 'Palatino Linotype', 'Times New Roman', serif" }}>Final Design Render</span>
-            <p className="text-[10.5px] text-black/45">
-              Your setup, photographed before it exists ✨ — regenerate to see text changes.
+            <span className="text-[14px] font-bold" style={{ color: "#46313B" }}>Your party preview</span>
+            <p className="text-[10.5px]" style={{ color: "#97808A" }}>
+              Text and graphics update after regeneration.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -1213,9 +1213,8 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
               type="button"
               onClick={generateFinalRender}
               disabled={finalIsLoading || config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}
-              className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium text-white transition hover:opacity-90 disabled:opacity-60 ${
-                isStale ? "bg-amber-500" : "bg-accent"
-              }`}
+              className="flex items-center gap-1 rounded-full px-3.5 py-2 text-[11.5px] font-bold text-white transition hover:opacity-90 disabled:opacity-60"
+              style={{ background: "linear-gradient(135deg,#E36A97,#D8548A)", boxShadow: "0 6px 16px rgba(216,84,138,.35)" }}
             >
               {finalIsLoading ? (
                 <>
@@ -1224,13 +1223,13 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
                 </>
               ) : isStale ? (
                 <>
-                  <span className="text-sm leading-none">↻</span>
-                  <span>Design changed — regenerate</span>
+                  <span className="text-sm leading-none">✨</span>
+                  <span>Regenerate preview</span>
                 </>
               ) : (
                 <>
-                  <span className="text-sm leading-none">✦</span>
-                  <span>{finalUrl ? "Regenerate" : "Generate Final Render"}</span>
+                  <span className="text-sm leading-none">✨</span>
+                  <span>{finalUrl ? "Regenerate" : "Generate render"}</span>
                 </>
               )}
             </button>
@@ -1246,14 +1245,26 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
         )}
 
         <div
-          className="relative w-full overflow-hidden rounded-2xl shadow-inner"
+          className="relative w-full overflow-hidden shadow-inner"
           style={{
+            borderRadius: 18,
             aspectRatio: (finalUrl || finalIsLoading) ? cssAspectRatio : undefined,
             minHeight: (finalUrl || finalIsLoading) ? undefined : 360,
             background: (finalUrl || finalIsLoading) ? "rgba(0,0,0,0.05)" : "transparent",
             transition: "aspect-ratio 0.35s ease",
           }}
         >
+          {/* Render freshness pill — Claude Design */}
+          {finalUrl && !finalIsLoading && (
+            <div
+              className="absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-bold"
+              style={isStale
+                ? { background: "#FFF3D6", color: "#A0761E" }
+                : { background: "rgba(255,255,255,.92)", color: "#3E9B6E" }}
+            >
+              <span>●</span> {isStale ? "Design changed" : "Render up to date"}
+            </div>
+          )}
           {finalUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
