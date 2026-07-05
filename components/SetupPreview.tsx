@@ -1184,73 +1184,20 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
 
   return (
     <div className="space-y-4">
-      {/* ─── 1. Final Design Render (top) ───────────────────────────────── */}
+      {/* ─── 1. Final Design Render (top) — Claude Design: image first, footer row below ── */}
       <div>
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <div>
-            <span className="text-[14px] font-bold" style={{ color: "#46313B" }}>Your party preview</span>
-            <p className="text-[10.5px]" style={{ color: "#97808A" }}>
-              Text and graphics update after regeneration.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Show measurements toggle — labels from scene state, never from AI */}
-            {finalUrl && (
-              <button
-                type="button"
-                onClick={() => setShowMeasurements((v) => !v)}
-                className={`rounded-full border px-2.5 py-1 text-[10px] font-medium transition ${
-                  showMeasurements
-                    ? "border-accent bg-accent-soft/60 text-accent"
-                    : "border-black/15 bg-white text-black/50"
-                }`}
-              >
-                {showMeasurements ? "Hide measurements" : "Show measurements"}
-              </button>
-            )}
-          {showControls && (
-            <button
-              type="button"
-              onClick={generateFinalRender}
-              disabled={finalIsLoading || config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}
-              className="flex items-center gap-1 rounded-full px-3.5 py-2 text-[11.5px] font-bold text-white transition hover:opacity-90 disabled:opacity-60"
-              style={{ background: "linear-gradient(135deg,#E36A97,#D8548A)", boxShadow: "0 6px 16px rgba(216,84,138,.35)" }}
-            >
-              {finalIsLoading ? (
-                <>
-                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"/>
-                  <span>Generating…</span>
-                </>
-              ) : isStale ? (
-                <>
-                  <span className="text-sm leading-none">✨</span>
-                  <span>Regenerate preview</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-sm leading-none">✨</span>
-                  <span>{finalUrl ? "Regenerate" : "Generate render"}</span>
-                </>
-              )}
-            </button>
-          )}
-          </div>
-        </div>
-
-        {/* Validation: block rendering until every arch piece has a size */}
-        {showControls && config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId) && (
-          <div className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700">
-            ⚠️ Choose a size for every backdrop piece before generating the render.
-          </div>
-        )}
-
         <div
-          className="relative w-full overflow-hidden shadow-inner"
+          className="relative w-full overflow-hidden"
           style={{
-            borderRadius: 18,
+            borderRadius: "24px 24px 0 0",
+            border: "1px solid #F3D7E1",
+            borderBottom: "none",
+            boxShadow: "0 8px 24px rgba(216,84,138,.08)",
             aspectRatio: (finalUrl || finalIsLoading) ? cssAspectRatio : undefined,
-            minHeight: (finalUrl || finalIsLoading) ? undefined : 360,
-            background: (finalUrl || finalIsLoading) ? "rgba(0,0,0,0.05)" : "transparent",
+            minHeight: (finalUrl || finalIsLoading) ? undefined : 300,
+            background: (finalUrl || finalIsLoading)
+              ? "repeating-linear-gradient(45deg,#FBE9EF 0 12px,#FDF3F6 12px 24px)"
+              : "white",
             transition: "aspect-ratio 0.35s ease",
           }}
         >
@@ -1280,46 +1227,24 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
               <span className="text-[11px] text-black/40">Generating final render…</span>
             </div>
           ) : (
-            /* Empty state — premium pastel placeholder, no AI call, no state change.
-               No aspect-ratio/gray-bg constraint here so icon+copy center cleanly. */
+            /* Empty state — Claude Design: diagonal candy stripes, white sparkle tile, mono caption */
             <div style={{
               position: "relative", overflow: "hidden",
-              minHeight: 360, height: "100%",
+              minHeight: 300, height: "100%",
               display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center",
-              background: "transparent",
+              alignItems: "center", justifyContent: "center", gap: 8,
+              background: "repeating-linear-gradient(45deg,#FBE9EF 0 12px,#FDF3F6 12px 24px)",
               padding: "32px 28px", textAlign: "center",
             }}>
-              {/* Self-contained confetti — clipped by parent overflow:hidden */}
-              <div aria-hidden style={{ pointerEvents: "none", position: "absolute", inset: 0 }}>
-                <div style={{ position: "absolute", top: 22, left: 24, width: 7, height: 7, borderRadius: "50%", background: "#FFB8D1", opacity: 0.55 }} />
-                <div style={{ position: "absolute", top: 40, right: 28, width: 6, height: 6, borderRadius: 2, background: "#C4B5FD", opacity: 0.45, transform: "rotate(20deg)" }} />
-                <div style={{ position: "absolute", bottom: 36, left: 32, width: 5, height: 5, borderRadius: "50%", background: "#86EFAC", opacity: 0.4 }} />
-                <div style={{ position: "absolute", bottom: 26, right: 30, width: 9, height: 4, borderRadius: 2, background: "#FBBF84", opacity: 0.4, transform: "rotate(-15deg)" }} />
-                <svg style={{ position: "absolute", top: 70, right: 50, opacity: 0.3 }} width="9" height="9" viewBox="0 0 10 10"><path d="M5 1l.9 2.8L8.8 5 5.9 6.2 5 9l-.9-2.8L1.2 5l2.9-1.2z" fill="#EC4D8D"/></svg>
-              </div>
-              {/* Sparkle icon in soft pink rounded square */}
               <div style={{
-                width: 68, height: 68, borderRadius: 17,
-                background: "linear-gradient(145deg, #FFE4F0 0%, #FFD6E8 100%)",
-                border: "1.5px solid #F7A7C8",
+                width: 52, height: 52, borderRadius: 18, background: "white",
+                boxShadow: "0 6px 18px rgba(216,84,138,.18)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                marginBottom: 18,
-                boxShadow: "0 8px 24px rgba(236,77,141,0.14)",
-              }}>
-                <svg width="32" height="32" viewBox="0 0 34 34" fill="none">
-                  <path d="M17 4L20.1 12.9L29 16L20.1 19.1L17 28L13.9 19.1L5 16L13.9 12.9L17 4Z" fill="#EC4D8D" stroke="#EC4D8D" strokeWidth="0.8" strokeLinejoin="round"/>
-                  <circle cx="6" cy="6" r="1.5" fill="#EC4D8D" opacity="0.35"/>
-                  <circle cx="28" cy="27" r="1.5" fill="#EC4D8D" opacity="0.35"/>
-                  <circle cx="28" cy="6" r="1" fill="#F7A7C8" opacity="0.5"/>
-                  <circle cx="6" cy="27" r="1" fill="#F7A7C8" opacity="0.5"/>
-                </svg>
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#15182E", marginBottom: 8, letterSpacing: "-0.3px", lineHeight: 1.25 }}>
-                Start your design to see preview
-              </div>
-              <div style={{ fontSize: 12.5, color: "#73778A", lineHeight: 1.6, maxWidth: 210, fontWeight: 500 }}>
-                Your live preview will appear here after you choose your event and decor.
+                color: "#D8548A", fontSize: 20,
+              }}>✦</div>
+              <span style={{ fontFamily: "ui-monospace, Menlo, monospace", fontSize: 10.5, color: "#B78A9B" }}>your AI event render</span>
+              <div style={{ fontSize: 11.5, color: "#97808A", lineHeight: 1.5, maxWidth: 220 }}>
+                Your live preview appears here after you choose your event and decor.
               </div>
             </div>
           )}
@@ -1334,14 +1259,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             <MeasurementOverlay config={config}/>
           )}
 
-          {/* Stale overlay — shown when decor changed after last render */}
-          {isStale && finalUrl && !finalIsLoading && (
-            <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center gap-1.5 bg-amber-500/80 py-1.5 backdrop-blur-sm">
-              <span className="text-[11px] font-medium text-white">
-                Design changed — render is out of date
-              </span>
-            </div>
-          )}
+          {/* Stale state is signalled by the amber "Design changed" pill above */}
 
           {finalStatus === "error" && (
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/45 px-3 py-1.5 backdrop-blur">
@@ -1352,6 +1270,54 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
                   Retry
                 </button>
               )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer row — Claude Design: title left, Regenerate pill right */}
+        <div style={{ background: "white", border: "1px solid #F3D7E1", borderTop: "none", borderRadius: "0 0 24px 24px", padding: "13px 15px 15px", boxShadow: "0 8px 24px rgba(216,84,138,.08)" }}>
+          <div className="flex items-center justify-between gap-2.5">
+            <div style={{ fontWeight: 700, fontSize: 14, color: "#46313B" }}>Your party preview</div>
+            <div className="flex items-center gap-2">
+              {finalUrl && (
+                <button
+                  type="button"
+                  onClick={() => setShowMeasurements((v) => !v)}
+                  className="rounded-full px-2.5 py-1 text-[10px] font-semibold transition"
+                  style={showMeasurements
+                    ? { border: "1.5px solid #E5BECF", background: "#FBE9EF", color: "#C24373" }
+                    : { border: "1.5px solid #F3D7E1", background: "white", color: "#B79AA6" }}
+                >
+                  {showMeasurements ? "Hide sizes" : "Show sizes"}
+                </button>
+              )}
+              {showControls && (
+                <button
+                  type="button"
+                  onClick={generateFinalRender}
+                  disabled={finalIsLoading || config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}
+                  className="flex shrink-0 items-center gap-1 rounded-full px-3.5 py-2 text-[12px] font-bold text-white transition hover:opacity-90 disabled:opacity-60"
+                  style={{ background: "linear-gradient(135deg,#E36A97,#D8548A)", boxShadow: "0 6px 16px rgba(216,84,138,.35)" }}
+                >
+                  {finalIsLoading ? (
+                    <>
+                      <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"/>
+                      <span>Generating…</span>
+                    </>
+                  ) : (
+                    <>✨ <span>{isStale ? "Regenerate preview" : finalUrl ? "Regenerate" : "Generate render"}</span></>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="mt-1.5 text-[11.5px]" style={{ color: "#97808A", lineHeight: 1.5 }}>
+            Text and graphics update after regeneration.
+          </div>
+          {/* Validation: block rendering until every arch piece has a size */}
+          {showControls && config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId) && (
+            <div className="mt-2 rounded-xl px-3 py-2 text-[11px] font-semibold" style={{ background: "#FFF3D6", color: "#A0761E" }}>
+              Choose a size for every backdrop piece before generating the render.
             </div>
           )}
         </div>

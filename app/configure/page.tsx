@@ -101,49 +101,68 @@ const DC = {
   amberFg:   "#A0761E",
 } as const;
 
-// Playful mini illustration for setup layout cards — pastel shapes, no text.
+// Playful mini illustration for setup layout cards — Claude Design proportions:
+// bigger pastel shapes with gradient fills on a 120×64 stage, no text.
 function SetupMiniPreview({ shapes }: { shapes: string[] }) {
   const els: JSX.Element[] = [];
   const drawShapes = shapes.filter(s => s !== "balloons");
   const hasBalloons = shapes.includes("balloons");
   const n = drawShapes.length;
+  const BASE = 60; // floor line
   drawShapes.forEach((shape, i) => {
-    // Lay out 1 shape centered, 2 shapes side by side
-    const cx = n === 1 ? 44 : i === 0 ? 28 : 62;
+    const cx = n === 1 ? 60 : i === 0 ? 40 : 84;
     const key = `${shape}-${i}`;
     if (shape === "arch" || shape === "arch_large" || shape === "arch_small") {
-      const w = shape === "arch_large" ? 30 : shape === "arch_small" ? 20 : 26;
-      const top = shape === "arch_large" ? 8 : shape === "arch_small" ? 20 : 12;
+      const w = shape === "arch_large" ? 38 : shape === "arch_small" ? 26 : 34;
+      const top = shape === "arch_large" ? 8 : shape === "arch_small" ? 26 : 12;
       const r = w / 2;
-      els.push(<path key={key} d={`M ${cx - r},44 L ${cx - r},${top + r} A ${r},${r} 0 0 1 ${cx + r},${top + r} L ${cx + r},44 Z`} fill="#F5BAD3" />);
+      els.push(
+        <path key={key} d={`M ${cx - r},${BASE} L ${cx - r},${top + r} A ${r},${r} 0 0 1 ${cx + r},${top + r} L ${cx + r},${BASE} Z`}
+          fill={`url(#gradArch)`} />
+      );
     } else if (shape === "round") {
-      els.push(<circle key={key} cx={cx} cy={28} r={16} fill="#BFD9F2" />);
+      els.push(<circle key={key} cx={cx} cy={36} r={24} fill="url(#gradRound)" />);
     } else if (shape === "shimmer") {
       els.push(
         <g key={key}>
-          <rect x={cx - 14} y={14} width={28} height={30} rx={2} fill="#DCCDF0" />
-          {[21, 28, 35].map(y => <line key={`h${y}`} x1={cx - 14} y1={y} x2={cx + 14} y2={y} stroke="white" strokeWidth={1} opacity={0.7} />)}
-          {[-7, 0, 7].map(dx => <line key={`v${dx}`} x1={cx + dx} y1={14} x2={cx + dx} y2={44} stroke="white" strokeWidth={1} opacity={0.7} />)}
+          <rect x={cx - 19} y={16} width={38} height={44} rx={4} fill="url(#gradShim)" />
+          {[25, 34, 43, 52].map(y => <line key={`h${y}`} x1={cx - 19} y1={y} x2={cx + 19} y2={y} stroke="white" strokeWidth={1.2} opacity={0.65} />)}
+          {[-9.5, 0, 9.5].map(dx => <line key={`v${dx}`} x1={cx + dx} y1={16} x2={cx + dx} y2={60} stroke="white" strokeWidth={1.2} opacity={0.65} />)}
         </g>
       );
     } else if (shape === "open_frame") {
-      const r = 12;
+      const r = 15;
       els.push(
-        <path key={key} d={`M ${cx - r},44 L ${cx - r},${18 + r} A ${r},${r} 0 0 1 ${cx + r},${18 + r} L ${cx + r},44`}
-          fill="none" stroke="#EC4D8D" strokeWidth={3.5} strokeLinecap="round" opacity={0.75} />
+        <path key={key} d={`M ${cx - r},${BASE} L ${cx - r},${24 + r} A ${r},${r} 0 0 1 ${cx + r},${24 + r} L ${cx + r},${BASE}`}
+          fill="none" stroke="#E8A9C4" strokeWidth={5} strokeLinecap="round" />
       );
     }
   });
   if (hasBalloons) {
     els.push(
       <g key="balloons">
-        <circle cx={58} cy={10} r={4.5} fill="#F7A7C8" />
-        <circle cx={66} cy={15} r={3.5} fill="#C9E4F5" />
-        <circle cx={72} cy={9} r={3} fill="#F9DFA9" />
+        <circle cx={80} cy={12} r={6} fill="#F7A7C8" />
+        <circle cx={91} cy={19} r={4.5} fill="#C9E4F5" />
+        <circle cx={98} cy={11} r={3.5} fill="#F9DFA9" />
       </g>
     );
   }
-  return <svg width={88} height={48} viewBox="0 0 88 48" aria-hidden="true">{els}</svg>;
+  return (
+    <svg width={120} height={64} viewBox="0 0 120 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="gradArch" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#F3A9C6" /><stop offset="100%" stopColor="#E27BA4" />
+        </linearGradient>
+        <linearGradient id="gradRound" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#BFD9F2" /><stop offset="100%" stopColor="#93BCE3" />
+        </linearGradient>
+        <linearGradient id="gradShim" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#E3D5F5" /><stop offset="100%" stopColor="#CBB3E8" />
+        </linearGradient>
+      </defs>
+      {els}
+    </svg>
+  );
 }
 import StepNavigation from "@/components/StepNavigation";
 import OptionCard from "@/components/OptionCard";
@@ -378,7 +397,7 @@ export default function ConfigurePage() {
     <main style={{ ...accentStyle, background: DC.pageBg }} className={`min-h-screen ${jakarta.className}`}>
       {/* Header — Claude Design: white translucent bar, serif wordmark, step pills */}
       <header className="sticky top-0 z-30 backdrop-blur" style={{ background: "rgba(255,255,255,.92)", borderBottom: `1px solid ${DC.cardBd}` }}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-2.5">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-7 py-3.5">
           {/* Logo */}
           <div className="flex items-baseline gap-2">
             <span style={{ color: DC.rose, fontSize: 18, lineHeight: 1 }}>✦</span>
@@ -420,32 +439,13 @@ export default function ConfigurePage() {
         </div>
       </header>
 
-      <div style={{ maxWidth: 1360, margin: "0 auto", padding: "20px 28px 0", display: "flex", flexWrap: "wrap", gap: 26, alignItems: "flex-start" }}>
-        {/* Left: preview rail — 356px on wide screens, full-width when wrapped */}
-        <div style={{ flex: "1 1 340px", maxWidth: 480, minWidth: 300 }}>
-          <div className="lg:sticky" style={{ top: 72 }}>
-            <div className="space-y-3">
-              {/* Preview card -overflow hidden keeps confetti contained */}
-              <div style={{ position: "relative", overflow: "hidden", minHeight: 408, borderRadius: 24, border: `1px solid ${DC.cardBd}`, boxShadow: DC.cardShadow, background: "white" }}>
-                {/* Confetti - pointer-events none, confined inside overflow:hidden */}
-                <div aria-hidden style={{ pointerEvents: "none", position: "absolute", inset: 0 }}>
-                  {/* Dots */}
-                  <div style={{ position: "absolute", top: 16, left: 26, width: 8, height: 8, borderRadius: "50%", background: "#FFB8D1", opacity: 0.6 }} />
-                  <div style={{ position: "absolute", top: 52, right: 22, width: 6, height: 6, borderRadius: "50%", background: "#C4B5FD", opacity: 0.5 }} />
-                  <div style={{ position: "absolute", bottom: 32, left: 40, width: 5, height: 5, borderRadius: "50%", background: "#FCA5A5", opacity: 0.45 }} />
-                  <div style={{ position: "absolute", top: 190, right: 16, width: 7, height: 7, borderRadius: "50%", background: "#86EFAC", opacity: 0.4 }} />
-                  <div style={{ position: "absolute", bottom: 95, right: 30, width: 5, height: 5, borderRadius: "50%", background: "#FBBF24", opacity: 0.35 }} />
-                  {/* Rectangles / confetti */}
-                  <div style={{ position: "absolute", top: 92, left: 16, width: 12, height: 4, borderRadius: 2, background: "#93C5FD", opacity: 0.42, transform: "rotate(-28deg)" }} />
-                  <div style={{ position: "absolute", top: 135, right: 28, width: 5, height: 14, borderRadius: 2, background: "#FBBF84", opacity: 0.38, transform: "rotate(22deg)" }} />
-                  <div style={{ position: "absolute", bottom: 68, right: 20, width: 11, height: 4, borderRadius: 2, background: "#A5B4FC", opacity: 0.4, transform: "rotate(-15deg)" }} />
-                  <div style={{ position: "absolute", bottom: 108, left: 20, width: 8, height: 3, borderRadius: 2, background: "#F9A8D4", opacity: 0.45, transform: "rotate(12deg)" }} />
-                  <div style={{ position: "absolute", top: 248, left: 14, width: 6, height: 10, borderRadius: 2, background: "#C4B5FD", opacity: 0.35, transform: "rotate(-10deg)" }} />
-                  {/* Small sparkle SVGs */}
-                  <svg style={{ position: "absolute", top: 38, left: 52, opacity: 0.35 }} width="10" height="10" viewBox="0 0 10 10"><path d="M5 1l.9 2.8L8.8 5 5.9 6.2 5 9l-.9-2.8L1.2 5l2.9-1.2z" fill="#EC4D8D"/></svg>
-                  <svg style={{ position: "absolute", bottom: 48, left: 18, opacity: 0.3 }} width="10" height="10" viewBox="0 0 10 10"><path d="M5 1l.9 2.8L8.8 5 5.9 6.2 5 9l-.9-2.8L1.2 5l2.9-1.2z" fill="#A78BFA"/></svg>
-                  <svg style={{ position: "absolute", top: 310, right: 18, opacity: 0.3 }} width="8" height="8" viewBox="0 0 10 10"><path d="M5 1l.9 2.8L8.8 5 5.9 6.2 5 9l-.9-2.8L1.2 5l2.9-1.2z" fill="#F472B6"/></svg>
-                </div>
+      <div style={{ maxWidth: 1360, margin: "0 auto", padding: "24px 28px 0", display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
+        {/* Left: preview rail — ~330px per Claude Design, full-width when wrapped */}
+        <div style={{ flex: "0 1 340px", minWidth: 300 }}>
+          <div className="lg:sticky" style={{ top: 76 }}>
+            <div className="space-y-3.5">
+              {/* Preview card — SetupPreview draws its own image + footer card */}
+              <div>
                 <SetupPreview
                   config={config}
                   status={preview.status}
@@ -584,14 +584,20 @@ export default function ConfigurePage() {
                           border: sel ? DC.selBorder : `1.5px solid ${DC.cardBd}`,
                           boxShadow: sel ? DC.selShadow : "0 4px 14px rgba(216,84,138,.06)",
                         }}>
-                        {/* Tinted art strip with icon + price pill */}
-                        <div className="relative flex h-[74px] items-center justify-center" style={{ borderRadius: 15, background: "#FBEFF4", border: "1px solid #F7E0E9" }}>
-                          <span className="scale-[1.6]">{icon}</span>
-                          <span className="absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold"
-                            style={{ background: t.priceModifier > 0 ? "rgba(255,255,255,.94)" : "#E5F3EB", color: t.priceModifier > 0 ? DC.roseDeep : "#3E9B6E" }}>
-                            {t.priceModifier > 0 ? `+ AED ${t.priceModifier}` : "Included"}
-                          </span>
-                        </div>
+                        {/* Tinted candy-stripe art panel with icon + price pill — Claude Design */}
+                        {(() => {
+                          const tintHex = (t.balloonColors?.[0] ?? "#F6C6DE");
+                          const tint = `${tintHex}33`; // ~20% alpha stripe
+                          return (
+                            <div className="relative flex h-[88px] items-center justify-center" style={{ borderRadius: 15, background: `repeating-linear-gradient(45deg, ${tint} 0 10px, #FFFFFF 10px 20px)`, border: `1px solid ${tintHex}55` }}>
+                              <span className="scale-[1.9] drop-shadow-sm">{icon}</span>
+                              <span className="absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm"
+                                style={{ background: t.priceModifier > 0 ? "rgba(255,255,255,.94)" : "#E5F3EB", color: t.priceModifier > 0 ? DC.roseDeep : "#3E9B6E" }}>
+                                {t.priceModifier > 0 ? `+ AED ${t.priceModifier}` : "Included"}
+                              </span>
+                            </div>
+                          );
+                        })()}
                         <div className="flex flex-col gap-0.5">
                           <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 20, color: DC.plum, lineHeight: 1.1 }}>{t.name}</span>
                           <span className="text-[11.5px] leading-snug" style={{ color: DC.muted }}>{t.desc}</span>
@@ -1248,8 +1254,9 @@ function clearAllStandees() {
   // Collapsible customize row -shows summary + button, expands on demand
   function BackdropCustomizeRow({ item, itemIdx }: { item: BackdropItem; itemIdx: number }) {
     const sizeLabelMap = Object.fromEntries([...ARCH_SIZES, ...RECT_SIZES].map(s => [s.id, s.label]));
-    const sizeStr = item.sizeId ? (sizeLabelMap[item.sizeId] ?? `${item.widthCm} x ${item.heightCm} cm`) : `${item.widthCm} x ${item.heightCm} cm`;
-    const summaryLabel = `Backdrop ${itemIdx + 1} - ${TYPE_LABEL[item.type] ?? item.type} - ${sizeStr}`;
+    const sizeStr = item.sizeId ? (sizeLabelMap[item.sizeId] ?? `${item.widthCm} × ${item.heightCm} cm`) : `${item.widthCm} × ${item.heightCm} cm`;
+    // Friendly, non-technical summary — "Arch Backdrop · Medium / Standard"
+    const summaryLabel = `${TYPE_LABEL[item.type] ?? item.type} · ${sizeStr}`;
     const isOpen = openCustomizeIds.has(item.id);
     return (
       <div style={{ marginTop: 12, borderRadius: 12, border: "1.5px solid #F1D8E2", background: "white", overflow: "hidden" }}>
@@ -1498,34 +1505,44 @@ function clearAllStandees() {
                 const archNumber = d.backdropItems.filter((i, k) => i.type === "arch" && k <= itemIdx).length;
                 const archCount  = d.backdropItems.filter(i => i.type === "arch").length;
                 const sized = !!item.sizeId;
+                const friendlyName = archCount > 1 ? (archNumber === 1 ? "Main arch" : "Second arch") : "Arch backdrop";
+                const sizedLabel = ARCH_SIZES.find(s => s.id === item.sizeId)?.label;
                 return (
-                  <div key={item.id} style={{ background: "white", borderRadius: 12, padding: "12px 14px",
-                    border: sized ? "1.5px solid #F1D8E2" : "2px dashed #F0A8C8" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#15182E" }}>
-                        {archCount > 1 ? `Arch ${archNumber}` : "Arch Backdrop"}
-                        {archCount > 1 && archNumber === 1 && <span style={{ fontSize: 10, color: "#8A8DA0", fontWeight: 600 }}> · main</span>}
-                        {archCount > 1 && archNumber === 2 && <span style={{ fontSize: 10, color: "#8A8DA0", fontWeight: 600 }}> · secondary</span>}
+                  <div key={item.id} style={{ background: DC.innerBg, borderRadius: 18, padding: 16,
+                    border: `1.5px solid ${sized ? DC.cardBd : DC.dashedBd}` }}>
+                    <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+                      {/* Piece thumb — Claude Design */}
+                      <svg width="56" height="64" viewBox="0 0 56 64" style={{ flex: "none" }} aria-hidden="true">
+                        <defs><linearGradient id={`pieceArch-${item.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#F3A9C6"/><stop offset="100%" stopColor="#E27BA4"/></linearGradient></defs>
+                        <path d="M 10,60 L 10,26 A 18,18 0 0 1 46,26 L 46,60 Z" fill={`url(#pieceArch-${item.id})`} />
+                      </svg>
+                      <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: DC.plum }}>{friendlyName}</div>
+                          <div style={{ fontSize: 11.5, color: DC.muted }}>
+                            {sized ? `${sizedLabel} — lovely choice ✨` : "How big should it be?"}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {ARCH_SIZES.map((size) => {
+                            const isSel = item.sizeId === size.id;
+                            return (
+                              <button key={size.id} type="button"
+                                onClick={() => patchItem(itemIdx, { sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm })}
+                                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, padding: "6px 13px", borderRadius: 13, cursor: "pointer", transition: "all 0.15s",
+                                  background: isSel ? DC.chipBg : "white",
+                                  border: `1.5px solid ${isSel ? DC.dashedBd : DC.cardBd}` }}>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: isSel ? DC.roseDeep : DC.plum }}>{size.label.replace(" / Standard", "")}{size.id === "medium" ? " ★" : ""}</span>
+                                <span style={{ fontSize: 9.5, color: isSel ? DC.roseDeep : DC.faint }}>{size.widthCm} × {size.heightCm} cm</span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                      {!sized && <span style={{ fontSize: 10, fontWeight: 700, color: "#EC4D8D", background: "#FFF0F6", borderRadius: 20, padding: "2px 8px" }}>Pick a size</span>}
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {ARCH_SIZES.map((size) => {
-                        const isSel = item.sizeId === size.id;
-                        return (
-                          <button key={size.id} type="button"
-                            onClick={() => patchItem(itemIdx, { sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm })}
-                            style={{ padding: "8px 14px", borderRadius: 20, fontSize: 12, fontWeight: isSel ? 700 : 500, cursor: "pointer", transition: "all 0.15s",
-                              border: isSel ? "2px solid #EC4D8D" : "1.5px solid #ECEAF1",
-                              background: isSel ? "#FFF0F6" : "white", color: isSel ? "#EC4D8D" : "#555" }}>
-                            {size.label} · {size.widthCm}x{size.heightCm}cm
-                          </button>
-                        );
-                      })}
                     </div>
                     {sized
                       ? BackdropCustomizeRow({ item, itemIdx })
-                      : <div style={{ marginTop: 8, fontSize: 11, color: "#B7A3AF", fontStyle: "italic" }}>Choose a size to unlock text &amp; graphic add-ons ✨</div>}
+                      : <div style={{ marginTop: 8, fontSize: 11, color: DC.faint, fontStyle: "italic" }}>Choose a size to unlock text &amp; graphic add-ons ✨</div>}
                   </div>
                 );
               })}
@@ -2122,15 +2139,15 @@ function clearAllStandees() {
       {/* SEMPERTEX PICKER -default: chips only; expanded: full browser */}
       <div style={card}>
         {/* Garland note */}
-        <div style={{ marginBottom: 14, padding: "8px 14px", background: "#F0F9FF", borderRadius: 10, border: "1px solid #BAE6FD", fontSize: 12, color: "#0369A1", fontWeight: 600 }}>
+        <div style={{ marginBottom: 14, padding: "8px 14px", background: DC.chipBg, borderRadius: 12, fontSize: 11.5, color: DC.roseDeep, fontWeight: 600 }}>
           * Garland style is included in your package -this step only selects production colors.
         </div>
 
         {/* Selected chips row -always visible */}
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#73778A", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              {sempertexManual ? `Selected colors (${effectiveSempertexSelection.length}/5)` : `Theme palette selected (${effectiveSempertexSelection.length}/5)`}
+            <div style={{ fontSize: 11, fontWeight: 700, color: DC.faint, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              Balloon colors · Sempertex ({effectiveSempertexSelection.length}/5)
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               <button type="button" onClick={resetToThemePalette}

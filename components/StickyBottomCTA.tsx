@@ -25,10 +25,10 @@ export default function StickyBottomCTA({
   const { total } = priceBreakdown(config);
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-30 px-4 py-3 backdrop-blur lg:left-auto lg:right-0 lg:w-1/2"
+      className="fixed inset-x-0 bottom-0 z-30 px-7 py-3 backdrop-blur"
       style={{ background: "rgba(255,255,255,.94)", borderTop: "1px solid #F3D7E1", boxShadow: "0 -8px 24px rgba(216,84,138,.07)" }}
     >
-      <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
         {showBack && (
           <button
             type="button"
