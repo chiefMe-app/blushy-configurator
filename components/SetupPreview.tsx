@@ -1073,8 +1073,15 @@ export function useSetupPreview(config: BuilderConfig) {
     e: extras, n: nonce,
   });
 
+  // LEGACY PREVIEW DISABLED — this hook used to auto-fetch /api/generate
+  // (fal-ai/flux-2-pro text-to-image) on every structural change, which caused
+  // accidental Pro usage. The live render is now driven entirely by
+  // useFinalRender → /api/generate-controlled-render (fal-ai/flux-2/flash/edit),
+  // and imageUrl/status/isIncremental from this hook are no longer consumed for
+  // display. We keep the hook's shape so callers keep compiling, but it performs
+  // NO network calls: it only tracks the structural snapshot locally.
   useEffect(() => {
-    const id = ++reqId.current;
+    reqId.current++;
     const curr: Snap = {
       theme: config.theme, pkg: config.package, nonce,
       shapes: JSON.stringify(structuralItems),
@@ -1089,38 +1096,10 @@ export function useSetupPreview(config: BuilderConfig) {
     const changeType: ChangeType =
       base && baseImageUrlRef.current ? detectChangeType(curr, base) : "full";
     const incremental = changeType !== "full" && changeType !== "theme";
-    if (!incremental) baseImageUrlRef.current = null;
     setIsIncremental(incremental);
-    setStatus("loading");
-    const capturedBaseUrl = baseImageUrlRef.current;
-
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch("/api/generate", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            theme: config.theme, package: config.package, eventType: config.eventType,
-            backdropItems: d.backdropItems, backdropColor: d.backdropColor,
-            balloonStyle: d.balloonStyle, balloonColors: d.balloonColors,
-            backdropText: d.backdropText, backdropPrint: d.backdropPrint,
-            cutouts: d.cutouts,
-            plinthSizes: PLINTH_MODE === "ai" ? d.plinthSizes : undefined,
-            extras, baseImageUrl: incremental ? capturedBaseUrl : undefined, changeType,
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (id !== reqId.current) return;
-        if (!res.ok || !data.imageUrl) { setStatus("error"); return; }
-        baseSnap.current        = curr;
-        baseImageUrlRef.current = data.imageUrl;
-        setImageUrl(data.imageUrl);
-        setStatus("done");
-      } catch {
-        if (id === reqId.current) setStatus("error");
-      }
-    }, 1500);
-
-    return () => clearTimeout(timer);
+    baseSnap.current = curr;
+    // No fetch — status stays idle; useFinalRender owns the real render.
+    setStatus("idle");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig]);
 
@@ -1162,8 +1141,9 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
     appliedChangeLabel,
   } = useFinalRender(config);
 
-  // Dynamic aspect ratio from real panel dimensions — updates when backdrop changes
-  const { cssAspectRatio } = calculateRenderAspectRatio(config.decor.backdropItems);
+  // Hero presentation: the preview card uses a fixed 4:3 stage regardless of the
+  // render's own aspect ratio — renders are letterboxed with object-contain on
+  // the candy-stripe background, so the image reads as the page's hero visual.
 
   // "Show measurements" toggle — overlays exact panel/plinth dimensions from scene state
   const [showMeasurements, setShowMeasurements] = useState(false);
@@ -1193,8 +1173,9 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             border: "1px solid #F3D7E1",
             borderBottom: "none",
             boxShadow: "0 8px 24px rgba(216,84,138,.08)",
-            aspectRatio: (finalUrl || finalIsLoading) ? cssAspectRatio : undefined,
-            minHeight: (finalUrl || finalIsLoading) ? undefined : 300,
+            aspectRatio: (finalUrl || finalIsLoading) ? "4 / 3" : undefined,
+            minHeight: (finalUrl || finalIsLoading) ? 300 : 300,
+            maxHeight: 460,
             background: (finalUrl || finalIsLoading)
               ? "repeating-linear-gradient(45deg,#FBE9EF 0 12px,#FDF3F6 12px 24px)"
               : "white",

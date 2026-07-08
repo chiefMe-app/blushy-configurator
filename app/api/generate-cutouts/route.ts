@@ -175,6 +175,18 @@ async function generateCutoutAsset(
 }
 
 export async function POST(req: NextRequest) {
+  // ── Production guard ──────────────────────────────────────────────────────
+  // This endpoint calls fal-ai/flux-2-pro (expensive) to generate cutout sets.
+  // Standees are now served as deterministic PNG overlays, so this generation
+  // path is disabled unless explicitly enabled, to prevent accidental Pro usage.
+  if (process.env.ENABLE_CUTOUT_GENERATION !== "true") {
+    console.warn(
+      "[api/generate-cutouts] BLOCKED: fal-ai/flux-2-pro cutout generation is disabled. " +
+      "Set ENABLE_CUTOUT_GENERATION=true to re-enable."
+    );
+    return NextResponse.json({ error: "cutout_generation_disabled" }, { status: 410 });
+  }
+
   const falKey = process.env.FAL_KEY;
   if (!falKey) {
     return NextResponse.json({ error: "Missing FAL_KEY." }, { status: 500 });

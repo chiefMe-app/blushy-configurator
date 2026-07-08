@@ -34,6 +34,18 @@ type RequestBody = PromptInput & {
 };
 
 export async function POST(req: NextRequest) {
+  // ── Production guard ──────────────────────────────────────────────────────
+  // This legacy text-to-image endpoint calls fal-ai/flux-2-pro (expensive) and
+  // is superseded by /api/generate-controlled-render (fal-ai/flux-2/flash/edit).
+  // Disabled unless explicitly re-enabled, to prevent accidental Pro usage.
+  if (process.env.ENABLE_LEGACY_GENERATE_ENDPOINT !== "true") {
+    console.warn(
+      "[api/generate] BLOCKED: legacy fal-ai/flux-2-pro endpoint is disabled. " +
+      "Set ENABLE_LEGACY_GENERATE_ENDPOINT=true to re-enable. Use /api/generate-controlled-render instead."
+    );
+    return NextResponse.json({ error: "legacy_generate_disabled" }, { status: 410 });
+  }
+
   const falKey = process.env.FAL_KEY;
   if (!falKey) {
     return NextResponse.json(

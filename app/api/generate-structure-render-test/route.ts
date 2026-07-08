@@ -85,6 +85,18 @@ interface TestRequestBody {
 }
 
 export async function POST(req: NextRequest) {
+  // ── Production guard ──────────────────────────────────────────────────────
+  // Test-only route: several modes call fal-ai/flux-2-pro/edit and other paid
+  // models. Disabled unless explicitly enabled, so it is never publicly callable
+  // in production and cannot cause accidental Pro usage.
+  if (process.env.ENABLE_STRUCTURE_RENDER_TEST !== "true") {
+    console.warn(
+      "[api/generate-structure-render-test] BLOCKED: test route is disabled. " +
+      "Set ENABLE_STRUCTURE_RENDER_TEST=true to re-enable."
+    );
+    return NextResponse.json({ error: "structure_render_test_disabled" }, { status: 410 });
+  }
+
   if (!checkAccess(req)) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
