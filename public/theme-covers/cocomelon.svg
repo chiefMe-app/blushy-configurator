@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#EFF8EC"/><stop offset="100%" stop-color="#E0F0DA"/></linearGradient></defs>
+<rect width="400" height="220" fill="url(#bg)"/>
+<g transform="translate(200,130) rotate(-8)">
+<path d="M-80 0 A80 80 0 0 1 80 0z" fill="#67B168"/>
+<path d="M-70 0 A70 70 0 0 1 70 0z" fill="#F5FBF3"/>
+<path d="M-62 0 A62 62 0 0 1 62 0z" fill="#F2789F"/>
+<circle cx="-30" cy="-20" r="4" fill="#3C4A3E"/><circle cx="0" cy="-34" r="4" fill="#3C4A3E"/><circle cx="30" cy="-20" r="4" fill="#3C4A3E"/>
+</g>
+<circle cx="80" cy="60" r="16" fill="#F2C864" opacity="0.85"/>
+<circle cx="320" cy="55" r="10" fill="#6FA8DC" opacity="0.8"/>
+<circle cx="350" cy="150" r="6" fill="#F2789F" opacity="0.7"/><circle cx="55" cy="150" r="5" fill="#67B168" opacity="0.7"/>
+<path d="M300 170 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3z" fill="#F2C864"/>
+</svg>

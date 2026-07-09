@@ -112,7 +112,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "double-arch-dense-garland-v1";
+const RENDER_CACHE_VERSION = "arch-open-frame-thick-organic-garland-v2";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -635,6 +635,13 @@ interface LayoutRefPngResult {
   /** Double Arch dense garland guide balloon counts (0 when not double arch). */
   doubleArchGarlandBalloonsLeft:  number;
   doubleArchGarlandBalloonsRight: number;
+  /** Arch + Open Frame dense garland guide balloon counts (0 when not that layout). */
+  archOpenFrameMainGarlandBalloons: number;
+  archOpenFrameMiniClusterBalloons: number;
+  archOpenFrameMainGarlandMinRadiusPx: number;
+  archOpenFrameMainGarlandMaxRadiusPx: number;
+  archOpenFrameMainGarlandLaneCount:   number;
+  archOpenFrameMainGarlandStyle:       string;
 }
 
 /**
@@ -665,7 +672,7 @@ async function generateLayoutReferencePng(
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] SVG generation failed:", msg);
-    return { dataUri: null, error: msg, stage: "svg-generation", bytes: null, doubleArchGarlandBalloonsLeft: 0, doubleArchGarlandBalloonsRight: 0 };
+    return { dataUri: null, error: msg, stage: "svg-generation", bytes: null, doubleArchGarlandBalloonsLeft: 0, doubleArchGarlandBalloonsRight: 0, archOpenFrameMainGarlandBalloons: 0, archOpenFrameMiniClusterBalloons: 0, archOpenFrameMainGarlandMinRadiusPx: 0, archOpenFrameMainGarlandMaxRadiusPx: 0, archOpenFrameMainGarlandLaneCount: 0, archOpenFrameMainGarlandStyle: "none" };
   }
 
   // Stage 2: sharp import — direct dynamic import so webpack/Vercel can trace and bundle it
@@ -676,7 +683,7 @@ async function generateLayoutReferencePng(
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] sharp import failed:", msg);
-    return { dataUri: null, error: msg, stage: "sharp-import", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight };
+    return { dataUri: null, error: msg, stage: "sharp-import", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle };
   }
 
   // Stage 3: rasterize SVG → PNG
@@ -689,11 +696,17 @@ async function generateLayoutReferencePng(
       dataUri, error: null, stage: null, bytes: pngBuffer.length,
       doubleArchGarlandBalloonsLeft:  silhouette.doubleArchGarlandBalloonsLeft,
       doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight,
+      archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons,
+      archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons,
+      archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx,
+      archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx,
+      archOpenFrameMainGarlandLaneCount:   silhouette.archOpenFrameMainGarlandLaneCount,
+      archOpenFrameMainGarlandStyle:       silhouette.archOpenFrameMainGarlandStyle,
     };
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] rasterization failed:", msg);
-    return { dataUri: null, error: msg, stage: "rasterization", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight };
+    return { dataUri: null, error: msg, stage: "rasterization", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle };
   }
 }
 
@@ -1600,6 +1613,14 @@ forbiddenBalloonColorLabels: hasSempertexLock
     doubleArchDenseGarlandGuideApplied:      pngResult.doubleArchGarlandBalloonsLeft > 0,
     doubleArchGarlandGuideBalloonCountLeft:  pngResult.doubleArchGarlandBalloonsLeft,
     doubleArchGarlandGuideBalloonCountRight: pngResult.doubleArchGarlandBalloonsRight,
+    // Arch + Open Frame dense garland guide diagnostics
+    archOpenFrameDenseGarlandGuideApplied:      pngResult.archOpenFrameMainGarlandBalloons > 0,
+    archOpenFrameMainGarlandGuideBalloonCount:  pngResult.archOpenFrameMainGarlandBalloons,
+    archOpenFrameMiniClusterGuideBalloonCount:  pngResult.archOpenFrameMiniClusterBalloons,
+    archOpenFrameMainGarlandMinRadiusPx:        pngResult.archOpenFrameMainGarlandMinRadiusPx,
+    archOpenFrameMainGarlandMaxRadiusPx:        pngResult.archOpenFrameMainGarlandMaxRadiusPx,
+    archOpenFrameMainGarlandLaneCount:          pngResult.archOpenFrameMainGarlandLaneCount,
+    archOpenFrameMainGarlandStyle:              pngResult.archOpenFrameMainGarlandStyle,
   };
 
   renderCache.set(cacheKey, { imageUrl: outputImageUrl, diagInfo, extra });

@@ -39,6 +39,8 @@ export interface ThemeCatalogEntry {
   icon: string;
   price: number;
   description: string;
+  /** Local SVG cover art for the theme card (public/theme-covers/). */
+  coverImageUrl?: string;
   swatchHexes: string[];
   sempertexPaletteIds: string[];
   renderDescription: string;
@@ -55,6 +57,7 @@ export function getPresetAssetId(themeId: string, presetIndex: number): string {
 export const THEME_CATALOG: ThemeCatalogEntry[] = [
   {
     id: "frozen",
+    coverImageUrl: "/theme-covers/frozen.svg",
     name: "Frozen",
     icon: "❄️",
     price: 50,
@@ -76,6 +79,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "unicorn",
+    coverImageUrl: "/theme-covers/unicorn.svg",
     name: "Unicorn",
     icon: "🦄",
     price: 50,
@@ -91,6 +95,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "dinosaur",
+    coverImageUrl: "/theme-covers/dinosaur.svg",
     name: "Dinosaur",
     icon: "🦕",
     price: 30,
@@ -106,6 +111,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "safari",
+    coverImageUrl: "/theme-covers/safari.svg",
     name: "Safari",
     icon: "🦒",
     price: 30,
@@ -121,6 +127,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "princess",
+    coverImageUrl: "/theme-covers/princess.svg",
     name: "Princess",
     icon: "👸",
     price: 50,
@@ -136,6 +143,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "superhero",
+    coverImageUrl: "/theme-covers/superhero.svg",
     name: "Superhero",
     icon: "🦸",
     price: 40,
@@ -151,6 +159,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "barbie",
+    coverImageUrl: "/theme-covers/barbie.svg",
     name: "Barbie",
     icon: "💗",
     price: 60,
@@ -166,6 +175,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "bluey",
+    coverImageUrl: "/theme-covers/bluey.svg",
     name: "Bluey",
     icon: "🐾",
     price: 40,
@@ -181,6 +191,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "pokemon",
+    coverImageUrl: "/theme-covers/pokemon.svg",
     name: "Pokémon",
     icon: "⚡",
     price: 50,
@@ -196,6 +207,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "stitch",
+    coverImageUrl: "/theme-covers/stitch.svg",
     name: "Stitch",
     icon: "🌺",
     price: 40,
@@ -211,6 +223,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "mermaid",
+    coverImageUrl: "/theme-covers/mermaid.svg",
     name: "Mermaid",
     icon: "🧜",
     price: 50,
@@ -226,6 +239,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "space",
+    coverImageUrl: "/theme-covers/space.svg",
     name: "Space",
     icon: "🚀",
     price: 60,
@@ -241,6 +255,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "football",
+    coverImageUrl: "/theme-covers/football.svg",
     name: "Football",
     icon: "⚽",
     price: 30,
@@ -256,6 +271,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "lego",
+    coverImageUrl: "/theme-covers/lego.svg",
     name: "Lego",
     icon: "🧱",
     price: 40,
@@ -271,6 +287,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "kpop",
+    coverImageUrl: "/theme-covers/kpop.svg",
     name: "K-Pop",
     icon: "🎤",
     price: 70,
@@ -286,6 +303,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "encanto",
+    coverImageUrl: "/theme-covers/encanto.svg",
     name: "Encanto",
     icon: "🌺",
     price: 50,
@@ -301,6 +319,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "cocomelon",
+    coverImageUrl: "/theme-covers/cocomelon.svg",
     name: "Cocomelon",
     icon: "🍉",
     price: 30,
@@ -316,6 +335,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "teddy_bear",
+    coverImageUrl: "/theme-covers/teddy_bear.svg",
     name: "Teddy Bear",
     icon: "🧸",
     price: 30,
@@ -331,6 +351,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "pineapple_tropical",
+    coverImageUrl: "/theme-covers/pineapple_tropical.svg",
     name: "Tropical 🍍",
     icon: "🍍",
     price: 40,
@@ -346,6 +367,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "blush_garden",
+    coverImageUrl: "/theme-covers/blush_garden.svg",
     name: "Blush Garden",
     icon: "🌸",
     price: 0,
@@ -361,6 +383,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
   {
     id: "luxury_neutral",
+    coverImageUrl: "/theme-covers/luxury_neutral.svg",
     name: "Luxury Neutral",
     icon: "✨",
     price: 80,

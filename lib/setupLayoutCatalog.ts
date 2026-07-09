@@ -171,7 +171,15 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     maxBackdrops: 2,
     miniPreview: ["arch", "open_frame"],
     panelInstruction: "Two pieces: a solid filled arch backdrop panel plus a freestanding hollow open arch frame beside it — the open arch frame is a pastel painted foam/wood arch outline with a completely empty center opening, no solid backdrop surface inside it, and NO extra backdrop panel behind it — the room wall is visible straight through the frame opening.",
-    garlandInstruction: "Balloon design: the solid arch is the main piece and the open frame is a secondary accent. One restrained accent cluster sits only on the open frame's top-right shoulder — a compact group of large balloons tapering to a few small ones, hugging the frame band. Most of the frame outline stays bare and the hollow opening stays completely clear — balloons never cross, fill, or block the opening. Do not wrap the whole frame; do not encircle it; do not create a separate disconnected balloon column; the solid arch carries no garland of its own.",
+    garlandInstruction:
+      "IMPORTANT: The solid arch must have a thick, dense, premium organic balloon garland, not a thin dotted border. " +
+      "The balloons must be large, overlapping, realistic 3D latex balloons, with visible large statement balloons, medium balloons, and small filler balloons. " +
+      "The garland forms a full decorator-style balloon mass around the outer edge of the solid arch, starting at the floor base, climbing the outer side, " +
+      "and curling over the top crown, with realistic depth and shadows between overlapping balloons — a natural event decorator garland, not sparse. " +
+      "The open frame gets only a small matching mini-cluster of medium and small balloons on its OUTER top shoulder; most of the frame outline stays bare " +
+      "and the hollow opening stays completely clear. " +
+      "No bead chain, no pearl necklace, no tiny dotted outline, no sparse mini-balloons, no micro balloons, no helium balloon strings, no balloon bouquet, " +
+      "no printed balloon graphic, no flat dot pattern, no balloons inside the hollow open frame, no detached balloon column.",
     plinthInstruction: "Place cylinder plinths at the front-left, clear of both the solid arch and the open frame.",
     standeeZones: ZONES_TWO_PIECE,
   },

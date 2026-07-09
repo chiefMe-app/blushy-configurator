@@ -440,8 +440,8 @@ export default function ConfigurePage() {
       </header>
 
       <div style={{ maxWidth: 1360, margin: "0 auto", padding: "24px 28px 0", display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
-        {/* Left: preview rail — ~330px per Claude Design, full-width when wrapped */}
-        <div style={{ flex: "0 1 340px", minWidth: 300 }}>
+        {/* Left: preview rail — hero-width (~480px) on desktop, full-width when wrapped */}
+        <div style={{ flex: "0 1 480px", minWidth: 320, maxWidth: 500 }}>
           <div className="lg:sticky" style={{ top: 76 }}>
             <div className="space-y-3.5">
               {/* Preview card — SetupPreview draws its own image + footer card */}
@@ -478,7 +478,7 @@ export default function ConfigurePage() {
                     <div style={{ fontSize: 14, fontWeight: 700, color: "#15182E" }}>Let's bring your celebration to life</div>
                     <div style={{ fontSize: 12, color: "#73778A", marginTop: 2 }}>Choose the event so we can tailor ideas and styling just for you.</div>
                   </div>
-                  <div style={{ marginLeft: "auto", display: "flex", gap: 18, flexShrink: 0 }}>
+                  <div className="hidden md:flex" style={{ marginLeft: "auto", gap: 18, flexShrink: 0 }}>
                     {([
                       [<svg key="a" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#EC4D8D" strokeWidth="1.5"/><path d="M5 8l2 2 4-4" stroke="#EC4D8D" strokeWidth="1.5" strokeLinecap="round"/></svg>, "Personalized ideas"],
                        [<svg key="b" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#FFE8F0"/><path d="M8 4v4l3 2" stroke="#EC4D8D" strokeWidth="1.5" strokeLinecap="round"/></svg>, "Saves you time"],
@@ -584,13 +584,23 @@ export default function ConfigurePage() {
                           border: sel ? DC.selBorder : `1.5px solid ${DC.cardBd}`,
                           boxShadow: sel ? DC.selShadow : "0 4px 14px rgba(216,84,138,.06)",
                         }}>
-                        {/* Tinted candy-stripe art panel with icon + price pill — Claude Design */}
+                        {/* Cover art panel — local SVG cover with candy-stripe fallback */}
                         {(() => {
+                          const coverUrl = getThemeCatalogEntry(t.id)?.coverImageUrl;
                           const tintHex = (t.balloonColors?.[0] ?? "#F6C6DE");
-                          const tint = `${tintHex}33`; // ~20% alpha stripe
+                          const tint = `${tintHex}33`; // ~20% alpha stripe (fallback only)
                           return (
-                            <div className="relative flex h-[88px] items-center justify-center" style={{ borderRadius: 15, background: `repeating-linear-gradient(45deg, ${tint} 0 10px, #FFFFFF 10px 20px)`, border: `1px solid ${tintHex}55` }}>
-                              <span className="scale-[1.9] drop-shadow-sm">{icon}</span>
+                            <div
+                              className="relative flex h-[90px] items-center justify-center overflow-hidden sm:h-[110px]"
+                              style={{
+                                borderRadius: 15,
+                                border: `1px solid ${tintHex}55`,
+                                ...(coverUrl
+                                  ? { backgroundImage: `url(${coverUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+                                  : { background: `repeating-linear-gradient(45deg, ${tint} 0 10px, #FFFFFF 10px 20px)` }),
+                              }}
+                            >
+                              {!coverUrl && <span className="scale-[1.9] drop-shadow-sm">{icon}</span>}
                               <span className="absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm"
                                 style={{ background: t.priceModifier > 0 ? "rgba(255,255,255,.94)" : "#E5F3EB", color: t.priceModifier > 0 ? DC.roseDeep : "#3E9B6E" }}>
                                 {t.priceModifier > 0 ? `+ AED ${t.priceModifier}` : "Included"}

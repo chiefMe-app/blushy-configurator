@@ -40,6 +40,14 @@ export interface SilhouetteResult {
   /** Double Arch dense garland guide — balloons drawn per side (0 when not double arch). */
   doubleArchGarlandBalloonsLeft:  number;
   doubleArchGarlandBalloonsRight: number;
+  /** Arch + Open Frame dense garland guide — 0 when not that layout. */
+  archOpenFrameMainGarlandBalloons: number;
+  archOpenFrameMiniClusterBalloons: number;
+  /** Radius range (px) and lane count of the main garland's thick-mass style. */
+  archOpenFrameMainGarlandMinRadiusPx: number;
+  archOpenFrameMainGarlandMaxRadiusPx: number;
+  archOpenFrameMainGarlandLaneCount:   number;
+  archOpenFrameMainGarlandStyle:       string;
 }
 
 /** One size tier of standee cutout to draw in the guide. */
@@ -357,10 +365,15 @@ export function generateStructureSilhouette(
   // content: everything else — scaled and centered
   const content: string[] = [];
 
-  // Double Arch dense garland guide counters — set only in the double_arch
-  // mirrored garland branch, reported in the result for diagnostics.
+  // Dense garland guide counters — set only in their layout branches,
+  // reported in the result for diagnostics.
   let doubleArchGarlandBalloonsLeft  = 0;
   let doubleArchGarlandBalloonsRight = 0;
+  let archOpenFrameMainGarlandBalloons = 0;
+  let archOpenFrameMiniClusterBalloons = 0;
+  let archOpenFrameMainGarlandMinRadiusPx = 0;
+  let archOpenFrameMainGarlandMaxRadiusPx = 0;
+  let archOpenFrameMainGarlandLaneCount   = 0;
 
   // v4: pure white background — no fills, no color signals, edge map only
   bgLines.push(`<rect width="${W}" height="${H}" fill="#FFFFFF"/>`);
@@ -542,16 +555,11 @@ export function generateStructureSilhouette(
           content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br}" ${balloonAttrs(i)}/>`);
         }
       } else {
-        // Double arch: mirrored DENSE organic garlands. Each side is a thick
-        // layered band — floor/base cluster → staggered climb band up the
-        // outer edge → crown cluster over the top shoulder. Never a thin
-        // single-file row, never a bridge across the pair; center stays clean.
-        const archPanels = layout.panels.filter(
-          (p) => (backdropItems[p.idx]?.type ?? "") === "arch",
-        );
-        if (archPanels.length === 2) {
-          const pair = [...archPanels].sort((a, b) => a.cx - b.cx);
-          const drawDenseGarland = (p: typeof pair[0], side: "left" | "right", colorOffset: number): number => {
+        // Dense organic garland helper — thick layered band: floor/base cluster
+        // → staggered climb band up the outer edge → crown cluster over the top
+        // shoulder. Shared by double_arch (both arches) and arch_open_frame
+        // (solid arch only). Never a thin single-file row.
+        const drawDenseGarland = (p: typeof layout.panels[0], side: "left" | "right", colorOffset: number): number => {
             const dir   = side === "left" ? -1 : 1;
             const edgeX = p.cx + dir * (p.pw / 2); // outer edge x
             const Hp    = p.floorY - p.apexY;
@@ -603,23 +611,140 @@ export function generateStructureSilhouette(
               put(x, y, br);
             }
             return n;
+        };
+
+        // Thick organic MASS garland for Arch + Open Frame's solid arch —
+        // a real decorator-style balloon cluster, not a thin dotted outline.
+        // Radii scale off the panel's own width (p.pw) so the mass reads as
+        // proportionally thick regardless of arch size. Style: "thick_organic_mass_v2".
+        const drawThickOrganicMainGarland = (
+          p: typeof layout.panels[0], side: "left" | "right", colorOffset: number,
+        ): { count: number; minR: number; maxR: number; lanes: number } => {
+          const dir   = side === "left" ? -1 : 1;
+          const edgeX = p.cx + dir * (p.pw / 2);
+          const Hp    = p.floorY - p.apexY;
+          let n = 0;
+          let minR = Infinity, maxR = 0;
+          const put = (bx: number, by: number, br: number) => {
+            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(colorOffset + n)}/>`);
+            n++;
+            if (br < minR) minR = br;
+            if (br > maxR) maxR = br;
           };
-          doubleArchGarlandBalloonsLeft  = drawDenseGarland(pair[0], "left", 0);
-          doubleArchGarlandBalloonsRight = drawDenseGarland(pair[1], "right", 7);
-        } else {
-        // Open-frame layouts: NO full-height garland column. Draw a compact
-        // accent cluster hugging the frame's top-right shoulder only, so the
-        // hollow frame silhouette stays visible and the opening stays clear.
+
+          // Radius scale relative to panel width — large/medium/small anchors.
+          const rLarge  = Math.max(20, Math.min(50, p.pw * 0.17));
+          const rMed    = Math.max(14, Math.min(34, p.pw * 0.12));
+          const rSmall  = Math.max(9,  Math.min(22, p.pw * 0.08));
+
+          // 1) Floor/base cluster — 16 heavily overlapping balloons mounded at
+          //    the outer base, several large anchors for a dense floor pile.
+          const BASE: [number, number, "L" | "M" | "S"][] = [
+            [   4,  10, "L"], [  32,  14, "L"], [ -20,  16, "L"], [  16,  38, "L"],
+            [ -10,  30, "M"], [  44,  32, "M"], [  22,  56, "M"], [  -2,  56, "M"],
+            [  50,  54, "S"], [   6,  74, "S"], [ -18,  46, "S"], [  36,  74, "S"],
+            [  14,  92, "M"], [ -12,  86, "S"], [  46,  90, "S"], [   0, 104, "S"],
+          ];
+          const sizeR = { L: rLarge, M: rMed, S: rSmall };
+          for (const [ox, up, sz] of BASE) put(edgeX + dir * ox, p.floorY - up, sizeR[sz]);
+
+          // 2) Side climb — 30 balloons across 5 staggered lanes, overlapping
+          //    35–60% between neighbors, forming a genuinely thick band from
+          //    just above the base to the spring line.
+          const climbN  = 30;
+          const laneOffsets = [-rLarge * 0.5, rLarge * 0.15, rLarge * 0.85, rLarge * 1.5, rLarge * 2.1];
+          const laneSizes: ("L" | "M" | "S")[] = ["M", "L", "M", "S", "S"];
+          for (let i = 0; i < climbN; i++) {
+            const t = i / (climbN - 1);
+            const y = p.floorY - Hp * (0.16 + t * 0.62); // 16% → 78% panel height
+            const lane = i % 5;
+            const wobble = ((i * 17) % 13) - 6; // deterministic organic jitter
+            const x = edgeX + dir * (laneOffsets[lane] + wobble);
+            const sz = laneSizes[lane];
+            put(x, y, sizeR[sz]);
+          }
+
+          // 3) Crown curl — 16 balloons wrapping the outer shoulder over the
+          //    top of the arch arc in 3 depth lanes, large near the crown apex.
+          const rArc  = p.pw / 2;
+          const arcCx = p.cx;
+          const arcCy = p.apexY + rArc;
+          const angFrom = side === "left" ? 178 : 2;
+          const angTo   = side === "left" ? 268 : -88;
+          const crownN = 16;
+          for (let i = 0; i < crownN; i++) {
+            const t   = i / (crownN - 1);
+            const ang = ((angFrom + (angTo - angFrom) * t) * Math.PI) / 180;
+            const depthLane = i % 3;
+            const rad = rArc + [-rSmall * 0.4, rMed * 0.6, rLarge * 0.85][depthLane];
+            const x   = arcCx + rad * Math.cos(ang);
+            const y   = arcCy + rad * Math.sin(ang);
+            const sz: "L" | "M" | "S" = depthLane === 2 ? "L" : depthLane === 1 ? "M" : "S";
+            put(x, y, sizeR[sz]);
+          }
+
+          return { count: n, minR: Math.round(minR), maxR: Math.round(maxR), lanes: 5 };
+        };
+
+        const archPanels = layout.panels.filter(
+          (p) => (backdropItems[p.idx]?.type ?? "") === "arch",
+        );
         const framePanel = layout.panels.find(
           (p) => (backdropItems[p.idx]?.type ?? "") === "open_arch_frame",
         );
-        if (framePanel) {
+
+        if (archPanels.length === 2) {
+          // Double arch: mirrored dense garlands, center stays clean.
+          const pair = [...archPanels].sort((a, b) => a.cx - b.cx);
+          doubleArchGarlandBalloonsLeft  = drawDenseGarland(pair[0], "left", 0);
+          doubleArchGarlandBalloonsRight = drawDenseGarland(pair[1], "right", 7);
+        } else if (framePanel && archPanels.length === 1) {
+          // Arch + Open Frame: the SOLID ARCH carries a thick organic-mass
+          // garland (floor base → outer edge climb → over the crown, ~62
+          // heavily overlapping balloons in varied sizes — not a dotted
+          // outline). The hollow frame gets only a small matching mini-cluster
+          // on its OUTER top shoulder — never inside the hollow opening.
+          const solidArch = archPanels[0];
+          const archOuterSide: "left" | "right" = solidArch.cx < framePanel.cx ? "left" : "right";
+          const mainResult = drawThickOrganicMainGarland(solidArch, archOuterSide, 0);
+          archOpenFrameMainGarlandBalloons     = mainResult.count;
+          archOpenFrameMainGarlandMinRadiusPx  = mainResult.minR;
+          archOpenFrameMainGarlandMaxRadiusPx  = mainResult.maxR;
+          archOpenFrameMainGarlandLaneCount    = mainResult.lanes;
+
+          // Mini shoulder cluster — 15 balloons (medium + small, no tiny dots)
+          // in two overlapping depth lanes hugging the frame's outer shoulder
+          // arc (upper quarter only), all OUTSIDE the hollow band.
+          const rF        = framePanel.pw / 2;
+          const springCy  = framePanel.apexY + rF;
+          const rFMed     = Math.max(13, Math.min(26, framePanel.pw * 0.11));
+          const rFSmall   = Math.max(9,  Math.min(18, framePanel.pw * 0.075));
+          const frameOuterRight = framePanel.cx > solidArch.cx; // frame's outer side faces away from the arch
+          const angFrom = frameOuterRight ? -80 : 260;
+          const angTo   = frameOuterRight ? -4  : 184;
+          const miniN = 15;
+          let miniCount = 0;
+          for (let i = 0; i < miniN; i++) {
+            const t    = i / (miniN - 1);
+            const ang  = ((angFrom + (angTo - angFrom) * t) * Math.PI) / 180;
+            const lane = i % 2;
+            const rad  = rF + (lane === 0 ? rFMed * 0.7 : rFMed * 1.5) + (i % 3 === 0 ? 4 : 0);
+            const bx   = framePanel.cx + rad * Math.cos(ang);
+            const by   = springCy + rad * Math.sin(ang);
+            const br   = lane === 0 ? rFMed : rFSmall;
+            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(9 + miniCount)}/>`);
+            miniCount++;
+          }
+          archOpenFrameMiniClusterBalloons = miniCount;
+        } else if (framePanel) {
+          // Shimmer + Open Frame (no solid arch): compact accent cluster on the
+          // frame's top-right shoulder only — hollow silhouette stays visible.
           const r        = framePanel.pw / 2;
-          const springCy = framePanel.apexY + r; // arch arc center
+          const springCy = framePanel.apexY + r;
           const numBalloons = 8;
           for (let i = 0; i < numBalloons; i++) {
             const t        = i / (numBalloons - 1);
-            const angleDeg = -62 + t * 72; // top of crown → right shoulder, upper part only
+            const angleDeg = -62 + t * 72;
             const angleRad = (angleDeg * Math.PI) / 180;
             const rr       = r + Math.round(W * 0.018) + (i % 2 === 0 ? 4 : -3);
             const bx       = framePanel.cx + rr * Math.cos(angleRad);
@@ -644,7 +769,6 @@ export function generateStructureSilhouette(
             const r   = i < 3 ? 20 + ((i * 5) % 7) : i > numBalloons - 4 ? 16 + ((i * 3) % 6) : 12 + ((i * 7) % 9);
             content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonAttrs(i)}/>`);
           }
-        }
         }
       }
 
@@ -734,5 +858,11 @@ export function generateStructureSilhouette(
     cutoutPlaceholderHeightsCm,
     doubleArchGarlandBalloonsLeft,
     doubleArchGarlandBalloonsRight,
+    archOpenFrameMainGarlandBalloons,
+    archOpenFrameMiniClusterBalloons,
+    archOpenFrameMainGarlandMinRadiusPx,
+    archOpenFrameMainGarlandMaxRadiusPx,
+    archOpenFrameMainGarlandLaneCount,
+    archOpenFrameMainGarlandStyle: archOpenFrameMainGarlandBalloons > 0 ? "thick_organic_mass_v2" : "none",
   };
 }
