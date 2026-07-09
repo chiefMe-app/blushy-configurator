@@ -112,7 +112,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "single-shimmer-color-applied-v2";
+const RENDER_CACHE_VERSION = "restore-arch-shimmer-quality-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1084,6 +1084,20 @@ forbiddenBalloonColorLabels: hasSempertexLock
       : null,
   shimmerColorAppliedToGuide: hasShimmerInScene && !!sceneModel.shimmerColor,
   shimmerColorAppliedToPrompt: hasShimmerInScene && !!sceneModel.shimmerColor,
+
+  // Shimmer adherence diagnostics — v3 ("large_paillette_checker_v2" +
+  // "forceful_v2" color lock) broke Arch + Shimmer quality: the edit model
+  // copied the large checkerboard guide tiles literally as visible square
+  // patchwork/mosaic blocks, and this happened even at color=silver, proving
+  // the guide/prompt geometry — not the color-lock wording — was the root
+  // cause. Rolled back to the previously-good dense small-tile sequin method;
+  // shimmer color customization is de-prioritized (soft mention only) until
+  // quality is confirmed stable again.
+  shimmerTileVisualStyle: hasShimmerInScene ? "dense_event_sequin_wall_restored_v1" : "n/a",
+  shimmerTileScaleLabel: hasShimmerInScene ? "normal_event_sequin_scale" : "n/a",
+  shimmerColorLockStrength: hasShimmerInScene ? "soft_or_disabled_for_quality" : "n/a",
+  shimmerPromptForcesNonSilver: false,
+  shimmerGuideUsesSelectedColorDominantly: false,
 };
 
   try {

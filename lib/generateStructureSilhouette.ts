@@ -68,6 +68,45 @@ export interface CutoutGuideItem {
 // can distinguish each board even when panels overlap.
 const MULTI_PANEL_FILLS = ["#EDE8E2", "#E2EAF0", "#EAE2F0"] as const;
 
+// ═══════════════════════════════════════════════════════════════════════════
+// GOLDEN SHIMMER METHOD — do not modify without re-verifying Arch + Shimmer
+// and Single Shimmer render quality end-to-end. This is the current source
+// of truth for the good shimmer-wall look and is shared by both layouts
+// (see singleShimmerUsesArchShimmerMethod in the route diagnostics).
+//
+// Builds a shimmer-tile <defs><pattern> that reads as a dense, fine-grained
+// event sequin wall — a flat single-color tile fill with a thin neutral grid
+// line, at a small tile size so the model reads it as texture, not shapes.
+//
+// KEEP:
+//   - flat single-color tile <rect> (one solid fill per tile)
+//   - thin neutral grid stroke (rgba(60,60,90,0.50), stroke-width 0.7)
+//   - small tile size: Math.max(10, Math.round(panel.pw * 0.05)) at both
+//     call sites below (~20 tiles across the panel)
+// DO NOT:
+//   - reintroduce a large checkerboard / 2x2 light-dark-shaded paillette
+//     pattern (tried as "v2 large paillette checker" and reverted)
+//   - enlarge the tile size so individual tiles become big, distinct squares
+//   - do anything that makes tiles readable as separate shapes at a glance
+//
+// v2 ("large paillette checker") tried a 2x2 light/dark checkerboard at a much
+// bigger tile size to make individual sequins more readable — it backfired:
+// the edit model copied the checker cells literally as visible square
+// patchwork/mosaic blocks instead of a sequin texture, degrading the
+// previously-good Arch + Shimmer look even with color=silver. Restored here
+// to the smaller flat-tile version that produced the good result.
+// ═══════════════════════════════════════════════════════════════════════════
+function shimmerTilePatternDefs(patId: string, tileSize: number, baseFill: string): string {
+  return [
+    `<defs>`,
+    `  <pattern id="${patId}" patternUnits="userSpaceOnUse" width="${tileSize}" height="${tileSize}">`,
+    `    <rect width="${tileSize}" height="${tileSize}" fill="${baseFill}"/>`,
+    `    <rect width="${tileSize}" height="${tileSize}" fill="none" stroke="rgba(60,60,90,0.50)" stroke-width="0.7"/>`,
+    `  </pattern>`,
+    `</defs>`,
+  ].join("\n    ");
+}
+
 function panelPathOrShape(
   cx: number, pw: number, apexY: number, floorY: number,
   shape: BackdropShapeId,
@@ -429,18 +468,13 @@ export function generateStructureSilhouette(
       const baseFill = MULTI_PANEL_FILLS[sortedIdx % MULTI_PANEL_FILLS.length];
 
       if (isShimmer) {
-        // Shimmer wall: high-contrast square tile grid so the edit model reads it
-        // as a tiled sequin wall, not a matte board.
+        // Shimmer wall: dense small tile grid so the edit model reads it as a
+        // fine sequin-textured wall, not a matte board and not visible mosaic blocks.
+        // GOLDEN SHIMMER METHOD (see shimmerTilePatternDefs above) — do not
+        // enlarge tileSize or swap in a checkerboard/paillette pattern here.
         const patId    = `shimmerTile_${sortedIdx}`;
         const tileSize = Math.max(10, Math.round(panel.pw * 0.05)); // ~20 tiles across the panel
-        content.push([
-          `<defs>`,
-          `  <pattern id="${patId}" patternUnits="userSpaceOnUse" width="${tileSize}" height="${tileSize}">`,
-          `    <rect width="${tileSize}" height="${tileSize}" fill="${shimmerTileFill}"/>`,
-          `    <rect width="${tileSize}" height="${tileSize}" fill="none" stroke="rgba(60,60,90,0.50)" stroke-width="0.7"/>`,
-          `  </pattern>`,
-          `</defs>`,
-        ].join("\n    "));
+        content.push(shimmerTilePatternDefs(patId, tileSize, shimmerTileFill));
         content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, `url(#${patId})`));
       } else {
         content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, MULTI_PANEL_FILLS[sortedIdx % MULTI_PANEL_FILLS.length]));
@@ -449,17 +483,14 @@ export function generateStructureSilhouette(
       // Single shimmer wall: force a clean rectangle (never arch edges) with tile grid.
       // Using <rect> directly avoids any arch-like path the panelEdgeOnly/panelPathOrShape
       // functions might generate, which could mislead the edit model into adding an arch.
+      // GOLDEN SHIMMER METHOD (see shimmerTilePatternDefs above) — same tileSize
+      // formula as the arch_shimmer branch so single_shimmer stays at parity.
       const patId    = `shimmerTileSingle`;
       const tileSize = Math.max(10, Math.round(panel.pw * 0.05));
       const left     = panel.cx - panel.pw / 2;
       const panelH   = panel.floorY - panel.apexY;
       content.push([
-        `<defs>`,
-        `  <pattern id="${patId}" patternUnits="userSpaceOnUse" width="${tileSize}" height="${tileSize}">`,
-        `    <rect width="${tileSize}" height="${tileSize}" fill="${shimmerTileFill}"/>`,
-        `    <rect width="${tileSize}" height="${tileSize}" fill="none" stroke="rgba(60,60,90,0.50)" stroke-width="0.7"/>`,
-        `  </pattern>`,
-        `</defs>`,
+        shimmerTilePatternDefs(patId, tileSize, shimmerTileFill),
         // Explicit rectangle — no arch path, no rounded top, clean square silhouette
         `<rect x="${left.toFixed(1)}" y="${panel.apexY.toFixed(1)}" width="${panel.pw.toFixed(1)}" height="${panelH.toFixed(1)}" fill="url(#${patId})" stroke="rgba(100,100,130,0.35)" stroke-width="1"/>`,
       ].join("\n    "));

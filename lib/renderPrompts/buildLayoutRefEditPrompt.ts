@@ -15,19 +15,31 @@ function shimmerColorLabel(id: string): string {
   return id.length > 0 ? id.charAt(0).toUpperCase() + id.slice(1) : id;
 }
 
-// Explicit color-lock sentence reused by both single_shimmer and arch_shimmer —
-// states the color by name, ties it to the sequin discs, and calls out the
-// silver default only when it wasn't the selected color, so a non-silver
-// selection can't drift back to the default silver look.
+// ═══════════════════════════════════════════════════════════════════════════
+// GOLDEN SHIMMER METHOD — do not modify without re-verifying Arch + Shimmer
+// and Single Shimmer render quality end-to-end. Shared verbatim by both
+// layouts (see the shimmer_wall branches below and shimmerNegs further down).
+//
+// KEEP the core sentence: "dense regular grid of small flat square reflective
+// sequin discs, each disc catching light individually with metallic sparkle,
+// ... a real event-rental sequin shimmer wall". KEEP this soft one-line color
+// mention only — no repeated/forceful negation.
+// DO NOT add forceful color-lock wording (e.g. "SHIMMER COLOR LOCK — IMPORTANT:
+// must be predominantly X, not silver", "Do NOT render... unless explicitly
+// selected") — it changes how the model interprets the guide geometry.
+// DO NOT reintroduce "large visible paillettes" / "PAILLETTE SCALE" wording.
+//
+// Soft color-mention clause reused by both single_shimmer and arch_shimmer.
+// v3 ("forceful" + a large-paillette scale clause below it) over-corrected: the
+// heavy repeated color negation combined with big-tile guide geometry made the
+// edit model copy the guide literally as visible square patchwork/mosaic blocks,
+// degrading the previously-good Arch + Shimmer look — even with color=silver,
+// where the forceful wording still fired. Reverted to a single gentle mention;
+// shimmer color selection is de-prioritized for now in favor of restoring quality.
+// ═══════════════════════════════════════════════════════════════════════════
 function shimmerColorLockClause(colorId: string): string {
   const label = shimmerColorLabel(colorId);
-  return (
-    `SHIMMER COLOR LOCK: the shimmer wall sequin discs are ${label} colored — ` +
-    `every sequin disc on this wall must be ${colorId}, in that exact color family. ` +
-    (colorId === "silver"
-      ? `Silver is the selected color. `
-      : `Do NOT render the default silver/gray sequin color — ${label} was explicitly selected. `)
-  );
+  return `The sequin discs are ${label.toLowerCase()} colored. `;
 }
 
 function panelTypeLabel(type: string): string {
@@ -78,10 +90,13 @@ export function buildLayoutRefEditPrompt(
   if (!isMulti) {
     const p = sceneModel.panels[0];
     if (p.type === "shimmer_wall") {
+      // GOLDEN SHIMMER METHOD wording — keep in sync with the arch_shimmer
+      // panel description below. See the guardrail comment above
+      // shimmerColorLockClause().
       const sc = sceneModel.shimmerColor ?? "silver";
       backdropDesc =
         `one freestanding square shimmer wall, ${p.widthCm}cm wide x ${p.heightCm}cm tall, ` +
-        `a real event-rental sequin shimmer wall: dense regular grid of small flat square reflective ${sc} sequin discs, ` +
+        `a real event-rental sequin shimmer wall: dense regular grid of small flat square reflective sequin discs, ` +
         `each disc catching light individually with metallic sparkle, flat rectangular panel, ` +
         `NOT a mirror slab, NOT a chrome wall, NOT a glitter print, ` +
         `NOT a matte board, NOT a cream backdrop, NOT crumpled foil. ` +
@@ -142,8 +157,11 @@ export function buildLayoutRefEditPrompt(
       const shimmerC  = sceneModel.shimmerColor ?? "silver";
       const pColor = backdropColorLabel(p.color);
       const surfaceDesc = isShimmer
+        // GOLDEN SHIMMER METHOD wording — keep in sync with the single_shimmer
+        // description above. See the guardrail comment above
+        // shimmerColorLockClause().
         ? `freestanding square event shimmer wall (200cm x 200cm) — a real event-rental sequin shimmer wall: ` +
-          `dense regular grid of small flat square reflective ${shimmerC} sequin discs, ` +
+          `dense regular grid of small flat square reflective sequin discs, ` +
           `each disc catching light individually with metallic sparkle, flat rectangular panel, ` +
           `NOT a mirror slab, NOT a chrome wall, NOT a glitter print, ` +
           `NOT crumpled foil, NOT a matte board, NOT a cream panel. ` +
@@ -334,13 +352,24 @@ export function buildLayoutRefEditPrompt(
   // relied on. This used to be nested inside the isMulti-only block, which
   // meant single_shimmer got no reinforcement against the model drifting into
   // a flat matte board or wrong color.
+  //
+  // Restored to the pre-"forceful_v2" wording — the stacked color negation
+  // ("No silver shimmer wall... No generic reflective silver wall...") combined
+  // with the large-paillette guide caused the edit model to render visible
+  // square patchwork blocks instead of a sequin texture, even for color=silver.
+  // Shimmer color adherence is de-prioritized for now in favor of restoring
+  // the previously-good Arch + Shimmer quality.
+  //
+  // GOLDEN SHIMMER METHOD negatives — keep exactly: no mirror slab, no chrome
+  // wall, no glitter print, no crumpled/flat foil, no matte board, no bathroom
+  // tile look. Do not remove these or replace with the stronger v3-era
+  // negatives (see shimmerColorLockClause guardrail comment above).
   const hasShimmerInScene = sceneModel.panels.some((p) => p.type === "shimmer_wall");
-  const shimmerColorForNegs = shimmerColorLabel(sceneModel.shimmerColor ?? "silver");
   const shimmerNegs = hasShimmerInScene
     ? `The shimmer wall must remain a tiled metallic sequin wall — ` +
       `do not turn it into a plain matte board or cream panel. ` +
       `No missing tile texture on shimmer wall. No flat off-white panel instead of shimmer. ` +
-      `No wrong shimmer color — the sequin discs must be ${shimmerColorForNegs}, not any other color. ` +
+      `No bathroom tile look, no mirror slab, no glitter print, no flat foil sheet. ` +
       `No smooth cream board for shimmer wall. `
     : "";
 
