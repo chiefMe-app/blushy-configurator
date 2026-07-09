@@ -10,13 +10,33 @@ function backdropColorLabel(color: string): string {
   return color;
 }
 
+// Human-readable label for a shimmer color id, e.g. "gold" -> "Gold".
+function shimmerColorLabel(id: string): string {
+  return id.length > 0 ? id.charAt(0).toUpperCase() + id.slice(1) : id;
+}
+
+// Explicit color-lock sentence reused by both single_shimmer and arch_shimmer —
+// states the color by name, ties it to the sequin discs, and calls out the
+// silver default only when it wasn't the selected color, so a non-silver
+// selection can't drift back to the default silver look.
+function shimmerColorLockClause(colorId: string): string {
+  const label = shimmerColorLabel(colorId);
+  return (
+    `SHIMMER COLOR LOCK: the shimmer wall sequin discs are ${label} colored — ` +
+    `every sequin disc on this wall must be ${colorId}, in that exact color family. ` +
+    (colorId === "silver"
+      ? `Silver is the selected color. `
+      : `Do NOT render the default silver/gray sequin color — ${label} was explicitly selected. `)
+  );
+}
+
 function panelTypeLabel(type: string): string {
   switch (type) {
     case "arch":            return "rounded arch";
     case "rect":            return "rectangular flat";
     case "shimmer_wall":    return "rectangular shimmer-wall";
     case "round":           return "round circular";
-    case "open_arch_frame": return "hollow open arch frame";
+    case "open_arch_frame": return "thick open arch decor prop";
     case "wavy":            return "wavy-top";
     default:                return type;
   }
@@ -46,65 +66,14 @@ export function buildLayoutRefEditPrompt(
     : "";
 
   // ── Backdrop description ──────────────────────────────────────────────────
+  // NOTE: single-shimmer used to short-circuit here with its own hand-written
+  // scene description, bypassing setupTemplateClause, sempertex color-lock
+  // handling, and the shared negative-prompt reinforcement that arch_shimmer
+  // gets — that legacy split is exactly why single_shimmer rendered worse.
+  // It's removed: single_shimmer now flows through the same shared pipeline
+  // as every other layout (including arch_shimmer), just via the `!isMulti`
+  // shimmer_wall branch below, so both use one shimmer-wall creation method.
   let backdropDesc: string;
-
-  const isSingleShimmerOnly = panelCount === 1 && sceneModel.panels[0]?.type === "shimmer_wall";
-
-  if (isSingleShimmerOnly) {
-    const sc    = sceneModel.shimmerColor ?? "silver";
-    const p     = sceneModel.panels[0];
-
-    const plinth    = sceneModel.plinths[0];
-    const plinthStr = plinth
-      ? `One slim freestanding white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter, ` +
-        `fully visible from base to rounded top, centered horizontally in front of the shimmer wall, ` +
-        `aligned to the horizontal center of the shimmer wall. ` +
-        `Do not place the plinth on the left or right side. Do not omit the plinth.`
-      : "";
-
-    const bStyle    = sceneModel.balloons.style;
-    const bColors   = sceneModel.balloons.colors.length > 0
-      ? sceneModel.balloons.colors.slice(0, 4).join(", ")
-      : sc === "silver" ? "silver chrome, white, pearl white"
-      : sc === "gold"   ? "gold chrome, white, cream"
-      : "the selected palette";
-    const chromeBalloonNote =
-      sc === "silver" ? `Include large chrome silver mirror balloons mixed with medium white and small pearl balloons. ` :
-      sc === "gold"   ? `Include large chrome gold mirror balloons mixed with medium white and cream balloons. ` :
-      "";
-    const garlandStr = bStyle !== "none"
-      ? `Full dense premium organic balloon half-garland starting at the top-right corner of the shimmer wall ` +
-        `and cascading richly all the way down the right side to the floor. ` +
-        `The garland must be lush, full volume, and layered — not sparse, thin, or flat. ` +
-        `Mix large, medium, and small balloons for maximum organic depth and texture. ` +
-        `The balloon garland must be attached directly to the backdrop edge with no visible gap. ` +
-        `Balloons must closely follow the backdrop contour and look professionally installed onto the structure. ` +
-        `Balloon palette: ${bColors}. ` +
-        chromeBalloonNote +
-        `Do not omit the balloon garland. Do not reduce the garland volume.`
-      : "No balloon garland.";
-
-    return (
-      `Cool neutral daylight studio photography with soft natural light from the left, ` +
-      `gray textured plaster or concrete studio wall, polished light concrete or stone floor, ` +
-      `neutral white balance, fresh modern editorial event styling. ` +
-      `Transform this layout reference into a premium photorealistic indoor event setup. ` +
-      `The setup contains exactly ONE backdrop panel plus selected decorative items. ` +
-      `Backdrop: a freestanding ${p.widthCm}cm × ${p.heightCm}cm square event shimmer wall. ` +
-      `Clean straight outer edges, full square silhouette, no cutouts or openings. ` +
-      `The entire surface is covered edge-to-edge with a dense regular grid of small flat square reflective ${sc} sequin discs ` +
-      `arranged in neat rows and columns, each disc catching light individually with metallic sparkle — ` +
-      `a realistic event rental sequin shimmer wall surface. ` +
-      `Clearly a shimmer sequin wall — NOT a mirror slab, NOT a chrome wall, NOT a glitter print, not a matte board. ` +
-      (plinthStr ? `${plinthStr} ` : "") +
-      `${garlandStr} ` +
-      `NOT an arch. NOT a rounded-top board. NOT a niche or frame. NOT a cutout. ` +
-      `NOT a layered backdrop. No second backdrop panel. No panel behind another panel. ` +
-      `No crumpled foil. No wrinkled aluminum. No hammered metal. No irregular mirror mosaic. ` +
-      `No noisy abstract reflective texture. No chaotic crinkled surface. ` +
-      `No matte board. No cream board. No missing tile grid. No wrong shimmer color.`
-    );
-  }
 
   if (!isMulti) {
     const p = sceneModel.panels[0];
@@ -115,7 +84,8 @@ export function buildLayoutRefEditPrompt(
         `a real event-rental sequin shimmer wall: dense regular grid of small flat square reflective ${sc} sequin discs, ` +
         `each disc catching light individually with metallic sparkle, flat rectangular panel, ` +
         `NOT a mirror slab, NOT a chrome wall, NOT a glitter print, ` +
-        `NOT a matte board, NOT a cream backdrop, NOT crumpled foil`;
+        `NOT a matte board, NOT a cream backdrop, NOT crumpled foil. ` +
+        shimmerColorLockClause(sc);
     } else if (p.type === "round") {
       backdropDesc =
         `a thin circular backdrop panel, ${backdropColorLabel(p.color)} colored, exactly ${p.widthCm}cm x ${p.heightCm}cm — not a furniture object, ` +
@@ -176,14 +146,18 @@ export function buildLayoutRefEditPrompt(
           `dense regular grid of small flat square reflective ${shimmerC} sequin discs, ` +
           `each disc catching light individually with metallic sparkle, flat rectangular panel, ` +
           `NOT a mirror slab, NOT a chrome wall, NOT a glitter print, ` +
-          `NOT crumpled foil, NOT a matte board, NOT a cream panel`
+          `NOT crumpled foil, NOT a matte board, NOT a cream panel. ` +
+          shimmerColorLockClause(shimmerC)
         : isOpenFrame
-          ? `thin freestanding open arch frame — a flat foam-board / MDF style arch outline, ` +
-            `front-facing, board about 1cm thick, with a slim frame band roughly 10-15cm wide, ` +
-            `pastel painted smooth finish, fully hollow center with no solid fill — you can see straight through ` +
-            `the arch opening to the room behind it. A clean slim arch-shaped outline frame prop. ` +
-            `NOT a filled panel, NOT a solid board, NOT chunky, NOT tubular, NOT inflatable, ` +
-            `NOT a deep tunnel, NOT a balloon arch, NOT a second backdrop panel, NOT a doorway with a door`
+          ? `freestanding open arch decor prop — a premium event-styling arch cutout with a bold, thick, ` +
+            `substantial frame border roughly 25-35cm wide, front-facing and flat like a large painted or ` +
+            `upholstered arch panel, with real visual weight and material presence — matching the same premium ` +
+            `finish and color family as the solid arch beside it so the two read as one coordinated decor set. ` +
+            `A clean hollow arch-shaped opening is cut straight through the center, with no solid fill inside it — ` +
+            `you can see straight through the opening to the room behind it. ` +
+            `NOT a thin doorway frame, NOT a skinny architectural portal, NOT a wire or metal outline, ` +
+            `NOT tubular, NOT inflatable, NOT a balloon arch, NOT a deep 3D tunnel or hallway, ` +
+            `NOT a second solid backdrop panel, NOT a doorway with a door`
           : isArch
             ? `solid filled freestanding arch backdrop panel, fully opaque surface, seamless matte ${pColor} surface, ` +
               `no cut-out opening, no hollow doorway, full solid panel face visible`
@@ -197,7 +171,7 @@ export function buildLayoutRefEditPrompt(
     backdropDesc =
       `exactly ${panelCount} separate freestanding backdrop pieces arranged side by side, ` +
       (hasOpenFrame
-        ? `one solid piece and one hollow open arch frame, each rendered at its correct width. `
+        ? `one solid backdrop piece and one thick open arch decor prop with a bold substantial frame border, each rendered at its correct width. `
         : `each fully solid, opaque, and rendered at its correct width. `) +
       `Both pieces are full-size physical event structures with correct width-to-height proportions. ` +
       `The total setup should feel wide and substantial, not skinny or compressed. ` +
@@ -354,15 +328,23 @@ export function buildLayoutRefEditPrompt(
         roundGeometryClause +
         sempertexClause;
 
-  // ── Multi-panel negatives ─────────────────────────────────────────────────
-  const hasShimmerInMulti = isMulti && sceneModel.panels.some((p) => p.type === "shimmer_wall");
-  const shimmerMultiNegs = hasShimmerInMulti
+  // ── Shimmer negatives ──────────────────────────────────────────────────────
+  // Applies whenever ANY shimmer wall is in the scene — single or multi-panel
+  // — so single_shimmer gets the identical reinforcement arch_shimmer already
+  // relied on. This used to be nested inside the isMulti-only block, which
+  // meant single_shimmer got no reinforcement against the model drifting into
+  // a flat matte board or wrong color.
+  const hasShimmerInScene = sceneModel.panels.some((p) => p.type === "shimmer_wall");
+  const shimmerColorForNegs = shimmerColorLabel(sceneModel.shimmerColor ?? "silver");
+  const shimmerNegs = hasShimmerInScene
     ? `The shimmer wall must remain a tiled metallic sequin wall — ` +
       `do not turn it into a plain matte board or cream panel. ` +
       `No missing tile texture on shimmer wall. No flat off-white panel instead of shimmer. ` +
-      `No wrong shimmer color. No smooth cream board for shimmer wall. `
+      `No wrong shimmer color — the sequin discs must be ${shimmerColorForNegs}, not any other color. ` +
+      `No smooth cream board for shimmer wall. `
     : "";
 
+  // ── Multi-panel negatives ─────────────────────────────────────────────────
   const multiPanelNegs = isMulti
     ? `Do not merge panels into one. Do not omit any panel. No extra panels beyond ${panelCount}. ` +
       `No outline-only arch. No wire-frame backdrop. No thin frame backdrop. ` +
@@ -370,8 +352,7 @@ export function buildLayoutRefEditPrompt(
       `Every selected panel must appear as a full solid opaque backdrop board. ` +
       `No skinny panels. No narrow tower-like panels. No compressed backdrop boards. ` +
       `No thin vertical strips. No overly narrow arch. No overly narrow rectangular board. ` +
-      `Do not shrink panel widths. Do not turn panels into slim columns. ` +
-      shimmerMultiNegs
+      `Do not shrink panel widths. Do not turn panels into slim columns. `
     : "";
 
   // Theme graphic clause — included when any panel has a printed graphic enabled
@@ -491,9 +472,11 @@ const setupTemplateClause = setupTemplate
     framingClause +
     `${backdropDesc}. ` +
     (sceneModel.panels.some((p) => p.type === "open_arch_frame")
-      ? `The open arch frame is completely hollow: no backdrop panel behind the frame, no solid surface inside the frame opening, ` +
-        `no hidden second backdrop, no curtain or board filling the arch. The area inside and behind the frame opening shows only the room. ` +
-        `The frame itself is a thin flat board about 1cm thick with a slim frame band — not chunky, not tubular, not inflatable, not a deep tunnel. ` +
+      ? `The open arch frame's CENTER is completely hollow: no backdrop panel behind the frame, no solid surface filling ` +
+        `the opening, no hidden second backdrop, no curtain or board filling the arch. The area inside and behind the ` +
+        `opening shows only the room. The frame's own border, however, must be thick, bold, and visually substantial — ` +
+        `a real premium decor prop with genuine material presence, not a thin wire outline or skinny doorway trim. ` +
+        `It stays flat-fronted and freestanding — not a tube-shaped balloon arch, not inflatable, not a deep 3D tunnel. ` +
         `Balloons must never fill, cross, or block the hollow opening — the opening stays fully clear. ` +
         `Exactly the listed pieces — do not add any extra panel. `
       : "") +
@@ -504,6 +487,7 @@ const setupTemplateClause = setupTemplate
     (plinthDesc ? `${plinthDesc}. ` : noPlinthDesc) +
     `${garlandDesc}. ` +
     multiPanelNegs +
+    shimmerNegs +
     neutralStyleClause +
     (hasSempertexLock
       ? `Neutral color-accurate event photography, neutral white balance. `

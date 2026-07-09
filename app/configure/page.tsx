@@ -1248,8 +1248,9 @@ function clearAllStandees() {
       case "single_shimmer":     panels = [makeBackdropItem("shimmer_wall")]; break;
       case "arch_shimmer":       panels = [makeArchUnsized("arch-1"), makeBackdropItem("shimmer_wall")]; break;
       case "double_arch":        panels = [makeArchUnsized("arch-1"), makeArchUnsized("arch-2")]; break;
-      case "arch_open_frame":    panels = [makeArchUnsized("arch-1"), makeBackdropItem("open_arch_frame")]; break;
-      case "shimmer_open_frame": panels = [makeBackdropItem("shimmer_wall"), makeBackdropItem("open_arch_frame")]; break;
+      // arch_open_frame / shimmer_open_frame removed from product — no longer
+      // selectable, so no case needed; legacy ids resolve via
+      // getSetupLayoutTemplate()'s LEGACY_TEMPLATE_ID_REMAP if ever passed in.
       default: return;
     }
     patchDecor({ backdropItems: panels });

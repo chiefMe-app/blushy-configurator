@@ -522,6 +522,17 @@ export const SHIMMER_COLORS: Option<ShimmerColorId>[] = [
   { id: "red",        label: "Red",        price: 0 },
 ];
 
+/** Approximate sequin-disc hex per shimmer color, used for the layout-reference guide tiles. */
+export const SHIMMER_COLOR_HEX: Record<ShimmerColorId, string> = {
+  gold:       "#D4AF6A",
+  silver:     "#D8D8E4",
+  black:      "#3A3A40",
+  pink:       "#E8AFC4",
+  iridescent: "#CFE0DC",
+  blue:       "#7FA8D9",
+  red:        "#C24B4B",
+};
+
 export interface DecorConfig {
   /** Source of truth for all backdrop panels - type, count, and arch sizes. */
   backdropItems: BackdropItem[];

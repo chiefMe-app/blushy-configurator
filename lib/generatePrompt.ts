@@ -208,6 +208,7 @@ export interface PromptInput {
   backdropColor?: string;
   balloonStyle: BalloonStyleId;
   balloonColors?: string[];
+  shimmerColor?: string | null;
   backdropText?: BackdropText;
   backdropPrint?: BackdropPrint;
   cutouts?: CutoutSelection;

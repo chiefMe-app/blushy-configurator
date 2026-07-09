@@ -13,6 +13,11 @@
  *
  * Removed layouts (kept out intentionally): arch_round, round_shimmer.
  * Round is single-only as a product decision.
+ *
+ * Removed layouts (open-frame prop unreliable, pulled from product):
+ * arch_open_frame, shimmer_open_frame. Legacy ids remap to single-panel
+ * equivalents via LEGACY_TEMPLATE_ID_REMAP / getSetupLayoutTemplate and
+ * inferSetupLayoutTemplateIdFromBackdropItems so old references never crash.
  */
 
 export interface LayoutZone {
@@ -163,42 +168,22 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
                { x: 0.03, bottomY: 0.96, maxHeightFraction: 0.24, maxWidthFraction: 0.24, preferredSide: "left" }],
     },
   },
-  {
-    id: "arch_open_frame",
-    name: "Arch + Open Frame",
-    description: "Solid arch with a hollow frame friend",
-    backdropTypes: ["arch", "open_arch_frame"],
-    maxBackdrops: 2,
-    miniPreview: ["arch", "open_frame"],
-    panelInstruction: "Two pieces: a solid filled arch backdrop panel plus a freestanding hollow open arch frame beside it — the open arch frame is a pastel painted foam/wood arch outline with a completely empty center opening, no solid backdrop surface inside it, and NO extra backdrop panel behind it — the room wall is visible straight through the frame opening.",
-    garlandInstruction:
-      "IMPORTANT: The solid arch must have a thick, dense, premium organic balloon garland, not a thin dotted border. " +
-      "The balloons must be large, overlapping, realistic 3D latex balloons, with visible large statement balloons, medium balloons, and small filler balloons. " +
-      "The garland forms a full decorator-style balloon mass around the outer edge of the solid arch, starting at the floor base, climbing the outer side, " +
-      "and curling over the top crown, with realistic depth and shadows between overlapping balloons — a natural event decorator garland, not sparse. " +
-      "The open frame gets only a small matching mini-cluster of medium and small balloons on its OUTER top shoulder; most of the frame outline stays bare " +
-      "and the hollow opening stays completely clear. " +
-      "No bead chain, no pearl necklace, no tiny dotted outline, no sparse mini-balloons, no micro balloons, no helium balloon strings, no balloon bouquet, " +
-      "no printed balloon graphic, no flat dot pattern, no balloons inside the hollow open frame, no detached balloon column.",
-    plinthInstruction: "Place cylinder plinths at the front-left, clear of both the solid arch and the open frame.",
-    standeeZones: ZONES_TWO_PIECE,
-  },
-  {
-    id: "shimmer_open_frame",
-    name: "Shimmer + Open Frame",
-    description: "Sparkle wall behind a hollow arch",
-    backdropTypes: ["shimmer_wall", "open_arch_frame"],
-    maxBackdrops: 2,
-    miniPreview: ["shimmer", "open_frame"],
-    panelInstruction: "Two pieces: a square shimmer sequin wall with a freestanding hollow open arch frame placed to its front/side — the open arch frame is a pastel painted foam/wood arch outline with a completely empty center opening, so the shimmer sequin sparkle is visible straight through the frame opening. The shimmer wall is the ONLY panel; do not add any other backdrop behind or inside the frame.",
-    garlandInstruction: "Balloon design: exactly two pieces in this scene — the flat rectangular shimmer wall and the hollow open arch frame; never add a third backdrop or hidden backing piece. One accent cluster sits only on the open frame's top-left shoulder, flowing partway down the frame's left leg with smaller balloons. Most of the frame outline and the entire shimmer wall stay clean, and the frame's hollow opening stays completely clear — balloons never cross or block it. Do not wrap the whole frame; do not put balloons on the shimmer wall itself; no disconnected balloon column.",
-    plinthInstruction: "Place cylinder plinths at the front-left, clear of the frame opening.",
-    standeeZones: ZONES_TWO_PIECE,
-  },
 ];
 
+/**
+ * Legacy template ids removed from the product (open-frame prop was
+ * unreliable). Any stale reference — a saved selection, a cached diagnostic,
+ * a direct getSetupLayoutTemplate() call — resolves safely to the surviving
+ * single-panel layout instead of returning undefined.
+ */
+export const LEGACY_TEMPLATE_ID_REMAP: Record<string, string> = {
+  arch_open_frame: "single_arch",
+  shimmer_open_frame: "single_shimmer",
+};
+
 export function getSetupLayoutTemplate(id: string): SetupLayoutTemplate | undefined {
-  return SETUP_LAYOUT_TEMPLATES.find((t) => t.id === id);
+  const resolvedId = LEGACY_TEMPLATE_ID_REMAP[id] ?? id;
+  return SETUP_LAYOUT_TEMPLATES.find((t) => t.id === resolvedId);
 }
 
 /**
@@ -206,6 +191,10 @@ export function getSetupLayoutTemplate(id: string): SetupLayoutTemplate | undefi
  * Count-aware: two arches infer double_arch. Returns null when the
  * combination doesn't match a curated set (e.g. rect panels) — callers
  * fall back to generic behavior.
+ *
+ * open_arch_frame is no longer a selectable layout; a stray leftover panel
+ * of that type (from an old session) resolves to the surviving single-panel
+ * layout rather than a dead template id.
  */
 export function inferSetupLayoutTemplateIdFromBackdropItems(
   items: { type: string }[],
@@ -217,7 +206,7 @@ export function inferSetupLayoutTemplateIdFromBackdropItems(
   if (key === "shimmer_wall") return "single_shimmer";
   if (key === "arch+arch") return "double_arch";
   if (key === "arch+shimmer_wall") return "arch_shimmer";
-  if (key === "arch+open_arch_frame") return "arch_open_frame";
-  if (key === "open_arch_frame+shimmer_wall") return "shimmer_open_frame";
+  if (key === "arch+open_arch_frame") return "single_arch";
+  if (key === "open_arch_frame+shimmer_wall") return "single_shimmer";
   return null;
 }

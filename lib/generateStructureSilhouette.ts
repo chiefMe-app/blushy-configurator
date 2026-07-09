@@ -48,6 +48,10 @@ export interface SilhouetteResult {
   archOpenFrameMainGarlandMaxRadiusPx: number;
   archOpenFrameMainGarlandLaneCount:   number;
   archOpenFrameMainGarlandStyle:       string;
+  /** Actual frame-border thickness (px) drawn for open_arch_frame — 0 when absent. */
+  archOpenFrameFrameThicknessPx: number;
+  /** Geometry version tag for the open-frame band drawing. */
+  archOpenFrameGeometryStyle:    string;
 }
 
 /** One size tier of standee cutout to draw in the guide. */
@@ -206,23 +210,39 @@ function plinthEdge(cx: number, bottomY: number, heightPx: number, diameterPx: n
   ].join("\n    ");
 }
 
-// Open arch frame — hollow arch outline: outer + inner arch paths, no fill.
-// Reads as a freestanding empty arch frame prop, never a solid panel.
-function openArchFramePath(cx: number, pw: number, apexY: number, floorY: number): string {
-  const drawArch = (r: number, left: number, right: number, topY: number): string => {
+// Open arch frame — a THICK freestanding decor prop, not a thin doorway
+// outline. Drawn as one filled band (outer arch silhouette minus the inner
+// arch silhouette, via fill-rule="evenodd") so the frame has real visual
+// material/mass, matching a premium event arch cutout — with a clean hollow
+// arch-shaped opening cut through the center, never a wire outline.
+function openArchFramePath(
+  cx: number, pw: number, apexY: number, floorY: number,
+  fillColor: string,
+): { svg: string; frameThicknessPx: number } {
+  const closedArch = (r: number, left: number, right: number, topY: number): string => {
     const springY = topY + r;
-    return `M ${left},${floorY} L ${left},${springY} A ${r},${r} 0 0 1 ${right},${springY} L ${right},${floorY}`;
+    return `M ${left},${floorY} L ${left},${springY} A ${r},${r} 0 0 1 ${right},${springY} L ${right},${floorY} Z`;
   };
   const rOuter = pw / 2;
-  // Thin frame band — reads as a slim flat foam-board/MDF frame, not a chunky
-  // tubular arch. Narrow gap between outer and inner outlines is the key cue.
-  const frameT = Math.max(5, Math.round(pw * 0.07));
+  // Bold, substantial frame border — roughly a fifth of the panel's own
+  // width, clamped so the hollow opening always stays clearly visible
+  // (inner radius never collapses below ~54% of the outer radius).
+  const frameT = Math.max(20, Math.min(rOuter * 0.46, pw * 0.20));
   const rInner = rOuter - frameT;
-  const stroke = `fill="none" stroke="rgba(95,95,95,0.55)" stroke-width="2" stroke-linecap="round"`;
-  return [
-    `<path d="${drawArch(rOuter, cx - rOuter, cx + rOuter, apexY)}" ${stroke}/>`,
-    `<path d="${drawArch(rInner, cx - rInner, cx + rInner, apexY + frameT)}" ${stroke}/>`,
+
+  const outerPath = closedArch(rOuter, cx - rOuter, cx + rOuter, apexY);
+  const innerPath = closedArch(rInner, cx - rInner, cx + rInner, apexY + frameT);
+
+  const svg = [
+    // Solid filled band — outer arch silhouette with the inner arch punched
+    // out (evenodd). This is the frame's real material, giving it visual weight.
+    `<path d="${outerPath} ${innerPath}" fill-rule="evenodd" fill="${fillColor}" stroke="rgba(120,120,120,0.30)" stroke-width="1.5"/>`,
+    // Inner-rim shading — a subtle darker line along the hollow opening to
+    // sell material depth/thickness, not just a flat painted outline.
+    `<path d="${innerPath}" fill="none" stroke="rgba(90,90,90,0.30)" stroke-width="1.2"/>`,
   ].join("\n    ");
+
+  return { svg, frameThicknessPx: Math.round(frameT) };
 }
 
 // Escape user text for safe embedding in SVG markup.
@@ -305,7 +325,11 @@ export function generateStructureSilhouette(
   balloonStyle:     BalloonStyleId,
   balloonColors?:   string[],
   cutoutGuideItems?: CutoutGuideItem[],
+  // Sequin-disc tile fill for shimmer_wall panels — defaults to the original silver-gray
+  // so any caller that doesn't pass it keeps the pre-existing look.
+  shimmerColorHex?: string,
 ): SilhouetteResult {
+  const shimmerTileFill = shimmerColorHex ?? "#D8D8E4";
   const { falImageSize } = calculateRenderAspectRatio(backdropItems);
   const [Wbase, H]       = VIEWBOX[falImageSize];
 
@@ -374,6 +398,9 @@ export function generateStructureSilhouette(
   let archOpenFrameMainGarlandMinRadiusPx = 0;
   let archOpenFrameMainGarlandMaxRadiusPx = 0;
   let archOpenFrameMainGarlandLaneCount   = 0;
+  // Set whenever an open_arch_frame panel is drawn — reports the actual
+  // frame-border thickness (px) of the thick decor-prop geometry fix.
+  let archOpenFrameFrameThicknessPx = 0;
 
   // v4: pure white background — no fills, no color signals, edge map only
   bgLines.push(`<rect width="${W}" height="${H}" fill="#FFFFFF"/>`);
@@ -387,10 +414,14 @@ export function generateStructureSilhouette(
     const shape     = (item?.type ?? "arch") as BackdropShapeId;
     const isShimmer = shape === "shimmer_wall";
 
-    // Open arch frame: always drawn as a hollow outline — never filled —
-    // in both single and multi-panel setups.
+    // Open arch frame: a thick filled decor-prop band with a hollow center —
+    // same neutral fill family as the paired solid arch (MULTI_PANEL_FILLS),
+    // so the pair reads as one coordinated set, not a wire outline vs a board.
     if (shape === "open_arch_frame") {
-      content.push(openArchFramePath(panel.cx, panel.pw, panel.apexY, panel.floorY));
+      const frameFill = MULTI_PANEL_FILLS[sortedIdx % MULTI_PANEL_FILLS.length];
+      const frame = openArchFramePath(panel.cx, panel.pw, panel.apexY, panel.floorY, frameFill);
+      content.push(frame.svg);
+      archOpenFrameFrameThicknessPx = frame.frameThicknessPx;
       return;
     }
 
@@ -405,7 +436,7 @@ export function generateStructureSilhouette(
         content.push([
           `<defs>`,
           `  <pattern id="${patId}" patternUnits="userSpaceOnUse" width="${tileSize}" height="${tileSize}">`,
-          `    <rect width="${tileSize}" height="${tileSize}" fill="#D8D8E4"/>`,
+          `    <rect width="${tileSize}" height="${tileSize}" fill="${shimmerTileFill}"/>`,
           `    <rect width="${tileSize}" height="${tileSize}" fill="none" stroke="rgba(60,60,90,0.50)" stroke-width="0.7"/>`,
           `  </pattern>`,
           `</defs>`,
@@ -425,7 +456,7 @@ export function generateStructureSilhouette(
       content.push([
         `<defs>`,
         `  <pattern id="${patId}" patternUnits="userSpaceOnUse" width="${tileSize}" height="${tileSize}">`,
-        `    <rect width="${tileSize}" height="${tileSize}" fill="#D8D8E4"/>`,
+        `    <rect width="${tileSize}" height="${tileSize}" fill="${shimmerTileFill}"/>`,
         `    <rect width="${tileSize}" height="${tileSize}" fill="none" stroke="rgba(60,60,90,0.50)" stroke-width="0.7"/>`,
         `  </pattern>`,
         `</defs>`,
@@ -864,5 +895,7 @@ export function generateStructureSilhouette(
     archOpenFrameMainGarlandMaxRadiusPx,
     archOpenFrameMainGarlandLaneCount,
     archOpenFrameMainGarlandStyle: archOpenFrameMainGarlandBalloons > 0 ? "thick_organic_mass_v2" : "none",
+    archOpenFrameFrameThicknessPx,
+    archOpenFrameGeometryStyle: archOpenFrameFrameThicknessPx > 0 ? "thick_decor_prop_v2" : "none",
   };
 }

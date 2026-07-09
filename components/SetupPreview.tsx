@@ -735,6 +735,10 @@ function computeSceneHash(config: BuilderConfig): string {
     backdropColor: d.backdropColor,
     balloonStyle:  d.balloonStyle,
     balloonColors: d.balloonColors,
+    // Shimmer wall color — included so a shimmer-color-only change is treated
+    // as a scene change (cache miss) rather than silently reusing the last
+    // rendered (wrong-colored) shimmer wall.
+    shimmerColor:  d.shimmerColor,
     plinthSizes:   d.plinthSizes,
     backdropPrint: d.backdropPrint,
     cutouts:       d.cutouts,
@@ -747,6 +751,11 @@ function computeSceneHash(config: BuilderConfig): string {
  * sempertexSelection). Used to detect "only the balloon colors changed" so a
  * color change can be routed through edit_existing (recolor in place) instead
  * of a full first_generate that would recompose the whole scene.
+ *
+ * shimmerColor is intentionally INCLUDED here (unlike balloonColors) — a
+ * shimmer color change must go through the full first_generate path (fresh
+ * guide + prompt with the new color), not the balloon-only recolor edit,
+ * which never mentions the shimmer wall at all.
  */
 function computeStructureHash(config: BuilderConfig): string {
   const d = config.decor;
@@ -762,6 +771,7 @@ function computeStructureHash(config: BuilderConfig): string {
     backdropColor: d.backdropColor,
     balloonStyle:  d.balloonStyle,
     // balloonColors / sempertexSelection intentionally excluded
+    shimmerColor:  d.shimmerColor,
     plinthSizes:   d.plinthSizes,
     backdropPrint: d.backdropPrint,
     cutouts:       d.cutouts,
@@ -889,6 +899,7 @@ export function useFinalRender(config: BuilderConfig) {
         backdropColor: d.backdropColor,
         balloonStyle:  d.balloonStyle,
         balloonColors: d.balloonColors,
+        shimmerColor:  d.shimmerColor,
         backdropText:  d.backdropText,
         backdropPrint: d.backdropPrint,
         cutouts:       d.cutouts,
