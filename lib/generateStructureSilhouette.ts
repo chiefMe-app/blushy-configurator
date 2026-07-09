@@ -52,6 +52,8 @@ export interface SilhouetteResult {
   archOpenFrameFrameThicknessPx: number;
   /** Geometry version tag for the open-frame band drawing. */
   archOpenFrameGeometryStyle:    string;
+  /** Arch + Shimmer continuous bridge garland guide — 0 when not that layout. */
+  archShimmerBridgeGarlandBalloons: number;
 }
 
 /** One size tier of standee cutout to draw in the guide. */
@@ -440,6 +442,10 @@ export function generateStructureSilhouette(
   // Set whenever an open_arch_frame panel is drawn — reports the actual
   // frame-border thickness (px) of the thick decor-prop geometry fix.
   let archOpenFrameFrameThicknessPx = 0;
+  // Set whenever the arch_shimmer layout (one arch + one shimmer_wall, no
+  // open frame) draws its structural bridge garland — see
+  // drawArchShimmerBridgeGarland below.
+  let archShimmerBridgeGarlandBalloons = 0;
 
   // v4: pure white background — no fills, no color signals, edge map only
   bgLines.push(`<rect width="${W}" height="${H}" fill="#FFFFFF"/>`);
@@ -748,8 +754,118 @@ export function generateStructureSilhouette(
           return { count: n, minR: Math.round(minR), maxR: Math.round(maxR), lanes: 5 };
         };
 
+        // Arch + Shimmer bridge garland — ONE continuous organic balloon mass:
+        // starts as a dense cluster on the arch's OUTER upper shoulder, flows
+        // over the arch crown, bridges the panel gap (dipping slightly), lands
+        // on the shimmer wall's near top corner, and descends only slightly on
+        // the shimmer side. Never two separate per-panel columns.
+        //
+        // Before this guide existed, arch_shimmer's "continuous bridge garland"
+        // was described only in prompt text (setupLayoutCatalog.ts
+        // garlandInstruction) with no structural backing — the deterministic
+        // layout-reference guide fell through to the generic single-side
+        // vertical garland below, which the edit model had no reason to treat
+        // as a connected cross-panel mass. This function makes the bridge
+        // structural so the guide and the prompt agree.
+        //
+        // Direction-agnostic: mirrors via `dir`/`ang()` so it reads correctly
+        // whether the arch or the shimmer wall ends up on the left (panel
+        // order normally has arch first/left per applySetupTemplate, but this
+        // doesn't assume that).
+        const drawArchShimmerBridgeGarland = (
+          archP: typeof layout.panels[0], shimmerP: typeof layout.panels[0], colorOffset: number,
+        ): number => {
+          let n = 0;
+          const put = (bx: number, by: number, br: number) => {
+            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(colorOffset + n)}/>`);
+            n++;
+          };
+
+          const rArc  = archP.pw / 2;
+          const arcCx = archP.cx;
+          const arcCy = archP.apexY + rArc; // spring line / arc center height
+
+          const shimmerOnRight = shimmerP.cx > archP.cx;
+          const dir = shimmerOnRight ? 1 : -1;
+          // Mirrors the angle across the vertical axis when the shimmer wall
+          // is on the arch's LEFT, so the shoulder cluster always starts on
+          // the arch's OUTER side and the sweep always ends on the side
+          // facing the shimmer wall (the gap).
+          const ang = (deg: number) => shimmerOnRight ? deg : (180 - deg);
+
+          // 1) Shoulder cluster — dense, large-anchored cluster on the arch's
+          //    outer upper shoulder (~188°-232° raw: left-horizontal up to
+          //    just past 10 o'clock).
+          const SHOULDER: [number, number, number][] = [
+            [194,  8, 24], [206, -6, 21], [218, 14, 19], [188, 20, 17],
+            [228,  2, 16], [200, 22, 14], [212, -12, 13], [232, 10, 12],
+          ];
+          for (const [deg, radOff, br] of SHOULDER) {
+            const a = (ang(deg) * Math.PI) / 180;
+            put(arcCx + (rArc + radOff) * Math.cos(a), arcCy + (rArc + radOff) * Math.sin(a), br);
+          }
+
+          // 2) Crown sweep — continues the same arc from the shoulder, over
+          //    the top of the arch (270° raw = apex), toward the arch's
+          //    gap-facing shoulder.
+          const sweepN = 14;
+          for (let i = 0; i < sweepN; i++) {
+            const t      = i / (sweepN - 1);
+            const deg    = 232 + t * (340 - 232);
+            const a      = (ang(deg) * Math.PI) / 180;
+            const radOff = [-4, 10, 2, -8][i % 4];
+            const br     = i % 4 === 0 ? 18 : i % 3 === 0 ? 14 : 10 + ((i * 5) % 5);
+            put(arcCx + (rArc + radOff) * Math.cos(a), arcCy + (rArc + radOff) * Math.sin(a), br);
+          }
+
+          // 3) Gap bridge — interpolates from the arch's gap-facing point
+          //    (where the crown sweep ended) across the panel gap to the
+          //    shimmer wall's near top corner, dipping slightly at the midpoint.
+          const archGapA    = (ang(340) * Math.PI) / 180;
+          const archGapX    = arcCx + rArc * Math.cos(archGapA);
+          const archGapY    = arcCy + rArc * Math.sin(archGapA);
+          const shimmerNearX = shimmerOnRight ? shimmerP.cx - shimmerP.pw / 2 : shimmerP.cx + shimmerP.pw / 2;
+          const shimmerTopY  = shimmerP.apexY;
+          const bridgeN = 10;
+          for (let i = 0; i < bridgeN; i++) {
+            const t    = i / (bridgeN - 1);
+            const dipY = Math.sin(t * Math.PI) * (archP.pw * 0.05); // slight sag mid-gap
+            const bx   = archGapX + t * (shimmerNearX - archGapX);
+            const by   = archGapY + t * (shimmerTopY  - archGapY) + dipY;
+            const br   = 10 + ((i * 5) % 6);
+            put(bx, by, br);
+          }
+
+          // 4) Landing cluster — medium cluster on the shimmer wall's near
+          //    top corner.
+          const LANDING: [number, number, number][] = [
+            [ 6, -4, 20], [22,  6, 17], [-6, 14, 15], [16, 22, 14],
+            [ 2, 30, 12], [26, 30, 11],
+          ];
+          for (const [ox, oy, br] of LANDING) {
+            put(shimmerNearX + dir * ox, shimmerTopY + oy, br);
+          }
+
+          // 5) Slight descent on the shimmer side — a short run down the
+          //    shimmer wall's near edge, NOT a full column to the floor.
+          const descentN = 6;
+          const descentMaxDrop = (shimmerP.floorY - shimmerP.apexY) * 0.16; // ~16% of panel height
+          for (let i = 0; i < descentN; i++) {
+            const t  = i / (descentN - 1);
+            const bx = shimmerNearX + dir * (i % 2 === 0 ? -4 : 6);
+            const by = shimmerTopY + 34 + t * descentMaxDrop;
+            const br = 14 - Math.round(t * 5);
+            put(bx, by, br);
+          }
+
+          return n;
+        };
+
         const archPanels = layout.panels.filter(
           (p) => (backdropItems[p.idx]?.type ?? "") === "arch",
+        );
+        const shimmerPanels = layout.panels.filter(
+          (p) => (backdropItems[p.idx]?.type ?? "") === "shimmer_wall",
         );
         const framePanel = layout.panels.find(
           (p) => (backdropItems[p.idx]?.type ?? "") === "open_arch_frame",
@@ -814,6 +930,11 @@ export function generateStructureSilhouette(
             const br       = i < 2 ? 18 : 10 + ((i * 5) % 7);
             content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br}" ${balloonAttrs(i)}/>`);
           }
+        } else if (!framePanel && archPanels.length === 1 && shimmerPanels.length === 1) {
+          // Arch + Shimmer: one arch, one shimmer_wall, no open frame — draw
+          // the structural bridge garland instead of falling through to the
+          // generic single-side vertical garland below.
+          archShimmerBridgeGarlandBalloons = drawArchShimmerBridgeGarland(archPanels[0], shimmerPanels[0], 0);
         } else {
           // Arch / rect / other: right-side vertical garland from top-right corner to floor
           const outerOffset = Math.round(W * 0.055);
@@ -928,5 +1049,6 @@ export function generateStructureSilhouette(
     archOpenFrameMainGarlandStyle: archOpenFrameMainGarlandBalloons > 0 ? "thick_organic_mass_v2" : "none",
     archOpenFrameFrameThicknessPx,
     archOpenFrameGeometryStyle: archOpenFrameFrameThicknessPx > 0 ? "thick_decor_prop_v2" : "none",
+    archShimmerBridgeGarlandBalloons,
   };
 }

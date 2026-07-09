@@ -112,7 +112,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "restore-arch-shimmer-quality-v1";
+const RENDER_CACHE_VERSION = "arch-shimmer-bridge-garland-guide-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -644,6 +644,8 @@ interface LayoutRefPngResult {
   archOpenFrameMainGarlandStyle:       string;
   archOpenFrameFrameThicknessPx: number;
   archOpenFrameGeometryStyle:    string;
+  /** Arch + Shimmer bridge garland guide balloon count (0 when not that layout). */
+  archShimmerBridgeGarlandBalloons: number;
 }
 
 /**
@@ -675,7 +677,7 @@ async function generateLayoutReferencePng(
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] SVG generation failed:", msg);
-    return { dataUri: null, error: msg, stage: "svg-generation", bytes: null, doubleArchGarlandBalloonsLeft: 0, doubleArchGarlandBalloonsRight: 0, archOpenFrameMainGarlandBalloons: 0, archOpenFrameMiniClusterBalloons: 0, archOpenFrameMainGarlandMinRadiusPx: 0, archOpenFrameMainGarlandMaxRadiusPx: 0, archOpenFrameMainGarlandLaneCount: 0, archOpenFrameMainGarlandStyle: "none", archOpenFrameFrameThicknessPx: 0, archOpenFrameGeometryStyle: "none" };
+    return { dataUri: null, error: msg, stage: "svg-generation", bytes: null, doubleArchGarlandBalloonsLeft: 0, doubleArchGarlandBalloonsRight: 0, archOpenFrameMainGarlandBalloons: 0, archOpenFrameMiniClusterBalloons: 0, archOpenFrameMainGarlandMinRadiusPx: 0, archOpenFrameMainGarlandMaxRadiusPx: 0, archOpenFrameMainGarlandLaneCount: 0, archOpenFrameMainGarlandStyle: "none", archOpenFrameFrameThicknessPx: 0, archOpenFrameGeometryStyle: "none", archShimmerBridgeGarlandBalloons: 0 };
   }
 
   // Stage 2: sharp import — direct dynamic import so webpack/Vercel can trace and bundle it
@@ -686,7 +688,7 @@ async function generateLayoutReferencePng(
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] sharp import failed:", msg);
-    return { dataUri: null, error: msg, stage: "sharp-import", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle, archOpenFrameFrameThicknessPx: silhouette.archOpenFrameFrameThicknessPx, archOpenFrameGeometryStyle: silhouette.archOpenFrameGeometryStyle };
+    return { dataUri: null, error: msg, stage: "sharp-import", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle, archOpenFrameFrameThicknessPx: silhouette.archOpenFrameFrameThicknessPx, archOpenFrameGeometryStyle: silhouette.archOpenFrameGeometryStyle, archShimmerBridgeGarlandBalloons: silhouette.archShimmerBridgeGarlandBalloons };
   }
 
   // Stage 3: rasterize SVG → PNG
@@ -707,11 +709,12 @@ async function generateLayoutReferencePng(
       archOpenFrameMainGarlandStyle:       silhouette.archOpenFrameMainGarlandStyle,
       archOpenFrameFrameThicknessPx:       silhouette.archOpenFrameFrameThicknessPx,
       archOpenFrameGeometryStyle:          silhouette.archOpenFrameGeometryStyle,
+      archShimmerBridgeGarlandBalloons:    silhouette.archShimmerBridgeGarlandBalloons,
     };
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] rasterization failed:", msg);
-    return { dataUri: null, error: msg, stage: "rasterization", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle, archOpenFrameFrameThicknessPx: silhouette.archOpenFrameFrameThicknessPx, archOpenFrameGeometryStyle: silhouette.archOpenFrameGeometryStyle };
+    return { dataUri: null, error: msg, stage: "rasterization", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle, archOpenFrameFrameThicknessPx: silhouette.archOpenFrameFrameThicknessPx, archOpenFrameGeometryStyle: silhouette.archOpenFrameGeometryStyle, archShimmerBridgeGarlandBalloons: silhouette.archShimmerBridgeGarlandBalloons };
   }
 }
 
@@ -943,6 +946,15 @@ const customizedTextSolidPanels = customizedTextPanels.filter(
   (p) => p.type !== "shimmer_wall" && p.type !== "open_arch_frame",
 );
 const hasShimmerInScene = sceneModel.panels.some((p) => p.type === "shimmer_wall");
+// Exactly one arch + one shimmer_wall, no open frame — the arch_shimmer
+// layout specifically (not single_shimmer, not double_arch, not any
+// open-frame variant). Used to scope the arch_shimmer bridge-garland
+// diagnostics below to only the scenes that can actually have one.
+const isArchShimmerScene =
+  sceneModel.panels.length === 2 &&
+  sceneModel.panels.some((p) => p.type === "arch") &&
+  sceneModel.panels.some((p) => p.type === "shimmer_wall") &&
+  !sceneModel.panels.some((p) => p.type === "open_arch_frame");
 
   const diagInfo = {
   selectedPlinthSize:       firstPlinthDiag?.size       ?? null,
@@ -1098,6 +1110,16 @@ forbiddenBalloonColorLabels: hasSempertexLock
   shimmerColorLockStrength: hasShimmerInScene ? "soft_or_disabled_for_quality" : "n/a",
   shimmerPromptForcesNonSilver: false,
   shimmerGuideUsesSelectedColorDominantly: false,
+
+  // Arch + Shimmer rule-path diagnostics — confirms whether this scene took
+  // the arch_shimmer path at all, and whether the structural bridge-garland
+  // guide (generateStructureSilhouette's drawArchShimmerBridgeGarland) fired.
+  // Balloon-count/applied fields live in the pngResult-derived `extra` object
+  // further down (only known after the layout-reference PNG is generated).
+  archShimmerGuideStyle: isArchShimmerScene ? "bridge_garland_v1" : "n/a",
+  archShimmerPromptStyle: isArchShimmerScene ? "bridge_garland_setup_template_v1" : "n/a",
+  archShimmerUsesMultiPanelNegs: isArchShimmerScene,
+  archShimmerModelPath: isArchShimmerScene ? actualPrimaryModelId : "n/a",
 };
 
   try {
@@ -1670,6 +1692,10 @@ forbiddenBalloonColorLabels: hasSempertexLock
     // Arch + Open Frame geometry diagnostics (thick decor-prop frame fix)
     archOpenFrameFrameThicknessPx: pngResult.archOpenFrameFrameThicknessPx,
     archOpenFrameGeometryStyle:    pngResult.archOpenFrameGeometryStyle,
+    // Arch + Shimmer bridge garland guide diagnostics — confirms the
+    // structural guide (not just prompt text) actually drew the bridge.
+    archShimmerBridgeGarlandGuideApplied: pngResult.archShimmerBridgeGarlandBalloons > 0,
+    archShimmerBridgeGarlandBalloonCount: pngResult.archShimmerBridgeGarlandBalloons,
   };
 
   renderCache.set(cacheKey, { imageUrl: outputImageUrl, diagInfo, extra });
