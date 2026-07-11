@@ -41,7 +41,7 @@ import {
 } from "@/lib/generatePrompt";
 import { type SceneModel } from "@/lib/buildSceneModel";
 import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
-import { generateStructureSilhouette, type CutoutGuideItem } from "@/lib/generateStructureSilhouette";
+import { generateStructureSilhouette, computeShimmerWallMaskGeometry, panelRectToFraction, type CutoutGuideItem } from "@/lib/generateStructureSilhouette";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems, type LayoutZone } from "@/lib/setupLayoutCatalog";
 import { type BalloonStyleId, SHIMMER_COLOR_HEX, SHIMMER_COLORS, type ShimmerColorId } from "@/lib/config";
 import { SEMPERTEX_CATALOG, type SempertexColor } from "@/lib/sempertexCatalog";
@@ -112,7 +112,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "arch-shimmer-bridge-garland-guide-v1";
+const RENDER_CACHE_VERSION = "shimmer-recolor-geometry-mask-v4";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -277,6 +277,17 @@ const ISOLATION_CLAUSE =
 // Fixed seed for reproducible studio environment across Final Design Renders.
 // fal-ai/flux-2-pro supports the seed parameter.
 const FINAL_RENDER_SEED = 42424242;
+
+// Tried and reverted: an arch_shimmer-only alternate seed (ARCH_SHIMMER_SEED)
+// to break the model out of what looked like a seed-locked extra-cluster
+// bias. A real A/B render at the alternate seed showed the identical
+// artifact (detached cluster on the shimmer wall's far top corner + a
+// separate floor cluster) — same failure, different seed, only the arch
+// panel's own color drifted as an unrelated side effect. That ruled out
+// "seed-locked" as the explanation: it's a seed-independent compositional
+// prior of the edit model for two-panel backdrops, not something a
+// different fixed seed fixes. Reverted to keep every layout on the single
+// shared FINAL_RENDER_SEED rather than add seed divergence with no benefit.
 
 // Applied whenever plinths are configured — guarantees the plinth is always rendered.
 const PLINTH_VISIBILITY_CLAUSE =
@@ -644,8 +655,11 @@ interface LayoutRefPngResult {
   archOpenFrameMainGarlandStyle:       string;
   archOpenFrameFrameThicknessPx: number;
   archOpenFrameGeometryStyle:    string;
-  /** Arch + Shimmer bridge garland guide balloon count (0 when not that layout). */
-  archShimmerBridgeGarlandBalloons: number;
+  /** Arch + Shimmer composition guide balloon count (0 when not that layout). */
+  archShimmerCompositionBalloons: number;
+  /** Bounding box (panel-local px) of the shimmer-side accent cluster — used
+   *  to exclude it from the shimmer recolor mask. Null when not that layout. */
+  archShimmerAccentZone: { xMin: number; xMax: number; yMin: number; yMax: number } | null;
 }
 
 /**
@@ -677,7 +691,7 @@ async function generateLayoutReferencePng(
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] SVG generation failed:", msg);
-    return { dataUri: null, error: msg, stage: "svg-generation", bytes: null, doubleArchGarlandBalloonsLeft: 0, doubleArchGarlandBalloonsRight: 0, archOpenFrameMainGarlandBalloons: 0, archOpenFrameMiniClusterBalloons: 0, archOpenFrameMainGarlandMinRadiusPx: 0, archOpenFrameMainGarlandMaxRadiusPx: 0, archOpenFrameMainGarlandLaneCount: 0, archOpenFrameMainGarlandStyle: "none", archOpenFrameFrameThicknessPx: 0, archOpenFrameGeometryStyle: "none", archShimmerBridgeGarlandBalloons: 0 };
+    return { dataUri: null, error: msg, stage: "svg-generation", bytes: null, doubleArchGarlandBalloonsLeft: 0, doubleArchGarlandBalloonsRight: 0, archOpenFrameMainGarlandBalloons: 0, archOpenFrameMiniClusterBalloons: 0, archOpenFrameMainGarlandMinRadiusPx: 0, archOpenFrameMainGarlandMaxRadiusPx: 0, archOpenFrameMainGarlandLaneCount: 0, archOpenFrameMainGarlandStyle: "none", archOpenFrameFrameThicknessPx: 0, archOpenFrameGeometryStyle: "none", archShimmerCompositionBalloons: 0, archShimmerAccentZone: null };
   }
 
   // Stage 2: sharp import — direct dynamic import so webpack/Vercel can trace and bundle it
@@ -688,7 +702,7 @@ async function generateLayoutReferencePng(
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] sharp import failed:", msg);
-    return { dataUri: null, error: msg, stage: "sharp-import", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle, archOpenFrameFrameThicknessPx: silhouette.archOpenFrameFrameThicknessPx, archOpenFrameGeometryStyle: silhouette.archOpenFrameGeometryStyle, archShimmerBridgeGarlandBalloons: silhouette.archShimmerBridgeGarlandBalloons };
+    return { dataUri: null, error: msg, stage: "sharp-import", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle, archOpenFrameFrameThicknessPx: silhouette.archOpenFrameFrameThicknessPx, archOpenFrameGeometryStyle: silhouette.archOpenFrameGeometryStyle, archShimmerCompositionBalloons: silhouette.archShimmerCompositionBalloons, archShimmerAccentZone: silhouette.archShimmerAccentZone };
   }
 
   // Stage 3: rasterize SVG → PNG
@@ -709,12 +723,13 @@ async function generateLayoutReferencePng(
       archOpenFrameMainGarlandStyle:       silhouette.archOpenFrameMainGarlandStyle,
       archOpenFrameFrameThicknessPx:       silhouette.archOpenFrameFrameThicknessPx,
       archOpenFrameGeometryStyle:          silhouette.archOpenFrameGeometryStyle,
-      archShimmerBridgeGarlandBalloons:    silhouette.archShimmerBridgeGarlandBalloons,
+      archShimmerCompositionBalloons:      silhouette.archShimmerCompositionBalloons,
+      archShimmerAccentZone:               silhouette.archShimmerAccentZone,
     };
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] rasterization failed:", msg);
-    return { dataUri: null, error: msg, stage: "rasterization", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle, archOpenFrameFrameThicknessPx: silhouette.archOpenFrameFrameThicknessPx, archOpenFrameGeometryStyle: silhouette.archOpenFrameGeometryStyle, archShimmerBridgeGarlandBalloons: silhouette.archShimmerBridgeGarlandBalloons };
+    return { dataUri: null, error: msg, stage: "rasterization", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle, archOpenFrameFrameThicknessPx: silhouette.archOpenFrameFrameThicknessPx, archOpenFrameGeometryStyle: silhouette.archOpenFrameGeometryStyle, archShimmerCompositionBalloons: silhouette.archShimmerCompositionBalloons, archShimmerAccentZone: silhouette.archShimmerAccentZone };
   }
 }
 
@@ -1112,14 +1127,32 @@ forbiddenBalloonColorLabels: hasSempertexLock
   shimmerGuideUsesSelectedColorDominantly: false,
 
   // Arch + Shimmer rule-path diagnostics — confirms whether this scene took
-  // the arch_shimmer path at all, and whether the structural bridge-garland
-  // guide (generateStructureSilhouette's drawArchShimmerBridgeGarland) fired.
-  // Balloon-count/applied fields live in the pngResult-derived `extra` object
-  // further down (only known after the layout-reference PNG is generated).
-  archShimmerGuideStyle: isArchShimmerScene ? "bridge_garland_v1" : "n/a",
-  archShimmerPromptStyle: isArchShimmerScene ? "bridge_garland_setup_template_v1" : "n/a",
+  // the arch_shimmer path at all. Balloon-count/applied fields live in the
+  // pngResult-derived `extra` object further down (only known after the
+  // layout-reference PNG is generated).
+  archShimmerGuideStyle: isArchShimmerScene ? "arch_dense_garland_plus_shimmer_accent_v3" : "n/a",
   archShimmerUsesMultiPanelNegs: isArchShimmerScene,
   archShimmerModelPath: isArchShimmerScene ? actualPrimaryModelId : "n/a",
+  // Balloon styling reference mode — v3 reverted the interpolated "bridge"
+  // guide (balloons spanning the panel gap) and the accompanying SINGLE
+  // GARLAND LOCK prompt/negative-prompt engineering after a real render
+  // comparison showed that combination read as an awkward, over-engineered
+  // composition. Restored to the older, visually-successful pattern: the
+  // arch gets its own full drawDenseGarland treatment (same function
+  // double_arch uses), the shimmer wall gets a standalone near-corner
+  // accent cluster, and the balloon PROMPT text is back to the same default
+  // wording every other arch scene uses (no arch_shimmer special case) —
+  // relying on setupLayoutCatalog's own garland description, as it did
+  // before the bridge experiment.
+  balloonStyleReferenceMode: "older_successful_arrangement_v1",
+  archShimmerBalloonCompositionMode: isArchShimmerScene ? "arch_dense_garland_plus_shimmer_accent_v3" : "n/a",
+  // single_shimmer's balloon guide was never touched by the bridge
+  // experiment (it uses the separate generic single-panel garland branch,
+  // positioned outside the shimmer panel's own footprint) — reported here
+  // for completeness/symmetry with the arch_shimmer diagnostic above.
+  singleShimmerBalloonCompositionMode:
+    sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "shimmer_wall"
+      ? "unchanged_generic_corner_garland" : "n/a",
 };
 
   try {
@@ -1326,14 +1359,139 @@ forbiddenBalloonColorLabels: hasSempertexLock
   }
 
   // ── Deterministic post-render composites ─────────────────────────────────
-  // Order: AI final image → custom text composite → standee overlay.
-  // Text sits behind standees. Both stages share one working buffer.
+  // Order: AI final image → shimmer recolor → custom text composite → standee
+  // overlay. Text sits behind standees. All stages share one working buffer.
   let outputImageUrl         = finalImageUrl;
   let workingImageBuf: Buffer | null = null;
   const fetchFinalImage = async (): Promise<Buffer | null> => {
     const resp = await fetch(finalImageUrl);
     return resp.ok ? Buffer.from(await resp.arrayBuffer()) : null;
   };
+
+  // ── Deterministic shimmer wall recolor ───────────────────────────────────
+  // The AI model reliably renders a premium silver shimmer wall (shape, tile
+  // density, and sequin texture all verified good) but does not reliably
+  // apply a requested non-silver color via prompt text — prior testing in
+  // this project showed forceful prompt wording and even negative-prompt
+  // reinforcement made no visible difference to the rendered color. Instead
+  // of touching the AI prompt/guide again, the selected shimmer color is
+  // applied here as a deterministic, luminance-preserving tint over ONLY the
+  // shimmer wall panel's own region (via sharp's built-in `.tint()`, which
+  // replaces hue/chroma while preserving luminance — the sparkle/highlight
+  // pattern is what carries the sequin texture, so it survives untouched).
+  // Silver is a no-op (the AI's native silver render is the golden baseline
+  // and is left completely untouched).
+  //
+  // v3: mask is PURE GEOMETRY (computeShimmerWallMaskGeometry) — no generous
+  // padding, no texture-based width search. A v2 attempt padded the
+  // geometric guess and searched for the true edge by pixel contrast; real
+  // renders showed that leaked tint onto the background wall and — because a
+  // plain rectangle has no notion of what's drawn in front of the panel —
+  // onto the plinth too (some layouts place the plinth in front of the
+  // shimmer wall's own footprint). This version uses the exact panel
+  // geometry only, explicitly excludes known foreground objects (plinths,
+  // and for arch_shimmer the shimmer-side accent balloon cluster, using
+  // their own deterministic layout geometry) via an evenodd SVG mask, and
+  // feathers just 1-2px at every mask edge (outer boundary and hole edges).
+  let shimmerRecolorApplied    = false;
+  let shimmerRecolorMethod     = "none";
+  let shimmerMaskSource        = "none";
+  let shimmerMaskFeatherPx     = 0;
+  let shimmerRegionOnlyRecolor = false;
+  const shimmerColorForRecolor = sceneModel.shimmerColor as ShimmerColorId | null;
+  if (shimmerColorForRecolor && shimmerColorForRecolor !== "silver") {
+    try {
+      const maskGeometry = computeShimmerWallMaskGeometry(
+        promptInputForAi.backdropItems ?? [],
+        sceneModel.plinths.map((p) => p.size),
+        (sceneModel.balloons.style ?? "none") as BalloonStyleId,
+      );
+      const baseBuf = maskGeometry ? await fetchFinalImage() : null;
+      if (maskGeometry && baseBuf) {
+        const sharpPkgSh = await import("sharp");
+        const sharpFnSh  = ((sharpPkgSh as any).default ?? sharpPkgSh) as (b: Buffer) => any;
+        const metaSh     = await sharpFnSh(baseBuf).metadata() as { width?: number; height?: number };
+        const imgW = metaSh.width  ?? 1024;
+        const imgH = metaSh.height ?? 1024;
+
+        const toPx = (r: { xFrac: number; yFrac: number; wFrac: number; hFrac: number }) => ({
+          x: Math.max(0, Math.round(r.xFrac * imgW)),
+          y: Math.max(0, Math.round(r.yFrac * imgH)),
+          w: Math.max(0, Math.round(r.wFrac * imgW)),
+          h: Math.max(0, Math.round(r.hFrac * imgH)),
+        });
+
+        const panelPx = toPx(maskGeometry.panel);
+        const excludeFracs = [...maskGeometry.excludeRects];
+        // arch_shimmer only: also exclude the shimmer-side accent balloon
+        // cluster, using the EXACT zone the guide actually drew it in (same
+        // source values, not a re-derived approximation), so those balloons
+        // are never tinted.
+        if (pngResult.archShimmerAccentZone) {
+          excludeFracs.push(panelRectToFraction(promptInputForAi.backdropItems ?? [], pngResult.archShimmerAccentZone));
+        }
+
+        if (panelPx.w > 4 && panelPx.h > 4) {
+          const tintHex = SHIMMER_COLOR_HEX[shimmerColorForRecolor];
+          const tintedRegion = await (sharpFnSh(baseBuf)
+            .extract({ left: panelPx.x, top: panelPx.y, width: panelPx.w, height: panelPx.h })
+            .tint(tintHex)
+            .toBuffer()) as Buffer;
+
+          // Panel-local holes, clamped to the panel's own extracted bounds.
+          const holes: { x: number; y: number; w: number; h: number }[] = [];
+          for (const ex of excludeFracs) {
+            const exPx = toPx(ex);
+            const x0 = Math.max(0, exPx.x - panelPx.x);
+            const y0 = Math.max(0, exPx.y - panelPx.y);
+            const x1 = Math.min(panelPx.w, exPx.x - panelPx.x + exPx.w);
+            const y1 = Math.min(panelPx.h, exPx.y - panelPx.y + exPx.h);
+            if (x1 > x0 && y1 > y0) holes.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+          }
+
+          // Evenodd path: outer panel rect minus each hole rect — genuinely
+          // transparent (alpha 0) in hole areas, unlike drawing a "black"
+          // rect (which would still be fully opaque and not mask anything).
+          // Wrapped in a <g filter> so the 1-2px feather softens both the
+          // outer boundary and every hole edge uniformly.
+          const feather = 2;
+          const holePath = holes
+            .map((h) => `M${h.x},${h.y} H${h.x + h.w} V${h.y + h.h} H${h.x} Z`)
+            .join(" ");
+          const pathD = `M0,0 H${panelPx.w} V${panelPx.h} H0 Z ${holePath}`;
+          const maskSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${panelPx.w}" height="${panelPx.h}">` +
+            `<defs><filter id="f" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="${feather}"/></filter></defs>` +
+            `<g filter="url(#f)"><path fill-rule="evenodd" fill="white" d="${pathD}"/></g>` +
+            `</svg>`;
+          const maskBuf = await sharpFnSh(Buffer.from(maskSvg)).png().toBuffer();
+          const masked = await (sharpFnSh(tintedRegion)
+            .composite([{ input: maskBuf, blend: "dest-in" }])
+            .png()
+            .toBuffer()) as Buffer;
+
+          workingImageBuf = await (sharpFnSh(baseBuf)
+            .composite([{ input: masked, left: panelPx.x, top: panelPx.y, blend: "over" }])
+            .png()
+            .toBuffer()) as Buffer;
+
+          outputImageUrl = `data:image/jpeg;base64,${(await (sharpFnSh(workingImageBuf).jpeg({ quality: 92 }).toBuffer()) as Buffer).toString("base64")}`;
+          shimmerRecolorApplied    = true;
+          shimmerRecolorMethod     = "luminance_preserving_tint_geometry_mask_v3";
+          shimmerMaskSource        = "layout_geometry";
+          shimmerMaskFeatherPx     = feather;
+          shimmerRegionOnlyRecolor = true;
+
+          if (process.env.NODE_ENV === "development") {
+            console.log("[generate-controlled-render] shimmer recolor applied:", shimmerColorForRecolor, tintHex,
+              { panelPx, excludeCount: holes.length });
+          }
+        }
+      }
+    } catch (shimmerRecolorErr) {
+      console.warn("[generate-controlled-render] shimmer recolor failed (keeping silver):", String(shimmerRecolorErr));
+      workingImageBuf = null;
+    }
+  }
 
   // ── Guaranteed custom text composite ─────────────────────────────────────
   // Prompt + layout guide stay as soft signals; this composite guarantees the
@@ -1346,7 +1504,10 @@ forbiddenBalloonColorLabels: hasSempertexLock
 
   if (customizedTextSolidPanels.length > 0) {
     try {
-      const baseBuf = await fetchFinalImage();
+      // Chain from the shimmer-recolored buffer when present (matches the
+      // cutout-overlay stage below) — otherwise a prior shimmer recolor
+      // would be silently discarded by a fresh fetch of the pre-recolor image.
+      const baseBuf = workingImageBuf ?? await fetchFinalImage();
       if (baseBuf) {
         const sharpPkgT = await import("sharp");
         const sharpFnT  = ((sharpPkgT as any).default ?? sharpPkgT) as (b: Buffer) => any;
@@ -1692,10 +1853,19 @@ forbiddenBalloonColorLabels: hasSempertexLock
     // Arch + Open Frame geometry diagnostics (thick decor-prop frame fix)
     archOpenFrameFrameThicknessPx: pngResult.archOpenFrameFrameThicknessPx,
     archOpenFrameGeometryStyle:    pngResult.archOpenFrameGeometryStyle,
-    // Arch + Shimmer bridge garland guide diagnostics — confirms the
-    // structural guide (not just prompt text) actually drew the bridge.
-    archShimmerBridgeGarlandGuideApplied: pngResult.archShimmerBridgeGarlandBalloons > 0,
-    archShimmerBridgeGarlandBalloonCount: pngResult.archShimmerBridgeGarlandBalloons,
+    // Arch + Shimmer composition guide diagnostics — confirms the structural
+    // guide (arch-side dense garland + shimmer-side accent, no bridge)
+    // actually drew.
+    archShimmerCompositionGuideApplied: pngResult.archShimmerCompositionBalloons > 0,
+    archShimmerCompositionBalloonCount: pngResult.archShimmerCompositionBalloons,
+    // Deterministic shimmer wall recolor diagnostics — confirms whether the
+    // post-render tint (not the AI prompt) actually applied a non-silver
+    // shimmer color, via which method/mask/feather.
+    shimmerRecolorApplied,
+    shimmerRecolorMethod,
+    shimmerMaskSource,
+    shimmerMaskFeatherPx,
+    shimmerRegionOnlyRecolor,
   };
 
   renderCache.set(cacheKey, { imageUrl: outputImageUrl, diagInfo, extra });

@@ -52,8 +52,14 @@ export interface SilhouetteResult {
   archOpenFrameFrameThicknessPx: number;
   /** Geometry version tag for the open-frame band drawing. */
   archOpenFrameGeometryStyle:    string;
-  /** Arch + Shimmer continuous bridge garland guide — 0 when not that layout. */
-  archShimmerBridgeGarlandBalloons: number;
+  /** Arch + Shimmer composition guide (arch-side dense garland + shimmer-side
+   *  accent cluster) balloon count — 0 when not that layout. */
+  archShimmerCompositionBalloons: number;
+  /** Bounding box (panel-local px, same coordinate space as PanelLayout) of
+   *  the shimmer-side accent cluster — used to exclude it from the
+   *  post-render shimmer recolor mask so those balloons are never tinted.
+   *  Null when not that layout. */
+  archShimmerAccentZone: { xMin: number; xMax: number; yMin: number; yMax: number } | null;
 }
 
 /** One size tier of standee cutout to draw in the guide. */
@@ -443,9 +449,9 @@ export function generateStructureSilhouette(
   // frame-border thickness (px) of the thick decor-prop geometry fix.
   let archOpenFrameFrameThicknessPx = 0;
   // Set whenever the arch_shimmer layout (one arch + one shimmer_wall, no
-  // open frame) draws its structural bridge garland — see
-  // drawArchShimmerBridgeGarland below.
-  let archShimmerBridgeGarlandBalloons = 0;
+  // open frame) draws its composition — see drawArchShimmerComposition below.
+  let archShimmerCompositionBalloons = 0;
+  let archShimmerAccentZone: { xMin: number; xMax: number; yMin: number; yMax: number } | null = null;
 
   // v4: pure white background — no fills, no color signals, edge map only
   bgLines.push(`<rect width="${W}" height="${H}" fill="#FFFFFF"/>`);
@@ -754,111 +760,75 @@ export function generateStructureSilhouette(
           return { count: n, minR: Math.round(minR), maxR: Math.round(maxR), lanes: 5 };
         };
 
-        // Arch + Shimmer bridge garland — ONE continuous organic balloon mass:
-        // starts as a dense cluster on the arch's OUTER upper shoulder, flows
-        // over the arch crown, bridges the panel gap (dipping slightly), lands
-        // on the shimmer wall's near top corner, and descends only slightly on
-        // the shimmer side. Never two separate per-panel columns.
+        // Arch + Shimmer composition — TWO independently well-composed
+        // treatments rather than one interpolated bridge:
+        //   - the arch gets its own full, proven-good dense garland
+        //     (drawDenseGarland — the same function double_arch uses on both
+        //     its arches), on the arch's OUTER side (away from the shimmer wall)
+        //   - the shimmer wall gets its own standalone accent cluster on its
+        //     near-top corner (the corner adjacent to the arch)
         //
-        // Before this guide existed, arch_shimmer's "continuous bridge garland"
-        // was described only in prompt text (setupLayoutCatalog.ts
-        // garlandInstruction) with no structural backing — the deterministic
-        // layout-reference guide fell through to the generic single-side
-        // vertical garland below, which the edit model had no reason to treat
-        // as a connected cross-panel mass. This function makes the bridge
-        // structural so the guide and the prompt agree.
+        // An earlier version interpolated balloons across the panel gap to
+        // physically connect the two into one continuous mass ("bridge
+        // garland"). A real render comparison showed that read as an awkward,
+        // over-engineered composition — reverted in favor of this simpler,
+        // proven pattern that matches the older, visually-successful
+        // arrangement: lush arch garland + elegant shimmer-side accent,
+        // no forced connecting bridge.
         //
-        // Direction-agnostic: mirrors via `dir`/`ang()` so it reads correctly
-        // whether the arch or the shimmer wall ends up on the left (panel
-        // order normally has arch first/left per applySetupTemplate, but this
+        // Direction-agnostic: mirrors via `dir` so it reads correctly whether
+        // the arch or the shimmer wall ends up on the left (panel order
+        // normally has arch first/left per applySetupTemplate, but this
         // doesn't assume that).
-        const drawArchShimmerBridgeGarland = (
+        const drawArchShimmerComposition = (
           archP: typeof layout.panels[0], shimmerP: typeof layout.panels[0], colorOffset: number,
-        ): number => {
-          let n = 0;
-          const put = (bx: number, by: number, br: number) => {
-            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(colorOffset + n)}/>`);
-            n++;
-          };
-
-          const rArc  = archP.pw / 2;
-          const arcCx = archP.cx;
-          const arcCy = archP.apexY + rArc; // spring line / arc center height
-
+        ): { total: number; accentZone: { xMin: number; xMax: number; yMin: number; yMax: number } } => {
           const shimmerOnRight = shimmerP.cx > archP.cx;
+          const archOuterSide: "left" | "right" = shimmerOnRight ? "left" : "right";
+          const archCount = drawDenseGarland(archP, archOuterSide, colorOffset);
+
           const dir = shimmerOnRight ? 1 : -1;
-          // Mirrors the angle across the vertical axis when the shimmer wall
-          // is on the arch's LEFT, so the shoulder cluster always starts on
-          // the arch's OUTER side and the sweep always ends on the side
-          // facing the shimmer wall (the gap).
-          const ang = (deg: number) => shimmerOnRight ? deg : (180 - deg);
-
-          // 1) Shoulder cluster — dense, large-anchored cluster on the arch's
-          //    outer upper shoulder (~188°-232° raw: left-horizontal up to
-          //    just past 10 o'clock).
-          const SHOULDER: [number, number, number][] = [
-            [194,  8, 24], [206, -6, 21], [218, 14, 19], [188, 20, 17],
-            [228,  2, 16], [200, 22, 14], [212, -12, 13], [232, 10, 12],
-          ];
-          for (const [deg, radOff, br] of SHOULDER) {
-            const a = (ang(deg) * Math.PI) / 180;
-            put(arcCx + (rArc + radOff) * Math.cos(a), arcCy + (rArc + radOff) * Math.sin(a), br);
-          }
-
-          // 2) Crown sweep — continues the same arc from the shoulder, over
-          //    the top of the arch (270° raw = apex), toward the arch's
-          //    gap-facing shoulder.
-          const sweepN = 14;
-          for (let i = 0; i < sweepN; i++) {
-            const t      = i / (sweepN - 1);
-            const deg    = 232 + t * (340 - 232);
-            const a      = (ang(deg) * Math.PI) / 180;
-            const radOff = [-4, 10, 2, -8][i % 4];
-            const br     = i % 4 === 0 ? 18 : i % 3 === 0 ? 14 : 10 + ((i * 5) % 5);
-            put(arcCx + (rArc + radOff) * Math.cos(a), arcCy + (rArc + radOff) * Math.sin(a), br);
-          }
-
-          // 3) Gap bridge — interpolates from the arch's gap-facing point
-          //    (where the crown sweep ended) across the panel gap to the
-          //    shimmer wall's near top corner, dipping slightly at the midpoint.
-          const archGapA    = (ang(340) * Math.PI) / 180;
-          const archGapX    = arcCx + rArc * Math.cos(archGapA);
-          const archGapY    = arcCy + rArc * Math.sin(archGapA);
           const shimmerNearX = shimmerOnRight ? shimmerP.cx - shimmerP.pw / 2 : shimmerP.cx + shimmerP.pw / 2;
           const shimmerTopY  = shimmerP.apexY;
-          const bridgeN = 10;
-          for (let i = 0; i < bridgeN; i++) {
-            const t    = i / (bridgeN - 1);
-            const dipY = Math.sin(t * Math.PI) * (archP.pw * 0.05); // slight sag mid-gap
-            const bx   = archGapX + t * (shimmerNearX - archGapX);
-            const by   = archGapY + t * (shimmerTopY  - archGapY) + dipY;
-            const br   = 10 + ((i * 5) % 6);
-            put(bx, by, br);
+          const rLarge = Math.max(16, Math.min(26, shimmerP.pw * 0.11));
+          const rMed   = Math.max(12, Math.min(20, shimmerP.pw * 0.08));
+          const rSmall = Math.max(9,  Math.min(15, shimmerP.pw * 0.055));
+
+          // Standalone accent cluster — elegant, well-composed corner accent,
+          // 3 depth lanes for real volume (not a token handful of dots),
+          // placed on the shimmer wall's near-top corner only.
+          const OX_MIN = 4, OX_MAX = 30, OY_MIN = -9, OY_MAX = 38;
+          let accentN = 0;
+          const putAccent = (bx: number, by: number, br: number) => {
+            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(colorOffset + archCount + accentN)}/>`);
+            accentN++;
+          };
+          const accentCount = 12;
+          for (let i = 0; i < accentCount; i++) {
+            const t    = i / (accentCount - 1);
+            const lane = i % 3;
+            const ox   = dir * (OX_MIN + t * (OX_MAX - OX_MIN) + (((i * 7) % 9) - 4));
+            const oy   = OY_MIN + t * (OY_MAX - OY_MIN) + (((i * 5) % 7) - 3);
+            const br   = lane === 2 ? rLarge : lane === 1 ? rMed : rSmall;
+            putAccent(shimmerNearX + ox, shimmerTopY + oy, br);
           }
 
-          // 4) Landing cluster — medium cluster on the shimmer wall's near
-          //    top corner.
-          const LANDING: [number, number, number][] = [
-            [ 6, -4, 20], [22,  6, 17], [-6, 14, 15], [16, 22, 14],
-            [ 2, 30, 12], [26, 30, 11],
-          ];
-          for (const [ox, oy, br] of LANDING) {
-            put(shimmerNearX + dir * ox, shimmerTopY + oy, br);
-          }
+          // Bounding zone for the accent cluster (panel-local px, same space
+          // as PanelLayout) — reported so route.ts can exclude this known
+          // balloon region from the shimmer recolor mask, so the recolor
+          // never tints these balloons. Derived from the exact same
+          // OX_MIN/OX_MAX/OY_MIN/OY_MAX/jitter bounds used to place them
+          // above, plus each balloon's own radius.
+          const jitterMax = 4;
+          const oxSpan = OX_MAX + jitterMax;
+          const accentZone = {
+            xMin: shimmerNearX + Math.min(0, dir * oxSpan) - rLarge,
+            xMax: shimmerNearX + Math.max(0, dir * oxSpan) + rLarge,
+            yMin: shimmerTopY + OY_MIN - rLarge,
+            yMax: shimmerTopY + OY_MAX + jitterMax + rLarge,
+          };
 
-          // 5) Slight descent on the shimmer side — a short run down the
-          //    shimmer wall's near edge, NOT a full column to the floor.
-          const descentN = 6;
-          const descentMaxDrop = (shimmerP.floorY - shimmerP.apexY) * 0.16; // ~16% of panel height
-          for (let i = 0; i < descentN; i++) {
-            const t  = i / (descentN - 1);
-            const bx = shimmerNearX + dir * (i % 2 === 0 ? -4 : 6);
-            const by = shimmerTopY + 34 + t * descentMaxDrop;
-            const br = 14 - Math.round(t * 5);
-            put(bx, by, br);
-          }
-
-          return n;
+          return { total: archCount + accentN, accentZone };
         };
 
         const archPanels = layout.panels.filter(
@@ -932,9 +902,12 @@ export function generateStructureSilhouette(
           }
         } else if (!framePanel && archPanels.length === 1 && shimmerPanels.length === 1) {
           // Arch + Shimmer: one arch, one shimmer_wall, no open frame — draw
-          // the structural bridge garland instead of falling through to the
-          // generic single-side vertical garland below.
-          archShimmerBridgeGarlandBalloons = drawArchShimmerBridgeGarland(archPanels[0], shimmerPanels[0], 0);
+          // the two-treatment composition instead of falling through to the
+          // generic single-side vertical garland below (which would leave the
+          // arch with no garland at all).
+          const result = drawArchShimmerComposition(archPanels[0], shimmerPanels[0], 0);
+          archShimmerCompositionBalloons = result.total;
+          archShimmerAccentZone = result.accentZone;
         } else {
           // Arch / rect / other: right-side vertical garland from top-right corner to floor
           const outerOffset = Math.round(W * 0.055);
@@ -1049,6 +1022,181 @@ export function generateStructureSilhouette(
     archOpenFrameMainGarlandStyle: archOpenFrameMainGarlandBalloons > 0 ? "thick_organic_mass_v2" : "none",
     archOpenFrameFrameThicknessPx,
     archOpenFrameGeometryStyle: archOpenFrameFrameThicknessPx > 0 ? "thick_decor_prop_v2" : "none",
-    archShimmerBridgeGarlandBalloons,
+    archShimmerCompositionBalloons,
+    archShimmerAccentZone,
   };
+}
+
+/** Normalized (0..1) bounding box of a panel within the full composed canvas. */
+export interface RegionFraction {
+  xFrac: number;
+  yFrac: number;
+  wFrac: number;
+  hFrac: number;
+}
+
+export interface ShimmerMaskGeometry {
+  /** Exact shimmer_wall panel bounds — no padding, no search window. */
+  panel: RegionFraction;
+  /** Known foreground objects (plinths) to punch out of the recolor mask,
+   *  since they can visually sit in front of the shimmer wall's own footprint. */
+  excludeRects: RegionFraction[];
+}
+
+/**
+ * Computes the shimmer_wall panel's EXACT bounding box (no padding) plus any
+ * known foreground objects to exclude, both as fractions of the full
+ * rendered canvas — used by the deterministic post-render shimmer recolor
+ * step (app/api/generate-controlled-render/route.ts) to build a precise mask
+ * without touching the AI prompt/guide.
+ *
+ * v3: reverted from a padded "search window" + texture-based width
+ * refinement (v2) back to pure geometry per explicit product decision — the
+ * padding/texture-search approach leaked color onto background wall/plinth
+ * in real renders, which is unacceptable. This version trades a small risk
+ * of under-coverage (a thin sliver of un-recolored silver at the true edge,
+ * if the edit model renders the panel slightly wider than predicted) for
+ * eliminating bleed entirely, which real-render testing shows is the right
+ * tradeoff: the model has been reliable about panel position/vertical extent
+ * throughout this project, and horizontal drift (when it happens) is modest.
+ *
+ * Reuses the exact same layout math (VIEWBOX, calculateExactLayout, the 0.80
+ * SCALE and margin transform) as the main silhouette generator, so the mask
+ * matches what the guide showed the edit model.
+ *
+ * Returns null when there is no shimmer_wall panel in the scene.
+ */
+export function computeShimmerWallMaskGeometry(
+  backdropItems: BackdropItem[],
+  plinthSizes:   PlinthSize[],
+  balloonStyle:  BalloonStyleId,
+): ShimmerMaskGeometry | null {
+  const { falImageSize } = calculateRenderAspectRatio(backdropItems);
+  const [Wbase, H]       = VIEWBOX[falImageSize];
+  const isMultiPanel     = backdropItems.length > 1;
+  const W                = isMultiPanel ? Math.round(Wbase * 1.4) : Wbase;
+  const layout           = calculateExactLayout(backdropItems, plinthSizes, W, H);
+
+  const shimmerIdx = backdropItems.findIndex((item) => item.type === "shimmer_wall");
+  if (shimmerIdx === -1) return null;
+  const panel = layout.panels.find((p) => p.idx === shimmerIdx);
+  if (!panel) return null;
+
+  const SCALE   = 0.80;
+  const marginX = Math.round(W * (1 - SCALE) / 2);
+  const marginY = Math.round(H * (1 - SCALE) / 2);
+
+  const toFrac = (xMin: number, xMax: number, yMin: number, yMax: number): RegionFraction => {
+    const outerLeft   = marginX + xMin * SCALE;
+    const outerRight  = marginX + xMax * SCALE;
+    const outerTop    = marginY + yMin * SCALE;
+    const outerBottom = marginY + yMax * SCALE;
+    const xFrac = Math.max(0, outerLeft / W);
+    const yFrac = Math.max(0, outerTop / H);
+    const wFrac = Math.min(1, outerRight / W) - xFrac;
+    const hFrac = Math.min(1, outerBottom / H) - yFrac;
+    return { xFrac, yFrac, wFrac, hFrac };
+  };
+
+  // Real-render comparison (pre-recolor AI output vs. post-recolor result)
+  // proved two of this function's earlier assumptions wrong:
+  //
+  // 1) The plinth's x-position override below (replicating the *guide's*
+  //    drawn position) doesn't match reality, because the AI doesn't
+  //    actually follow the guide dot for the plinth — it follows the TEXT
+  //    prompt instead, which unconditionally says "Place it front-left of
+  //    the backdrop" (buildLayoutRefEditPrompt.ts plinthDesc), regardless of
+  //    layout. A real single_shimmer+pink render placed the plinth clearly
+  //    front-left, not centered at W*0.50 as the old override assumed —
+  //    leaving the exclusion hole nowhere near the actual plinth and letting
+  //    it get tinted. "Front-left" has no exact coordinate, so instead of
+  //    guessing a second fixed x, the exclusion is anchored at the panel's
+  //    OWN left edge (known precisely) and sized off the plinth's own
+  //    diameter/height — robust to wherever "front-left" actually lands,
+  //    as long as it's in the panel's left neighborhood (which is the only
+  //    case that can bleed onto the panel anyway).
+  //
+  // 2) A purely exact, unpadded panel rectangle still bled onto the
+  //    single_shimmer corner garland: that layout's "half" balloon style
+  //    draws one dense, premium garland cascading from the panel's top-right
+  //    corner down its right edge to the floor (the "Arch / rect / other"
+  //    branch above), and in real renders that garland visibly drapes well
+  //    into the panel's own right ~third and top ~sixth — not just grazing
+  //    the edge. Since balloon guide-dot positions undershoot how generously
+  //    the AI drapes the garland, the fix insets the panel rect itself on
+  //    those two edges (coverage loss on that strip, accepted per the
+  //    project's "never bleed onto balloons" priority) rather than trying to
+  //    predict individual balloon positions.
+  // 3) For arch_shimmer (the only multi-panel case here), a real render
+  //    comparison against its own pre-recolor output showed the panel's
+  //    predicted top edge sits a modest ~5% of panel height ABOVE where the
+  //    sequin texture actually starts — bleeding a flat tinted band onto the
+  //    bare wall above it. single_shimmer's top edge measured pixel-perfect
+  //    in the same comparison, so this inset is scoped to the multi-panel
+  //    case only (isMultiPanel), not applied universally.
+  const singleShimmerLocal = backdropItems.length === 1 && backdropItems[0]?.type === "shimmer_wall";
+  const hasCornerGarland    = singleShimmerLocal && balloonStyle === "half";
+
+  const panelLeft  = panel.cx - panel.pw / 2;
+  const panelRight = panel.cx + panel.pw / 2;
+  const panelTop   = panel.apexY;
+  const panelHeight = panel.floorY - panel.apexY;
+
+  const panelRect = toFrac(
+    panelLeft,
+    hasCornerGarland ? panelRight - panel.pw * 0.32 : panelRight,
+    hasCornerGarland ? panelTop + panelHeight * 0.16 : isMultiPanel ? panelTop + panelHeight * 0.07 : panelTop,
+    panel.floorY,
+  );
+
+  const excludeRects: RegionFraction[] = singleShimmerLocal
+    ? layout.plinths.map((pl) => {
+        const padX = Math.max(10, pl.diameterPx * 0.25);
+        const padY = Math.max(10, pl.heightPx * 0.15);
+        return toFrac(
+          panelLeft - padX, panelLeft + pl.diameterPx * 1.3 + padX,
+          pl.bottomY - pl.heightPx * 1.15 - padY, pl.bottomY + padY,
+        );
+      })
+    : layout.plinths.map((pl) => {
+        const padX = Math.max(10, pl.diameterPx * 0.35);
+        const padY = Math.max(10, pl.heightPx * 0.12);
+        return toFrac(
+          pl.cx - pl.diameterPx / 2 - padX, pl.cx + pl.diameterPx / 2 + padX,
+          pl.bottomY - pl.heightPx - padY, pl.bottomY + padY,
+        );
+      });
+
+  return { panel: panelRect, excludeRects };
+}
+
+/**
+ * Transforms a panel-space rect (same coordinate system as PanelLayout — e.g.
+ * SilhouetteResult.archShimmerAccentZone) into a canvas-fraction
+ * RegionFraction, using the same W/H/SCALE/margin transform as
+ * computeShimmerWallMaskGeometry — so a known balloon-cluster zone can also
+ * be punched out of the shimmer recolor mask, guaranteed consistent with
+ * where the guide actually drew those balloons (same source values, not a
+ * re-derived approximation).
+ */
+export function panelRectToFraction(
+  backdropItems: BackdropItem[],
+  rect: { xMin: number; xMax: number; yMin: number; yMax: number },
+): RegionFraction {
+  const { falImageSize } = calculateRenderAspectRatio(backdropItems);
+  const [Wbase, H]       = VIEWBOX[falImageSize];
+  const isMultiPanel     = backdropItems.length > 1;
+  const W                = isMultiPanel ? Math.round(Wbase * 1.4) : Wbase;
+  const SCALE   = 0.80;
+  const marginX = Math.round(W * (1 - SCALE) / 2);
+  const marginY = Math.round(H * (1 - SCALE) / 2);
+  const outerLeft   = marginX + rect.xMin * SCALE;
+  const outerRight  = marginX + rect.xMax * SCALE;
+  const outerTop    = marginY + rect.yMin * SCALE;
+  const outerBottom = marginY + rect.yMax * SCALE;
+  const xFrac = Math.max(0, outerLeft / W);
+  const yFrac = Math.max(0, outerTop / H);
+  const wFrac = Math.min(1, outerRight / W) - xFrac;
+  const hFrac = Math.min(1, outerBottom / H) - yFrac;
+  return { xFrac, yFrac, wFrac, hFrac };
 }

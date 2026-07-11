@@ -286,6 +286,13 @@ export function buildLayoutRefEditPrompt(
       `The visible front bottom edge of the round panel touches the floor directly.`
     : "";
 
+  // Reverted to a single unconditional treatment for any arch scene, including
+  // arch_shimmer — a "SINGLE GARLAND LOCK" special case was tried and removed
+  // (see git history) after a real render comparison showed it produced a
+  // more awkward, over-engineered composition than this default text
+  // combined with the catalog's own bridge-garland description
+  // (setupTemplateClause) had already been producing. Restoring the older,
+  // visually-successful default for all arch scenes.
   const archGarlandExtra = hasArchPanelInPrompt
     ? ` Premium organic balloon garland with large, medium, and small balloons nested together ` +
       `in lush clustered bunches, attached ONLY to ONE OUTER SIDE of the arch — the right outer edge — ` +

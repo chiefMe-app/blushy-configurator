@@ -161,6 +161,7 @@ export function buildNegativePrompt(
       "no merged shimmer panel"
     : "";
 
+
   // Unselected-prop negatives — block everything not in the scene config
   const extrasList   = promptInput?.extras ?? [];
   const selCutouts   = sceneModel?.cutouts?.size !== "none";
