@@ -28,6 +28,29 @@ import { getPlinthDimensions } from "./layoutDimensions";
 import { normalizeCutouts } from "@/lib/config";
 
 // ---------------------------------------------------------------------------
+// Legacy shimmer_wall sanitization
+// ---------------------------------------------------------------------------
+
+/**
+ * Shimmer wall was removed from the product (2026-07-12) — the recolor
+ * pipeline was too unreliable, focus shifted to arch-based designs. Old
+ * saved configs/sessions (or a stale client request) can still send a
+ * shimmer_wall backdropItem; rather than let a panel type nothing downstream
+ * expects to see anymore flow through, remap it in-place to a same-slot arch
+ * panel (medium size) so every SceneModel this builds always resolves to a
+ * currently-supported layout. This is the single choke point both
+ * buildSceneModel() and buildSceneModelFromItems() route through, so no
+ * caller needs its own shimmer_wall handling.
+ */
+function sanitizeBackdropItems(items: BackdropItem[]): BackdropItem[] {
+  return items.map((item) =>
+    item.type === "shimmer_wall"
+      ? { ...item, type: "arch" as const, sizeId: "medium", widthCm: 100, heightCm: 200 }
+      : item
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Scene model types
 // ---------------------------------------------------------------------------
 
@@ -105,7 +128,7 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
   const globalColor = d.backdropColor;
 
   // Panels: resolve per-item color, falling back to global backdrop color.
-  const panels: ScenePanel[] = d.backdropItems
+  const panels: ScenePanel[] = sanitizeBackdropItems(d.backdropItems)
     .slice(0, 3)
     .map<ScenePanel>((item, i) => ({
       id:       item.id,
@@ -143,8 +166,6 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
 
   const cutouts: SceneCutouts = normalizeCutouts(d.cutouts);
 
-  const hasShimmer = d.backdropItems.some((item) => item.type === "shimmer_wall");
-
   return {
     theme:        config.theme,
     panels,
@@ -152,8 +173,10 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
     plinths,
     cutouts,
     totalPrice:   config.estimatedTotal,
-    // Default to "silver" when shimmer wall is present but no color chosen (backward compat)
-    shimmerColor: hasShimmer ? (d.shimmerColor ?? "silver") : null,
+    // Shimmer wall is no longer a supported panel type — sanitizeBackdropItems()
+    // above already remaps any legacy shimmer_wall item to arch, so `panels`
+    // never contains one and this is always null.
+    shimmerColor: null,
   };
 }
 
@@ -172,7 +195,7 @@ export function buildSceneModelFromItems(
   cutoutSize: CutoutSize,
   cutoutPosition: CutoutPosition,
 ): SceneModel {
-  const panels: ScenePanel[] = items.slice(0, 3).map<ScenePanel>((item, i) => ({
+  const panels: ScenePanel[] = sanitizeBackdropItems(items).slice(0, 3).map<ScenePanel>((item, i) => ({
     id:       item.id,
     type:     item.type,
     sizeId:   item.sizeId,
@@ -211,6 +234,9 @@ export function buildSceneModelFromItems(
   plinths,
   cutouts,
   totalPrice: 0,
-  shimmerColor: items.some((i) => i.type === "shimmer_wall") ? "silver" : null,
+  // Shimmer wall is no longer a supported panel type — sanitizeBackdropItems()
+  // above already remaps any legacy shimmer_wall item to arch, so `panels`
+  // never contains one and this is always null.
+  shimmerColor: null,
 };
 }

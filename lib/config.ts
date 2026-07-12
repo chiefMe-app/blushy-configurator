@@ -262,6 +262,10 @@ export const PACKAGES: Package[] = [
 
 // =====================  STEP - DECOR  ======================================
 
+// "shimmer_wall" and "open_arch_frame" are no longer selectable in the
+// product (see BACKDROP_SHAPES / setupLayoutCatalog.ts) but stay in this
+// union so old saved BackdropItem data still type-checks and can be
+// sanitized/remapped instead of crashing.
 export type BackdropShapeId =
   | "arch"
   | "round"
@@ -580,8 +584,10 @@ export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   { id: "arch",         label: "Arch Backdrop",        price: 0 },
   { id: "round",        label: "Round Backdrop",       price: 0 },
   { id: "rect",         label: "Rectangular Backdrop", price: 0 },
-  { id: "shimmer_wall", label: "Shimmer Wall - 200 x 200 cm", price: 80 },
   // "wavy" removed from product - not selectable. Kept in BackdropShapeId for backward compat.
+  // "shimmer_wall" removed from product (2026-07-12) - shimmer pipeline too
+  // unreliable, focus shifted to arch-based designs. Kept in BackdropShapeId
+  // for backward compat with old saved configs.
 ];
 
 export const BALLOON_STYLES: Option<BalloonStyleId>[] = [

@@ -1245,12 +1245,11 @@ function clearAllStandees() {
     switch (templateId) {
       case "single_arch":        panels = [makeArchUnsized("arch-1")]; break;
       case "single_round":       panels = [makeBackdropItem("round")]; break;
-      case "single_shimmer":     panels = [makeBackdropItem("shimmer_wall")]; break;
-      case "arch_shimmer":       panels = [makeArchUnsized("arch-1"), makeBackdropItem("shimmer_wall")]; break;
       case "double_arch":        panels = [makeArchUnsized("arch-1"), makeArchUnsized("arch-2")]; break;
-      // arch_open_frame / shimmer_open_frame removed from product — no longer
-      // selectable, so no case needed; legacy ids resolve via
-      // getSetupLayoutTemplate()'s LEGACY_TEMPLATE_ID_REMAP if ever passed in.
+      // arch_open_frame / shimmer_open_frame / single_shimmer / arch_shimmer
+      // removed from product — no longer selectable, so no case needed;
+      // legacy ids resolve via getSetupLayoutTemplate()'s
+      // LEGACY_TEMPLATE_ID_REMAP if ever passed in.
       default: return;
     }
     patchDecor({ backdropItems: panels });
@@ -1465,7 +1464,6 @@ function clearAllStandees() {
             { type: "arch" as const, label: "Arch Backdrop", badge: "Most popular", click: () => { const hasArch = d.backdropItems.some(i=>i.type==="arch"); if(!hasArch) toggleArchSize(ARCH_SIZES[1]); else patchDecor({ backdropItems: d.backdropItems.filter(i=>i.type!=="arch") }); } },
             { type: "rect" as const, label: "Rectangular Backdrop", badge: null, click: () => toggleOtherType("rect") },
             { type: "round" as const, label: "Round Backdrop", badge: null, click: () => toggleRound() },
-            { type: "shimmer_wall" as const, label: "Shimmer Wall", badge: "Glam pick", click: () => toggleOtherType("shimmer_wall") },
           ].map(({ type, label, badge, click }) => {
             const isSelected = type === "arch"
               ? d.backdropItems.some(i => i.type === "arch")
@@ -1601,30 +1599,11 @@ function clearAllStandees() {
           return roundItem && itemIdx >= 0 ? BackdropCustomizeRow({ item: roundItem, itemIdx }) : null;
         })()}
 
-        {/* Shimmer color selector + customization */}
-        {d.backdropItems.some(i => i.type === "shimmer_wall") && (() => {
-          const shimmerItem = d.backdropItems.find(i => i.type === "shimmer_wall");
-          const itemIdx = shimmerItem ? d.backdropItems.findIndex(i => i.id === shimmerItem.id) : -1;
-          return (
-            <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 8 }}>Shimmer color</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-                {SHIMMER_COLORS.map(sc => {
-                  const isActive = (d.shimmerColor ?? "silver") === sc.id;
-                  return (
-                    <button key={sc.id} type="button" onClick={() => patchDecor({ shimmerColor: sc.id as ShimmerColorId })}
-                      style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: isActive ? 700 : 500,
-                        border: isActive ? "2px solid #FF6B9D" : "1.5px solid rgba(0,0,0,0.12)",
-                        background: isActive ? "#FFF0F5" : "white", color: isActive ? "#FF6B9D" : "#333", cursor: "pointer" }}>
-                      {sc.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {shimmerItem && itemIdx >= 0 && BackdropCustomizeRow({ item: shimmerItem, itemIdx })}
-            </div>
-          );
-        })()}
+        {/* Shimmer color picker intentionally removed (2026-07-12) — shimmer
+            wall is no longer a selectable product path. Left unconditional
+            (not gated on a shimmer_wall item existing) so it stays hidden
+            even if a stale/legacy backdropItems array somehow still has one;
+            buildSceneModel also sanitizes shimmer_wall items server-side. */}
 
         {d.backdropItems.length === 0 && (
           <div style={{ textAlign: "center", padding: "8px 0 4px", fontSize: 13, color: "#AAA", fontStyle: "italic" }}>Choose a backdrop above to get started</div>

@@ -79,6 +79,20 @@ function getT2IModelId(mode: ModelMode): string {
 function getT2IEndpoint(mode: ModelMode): string {
   return `https://fal.run/${getT2IModelId(mode)}`;
 }
+
+// ── Shimmer wall product removal (2026-07-12) ───────────────────────────────
+// Shimmer wall is no longer a selectable layout — the recolor pipeline was
+// too unreliable and the product direction shifted to arch-based designs.
+// buildSceneModel()/buildSceneModelFromItems() already sanitize any legacy
+// shimmer_wall backdropItem to an arch panel for requests built through the
+// normal client flow, but this route trusts `promptInput`/`sceneModel`
+// straight from the request body (no server-side rebuild) — so this flag is
+// the actual, unconditional guarantee that shimmer recolor never runs for a
+// normal user selection, independent of what a stale or hand-crafted request
+// body contains. Mirrors the ENABLE_LEGACY_GENERATE_ENDPOINT / pro-endpoint
+// disable pattern used elsewhere in this file. The recolor code itself is
+// left intact (not deleted) in case shimmer ever comes back.
+const SHIMMER_RECOLOR_ENABLED = process.env.ENABLE_SHIMMER_RECOLOR === "true";
 function getThemeSempertexDefaults(themeId: string): SempertexColor[] {
   const entry = THEME_CATALOG.find((t) => t.id === themeId);
   if (!entry || entry.sempertexPaletteIds.length === 0) return [];
@@ -1399,7 +1413,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
   let shimmerMaskFeatherPx     = 0;
   let shimmerRegionOnlyRecolor = false;
   const shimmerColorForRecolor = sceneModel.shimmerColor as ShimmerColorId | null;
-  if (shimmerColorForRecolor && shimmerColorForRecolor !== "silver") {
+  if (SHIMMER_RECOLOR_ENABLED && shimmerColorForRecolor && shimmerColorForRecolor !== "silver") {
     try {
       const maskGeometry = computeShimmerWallMaskGeometry(
         promptInputForAi.backdropItems ?? [],

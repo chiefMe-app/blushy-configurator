@@ -15,8 +15,13 @@
  * Round is single-only as a product decision.
  *
  * Removed layouts (open-frame prop unreliable, pulled from product):
- * arch_open_frame, shimmer_open_frame. Legacy ids remap to single-panel
- * equivalents via LEGACY_TEMPLATE_ID_REMAP / getSetupLayoutTemplate and
+ * arch_open_frame, shimmer_open_frame.
+ *
+ * Removed layouts (product decision — shimmer wall pipeline too unreliable,
+ * focus shifted to arch-based designs): single_shimmer, arch_shimmer.
+ *
+ * All removed-layout ids remap to single-panel equivalents via
+ * LEGACY_TEMPLATE_ID_REMAP / getSetupLayoutTemplate and
  * inferSetupLayoutTemplateIdFromBackdropItems so old references never crash.
  */
 
@@ -71,13 +76,6 @@ const ZONES_STANDARD = {
   small:  [{ x: 0.96, bottomY: 0.96, maxHeightFraction: 0.25, maxWidthFraction: 0.26, preferredSide: "right" as const }],
 };
 
-// Tighter zones for 2-piece sets — keep standees off both panel faces.
-const ZONES_TWO_PIECE = {
-  large:  [{ x: 0.99, bottomY: 0.92, maxHeightFraction: 0.54, maxWidthFraction: 0.38, preferredSide: "right" as const }],
-  medium: [{ x: 0.02, bottomY: 0.94, maxHeightFraction: 0.38, maxWidthFraction: 0.32, preferredSide: "left" as const }],
-  small:  [{ x: 0.96, bottomY: 0.96, maxHeightFraction: 0.24, maxWidthFraction: 0.24, preferredSide: "right" as const }],
-};
-
 export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
   {
     id: "single_arch",
@@ -103,32 +101,6 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     garlandInstruction: "Preserve one organic balloon garland arcing along the upper-right perimeter of the round backdrop only — a partial arc, never a full ring.",
     plinthInstruction: "Place cylinder plinths on the left/front side of the round panel, away from the right-side garland.",
     standeeZones: ZONES_STANDARD,
-  },
-  {
-    id: "single_shimmer",
-    name: "Single Shimmer",
-    description: "Sparkling sequin wall",
-    backdropTypes: ["shimmer_wall"],
-    maxBackdrops: 1,
-    badge: "Glam",
-    miniPreview: ["shimmer", "balloons"],
-    panelInstruction: "A single freestanding square shimmer sequin wall centered in the scene.",
-    garlandInstruction: "Balloon design: one corner-mounted garland hugging the top-right corner of the shimmer wall — a dense cluster of large balloons at the corner itself, spilling a short arm along the top edge and a longer arm about two-thirds of the way down the right edge. Balloons sit tight against the wall edge so the sequin surface stays almost fully visible.",
-    plinthInstruction: "Place cylinder plinths front-left or centered in front of the shimmer wall.",
-    standeeZones: ZONES_STANDARD,
-  },
-  {
-    id: "arch_shimmer",
-    name: "Arch + Shimmer",
-    description: "Arch with a sparkle sidekick",
-    backdropTypes: ["arch", "shimmer_wall"],
-    maxBackdrops: 2,
-    badge: "Glam",
-    miniPreview: ["arch", "shimmer"],
-    panelInstruction: "Two backdrop pieces: the solid arch panel on the left and the square shimmer sequin wall on the right, standing side by side as separate physical boards.",
-    garlandInstruction: "Balloon design: one continuous bridge garland — it starts as a dense cluster of large balloons on the upper-left shoulder of the arch, sweeps over the arch crown, dips slightly in the gap between the two pieces, and lands on the top-left corner of the shimmer wall with a medium cluster. One single connected garland spanning both pieces; the shimmer wall's right edge and the arch's left edge stay clean.",
-    plinthInstruction: "Place cylinder plinths in front of the arch, clear of both panels.",
-    standeeZones: ZONES_TWO_PIECE,
   },
   {
     id: "double_arch",
@@ -175,10 +147,16 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
  * unreliable). Any stale reference — a saved selection, a cached diagnostic,
  * a direct getSetupLayoutTemplate() call — resolves safely to the surviving
  * single-panel layout instead of returning undefined.
+ *
+ * single_shimmer / arch_shimmer are also removed (shimmer pipeline pulled
+ * from product) and remap to single_arch for the same reason — an old saved
+ * config referencing either must never crash, it just lands on an arch.
  */
 export const LEGACY_TEMPLATE_ID_REMAP: Record<string, string> = {
   arch_open_frame: "single_arch",
-  shimmer_open_frame: "single_shimmer",
+  shimmer_open_frame: "single_arch",
+  single_shimmer: "single_arch",
+  arch_shimmer: "single_arch",
 };
 
 export function getSetupLayoutTemplate(id: string): SetupLayoutTemplate | undefined {
@@ -192,9 +170,9 @@ export function getSetupLayoutTemplate(id: string): SetupLayoutTemplate | undefi
  * combination doesn't match a curated set (e.g. rect panels) — callers
  * fall back to generic behavior.
  *
- * open_arch_frame is no longer a selectable layout; a stray leftover panel
- * of that type (from an old session) resolves to the surviving single-panel
- * layout rather than a dead template id.
+ * open_arch_frame and shimmer_wall are no longer selectable layout pieces;
+ * a stray leftover panel of either type (from an old session) resolves to
+ * the surviving single-arch layout rather than a dead template id.
  */
 export function inferSetupLayoutTemplateIdFromBackdropItems(
   items: { type: string }[],
@@ -203,10 +181,10 @@ export function inferSetupLayoutTemplateIdFromBackdropItems(
   const key = types.join("+");
   if (key === "arch") return "single_arch";
   if (key === "round") return "single_round";
-  if (key === "shimmer_wall") return "single_shimmer";
+  if (key === "shimmer_wall") return "single_arch";
   if (key === "arch+arch") return "double_arch";
-  if (key === "arch+shimmer_wall") return "arch_shimmer";
+  if (key === "arch+shimmer_wall") return "single_arch";
   if (key === "arch+open_arch_frame") return "single_arch";
-  if (key === "open_arch_frame+shimmer_wall") return "single_shimmer";
+  if (key === "open_arch_frame+shimmer_wall") return "single_arch";
   return null;
 }
