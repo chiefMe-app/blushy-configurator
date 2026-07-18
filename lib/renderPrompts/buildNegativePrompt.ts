@@ -40,6 +40,24 @@ export function buildNegativePrompt(
       "hollow arch, open doorway arch, arch frame, cut-out center, empty opening, see-through arch, doorway frame"
     : "";
 
+  // Double Arch fidelity negatives (2026-07-12) — reinforces the size-lock
+  // and separation-lock positive clauses in buildLayoutRefEditPrompt.ts.
+  // Same isDoubleArchScene definition used there and in
+  // generateStructureSilhouette.ts's guide drawing: exactly two arch panels.
+  const isDoubleArchScene = items.length === 2 && items.every((p) => p.type === "arch");
+  // Plinth-specific negatives for Double Arch live in plinthNeg below (via
+  // aiFacingHasPlinths) now that the plinth is suppressed from the AI
+  // entirely and composited deterministically instead — kept this clause
+  // scoped to pure arch geometry (size, base separation).
+  const doubleArchNeg = isDoubleArchScene
+    ? ", two equal-sized arches, matching pair of arches, identical arch sizes, same-height arches, " +
+      "same-width arches, symmetric twin arches, uniform arch pair, mirrored size arches, " +
+      "merged arch bases, touching arch bases, overlapping arch floor footprints, " +
+      "connected arch bases, arches sharing one base, arches touching at the bottom, " +
+      "no gap between arch bases, single fused backdrop shape, blended arch silhouette, " +
+      "arches leaning into each other"
+    : "";
+
   const hasRoundPanel = items.some((p) => p.type === "round");
   const roundPropNeg = hasRoundPanel
     ? ", visible stand, wheels, metal frame, support hardware, support legs, " +
@@ -60,7 +78,7 @@ export function buildNegativePrompt(
   const structureNeg =
     "wrong number of panels, extra backdrop panel, missing backdrop panel, " +
     "changed panel silhouette, wrong panel proportions, oversized backdrop wall" +
-    archPropNeg + roundPropNeg;
+    archPropNeg + roundPropNeg + doubleArchNeg;
 
   const archBalloonNeg = hasArchPanel
     ? ", tiny balloons only, same-size balloons, sparse garland, thin garland, stringy garland, " +
@@ -133,21 +151,39 @@ export function buildNegativePrompt(
   // Declared early so it gates both plinthNeg/plinthGeometryNeg below and plinthOmissionNeg later.
   const hasPlinths = (sceneModel?.plinths?.length ?? 0) > 0;
 
+  // Double Arch (2026-07-12): the plinth is composited deterministically
+  // after the AI render now (route.ts), not requested from the AI at all —
+  // see the matching suppression in buildLayoutRefEditPrompt.ts's
+  // plinthDesc/noPlinthDesc. The negative prompt needs to match: with real
+  // hasPlinths, plinthOmissionNeg below would tell the model "don't omit
+  // the plinth" while the positive prompt now says there is none — the
+  // same kind of contradiction that caused the plinth-conflict bug fixed
+  // earlier. aiFacingHasPlinths treats Double Arch as plinth-less for every
+  // plinth-related negative below, which flips plinthNeg/plinthGeometryNeg
+  // to their "forbid ANY plinth-like shape" form — helpful, since it also
+  // discourages the faint glass/ghost plinth the AI sometimes still drew on
+  // its own even without a prompt asking for one.
+  const aiFacingHasPlinths = isDoubleArchScene ? false : hasPlinths;
+
   // Broad shape negatives ("no cylinder", "no podium") confuse the model into removing the
   // selected plinth. Only fire them when NO plinth is configured in the scene.
-  const plinthGeometryNeg = !hasPlinths
+  const plinthGeometryNeg = !aiFacingHasPlinths
     ? "short podium, low podium, cake stand, squat cylinder, short cylinder, wide cylinder, " +
       "flat cylinder, disk plinth, low round platform, short round stand, wide display stand"
     : "";
 
   // When a plinth IS selected: only forbid extra/wrong additions, not the plinth itself.
-  const plinthNeg = hasPlinths
+  const plinthNeg = aiFacingHasPlinths
     ? "extra plinth, second plinth, additional pedestal, extra podium, support base, " +
       "circular stage, rectangular base block, riser, platform under backdrop"
     : "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base, " +
       "short round podium, cake stand, low display stand, short cylinder, low podium, " +
       "squat cylinder, wide cylinder, flat cylinder, disk plinth, drum table, round stool, " +
-      "short round stand, wide display stand";
+      "short round stand, wide display stand" +
+      (isDoubleArchScene
+        ? ", glass plinth, clear plinth, transparent plinth, clear acrylic plinth, crystal plinth, " +
+          "see-through plinth, glass cylinder, acrylic cylinder, any cylinder in the gap between the arches"
+        : "");
 
   // Shimmer wall negatives — fire when a shimmer wall is in the scene
   const hasShimmerWall = (sceneModel?.panels ?? []).some((p) => p.type === "shimmer_wall");
@@ -235,7 +271,7 @@ export function buildNegativePrompt(
       "missing lower balloons, balloon garland moved to opposite side"
     : "";
 
-  const plinthOmissionNeg = hasPlinths
+  const plinthOmissionNeg = aiFacingHasPlinths
     ? ", missing plinth, omitted plinth, invisible plinth, plinth disappeared, plinth hidden, " +
       "plinth blended into backdrop, plinth merged with backdrop, cropped plinth, " +
       "removed plinth, absent foreground plinth, no plinth, " +

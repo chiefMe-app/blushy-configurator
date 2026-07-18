@@ -123,13 +123,19 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
       "The left garland starts as a strong floor cluster at the left outer base, climbs the left outside edge as a " +
       "thick organic band, and finishes in a full crown cluster over the top of the left arch. " +
       "The right garland mirrors this exactly on the right outer edge, from a right floor cluster up to a right crown cluster. " +
-      "Keep the arch faces mostly visible and the center gap between the arches clean. " +
+      // "clean" here means free of BALLOONS specifically — was previously
+      // unqualified ("...the center gap between the arches clean"), which a
+      // real render suggested the model was reading as "keep this area
+      // empty of everything", suppressing the plinth this same catalog
+      // entry explicitly places there (see plinthInstruction below). If a
+      // plinth is configured it belongs in this gap; only balloons don't.
+      "Keep the arch faces mostly visible and keep the center gap between the arches free of balloons. " +
       "No bead chain. No single-file balloon row. No sparse dotted vertical row. No pearl string. " +
       "No floating balloon string. No balloon bouquet with strings. No detached balloon column. No thin garland line. " +
       "No horizontal balloon bridge across both arches.",
     plinthInstruction:
       "If there is one cake plinth, place it at the horizontal center of the full double-arch setup, " +
-      "in front of the gap between the two arches. Keep the center area clean for it.",
+      "in front of the gap between the two arches — this plinth belongs in that gap and must be rendered there, clearly visible.",
     standeeZones: {
       // 1 standee → right outer; 2 standees → left + right outer (mirrored)
       large:  [{ x: 0.99, bottomY: 0.92, maxHeightFraction: 0.54, maxWidthFraction: 0.38, preferredSide: "right" },

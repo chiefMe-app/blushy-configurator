@@ -169,6 +169,15 @@ function panelPathOrShape(
 // v3: Cylindrical plinth — top ellipse is the dominant Canny cue.
 // Side body edges are barely visible (not rectangular-box signal).
 // No floor platform, no podium base — just the slim column and its top.
+//
+// Double Arch (2026-07-12) no longer calls this — after 8 real-render
+// attempts (including a variant of this function with several different
+// opaque fill treatments) the edit model still wouldn't reliably paint a
+// solid white plinth from any guide marker here, so Double Arch's plinth is
+// now suppressed from the guide entirely and composited deterministically
+// after the AI render instead (see computeDoubleArchPlinthOverlayGeometry
+// and its use in route.ts). This function is unchanged from before that
+// experiment and still serves Round scenes.
 function plinthCylinder(cx: number, bottomY: number, heightPx: number, diameterPx: number): string {
   // Enforce ≥ 3:1 — slim column, not podium
   const visualWidth = Math.min(diameterPx, Math.round(heightPx / 3.0));
@@ -528,31 +537,39 @@ export function generateStructureSilhouette(
   const singleShimmer = backdropItems.length === 1 && backdropItems[0]?.type === "shimmer_wall";
   const singleRound   = backdropItems.length === 1 && backdropItems[0]?.type === "round";
   const isDoubleArch  = backdropItems.length === 2 && backdropItems.every((i) => i.type === "arch");
-  for (const p of layout.plinths) {
-    let plinthCx: number;
-    if (isDoubleArch && layout.plinths.length === 1 && layout.panels.length === 2) {
-      // Double arch + one plinth: centered in the full setup, in front of the
-      // gap between the two arches.
-      const gLeft  = Math.min(...layout.panels.map((pp) => pp.cx - pp.pw / 2));
-      const gRight = Math.max(...layout.panels.map((pp) => pp.cx + pp.pw / 2));
-      plinthCx = Math.round((gLeft + gRight) / 2);
-    } else if (singleShimmer) {
-      plinthCx = Math.round(W * 0.50); // centered in front of shimmer wall
-    } else if (singleRound && balloonStyle === "half" && layout.panels.length === 1) {
-      // Left side of the round circle, clear of the right-arc garland
-      const rPanel = layout.panels[0];
-      plinthCx = Math.round(rPanel.cx - rPanel.pw * 0.40);
-    } else if (balloonStyle === "half") {
-      plinthCx = Math.round(W * 0.28); // open left side, away from right-side garland
-    } else {
-      plinthCx = p.cx;
-    }
-    // Round scenes: use filled cylinder so the plinth reads as a clear solid object,
-    // not just outline edges that the model may skip or merge with the background.
-    if (singleRound) {
-      content.push(plinthCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
-    } else {
-      content.push(plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
+  // Double Arch (2026-07-12): after 8 evidence-based real-render attempts to
+  // get the edit model to reliably paint a solid white plinth from a guide
+  // marker — thin outline, filled cylinder, white fill, gray fill, a fill
+  // matching the arch panels' own successful recipe, a boosted size, and a
+  // clarified "keep the gap clean" instruction — every attempt still either
+  // rendered it as glass/transparent or omitted it outright. Product
+  // decision: stop relying on the AI for Double Arch's plinth. It's
+  // suppressed here entirely (no guide marker at all) and composited
+  // deterministically after the AI render instead — see
+  // computeDoubleArchPlinthOverlayGeometry() below and its use in
+  // route.ts, the same pattern already used for character-standee cutouts.
+  if (!isDoubleArch) {
+    for (const p of layout.plinths) {
+      let plinthCx: number;
+      if (singleShimmer) {
+        plinthCx = Math.round(W * 0.50); // centered in front of shimmer wall
+      } else if (singleRound && balloonStyle === "half" && layout.panels.length === 1) {
+        // Left side of the round circle, clear of the right-arc garland
+        const rPanel = layout.panels[0];
+        plinthCx = Math.round(rPanel.cx - rPanel.pw * 0.40);
+      } else if (balloonStyle === "half") {
+        plinthCx = Math.round(W * 0.28); // open left side, away from right-side garland
+      } else {
+        plinthCx = p.cx;
+      }
+      // Round scenes: use filled cylinder so the plinth reads as a clear
+      // solid object, not just outline edges that the model may skip or
+      // merge with the background.
+      if (singleRound) {
+        content.push(plinthCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
+      } else {
+        content.push(plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
+      }
     }
   }
 
@@ -1199,4 +1216,61 @@ export function panelRectToFraction(
   const wFrac = Math.min(1, outerRight / W) - xFrac;
   const hFrac = Math.min(1, outerBottom / H) - yFrac;
   return { xFrac, yFrac, wFrac, hFrac };
+}
+
+/**
+ * Double Arch's plinth footprint (cake plinth centered in the gap between
+ * the two arches), as a fraction of the full rendered canvas — used by
+ * route.ts's deterministic post-render plinth composite (2026-07-12,
+ * replacing 8 failed real-render attempts at getting the edit model to
+ * paint the plinth itself; see the comment above the removed guide call in
+ * the panels-drawing section).
+ *
+ * Reuses the exact same layout math (VIEWBOX, calculateExactLayout, the
+ * 0.80 SCALE and margin transform) as the main silhouette generator and the
+ * same gap-midpoint x-position the guide always used for this plinth, so
+ * the composite lands exactly where the guide/prompt always intended it —
+ * centered in the same clean gap the separation-lock fixes now keep clear.
+ *
+ * Returns null when the scene isn't Double Arch or has no plinth.
+ */
+export function computeDoubleArchPlinthOverlayGeometry(
+  backdropItems: BackdropItem[],
+  plinthSizes:   PlinthSize[],
+): RegionFraction | null {
+  const isDoubleArch = backdropItems.length === 2 && backdropItems.every((i) => i.type === "arch");
+  if (!isDoubleArch || plinthSizes.length === 0) return null;
+
+  const { falImageSize } = calculateRenderAspectRatio(backdropItems);
+  const [Wbase, H]       = VIEWBOX[falImageSize];
+  const W                = Math.round(Wbase * 1.4); // Double Arch is always multi-panel
+  const layout            = calculateExactLayout(backdropItems, plinthSizes, W, H);
+  const pl = layout.plinths[0];
+  if (!pl || layout.panels.length !== 2) return null;
+
+  const SCALE   = 0.80;
+  const marginX = Math.round(W * (1 - SCALE) / 2);
+  const marginY = Math.round(H * (1 - SCALE) / 2);
+  const toFrac = (xMin: number, xMax: number, yMin: number, yMax: number): RegionFraction => {
+    const outerLeft   = marginX + xMin * SCALE;
+    const outerRight  = marginX + xMax * SCALE;
+    const outerTop    = marginY + yMin * SCALE;
+    const outerBottom = marginY + yMax * SCALE;
+    const xFrac = Math.max(0, outerLeft / W);
+    const yFrac = Math.max(0, outerTop / H);
+    const wFrac = Math.min(1, outerRight / W) - xFrac;
+    const hFrac = Math.min(1, outerBottom / H) - yFrac;
+    return { xFrac, yFrac, wFrac, hFrac };
+  };
+
+  // Same gap-midpoint the (now-removed) guide marker used — the visual gap
+  // between the two arch bases, which the separation-lock fixes keep clean.
+  const gLeft  = Math.min(...layout.panels.map((pp) => pp.cx - pp.pw / 2));
+  const gRight = Math.max(...layout.panels.map((pp) => pp.cx + pp.pw / 2));
+  const plinthCx = Math.round((gLeft + gRight) / 2);
+
+  return toFrac(
+    plinthCx - pl.diameterPx / 2, plinthCx + pl.diameterPx / 2,
+    pl.bottomY - pl.heightPx, pl.bottomY,
+  );
 }

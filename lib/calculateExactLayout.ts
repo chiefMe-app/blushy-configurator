@@ -64,14 +64,27 @@ export function calculateExactLayout(
   // Max panel width per count — keeps groups tight without overflow
   const maxPwByCount = count === 1 ? canvasW * 0.70 : count === 2 ? canvasW * 0.42 : canvasW * 0.30;
 
+  // Tallest panel's own height budget — apex fixed at 5% of canvas height,
+  // exactly the old single-panel apexFactor baseline (heightRatio=1 always
+  // resolved to apexFactor=0.05), so the tallest/reference panel's position
+  // is unchanged from before.
+  const tallestPanelHeightPx = floorY - canvasH * 0.05;
+
   // --- Compute intrinsic sizes and z-orders ---
   const rawPanels = items.slice(0, count).map((item, i) => {
     const wCm = item?.widthCm  ?? 100;
     const hCm = item?.heightCm ?? 200;
+    // Shorter panels get a height EXACTLY proportional to their real-world
+    // heightCm relative to the tallest panel (not an approximate "stagger").
+    // The previous formula (apexFactor = 0.05 + 0.12*(1-heightRatio)) only
+    // weakly differentiated heights — e.g. Double Arch's 220cm vs 200cm
+    // arches (a real 10% difference) rendered only ~1.3% shorter in the
+    // guide, which the edit model then read as "same size". Since pw below
+    // is derived from panelHeightPx * aspect, this single change also makes
+    // width scale correctly with the configured widthCm.
     const heightRatio   = hCm / maxHeightCm;
-    const apexFactor    = 0.05 + 0.12 * (1 - heightRatio);
-    const apexY         = canvasH * apexFactor;
-    const panelHeightPx = floorY - apexY;
+    const panelHeightPx = tallestPanelHeightPx * heightRatio;
+    const apexY         = floorY - panelHeightPx;
     const aspect        = wCm / hCm;
     const pw = Math.max(canvasW * 0.08, Math.min(maxPwByCount, panelHeightPx * aspect));
 
@@ -84,8 +97,24 @@ export function calculateExactLayout(
     return { i, wCm, hCm, apexY, pw, aspect, zOrder };
   });
 
-  // Gap between panels (tight, event-like)
-  const gap = count === 1 ? 0 : Math.max(6, canvasW * 0.008);
+  // Gap between panels (tight, event-like) — widened when a plinth is
+  // configured alongside 2 panels (Double Arch's only real 2-panel case
+  // post-shimmer-removal): a real guide render showed the default gap
+  // (~0.8% of canvas width) is far narrower than a 40cm plinth's own
+  // footprint, so the plinth guide had to overlap both arch edges to fit,
+  // reading as a thin sliver wedged in a crack rather than a distinct
+  // freestanding object — which real renders then dropped entirely. Sizing
+  // the gap off the plinth's actual diameter (in px, via the same
+  // tallestPanelHeightPx/maxHeightCm scale used for panels) guarantees the
+  // plinth always has genuine standalone floor space, which also directly
+  // improves the two panels' visual separation at the base.
+  const hasPlinthForGap = count === 2 && plinthSizes.length > 0;
+  const approxPxPerCm = tallestPanelHeightPx / maxHeightCm;
+  const maxPlinthDiameterCm = hasPlinthForGap
+    ? Math.max(...plinthSizes.map((s) => getPlinthDimensions(s).diameterCm))
+    : 0;
+  const plinthGapPaddingPx = hasPlinthForGap ? maxPlinthDiameterCm * approxPxPerCm * 1.7 : 0;
+  const gap = count === 1 ? 0 : Math.max(6, canvasW * 0.008, plinthGapPaddingPx);
 
   // Scale group down if it overflows canvas
   let totalGroupW = rawPanels.reduce((s, p) => s + p.pw, 0) + (count - 1) * gap;

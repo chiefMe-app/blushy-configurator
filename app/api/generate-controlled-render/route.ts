@@ -41,7 +41,7 @@ import {
 } from "@/lib/generatePrompt";
 import { type SceneModel } from "@/lib/buildSceneModel";
 import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
-import { generateStructureSilhouette, computeShimmerWallMaskGeometry, panelRectToFraction, type CutoutGuideItem } from "@/lib/generateStructureSilhouette";
+import { generateStructureSilhouette, computeShimmerWallMaskGeometry, panelRectToFraction, computeDoubleArchPlinthOverlayGeometry, type CutoutGuideItem } from "@/lib/generateStructureSilhouette";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems, type LayoutZone } from "@/lib/setupLayoutCatalog";
 import { type BalloonStyleId, SHIMMER_COLOR_HEX, SHIMMER_COLORS, type ShimmerColorId } from "@/lib/config";
 import { SEMPERTEX_CATALOG, type SempertexColor } from "@/lib/sempertexCatalog";
@@ -93,6 +93,20 @@ function getT2IEndpoint(mode: ModelMode): string {
 // disable pattern used elsewhere in this file. The recolor code itself is
 // left intact (not deleted) in case shimmer ever comes back.
 const SHIMMER_RECOLOR_ENABLED = process.env.ENABLE_SHIMMER_RECOLOR === "true";
+
+// ── Double Arch plinth composite (2026-07-13) ───────────────────────────────
+// Disabled by product decision: the deterministic SVG cylinder overlay
+// (added 2026-07-12, after 8 failed attempts at getting the AI to paint the
+// plinth itself) looked like pasted-on clipart, not a realistic event prop —
+// not acceptable for production. For MVP, Double Arch's final render simply
+// doesn't show a plinth, even when one is configured/priced. AI-side
+// suppression stays ON regardless of this flag (buildLayoutRefEditPrompt.ts /
+// buildNegativePrompt.ts) — that's what prevents the glass/ghost plinth the
+// AI used to draw on its own; it's independent of whether the deterministic
+// overlay runs. The composite code itself is left intact, not deleted: flip
+// this to true once a realistic transparent PNG/3D asset (perspective,
+// lighting, shadow) replaces the flat SVG shape.
+const DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED = false;
 function getThemeSempertexDefaults(themeId: string): SempertexColor[] {
   const entry = THEME_CATALOG.find((t) => t.id === themeId);
   if (!entry || entry.sempertexPaletteIds.length === 0) return [];
@@ -126,7 +140,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "shimmer-recolor-geometry-mask-v4";
+const RENDER_CACHE_VERSION = "double-arch-plinth-composite-disabled-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1089,6 +1103,29 @@ forbiddenBalloonColorLabels: hasSempertexLock
   doubleArchLayoutLocked:              setupLayoutTemplateId === "double_arch",
   doubleArchMirrorGarlandGuideApplied: setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
   centeredPlinthGuideApplied:          setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length === 1,
+
+  // Double Arch render-fidelity reinforcement diagnostics (2026-07-12) —
+  // fixes for: the two arches rendering near-identical in size, and the two
+  // arch bases merging/touching at the floor. See buildLayoutRefEditPrompt.ts
+  // (doubleArchSizeLockClause, doubleArchSeparationClause),
+  // buildNegativePrompt.ts (doubleArchNeg), and calculateExactLayout.ts
+  // (panel height now exactly proportional to configured heightCm instead
+  // of a weak approximate stagger, and the panel gap widens when a plinth
+  // needs room). These two remain accurate and unchanged.
+  //
+  // doubleArchPlinthRetentionPromptApplied / doubleArchPlinthGuideStrengthened
+  // are now permanently false: after 8 real-render attempts, AI-side plinth
+  // prompt/guide reinforcement was abandoned in favor of a deterministic
+  // post-render composite (see doubleArchPlinthCompositeApplied /
+  // doubleArchPlinthAiSuppressed in `extra`, added by the compositing stage
+  // below) — there is no more AI-facing plinth prompt or guide to apply or
+  // strengthen for Double Arch. Field names kept stable rather than removed.
+  doubleArchPlinthRetentionPromptApplied: false,
+  doubleArchPlinthGuideStrengthened:      false,
+  doubleArchSizeLockStrengthened:         setupLayoutTemplateId === "double_arch",
+  doubleArchGapLockApplied:               setupLayoutTemplateId === "double_arch",
+  doubleArchPhysicalSeparationApplied:    setupLayoutTemplateId === "double_arch",
+
   cutoutAiGenerationSuppressed: cutoutGuideItems.length > 0,
 
   // Theme catalog diagnostics
@@ -1805,6 +1842,11 @@ forbiddenBalloonColorLabels: hasSempertexLock
           .jpeg({ quality: 92 })
           .toBuffer()) as Buffer;
 
+        // Persist to workingImageBuf too — not just outputImageUrl — so any
+        // later compositing stage (e.g. the Double Arch plinth overlay
+        // below) chains from this result instead of silently discarding it
+        // by re-fetching the pre-cutout image via fetchFinalImage().
+        workingImageBuf         = compBuf;
         outputImageUrl         = `data:image/jpeg;base64,${compBuf.toString("base64")}`;
         cutoutOverlayApplied   = true;
         cutoutOverlayHeightsCm = cutoutGuideItems.flatMap(i => Array<number>(i.quantity).fill(i.heightCm));
@@ -1815,6 +1857,128 @@ forbiddenBalloonColorLabels: hasSempertexLock
       }
     } catch (overlayErr) {
       console.warn("[generate-controlled-render] cutout overlay failed (falling back to AI render):", String(overlayErr));
+    }
+  }
+
+  // ── Deterministic Double Arch plinth composite (DISABLED 2026-07-13) ─────
+  // Double Arch (2026-07-12): 8 evidence-based real-render attempts couldn't
+  // get the edit model to reliably paint a solid white plinth — it rendered
+  // as glass/transparent or was omitted outright every time (see
+  // buildLayoutRefEditPrompt.ts's plinthDesc comment for the full list). The
+  // SVG cylinder overlay below was built as a deterministic replacement
+  // (same pattern as the custom text composite and cutout standee overlay
+  // above), but a real render showed it reads as flat pasted-on clipart, not
+  // a realistic event prop — rejected for production. Product decision: for
+  // MVP, Double Arch's final render shows no plinth at all when one is
+  // configured, rather than a fake-looking one. The composite logic below is
+  // gated off by DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED (kept, not deleted,
+  // for a future realistic asset-based version) — AI-side suppression
+  // (aiFacingHasPlinths in buildNegativePrompt.ts, plinthDesc/noPlinthDesc in
+  // buildLayoutRefEditPrompt.ts) stays fully active either way, since that's
+  // what stops the AI's own glass/ghost plinth attempts.
+  let doubleArchPlinthCompositeApplied  = false;
+  let doubleArchPlinthCompositeMethod   = "none";
+  let doubleArchPlinthCompositePosition: { x: number; y: number } | null = null;
+  let doubleArchPlinthOverlayWidthPx:  number | null = null;
+  let doubleArchPlinthOverlayHeightPx: number | null = null;
+  const doubleArchPlinthAiSuppressed = setupLayoutTemplateId === "double_arch";
+  const doubleArchHasConfiguredPlinth = setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0;
+  const doubleArchPlinthRenderSuppressed = doubleArchHasConfiguredPlinth;
+  const doubleArchPlinthSuppressionReason: string | null = doubleArchHasConfiguredPlinth
+    ? "no_realistic_overlay_asset"
+    : null;
+
+  if (DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED && setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0) {
+    try {
+      const plinthGeometry = computeDoubleArchPlinthOverlayGeometry(
+        promptInputForAi.backdropItems ?? [],
+        sceneModel.plinths.map((p) => p.size),
+      );
+      const baseBuf = plinthGeometry ? (workingImageBuf ?? await fetchFinalImage()) : null;
+
+      if (plinthGeometry && baseBuf) {
+        const sharpPkgP = await import("sharp");
+        const sharpFnP  = ((sharpPkgP as any).default ?? sharpPkgP) as (b: Buffer, opts?: Record<string, unknown>) => any;
+        const metaP     = await sharpFnP(baseBuf).metadata() as { width?: number; height?: number };
+        const imgW = metaP.width  ?? 1024;
+        const imgH = metaP.height ?? 1024;
+
+        const px = {
+          x: Math.round(plinthGeometry.xFrac * imgW),
+          y: Math.round(plinthGeometry.yFrac * imgH),
+          w: Math.round(plinthGeometry.wFrac * imgW),
+          h: Math.round(plinthGeometry.hFrac * imgH),
+        };
+
+        if (px.w > 2 && px.h > 8) {
+          const cx      = px.x + px.w / 2;
+          const rx      = px.w / 2;
+          // Ellipse cap height — same 0.42-0.45 ratio the AI-guide cylinder
+          // helpers use elsewhere in this codebase, unambiguously elliptical.
+          const ryTop   = Math.max(2, Math.round(rx * 0.42));
+          const topY    = px.y;
+          const bottomY = px.y + px.h;
+          const shadowRx = rx * 1.35;
+          const shadowRy = Math.max(3, Math.round(ryTop * 0.9));
+
+          // Left-lit gradient — matches the scene's own established lighting
+          // ("soft natural light from the left") so the plinth reads as lit
+          // by the same source as the rest of the photo, not a flat sticker.
+          // Solid gradient fills throughout (no glass-coded translucency) —
+          // this is exactly the failure mode 8 AI-guide attempts hit.
+          const plinthSvg =
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${imgW}" height="${imgH}" viewBox="0 0 ${imgW} ${imgH}">` +
+            `<defs>` +
+              `<linearGradient id="pbody" x1="0%" y1="0%" x2="100%" y2="0%">` +
+                `<stop offset="0%" stop-color="#FFFFFF"/>` +
+                `<stop offset="52%" stop-color="#F6F4F1"/>` +
+                `<stop offset="100%" stop-color="#DFDAD3"/>` +
+              `</linearGradient>` +
+              `<linearGradient id="pbottom" x1="0%" y1="0%" x2="100%" y2="0%">` +
+                `<stop offset="0%" stop-color="#EFECE7"/>` +
+                `<stop offset="52%" stop-color="#E1DCD5"/>` +
+                `<stop offset="100%" stop-color="#CEC8C0"/>` +
+              `</linearGradient>` +
+              `<radialGradient id="ptop" cx="38%" cy="35%" r="75%">` +
+                `<stop offset="0%" stop-color="#FFFFFF"/>` +
+                `<stop offset="100%" stop-color="#E9E5DF"/>` +
+              `</radialGradient>` +
+              `<filter id="pshadow" x="-80%" y="-80%" width="260%" height="260%">` +
+                `<feGaussianBlur stdDeviation="${Math.max(2, rx * 0.22).toFixed(1)}"/>` +
+              `</filter>` +
+            `</defs>` +
+            // Soft floor contact shadow — drawn first (bottom of paint order)
+            `<ellipse cx="${cx.toFixed(1)}" cy="${(bottomY + shadowRy * 0.3).toFixed(1)}" rx="${shadowRx.toFixed(1)}" ry="${shadowRy.toFixed(1)}" fill="rgba(15,15,15,0.30)" filter="url(#pshadow)"/>` +
+            // Cylinder body
+            `<rect x="${(cx - rx).toFixed(1)}" y="${topY.toFixed(1)}" width="${(rx * 2).toFixed(1)}" height="${px.h.toFixed(1)}" fill="url(#pbody)"/>` +
+            // Bottom cap — grounds the cylinder, slightly darker
+            `<ellipse cx="${cx.toFixed(1)}" cy="${bottomY.toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ryTop.toFixed(1)}" fill="url(#pbottom)"/>` +
+            // Top cap — the dominant rounded-top cue, brightest highlight, drawn last (on top)
+            `<ellipse cx="${cx.toFixed(1)}" cy="${topY.toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ryTop.toFixed(1)}" fill="url(#ptop)" stroke="rgba(0,0,0,0.05)" stroke-width="0.6"/>` +
+            `</svg>`;
+
+          workingImageBuf = await (sharpFnP(baseBuf)
+            .composite([{ input: Buffer.from(plinthSvg, "utf8"), blend: "over" }])
+            .png()
+            .toBuffer()) as Buffer;
+          outputImageUrl = `data:image/jpeg;base64,${(await (sharpFnP(workingImageBuf).jpeg({ quality: 92 }).toBuffer()) as Buffer).toString("base64")}`;
+
+          doubleArchPlinthCompositeApplied  = true;
+          doubleArchPlinthCompositeMethod   = "sharp_svg_cylinder_overlay_v1";
+          doubleArchPlinthCompositePosition = {
+            x: plinthGeometry.xFrac + plinthGeometry.wFrac / 2,
+            y: plinthGeometry.yFrac + plinthGeometry.hFrac / 2,
+          };
+          doubleArchPlinthOverlayWidthPx  = px.w;
+          doubleArchPlinthOverlayHeightPx = px.h;
+
+          if (process.env.NODE_ENV === "development") {
+            console.log("[generate-controlled-render] double arch plinth composite applied:", { px });
+          }
+        }
+      }
+    } catch (plinthCompositeErr) {
+      console.warn("[generate-controlled-render] double arch plinth composite failed (continuing without):", String(plinthCompositeErr));
     }
   }
 
@@ -1847,6 +2011,25 @@ forbiddenBalloonColorLabels: hasSempertexLock
     cutoutOverlayRenderedAssetWidthPx,
     cutoutOverlayRenderedAssetHeightPx,
     cutoutOverlayScaleReason,
+    // Double Arch plinth diagnostics (2026-07-12, composite disabled
+    // 2026-07-13). AiSuppressed is true whenever the scene is double_arch
+    // (plinth or not) since the AI-facing prompt/guide suppression is
+    // unconditional for that layout — this stays on regardless of the
+    // composite flag. CompositeApplied/Method/Position/OverlayWidthPx/
+    // OverlayHeightPx are the deterministic-SVG-overlay diagnostics; with
+    // DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED=false they always report
+    // false/"none"/null now — the SVG cylinder looked like pasted clipart,
+    // rejected for production. RenderSuppressed/SuppressionReason are the
+    // current, accurate picture: no plinth shown in the final render at all
+    // when one is configured, until a realistic asset-based overlay exists.
+    doubleArchPlinthAiSuppressed,
+    doubleArchPlinthRenderSuppressed,
+    doubleArchPlinthSuppressionReason,
+    doubleArchPlinthCompositeApplied,
+    doubleArchPlinthCompositeMethod,
+    doubleArchPlinthCompositePosition,
+    doubleArchPlinthOverlayWidthPx,
+    doubleArchPlinthOverlayHeightPx,
     standeeZoneLockApplied: !!setupLayoutTemplate && standeeOverlayZonesUsed.length > 0,
     standeeOverlayZonesUsed,
     layoutReferencePngGenerated: true,

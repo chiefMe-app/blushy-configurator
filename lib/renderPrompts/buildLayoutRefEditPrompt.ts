@@ -64,6 +64,11 @@ export function buildLayoutRefEditPrompt(
   const isUnicornTheme = theme.includes("unicorn");
 
   const hasRoundPanelInPrompt = sceneModel.panels.some((p) => p.type === "round");
+  // Same definition used by generateStructureSilhouette.ts's guide drawing —
+  // exactly two arch panels, nothing else. Used to fix a set of Double Arch
+  // fidelity issues (2026-07-12): missing plinth, near-identical arch sizes,
+  // and merged/touching arch bases — see the doubleArch*Clause definitions below.
+  const isDoubleArchScene = panelCount === 2 && sceneModel.panels.every((p) => p.type === "arch");
 
   const roundGeometryClause = hasRoundPanelInPrompt
     ? ` ROUND BACKDROP HARD LOCK: The setup contains exactly one large freestanding round event backdrop panel, 200 x 200 cm. ` +
@@ -196,8 +201,54 @@ export function buildLayoutRefEditPrompt(
       panelDescs.join(". ") + ".";
   }
 
+  // ── Double Arch size + separation reinforcement (2026-07-12) ──────────────
+  // Each panel already carries its own real widthCm/heightCm in backdropDesc
+  // above, but a real render showed the edit model still normalizes the two
+  // arches toward a visually matching pair unless explicitly told the sizes
+  // must read as different, and separately lets the two bases drift into
+  // touching/merging at the floor. Both are additive reinforcement — they
+  // don't change what backdropDesc already says, just add an explicit
+  // comparison the model can't average away.
+  //
+  // Deliberately qualitative only, no cm figures repeated here — an earlier
+  // version restated "Panel 1 (left) is 120cm wide by 220cm tall..." a
+  // second time (backdropDesc above already states it once) and a real
+  // render then baked visible dimension-line/measurement-label annotations
+  // onto the image, which is explicitly forbidden elsewhere in this prompt.
+  // Comparative wording alone ("visibly larger" / "visibly smaller") gets
+  // the same result without giving the model a second number to echo.
+  const doubleArchSizeLockClause = isDoubleArchScene
+    ? ` DOUBLE ARCH SIZE LOCK: the two arch panels are DIFFERENT SIZES and must look clearly, ` +
+      `obviously different in scale at a glance — the left arch is visibly larger, both taller and wider, ` +
+      `than the right arch. ` +
+      `Do NOT render the two arches as the same size. Do NOT render them as a matching identical pair. ` +
+      `Do NOT normalize, average, or equalize their sizes toward each other — preserve each arch's own ` +
+      `configured width and height exactly as already described above, relative to the other arch. ` +
+      `Do not render any dimension lines, measurement arrows, or size labels on the image.`
+    : "";
+
+  const doubleArchSeparationClause = isDoubleArchScene
+    ? ` DOUBLE ARCH SEPARATION LOCK: the two arch panels are two separate freestanding physical event props, ` +
+      `each with its own independent floor footprint and base contact point. ` +
+      `Maintain a small but clearly visible gap of bare floor between the two arch bases at all times — ` +
+      `the bases must never touch, merge, overlap, or blend into a single connected shape. ` +
+      `Each arch must read as a distinct standalone board, not fused, joined, or leaning into the other.`
+    : "";
+
   // ── Plinth description ────────────────────────────────────────────────────
-  const plinth       = sceneModel.plinths[0];
+  // Double Arch (2026-07-12): after 8 evidence-based real-render attempts —
+  // conflict removal, filled-cylinder guide, several fill colors, a size
+  // boost, and a clarified "keep the gap clean" instruction — the edit model
+  // still wouldn't reliably paint a solid white plinth; it rendered as
+  // glass/transparent or got omitted outright. Product decision: stop
+  // asking the AI for it. Double Arch's plinth is now composited
+  // deterministically after the AI render (route.ts, mirroring the
+  // character-standee overlay pattern), so the AI-facing prompt treats a
+  // Double Arch scene as having NO plinth at all — this is what
+  // computeDoubleArchPlinthOverlayGeometry() / doubleArchPlinthAiSuppressed
+  // in route.ts refers to. sceneModel.plinths itself is untouched (the
+  // composite stage still reads the real configured plinth from it).
+  const plinth       = isDoubleArchScene ? undefined : sceneModel.plinths[0];
   const hasRoundPanelInScene = sceneModel.panels.some((p) => p.type === "round");
   const plinthDesc   = plinth
     ? `Keep exactly one visible white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter. ` +
@@ -211,7 +262,11 @@ export function buildLayoutRefEditPrompt(
         ? `Stand it close to the round backdrop panel, not set too far forward into the room.`
         : `Place it on the open side near the arch backdrop.`)
     : "";
-  const noPlinthDesc = plinth ? "" : "No plinths. ";
+  const noPlinthDesc = plinth
+    ? ""
+    : isDoubleArchScene
+      ? `No plinths, pedestals, podiums, or display columns of any kind. The floor area between the two arches stays completely bare and empty — no object of any kind stands there. `
+      : "No plinths. ";
 
   // ── Balloon garland description ───────────────────────────────────────────
   const balloonStyle = sceneModel.balloons.style;
@@ -496,17 +551,19 @@ const setupTemplateClause = setupTemplate
     (hasGarland && sceneModel.panels.length >= 2
       ? `Preserve the organic garland following the selected setup layout path. ` +
         `Do not replace it with loose balloon bouquets, simple balloon clusters, or floating balloons. `
-      : "") +
-    // Double Arch: centered-plinth instruction is part of the locked layout
-    (setupTemplate.id === "double_arch" && sceneModel.plinths.length > 0
-      ? `${setupTemplate.plinthInstruction} `
       : "")
+    // Double Arch's plinthInstruction (catalog text) is intentionally never
+    // included here anymore — the plinth is suppressed from the AI-facing
+    // prompt entirely and composited deterministically instead. See the
+    // plinthDesc/noPlinthDesc block above.
   : "";
 
   return (
     photographyOpening +
     framingClause +
     `${backdropDesc}. ` +
+    doubleArchSizeLockClause +
+    doubleArchSeparationClause +
     (sceneModel.panels.some((p) => p.type === "open_arch_frame")
       ? `The open arch frame's CENTER is completely hollow: no backdrop panel behind the frame, no solid surface filling ` +
         `the opening, no hidden second backdrop, no curtain or board filling the arch. The area inside and behind the ` +
