@@ -848,61 +848,6 @@ export function generateStructureSilhouette(
           return { total: archCount + accentN, accentZone };
         };
 
-        // Single-arch-style garland, generalized to run against one panel's
-        // own edge/height instead of the whole-group groupRight/groupTop/dy
-        // used by the single-panel case below. Same sine-jitter formula,
-        // same balloon count/radius pattern — this is literally the proven
-        // Single Arch garland guide, made direction-aware (dir=-1 mirrors it
-        // for a left-side attachment) and panel-scoped (each arch gets its
-        // own apex/floor instead of a shared group bounding box, since
-        // Double Arch's two arches can be different configured heights).
-        //
-        // Restored 2026-07-18 in place of the old drawDenseGarland call for
-        // double_arch: real renders showed drawDenseGarland's bespoke
-        // floor/climb/crown algorithm producing unreliable-looking garlands.
-        // A first pass reusing Single Arch's exact single-lane sine-jitter
-        // formula (still the base shape here) came out visibly thinner —
-        // closer to a bead-chain than genuine Single Arch — because an
-        // img2img model follows a THIN 1-D guide line much more literally in
-        // a busier two-panel scene than it does in a single-arch frame,
-        // where it elaborates the same thin guide into a full cluster on its
-        // own. A real render confirmed count alone (22→32 balloons on the
-        // same thin line) didn't fix that — the guide needed actual WIDTH.
-        // laneCount>1 spreads balloons across multiple parallel offset lanes
-        // (same idea as a real garland's layered depth), giving the guide a
-        // genuine 2-D band a busier scene's img2img pass reproduces reliably,
-        // while still being one continuous mirrored cascade — not the old
-        // bespoke floor/climb/crown 3-stage algorithm.
-        const drawSingleArchStyleGarland = (
-          p: typeof layout.panels[0], side: "left" | "right", colorOffset: number,
-          balloonsPerLane = 22, laneCount = 1,
-        ): number => {
-          const dir    = side === "left" ? -1 : 1;
-          const edgeX  = p.cx + dir * (p.pw / 2);
-          const topY   = p.apexY;
-          const Hp     = p.floorY - p.apexY;
-          const baseOffset = Math.round(W * 0.048);
-          const laneStep   = Math.round(W * 0.026);
-          let n = 0;
-          for (let lane = 0; lane < laneCount; lane++) {
-            const laneOffset = baseOffset + lane * laneStep;
-            const numBalloons = balloonsPerLane;
-            for (let i = 0; i < numBalloons; i++) {
-              const t   = i / (numBalloons - 1);
-              const jx  = Math.sin(t * Math.PI * 2.1 + 0.4 + lane * 1.7) * Math.round(W * 0.016);
-              const jy  = (((i * 9 + lane * 13) % 24) - 12);
-              const bx  = edgeX + dir * (laneOffset + jx);
-              const by  = topY + t * Hp + jy;
-              const r   = lane === 0
-                ? (i < 4 ? 20 + ((i * 5) % 7) : i > numBalloons - 5 ? 16 + ((i * 3) % 6) : 12 + ((i * 7) % 9))
-                : (9 + ((i * 7 + lane * 4) % 8));
-              content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonAttrs(colorOffset + n)}/>`);
-              n++;
-            }
-          }
-          return n;
-        };
-
         const archPanels = layout.panels.filter(
           (p) => (backdropItems[p.idx]?.type ?? "") === "arch",
         );
@@ -914,12 +859,26 @@ export function generateStructureSilhouette(
         );
 
         if (archPanels.length === 2) {
-          // Double arch: mirrored Single-Arch-style garlands, center stays
-          // clean. 3 lanes (18 balloons each) instead of Single Arch's 1
-          // lane — see the width/density comment above.
+          // Double arch (2026-07-18 geometry fix): each arch carries the same
+          // thick organic MASS garland already proven on Arch + Open Frame's
+          // solid arch (drawThickOrganicMainGarland, "thick_organic_mass_v2"),
+          // mirrored onto its own outer side. Two earlier guide styles failed
+          // in real renders: the old bespoke drawDenseGarland (unreliable
+          // look), then a thin sine-line copy of Single Arch's guide — that
+          // one rendered as a sparse detached vertical bead column, because
+          // the whole line sat OUTSIDE the panel edge (offset ~5% of canvas
+          // width into empty wall) and the busier two-panel scene reproduced
+          // the thin floating guide literally instead of elaborating it.
+          // The mass garland fixes the GEOMETRY, not just the count: a dense
+          // floor/base cluster at the outer base, a 30-balloon 5-lane climb
+          // whose innermost lane overlaps the panel face (so the garland
+          // physically hugs the arch edge), and a crown curl over the top
+          // shoulder — heavily overlapping large/medium/small radii scaled
+          // to the panel's own width, a genuine 2-D organic mass rather than
+          // any dotted path. Outer sides only — the center gap stays clean.
           const pair = [...archPanels].sort((a, b) => a.cx - b.cx);
-          doubleArchGarlandBalloonsLeft  = drawSingleArchStyleGarland(pair[0], "left", 0,  18, 3);
-          doubleArchGarlandBalloonsRight = drawSingleArchStyleGarland(pair[1], "right", 54, 18, 3);
+          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0).count;
+          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62).count;
         } else if (framePanel && archPanels.length === 1) {
           // Arch + Open Frame: the SOLID ARCH carries a thick organic-mass
           // garland (floor base → outer edge climb → over the crown, ~62

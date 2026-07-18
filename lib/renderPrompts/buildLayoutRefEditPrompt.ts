@@ -242,21 +242,29 @@ export function buildLayoutRefEditPrompt(
   // (archGarlandExtra above, excluded for double-arch scenes) applied twice,
   // once per arch, mirrored onto each arch's own outer edge — "two mirrored
   // Single Arch designs" per product direction. Matches the guide-drawing
-  // change in generateStructureSilhouette.ts (drawSingleArchStyleGarland)
+  // change in generateStructureSilhouette.ts (thick-organic-mass guide)
   // and the catalog's double_arch garlandInstruction.
   const doubleArchMirroredGarlandClause = isDoubleArchScene
     ? ` DOUBLE ARCH MIRRORED GARLAND: each of the two arch panels has its own premium organic balloon ` +
       `garland, built the exact same proven way as a classic single-arch garland, mirrored between the ` +
       `two arches — this must look like two mirrored Single Arch designs, not a custom double-arch treatment. ` +
-      `The LEFT arch's garland is attached ONLY to its OUTER LEFT edge — large, medium, and small balloons ` +
-      `nested together in lush clustered bunches, starting at the top-left corner of the left arch, ` +
-      `flowing naturally and continuously down the left outer edge, ending in a connected floor-level ` +
-      `cluster at the bottom-left corner of the left arch. ` +
-      `The RIGHT arch's garland is attached ONLY to its OUTER RIGHT edge — the same lush clustered style, ` +
-      `starting at the top-right corner of the right arch, flowing continuously down the right outer edge, ` +
-      `ending in a connected floor-level cluster at the bottom-right corner of the right arch. ` +
-      `Both garlands are dense and organic, premium event-decorator style — NOT tiny beads, NOT a thin ` +
-      `single-file chain, NOT a sparse dotted border, NOT scattered or randomly floating balloons. ` +
+      `ATTACHMENT IS MANDATORY: each garland is physically installed ON its arch board — the balloons ` +
+      `press against, touch, and slightly overlap the arch panel's outer edge along the garland's whole ` +
+      `length, exactly like a real decorator ties a garland onto the board itself. ` +
+      `The garland must never float in the empty wall space beside the arch, never stand apart from the ` +
+      `arch as its own separate column, and never leave a visible gap between the balloons and the arch edge. ` +
+      `The LEFT arch's garland lives on its OUTER LEFT side: it starts as a dense floor-level base cluster ` +
+      `mounded at the bottom-left outer corner of the left arch, climbs up along the left outer edge as a ` +
+      `thick layered band of large, medium, and small balloons nested and overlapping in lush clustered ` +
+      `bunches, and finishes by curling over the top-left crown/shoulder of the left arch — stopping well ` +
+      `before the center gap. ` +
+      `The RIGHT arch's garland mirrors this exactly on its OUTER RIGHT side: a dense floor-level base ` +
+      `cluster at the bottom-right outer corner, a thick layered climb up the right outer edge, and a curl ` +
+      `over the top-right crown/shoulder of the right arch — stopping well before the center gap. ` +
+      `Both garlands are thick, dense, organic masses with real visual width and layered 3D depth, premium ` +
+      `event-decorator style — NOT a detached vertical balloon column, NOT a bead chain, NOT a pearl ` +
+      `necklace string, NOT tiny beads, NOT a thin single-file chain, NOT a sparse dotted border, NOT ` +
+      `scattered or randomly floating balloons, NOT balloons drifting away from the arch. ` +
       `The INNER side of each arch (the side facing the other arch) and the entire CENTER GAP between the ` +
       `two arches must stay completely clean and balloon-free — no balloons of any kind in the gap, no ` +
       `balloons bridging or connecting the two arches, no balloons crossing from one arch toward the other. ` +
@@ -346,6 +354,16 @@ export function buildLayoutRefEditPrompt(
     const code = String(c.code ?? "");
     const name = String(c.colorName ?? "").toLowerCase();
     return code === "630" || name.includes("green") || name.includes("mint");
+  });
+  // Blue must not be blanket-forbidden when the selected palette itself
+  // contains a blue (e.g. Frozen's 839 Arctic Blue / 640 Blue) — the same
+  // conflict-avoidance treatment yellow and green already get above. The
+  // negative wording said "when not selected", but a literal "No blue
+  // balloons" phrase still biases the model against the palette's own blues.
+  const hasBlueInPalette = selectedSempertexColors.some((c) => {
+    const name   = String(c.colorName ?? "").toLowerCase();
+    const family = String((c as SempertexSelectionItem & { family?: string }).family ?? "").toLowerCase();
+    return name.includes("blue") || family === "blue";
   });
 
   // When a Sempertex palette is selected it fully overrides the theme palette.
@@ -680,7 +698,8 @@ const setupTemplateClause = setupTemplate
         `No orange balloons when not selected. ` +
         (!hasYellowInPalette ? `No yellow balloons when not selected. ` : "") +
         (!hasGreenInPalette  ? `No green balloons when not selected. `  : "") +
-        `No blue balloons when not selected. No teal balloons. No turquoise balloons. ` +
+        (!hasBlueInPalette   ? `No blue balloons when not selected. `   : "") +
+        `No teal balloons. No turquoise balloons. ` +
         `No unrelated metallic balloons. No unselected gold balloons. No unselected rose gold balloons. ` +
         `No peach balloons. No coral balloons. No terracotta balloons. ` +
         `No beige balloons. No cream balloons. No bronze balloons. No copper balloons. ` +

@@ -111,7 +111,7 @@ const SHIMMER_RECOLOR_ENABLED = process.env.ENABLE_SHIMMER_RECOLOR === "true";
 // no working plinth) and restored on 2026-07-18 with simplified balloon
 // behavior (mirrored Single Arch garlands — see buildLayoutRefEditPrompt.ts's
 // doubleArchMirroredGarlandClause and generateStructureSilhouette.ts's
-// drawSingleArchStyleGarland). This plinth-composite decision is unrelated
+// thick-organic-mass garland guide). This plinth-composite decision is unrelated
 // and unchanged by that restoration: plinth stays hidden from the Double
 // Arch preview either way (doubleArchPlinthRenderSuppressed /
 // doubleArchPlinthPreviewHidden below), still selectable and priced.
@@ -149,7 +149,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "double-arch-restored-mirrored-garland-v1";
+const RENDER_CACHE_VERSION = "double-arch-garland-edge-attached-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -838,6 +838,18 @@ if (process.env.NODE_ENV === "development") {
 
 const hasSempertexLock = effectiveSempertexSelection.length > 0;
 
+// Palette-aware forbidden-color sanitization (2026-07-18): "blue" must never
+// appear in the forbidden list when the selected palette itself contains a
+// blue — Frozen's 839 Arctic Blue / 640 Blue were being contradicted by a
+// blanket "blue" entry in forbiddenBalloonColorLabels. Same conflict-avoidance
+// treatment the prompt builders already give yellow/green (and now blue too,
+// see hasBlueInPalette / negBlueInPalette there).
+const paletteHasBlue = effectiveSempertexSelection.some((c) => {
+  const name   = String(c.colorName ?? "").toLowerCase();
+  const family = String((c as SempertexSelectionItem & { family?: string }).family ?? "").toLowerCase();
+  return name.includes("blue") || family === "blue";
+});
+
 // Hex colors for the layout-reference balloon guide dots.
 // When a Sempertex palette is locked, pass the exact hex values so the SVG
 // guide image shows the selected colors instead of transparent white outlines.
@@ -1089,7 +1101,11 @@ allowedBalloonPaletteLabels: effectiveSempertexSelection.map((c) => {
   return `${c.code} ${hex} ${getVisualLabel(c)}`;
 }),
 forbiddenBalloonColorLabels: hasSempertexLock
-  ? ["teal", "turquoise", "blue", "orange", "coral", "copper", "bronze", "dark gold", "saturated red", "rainbow colors"]
+  ? [
+      "teal", "turquoise",
+      ...(paletteHasBlue ? [] : ["blue"]),
+      "orange", "coral", "copper", "bronze", "dark gold", "saturated red", "rainbow colors",
+    ]
   : [],
 
   // Layout-reference guide diagnostics
@@ -1145,6 +1161,17 @@ forbiddenBalloonColorLabels: hasSempertexLock
   doubleArchUsesMirroredSingleArchGarland:  setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
   doubleArchCenterGapProtected:             setupLayoutTemplateId === "double_arch",
   doubleArchPlinthPreviewHidden:            setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0,
+
+  // Double Arch garland geometry fix (2026-07-18) — the first restored
+  // version rendered as thin detached vertical bead columns floating beside
+  // the arches. The guide now reuses the thick-organic-mass drawing
+  // (drawThickOrganicMainGarland: base cluster + 5-lane edge-overlapping
+  // climb + crown curl) per arch, and the prompt/negatives mandate physical
+  // attachment to the arch edge and forbid the detached-column shape.
+  doubleArchGarlandAttachedToArchEdges:     setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
+  doubleArchGarlandDetachedColumnPrevented: setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
+  doubleArchGarlandThickOrganicMass:        setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
+  doubleArchColorForbiddenListSanitized:    hasSempertexLock,
 
   cutoutAiGenerationSuppressed: cutoutGuideItems.length > 0,
 

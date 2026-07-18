@@ -135,13 +135,18 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     garlandInstruction:
       "Balloon design: each arch gets its own single-arch-style half-garland on its OUTER side — " +
       "the exact same proven Single Arch look, mirrored between the two arches. " +
-      "The LEFT arch's garland is anchored by a dense cluster of large balloons at its top-left crown, " +
-      "cascading down its left outer edge with gradually smaller balloons, ending in a loose trailing " +
-      "cluster of small balloons pooling on the floor at its base. " +
-      "The RIGHT arch's garland mirrors this exactly at its top-right crown, cascading down its right " +
-      "outer edge, ending in a floor cluster at its base. " +
-      "Dense organic garlands with a large/medium/small balloon mix, premium event-decorator style — " +
-      "not tiny beads, not a sparse dotted border, not random floating balloons. " +
+      "Each garland is physically installed on its arch board: the balloons touch and slightly overlap " +
+      "the arch panel's outer edge along the garland's whole length, never floating in the empty wall " +
+      "space beside the arch and never standing apart as a separate column. " +
+      "The LEFT arch's garland starts as a dense floor-level base cluster at the bottom-left outer " +
+      "corner, climbs the left outer edge as a thick layered band of large, medium, and small balloons, " +
+      "and curls over the top-left crown/shoulder of the left arch. " +
+      "The RIGHT arch's garland mirrors this exactly: a dense base cluster at the bottom-right outer " +
+      "corner, a thick layered climb up the right outer edge, and a curl over the top-right " +
+      "crown/shoulder of the right arch. " +
+      "Dense organic garlands with a large/medium/small balloon mix, heavy overlap, real visual " +
+      "thickness, premium event-decorator style — not tiny beads, not a sparse dotted border, not a " +
+      "detached vertical balloon column, not a pearl-necklace string, not random floating balloons. " +
       "The inner sides of both arches (facing each other) and the entire center gap between the two " +
       "arches stay completely clean and balloon-free — no bead chain, no thin single-file row, " +
       "no horizontal balloon bridge across both arches.",

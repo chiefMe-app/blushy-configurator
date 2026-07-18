@@ -64,7 +64,16 @@ export function buildNegativePrompt(
       "garland connecting both arches, single balloon installation spanning both arches, " +
       "balloons on the inner side of either arch, balloons crossing the gap between arches, " +
       "connected balloon bridge between arches, bead-chain garland, sparse dotted balloon border, " +
-      "randomly floating balloons between arches"
+      "randomly floating balloons between arches, " +
+      // 2026-07-18 geometry fix — a real render came out as thin floating
+      // bead columns standing apart from the arches; forbid that failure
+      // shape explicitly, in the same vocabulary the positive attachment
+      // clause uses (doubleArchMirroredGarlandClause).
+      "detached vertical balloon column, freestanding balloon column, balloon column separate from arch, " +
+      "pearl necklace balloon string, vertical string of single balloons, " +
+      "balloons floating away from the arch, garland separated from the arch edge, " +
+      "visible gap between garland and arch panel, garland hanging in empty wall space, " +
+      "garland not touching the arch board"
     : "";
 
   const hasRoundPanel = items.some((p) => p.type === "round");
@@ -121,6 +130,15 @@ export function buildNegativePrompt(
     const name = String(c.colorName ?? "").toLowerCase();
     return code === "630" || name.includes("green") || name.includes("mint");
   });
+  // Blue gets the same palette-aware treatment as yellow/green: never forbid
+  // it when the selected palette itself contains a blue (Frozen's 839 Arctic
+  // Blue / 640 Blue) — see the matching hasBlueInPalette in
+  // buildLayoutRefEditPrompt.ts.
+  const negBlueInPalette = (effectiveSempertexSelection ?? []).some((c) => {
+    const name   = String(c.colorName ?? "").toLowerCase();
+    const family = String((c as SempertexSelectionItem & { family?: string }).family ?? "").toLowerCase();
+    return name.includes("blue") || family === "blue";
+  });
   const balloonColorNeg = hasBalloonColors
     ? ", mostly white balloons, all-white garland, desaturated balloons, " +
       "colorless balloon garland, washed-out balloon colors, faded balloon palette, " +
@@ -134,7 +152,8 @@ export function buildNegativePrompt(
       "orange balloons when not selected, " +
       (!negYellowInPalette ? "yellow balloons when not selected, " : "") +
       (!negGreenInPalette  ? "green balloons when not selected, "  : "") +
-      "blue balloons when not selected, teal balloons, turquoise balloons, " +
+      (!negBlueInPalette   ? "blue balloons when not selected, "   : "") +
+      "teal balloons, turquoise balloons, " +
       "peach balloons, coral balloons, terracotta balloons, beige balloons, cream balloons, " +
       "bronze balloons, copper balloons, gold balloons unless selected"
     : "";
