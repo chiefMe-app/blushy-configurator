@@ -40,12 +40,11 @@ import { normalizeCutouts } from "@/lib/config";
  * panel (medium size) so every SceneModel this builds always resolves to a
  * currently-supported layout.
  *
- * Double Arch was also removed from the product (2026-07-13) — render
- * quality wasn't production-ready (unreliable garlands, and the selected
- * plinth couldn't be shown in the final render via any method tried). Old
- * saved configs/sessions can still send two arch panels; every arch panel
- * after the first is dropped so the scene always resolves to single_arch's
- * one-panel shape instead of the removed two-panel layout.
+ * Double Arch was removed from the product on 2026-07-13, then restored on
+ * 2026-07-18 with simplified balloon behavior (see setupLayoutCatalog.ts).
+ * It is a real two-arch-panel layout again, so arch panels are capped at 2
+ * (not 1) — a third+ arch panel from a stale/hand-crafted request is still
+ * dropped, since no product layout uses more than two.
  *
  * This is the single choke point both buildSceneModel() and
  * buildSceneModelFromItems() route through, so no caller needs its own
@@ -58,12 +57,11 @@ function sanitizeBackdropItems(items: BackdropItem[]): BackdropItem[] {
       : item
   );
 
-  let keptFirstArch = false;
+  let archCount = 0;
   return shimmerMapped.filter((item) => {
     if (item.type !== "arch") return true;
-    if (keptFirstArch) return false;
-    keptFirstArch = true;
-    return true;
+    archCount++;
+    return archCount <= 2;
   });
 }
 

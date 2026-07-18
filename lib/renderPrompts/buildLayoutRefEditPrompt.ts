@@ -235,6 +235,34 @@ export function buildLayoutRefEditPrompt(
       `Each arch must read as a distinct standalone board, not fused, joined, or leaning into the other.`
     : "";
 
+  // ── Double Arch mirrored garland (2026-07-18 restoration) ─────────────────
+  // Replaces the old bespoke double-arch garland wording: real renders under
+  // that approach came out unreliable (bead-chain/sparse in places). Instead
+  // this reuses the exact proven Single Arch garland description
+  // (archGarlandExtra above, excluded for double-arch scenes) applied twice,
+  // once per arch, mirrored onto each arch's own outer edge — "two mirrored
+  // Single Arch designs" per product direction. Matches the guide-drawing
+  // change in generateStructureSilhouette.ts (drawSingleArchStyleGarland)
+  // and the catalog's double_arch garlandInstruction.
+  const doubleArchMirroredGarlandClause = isDoubleArchScene
+    ? ` DOUBLE ARCH MIRRORED GARLAND: each of the two arch panels has its own premium organic balloon ` +
+      `garland, built the exact same proven way as a classic single-arch garland, mirrored between the ` +
+      `two arches — this must look like two mirrored Single Arch designs, not a custom double-arch treatment. ` +
+      `The LEFT arch's garland is attached ONLY to its OUTER LEFT edge — large, medium, and small balloons ` +
+      `nested together in lush clustered bunches, starting at the top-left corner of the left arch, ` +
+      `flowing naturally and continuously down the left outer edge, ending in a connected floor-level ` +
+      `cluster at the bottom-left corner of the left arch. ` +
+      `The RIGHT arch's garland is attached ONLY to its OUTER RIGHT edge — the same lush clustered style, ` +
+      `starting at the top-right corner of the right arch, flowing continuously down the right outer edge, ` +
+      `ending in a connected floor-level cluster at the bottom-right corner of the right arch. ` +
+      `Both garlands are dense and organic, premium event-decorator style — NOT tiny beads, NOT a thin ` +
+      `single-file chain, NOT a sparse dotted border, NOT scattered or randomly floating balloons. ` +
+      `The INNER side of each arch (the side facing the other arch) and the entire CENTER GAP between the ` +
+      `two arches must stay completely clean and balloon-free — no balloons of any kind in the gap, no ` +
+      `balloons bridging or connecting the two arches, no balloons crossing from one arch toward the other. ` +
+      `Each arch's garland is fully independent from the other's — they must never touch, merge, or share balloons.`
+    : "";
+
   // ── Plinth description ────────────────────────────────────────────────────
   // Double Arch (2026-07-12): after 8 evidence-based real-render attempts —
   // conflict removal, filled-cylinder guide, several fill colors, a size
@@ -348,7 +376,13 @@ export function buildLayoutRefEditPrompt(
   // combined with the catalog's own bridge-garland description
   // (setupTemplateClause) had already been producing. Restoring the older,
   // visually-successful default for all arch scenes.
-  const archGarlandExtra = hasArchPanelInPrompt
+  //
+  // Excluded for Double Arch (2026-07-18 restoration): this clause is
+  // written for exactly one arch with garland on "the right outer edge —
+  // and nowhere else" — literally wrong for a double-arch scene's left arch,
+  // and contradicting the mirrored instruction below. Double Arch gets its
+  // own doubleArchMirroredGarlandClause instead.
+  const archGarlandExtra = hasArchPanelInPrompt && !isDoubleArchScene
     ? ` Premium organic balloon garland with large, medium, and small balloons nested together ` +
       `in lush clustered bunches, attached ONLY to ONE OUTER SIDE of the arch — the right outer edge — ` +
       `and nowhere else on the structure. ` +
@@ -370,13 +404,32 @@ export function buildLayoutRefEditPrompt(
       `support block, base, riser, second cylinder, secondary display column, or additional prop.`
     : "";
 
-  const balloonSizeDesc =
-    ` Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
-    `standard balloons, and small 5 inch filler balloons. Include at least 5 visible 36 inch statement ` +
-    `balloons distributed through the garland at the top, side, and base. 36 inch balloons must be clearly ` +
-    `larger than all others. 5 inch balloons only appear as small filler clusters attached to larger balloons. ` +
-    `Any balloons resting on the floor must be part of the garland's base cluster, visually connected to ` +
-    `and touching the main garland — never scattered, detached, or floating separately on the floor.`;
+  // Double Arch (2026-07-18 restoration): this density bar is written singular
+  // ("the garland") — a real render showed the model reading that as a
+  // scene-wide total and splitting it across the two garlands, so each side
+  // came out visibly thinner than a genuine single-arch garland (closer to a
+  // sparse bead-chain than the intended "two mirrored Single Arch designs").
+  // Making the requirement explicitly per-garland fixes that dilution.
+  const balloonSizeDesc = isDoubleArchScene
+    ? ` Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
+      `standard balloons, and small 5 inch filler balloons — for EACH of the two garlands independently, ` +
+      `not divided or shared between them. ` +
+      `EACH garland (left arch's garland AND right arch's garland, separately) must include its own at ` +
+      `least 5 visible 36 inch statement balloons distributed through that garland at the top, side, and ` +
+      `base — 10 total 36 inch balloons across the full scene, 5 per side, never fewer on either side. ` +
+      `Do not thin out, shrink, or reduce either garland's balloon count or size to compensate for having ` +
+      `two garlands in the scene — both garlands must independently look as full and dense as a single ` +
+      `standalone Single Arch garland. ` +
+      `36 inch balloons must be clearly larger than all others. 5 inch balloons only appear as small filler ` +
+      `clusters attached to larger balloons. ` +
+      `Any balloons resting on the floor must be part of their garland's base cluster, visually connected ` +
+      `to and touching that garland — never scattered, detached, or floating separately on the floor.`
+    : ` Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
+      `standard balloons, and small 5 inch filler balloons. Include at least 5 visible 36 inch statement ` +
+      `balloons distributed through the garland at the top, side, and base. 36 inch balloons must be clearly ` +
+      `larger than all others. 5 inch balloons only appear as small filler clusters attached to larger balloons. ` +
+      `Any balloons resting on the floor must be part of the garland's base cluster, visually connected to ` +
+      `and touching the main garland — never scattered, detached, or floating separately on the floor.`;
 
   const sempertexClause = hasSempertexLock
     ? ` BALLOON COLOR SOURCE OVERRIDE: The theme name is not a balloon color instruction. Balloon colors must be copied from the selected Sempertex palette and from the colored layout reference guide only. ` +
@@ -393,8 +446,11 @@ export function buildLayoutRefEditPrompt(
     ? `organic half balloon garland attached to the outer right arc of the round panel, ` +
       `following the circular edge from about 1 o'clock to 5 o'clock, right outer arc only, dense and premium, ` +
       `individual ${balloonColors} latex balloons`
-    : `organic half balloon garland on the right side, dense and premium, ` +
-      `individual ${balloonColors} latex balloons cascading from the top corner to the floor`;
+    : isDoubleArchScene
+      ? `two mirrored organic half balloon garlands, one on each arch's own outer side, dense and premium, ` +
+        `individual ${balloonColors} latex balloons cascading from each arch's own top outer corner to the floor`
+      : `organic half balloon garland on the right side, dense and premium, ` +
+        `individual ${balloonColors} latex balloons cascading from the top corner to the floor`;
 
   const garlandDesc =
     balloonStyle === "none"
@@ -404,6 +460,7 @@ export function buildLayoutRefEditPrompt(
         ` The balloon garland must be attached directly to the backdrop edge with no visible gap. ` +
         `Balloons must closely follow the backdrop contour and look professionally installed onto the structure.` +
         archGarlandExtra +
+        doubleArchMirroredGarlandClause +
         roundGarlandExtra +
         roundGeometryClause +
         sempertexClause;

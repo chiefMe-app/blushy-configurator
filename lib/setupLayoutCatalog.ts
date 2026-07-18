@@ -20,12 +20,16 @@
  * Removed layouts (product decision — shimmer wall pipeline too unreliable,
  * focus shifted to arch-based designs): single_shimmer, arch_shimmer.
  *
- * Removed layouts (product decision, 2026-07-13 — Double Arch render
- * quality wasn't production-ready: unreliable garlands, and the selected
- * plinth couldn't be shown in the final render via any method tried —
- * AI-rendered, AI-rendered-then-composited, and a deterministic SVG overlay
- * were all rejected. MVP focuses on stable single-backdrop designs only):
- * double_arch.
+ * Double Arch (2026-07-13 removal, 2026-07-18 restoration): pulled from the
+ * product on 2026-07-13 because render quality wasn't production-ready
+ * (unreliable garlands, no working plinth). Restored 2026-07-18 with the
+ * balloon behavior deliberately simplified: instead of the old dense/mirror
+ * garland algorithm, each arch now reuses the exact same proven Single Arch
+ * half-garland treatment, mirrored — see garlandInstruction below and the
+ * doubleArchMirroredGarlandClause in buildLayoutRefEditPrompt.ts. Plinth
+ * stays suppressed from the AI render entirely (still selectable/priced,
+ * just hidden from the Double Arch preview) — no realistic asset-based
+ * overlay exists yet.
  *
  * All removed-layout ids remap to single-panel equivalents via
  * LEGACY_TEMPLATE_ID_REMAP / getSetupLayoutTemplate and
@@ -109,6 +113,51 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     plinthInstruction: "Place cylinder plinths on the left/front side of the round panel, away from the right-side garland.",
     standeeZones: ZONES_STANDARD,
   },
+  {
+    id: "double_arch",
+    name: "Double Arch",
+    description: "Two arches, side by side",
+    backdropTypes: ["arch", "arch"],
+    maxBackdrops: 2,
+    badge: "Popular",
+    miniPreview: ["arch_large", "arch_small"],
+    panelInstruction:
+      "Use exactly two solid arch backdrop panels side-by-side, bases aligned on the same floor line, " +
+      "with a small clean gap between them. The left arch and the right arch are each independent " +
+      "freestanding solid backdrop panels rendered at their own configured size. " +
+      "Do not overlap them front/back. Do not merge them into one shape. Do not create a third panel. " +
+      "No shimmer wall. No open frame. No perspective tunnel — a curated flat pair of arches.",
+    // Simplified 2026-07-18: reuses the exact proven Single Arch half-garland
+    // description twice, mirrored, instead of the old bespoke dense/mirror
+    // garland algorithm that produced unreliable-looking results. See the
+    // matching doubleArchMirroredGarlandClause in buildLayoutRefEditPrompt.ts
+    // and the guide-drawing change in generateStructureSilhouette.ts.
+    garlandInstruction:
+      "Balloon design: each arch gets its own single-arch-style half-garland on its OUTER side — " +
+      "the exact same proven Single Arch look, mirrored between the two arches. " +
+      "The LEFT arch's garland is anchored by a dense cluster of large balloons at its top-left crown, " +
+      "cascading down its left outer edge with gradually smaller balloons, ending in a loose trailing " +
+      "cluster of small balloons pooling on the floor at its base. " +
+      "The RIGHT arch's garland mirrors this exactly at its top-right crown, cascading down its right " +
+      "outer edge, ending in a floor cluster at its base. " +
+      "Dense organic garlands with a large/medium/small balloon mix, premium event-decorator style — " +
+      "not tiny beads, not a sparse dotted border, not random floating balloons. " +
+      "The inner sides of both arches (facing each other) and the entire center gap between the two " +
+      "arches stay completely clean and balloon-free — no bead chain, no thin single-file row, " +
+      "no horizontal balloon bridge across both arches.",
+    plinthInstruction:
+      "Plinth preview is currently hidden for Double Arch's final AI render — no realistic asset-based " +
+      "overlay exists yet. Plinths remain selectable and priced.",
+    standeeZones: {
+      // 1 standee → right outer; 2 standees → left + right outer (mirrored)
+      large:  [{ x: 0.99, bottomY: 0.92, maxHeightFraction: 0.54, maxWidthFraction: 0.38, preferredSide: "right" },
+               { x: 0.01, bottomY: 0.92, maxHeightFraction: 0.54, maxWidthFraction: 0.38, preferredSide: "left" }],
+      medium: [{ x: 0.01, bottomY: 0.94, maxHeightFraction: 0.38, maxWidthFraction: 0.32, preferredSide: "left" },
+               { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.38, maxWidthFraction: 0.32, preferredSide: "right" }],
+      small:  [{ x: 0.97, bottomY: 0.96, maxHeightFraction: 0.24, maxWidthFraction: 0.24, preferredSide: "right" },
+               { x: 0.03, bottomY: 0.96, maxHeightFraction: 0.24, maxWidthFraction: 0.24, preferredSide: "left" }],
+    },
+  },
 ];
 
 /**
@@ -121,15 +170,15 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
  * from product) and remap to single_arch for the same reason — an old saved
  * config referencing either must never crash, it just lands on an arch.
  *
- * double_arch is removed too (2026-07-13, see the header comment above) and
- * remaps to single_arch for the same reason.
+ * double_arch is NOT in this table — it was restored to the product on
+ * 2026-07-18 and is a real, selectable template again (see
+ * SETUP_LAYOUT_TEMPLATES above). Only genuinely removed ids map here.
  */
 export const LEGACY_TEMPLATE_ID_REMAP: Record<string, string> = {
   arch_open_frame: "single_arch",
   shimmer_open_frame: "single_arch",
   single_shimmer: "single_arch",
   arch_shimmer: "single_arch",
-  double_arch: "single_arch",
 };
 
 export function getSetupLayoutTemplate(id: string): SetupLayoutTemplate | undefined {
@@ -139,18 +188,13 @@ export function getSetupLayoutTemplate(id: string): SetupLayoutTemplate | undefi
 
 /**
  * Infer the curated template from currently selected backdrop items.
- * Returns null when the combination doesn't match a curated set (e.g. rect
- * panels) — callers fall back to generic behavior.
+ * Count-aware: two arches infer double_arch. Returns null when the
+ * combination doesn't match a curated set (e.g. rect panels) — callers
+ * fall back to generic behavior.
  *
  * open_arch_frame and shimmer_wall are no longer selectable layout pieces;
  * a stray leftover panel of either type (from an old session) resolves to
- * the surviving single-arch layout rather than a dead template id. Two arch
- * panels (the old double_arch combination) resolve to single_arch too,
- * since Double Arch itself is no longer a selectable layout (2026-07-13) —
- * see sanitizeBackdropItems() in buildSceneModel.ts, which drops the second
- * arch panel before this function ever sees it in the normal product path;
- * this arch+arch case stays here as a second safety net for any caller that
- * inspects raw backdropItems directly.
+ * the surviving single-arch layout rather than a dead template id.
  */
 export function inferSetupLayoutTemplateIdFromBackdropItems(
   items: { type: string }[],
@@ -160,7 +204,7 @@ export function inferSetupLayoutTemplateIdFromBackdropItems(
   if (key === "arch") return "single_arch";
   if (key === "round") return "single_round";
   if (key === "shimmer_wall") return "single_arch";
-  if (key === "arch+arch") return "single_arch";
+  if (key === "arch+arch") return "double_arch";
   if (key === "arch+shimmer_wall") return "single_arch";
   if (key === "arch+open_arch_frame") return "single_arch";
   if (key === "open_arch_frame+shimmer_wall") return "single_arch";

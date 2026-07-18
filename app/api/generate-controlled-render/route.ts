@@ -106,6 +106,15 @@ const SHIMMER_RECOLOR_ENABLED = process.env.ENABLE_SHIMMER_RECOLOR === "true";
 // overlay runs. The composite code itself is left intact, not deleted: flip
 // this to true once a realistic transparent PNG/3D asset (perspective,
 // lighting, shadow) replaces the flat SVG shape.
+//
+// Double Arch itself was removed from the product on 2026-07-13 (garlands +
+// no working plinth) and restored on 2026-07-18 with simplified balloon
+// behavior (mirrored Single Arch garlands — see buildLayoutRefEditPrompt.ts's
+// doubleArchMirroredGarlandClause and generateStructureSilhouette.ts's
+// drawSingleArchStyleGarland). This plinth-composite decision is unrelated
+// and unchanged by that restoration: plinth stays hidden from the Double
+// Arch preview either way (doubleArchPlinthRenderSuppressed /
+// doubleArchPlinthPreviewHidden below), still selectable and priced.
 const DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED = false;
 function getThemeSempertexDefaults(themeId: string): SempertexColor[] {
   const entry = THEME_CATALOG.find((t) => t.id === themeId);
@@ -140,7 +149,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "double-arch-plinth-composite-disabled-v1";
+const RENDER_CACHE_VERSION = "double-arch-restored-mirrored-garland-v1";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1125,6 +1134,17 @@ forbiddenBalloonColorLabels: hasSempertexLock
   doubleArchSizeLockStrengthened:         setupLayoutTemplateId === "double_arch",
   doubleArchGapLockApplied:               setupLayoutTemplateId === "double_arch",
   doubleArchPhysicalSeparationApplied:    setupLayoutTemplateId === "double_arch",
+
+  // Double Arch restoration diagnostics (2026-07-18) — Double Arch was
+  // brought back into the product with simplified balloon behavior: each
+  // arch reuses the exact proven Single Arch garland treatment, mirrored,
+  // instead of the old bespoke double-arch garland algorithm. Plinth stays
+  // suppressed from the AI-facing render (doubleArchPlinthRenderSuppressed /
+  // doubleArchPlinthAiSuppressed below, unchanged from the prior decision).
+  doubleArchRestored:                       setupLayoutTemplateId === "double_arch",
+  doubleArchUsesMirroredSingleArchGarland:  setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
+  doubleArchCenterGapProtected:             setupLayoutTemplateId === "double_arch",
+  doubleArchPlinthPreviewHidden:            setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0,
 
   cutoutAiGenerationSuppressed: cutoutGuideItems.length > 0,
 

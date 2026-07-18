@@ -55,7 +55,16 @@ export function buildNegativePrompt(
       "merged arch bases, touching arch bases, overlapping arch floor footprints, " +
       "connected arch bases, arches sharing one base, arches touching at the bottom, " +
       "no gap between arch bases, single fused backdrop shape, blended arch silhouette, " +
-      "arches leaning into each other"
+      "arches leaning into each other, " +
+      // 2026-07-18 restoration — simplified balloon behavior (mirrored
+      // Single Arch garlands): reinforce that the center gap and inner
+      // (facing) sides stay clean, and forbid the old bespoke double-arch
+      // garland artifacts (bead-chain, sparse dotted border) explicitly.
+      "balloons in the center gap between arches, balloons bridging the two arches, " +
+      "garland connecting both arches, single balloon installation spanning both arches, " +
+      "balloons on the inner side of either arch, balloons crossing the gap between arches, " +
+      "connected balloon bridge between arches, bead-chain garland, sparse dotted balloon border, " +
+      "randomly floating balloons between arches"
     : "";
 
   const hasRoundPanel = items.some((p) => p.type === "round");
