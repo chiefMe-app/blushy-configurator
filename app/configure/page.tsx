@@ -1245,10 +1245,9 @@ function clearAllStandees() {
     switch (templateId) {
       case "single_arch":        panels = [makeArchUnsized("arch-1")]; break;
       case "single_round":       panels = [makeBackdropItem("round")]; break;
-      case "double_arch":        panels = [makeArchUnsized("arch-1"), makeArchUnsized("arch-2")]; break;
-      // arch_open_frame / shimmer_open_frame / single_shimmer / arch_shimmer
-      // removed from product — no longer selectable, so no case needed;
-      // legacy ids resolve via getSetupLayoutTemplate()'s
+      // arch_open_frame / shimmer_open_frame / single_shimmer / arch_shimmer /
+      // double_arch removed from product — no longer selectable, so no case
+      // needed; legacy ids resolve via getSetupLayoutTemplate()'s
       // LEGACY_TEMPLATE_ID_REMAP if ever passed in.
       default: return;
     }

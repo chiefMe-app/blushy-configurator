@@ -38,16 +38,33 @@ import { normalizeCutouts } from "@/lib/config";
  * shimmer_wall backdropItem; rather than let a panel type nothing downstream
  * expects to see anymore flow through, remap it in-place to a same-slot arch
  * panel (medium size) so every SceneModel this builds always resolves to a
- * currently-supported layout. This is the single choke point both
- * buildSceneModel() and buildSceneModelFromItems() route through, so no
- * caller needs its own shimmer_wall handling.
+ * currently-supported layout.
+ *
+ * Double Arch was also removed from the product (2026-07-13) — render
+ * quality wasn't production-ready (unreliable garlands, and the selected
+ * plinth couldn't be shown in the final render via any method tried). Old
+ * saved configs/sessions can still send two arch panels; every arch panel
+ * after the first is dropped so the scene always resolves to single_arch's
+ * one-panel shape instead of the removed two-panel layout.
+ *
+ * This is the single choke point both buildSceneModel() and
+ * buildSceneModelFromItems() route through, so no caller needs its own
+ * shimmer_wall or extra-arch handling.
  */
 function sanitizeBackdropItems(items: BackdropItem[]): BackdropItem[] {
-  return items.map((item) =>
+  const shimmerMapped = items.map((item) =>
     item.type === "shimmer_wall"
       ? { ...item, type: "arch" as const, sizeId: "medium", widthCm: 100, heightCm: 200 }
       : item
   );
+
+  let keptFirstArch = false;
+  return shimmerMapped.filter((item) => {
+    if (item.type !== "arch") return true;
+    if (keptFirstArch) return false;
+    keptFirstArch = true;
+    return true;
+  });
 }
 
 // ---------------------------------------------------------------------------

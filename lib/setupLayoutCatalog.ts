@@ -20,6 +20,13 @@
  * Removed layouts (product decision — shimmer wall pipeline too unreliable,
  * focus shifted to arch-based designs): single_shimmer, arch_shimmer.
  *
+ * Removed layouts (product decision, 2026-07-13 — Double Arch render
+ * quality wasn't production-ready: unreliable garlands, and the selected
+ * plinth couldn't be shown in the final render via any method tried —
+ * AI-rendered, AI-rendered-then-composited, and a deterministic SVG overlay
+ * were all rejected. MVP focuses on stable single-backdrop designs only):
+ * double_arch.
+ *
  * All removed-layout ids remap to single-panel equivalents via
  * LEGACY_TEMPLATE_ID_REMAP / getSetupLayoutTemplate and
  * inferSetupLayoutTemplateIdFromBackdropItems so old references never crash.
@@ -102,50 +109,6 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     plinthInstruction: "Place cylinder plinths on the left/front side of the round panel, away from the right-side garland.",
     standeeZones: ZONES_STANDARD,
   },
-  {
-    id: "double_arch",
-    name: "Double Arch",
-    description: "Two arches, side by side",
-    backdropTypes: ["arch", "arch"],
-    maxBackdrops: 2,
-    badge: "Popular",
-    miniPreview: ["arch_large", "arch_small"],
-    panelInstruction:
-      "Use exactly two solid arch backdrop panels side-by-side, bases aligned on the same floor line. " +
-      "The larger arch is on the left and the smaller arch is on the right, both front-facing, " +
-      "with a small clean gap or slight edge touch between them. " +
-      "Do not overlap them front/back. Do not create a third panel. Do not place any panel behind another. " +
-      "No perspective tunnel — a curated flat pair of arches.",
-    garlandInstruction:
-      "Double Arch must have two thick, lush organic balloon garlands, one on each outer side of the arches. " +
-      "These are not thin rows. Each garland is a dense layered cluster with large, medium, small, and mini balloons, " +
-      "overlapping in 3D with natural depth. " +
-      "The left garland starts as a strong floor cluster at the left outer base, climbs the left outside edge as a " +
-      "thick organic band, and finishes in a full crown cluster over the top of the left arch. " +
-      "The right garland mirrors this exactly on the right outer edge, from a right floor cluster up to a right crown cluster. " +
-      // "clean" here means free of BALLOONS specifically — was previously
-      // unqualified ("...the center gap between the arches clean"), which a
-      // real render suggested the model was reading as "keep this area
-      // empty of everything", suppressing the plinth this same catalog
-      // entry explicitly places there (see plinthInstruction below). If a
-      // plinth is configured it belongs in this gap; only balloons don't.
-      "Keep the arch faces mostly visible and keep the center gap between the arches free of balloons. " +
-      "No bead chain. No single-file balloon row. No sparse dotted vertical row. No pearl string. " +
-      "No floating balloon string. No balloon bouquet with strings. No detached balloon column. No thin garland line. " +
-      "No horizontal balloon bridge across both arches.",
-    plinthInstruction:
-      "If there is one cake plinth, place it at the horizontal center of the full double-arch setup, " +
-      "in front of the gap between the two arches — this plinth belongs in that gap and must be rendered there, clearly visible.",
-    standeeZones: {
-      // 1 standee → right outer; 2 standees → left + right outer (mirrored)
-      large:  [{ x: 0.99, bottomY: 0.92, maxHeightFraction: 0.54, maxWidthFraction: 0.38, preferredSide: "right" },
-               { x: 0.01, bottomY: 0.92, maxHeightFraction: 0.54, maxWidthFraction: 0.38, preferredSide: "left" }],
-      medium: [{ x: 0.01, bottomY: 0.94, maxHeightFraction: 0.38, maxWidthFraction: 0.32, preferredSide: "left" },
-               { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.38, maxWidthFraction: 0.32, preferredSide: "right" }],
-      small:  [{ x: 0.97, bottomY: 0.96, maxHeightFraction: 0.24, maxWidthFraction: 0.24, preferredSide: "right" },
-               { x: 0.03, bottomY: 0.96, maxHeightFraction: 0.24, maxWidthFraction: 0.24, preferredSide: "left" }],
-    },
-  },
 ];
 
 /**
@@ -157,12 +120,16 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
  * single_shimmer / arch_shimmer are also removed (shimmer pipeline pulled
  * from product) and remap to single_arch for the same reason — an old saved
  * config referencing either must never crash, it just lands on an arch.
+ *
+ * double_arch is removed too (2026-07-13, see the header comment above) and
+ * remaps to single_arch for the same reason.
  */
 export const LEGACY_TEMPLATE_ID_REMAP: Record<string, string> = {
   arch_open_frame: "single_arch",
   shimmer_open_frame: "single_arch",
   single_shimmer: "single_arch",
   arch_shimmer: "single_arch",
+  double_arch: "single_arch",
 };
 
 export function getSetupLayoutTemplate(id: string): SetupLayoutTemplate | undefined {
@@ -172,13 +139,18 @@ export function getSetupLayoutTemplate(id: string): SetupLayoutTemplate | undefi
 
 /**
  * Infer the curated template from currently selected backdrop items.
- * Count-aware: two arches infer double_arch. Returns null when the
- * combination doesn't match a curated set (e.g. rect panels) — callers
- * fall back to generic behavior.
+ * Returns null when the combination doesn't match a curated set (e.g. rect
+ * panels) — callers fall back to generic behavior.
  *
  * open_arch_frame and shimmer_wall are no longer selectable layout pieces;
  * a stray leftover panel of either type (from an old session) resolves to
- * the surviving single-arch layout rather than a dead template id.
+ * the surviving single-arch layout rather than a dead template id. Two arch
+ * panels (the old double_arch combination) resolve to single_arch too,
+ * since Double Arch itself is no longer a selectable layout (2026-07-13) —
+ * see sanitizeBackdropItems() in buildSceneModel.ts, which drops the second
+ * arch panel before this function ever sees it in the normal product path;
+ * this arch+arch case stays here as a second safety net for any caller that
+ * inspects raw backdropItems directly.
  */
 export function inferSetupLayoutTemplateIdFromBackdropItems(
   items: { type: string }[],
@@ -188,7 +160,7 @@ export function inferSetupLayoutTemplateIdFromBackdropItems(
   if (key === "arch") return "single_arch";
   if (key === "round") return "single_round";
   if (key === "shimmer_wall") return "single_arch";
-  if (key === "arch+arch") return "double_arch";
+  if (key === "arch+arch") return "single_arch";
   if (key === "arch+shimmer_wall") return "single_arch";
   if (key === "arch+open_arch_frame") return "single_arch";
   if (key === "open_arch_frame+shimmer_wall") return "single_arch";
