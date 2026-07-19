@@ -749,12 +749,23 @@ export function generateStructureSilhouette(
             [  14,  92, "M"], [ -12,  86, "S"], [  46,  90, "S"], [   0, 104, "S"],
           ];
           const sizeR = { L: rLarge, M: rMed, S: rSmall };
-          for (const [ox, up, sz] of BASE) put(edgeX + dir * ox, p.floorY - up, sizeR[sz]);
+          // Tight (double_arch) is also BOTTOM-HEAVY (2026-07-19): a real
+          // render at uniform density read as an evenly spaced side border /
+          // trim rather than a decorator garland. The base cluster is
+          // enlarged, the climb concentrates balloons low and tapers both
+          // its width and its balloon radii toward the top, and the crown is
+          // lighter — so the guide's own silhouette is a fat floor mound
+          // flowing up into a slim shoulder curl, which the img2img pass
+          // then reproduces instead of an even strip.
+          const baseScale = tight ? 1.15 : 1;
+          for (const [ox, up, sz] of BASE) put(edgeX + dir * ox, p.floorY - up, sizeR[sz] * baseScale);
 
           // 2) Side climb — 30 balloons across staggered lanes, overlapping
           //    35–60% between neighbors, forming a genuinely thick band from
           //    just above the base to the spring line. Tight mode: 4 compact
-          //    lanes, medium outer balloons, half jitter (see comment above).
+          //    lanes, medium outer balloons, half jitter, and a bottom-heavy
+          //    taper — tEase concentrates balloons low, spread/radius shrink
+          //    with height (see comment above).
           const climbN  = 30;
           const laneOffsets = tight
             ? [-rLarge * 0.5, rLarge * 0.1, rLarge * 0.7, rLarge * 1.3]
@@ -765,32 +776,39 @@ export function generateStructureSilhouette(
           const wobbleMod = tight ? 7 : 13;
           for (let i = 0; i < climbN; i++) {
             const t = i / (climbN - 1);
-            const y = p.floorY - Hp * (0.16 + t * 0.62); // 16% → 78% panel height
+            const tEase = tight ? Math.pow(t, 1.35) : t; // tight: denser sampling near the floor
+            const y = p.floorY - Hp * (0.16 + tEase * 0.62); // 16% → 78% panel height
             const lane = i % laneOffsets.length;
             const wobble = ((i * 17) % wobbleMod) - Math.floor(wobbleMod / 2); // deterministic organic jitter
-            const x = edgeX + dir * (laneOffsets[lane] + wobble);
+            const spread = tight ? 1 - 0.42 * tEase : 1;   // band narrows as it rises
+            const rTaper = tight ? 1.18 - 0.48 * tEase : 1; // balloons shrink as they rise
+            const x = edgeX + dir * (laneOffsets[lane] * spread + wobble);
             const sz = laneSizes[lane];
-            put(x, y, sizeR[sz]);
+            put(x, y, sizeR[sz] * rTaper);
           }
 
-          // 3) Crown curl — 16 balloons wrapping the outer shoulder over the
-          //    top of the arch arc in 3 depth lanes, large near the crown apex.
+          // 3) Crown curl — balloons wrapping the outer shoulder over the
+          //    top of the arch arc in 3 depth lanes. Default: 16, large near
+          //    the apex. Tight mode: 11 medium/small only — a deliberately
+          //    LIGHTER crown so the whole garland reads bottom-heavy.
           const rArc  = p.pw / 2;
           const arcCx = p.cx;
           const arcCy = p.apexY + rArc;
           const angFrom = side === "left" ? 178 : 2;
           const angTo   = side === "left" ? 268 : -88;
-          const crownN = 16;
+          const crownN = tight ? 11 : 16;
           for (let i = 0; i < crownN; i++) {
             const t   = i / (crownN - 1);
             const ang = ((angFrom + (angTo - angFrom) * t) * Math.PI) / 180;
             const depthLane = i % 3;
             const rad = rArc + (tight
-              ? [-rSmall * 0.4, rMed * 0.4, rLarge * 0.6]
+              ? [-rSmall * 0.4, rMed * 0.35, rMed * 0.6]
               : [-rSmall * 0.4, rMed * 0.6, rLarge * 0.85])[depthLane];
             const x   = arcCx + rad * Math.cos(ang);
             const y   = arcCy + rad * Math.sin(ang);
-            const sz: "L" | "M" | "S" = depthLane === 2 ? "L" : depthLane === 1 ? "M" : "S";
+            const sz: "L" | "M" | "S" = tight
+              ? (depthLane === 2 ? "M" : "S")
+              : (depthLane === 2 ? "L" : depthLane === 1 ? "M" : "S");
             put(x, y, sizeR[sz]);
           }
 

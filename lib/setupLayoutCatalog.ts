@@ -26,10 +26,11 @@
  * balloon behavior deliberately simplified: instead of the old dense/mirror
  * garland algorithm, each arch now reuses the exact same proven Single Arch
  * half-garland treatment, mirrored — see garlandInstruction below and the
- * doubleArchMirroredGarlandClause in buildLayoutRefEditPrompt.ts. Plinth
- * stays suppressed from the AI render entirely (still selectable/priced,
- * just hidden from the Double Arch preview) — no realistic asset-based
- * overlay exists yet.
+ * doubleArchMirroredGarlandClause in buildLayoutRefEditPrompt.ts. The
+ * plinth is never requested from the AI (suppression stays active); since
+ * 2026-07-19 it is composited deterministically after the render instead
+ * (route.ts, sharp_svg_cylinder_overlay_v2), so it is visible in the
+ * Double Arch preview again.
  *
  * All removed-layout ids remap to single-panel equivalents via
  * LEGACY_TEMPLATE_ID_REMAP / getSetupLayoutTemplate and
@@ -138,21 +139,24 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
       "Each garland is physically installed on its arch board: the balloons touch and slightly overlap " +
       "the arch panel's outer edge along the garland's whole length, never floating in the empty wall " +
       "space beside the arch and never standing apart as a separate column. " +
-      "The LEFT arch's garland starts as a dense floor-level base cluster at the bottom-left outer " +
-      "corner, climbs the left outer edge as a thick layered band of large, medium, and small balloons, " +
-      "and curls over the top-left crown/shoulder of the left arch. " +
-      "The RIGHT arch's garland mirrors this exactly: a dense base cluster at the bottom-right outer " +
-      "corner, a thick layered climb up the right outer edge, and a curl over the top-right " +
-      "crown/shoulder of the right arch. " +
+      "Each garland is bottom-heavy: its largest, densest mass is a fat floor-level mound of big " +
+      "balloons at the arch's outer base corner, from which it rises in a lush organic flow that " +
+      "gradually tapers — narrower band, smaller balloons — up the outer edge, finishing as a lighter " +
+      "crown/shoulder curl over the top. " +
+      "The LEFT arch's garland does this on its outer-left side; the RIGHT arch's garland mirrors it " +
+      "exactly on its outer-right side. " +
       "Dense organic garlands with a large/medium/small balloon mix, heavy overlap, real visual " +
-      "thickness, premium event-decorator style — not tiny beads, not a sparse dotted border, not a " +
+      "thickness, premium event-decorator style — not an evenly spaced side border or trim, not the " +
+      "same thickness from bottom to top, not tiny beads, not a sparse dotted border, not a " +
       "detached vertical balloon column, not a pearl-necklace string, not random floating balloons. " +
       "The inner sides of both arches (facing each other) and the entire center gap between the two " +
       "arches stay completely clean and balloon-free — no bead chain, no thin single-file row, " +
       "no horizontal balloon bridge across both arches.",
     plinthInstruction:
-      "Plinth preview is currently hidden for Double Arch's final AI render — no realistic asset-based " +
-      "overlay exists yet. Plinths remain selectable and priced.",
+      "Double Arch's plinth is composited deterministically after the AI render (route.ts, " +
+      "sharp_svg_cylinder_overlay_v2) — centered in the gap between the two arches. It is never " +
+      "requested from the AI (AI-side suppression stays active), so this instruction text is " +
+      "documentation only and is intentionally never injected into the prompt.",
     standeeZones: {
       // 1 standee → right outer; 2 standees → left + right outer (mirrored)
       large:  [{ x: 0.99, bottomY: 0.92, maxHeightFraction: 0.54, maxWidthFraction: 0.38, preferredSide: "right" },

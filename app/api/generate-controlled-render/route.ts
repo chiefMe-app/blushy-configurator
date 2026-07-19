@@ -94,28 +94,26 @@ function getT2IEndpoint(mode: ModelMode): string {
 // left intact (not deleted) in case shimmer ever comes back.
 const SHIMMER_RECOLOR_ENABLED = process.env.ENABLE_SHIMMER_RECOLOR === "true";
 
-// ── Double Arch plinth composite (2026-07-13) ───────────────────────────────
-// Disabled by product decision: the deterministic SVG cylinder overlay
-// (added 2026-07-12, after 8 failed attempts at getting the AI to paint the
-// plinth itself) looked like pasted-on clipart, not a realistic event prop —
-// not acceptable for production. For MVP, Double Arch's final render simply
-// doesn't show a plinth, even when one is configured/priced. AI-side
-// suppression stays ON regardless of this flag (buildLayoutRefEditPrompt.ts /
-// buildNegativePrompt.ts) — that's what prevents the glass/ghost plinth the
-// AI used to draw on its own; it's independent of whether the deterministic
-// overlay runs. The composite code itself is left intact, not deleted: flip
-// this to true once a realistic transparent PNG/3D asset (perspective,
-// lighting, shadow) replaces the flat SVG shape.
+// ── Double Arch plinth composite ────────────────────────────────────────────
+// History: 8 real-render attempts (2026-07-12) couldn't get the edit model
+// to paint a solid white plinth for Double Arch — glass/transparent or
+// omitted every time — so a deterministic SVG cylinder overlay was built
+// (same pattern as the custom-text/standee composites). Its v1 shading was
+// rejected as flat pasted-on clipart and the flag was turned off
+// (2026-07-13), hiding the plinth from Double Arch's preview entirely.
 //
-// Double Arch itself was removed from the product on 2026-07-13 (garlands +
-// no working plinth) and restored on 2026-07-18 with simplified balloon
-// behavior (mirrored Single Arch garlands — see buildLayoutRefEditPrompt.ts's
-// doubleArchMirroredGarlandClause and generateStructureSilhouette.ts's
-// thick-organic-mass garland guide). This plinth-composite decision is unrelated
-// and unchanged by that restoration: plinth stays hidden from the Double
-// Arch preview either way (doubleArchPlinthRenderSuppressed /
-// doubleArchPlinthPreviewHidden below), still selectable and priced.
-const DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED = false;
+// RE-ENABLED 2026-07-19 by product decision: the plinth must be visible in
+// Double Arch again, and a clean deterministic overlay is preferred over
+// the proven-unreliable AI plinth. The overlay is now v2
+// ("sharp_svg_cylinder_overlay_v2" below): flatter photo-perspective end
+// caps, a vertical ambient-occlusion pass on top of the left-lit horizontal
+// gradient, a left rim-light / right core-shadow pair, and a soft contact
+// shadow biased to the right (scene light comes from the left) — a matte
+// satin white cylinder rather than v1's flat sticker. AI-side suppression
+// stays ON regardless of this flag (buildLayoutRefEditPrompt.ts /
+// buildNegativePrompt.ts) — that's what keeps the AI from painting its own
+// glass/ghost plinth that would double up with this overlay.
+const DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED = true;
 function getThemeSempertexDefaults(themeId: string): SempertexColor[] {
   const entry = THEME_CATALOG.find((t) => t.id === themeId);
   if (!entry || entry.sempertexPaletteIds.length === 0) return [];
@@ -149,7 +147,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "double-arch-garland-connected-mass-v1";
+const RENDER_CACHE_VERSION = "double-arch-bottomheavy-plinth-v2";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1160,7 +1158,11 @@ forbiddenBalloonColorLabels: hasSempertexLock
   doubleArchRestored:                       setupLayoutTemplateId === "double_arch",
   doubleArchUsesMirroredSingleArchGarland:  setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
   doubleArchCenterGapProtected:             setupLayoutTemplateId === "double_arch",
-  doubleArchPlinthPreviewHidden:            setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0,
+  // False since 2026-07-19: the deterministic plinth composite is re-enabled
+  // (see DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED), so a configured plinth is
+  // visible in the Double Arch preview again — this flips back to true only
+  // if the composite flag is ever turned off.
+  doubleArchPlinthPreviewHidden:            setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0 && !DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED,
 
   // Double Arch garland geometry fix (2026-07-18) — the first restored
   // version rendered as thin detached vertical bead columns floating beside
@@ -1171,6 +1173,10 @@ forbiddenBalloonColorLabels: hasSempertexLock
   doubleArchGarlandAttachedToArchEdges:     setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
   doubleArchGarlandDetachedColumnPrevented: setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
   doubleArchGarlandThickOrganicMass:        setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
+  // 2026-07-19: the tight guide now tapers — enlarged floor mound, balloons
+  // concentrated low, band width and radii shrinking with height, lighter
+  // crown — and the prompt/negatives forbid the even side-border/trim look.
+  doubleArchGarlandBottomHeavyOrganic:      setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
   doubleArchColorForbiddenListSanitized:    hasSempertexLock,
 
   cutoutAiGenerationSuppressed: cutoutGuideItems.length > 0,
@@ -1907,22 +1913,14 @@ forbiddenBalloonColorLabels: hasSempertexLock
     }
   }
 
-  // ── Deterministic Double Arch plinth composite (DISABLED 2026-07-13) ─────
-  // Double Arch (2026-07-12): 8 evidence-based real-render attempts couldn't
-  // get the edit model to reliably paint a solid white plinth — it rendered
-  // as glass/transparent or was omitted outright every time (see
-  // buildLayoutRefEditPrompt.ts's plinthDesc comment for the full list). The
-  // SVG cylinder overlay below was built as a deterministic replacement
-  // (same pattern as the custom text composite and cutout standee overlay
-  // above), but a real render showed it reads as flat pasted-on clipart, not
-  // a realistic event prop — rejected for production. Product decision: for
-  // MVP, Double Arch's final render shows no plinth at all when one is
-  // configured, rather than a fake-looking one. The composite logic below is
-  // gated off by DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED (kept, not deleted,
-  // for a future realistic asset-based version) — AI-side suppression
-  // (aiFacingHasPlinths in buildNegativePrompt.ts, plinthDesc/noPlinthDesc in
-  // buildLayoutRefEditPrompt.ts) stays fully active either way, since that's
-  // what stops the AI's own glass/ghost plinth attempts.
+  // ── Deterministic Double Arch plinth composite (re-enabled 2026-07-19) ───
+  // See the DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED comment near the top of
+  // this file for the full history (AI plinth unreliable → v1 overlay
+  // rejected as clipart → v2 overlay below with photo-real shading).
+  // AI-side suppression (aiFacingHasPlinths in buildNegativePrompt.ts,
+  // plinthDesc/noPlinthDesc in buildLayoutRefEditPrompt.ts) stays fully
+  // active either way, since that's what stops the AI's own glass/ghost
+  // plinth attempts from doubling up with this overlay.
   let doubleArchPlinthCompositeApplied  = false;
   let doubleArchPlinthCompositeMethod   = "none";
   let doubleArchPlinthCompositePosition: { x: number; y: number } | null = null;
@@ -1930,8 +1928,12 @@ forbiddenBalloonColorLabels: hasSempertexLock
   let doubleArchPlinthOverlayHeightPx: number | null = null;
   const doubleArchPlinthAiSuppressed = setupLayoutTemplateId === "double_arch";
   const doubleArchHasConfiguredPlinth = setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0;
-  const doubleArchPlinthRenderSuppressed = doubleArchHasConfiguredPlinth;
-  const doubleArchPlinthSuppressionReason: string | null = doubleArchHasConfiguredPlinth
+  // Suppressed-from-render only when a plinth is configured AND the
+  // deterministic composite is off — with the composite re-enabled these are
+  // false/null, and doubleArchPlinthCompositeApplied below reports whether
+  // the plinth actually landed on the image.
+  const doubleArchPlinthRenderSuppressed = doubleArchHasConfiguredPlinth && !DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED;
+  const doubleArchPlinthSuppressionReason: string | null = doubleArchPlinthRenderSuppressed
     ? "no_realistic_overlay_asset"
     : null;
 
@@ -1960,48 +1962,72 @@ forbiddenBalloonColorLabels: hasSempertexLock
         if (px.w > 2 && px.h > 8) {
           const cx      = px.x + px.w / 2;
           const rx      = px.w / 2;
-          // Ellipse cap height — same 0.42-0.45 ratio the AI-guide cylinder
-          // helpers use elsewhere in this codebase, unambiguously elliptical.
-          const ryTop   = Math.max(2, Math.round(rx * 0.42));
+          // v2: flatter end caps (0.28 vs v1's 0.42) — matches the near-eye-
+          // level photo perspective of the rendered scene; the steep v1
+          // ellipse was a big part of the "clipart" read.
+          const ryTop   = Math.max(2, Math.round(rx * 0.28));
           const topY    = px.y;
           const bottomY = px.y + px.h;
-          const shadowRx = rx * 1.35;
-          const shadowRy = Math.max(3, Math.round(ryTop * 0.9));
+          const shadowRx = rx * 1.5;
+          const shadowRy = Math.max(3, Math.round(ryTop * 1.1));
 
-          // Left-lit gradient — matches the scene's own established lighting
-          // ("soft natural light from the left") so the plinth reads as lit
-          // by the same source as the rest of the photo, not a flat sticker.
-          // Solid gradient fills throughout (no glass-coded translucency) —
-          // this is exactly the failure mode 8 AI-guide attempts hit.
+          // v2 shading (see DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED comment):
+          // left-lit horizontal gradient (matches the scene's "soft natural
+          // light from the left") + a vertical ambient-occlusion overlay
+          // (subtly darker toward the floor) + a narrow left rim-light band
+          // and right core-shadow band for cylindrical roundness + a soft
+          // contact shadow biased slightly right (opposite the light).
+          // Everything is fully opaque paint — no glass-coded translucency.
+          const rimW  = Math.max(1.5, rx * 0.16);
+          const coreW = Math.max(2, rx * 0.30);
           const plinthSvg =
             `<svg xmlns="http://www.w3.org/2000/svg" width="${imgW}" height="${imgH}" viewBox="0 0 ${imgW} ${imgH}">` +
             `<defs>` +
               `<linearGradient id="pbody" x1="0%" y1="0%" x2="100%" y2="0%">` +
-                `<stop offset="0%" stop-color="#FFFFFF"/>` +
-                `<stop offset="52%" stop-color="#F6F4F1"/>` +
-                `<stop offset="100%" stop-color="#DFDAD3"/>` +
+                `<stop offset="0%" stop-color="#FDFDFC"/>` +
+                `<stop offset="38%" stop-color="#F7F5F2"/>` +
+                `<stop offset="78%" stop-color="#E7E2DB"/>` +
+                `<stop offset="100%" stop-color="#D8D2C9"/>` +
+              `</linearGradient>` +
+              `<linearGradient id="pao" x1="0%" y1="0%" x2="0%" y2="100%">` +
+                `<stop offset="0%" stop-color="rgba(0,0,0,0)"/>` +
+                `<stop offset="70%" stop-color="rgba(0,0,0,0.03)"/>` +
+                `<stop offset="100%" stop-color="rgba(60,50,40,0.12)"/>` +
               `</linearGradient>` +
               `<linearGradient id="pbottom" x1="0%" y1="0%" x2="100%" y2="0%">` +
-                `<stop offset="0%" stop-color="#EFECE7"/>` +
-                `<stop offset="52%" stop-color="#E1DCD5"/>` +
-                `<stop offset="100%" stop-color="#CEC8C0"/>` +
+                `<stop offset="0%" stop-color="#EAE6E0"/>` +
+                `<stop offset="55%" stop-color="#DDD7CF"/>` +
+                `<stop offset="100%" stop-color="#C9C2B8"/>` +
               `</linearGradient>` +
-              `<radialGradient id="ptop" cx="38%" cy="35%" r="75%">` +
+              `<radialGradient id="ptop" cx="36%" cy="34%" r="80%">` +
                 `<stop offset="0%" stop-color="#FFFFFF"/>` +
-                `<stop offset="100%" stop-color="#E9E5DF"/>` +
+                `<stop offset="70%" stop-color="#F3F0EB"/>` +
+                `<stop offset="100%" stop-color="#E4DFD7"/>` +
               `</radialGradient>` +
               `<filter id="pshadow" x="-80%" y="-80%" width="260%" height="260%">` +
-                `<feGaussianBlur stdDeviation="${Math.max(2, rx * 0.22).toFixed(1)}"/>` +
+                `<feGaussianBlur stdDeviation="${Math.max(3, rx * 0.30).toFixed(1)}"/>` +
+              `</filter>` +
+              `<filter id="pband" x="-50%" y="-10%" width="200%" height="120%">` +
+                `<feGaussianBlur stdDeviation="${Math.max(1, rx * 0.10).toFixed(1)}"/>` +
               `</filter>` +
             `</defs>` +
-            // Soft floor contact shadow — drawn first (bottom of paint order)
-            `<ellipse cx="${cx.toFixed(1)}" cy="${(bottomY + shadowRy * 0.3).toFixed(1)}" rx="${shadowRx.toFixed(1)}" ry="${shadowRy.toFixed(1)}" fill="rgba(15,15,15,0.30)" filter="url(#pshadow)"/>` +
-            // Cylinder body
-            `<rect x="${(cx - rx).toFixed(1)}" y="${topY.toFixed(1)}" width="${(rx * 2).toFixed(1)}" height="${px.h.toFixed(1)}" fill="url(#pbody)"/>` +
-            // Bottom cap — grounds the cylinder, slightly darker
+            // Soft floor contact shadow — biased right, opposite the left light
+            `<ellipse cx="${(cx + rx * 0.28).toFixed(1)}" cy="${(bottomY + shadowRy * 0.25).toFixed(1)}" rx="${shadowRx.toFixed(1)}" ry="${shadowRy.toFixed(1)}" fill="rgba(20,18,15,0.32)" filter="url(#pshadow)"/>` +
+            // Bottom cap BEFORE the body — only its lower bulge stays visible
+            // below the body rect, the curved front bottom edge of a real
+            // opaque cylinder. (v2 initially painted the full ellipse on top
+            // of the body; its upper arc showing through inside the body
+            // read as a faint frosted-glass cue.)
             `<ellipse cx="${cx.toFixed(1)}" cy="${bottomY.toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ryTop.toFixed(1)}" fill="url(#pbottom)"/>` +
-            // Top cap — the dominant rounded-top cue, brightest highlight, drawn last (on top)
-            `<ellipse cx="${cx.toFixed(1)}" cy="${topY.toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ryTop.toFixed(1)}" fill="url(#ptop)" stroke="rgba(0,0,0,0.05)" stroke-width="0.6"/>` +
+            // Cylinder body — horizontal light gradient
+            `<rect x="${(cx - rx).toFixed(1)}" y="${topY.toFixed(1)}" width="${(rx * 2).toFixed(1)}" height="${px.h.toFixed(1)}" fill="url(#pbody)"/>` +
+            // Vertical ambient occlusion over the body
+            `<rect x="${(cx - rx).toFixed(1)}" y="${topY.toFixed(1)}" width="${(rx * 2).toFixed(1)}" height="${px.h.toFixed(1)}" fill="url(#pao)"/>` +
+            // Left rim light + right core shadow — cylindrical roundness cues
+            `<rect x="${(cx - rx + rimW * 0.3).toFixed(1)}" y="${(topY + ryTop).toFixed(1)}" width="${rimW.toFixed(1)}" height="${(px.h - ryTop).toFixed(1)}" fill="rgba(255,255,255,0.55)" filter="url(#pband)"/>` +
+            `<rect x="${(cx + rx - coreW * 1.35).toFixed(1)}" y="${(topY + ryTop).toFixed(1)}" width="${coreW.toFixed(1)}" height="${(px.h - ryTop).toFixed(1)}" fill="rgba(90,80,70,0.13)" filter="url(#pband)"/>` +
+            // Top cap — brightest surface, drawn last
+            `<ellipse cx="${cx.toFixed(1)}" cy="${topY.toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ryTop.toFixed(1)}" fill="url(#ptop)" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>` +
             `</svg>`;
 
           workingImageBuf = await (sharpFnP(baseBuf)
@@ -2011,7 +2037,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
           outputImageUrl = `data:image/jpeg;base64,${(await (sharpFnP(workingImageBuf).jpeg({ quality: 92 }).toBuffer()) as Buffer).toString("base64")}`;
 
           doubleArchPlinthCompositeApplied  = true;
-          doubleArchPlinthCompositeMethod   = "sharp_svg_cylinder_overlay_v1";
+          doubleArchPlinthCompositeMethod   = "sharp_svg_cylinder_overlay_v2";
           doubleArchPlinthCompositePosition = {
             x: plinthGeometry.xFrac + plinthGeometry.wFrac / 2,
             y: plinthGeometry.yFrac + plinthGeometry.hFrac / 2,

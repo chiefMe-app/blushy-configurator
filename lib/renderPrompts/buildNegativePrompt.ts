@@ -76,7 +76,14 @@ export function buildNegativePrompt(
       "garland not touching the arch board, " +
       "isolated single balloons, lone floating balloons, balloons hovering in air, " +
       "stray balloons detached from the garland mass, small balloons poking out separately, " +
-      "balloons not touching any neighboring balloon"
+      "balloons not touching any neighboring balloon, " +
+      // 2026-07-19 bottom-heavy pass — forbid the even side-border/trim look
+      // (uniform width and spacing from floor to crown) the previous render
+      // still drifted into; matches the BOTTOM-HEAVY positive clause.
+      "evenly spaced balloon strip, uniform balloon border, balloon side trim, " +
+      "balloon border trim around the arch, uniform-width balloon band, " +
+      "same-thickness garland from bottom to top, evenly distributed balloons along the edge, " +
+      "top-heavy balloon garland"
     : "";
 
   const hasRoundPanel = items.some((p) => p.type === "round");

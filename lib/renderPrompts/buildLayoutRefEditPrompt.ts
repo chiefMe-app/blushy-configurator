@@ -253,18 +253,23 @@ export function buildLayoutRefEditPrompt(
       `length, exactly like a real decorator ties a garland onto the board itself. ` +
       `The garland must never float in the empty wall space beside the arch, never stand apart from the ` +
       `arch as its own separate column, and never leave a visible gap between the balloons and the arch edge. ` +
-      `The LEFT arch's garland lives on its OUTER LEFT side: it starts as a dense floor-level base cluster ` +
-      `mounded at the bottom-left outer corner of the left arch, climbs up along the left outer edge as a ` +
-      `thick layered band of large, medium, and small balloons nested and overlapping in lush clustered ` +
-      `bunches, and finishes by curling over the top-left crown/shoulder of the left arch — stopping well ` +
-      `before the center gap. ` +
-      `The RIGHT arch's garland mirrors this exactly on its OUTER RIGHT side: a dense floor-level base ` +
-      `cluster at the bottom-right outer corner, a thick layered climb up the right outer edge, and a curl ` +
-      `over the top-right crown/shoulder of the right arch — stopping well before the center gap. ` +
-      `Both garlands are thick, dense, organic masses with real visual width and layered 3D depth, premium ` +
-      `event-decorator style — NOT a detached vertical balloon column, NOT a bead chain, NOT a pearl ` +
-      `necklace string, NOT tiny beads, NOT a thin single-file chain, NOT a sparse dotted border, NOT ` +
-      `scattered or randomly floating balloons, NOT balloons drifting away from the arch. ` +
+      `EACH GARLAND IS BOTTOM-HEAVY: its largest and densest mass is the floor-level base cluster — a fat ` +
+      `mound of big statement balloons pooled at the arch's outer base corner. From that mound the garland ` +
+      `rises in a lush organic upward flow along the outer edge, gradually TAPERING as it climbs — the band ` +
+      `gets narrower and the balloons get smaller with height — and finishes as a lighter, more delicate ` +
+      `crown/shoulder curl of medium and small balloons over the top of the arch. ` +
+      `The LEFT arch's garland lives on its OUTER LEFT side: dense floor mound at the bottom-left outer ` +
+      `corner, organic tapering climb up the left outer edge, light crown curl over the top-left ` +
+      `shoulder — stopping well before the center gap. ` +
+      `The RIGHT arch's garland mirrors this exactly on its OUTER RIGHT side: dense floor mound at the ` +
+      `bottom-right outer corner, organic tapering climb up the right outer edge, light crown curl over ` +
+      `the top-right shoulder — stopping well before the center gap. ` +
+      `Both garlands are clustered organic masses with real visual width, layered 3D depth, and clearly ` +
+      `varied balloon sizes nested together, premium event-decorator style — NOT an evenly spaced side ` +
+      `border, NOT a uniform balloon strip or trim, NOT the same thickness from bottom to top, NOT a ` +
+      `detached vertical balloon column, NOT a bead chain, NOT a pearl necklace string, NOT tiny beads, ` +
+      `NOT a thin single-file chain, NOT a sparse dotted border, NOT scattered or randomly floating ` +
+      `balloons, NOT balloons drifting away from the arch. ` +
       `CONNECTED MASS RULE: every single balloon must visibly touch and overlap at least one neighboring ` +
       `balloon so each garland reads as ONE continuous connected mass — absolutely no isolated single ` +
       `balloons, no lone balloons hovering in the air beside the garland, no small balloons poking out ` +
