@@ -73,7 +73,10 @@ export function buildNegativePrompt(
       "pearl necklace balloon string, vertical string of single balloons, " +
       "balloons floating away from the arch, garland separated from the arch edge, " +
       "visible gap between garland and arch panel, garland hanging in empty wall space, " +
-      "garland not touching the arch board"
+      "garland not touching the arch board, " +
+      "isolated single balloons, lone floating balloons, balloons hovering in air, " +
+      "stray balloons detached from the garland mass, small balloons poking out separately, " +
+      "balloons not touching any neighboring balloon"
     : "";
 
   const hasRoundPanel = items.some((p) => p.type === "round");

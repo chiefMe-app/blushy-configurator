@@ -265,6 +265,10 @@ export function buildLayoutRefEditPrompt(
       `event-decorator style — NOT a detached vertical balloon column, NOT a bead chain, NOT a pearl ` +
       `necklace string, NOT tiny beads, NOT a thin single-file chain, NOT a sparse dotted border, NOT ` +
       `scattered or randomly floating balloons, NOT balloons drifting away from the arch. ` +
+      `CONNECTED MASS RULE: every single balloon must visibly touch and overlap at least one neighboring ` +
+      `balloon so each garland reads as ONE continuous connected mass — absolutely no isolated single ` +
+      `balloons, no lone balloons hovering in the air beside the garland, no small balloons poking out ` +
+      `separately from the cluster, no stray balloons detached from the mass anywhere in the scene. ` +
       `The INNER side of each arch (the side facing the other arch) and the entire CENTER GAP between the ` +
       `two arches must stay completely clean and balloon-free — no balloons of any kind in the gap, no ` +
       `balloons bridging or connecting the two arches, no balloons crossing from one arch toward the other. ` +

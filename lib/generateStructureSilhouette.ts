@@ -708,8 +708,20 @@ export function generateStructureSilhouette(
         // a real decorator-style balloon cluster, not a thin dotted outline.
         // Radii scale off the panel's own width (p.pw) so the mass reads as
         // proportionally thick regardless of arch size. Style: "thick_organic_mass_v2".
+        //
+        // `tight` (2026-07-18, double_arch): the default 5-lane spread pushes
+        // small balloons out to 2.1x rLarge from the edge — a real Double
+        // Arch render showed those outer-lane small balloons separating from
+        // the band and floating as isolated spheres beside the garland
+        // (inter-lane gaps exceed the small radii once jitter lands wrong).
+        // Tight mode compacts the climb to 4 lanes capped at 1.3x rLarge,
+        // drops the small-only outer lanes (outer lanes get medium balloons
+        // that still overlap their neighbors), halves the jitter, and pulls
+        // the crown's outer depth lane in — every guide balloon then overlaps
+        // the connected mass, so nothing reads as a stray floating balloon.
         const drawThickOrganicMainGarland = (
           p: typeof layout.panels[0], side: "left" | "right", colorOffset: number,
+          tight = false,
         ): { count: number; minR: number; maxR: number; lanes: number } => {
           const dir   = side === "left" ? -1 : 1;
           const edgeX = p.cx + dir * (p.pw / 2);
@@ -739,17 +751,23 @@ export function generateStructureSilhouette(
           const sizeR = { L: rLarge, M: rMed, S: rSmall };
           for (const [ox, up, sz] of BASE) put(edgeX + dir * ox, p.floorY - up, sizeR[sz]);
 
-          // 2) Side climb — 30 balloons across 5 staggered lanes, overlapping
+          // 2) Side climb — 30 balloons across staggered lanes, overlapping
           //    35–60% between neighbors, forming a genuinely thick band from
-          //    just above the base to the spring line.
+          //    just above the base to the spring line. Tight mode: 4 compact
+          //    lanes, medium outer balloons, half jitter (see comment above).
           const climbN  = 30;
-          const laneOffsets = [-rLarge * 0.5, rLarge * 0.15, rLarge * 0.85, rLarge * 1.5, rLarge * 2.1];
-          const laneSizes: ("L" | "M" | "S")[] = ["M", "L", "M", "S", "S"];
+          const laneOffsets = tight
+            ? [-rLarge * 0.5, rLarge * 0.1, rLarge * 0.7, rLarge * 1.3]
+            : [-rLarge * 0.5, rLarge * 0.15, rLarge * 0.85, rLarge * 1.5, rLarge * 2.1];
+          const laneSizes: ("L" | "M" | "S")[] = tight
+            ? ["M", "L", "M", "M"]
+            : ["M", "L", "M", "S", "S"];
+          const wobbleMod = tight ? 7 : 13;
           for (let i = 0; i < climbN; i++) {
             const t = i / (climbN - 1);
             const y = p.floorY - Hp * (0.16 + t * 0.62); // 16% → 78% panel height
-            const lane = i % 5;
-            const wobble = ((i * 17) % 13) - 6; // deterministic organic jitter
+            const lane = i % laneOffsets.length;
+            const wobble = ((i * 17) % wobbleMod) - Math.floor(wobbleMod / 2); // deterministic organic jitter
             const x = edgeX + dir * (laneOffsets[lane] + wobble);
             const sz = laneSizes[lane];
             put(x, y, sizeR[sz]);
@@ -767,14 +785,16 @@ export function generateStructureSilhouette(
             const t   = i / (crownN - 1);
             const ang = ((angFrom + (angTo - angFrom) * t) * Math.PI) / 180;
             const depthLane = i % 3;
-            const rad = rArc + [-rSmall * 0.4, rMed * 0.6, rLarge * 0.85][depthLane];
+            const rad = rArc + (tight
+              ? [-rSmall * 0.4, rMed * 0.4, rLarge * 0.6]
+              : [-rSmall * 0.4, rMed * 0.6, rLarge * 0.85])[depthLane];
             const x   = arcCx + rad * Math.cos(ang);
             const y   = arcCy + rad * Math.sin(ang);
             const sz: "L" | "M" | "S" = depthLane === 2 ? "L" : depthLane === 1 ? "M" : "S";
             put(x, y, sizeR[sz]);
           }
 
-          return { count: n, minR: Math.round(minR), maxR: Math.round(maxR), lanes: 5 };
+          return { count: n, minR: Math.round(minR), maxR: Math.round(maxR), lanes: laneOffsets.length };
         };
 
         // Arch + Shimmer composition — TWO independently well-composed
@@ -877,8 +897,8 @@ export function generateStructureSilhouette(
           // to the panel's own width, a genuine 2-D organic mass rather than
           // any dotted path. Outer sides only — the center gap stays clean.
           const pair = [...archPanels].sort((a, b) => a.cx - b.cx);
-          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0).count;
-          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62).count;
+          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true).count;
+          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true).count;
         } else if (framePanel && archPanels.length === 1) {
           // Arch + Open Frame: the SOLID ARCH carries a thick organic-mass
           // garland (floor base → outer edge climb → over the crown, ~62
