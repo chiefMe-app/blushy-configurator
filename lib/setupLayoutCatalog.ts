@@ -26,11 +26,10 @@
  * balloon behavior deliberately simplified: instead of the old dense/mirror
  * garland algorithm, each arch now reuses the exact same proven Single Arch
  * half-garland treatment, mirrored — see garlandInstruction below and the
- * doubleArchMirroredGarlandClause in buildLayoutRefEditPrompt.ts. The
- * plinth is never requested from the AI (suppression stays active); since
- * 2026-07-19 it is composited deterministically after the render instead
- * (route.ts, sharp_svg_cylinder_overlay_v2), so it is visible in the
- * Double Arch preview again.
+ * doubleArchMirroredGarlandClause in buildLayoutRefEditPrompt.ts. Since
+ * 2026-07-19 the plinth is AI-rendered exactly like Single Arch's (guide
+ * marker centered in the gap + the shared plinthDesc prompt clause), so it
+ * appears with real scene lighting in the Double Arch preview.
  *
  * All removed-layout ids remap to single-panel equivalents via
  * LEGACY_TEMPLATE_ID_REMAP / getSetupLayoutTemplate and
@@ -153,10 +152,10 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
       "arches stay completely clean and balloon-free — no bead chain, no thin single-file row, " +
       "no horizontal balloon bridge across both arches.",
     plinthInstruction:
-      "Double Arch's plinth is composited deterministically after the AI render (route.ts, " +
-      "sharp_svg_cylinder_overlay_v2) — centered in the gap between the two arches. It is never " +
-      "requested from the AI (AI-side suppression stays active), so this instruction text is " +
-      "documentation only and is intentionally never injected into the prompt.",
+      "Double Arch's plinth is AI-rendered (2026-07-19), exactly like Single Arch's — guide " +
+      "plinthEdge marker + plinthDesc prompt clause, centered in the clean gap between the two " +
+      "arches. This instruction text is documentation only and is intentionally never injected " +
+      "into the prompt (plinth wording lives in buildLayoutRefEditPrompt.ts).",
     standeeZones: {
       // 1 standee → right outer; 2 standees → left + right outer (mirrored)
       large:  [{ x: 0.99, bottomY: 0.92, maxHeightFraction: 0.54, maxWidthFraction: 0.38, preferredSide: "right" },

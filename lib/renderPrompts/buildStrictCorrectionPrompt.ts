@@ -7,6 +7,8 @@ export function buildStrictCorrectionPrompt(
     isRound: boolean;
     hasPlinth: boolean;
     roundDiameterCm?: number | null;
+    /** Exactly two arch panels — the plinth stands centered in the gap, not front-left. */
+    isDoubleArch?: boolean;
   }
 ): string {
   const selectedCorrectionColors = (effectiveSempertexSelection ?? []).slice(0, 5);
@@ -47,7 +49,11 @@ export function buildStrictCorrectionPrompt(
     : "";
 
   const plinthClause = opts.hasPlinth
-    ? `Preserve the single selected white cylindrical plinth at the front-left of the backdrop. Keep exactly one plinth visible. Do not remove it. Do not replace it with a platform, stage, riser, or block. Do not hide it behind balloons. Do not add any extra plinth, block, podium, stage piece, rectangular box, oval base, circular riser, support cylinder, or secondary display column.`
+    ? `Preserve the single selected white cylindrical plinth ${
+        opts.isDoubleArch
+          ? "standing centered in the gap between the two arches"
+          : "at the front-left of the backdrop"
+      }. Keep exactly one plinth visible. Do not remove it. Do not replace it with a platform, stage, riser, or block. Do not hide it behind balloons. Do not add any extra plinth, block, podium, stage piece, rectangular box, oval base, circular riser, support cylinder, or secondary display column.`
     : `Do not introduce any plinth, podium, pedestal, cylinder, stage, or base object.`;
 
   const preserveClause = opts.isRound

@@ -230,8 +230,11 @@ export function buildLayoutRefEditPrompt(
   const doubleArchSeparationClause = isDoubleArchScene
     ? ` DOUBLE ARCH SEPARATION LOCK: the two arch panels are two separate freestanding physical event props, ` +
       `each with its own independent floor footprint and base contact point. ` +
-      `Maintain a small but clearly visible gap of bare floor between the two arch bases at all times — ` +
+      `Maintain a small but clearly visible gap between the two arch bases at all times — ` +
       `the bases must never touch, merge, overlap, or blend into a single connected shape. ` +
+      (sceneModel.plinths.length > 0
+        ? `The only object standing in this gap is the single white cylindrical display plinth. `
+        : `The floor in this gap stays completely bare. `) +
       `Each arch must read as a distinct standalone board, not fused, joined, or leaning into the other.`
     : "";
 
@@ -275,37 +278,57 @@ export function buildLayoutRefEditPrompt(
       `balloons, no lone balloons hovering in the air beside the garland, no small balloons poking out ` +
       `separately from the cluster, no stray balloons detached from the mass anywhere in the scene. ` +
       `The INNER side of each arch (the side facing the other arch) and the entire CENTER GAP between the ` +
-      `two arches must stay completely clean and balloon-free — no balloons of any kind in the gap, no ` +
-      `balloons bridging or connecting the two arches, no balloons crossing from one arch toward the other. ` +
+      `two arches must stay balloon-free — no balloons of any kind in the gap, no ` +
+      `balloons bridging or connecting the two arches, no balloons crossing from one arch toward the other` +
+      (sceneModel.plinths.length > 0
+        ? ` (balloon-free does NOT mean empty: the white cylindrical display plinth stands in this gap and must remain). `
+        : `. `) +
       `Each arch's garland is fully independent from the other's — they must never touch, merge, or share balloons.`
     : "";
 
   // ── Plinth description ────────────────────────────────────────────────────
-  // Double Arch (2026-07-12): after 8 evidence-based real-render attempts —
-  // conflict removal, filled-cylinder guide, several fill colors, a size
-  // boost, and a clarified "keep the gap clean" instruction — the edit model
-  // still wouldn't reliably paint a solid white plinth; it rendered as
-  // glass/transparent or got omitted outright. Product decision: stop
-  // asking the AI for it. Double Arch's plinth is now composited
-  // deterministically after the AI render (route.ts, mirroring the
-  // character-standee overlay pattern), so the AI-facing prompt treats a
-  // Double Arch scene as having NO plinth at all — this is what
-  // computeDoubleArchPlinthOverlayGeometry() / doubleArchPlinthAiSuppressed
-  // in route.ts refers to. sceneModel.plinths itself is untouched (the
-  // composite stage still reads the real configured plinth from it).
-  const plinth       = isDoubleArchScene ? undefined : sceneModel.plinths[0];
+  // Double Arch plinth history: 8 real-render attempts (2026-07-12) under the
+  // OLD prompt pipeline failed (glass/omitted), so the plinth was suppressed
+  // from the AI and composited deterministically. RE-ATTEMPTED 2026-07-19 by
+  // product request ("plinth same as single arch"): the prompt has since been
+  // rewritten (mirrored-single-arch garlands, no contradictory bare-gap
+  // wording), so Double Arch now asks the AI for the plinth exactly like
+  // Single Arch does — same clause, gap-centered placement.
+  const plinth       = sceneModel.plinths[0];
   const hasRoundPanelInScene = sceneModel.panels.some((p) => p.type === "round");
+
+  // Double Arch plinth hard lock (2026-07-19): even with the plinth in the
+  // prompt AND a filled cylinder marker in the guide, flash/edit still omitted
+  // it twice in verification renders — the many "gap stays clean" constraints
+  // dominate. This clause explicitly names the guide-marker cylinder as a
+  // mandatory scene object, in the same authoritative HARD LOCK style that
+  // fixed the round-panel and arch-size fidelity issues.
+  const doubleArchPlinthHardLockClause = isDoubleArchScene && plinth
+    ? ` PLINTH HARD LOCK: the layout reference image shows a small solid vertical cylinder standing on ` +
+      `the floor in the gap between the two arches. That cylinder is a real product — a cylindrical ` +
+      `display plinth — and it MUST appear in the final photograph exactly where the reference shows it: ` +
+      `a solid opaque matte white cylinder, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm in ` +
+      `diameter, standing upright on the floor centered between the two arch bases. ` +
+      `Rendering this scene without the plinth is WRONG and unacceptable — never omit it, never fade it ` +
+      `into the background, never replace it with empty floor. It is the third object in the scene: ` +
+      `left arch, right arch, and the white plinth between them.`
+    : "";
   const plinthDesc   = plinth
     ? `Keep exactly one visible white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter. ` +
       `This is a separate display plinth, not a support base for the backdrop. ` +
-      `Place it front-left of the backdrop. ` +
+      (isDoubleArchScene
+        ? `Place it centered in the clean gap between the two arches, standing directly on the floor in front of the gap. `
+        : `Place it front-left of the backdrop. `) +
       `It must remain fully visible from base to rounded top. ` +
+      `It is a solid opaque matte white column — NOT glass, NOT transparent, NOT clear acrylic. ` +
       `Do not hide it behind balloons. ` +
       `Do not merge it into the backdrop. ` +
       `Do not convert it into a base, podium, riser, or stage. ` +
       (hasRoundPanelInScene
         ? `Stand it close to the round backdrop panel, not set too far forward into the room.`
-        : `Place it on the open side near the arch backdrop.`)
+        : isDoubleArchScene
+          ? `It stands alone in the gap — the balloons stay on the outer sides of the arches, far from the plinth.`
+          : `Place it on the open side near the arch backdrop.`)
     : "";
   const noPlinthDesc = plinth
     ? ""
@@ -648,6 +671,7 @@ const setupTemplateClause = setupTemplate
     `${backdropDesc}. ` +
     doubleArchSizeLockClause +
     doubleArchSeparationClause +
+    doubleArchPlinthHardLockClause +
     (sceneModel.panels.some((p) => p.type === "open_arch_frame")
       ? `The open arch frame's CENTER is completely hollow: no backdrop panel behind the frame, no solid surface filling ` +
         `the opening, no hidden second backdrop, no curtain or board filling the arch. The area inside and behind the ` +

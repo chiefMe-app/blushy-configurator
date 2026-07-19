@@ -102,18 +102,17 @@ const SHIMMER_RECOLOR_ENABLED = process.env.ENABLE_SHIMMER_RECOLOR === "true";
 // rejected as flat pasted-on clipart and the flag was turned off
 // (2026-07-13), hiding the plinth from Double Arch's preview entirely.
 //
-// RE-ENABLED 2026-07-19 by product decision: the plinth must be visible in
-// Double Arch again, and a clean deterministic overlay is preferred over
-// the proven-unreliable AI plinth. The overlay is now v2
-// ("sharp_svg_cylinder_overlay_v2" below): flatter photo-perspective end
-// caps, a vertical ambient-occlusion pass on top of the left-lit horizontal
-// gradient, a left rim-light / right core-shadow pair, and a soft contact
-// shadow biased to the right (scene light comes from the left) — a matte
-// satin white cylinder rather than v1's flat sticker. AI-side suppression
-// stays ON regardless of this flag (buildLayoutRefEditPrompt.ts /
-// buildNegativePrompt.ts) — that's what keeps the AI from painting its own
-// glass/ghost plinth that would double up with this overlay.
-const DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED = true;
+// RE-ENABLED 2026-07-19 (v2 shading), then DISABLED AGAIN later the same
+// day by product request: the composited plinth should look "the same as
+// Single Arch", i.e. painted by the AI itself with real scene lighting and
+// reflections, not overlaid. Double Arch's plinth is now AI-rendered again
+// (guide plinthEdge marker centered in the gap + the same plinthDesc clause
+// Single Arch uses — see generateStructureSilhouette.ts and
+// buildLayoutRefEditPrompt.ts). The 8 historical AI-plinth failures
+// happened under the OLD prompt/garland pipeline, since fully rewritten.
+// This v2 overlay code stays intact as the fallback if the AI plinth
+// regresses to glass/omitted again.
+const DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED = false;
 function getThemeSempertexDefaults(themeId: string): SempertexColor[] {
   const entry = THEME_CATALOG.find((t) => t.id === themeId);
   if (!entry || entry.sempertexPaletteIds.length === 0) return [];
@@ -147,7 +146,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "double-arch-bottomheavy-plinth-v2";
+const RENDER_CACHE_VERSION = "double-arch-ai-plinth-injection-pass-v3";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1158,11 +1157,11 @@ forbiddenBalloonColorLabels: hasSempertexLock
   doubleArchRestored:                       setupLayoutTemplateId === "double_arch",
   doubleArchUsesMirroredSingleArchGarland:  setupLayoutTemplateId === "double_arch" && sceneModel.balloons.style !== "none",
   doubleArchCenterGapProtected:             setupLayoutTemplateId === "double_arch",
-  // False since 2026-07-19: the deterministic plinth composite is re-enabled
-  // (see DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED), so a configured plinth is
-  // visible in the Double Arch preview again — this flips back to true only
-  // if the composite flag is ever turned off.
-  doubleArchPlinthPreviewHidden:            setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0 && !DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED,
+  // False since 2026-07-19: the plinth is visible in Double Arch again —
+  // AI-rendered via the same guide-marker + prompt path Single Arch uses
+  // (doubleArchPlinthAiRendered below reports it).
+  doubleArchPlinthPreviewHidden:            false,
+  doubleArchPlinthAiRendered:               setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0,
 
   // Double Arch garland geometry fix (2026-07-18) — the first restored
   // version rendered as thin detached vertical bead columns floating beside
@@ -1397,6 +1396,66 @@ forbiddenBalloonColorLabels: hasSempertexLock
   let finalImageUrl = imageUrl;
   let strictCorrectionApplied = false;
 
+  // ── Double Arch plinth injection pass (2026-07-19) ───────────────────────
+  // flux-2/flash/edit reliably paints the Single Arch plinth but refuses to
+  // render ANY object between the two arches in the primary layout-reference
+  // pass — 5 verification renders with a filled high-contrast guide marker
+  // AND a PLINTH HARD LOCK prompt clause all came back plinth-less (a
+  // fixed-seed compositional bias, matching the 8 historical failures from
+  // 2026-07-12). The same model is however very good at adding a described
+  // object to an existing photo, so the plinth is added in a dedicated small
+  // edit pass on the primary render — the result is still fully AI-painted
+  // with real scene lighting, shadows, and floor reflection, exactly like
+  // Single Arch's plinth (per product request).
+  let plinthSourceUrl = imageUrl;
+  let doubleArchPlinthInjectionApplied = false;
+  if (setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0) {
+    const pl = sceneModel.plinths[0];
+    const injectionPrompt =
+      `Edit the existing photograph ONLY. Add exactly one cylindrical display plinth standing upright ` +
+      `on the floor, centered in the gap between the two arch backdrop panels, slightly in front of them. ` +
+      `It is a solid opaque matte white cylinder, ${pl.heightCm}cm tall and ${pl.diameterCm}cm in ` +
+      `diameter — NOT glass, NOT transparent, NOT acrylic, not a box, not a podium, not a stage. ` +
+      `Its base sits flat on the floor with a soft natural contact shadow, and it picks up the room's ` +
+      `real lighting and a subtle floor reflection, matching the photograph's style exactly. ` +
+      `If a white cylindrical plinth already stands between the arches, keep it exactly as is and add nothing. ` +
+      `Change NOTHING else: preserve the camera angle, room, floor, lighting, both arch panels, their ` +
+      `sizes and positions, and every balloon exactly as they are.`;
+    try {
+      const injResult = await fal.subscribe(resolvedEditModelId, {
+        input: {
+          prompt:        injectionPrompt,
+          image_urls:    [imageUrl],
+          image_size:    renderAspectRatio,
+          seed:          FINAL_RENDER_SEED,
+          output_format: "jpeg",
+          // no negative_prompt: the shared negatives contain cylinder-shape
+          // bans that would fight the very object this pass must add
+        } as any,
+        logs: true,
+      });
+      const jd   = injResult.data as Record<string, unknown>;
+      const jArr = Array.isArray(jd?.["images"]) ? (jd["images"] as Record<string, unknown>[]) : null;
+      const injUrl =
+        (jArr?.[0]?.["url"] as string | undefined) ??
+        ((jd?.["image"] as Record<string, unknown> | undefined)?.["url"] as string | undefined) ??
+        (jd?.["url"] as string | undefined) ??
+        null;
+      if (injUrl) {
+        plinthSourceUrl = injUrl;
+        finalImageUrl   = injUrl;
+        doubleArchPlinthInjectionApplied = true;
+        if (process.env.NODE_ENV === "development") {
+          console.log("[generate-controlled-render] double-arch plinth injection succeeded:", injUrl);
+        }
+      }
+    } catch (injErr) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[generate-controlled-render] double-arch plinth injection failed:", String(injErr));
+      }
+    }
+  }
+
   const isMaxEditModel = resolvedEditModelId === "fal-ai/flux-2-max/edit";
   const hasRoundPanelInRender = sceneModel.panels.some((p) => p.type === "round");
 
@@ -1420,6 +1479,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
         isRound: selectedBackdropTypes.includes("round"),
         hasPlinth: sceneModel.plinths.length > 0,
         roundDiameterCm: firstRoundDiag?.widthCm ?? 200,
+        isDoubleArch: setupLayoutTemplateId === "double_arch",
       }
     );
 
@@ -1428,7 +1488,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
         input: {
           prompt:          correctionPrompt,
           negative_prompt: negativePrompt,
-          image_urls:      [imageUrl],
+          image_urls:      [plinthSourceUrl],
           image_size:      renderAspectRatio,
           seed:            FINAL_RENDER_SEED,
           output_format:   "jpeg",
@@ -1926,16 +1986,14 @@ forbiddenBalloonColorLabels: hasSempertexLock
   let doubleArchPlinthCompositePosition: { x: number; y: number } | null = null;
   let doubleArchPlinthOverlayWidthPx:  number | null = null;
   let doubleArchPlinthOverlayHeightPx: number | null = null;
-  const doubleArchPlinthAiSuppressed = setupLayoutTemplateId === "double_arch";
-  const doubleArchHasConfiguredPlinth = setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0;
-  // Suppressed-from-render only when a plinth is configured AND the
-  // deterministic composite is off — with the composite re-enabled these are
-  // false/null, and doubleArchPlinthCompositeApplied below reports whether
-  // the plinth actually landed on the image.
-  const doubleArchPlinthRenderSuppressed = doubleArchHasConfiguredPlinth && !DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED;
-  const doubleArchPlinthSuppressionReason: string | null = doubleArchPlinthRenderSuppressed
-    ? "no_realistic_overlay_asset"
-    : null;
+  // 2026-07-19: the plinth is AI-rendered for Double Arch again (same path
+  // as Single Arch — guide marker + prompt clause), so nothing is
+  // suppressed anymore. These fields stay for API stability and now always
+  // read false/null; doubleArchPlinthAiRendered in diagInfo reports the
+  // active mechanism.
+  const doubleArchPlinthAiSuppressed = false;
+  const doubleArchPlinthRenderSuppressed = false;
+  const doubleArchPlinthSuppressionReason: string | null = null;
 
   if (DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED && setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0) {
     try {
@@ -2064,6 +2122,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
     fallbackUsed: false,
     strictCorrectionApplied,
     strictCorrectionSkippedReason,
+    doubleArchPlinthInjectionApplied,
     actualRenderPath: strictCorrectionApplied
       ? "first_generate_layout_reference_edit_with_strict_correction"
       : "first_generate_layout_reference_edit",

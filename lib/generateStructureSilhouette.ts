@@ -266,6 +266,34 @@ function plinthEdge(cx: number, bottomY: number, heightPx: number, diameterPx: n
   ].join("\n    ");
 }
 
+// Filled cylindrical plinth marker for the Double Arch gap. plinthEdge is a
+// faint outline that works for Single Arch only because it overlaps the
+// tinted arch panel; centered in Double Arch's empty white gap the same
+// outline is nearly invisible and the edit model simply omits the plinth
+// (verified 2026-07-19 — prompt asked for the plinth, guide had the faint
+// marker, render came back without it). The arches themselves are copied
+// faithfully because they are FILLED shapes, so the plinth marker gets the
+// same treatment: a solid light-gray filled body with visible side edges and
+// cap ellipses, giving the model an unmissable object to paint as the white
+// cylinder.
+function plinthFilledCylinder(cx: number, bottomY: number, heightPx: number, diameterPx: number): string {
+  const visualWidth = Math.min(diameterPx, Math.round(heightPx / 3.0));
+  const rx    = visualWidth / 2;
+  const ry    = Math.max(3, Math.round(rx * 0.45));
+  const topY  = bottomY - heightPx;
+  return [
+    // Solid body — pure white like the real product, with a strong outline so
+    // it contrasts against BOTH the white gap and the tinted arch panel it
+    // partially overlaps (a light-gray fill blended into the beige panel and
+    // the model dropped it)
+    `<rect x="${cx - rx}" y="${topY}" width="${visualWidth}" height="${heightPx}" fill="#FFFFFF" stroke="rgba(85,85,85,0.72)" stroke-width="2"/>`,
+    // Bottom cap — grounds the cylinder on the floor line
+    `<ellipse cx="${cx}" cy="${bottomY}" rx="${rx}" ry="${ry}" fill="#F1EEEA" stroke="rgba(85,85,85,0.60)" stroke-width="1.6"/>`,
+    // Top cap — primary cylinder cue
+    `<ellipse cx="${cx}" cy="${topY}" rx="${rx}" ry="${ry}" fill="#FBFAF8" stroke="rgba(75,75,75,0.75)" stroke-width="2"/>`,
+  ].join("\n    ");
+}
+
 // Open arch frame — a THICK freestanding decor prop, not a thin doorway
 // outline. Drawn as one filled band (outer arch silhouette minus the inner
 // arch silhouette, via fill-rule="evenodd") so the frame has real visual
@@ -537,39 +565,55 @@ export function generateStructureSilhouette(
   const singleShimmer = backdropItems.length === 1 && backdropItems[0]?.type === "shimmer_wall";
   const singleRound   = backdropItems.length === 1 && backdropItems[0]?.type === "round";
   const isDoubleArch  = backdropItems.length === 2 && backdropItems.every((i) => i.type === "arch");
-  // Double Arch (2026-07-12): after 8 evidence-based real-render attempts to
-  // get the edit model to reliably paint a solid white plinth from a guide
-  // marker — thin outline, filled cylinder, white fill, gray fill, a fill
-  // matching the arch panels' own successful recipe, a boosted size, and a
-  // clarified "keep the gap clean" instruction — every attempt still either
-  // rendered it as glass/transparent or omitted it outright. Product
-  // decision: stop relying on the AI for Double Arch's plinth. It's
-  // suppressed here entirely (no guide marker at all) and composited
-  // deterministically after the AI render instead — see
-  // computeDoubleArchPlinthOverlayGeometry() below and its use in
-  // route.ts, the same pattern already used for character-standee cutouts.
-  if (!isDoubleArch) {
-    for (const p of layout.plinths) {
-      let plinthCx: number;
-      if (singleShimmer) {
-        plinthCx = Math.round(W * 0.50); // centered in front of shimmer wall
-      } else if (singleRound && balloonStyle === "half" && layout.panels.length === 1) {
-        // Left side of the round circle, clear of the right-arc garland
-        const rPanel = layout.panels[0];
-        plinthCx = Math.round(rPanel.cx - rPanel.pw * 0.40);
-      } else if (balloonStyle === "half") {
-        plinthCx = Math.round(W * 0.28); // open left side, away from right-side garland
-      } else {
-        plinthCx = p.cx;
-      }
-      // Round scenes: use filled cylinder so the plinth reads as a clear
-      // solid object, not just outline edges that the model may skip or
-      // merge with the background.
-      if (singleRound) {
-        content.push(plinthCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
-      } else {
-        content.push(plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
-      }
+  // Double Arch plinth history: 8 real-render attempts (2026-07-12) under
+  // the OLD prompt/garland pipeline couldn't get the AI to paint a solid
+  // plinth from a guide marker, so it was suppressed and later composited
+  // deterministically (SVG overlay). RE-ATTEMPTED 2026-07-19 by product
+  // request ("plinth same as single arch"): the prompt pipeline has since
+  // been rewritten (mirrored-single-arch garland clauses, no contradictory
+  // "keep the gap bare" wording, connected-mass negatives). First retry used
+  // the same faint plinthEdge marker Single Arch uses, but centered in the
+  // empty white gap that outline is nearly invisible and the model omitted
+  // the plinth — Single Arch only gets away with it because its marker
+  // overlaps the tinted panel. Double Arch therefore uses the FILLED
+  // plinthFilledCylinder marker (solid shape, like the arch panels the model
+  // copies faithfully), centered in the gap (the same gap-midpoint math
+  // computeDoubleArchPlinthOverlayGeometry uses).
+  for (const p of layout.plinths) {
+    let plinthCx: number;
+    if (isDoubleArch) {
+      // Anchor on the LEFT arch's inner edge so the marker half-overlaps the
+      // filled panel — the same overlap cue that makes Single Arch's plinth
+      // render reliably. A cylinder floating fully inside the empty gap was
+      // ignored by the edit model in three verification renders (2026-07-19),
+      // even drawn filled and prompt-hard-locked.
+      const leftPanel = layout.panels.reduce((a, b) => (a.cx <= b.cx ? a : b));
+      plinthCx = Math.round(leftPanel.cx + leftPanel.pw / 2);
+    } else if (singleShimmer) {
+      plinthCx = Math.round(W * 0.50); // centered in front of shimmer wall
+    } else if (singleRound && balloonStyle === "half" && layout.panels.length === 1) {
+      // Left side of the round circle, clear of the right-arc garland
+      const rPanel = layout.panels[0];
+      plinthCx = Math.round(rPanel.cx - rPanel.pw * 0.40);
+    } else if (balloonStyle === "half") {
+      plinthCx = Math.round(W * 0.28); // open left side, away from right-side garland
+    } else {
+      plinthCx = p.cx;
+    }
+    // Round scenes: use filled cylinder so the plinth reads as a clear
+    // solid object, not just outline edges that the model may skip or
+    // merge with the background.
+    if (singleRound) {
+      content.push(plinthCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
+    } else if (isDoubleArch) {
+      // Foreground cue: drop the plinth base ~5% below the arch floor line so
+      // it reads as standing IN FRONT of the gap, not as a background artifact
+      // between the panels — mid-gap objects at the shared floor line were
+      // smoothed away by the edit model even when drawn filled (2026-07-19).
+      const daBottomY = Math.min(p.bottomY + Math.round(H * 0.05), H - 6);
+      content.push(plinthFilledCylinder(plinthCx, daBottomY, p.heightPx, p.diameterPx));
+    } else {
+      content.push(plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
     }
   }
 

@@ -189,19 +189,13 @@ export function buildNegativePrompt(
   // Declared early so it gates both plinthNeg/plinthGeometryNeg below and plinthOmissionNeg later.
   const hasPlinths = (sceneModel?.plinths?.length ?? 0) > 0;
 
-  // Double Arch (2026-07-12): the plinth is composited deterministically
-  // after the AI render now (route.ts), not requested from the AI at all —
-  // see the matching suppression in buildLayoutRefEditPrompt.ts's
-  // plinthDesc/noPlinthDesc. The negative prompt needs to match: with real
-  // hasPlinths, plinthOmissionNeg below would tell the model "don't omit
-  // the plinth" while the positive prompt now says there is none — the
-  // same kind of contradiction that caused the plinth-conflict bug fixed
-  // earlier. aiFacingHasPlinths treats Double Arch as plinth-less for every
-  // plinth-related negative below, which flips plinthNeg/plinthGeometryNeg
-  // to their "forbid ANY plinth-like shape" form — helpful, since it also
-  // discourages the faint glass/ghost plinth the AI sometimes still drew on
-  // its own even without a prompt asking for one.
-  const aiFacingHasPlinths = isDoubleArchScene ? false : hasPlinths;
+  // Double Arch plinth (2026-07-19): requested from the AI again, exactly
+  // like Single Arch — see buildLayoutRefEditPrompt.ts's plinthDesc. The
+  // negatives treat Double Arch's plinth the same as any other layout's
+  // (plinthOmissionNeg fires, "forbid any plinth" form doesn't), with
+  // anti-glass negatives kept for Double Arch below since glass/transparent
+  // rendering was this layout's historical failure mode.
+  const aiFacingHasPlinths = hasPlinths;
 
   // Broad shape negatives ("no cylinder", "no podium") confuse the model into removing the
   // selected plinth. Only fire them when NO plinth is configured in the scene.
@@ -211,17 +205,22 @@ export function buildNegativePrompt(
     : "";
 
   // When a plinth IS selected: only forbid extra/wrong additions, not the plinth itself.
+  // Double Arch keeps explicit anti-glass negatives in BOTH branches — the
+  // glass/transparent plinth was this layout's historical AI failure mode.
+  const doubleArchGlassNeg = isDoubleArchScene
+    ? ", glass plinth, clear plinth, transparent plinth, clear acrylic plinth, crystal plinth, " +
+      "see-through plinth, glass cylinder, acrylic cylinder"
+    : "";
   const plinthNeg = aiFacingHasPlinths
     ? "extra plinth, second plinth, additional pedestal, extra podium, support base, " +
-      "circular stage, rectangular base block, riser, platform under backdrop"
+      "circular stage, rectangular base block, riser, platform under backdrop" +
+      doubleArchGlassNeg
     : "wrong plinth shape, wide platform, stage, podium, square pedestal, wide base, " +
       "short round podium, cake stand, low display stand, short cylinder, low podium, " +
       "squat cylinder, wide cylinder, flat cylinder, disk plinth, drum table, round stool, " +
       "short round stand, wide display stand" +
-      (isDoubleArchScene
-        ? ", glass plinth, clear plinth, transparent plinth, clear acrylic plinth, crystal plinth, " +
-          "see-through plinth, glass cylinder, acrylic cylinder, any cylinder in the gap between the arches"
-        : "");
+      doubleArchGlassNeg +
+      (isDoubleArchScene ? ", any cylinder in the gap between the arches" : "");
 
   // Shimmer wall negatives — fire when a shimmer wall is in the scene
   const hasShimmerWall = (sceneModel?.panels ?? []).some((p) => p.type === "shimmer_wall");
