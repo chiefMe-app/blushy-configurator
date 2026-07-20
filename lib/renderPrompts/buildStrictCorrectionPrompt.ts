@@ -41,6 +41,7 @@ export function buildStrictCorrectionPrompt(
           "For silver selections, use cool silver-gray only, never gold, bronze, copper, or champagne.",
           "For oyster/off-white selections, use cool pearl white or cool off-white only, never beige, ivory, cream-gold, warm cream, or champagne.",
           "Correct any global warm tint or creamy cast on the entire scene. Keep the scene neutral and color-accurate. Do not add haze, matte wash, sepia warmth, beige cast, or editorial filtering. Keep whites neutral white, not ivory or creamy. Preserve true pastel color separation.",
+          "Remove any color cast from the window daylight on the balloons: every balloon keeps its exact selected color on both its window-lit side and its shadow side — no blue, golden, or warm tint from the window light on balloon surfaces.",
         ]
       : [];
 

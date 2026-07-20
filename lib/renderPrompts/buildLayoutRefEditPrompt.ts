@@ -465,8 +465,11 @@ export function buildLayoutRefEditPrompt(
       `standard balloons, and small 5 inch filler balloons — for EACH of the two garlands independently, ` +
       `not divided or shared between them. ` +
       `EACH garland (left arch's garland AND right arch's garland, separately) must include its own at ` +
-      `least 5 visible 36 inch statement balloons distributed through that garland at the top, side, and ` +
-      `base — 10 total 36 inch balloons across the full scene, 5 per side, never fewer on either side. ` +
+      `least 5 visible 36 inch statement balloons — 10 total 36 inch balloons across the full scene, ` +
+      `5 per side, never fewer on either side. ` +
+      `MOST 36 inch balloons sit LOW: seated in and just above each garland's floor-level base mound. ` +
+      `The lower half of each garland carries most of its volume — the biggest, densest balloons are at ` +
+      `and near the floor; the upper half stays lighter with progressively smaller balloons. ` +
       `Do not thin out, shrink, or reduce either garland's balloon count or size to compensate for having ` +
       `two garlands in the scene — both garlands must independently look as full and dense as a single ` +
       `standalone Single Arch garland. ` +
@@ -604,7 +607,12 @@ export function buildLayoutRefEditPrompt(
   const neutralStyleClause = hasSempertexLock
     ? `Use neutral daylight product photography with accurate white balance. ` +
       `Keep whites clean neutral white. ` +
-      `Preserve true soft pastel color separation and natural diffuse balloon material. `
+      `Preserve true soft pastel color separation and natural diffuse balloon material. ` +
+      // 2026-07-20 product feedback: window daylight was visibly tinting the
+      // balloons away from their selected Sempertex tones.
+      `The window daylight must NOT tint the balloons: no blue, golden, or warm color cast from the ` +
+      `window light on any balloon surface — every balloon keeps its exact specified color on both its ` +
+      `window-lit side and its shadow side, with only neutral highlights and neutral gray shading. `
     : "";
   const photographyOpening = isRoundScene
     ? `Bright, sharp, premium studio photography with clean natural daylight from the left, ` +

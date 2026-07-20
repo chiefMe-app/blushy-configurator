@@ -783,6 +783,12 @@ export function generateStructureSilhouette(
           const rLarge  = Math.max(20, Math.min(50, p.pw * 0.17));
           const rMed    = Math.max(14, Math.min(34, p.pw * 0.12));
           const rSmall  = Math.max(9,  Math.min(22, p.pw * 0.08));
+          // 36-inch statement anchor (tight/double-arch only): a real 36"
+          // balloon is ~3x a 12" one. The guide must SHOW that scale — with
+          // only L/M/S circles the model rendered a uniform mid-size garland
+          // (2026-07-20 product feedback: balloons too small, not enough mass
+          // low down; sizes must read as 36" / 12" / 5").
+          const rXL     = Math.max(30, Math.min(80, p.pw * 0.28));
 
           // 1) Floor/base cluster — 16 heavily overlapping balloons mounded at
           //    the outer base, several large anchors for a dense floor pile.
@@ -792,7 +798,7 @@ export function generateStructureSilhouette(
             [  50,  54, "S"], [   6,  74, "S"], [ -18,  46, "S"], [  36,  74, "S"],
             [  14,  92, "M"], [ -12,  86, "S"], [  46,  90, "S"], [   0, 104, "S"],
           ];
-          const sizeR = { L: rLarge, M: rMed, S: rSmall };
+          const sizeR = { X: rXL, L: rLarge, M: rMed, S: rSmall };
           // Tight (double_arch) is also BOTTOM-HEAVY (2026-07-19): a real
           // render at uniform density read as an evenly spaced side border /
           // trim rather than a decorator garland. The base cluster is
@@ -801,8 +807,19 @@ export function generateStructureSilhouette(
           // lighter — so the guide's own silhouette is a fat floor mound
           // flowing up into a slim shoulder curl, which the img2img pass
           // then reproduces instead of an even strip.
-          const baseScale = tight ? 1.15 : 1;
-          for (const [ox, up, sz] of BASE) put(edgeX + dir * ox, p.floorY - up, sizeR[sz] * baseScale);
+          const baseScale = tight ? 1.3 : 1;
+          const upScale   = tight ? 1.25 : 1; // taller mound — more volume low down
+          if (tight) {
+            // Three 36" giant statement anchors seated IN the floor mound —
+            // the biggest objects in the garland, unmistakably larger than
+            // everything else, exactly where a decorator parks them.
+            put(edgeX + dir * 16,  p.floorY - rXL * 0.72, rXL);
+            put(edgeX + dir * -24, p.floorY - rXL * 0.60, rXL * 0.88);
+            put(edgeX + dir * 54,  p.floorY - rXL * 0.55, rXL * 0.78);
+          }
+          for (const [ox, up, sz] of BASE) {
+            put(edgeX + dir * ox * (tight ? 1.15 : 1), p.floorY - up * upScale, sizeR[sz] * baseScale);
+          }
 
           // 2) Side climb — 30 balloons across staggered lanes, overlapping
           //    35–60% between neighbors, forming a genuinely thick band from
@@ -815,17 +832,17 @@ export function generateStructureSilhouette(
             ? [-rLarge * 0.5, rLarge * 0.1, rLarge * 0.7, rLarge * 1.3]
             : [-rLarge * 0.5, rLarge * 0.15, rLarge * 0.85, rLarge * 1.5, rLarge * 2.1];
           const laneSizes: ("L" | "M" | "S")[] = tight
-            ? ["M", "L", "M", "M"]
+            ? ["M", "L", "L", "M"] // bigger overall body (2026-07-20 feedback)
             : ["M", "L", "M", "S", "S"];
           const wobbleMod = tight ? 7 : 13;
           for (let i = 0; i < climbN; i++) {
             const t = i / (climbN - 1);
-            const tEase = tight ? Math.pow(t, 1.35) : t; // tight: denser sampling near the floor
+            const tEase = tight ? Math.pow(t, 1.5) : t; // tight: denser sampling near the floor
             const y = p.floorY - Hp * (0.16 + tEase * 0.62); // 16% → 78% panel height
             const lane = i % laneOffsets.length;
             const wobble = ((i * 17) % wobbleMod) - Math.floor(wobbleMod / 2); // deterministic organic jitter
             const spread = tight ? 1 - 0.42 * tEase : 1;   // band narrows as it rises
-            const rTaper = tight ? 1.18 - 0.48 * tEase : 1; // balloons shrink as they rise
+            const rTaper = tight ? 1.3 - 0.55 * tEase : 1; // balloons shrink as they rise
             const x = edgeX + dir * (laneOffsets[lane] * spread + wobble);
             const sz = laneSizes[lane];
             put(x, y, sizeR[sz] * rTaper);
