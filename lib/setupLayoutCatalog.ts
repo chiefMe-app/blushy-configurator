@@ -78,13 +78,23 @@ export interface SetupLayoutTemplate {
   };
 }
 
-// Shared zone presets — outer edges, clear of the central backdrop opening.
+// Shared zone presets.
+//
+// 2026-07-20 product direction: a standee belongs on the VIEWER'S LEFT and
+// directly in front of the backdrop — not pushed out to the far right edge,
+// which read as a separate object floating beside the setup and also buried
+// the garland. The first (and for most orders only) standee therefore anchors
+// just left of the backdrop's centre and overlaps the panel, standing on the
+// same floor line. The plinth moves to the right of centre for these scenes
+// (see generateStructureSilhouette + plinthDesc), so the two never collide.
+// Extra standees step further left, staying clear of the plinth.
 const ZONES_STANDARD = {
-  large:  [{ x: 0.99, bottomY: 0.92, maxHeightFraction: 0.56, maxWidthFraction: 0.42, preferredSide: "right" as const },
-           { x: 0.01, bottomY: 0.92, maxHeightFraction: 0.56, maxWidthFraction: 0.42, preferredSide: "left" as const }],
-  medium: [{ x: 0.03, bottomY: 0.94, maxHeightFraction: 0.40, maxWidthFraction: 0.34, preferredSide: "left" as const },
-           { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.40, maxWidthFraction: 0.34, preferredSide: "right" as const }],
-  small:  [{ x: 0.96, bottomY: 0.96, maxHeightFraction: 0.25, maxWidthFraction: 0.26, preferredSide: "right" as const }],
+  large:  [{ x: 0.10, bottomY: 0.94, maxHeightFraction: 0.62, maxWidthFraction: 0.34, preferredSide: "left" as const },
+           { x: 0.99, bottomY: 0.92, maxHeightFraction: 0.56, maxWidthFraction: 0.34, preferredSide: "right" as const }],
+  medium: [{ x: 0.12, bottomY: 0.95, maxHeightFraction: 0.44, maxWidthFraction: 0.28, preferredSide: "left" as const },
+           { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.40, maxWidthFraction: 0.28, preferredSide: "right" as const }],
+  small:  [{ x: 0.14, bottomY: 0.96, maxHeightFraction: 0.28, maxWidthFraction: 0.24, preferredSide: "left" as const },
+           { x: 0.96, bottomY: 0.96, maxHeightFraction: 0.25, maxWidthFraction: 0.24, preferredSide: "right" as const }],
 };
 
 export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [

@@ -20,6 +20,9 @@ import { generateStructureControlMap } from "@/lib/generateStructureControlMap";
 import { calculateRenderAspectRatio } from "@/lib/calculateRenderAspectRatio";
 import MeasurementOverlay from "./MeasurementOverlay";
 import DesignChangePrompt from "./DesignChangePrompt";
+
+/** Feature flag: the free-text "Ask for a change" panel is parked (2026-07-20). */
+const ASK_FOR_A_CHANGE_ENABLED = false;
 import type { ChangeType } from "@/lib/generatePrompt";
 import LiveSetupPreview from "./LiveSetupPreview";
 
@@ -1316,7 +1319,10 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
       </div>
 
       {/* ─── Ask for a change prompt ─────────────────────────────────── */}
-      {onPatchDecor && (
+      {/* Disabled 2026-07-20 by product request — the free-text change flow is
+          parked until it is reworked. Flip ASK_FOR_A_CHANGE_ENABLED back to
+          true to restore it; the component and its wiring are untouched. */}
+      {ASK_FOR_A_CHANGE_ENABLED && onPatchDecor && (
         <DesignChangePrompt
           sceneModel={buildSceneModel(config)}
           currentExtraClusters={config.decor.extraBalloonClusters ?? []}

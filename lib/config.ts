@@ -1028,9 +1028,21 @@ export function priceBreakdown(config: BuilderConfig): {
     lines.push({ label: `Plinths (${d.plinthSizes.length})`, amount: plinthSum, section: "design" });
   }
 
-  const cut = cutoutPrice(d.cutouts.size);
+  // Pricing bug fixed 2026-07-20: this passed d.cutouts.size, which is always
+  // "none" in the per-character standee model, so selected standees never
+  // reached the quote. Price the whole selection instead — cutoutPrice()
+  // handles both the legacy set sizes and the standee list.
+  const normalizedCutouts = normalizeCutouts(d.cutouts);
+  const cut = cutoutPrice(normalizedCutouts);
   if (cut > 0) {
-    lines.push({ label: `${cutoutSetBySize(d.cutouts.size)?.label}`, amount: cut, section: "design" });
+    const standeeCount = cutoutTotalCount(normalizedCutouts);
+    lines.push({
+      label: normalizedCutouts.mode === "standees"
+        ? `Character standees (${standeeCount})`
+        : `${cutoutSetBySize(normalizedCutouts.size)?.label ?? "Character cutouts"}`,
+      amount: cut,
+      section: "design",
+    });
   }
 
   const printOpt = backdropPrintById(d.backdropPrint?.type ?? "none");

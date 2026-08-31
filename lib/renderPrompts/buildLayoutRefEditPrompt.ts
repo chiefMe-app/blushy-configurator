@@ -313,12 +313,23 @@ export function buildLayoutRefEditPrompt(
       `into the background, never replace it with empty floor. It is the third object in the scene: ` +
       `left arch, right arch, and the white plinth between them.`
     : "";
+  // Character standees are composited on the viewer's LEFT in front of the
+  // backdrop, so a front-left plinth ends up hidden behind them (2026-07-20
+  // bug: "the plinth disappears when a character is added"). With standees in
+  // the scene the plinth is asked for on the right of centre instead — the
+  // same side the layout guide now marks it on.
+  const hasStandeesInScene =
+    (sceneModel.cutouts?.items ?? []).some((i) => (i?.quantity ?? 0) > 0);
+
   const plinthDesc   = plinth
     ? `Keep exactly one visible white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter. ` +
       `This is a separate display plinth, not a support base for the backdrop. ` +
       (isDoubleArchScene
         ? `Place it centered in the clean gap between the two arches, standing directly on the floor in front of the gap. `
-        : `Place it front-left of the backdrop. `) +
+        : hasStandeesInScene
+          ? `Place it to the RIGHT of centre, standing on the floor directly in front of the backdrop panel. ` +
+            `Keep the left-hand floor area in front of the backdrop completely clear and empty — a character standee is added there afterwards. `
+          : `Place it front-left of the backdrop. `) +
       `It must remain fully visible from base to rounded top. ` +
       `It is a solid opaque matte white column — NOT glass, NOT transparent, NOT clear acrylic. ` +
       `Do not hide it behind balloons. ` +
@@ -328,7 +339,9 @@ export function buildLayoutRefEditPrompt(
         ? `Stand it close to the round backdrop panel, not set too far forward into the room.`
         : isDoubleArchScene
           ? `It stands alone in the gap — the balloons stay on the outer sides of the arches, far from the plinth.`
-          : `Place it on the open side near the arch backdrop.`)
+          : hasStandeesInScene
+            ? `Stand it close to the backdrop panel, right of centre, fully visible.`
+            : `Place it on the open side near the arch backdrop.`)
     : "";
   const noPlinthDesc = plinth
     ? ""

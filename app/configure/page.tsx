@@ -957,7 +957,10 @@ function toggleCutoutAsset(preset: { assetId: string; label: string; previewUrl?
         assetId: preset.assetId,
         label: preset.label,
         previewUrl: preset.previewUrl,
-        quantities: emptyCutoutQuantities(),
+        // Standees ship in ONE standard height (2026-07-20 product decision):
+        // picking the character is the whole choice, so selecting a design
+        // adds exactly one 150cm feature standee.
+        quantities: { ...emptyCutoutQuantities(), large: 1 },
       }];
   patchDecor({
     cutouts: {
@@ -1089,6 +1092,25 @@ function clearAllStandees() {
   );
   const secSub = (text: string) => (
     <p style={{ fontSize: 11.5, color: "#727386", marginTop: 2, marginBottom: 10, fontWeight: 500 }}>{text}</p>
+  );
+
+  /**
+   * "You're here" pointer for the step that needs attention next.
+   * Deliberately a soft pill with a gentle nudge rather than a cartoon arrow —
+   * it guides a first-time user without undoing the premium look (2026-07-20).
+   */
+  const nextCue = (text: string) => (
+    <div style={{
+      display: "inline-flex", alignItems: "center", gap: 6, marginTop: 2,
+      background: DC.chipBg, color: DC.roseDeep, borderRadius: 999,
+      padding: "3px 10px 3px 8px", fontSize: 10.5, fontWeight: 700,
+      animation: "blushyNudge 1.8s ease-in-out infinite",
+    }}>
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden>
+        <path d="M2.5 6h6.2M6 3.2 8.9 6 6 8.8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      {text}
+    </div>
   );
 
   function BackdropShapePreview({ type, color = "#F2D4E0" }: { type: string; color?: string }) {
@@ -1357,6 +1379,7 @@ function clearAllStandees() {
             <div>
               <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 18, color: DC.plum, lineHeight: 1.15 }}>Pick your setup</div>
               <div style={{ fontSize: 11.5, color: DC.muted }}>Start with a layout — we&apos;ll arrange the pieces for you.</div>
+              {d.backdropItems.length === 0 && nextCue("Start here — tap a layout")}
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(128px, 1fr))", gap: 10 }}>
@@ -1445,6 +1468,7 @@ function clearAllStandees() {
           <div>
             <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 18, color: DC.plum, lineHeight: 1.15 }}>Size your pieces</div>
             <div style={{ fontSize: 11.5, color: DC.muted }}>Choose a size for each piece — add-ons unlock once it&apos;s sized.</div>
+            {d.backdropItems.length > 0 && d.backdropItems.some((i) => !i.sizeId) && nextCue("Pick a size next")}
           </div>
         </div>
 
@@ -2066,6 +2090,7 @@ function clearAllStandees() {
           <div>
             <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 18, color: DC.plum, lineHeight: 1.15 }}>Add your balloons</div>
             <div style={{ fontSize: 11.5, color: DC.muted }}>Choose a garland — or skip it — then fine-tune the colors.</div>
+            {d.backdropItems.length > 0 && d.balloonStyle === "none" && nextCue("Optional — add a garland")}
           </div>
         </div>
 
@@ -2335,7 +2360,7 @@ function clearAllStandees() {
       {/* CHARACTER STANDEES */}
 <div style={card}>
   {secLabel("Character standees")}
-  {secSub("Pick who joins the party, then choose how tall each standee should be.")}
+  {secSub("Pick who joins the party — each standee is a 150 cm feature piece.")}
 
   <div className="space-y-3">
     {/* 1 — Choose characters (multi-select, NOTHING preselected) */}
@@ -2343,7 +2368,7 @@ function clearAllStandees() {
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>1 · Choose characters</div>
-          <div className="text-[11px]" style={{ color: DC.muted }}>Choose one or more characters, then pick the sizes you want.</div>
+          <div className="text-[11px]" style={{ color: DC.muted }}>Tap a character to add it — each standee is 150 cm, +AED 180.</div>
         </div>
         {selectedCutoutAssets.length > 0 && (
           <button
@@ -2402,96 +2427,28 @@ function clearAllStandees() {
       )}
     </div>
 
-    {/* 2 — Choose sizes per selected character */}
-    {selectedCutoutAssets.length > 0 && (
-      <div className="rounded-[16px] border border-black/10 bg-white p-3">
-        <div className="mb-3">
-          <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>2 · Choose sizes</div>
-          <div className="text-[11px]" style={{ color: DC.muted }}>
-            Set how many of each height you want, per character.
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {selectedCutoutAssets.map((asset) => (
-            <div key={asset.assetId} className="rounded-[14px] border border-accent/25 bg-[#FFF9FC] p-3">
-              <div className="mb-2 flex items-center gap-2">
-                {asset.previewUrl && (
-                  <div className="flex h-10 w-8 items-center justify-center overflow-hidden rounded-[8px] bg-white">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={asset.previewUrl} alt={asset.label} className="h-full w-full object-contain" />
-                  </div>
-                )}
-                <div className="text-[12px] font-extrabold text-[#12162F]">{asset.label}</div>
-              </div>
-              <div className="space-y-1.5">
-                {CUTOUT_STANDEE_OPTIONS.map((option) => {
-                  const qty = asset.quantities[option.size] ?? 0;
-                  const sizeBar = option.heightCm >= 150 ? "h-8" : option.heightCm >= 100 ? "h-6" : "h-3.5";
-                  return (
-                    <div
-                      key={option.size}
-                      className={`flex items-center justify-between gap-3 rounded-[12px] border px-3 py-2 transition ${qty > 0 ? "border-accent/60 bg-white" : "border-black/5 bg-white/60"}`}
-                    >
-                      <div className="flex items-end gap-2.5">
-                        <div className="flex w-4 items-end justify-center">
-                          <div className={`w-2.5 rounded-t-full bg-accent/40 ${sizeBar}`} />
-                        </div>
-                        <div>
-                          <span className="text-[12px] font-bold text-[#12162F]">{option.heightCm} cm</span>
-                          <span className="ml-1.5 text-[10px] font-bold text-blue-500">+AED {option.unitPrice}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setAssetQuantity(asset.assetId, option.size, qty - 1)}
-                          className="flex h-7 w-7 items-center justify-center rounded-full border border-black/15 bg-white text-base font-bold text-black/60"
-                        >
-                          −
-                        </button>
-                        <div className="w-6 text-center text-sm font-extrabold text-[#12162F]">{qty}</div>
-                        <button
-                          type="button"
-                          onClick={() => setAssetQuantity(asset.assetId, option.size, qty + 1)}
-                          className="flex h-7 w-7 items-center justify-center rounded-full border border-black/15 bg-white text-base font-bold text-black/60"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+    {/* 2 — Your standee squad. Sizes were removed (2026-07-20): standees now
+        ship in one standard 150cm height, so choosing the character is the
+        entire decision and there is nothing left to configure per asset. */}
+    {cutoutTotalCount(normalizedCut) > 0 && (() => {
+      const single = CUTOUT_STANDEE_OPTIONS.find((o) => o.size === "large")!;
+      const lines = selectedCutoutAssets.map((asset) => ({
+        text:  `${asset.label} · ${single.heightCm} cm`,
+        price: `AED ${single.unitPrice * (asset.quantities.large ?? 0)}`,
+      }));
+      return (
+        <div style={{ background: "white", border: `1.5px dashed ${DC.dashedBd}`, borderRadius: 16, padding: "13px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>2 · Your standee squad</div>
+          {lines.map((line) => (
+            <div key={line.text} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <span style={{ fontSize: 12.5, color: DC.plum }}><span aria-hidden style={{ color: DC.rose }}>·</span> {line.text}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: DC.plum }}>{line.price}</span>
             </div>
           ))}
+          <div style={{ fontSize: 10.5, color: DC.faint }}>They&apos;ll appear in your render after you regenerate · Total +AED {cutoutPrice(normalizedCut)}</div>
         </div>
-
-        {/* 3 — Live human-readable summary — Claude Design "standee squad" */}
-        {cutoutTotalCount(normalizedCut) > 0 && (() => {
-          const lines = selectedCutoutAssets.flatMap((asset) =>
-            CUTOUT_STANDEE_OPTIONS
-              .filter((o) => (asset.quantities[o.size] ?? 0) > 0)
-              .map((o) => ({
-                text:  `${asset.quantities[o.size]} × ${o.heightCm} cm ${asset.label}`,
-                price: `AED ${o.unitPrice * (asset.quantities[o.size] ?? 0)}`,
-              })),
-          );
-          return (
-            <div className="mt-3" style={{ background: "white", border: `1.5px dashed ${DC.dashedBd}`, borderRadius: 16, padding: "13px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>3 · Your standee squad</div>
-              {lines.map((line) => (
-                <div key={line.text} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <span style={{ fontSize: 12.5, color: DC.plum }}><span aria-hidden style={{ color: DC.rose }}>·</span> {line.text}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: DC.plum }}>{line.price}</span>
-                </div>
-              ))}
-              <div style={{ fontSize: 10.5, color: DC.faint }}>They&apos;ll appear in your render after you regenerate · Total +AED {cutoutPrice(normalizedCut)}</div>
-            </div>
-          );
-        })()}
-      </div>
-    )}
+      );
+    })()}
   </div>
 </div>
 

@@ -63,3 +63,13 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Gentle nudge for the "next step" cue pills in the configurator (2026-07-20).
+   Motion is intentionally tiny — guidance without a cartoon bounce. */
+@keyframes blushyNudge {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes blushyNudge { 0%, 100% { transform: none; } }
+}

@@ -384,18 +384,18 @@ function standeeGuide(cx: number, bottomY: number, heightPx: number, label: stri
   const baseRy   = Math.max(4, Math.round(widthPx * 0.15));
   const fontSize = Math.max(9, Math.min(13, Math.round(widthPx * 0.55)));
 
+  // 2026-07-20: the dashed outline and the "150cm" label were being COPIED
+  // into the finished photograph by the edit model — a ghost rectangle with
+  // measurement text sat in the render where the standee would later be
+  // composited. The placeholder now only softly reserves the footprint: a
+  // very low-contrast fill, no dashes, no stroke, no text. The prompt
+  // ("keep the left-hand floor area clear") does the rest of the work.
+  void cornerR; void fontSize; void label;
   return [
-    // Body silhouette — light fill, dashed outline so it reads as a guide placeholder
     `<rect x="${(cx - rx).toFixed(1)}" y="${topY.toFixed(1)}" width="${widthPx.toFixed(1)}" height="${heightPx.toFixed(1)}" ` +
-      `rx="${cornerR}" ry="${cornerR}" ` +
-      `fill="#F4F4F4" stroke="#999999" stroke-width="1.2" stroke-dasharray="5,3"/>`,
-    // Base foot ellipse — suggests the standee rests on the floor
+      `rx="${(widthPx * 0.3).toFixed(1)}" ry="${(widthPx * 0.3).toFixed(1)}" fill="#FAFAFA" opacity="0.55"/>`,
     `<ellipse cx="${cx.toFixed(1)}" cy="${bottomY.toFixed(1)}" ` +
-      `rx="${(rx * 1.3).toFixed(1)}" ry="${baseRy.toFixed(1)}" ` +
-      `fill="#E4E4E4" stroke="#AAAAAA" stroke-width="0.8"/>`,
-    // Size label below the base
-    `<text x="${cx.toFixed(1)}" y="${(bottomY + baseRy + fontSize + 2).toFixed(1)}" ` +
-      `text-anchor="middle" font-size="${fontSize}" font-family="sans-serif" fill="#777777">${label}</text>`,
+      `rx="${(rx * 1.15).toFixed(1)}" ry="${baseRy.toFixed(1)}" fill="#F2F2F2" opacity="0.5"/>`,
   ].join("\n    ");
 }
 
@@ -579,6 +579,14 @@ export function generateStructureSilhouette(
   // plinthFilledCylinder marker (solid shape, like the arch panels the model
   // copies faithfully), centered in the gap (the same gap-midpoint math
   // computeDoubleArchPlinthOverlayGeometry uses).
+  // Standees are composited on the VIEWER'S LEFT, directly in front of the
+  // backdrop (see ZONES_STANDARD). The half-garland plinth normally sits on
+  // that same open left side, so it ended up hidden underneath the standee —
+  // the plinth appeared to vanish whenever a character was added
+  // (2026-07-20 bug report). When standees are present the plinth moves to
+  // the right of centre instead, keeping both objects visible.
+  const hasStandeeGuideItems = (cutoutGuideItems ?? []).some((i) => i.quantity > 0);
+
   for (const p of layout.plinths) {
     let plinthCx: number;
     if (isDoubleArch) {
@@ -596,7 +604,9 @@ export function generateStructureSilhouette(
       const rPanel = layout.panels[0];
       plinthCx = Math.round(rPanel.cx - rPanel.pw * 0.40);
     } else if (balloonStyle === "half") {
-      plinthCx = Math.round(W * 0.28); // open left side, away from right-side garland
+      plinthCx = hasStandeeGuideItems
+        ? Math.round(W * 0.62)  // standee owns the left — plinth sits right of centre
+        : Math.round(W * 0.28); // open left side, away from right-side garland
     } else {
       plinthCx = p.cx;
     }
@@ -1109,9 +1119,12 @@ export function generateStructureSilhouette(
     }
     standeesToDraw.sort((a, b) => b.heightCm - a.heightCm);
 
-    const standeeGap = Math.round(W * 0.03); // gap between backdrop and first standee
     const betweenGap = Math.round(W * 0.012); // gap between consecutive standees
-    let curRight = groupLeft - standeeGap; // right edge of next standee placement
+    // The composite drops standees just left of centre, overlapping the panel's
+    // left edge (ZONES_STANDARD). The guide reserves that same footprint —
+    // previously it sat fully outside the panel, so the model happily painted
+    // the plinth/garland exactly where the standee would later land.
+    let curRight = Math.round(groupLeft + (layout.panels[0]?.pw ?? 0) * 0.35);
 
     for (const standee of standeesToDraw) {
       const heightPx = Math.round(standee.heightCm * pxPerCm);
