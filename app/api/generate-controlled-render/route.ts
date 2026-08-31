@@ -41,7 +41,7 @@ import {
 } from "@/lib/generatePrompt";
 import { type SceneModel } from "@/lib/buildSceneModel";
 import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
-import { generateStructureSilhouette, computeShimmerWallMaskGeometry, panelRectToFraction, computeDoubleArchPlinthOverlayGeometry, type CutoutGuideItem } from "@/lib/generateStructureSilhouette";
+import { generateStructureSilhouette, computeShimmerWallMaskGeometry, panelRectToFraction, computeDoubleArchPlinthOverlayGeometry, computeBackdropGroupGeometry, type CutoutGuideItem } from "@/lib/generateStructureSilhouette";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems, type LayoutZone } from "@/lib/setupLayoutCatalog";
 import { type BalloonStyleId, SHIMMER_COLOR_HEX, SHIMMER_COLORS, type ShimmerColorId } from "@/lib/config";
 import { SEMPERTEX_CATALOG, type SempertexColor } from "@/lib/sempertexCatalog";
@@ -146,7 +146,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "standee-beside-panel-fuller-garland-v6";
+const RENDER_CACHE_VERSION = "standee-truescale-floorline-v7";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1825,6 +1825,21 @@ forbiddenBalloonColorLabels: hasSempertexLock
             const floorY   = Math.round(imgH * 0.92);
             let  rightEdge = Math.round(imgW * 0.99);
 
+            // TRUE-SCALE placement (2026-07-20). Sizing a standee as a fraction
+            // of the IMAGE made a 150cm figure read as tiny beside a 220cm arch
+            // ("it shrank, it should be 150cm"), and anchoring its feet at a
+            // fixed image fraction stood it in the foreground ("it's still in
+            // front"). With the backdrop's own rect we scale the standee by the
+            // real cm ratio (standeeCm / panelCm) and stand it on the SAME
+            // floor line as the backdrop, just outside the panel edge.
+            const groupGeom = computeBackdropGroupGeometry(
+              promptInputForAi.backdropItems ?? [],
+              sceneModel.plinths.map((p) => p.size),
+            );
+            const panelPxHeight = groupGeom
+              ? Math.round((groupGeom.floorYFrac - groupGeom.apexYFrac) * imgH)
+              : 0;
+
             // Locked standee zones from the setup layout template, keyed by size.
             const sizeKey = (cm: number): "large" | "medium" | "small" =>
               cm >= 150 ? "large" : cm >= 100 ? "medium" : "small";
@@ -1847,8 +1862,20 @@ forbiddenBalloonColorLabels: hasSempertexLock
                 zoneUseCount[key] = used + 1;
               }
 
-              const targetH = Math.round(imgH * (zone ? zone.maxHeightFraction : heightFrac(cm)));
-              const maxW    = Math.round(imgW * (zone ? zone.maxWidthFraction : widthCapFrac(cm)));
+              // True-scale height wins when we know the backdrop rect: a 150cm
+              // standee beside a 220cm arch is exactly 150/220 of the panel's
+              // rendered height. The zone fraction stays as an upper bound so a
+              // very tall panel can't push the figure off-canvas.
+              const trueScaleH = groupGeom && panelPxHeight > 0
+                ? Math.round(panelPxHeight * (cm / groupGeom.refHeightCm))
+                : 0;
+              const zoneCapH = Math.round(imgH * (zone ? zone.maxHeightFraction : heightFrac(cm)));
+              const targetH  = trueScaleH > 0 ? Math.min(trueScaleH, Math.round(imgH * 0.92)) : zoneCapH;
+              // Width is only capped when we have no true-scale reference —
+              // capping a true-scale figure by width is what shrank it before.
+              const maxW    = trueScaleH > 0
+                ? imgW
+                : Math.round(imgW * (zone ? zone.maxWidthFraction : widthCapFrac(cm)));
               let scaleReason: "height" | "width_cap" = "height";
 
               // Resize by height first, preserving aspect ratio and transparency
@@ -1889,17 +1916,35 @@ forbiddenBalloonColorLabels: hasSempertexLock
               let left: number;
               let bottom: number;
               if (zone) {
-                // Zone-locked placement: x anchors the outer edge; the asset
-                // extends inward from the preferred side.
-                const anchorX = Math.round(zone.x * imgW);
-                left   = zone.preferredSide === "left" ? anchorX : anchorX - rw;
-                bottom = Math.round(zone.bottomY * imgH);
-                // Extra instances of the same size step inward so they don't stack
+                const onLeft = zone.preferredSide === "left";
+                if (groupGeom) {
+                  // Stand it on the backdrop's own floor line — same depth as
+                  // the setup, so it no longer reads as a figure standing in
+                  // the foreground. Horizontally it sits mostly outside the
+                  // panel edge; a 150cm figure is wider than the free floor
+                  // beside a 120cm arch in this framing, so a quarter of it may
+                  // overlap the panel, exactly as a real standee placed next to
+                  // a backdrop does.
+                  const panelLeft  = Math.round(groupGeom.leftFrac  * imgW);
+                  const panelRight = Math.round(groupGeom.rightFrac * imgW);
+                  left   = onLeft
+                    ? Math.round(panelLeft - rw * 0.75)
+                    : Math.round(panelRight - rw * 0.25);
+                  bottom = Math.round(groupGeom.floorYFrac * imgH);
+                  // Keep the figure fully on canvas if the panel sits near an edge
+                  if (left < 0) left = 0;
+                  if (left + rw > imgW) left = Math.max(0, imgW - rw);
+                } else {
+                  const anchorX = Math.round(zone.x * imgW);
+                  left   = onLeft ? anchorX : anchorX - rw;
+                  bottom = Math.round(zone.bottomY * imgH);
+                }
+                // Extra instances of the same size step outward so they don't stack
                 if (zoneOverflow > 0) {
                   const step = zoneOverflow * (rw + Math.round(imgW * 0.02));
-                  left += zone.preferredSide === "left" ? step : -step;
+                  left += onLeft ? -step : step;
                 }
-                standeeOverlayZonesUsed.push(`${sizeKey(cm)}[${zoneIdx}]:${zone.preferredSide ?? "right"}`);
+                standeeOverlayZonesUsed.push(`${sizeKey(cm)}[${zoneIdx}]:${zone.preferredSide ?? "right"}${groupGeom ? ":truescale" : ""}`);
               } else {
                 // Generic fallback: step leftward from the right edge
                 left   = rightEdge - rw;

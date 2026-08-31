@@ -1413,3 +1413,46 @@ export function computeDoubleArchPlinthOverlayGeometry(
     pl.bottomY - pl.heightPx, pl.bottomY,
   );
 }
+
+/**
+ * Geometry of the backdrop group as fractions of the rendered image, plus the
+ * reference panel's real-world height.
+ *
+ * Standee compositing needs this (2026-07-20): sizing a standee as a fraction
+ * of the IMAGE made a 150cm figure look tiny next to a 220cm arch, and
+ * anchoring its feet at a fixed image fraction put it in the foreground —
+ * "it's still standing in front". With the panel's own rect the standee can be
+ * scaled from the true cm ratio and stood on the SAME floor line as the
+ * backdrop, just outside its edge.
+ */
+export function computeBackdropGroupGeometry(
+  backdropItems: BackdropItem[],
+  plinthSizes:   PlinthSize[],
+): { leftFrac: number; rightFrac: number; floorYFrac: number; apexYFrac: number; refHeightCm: number } | null {
+  if (backdropItems.length === 0) return null;
+
+  const { falImageSize } = calculateRenderAspectRatio(backdropItems);
+  const [Wbase, H]       = VIEWBOX[falImageSize];
+  const isMultiPanel     = backdropItems.length > 1;
+  const W                = isMultiPanel ? Math.round(Wbase * 1.4) : Wbase;
+  const layout           = calculateExactLayout(backdropItems, plinthSizes, W, H);
+  if (layout.panels.length === 0) return null;
+
+  const SCALE   = 0.80;
+  const marginX = Math.round(W * (1 - SCALE) / 2);
+  const marginY = Math.round(H * (1 - SCALE) / 2);
+
+  const groupLeft  = Math.min(...layout.panels.map((p) => p.cx - p.pw / 2));
+  const groupRight = Math.max(...layout.panels.map((p) => p.cx + p.pw / 2));
+  const groupApex  = Math.min(...layout.panels.map((p) => p.apexY));
+  const refPanel   = layout.panels[0];
+  const refItem    = backdropItems[refPanel.idx] as { heightCm?: number } | undefined;
+
+  return {
+    leftFrac:   (marginX + groupLeft  * SCALE) / W,
+    rightFrac:  (marginX + groupRight * SCALE) / W,
+    floorYFrac: (marginY + layout.floorY * SCALE) / H,
+    apexYFrac:  (marginY + groupApex   * SCALE) / H,
+    refHeightCm: refItem?.heightCm ?? 200,
+  };
+}
