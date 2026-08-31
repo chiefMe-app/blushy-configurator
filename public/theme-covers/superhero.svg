@@ -1,11 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
-<defs><radialGradient id="bg" cx="50%" cy="50%" r="75%"><stop offset="0%" stop-color="#FFF3D6"/><stop offset="100%" stop-color="#FBE3B8"/></radialGradient></defs>
-<rect width="400" height="220" fill="url(#bg)"/>
-<g stroke="#F2C24B" stroke-width="10" opacity="0.55">
-<line x1="200" y1="110" x2="200" y2="-30"/><line x1="200" y1="110" x2="340" y2="-10"/><line x1="200" y1="110" x2="430" y2="60"/>
-<line x1="200" y1="110" x2="430" y2="170"/><line x1="200" y1="110" x2="330" y2="250"/><line x1="200" y1="110" x2="70" y2="250"/>
-<line x1="200" y1="110" x2="-30" y2="170"/><line x1="200" y1="110" x2="-30" y2="60"/><line x1="200" y1="110" x2="60" y2="-10"/>
-</g>
-<path d="M200 40 l16 44 46 3 -36 29 12 45 -38 -26 -38 26 12 -45 -36 -29 46 -3z" fill="#E2574C"/>
-<circle cx="70" cy="50" r="4" fill="#3E7BC4"/><circle cx="340" cy="180" r="4" fill="#3E7BC4"/><circle cx="320" cy="45" r="3" fill="#E2574C"/>
+<defs><linearGradient id="lg45" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#33518F"/><stop offset="100%" stop-color="#24406F"/></linearGradient>
+<linearGradient id="lg46" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#C74B52"/><stop offset="100%" stop-color="#A93A44"/></linearGradient>
+<pattern id="ht47" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="1.7" fill="#FFFFFF"/></pattern>
+<filter id="bl48" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="22"/></filter>
+<filter id="gr49"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope="0.05"/></feComponentTransfer><feComposite operator="in" in2="SourceGraphic"/></filter>
+<linearGradient id="lg50" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#101828" stop-opacity="0"/><stop offset="100%" stop-color="#101828" stop-opacity="0.12"/></linearGradient></defs>
+<rect width="400" height="220" fill="#F2EEE6"/>
+<path d="M0 0 H250 L150 220 H0 Z" fill="url(#lg45)"/>
+<path d="M250 0 H400 V150 L330 220 H150 Z" fill="url(#lg46)" opacity="0.94"/>
+<path d="M400 120 V220 H310 Z" fill="#E3B93E" opacity="0.9"/>
+<path d="M0 0 H250 L150 220 H0 Z" fill="url(#ht47)" opacity="0.16"/>
+<path d="M250 0 H400 V150 L330 220 H150 Z" fill="url(#ht47)" opacity="0.12"/>
+<rect x="-60" y="20" width="320" height="70" rx="35" fill="#FFFFFF" opacity="0.1" filter="url(#bl48)" transform="rotate(-18 100 55)"/>
+<rect width="400" height="220" fill="#808080" filter="url(#gr49)"/>
+<rect width="400" height="220" fill="url(#lg50)"/>
 </svg>

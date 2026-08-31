@@ -548,79 +548,35 @@ export default function ConfigurePage() {
                 <p className="-mt-2 mb-3 text-[13.5px] font-medium" style={{ color: DC.muted, maxWidth: 520, lineHeight: 1.55 }}>
                   Choose a party world — we&apos;ll suggest matching balloons, graphics and standees. You can change it anytime. 🎈
                 </p>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
                   {THEMES.map((t) => {
                     const sel = config.themeSelected && config.theme === t.id;
-                    // Per-theme SVG icon - pure inline SVG, no emoji
-                    const THEME_ICONS: Record<string, React.ReactNode> = {
-                      frozen: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><line x1="11" y1="2" x2="11" y2="20" stroke="#7DD3FC" strokeWidth="2" strokeLinecap="round"/><line x1="2" y1="11" x2="20" y2="11" stroke="#7DD3FC" strokeWidth="2" strokeLinecap="round"/><line x1="4.5" y1="4.5" x2="17.5" y2="17.5" stroke="#BAE6FD" strokeWidth="1.5" strokeLinecap="round"/><line x1="17.5" y1="4.5" x2="4.5" y2="17.5" stroke="#BAE6FD" strokeWidth="1.5" strokeLinecap="round"/><circle cx="11" cy="11" r="2" fill="#38BDF8"/></svg>,
-                      unicorn: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3l1.2 3.6L16 8l-3.8 1.4L11 13l-1.2-3.6L6 8l3.8-1.4z" fill="#C084FC"/><circle cx="4" cy="4" r="1.5" fill="#F9A8D4"/><circle cx="18" cy="17" r="1.5" fill="#86EFAC"/><circle cx="17" cy="5" r="1" fill="#FDE68A"/></svg>,
-                      dinosaur: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><ellipse cx="11" cy="13" rx="6" ry="5" fill="#86EFAC"/><path d="M7 8 Q11 4 15 8" stroke="#4ADE80" strokeWidth="1.5" fill="none" strokeLinecap="round"/><circle cx="9" cy="11" r="1" fill="#15803D"/><circle cx="13" cy="11" r="1" fill="#15803D"/></svg>,
-                      safari: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7" fill="#FDE68A"/><path d="M11 4v3M11 15v3M4 11h3M15 11h3" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round"/><circle cx="11" cy="11" r="2.5" fill="#D97706"/></svg>,
-                      princess: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 14h12l-2-6-4 4-4-4-2 6z" fill="#F9A8D4"/><path d="M7 10V6l4 3 4-3v4" stroke="#EC4D8D" strokeWidth="1.2" fill="none" strokeLinejoin="round"/><circle cx="11" cy="5" r="1.5" fill="#EC4D8D"/><circle cx="6" cy="9" r="1" fill="#FBCFE8"/><circle cx="16" cy="9" r="1" fill="#FBCFE8"/></svg>,
-                      superhero: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3l2.5 6 6 .5-4.5 4 1.5 6L11 17l-5.5 2.5 1.5-6-4.5-4 6-.5z" fill="#FDE68A" stroke="#D97706" strokeWidth="0.8"/></svg>,
-                      barbie: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 4l1.5 4.5H20l-5.5 4 2 5.5L11 15l-5.5 3 2-5.5L2 8.5h7.5z" fill="#FF69B4" opacity="0.8"/></svg>,
-                      bluey: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7" fill="#93C5FD"/><circle cx="8" cy="9" r="1.5" fill="#1D4ED8"/><circle cx="14" cy="9" r="1.5" fill="#1D4ED8"/><path d="M8 14 Q11 17 14 14" stroke="#1D4ED8" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>,
-                      pokemon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="#EF4444" strokeWidth="2.5"/><rect x="3" y="9.5" width="16" height="3" fill="white"/><rect x="3" y="9.5" width="16" height="3" fill="#EF4444" opacity="0.5"/><circle cx="11" cy="11" r="2.5" fill="white" stroke="#EF4444" strokeWidth="1.5"/></svg>,
-                      stitch: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="12" r="7" fill="#60A5FA"/><ellipse cx="8" cy="9" rx="1.5" ry="2" fill="#1D4ED8"/><ellipse cx="14" cy="9" rx="1.5" ry="2" fill="#1D4ED8"/><path d="M8 15 Q11 18 14 15" stroke="#1D4ED8" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>,
-                      mermaid: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 18 Q11 12 18 18" stroke="#2DD4BF" strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M6 14 Q11 8 16 14" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.7"/><circle cx="11" cy="7" r="3" fill="#67E8F9" opacity="0.8"/></svg>,
-                      space: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="14" cy="10" r="5" fill="#818CF8"/><circle cx="14" cy="10" r="3" fill="#312E81"/><ellipse cx="14" cy="10" rx="8" ry="2.5" stroke="#A5B4FC" strokeWidth="1.2" fill="none"/><circle cx="5" cy="5" r="1" fill="#FDE68A"/><circle cx="18" cy="17" r="1.2" fill="#FDE68A"/><circle cx="4" cy="16" r="0.8" fill="white" opacity="0.7"/></svg>,
-                      football: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" fill="#4ADE80"/><path d="M3 11h16M11 3v16" stroke="white" strokeWidth="1.2" opacity="0.5"/></svg>,
-                      lego: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="4" y="8" width="14" height="10" rx="2" fill="#EF4444"/><circle cx="8" cy="8" r="2" fill="#DC2626"/><circle cx="14" cy="8" r="2" fill="#DC2626"/></svg>,
-                      kpop: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 4l1.2 3.6L16 8l-3.8 1.4L11 13l-1.2-3.6L6 8l3.8-1.4z" fill="#E879F9"/><circle cx="4" cy="15" r="1.5" fill="#C084FC"/><circle cx="18" cy="15" r="1.5" fill="#F472B6"/><circle cx="11" cy="18" r="1" fill="#A78BFA"/></svg>,
-                      encanto: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="4" fill="#FDE68A"/><path d="M11 3 Q14 7 11 11 Q8 7 11 3z" fill="#4ADE80"/><path d="M11 11 Q15 8 19 11 Q15 14 11 11z" fill="#F97316"/><path d="M11 19 Q14 15 11 11 Q8 15 11 19z" fill="#EC4899"/><path d="M11 11 Q7 8 3 11 Q7 14 11 11z" fill="#A78BFA"/></svg>,
-                      cocomelon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="12" r="7" fill="#86EFAC"/><path d="M8 10 Q11 8 14 10" stroke="#15803D" strokeWidth="1.5" strokeLinecap="round" fill="none"/><path d="M8 14 Q11 16 14 14" stroke="#15803D" strokeWidth="1.2" strokeLinecap="round" fill="none"/></svg>,
-                      teddy_bear: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="13" r="6" fill="#D4A574"/><circle cx="6" cy="7" r="3" fill="#C8956C"/><circle cx="16" cy="7" r="3" fill="#C8956C"/><circle cx="9" cy="12" r="1" fill="#7B3F00"/><circle cx="13" cy="12" r="1" fill="#7B3F00"/><path d="M9 15 Q11 17 13 15" stroke="#7B3F00" strokeWidth="1.2" strokeLinecap="round" fill="none"/></svg>,
-                      pineapple_tropical: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><ellipse cx="11" cy="14" rx="5" ry="6" fill="#FDE68A"/><path d="M9 8 Q11 4 13 8" stroke="#4ADE80" strokeWidth="1.5" fill="none" strokeLinecap="round"/><path d="M7 7 Q11 3 15 7" stroke="#86EFAC" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>,
-                      blush_garden: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="4" fill="#F9A8D4"/><circle cx="11" cy="6" r="2.5" fill="#FBCFE8"/><circle cx="16" cy="11" r="2.5" fill="#FBCFE8"/><circle cx="11" cy="16" r="2.5" fill="#FBCFE8"/><circle cx="6" cy="11" r="2.5" fill="#FBCFE8"/></svg>,
-                      luxury_neutral: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="5" y="14" width="12" height="4" rx="1.5" fill="#D4B896"/><rect x="7" y="10" width="8" height="5" rx="1" fill="#EDE0D0"/><path d="M11 3l1.5 6-1.5 1-1.5-1z" fill="#FFD54F" stroke="#D97706" strokeWidth="0.5"/></svg>,
-                    };
-                    const icon = THEME_ICONS[t.id] ?? <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 4l1.2 3.6L16 8l-3.8 1.4L11 13l-1.2-3.6L6 8l3.8-1.4z" fill="#F9A8D4"/></svg>;
+                    // Theme cards are a compact name-first list (2026-07-20
+                    // product direction: illustrated covers read as childish and
+                    // made this step far too tall) — no icon or cover art per card.
                     return (
                       <button key={t.id} type="button" onClick={() => setTheme(t.id)} aria-pressed={sel}
-                        className="relative flex w-full flex-col gap-2.5 p-3.5 text-left transition hover:-translate-y-0.5"
+                        className="relative flex w-full flex-col gap-2 px-3.5 py-3 text-left transition hover:-translate-y-0.5"
                         style={{
-                          background: "white", borderRadius: 22,
-                          border: sel ? DC.selBorder : `1.5px solid ${DC.cardBd}`,
-                          boxShadow: sel ? DC.selShadow : "0 4px 14px rgba(216,84,138,.06)",
+                          background: "white", borderRadius: 14,
+                          border: sel ? "1.5px solid #D8548A" : "1px solid #ECE7E4",
+                          boxShadow: sel ? "0 0 0 3px #FBE9EF" : "0 2px 8px rgba(70,49,59,.05)",
                         }}>
-                        {/* Cover art panel — local SVG cover with candy-stripe fallback */}
-                        {(() => {
-                          const coverUrl = getThemeCatalogEntry(t.id)?.coverImageUrl;
-                          const tintHex = (t.balloonColors?.[0] ?? "#F6C6DE");
-                          const tint = `${tintHex}33`; // ~20% alpha stripe (fallback only)
-                          return (
-                            <div
-                              className="relative flex h-[90px] items-center justify-center overflow-hidden sm:h-[110px]"
-                              style={{
-                                borderRadius: 15,
-                                border: `1px solid ${tintHex}55`,
-                                ...(coverUrl
-                                  ? { backgroundImage: `url(${coverUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
-                                  : { background: `repeating-linear-gradient(45deg, ${tint} 0 10px, #FFFFFF 10px 20px)` }),
-                              }}
-                            >
-                              {!coverUrl && <span className="scale-[1.9] drop-shadow-sm">{icon}</span>}
-                              <span className="absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm"
-                                style={{ background: t.priceModifier > 0 ? "rgba(255,255,255,.94)" : "#E5F3EB", color: t.priceModifier > 0 ? DC.roseDeep : "#3E9B6E" }}>
-                                {t.priceModifier > 0 ? `+ AED ${t.priceModifier}` : "Included"}
-                              </span>
-                            </div>
-                          );
-                        })()}
-                        <div className="flex flex-col gap-0.5">
-                          <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 20, color: DC.plum, lineHeight: 1.1 }}>{t.name}</span>
-                          <span className="text-[11.5px] leading-snug" style={{ color: DC.muted }}>{t.desc}</span>
-                        </div>
-                        <div className="mt-auto flex items-center justify-between">
-                          {t.balloonColors.length > 0 && (
-                            <div className="flex gap-1">
-                              {t.balloonColors.slice(0, 5).map((c, i) => <span key={i} style={{ width: 15, height: 15, borderRadius: "50%", background: c, border: "1px solid rgba(70,49,59,.12)" }}/>)}
-                            </div>
-                          )}
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="truncate" style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 15.5, color: DC.plum, lineHeight: 1.25 }}>{t.name}</span>
                           {sel && (
-                            <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold text-white" style={{ background: DC.rose }}>✓ In your party</span>
+                            <span aria-hidden className="mt-[3px] inline-flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ background: DC.rose }}>✓</span>
                           )}
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          {t.balloonColors.length > 0 && (
+                            <div className="flex gap-[4px]">
+                              {t.balloonColors.slice(0, 5).map((c, i) => <span key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: c, border: "1px solid rgba(40,28,34,.1)" }}/>)}
+                            </div>
+                          )}
+                          <span className="shrink-0 text-[9.5px] font-medium tracking-wide" style={{ color: t.priceModifier > 0 ? DC.faint : "#5C9179" }}>
+                            {t.priceModifier > 0 ? `+AED ${t.priceModifier}` : "Included"}
+                          </span>
                         </div>
                       </button>
                     );

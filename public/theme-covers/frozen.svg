@@ -1,14 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
-<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#EAF6FC"/><stop offset="55%" stop-color="#D5ECF8"/><stop offset="100%" stop-color="#C2E2F4"/></linearGradient></defs>
-<rect width="400" height="220" fill="url(#bg)"/>
-<circle cx="330" cy="40" r="60" fill="#FFFFFF" opacity="0.35"/>
-<circle cx="60" cy="190" r="80" fill="#B3D9F2" opacity="0.4"/>
-<g stroke="#7EB6D9" stroke-width="3" stroke-linecap="round" opacity="0.85">
-<g transform="translate(90,70)"><line x1="0" y1="-22" x2="0" y2="22"/><line x1="-22" y1="0" x2="22" y2="0"/><line x1="-15" y1="-15" x2="15" y2="15"/><line x1="15" y1="-15" x2="-15" y2="15"/><circle r="4" fill="#7EB6D9" stroke="none"/></g>
-<g transform="translate(290,150) scale(0.7)"><line x1="0" y1="-22" x2="0" y2="22"/><line x1="-22" y1="0" x2="22" y2="0"/><line x1="-15" y1="-15" x2="15" y2="15"/><line x1="15" y1="-15" x2="-15" y2="15"/><circle r="4" fill="#7EB6D9" stroke="none"/></g>
-<g transform="translate(210,50) scale(0.45)" opacity="0.7"><line x1="0" y1="-22" x2="0" y2="22"/><line x1="-22" y1="0" x2="22" y2="0"/><line x1="-15" y1="-15" x2="15" y2="15"/><line x1="15" y1="-15" x2="-15" y2="15"/></g>
-</g>
-<path d="M340 90 l4 12 12 4 -12 4 -4 12 -4 -12 -12 -4 12 -4z" fill="#FFFFFF" opacity="0.9"/>
-<path d="M40 40 l3 9 9 3 -9 3 -3 9 -3 -9 -9 -3 9 -3z" fill="#FFFFFF" opacity="0.8"/>
-<circle cx="160" cy="170" r="3" fill="#FFFFFF" opacity="0.8"/><circle cx="250" cy="100" r="2.5" fill="#FFFFFF" opacity="0.7"/>
+<defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#EDF5FA"/><stop offset="45%" stop-color="#D3E7F3"/><stop offset="100%" stop-color="#A9CBE2"/></linearGradient>
+<filter id="bl2" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="10"/></filter>
+<filter id="bl3" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="14"/></filter>
+<filter id="bl4" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="8"/></filter>
+<filter id="bl5" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="12"/></filter>
+<filter id="bl6" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7"/></filter>
+<filter id="bl7" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="26"/></filter>
+<filter id="bl8" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="16"/></filter>
+<filter id="bl9" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="22"/></filter>
+<filter id="gr10"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope="0.05"/></feComponentTransfer><feComposite operator="in" in2="SourceGraphic"/></filter>
+<linearGradient id="lg11" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#12283A" stop-opacity="0"/><stop offset="100%" stop-color="#12283A" stop-opacity="0.12"/></linearGradient></defs>
+<rect width="400" height="220" fill="url(#lg1)"/>
+<circle cx="330" cy="40" r="46" fill="#FFFFFF" opacity="0.5" filter="url(#bl2)"/>
+<circle cx="70" cy="160" r="60" fill="#FFFFFF" opacity="0.35" filter="url(#bl3)"/>
+<circle cx="210" cy="90" r="30" fill="#FFFFFF" opacity="0.4" filter="url(#bl4)"/>
+<circle cx="380" cy="170" r="40" fill="#FFFFFF" opacity="0.3" filter="url(#bl5)"/>
+<circle cx="140" cy="30" r="22" fill="#FFFFFF" opacity="0.45" filter="url(#bl6)"/>
+<rect x="180" y="120" width="300" height="90" rx="45" fill="#E8F3FB" opacity="0.22" filter="url(#bl7)" transform="rotate(-12 330 165)"/>
+<rect x="-40" y="150" width="260" height="34" rx="17" fill="#C7D9E8" opacity="0.28" filter="url(#bl8)" transform="rotate(-20 90 167)"/>
+<path d="M300 63 L301.96 68.04 L307 70 L301.96 71.96 L300 77 L298.04 71.96 L293 70 L298.04 68.04 Z" fill="#FFFFFF" opacity="0.85"/>
+<path d="M96 103 L97.4 106.6 L101 108 L97.4 109.4 L96 113 L94.6 109.4 L91 108 L94.6 106.6 Z" fill="#FFFFFF" opacity="0.7"/>
+<path d="M352 128 L353.12 130.88 L356 132 L353.12 133.12 L352 136 L350.88 133.12 L348 132 L350.88 130.88 Z" fill="#DCEBF7" opacity="0.75"/>
+<path d="M180 164.5 L180.98 167.02 L183.5 168 L180.98 168.98 L180 171.5 L179.02 168.98 L176.5 168 L179.02 167.02 Z" fill="#FFFFFF" opacity="0.6"/>
+<rect x="-60" y="20" width="320" height="70" rx="35" fill="#FFFFFF" opacity="0.16" filter="url(#bl9)" transform="rotate(-18 100 55)"/>
+<rect width="400" height="220" fill="#808080" filter="url(#gr10)"/>
+<rect width="400" height="220" fill="url(#lg11)"/>
 </svg>

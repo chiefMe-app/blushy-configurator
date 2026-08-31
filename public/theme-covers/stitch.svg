@@ -1,14 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
-<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E8F4FA"/><stop offset="100%" stop-color="#CFE9F5"/></linearGradient></defs>
-<rect width="400" height="220" fill="url(#bg)"/>
-<path d="M0 190 Q60 165 120 185 T240 185 T400 182 L400 220 L0 220z" fill="#8FD0EA" opacity="0.7"/>
-<path d="M0 205 Q80 185 160 200 T320 200 T400 198 L400 220 L0 220z" fill="#5FB6DC" opacity="0.6"/>
-<g fill="#F2789F">
-<circle cx="90" cy="70" r="16"/><circle cx="74" cy="82" r="16"/><circle cx="106" cy="82" r="16"/><circle cx="90" cy="94" r="16"/>
-<circle cx="90" cy="82" r="9" fill="#F9D34C"/>
-</g>
-<g stroke="#5E9E58" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.8">
-<path d="M320 200 V130"/><path d="M320 135 Q295 122 288 98"/><path d="M320 135 Q345 120 352 98"/><path d="M320 158 Q300 150 294 136"/>
-</g>
-<circle cx="250" cy="60" r="3.5" fill="#5FB6DC"/><circle cx="180" cy="45" r="2.5" fill="#F2789F"/>
+<defs><linearGradient id="lg77" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#D8EAF4"/><stop offset="50%" stop-color="#A9CDE4"/><stop offset="100%" stop-color="#7FAFD2"/></linearGradient>
+<filter id="bl78" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="8"/></filter>
+<radialGradient id="rg79" cx="0.25" cy="0.2" r="0.55"><stop offset="0%" stop-color="#F2FAFF" stop-opacity="0.85"/><stop offset="100%" stop-color="#F2FAFF" stop-opacity="0"/></radialGradient>
+<filter id="bl80" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="12"/></filter>
+<filter id="bl81" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="10"/></filter>
+<filter id="bl82" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="22"/></filter>
+<filter id="gr83"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope="0.05"/></feComponentTransfer><feComposite operator="in" in2="SourceGraphic"/></filter>
+<linearGradient id="lg84" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#123048" stop-opacity="0"/><stop offset="100%" stop-color="#123048" stop-opacity="0.1"/></linearGradient></defs>
+<rect width="400" height="220" fill="url(#lg77)"/>
+<g fill="#3D6E9C" opacity="0.35" filter="url(#bl78)">
+    <path d="M380 -20 C330 30 325 95 375 140 C415 95 420 30 380 -20 Z"/>
+    <path d="M320 180 C300 200 300 230 330 250 C355 230 350 195 320 180 Z"/>
+  </g>
+<rect width="400" height="220" fill="url(#rg79)"/>
+<rect x="30" y="130" width="240" height="20" rx="10" fill="#E6F4FC" opacity="0.22" filter="url(#bl80)" transform="rotate(-10 150 140)"/>
+<rect x="90" y="170" width="220" height="16" rx="8" fill="#E6F4FC" opacity="0.18" filter="url(#bl81)" transform="rotate(-8 200 178)"/>
+<rect x="-60" y="20" width="320" height="70" rx="35" fill="#FFFFFF" opacity="0.12" filter="url(#bl82)" transform="rotate(-18 100 55)"/>
+<rect width="400" height="220" fill="#808080" filter="url(#gr83)"/>
+<rect width="400" height="220" fill="url(#lg84)"/>
 </svg>
