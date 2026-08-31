@@ -467,78 +467,55 @@ export default function ConfigurePage() {
             {step === 0 && (
               <div>
                 {/* Intro band */}
-                <div style={{ background: "white", border: "1.5px solid #F1D8E2", borderRadius: 18, padding: "16px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 14, boxShadow: "0 2px 10px rgba(39,40,68,0.04)" }}>
-                  {/* Sparkle icon */}
-                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}>
-                    <path d="M14 4L16 11L23 13L16 15L14 22L12 15L5 13L12 11Z" fill="#EC4D8D" opacity="0.8"/>
-                    <circle cx="6" cy="6" r="1.2" fill="#F7A7C8"/>
-                    <circle cx="22" cy="21" r="1.2" fill="#F7A7C8"/>
-                  </svg>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#15182E" }}>Let's bring your celebration to life</div>
-                    <div style={{ fontSize: 12, color: "#73778A", marginTop: 2 }}>Choose the event so we can tailor ideas and styling just for you.</div>
-                  </div>
-                  <div className="hidden md:flex" style={{ marginLeft: "auto", gap: 18, flexShrink: 0 }}>
-                    {([
-                      [<svg key="a" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#EC4D8D" strokeWidth="1.5"/><path d="M5 8l2 2 4-4" stroke="#EC4D8D" strokeWidth="1.5" strokeLinecap="round"/></svg>, "Personalized ideas"],
-                       [<svg key="b" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#FFE8F0"/><path d="M8 4v4l3 2" stroke="#EC4D8D" strokeWidth="1.5" strokeLinecap="round"/></svg>, "Saves you time"],
-                       [<svg key="c" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#FFE8F0"/><path d="M8 5l1 3H12l-2.5 1.8.9 3L8 11.3l-2.4 1.5.9-3L4 8h3z" fill="#EC4D8D"/></svg>, "Stress-free planning"],
-                    ] as [React.ReactNode, string][]).map(([icon, text]) => (
-                      <div key={text} style={{ textAlign: "center" }}>
-                        <div style={{ display: "flex", justifyContent: "center" }}>{icon}</div>
-                        <div style={{ fontSize: 10, color: "#73778A", fontWeight: 600, marginTop: 2, whiteSpace: "nowrap" }}>{text}</div>
-                      </div>
-                    ))}
+                {/* Typographic intro — no decorative icons (2026-07-20 product
+                    direction: the pastel icon set read as unprofessional). */}
+                <div style={{ marginBottom: 22 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.6px", textTransform: "uppercase", color: DC.faint }}>Step 1 — Occasion</div>
+                  <div style={{ fontFamily: SERIF, fontSize: 27, fontWeight: 600, color: DC.plum, letterSpacing: "-0.3px", marginTop: 6, lineHeight: 1.15 }}>What are we celebrating?</div>
+                  <div style={{ fontSize: 13, color: DC.muted, marginTop: 7, fontWeight: 500, maxWidth: 520, lineHeight: 1.55 }}>
+                    We tailor every balloon, backdrop and styling suggestion to your occasion.
                   </div>
                 </div>
 
-                {/* Section heading */}
-                <div style={{ marginBottom: 18 }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: "#15182E", letterSpacing: "-0.4px" }}>What are we celebrating?</div>
-                  <div style={{ fontSize: 13, color: "#73778A", marginTop: 4, fontWeight: 500 }}>Pick the event that best describes your celebration. You can always change it later.</div>
-                </div>
-
-                {/* Event cards -3 col desktop, premium pastel */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+                {/* Occasion cards — Birthday live, the rest on the roadmap */}
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                   {EVENT_TYPES.map((e) => {
                     const sel = config.eventType === e.id;
+                    const available = e.id === "birthday";
                     return (
-                      <button key={e.id} type="button" onClick={() => setEventType(e.id)}
+                      <button key={e.id} type="button"
+                        onClick={() => available && setEventType(e.id)}
+                        disabled={!available}
+                        aria-pressed={available ? sel : undefined}
+                        className={available ? "transition hover:-translate-y-0.5" : ""}
                         style={{
-                          position: "relative", textAlign: "center", cursor: "pointer",
-                          borderRadius: 18, padding: "28px 16px 22px",
-                          border: sel ? "2px solid #F7A7C8" : "1.5px solid #ECEAF1",
-                          background: sel ? "linear-gradient(145deg,#FFF7FB 0%,#FFFFFF 100%)" : "white",
-                          boxShadow: sel ? "0 8px 28px rgba(236,77,141,0.10)" : "0 2px 8px rgba(39,40,68,0.04)",
-                          transition: "all 0.18s",
+                          position: "relative", textAlign: "left",
+                          cursor: available ? "pointer" : "default",
+                          borderRadius: 14, padding: "15px 16px", minHeight: 78,
+                          border: sel && available ? "1.5px solid #D8548A" : "1px solid #ECE7E4",
+                          background: available ? "white" : "#FBFAF9",
+                          boxShadow: sel && available ? "0 0 0 3px #FBE9EF" : "0 2px 8px rgba(70,49,59,.05)",
+                          opacity: available ? 1 : 0.62,
                         }}>
-                        {sel && (
-                          <span style={{ position: "absolute", top: 10, right: 10, width: 22, height: 22, borderRadius: "50%", background: "#EC4D8D", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                          </span>
-                        )}
-                        {/* Event icon - inline SVG per type */}
-                        <div style={{ fontSize: 36, marginBottom: 10, display: "flex", justifyContent: "center" }}>
-                          {e.id === "birthday" && <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="8" y="20" width="24" height="14" rx="4" fill="#FBCFE8"/><rect x="12" y="15" width="16" height="7" rx="2" fill="#F9A8D4"/><path d="M15 15c0-3 2-5 2-5s2 2 2 5" stroke="#EC4D8D" strokeWidth="1.5" strokeLinecap="round"/><path d="M21 15c0-3 2-5 2-5s2 2 2 5" stroke="#EC4D8D" strokeWidth="1.5" strokeLinecap="round"/><circle cx="20" cy="12" r="2" fill="#EC4D8D"/></svg>}
-                          {e.id === "baby_shower" && <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><ellipse cx="20" cy="22" rx="9" ry="11" fill="#BAE6FD"/><path d="M20 11c-4-6-10-4-10 0 0 3 3 5 6 4" stroke="#7DD3FC" strokeWidth="1.5" strokeLinecap="round"/><circle cx="20" cy="11" r="2" fill="#7DD3FC"/></svg>}
-                          {e.id === "bridal_shower" && <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="10" stroke="#F9A8D4" strokeWidth="2.5" fill="none"/><circle cx="20" cy="20" r="4" stroke="#EC4D8D" strokeWidth="2" fill="none"/><rect x="18" y="8" width="4" height="4" rx="1" fill="#EC4D8D"/></svg>}
-                          {e.id === "boutique_wedding" && <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M20 8 L22 14 L28 14 L23 18 L25 24 L20 20 L15 24 L17 18 L12 14 L18 14 Z" fill="#FBCFE8" stroke="#EC4D8D" strokeWidth="1"/></svg>}
-                          {e.id === "corporate_mini" && <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="10" y="14" width="20" height="18" rx="2" fill="#E0F2FE"/><rect x="15" y="10" width="10" height="6" rx="1" fill="#BAE6FD"/><rect x="14" y="22" width="4" height="4" rx="1" fill="#7DD3FC"/><rect x="22" y="22" width="4" height="4" rx="1" fill="#7DD3FC"/><rect x="14" y="18" width="4" height="3" rx="1" fill="#7DD3FC"/><rect x="22" y="18" width="4" height="3" rx="1" fill="#7DD3FC"/></svg>}
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                          <span style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 600, color: available ? DC.plum : "#9B8F94", lineHeight: 1.25 }}>{e.label}</span>
+                          {available
+                            ? sel && (
+                                <span aria-hidden style={{ flexShrink: 0, marginTop: 3, width: 16, height: 16, borderRadius: "50%", background: DC.rose, color: "white", fontSize: 9, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>✓</span>
+                              )
+                            : (
+                              <span style={{ flexShrink: 0, marginTop: 2, fontSize: 9, fontWeight: 600, letterSpacing: ".6px", textTransform: "uppercase", color: "#A99DA3", background: "#F2EEEC", border: "1px solid rgba(40,28,34,.05)", padding: "2px 7px", borderRadius: 20, whiteSpace: "nowrap" }}>Soon</span>
+                            )}
                         </div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: sel ? "#EC4D8D" : "#15182E", marginBottom: 4 }}>{e.label}</div>
-                        <div style={{ fontSize: 12, color: "#73778A" }}>{e.description}</div>
-                        {e.id === "birthday" && !sel && (
-                          <div style={{ marginTop: 10, fontSize: 10, fontWeight: 700, color: "#EC4D8D", background: "#FFE8F0", padding: "2px 10px", borderRadius: 20, display: "inline-block" }}>Most popular</div>
-                        )}
+                        <div style={{ fontSize: 11.5, color: available ? DC.muted : "#AFA4A9", marginTop: 3, lineHeight: 1.45 }}>{e.description}</div>
                       </button>
                     );
                   })}
                 </div>
 
                 {/* Bottom hint */}
-                <div style={{ marginTop: 20, padding: "12px 16px", background: "#FFF7F0", borderRadius: 12, fontSize: 12, color: "#73778A", display: "flex", alignItems: "center", gap: 8 }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><circle cx="8" cy="8" r="7" fill="#FED7AA"/><rect x="7" y="6" width="2" height="6" rx="1" fill="#EA580C"/><circle cx="8" cy="4.5" r="1" fill="#EA580C"/></svg>
-                  Not sure? You can update your event anytime, and we'll re-tailor the suggestions for you.
+                <div style={{ marginTop: 18, fontSize: 11.5, color: DC.faint, lineHeight: 1.55 }}>
+                  More occasions are on the way — birthdays are where Blushy shines today.
                 </div>
               </div>
             )}
