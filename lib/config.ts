@@ -919,6 +919,13 @@ export function defaultConfig(): BuilderConfig {
     decor: {
       ...pkg.defaultDecor,
       backdropItems: [],        // no default backdrop - user chooses
+      // Nothing is pre-added to the quote (2026-07-20): the package's
+      // defaultDecor pre-selected a half garland + one plinth, so the
+      // Estimated total opened at AED 480 for choices the user had not made
+      // yet. Start at the service package price only and grow as they pick.
+      balloonStyle: "none",
+      plinths: 0,
+      plinthSizes: [],
       backdropColor: theme.backdropColors[0],
       balloonColors: theme.balloonColors.slice(0, 5),
     },
@@ -1004,7 +1011,8 @@ export function priceBreakdown(config: BuilderConfig): {
     const shimmerExtra = item.type === "shimmer_wall" ? 80 : 0;
     const cost = PER_BACKDROP + shimmerExtra;
     lines.push({
-      label: d.backdropItems.length === 1 ? `${sLabel} backdrop` : `${sLabel} - panel ${i + 1}`,
+      // sLabel already ends in "Backdrop" for most shapes — don't repeat it.
+      label: d.backdropItems.length === 1 ? sLabel : `${sLabel} - panel ${i + 1}`,
       amount: cost,
       section: "design",
     });

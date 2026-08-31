@@ -522,9 +522,16 @@ export default function ConfigurePage() {
 
             {step === 1 && (
               <StepShell title="Pick your party world">
-                <p className="-mt-2 mb-3 text-[13.5px] font-medium" style={{ color: DC.muted, maxWidth: 520, lineHeight: 1.55 }}>
-                  Choose a party world — we&apos;ll suggest matching balloons, graphics and standees. You can change it anytime. 🎈
+                <p className="-mt-2 mb-3 text-[12.5px] font-medium" style={{ color: DC.muted, maxWidth: 520, lineHeight: 1.55 }}>
+                  Pick one and we&apos;ll match the balloons, graphics and styling to it. You can change it anytime.
                 </p>
+                {!config.themeSelected && (
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5"
+                    style={{ background: DC.chipBg, color: DC.roseDeep, fontSize: 11.5, fontWeight: 600 }}>
+                    <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: DC.rose, display: "inline-block" }}/>
+                    Choose a theme to continue
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
                   {THEMES.map((t) => {
                     const sel = config.themeSelected && config.theme === t.id;
@@ -732,7 +739,10 @@ export default function ConfigurePage() {
         showBack={step > 0}
         onBack={() => setStep((s) => Math.max(0, s - 1))}
         onNext={isReview ? submit : () => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
-        disabled={isReview && !canSubmit}
+        // Theme step is a required choice — everything downstream (palette,
+        // graphics, standee suggestions) is themed, so continuing without one
+        // silently applied the default theme.
+        disabled={(isReview && !canSubmit) || (step === 1 && !config.themeSelected)}
         busy={submitting}
       />
     </main>
@@ -1066,19 +1076,19 @@ function clearAllStandees() {
   // Claude Design: soft rounded-square number chip (#FBE9EF / #C24373)
   const numBadge = (n: number) => (
     <div style={{
-      width: 34, height: 34, borderRadius: 12, background: DC.chipBg,
-      color: DC.roseDeep, fontSize: 15, fontWeight: 700,
+      width: 26, height: 26, borderRadius: 9, background: DC.chipBg,
+      color: DC.roseDeep, fontSize: 12, fontWeight: 700,
       display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
     }}>{n}</div>
   );
   const secLabel = (text: string) => (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-      <span style={{ width: 3, height: 17, borderRadius: 2, background: accent, display: "inline-block", flexShrink: 0 }} />
-      <span style={{ fontSize: 16, fontWeight: 700, color: "#2B2040", fontFamily: SERIF, letterSpacing: "-0.01em" }}>{text}</span>
+      <span style={{ width: 2.5, height: 14, borderRadius: 2, background: accent, display: "inline-block", flexShrink: 0 }} />
+      <span style={{ fontSize: 13.5, fontWeight: 600, color: "#2B2040", fontFamily: SERIF, letterSpacing: "-0.01em" }}>{text}</span>
     </div>
   );
   const secSub = (text: string) => (
-    <p style={{ fontSize: 12, color: "#727386", marginTop: 2, marginBottom: 10, fontWeight: 500 }}>{text}</p>
+    <p style={{ fontSize: 11.5, color: "#727386", marginTop: 2, marginBottom: 10, fontWeight: 500 }}>{text}</p>
   );
 
   function BackdropShapePreview({ type, color = "#F2D4E0" }: { type: string; color?: string }) {
@@ -1331,22 +1341,22 @@ function clearAllStandees() {
       {/* == PAGE HEADING — Claude Design ====================== */}
       <div style={{ margin: "4px 2px 20px" }}>
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", color: DC.rose, textTransform: "uppercase", marginBottom: 6 }}>Decor</div>
-        <h1 style={{ margin: 0, fontFamily: SERIF, fontWeight: 600, fontSize: 34, color: DC.plum, lineHeight: 1.05 }}>Build your dream backdrop</h1>
-        <p style={{ margin: "8px 0 0", fontSize: 14, color: DC.muted, maxWidth: 540, lineHeight: 1.55 }}>
-          Four little steps — we&apos;ve pre-styled everything to match your {theme.name} theme, so feel free to just glide through. 💖
+        <h1 style={{ margin: 0, fontFamily: SERIF, fontWeight: 600, fontSize: 25, color: DC.plum, lineHeight: 1.1 }}>Build your dream backdrop</h1>
+        <p style={{ margin: "7px 0 0", fontSize: 12.5, color: DC.muted, maxWidth: 540, lineHeight: 1.55 }}>
+          Four quick steps. Everything is pre-styled to your {theme.name} theme — adjust only what you want.
         </p>
       </div>
 
       {/* == 1 · PICK YOUR SETUP =============================== */}
-      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 24, padding: 22, marginBottom: 18, boxShadow: DC.cardShadow }}>
+      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 18, padding: 18, marginBottom: 14, boxShadow: DC.cardShadow }}>
       <div>
         {/* Curated setup layouts — playful visual cards */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
             {numBadge(1)}
             <div>
-              <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 23, color: DC.plum, lineHeight: 1.1 }}>Pick your setup ✨</div>
-              <div style={{ fontSize: 12.5, color: DC.muted }}>Start with a layout — we&apos;ll arrange the pieces for you.</div>
+              <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 18, color: DC.plum, lineHeight: 1.15 }}>Pick your setup</div>
+              <div style={{ fontSize: 11.5, color: DC.muted }}>Start with a layout — we&apos;ll arrange the pieces for you.</div>
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(128px, 1fr))", gap: 10 }}>
@@ -1375,7 +1385,7 @@ function clearAllStandees() {
           </div>
           {d.backdropItems.length > 0 && (
             <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF0F6", border: "1px solid #F7C9DD", borderRadius: 20, padding: "4px 12px", fontSize: 11, fontWeight: 700, color: "#EC4D8D" }}>
-              <span>🎀</span>
+              <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "#EC4D8D", display: "inline-block" }}/>
               <span>Your set: {d.backdropItems.map(i => TYPE_LABEL[i.type] ?? i.type).join(" + ")}</span>
             </div>
           )}
@@ -1429,12 +1439,12 @@ function clearAllStandees() {
       </div>{/* == end 1 · Pick your setup == */}
 
       {/* == 2 · SIZE YOUR PIECES ============================== */}
-      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 24, padding: 22, marginBottom: 18, boxShadow: DC.cardShadow }}>
+      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 18, padding: 18, marginBottom: 14, boxShadow: DC.cardShadow }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
           {numBadge(2)}
           <div>
-            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 23, color: DC.plum, lineHeight: 1.1 }}>Size your pieces 📏</div>
-            <div style={{ fontSize: 12.5, color: DC.muted }}>Choose a size for each piece — add-ons unlock once it&apos;s sized.</div>
+            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 18, color: DC.plum, lineHeight: 1.15 }}>Size your pieces</div>
+            <div style={{ fontSize: 11.5, color: DC.muted }}>Choose a size for each piece — add-ons unlock once it&apos;s sized.</div>
           </div>
         </div>
 
@@ -1462,7 +1472,7 @@ function clearAllStandees() {
                         <div>
                           <div style={{ fontWeight: 700, fontSize: 14, color: DC.plum }}>{friendlyName}</div>
                           <div style={{ fontSize: 11.5, color: DC.muted }}>
-                            {sized ? `${sizedLabel} — lovely choice ✨` : "How big should it be?"}
+                            {sized ? sizedLabel : "Choose a size"}
                           </div>
                         </div>
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -1484,7 +1494,7 @@ function clearAllStandees() {
                     </div>
                     {sized
                       ? BackdropCustomizeRow({ item, itemIdx })
-                      : <div style={{ marginTop: 8, fontSize: 11, color: DC.faint, fontStyle: "italic" }}>Choose a size to unlock text &amp; graphic add-ons ✨</div>}
+                      : <div style={{ marginTop: 8, fontSize: 11, color: DC.faint, fontStyle: "italic" }}>Choose a size to unlock text and graphic add-ons</div>}
                   </div>
                 );
               })}
@@ -2050,20 +2060,51 @@ function clearAllStandees() {
       )}
 
       {/* == 3 · STYLE YOUR SETUP ============================== */}
-      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 24, padding: 22, marginBottom: 18, boxShadow: DC.cardShadow }}>
+      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 18, padding: 18, marginBottom: 14, boxShadow: DC.cardShadow }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
           {numBadge(3)}
           <div>
-            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 23, color: DC.plum, lineHeight: 1.1 }}>Style your setup 🎀</div>
-            <div style={{ fontSize: 12.5, color: DC.muted }}>We pre-picked a {theme.name} palette — swap any shade you like, up to 5.</div>
+            <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 18, color: DC.plum, lineHeight: 1.15 }}>Add your balloons</div>
+            <div style={{ fontSize: 11.5, color: DC.muted }}>Choose a garland — or skip it — then fine-tune the colors.</div>
           </div>
         </div>
 
+      {/* Garland choice — balloons are opt-in (2026-07-20). They used to be
+          pre-added by the package's defaultDecor with no way to decline. */}
+      <div style={{ ...card, marginBottom: 12 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: DC.faint, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 9 }}>
+          Balloon garland
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {BALLOON_STYLES.map((b) => {
+            const active = d.balloonStyle === b.id;
+            return (
+              <button key={b.id} type="button" onClick={() => patchDecor({ balloonStyle: b.id })} aria-pressed={active}
+                style={{
+                  textAlign: "left", cursor: "pointer", borderRadius: 12, padding: "9px 11px",
+                  border: active ? "1.5px solid #D8548A" : "1px solid #ECE7E4",
+                  background: "white",
+                  boxShadow: active ? "0 0 0 3px #FBE9EF" : "none",
+                }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: active ? DC.roseDeep : DC.plum, lineHeight: 1.2 }}>
+                  {b.id === "none" ? "No balloons" : b.label}
+                </div>
+                <div style={{ fontSize: 10.5, color: DC.faint, marginTop: 2 }}>
+                  {b.price > 0 ? `+AED ${b.price}` : "Skip"}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* SEMPERTEX PICKER -default: chips only; expanded: full browser */}
-      <div style={card}>
+      <div style={{ ...card, opacity: d.balloonStyle === "none" ? 0.5 : 1 }}>
         {/* Garland note */}
-        <div style={{ marginBottom: 14, padding: "8px 14px", background: DC.chipBg, borderRadius: 12, fontSize: 11.5, color: DC.roseDeep, fontWeight: 600 }}>
-          * Garland style is included in your package -this step only selects production colors.
+        <div style={{ marginBottom: 14, padding: "8px 14px", background: DC.chipBg, borderRadius: 12, fontSize: 11, color: DC.roseDeep, fontWeight: 600 }}>
+          {d.balloonStyle === "none"
+            ? "Pick a garland above to choose balloon colors."
+            : "These are the exact Sempertex shades our team will inflate on the day."}
         </div>
 
         {/* Selected chips row -always visible */}
@@ -2282,12 +2323,12 @@ function clearAllStandees() {
       </div>{/* -"--"- end BALLOONS section -"--"- */}
 
       {/* == 4 · ADD EXTRA MAGIC =============================== */}
-      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 24, padding: 22, marginBottom: 18, boxShadow: DC.cardShadow }}>
+      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 18, padding: 18, marginBottom: 14, boxShadow: DC.cardShadow }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
           {numBadge(4)}
           <div>
-            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 23, color: DC.plum, lineHeight: 1.1 }}>Add extra magic ✨</div>
-            <div style={{ fontSize: 12.5, color: DC.muted }}>Characters and cake plinths make the photos unforgettable.</div>
+            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 18, color: DC.plum, lineHeight: 1.15 }}>Add extra magic</div>
+            <div style={{ fontSize: 11.5, color: DC.muted }}>Optional extras — standees and cake plinths.</div>
           </div>
         </div>
 
@@ -2301,7 +2342,7 @@ function clearAllStandees() {
     <div className="rounded-[16px] border border-black/10 bg-white p-3">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>1 · Choose characters 💖</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>1 · Choose characters</div>
           <div className="text-[11px]" style={{ color: DC.muted }}>Choose one or more characters, then pick the sizes you want.</div>
         </div>
         {selectedCutoutAssets.length > 0 && (
@@ -2365,7 +2406,7 @@ function clearAllStandees() {
     {selectedCutoutAssets.length > 0 && (
       <div className="rounded-[16px] border border-black/10 bg-white p-3">
         <div className="mb-3">
-          <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>2 · Choose sizes 📏</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>2 · Choose sizes</div>
           <div className="text-[11px]" style={{ color: DC.muted }}>
             Set how many of each height you want, per character.
           </div>
@@ -2438,10 +2479,10 @@ function clearAllStandees() {
           );
           return (
             <div className="mt-3" style={{ background: "white", border: `1.5px dashed ${DC.dashedBd}`, borderRadius: 16, padding: "13px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>3 · Your standee squad ✨</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>3 · Your standee squad</div>
               {lines.map((line) => (
                 <div key={line.text} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <span style={{ fontSize: 12.5, color: DC.plum }}><span style={{ color: DC.rose }}>🎀</span> {line.text}</span>
+                  <span style={{ fontSize: 12.5, color: DC.plum }}><span aria-hidden style={{ color: DC.rose }}>·</span> {line.text}</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: DC.plum }}>{line.price}</span>
                 </div>
               ))}
@@ -2456,20 +2497,9 @@ function clearAllStandees() {
 
       {/* PLINTHS */}
       <div style={card}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          {/* Mini plinth illustration — slim cylinder with a cake on top */}
-          <svg width="34" height="44" viewBox="0 0 34 44" aria-hidden="true">
-            <ellipse cx="17" cy="40" rx="9" ry="2.5" fill="#F3E2EA" />
-            <rect x="9" y="16" width="16" height="24" rx="1.5" fill="#FDF3F8" stroke="#E8C7D8" strokeWidth="1" />
-            <ellipse cx="17" cy="16" rx="8" ry="2.5" fill="#F9E3EE" stroke="#E8C7D8" strokeWidth="1" />
-            <rect x="12" y="8" width="10" height="7" rx="1.5" fill="#F7A7C8" />
-            <rect x="14" y="5" width="6" height="4" rx="1" fill="#FBD1E3" />
-            <circle cx="17" cy="3.5" r="1.3" fill="#EC4D8D" />
-          </svg>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: DC.plum }}>Cake plinths 🍰</div>
-            <div style={{ fontSize: 11.5, color: DC.muted }}>Elegant columns that put your cake center-stage beside the backdrop.</div>
-          </div>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontWeight: 600, fontSize: 13.5, color: DC.plum }}>Cake plinths</div>
+          <div style={{ fontSize: 11.5, color: DC.muted }}>Elegant columns that put your cake center-stage beside the backdrop.</div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: DC.faint, textTransform: "uppercase", marginRight: 2 }}>How many?</span>
