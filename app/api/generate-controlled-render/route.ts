@@ -146,7 +146,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "standee-left-front-plinth-right-v5";
+const RENDER_CACHE_VERSION = "standee-beside-panel-fuller-garland-v6";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1863,7 +1863,14 @@ forbiddenBalloonColorLabels: hasSempertexLock
                 // For large standees, don't let the cap collapse the height below
                 // minLargeH — re-resize to the minimum height unless the resulting
                 // width would be cropped off the canvas.
-                if (cm >= 150 && (cappedMeta.height ?? 0) < minLargeH) {
+                //
+                // 2026-07-20: this rescue used to run even when a template zone
+                // was active, blowing a 150cm standee back up to 54% of the
+                // image height and ~50% of its width — the standee then covered
+                // the backdrop ("the character is still standing in front").
+                // A zone's maxHeightFraction is a deliberate art-direction
+                // choice, so the rescue is now skipped whenever a zone applies.
+                if (!zone && cm >= 150 && (cappedMeta.height ?? 0) < minLargeH) {
                   const rescueBuf  = await (sharpFn2(assetBuf).resize({ height: minLargeH }).png().toBuffer()) as Buffer;
                   const rescueMeta = await sharpFn2(rescueBuf).metadata() as { width?: number; height?: number };
                   if ((rescueMeta.width ?? 0) <= imgW) {

@@ -486,14 +486,20 @@ export function buildLayoutRefEditPrompt(
       `Do not thin out, shrink, or reduce either garland's balloon count or size to compensate for having ` +
       `two garlands in the scene — both garlands must independently look as full and dense as a single ` +
       `standalone Single Arch garland. ` +
-      `36 inch balloons must be clearly larger than all others. 5 inch balloons only appear as small filler ` +
-      `clusters attached to larger balloons. ` +
+      `36 inch balloons must be clearly larger than all others. Use only a FEW 5 inch balloons — they appear ` +
+      `sparingly as tiny accents tucked between big balloons, never as a large group. ` +
+      `FULLNESS RULE: every part of each garland is plump and packed — no thin, sparse, or gappy stretches ` +
+      `anywhere along its length, and no section that narrows to a single file of balloons. ` +
       `Any balloons resting on the floor must be part of their garland's base cluster, visually connected ` +
       `to and touching that garland — never scattered, detached, or floating separately on the floor.`
     : ` Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
-      `standard balloons, and small 5 inch filler balloons. Include at least 5 visible 36 inch statement ` +
+      `standard balloons, and a FEW small 5 inch accent balloons. Include at least 6 visible 36 inch statement ` +
       `balloons distributed through the garland at the top, side, and base. 36 inch balloons must be clearly ` +
-      `larger than all others. 5 inch balloons only appear as small filler clusters attached to larger balloons. ` +
+      `larger than all others. Use 5 inch balloons sparingly — only a few tiny accents tucked between big ` +
+      `balloons, never a group of them. ` +
+      `FULLNESS RULE: the garland is plump and densely packed along its ENTIRE length — no thin, sparse or ` +
+      `gappy stretches, no section that narrows to a single file of balloons, no visible backdrop showing ` +
+      `through the middle of the garland band. ` +
       `Any balloons resting on the floor must be part of the garland's base cluster, visually connected to ` +
       `and touching the main garland — never scattered, detached, or floating separately on the floor.`;
 

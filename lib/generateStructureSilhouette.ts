@@ -808,7 +808,11 @@ export function generateStructureSilhouette(
             [  50,  54, "S"], [   6,  74, "S"], [ -18,  46, "S"], [  36,  74, "S"],
             [  14,  92, "M"], [ -12,  86, "S"], [  46,  90, "S"], [   0, 104, "S"],
           ];
-          const sizeR = { X: rXL, L: rLarge, M: rMed, S: rSmall };
+          // Plumper mix in tight mode (2026-07-20 feedback: "fuller, fewer
+          // 12in, fewer 5in"): the S slot stops being a 5-inch filler and
+          // becomes a near-medium balloon, so the band has no thin gappy
+          // stretches. 5-inch balloons remain only as prompt-level accents.
+          const sizeR = { X: rXL, L: rLarge, M: rMed, S: tight ? rMed * 0.86 : rSmall };
           // Tight (double_arch) is also BOTTOM-HEAVY (2026-07-19): a real
           // render at uniform density read as an evenly spaced side border /
           // trim rather than a decorator garland. The base cluster is
@@ -1050,8 +1054,15 @@ export function generateStructureSilhouette(
           const result = drawArchShimmerComposition(archPanels[0], shimmerPanels[0], 0);
           archShimmerCompositionBalloons = result.total;
           archShimmerAccentZone = result.accentZone;
+        } else if (archPanels.length === 1 && layout.panels.length === 1) {
+          // Single arch: use the same thick organic mass the Double Arch
+          // garlands use. The previous guide here was a single-file sine-wave
+          // column of 22 circles, which the edit model reproduced with visibly
+          // thin, gappy stretches (2026-07-20 feedback: "balloons have very
+          // thin parts, should look fuller").
+          drawThickOrganicMainGarland(archPanels[0], "right", 0, true);
         } else {
-          // Arch / rect / other: right-side vertical garland from top-right corner to floor
+          // Multi-panel fallback: right-side vertical garland from top-right corner to floor
           const outerOffset = Math.round(W * 0.055);
           const numBalloons = 22;
 
@@ -1124,7 +1135,7 @@ export function generateStructureSilhouette(
     // left edge (ZONES_STANDARD). The guide reserves that same footprint —
     // previously it sat fully outside the panel, so the model happily painted
     // the plinth/garland exactly where the standee would later land.
-    let curRight = Math.round(groupLeft + (layout.panels[0]?.pw ?? 0) * 0.35);
+    let curRight = Math.round(groupLeft + (layout.panels[0]?.pw ?? 0) * 0.12);
 
     for (const standee of standeesToDraw) {
       const heightPx = Math.round(standee.heightCm * pxPerCm);

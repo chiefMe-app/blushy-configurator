@@ -89,12 +89,16 @@ export interface SetupLayoutTemplate {
 // (see generateStructureSilhouette + plinthDesc), so the two never collide.
 // Extra standees step further left, staying clear of the plinth.
 const ZONES_STANDARD = {
-  large:  [{ x: 0.10, bottomY: 0.94, maxHeightFraction: 0.62, maxWidthFraction: 0.34, preferredSide: "left" as const },
-           { x: 0.99, bottomY: 0.92, maxHeightFraction: 0.56, maxWidthFraction: 0.34, preferredSide: "right" as const }],
-  medium: [{ x: 0.12, bottomY: 0.95, maxHeightFraction: 0.44, maxWidthFraction: 0.28, preferredSide: "left" as const },
-           { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.40, maxWidthFraction: 0.28, preferredSide: "right" as const }],
-  small:  [{ x: 0.14, bottomY: 0.96, maxHeightFraction: 0.28, maxWidthFraction: 0.24, preferredSide: "left" as const },
-           { x: 0.96, bottomY: 0.96, maxHeightFraction: 0.25, maxWidthFraction: 0.24, preferredSide: "right" as const }],
+  // 2026-07-20 (second pass): the first left-anchored zone was still too big
+  // and too far in — the standee covered the backdrop and read as standing in
+  // front of the whole setup. It now stands BESIDE the panel on the far left,
+  // scaled down so the backdrop and garland stay fully readable.
+  large:  [{ x: 0.02, bottomY: 0.95, maxHeightFraction: 0.62, maxWidthFraction: 0.36, preferredSide: "left" as const },
+           { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.62, maxWidthFraction: 0.36, preferredSide: "right" as const }],
+  medium: [{ x: 0.03, bottomY: 0.95, maxHeightFraction: 0.46, maxWidthFraction: 0.28, preferredSide: "left" as const },
+           { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.46, maxWidthFraction: 0.28, preferredSide: "right" as const }],
+  small:  [{ x: 0.04, bottomY: 0.96, maxHeightFraction: 0.30, maxWidthFraction: 0.20, preferredSide: "left" as const },
+           { x: 0.96, bottomY: 0.96, maxHeightFraction: 0.30, maxWidthFraction: 0.20, preferredSide: "right" as const }],
 };
 
 export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
@@ -167,13 +171,14 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
       "arches. This instruction text is documentation only and is intentionally never injected " +
       "into the prompt (plinth wording lives in buildLayoutRefEditPrompt.ts).",
     standeeZones: {
-      // 1 standee → right outer; 2 standees → left + right outer (mirrored)
-      large:  [{ x: 0.99, bottomY: 0.92, maxHeightFraction: 0.54, maxWidthFraction: 0.38, preferredSide: "right" },
-               { x: 0.01, bottomY: 0.92, maxHeightFraction: 0.54, maxWidthFraction: 0.38, preferredSide: "left" }],
-      medium: [{ x: 0.01, bottomY: 0.94, maxHeightFraction: 0.38, maxWidthFraction: 0.32, preferredSide: "left" },
-               { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.38, maxWidthFraction: 0.32, preferredSide: "right" }],
-      small:  [{ x: 0.97, bottomY: 0.96, maxHeightFraction: 0.24, maxWidthFraction: 0.24, preferredSide: "right" },
-               { x: 0.03, bottomY: 0.96, maxHeightFraction: 0.24, maxWidthFraction: 0.24, preferredSide: "left" }],
+      // 1 standee → left outer, beside the arches; 2 standees → left + right
+      // (matches the Single Arch direction set on 2026-07-20).
+      large:  [{ x: 0.02, bottomY: 0.94, maxHeightFraction: 0.60, maxWidthFraction: 0.34, preferredSide: "left" },
+               { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.60, maxWidthFraction: 0.34, preferredSide: "right" }],
+      medium: [{ x: 0.03, bottomY: 0.95, maxHeightFraction: 0.44, maxWidthFraction: 0.26, preferredSide: "left" },
+               { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.44, maxWidthFraction: 0.26, preferredSide: "right" }],
+      small:  [{ x: 0.04, bottomY: 0.96, maxHeightFraction: 0.28, maxWidthFraction: 0.19, preferredSide: "left" },
+               { x: 0.96, bottomY: 0.96, maxHeightFraction: 0.28, maxWidthFraction: 0.19, preferredSide: "right" }],
     },
   },
 ];
