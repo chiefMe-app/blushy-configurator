@@ -4,6 +4,7 @@ import { getSupabase } from "@/lib/supabase";
 import {
   themeById,
   packageById,
+  servicePackageById,
   computeTotal,
   type BuilderConfig,
 } from "@/lib/config";
@@ -36,6 +37,12 @@ export async function POST(req: NextRequest) {
   if (!themeById(body.theme) || !packageById(body.package)) {
     return NextResponse.json({ error: "Invalid theme or package." }, { status: 400 });
   }
+  // servicePackageId is what the client's Package step (step 3) actually sets.
+  // Without this check a missing/invalid value would silently fall back to the
+  // cheapest service package inside computeTotal() below instead of failing loudly.
+  if (!servicePackageById(body.servicePackageId)) {
+    return NextResponse.json({ error: "Invalid service package." }, { status: 400 });
+  }
 
   // Recompute total server-side — never trust the client value.
   const pricingConfig = {
@@ -51,6 +58,7 @@ export async function POST(req: NextRequest) {
   const extras = {
     eventType: body.eventType,
     package: body.package,
+    servicePackageId: body.servicePackageId,
     decor: body.decor,
     addOns: body.addOns,
     venue: body.venue,

@@ -282,6 +282,13 @@ export default function ConfigurePage() {
       eventType: config.eventType,
       theme: config.theme,
       package: config.package,
+      // The Package step (step 3) only ever writes servicePackageId — config.package
+      // is a legacy field nothing sets anymore, permanently stuck at its "mini"
+      // default. Omitting servicePackageId here meant the order route's
+      // server-side computeTotal() couldn't see which service tier was chosen and
+      // silently fell back to the cheapest one (Design Only) for every order,
+      // regardless of what the customer picked and saw priced on the Review step.
+      servicePackageId: config.servicePackageId,
       decor: config.decor,
       addOns: config.addOns,
       venue: {
