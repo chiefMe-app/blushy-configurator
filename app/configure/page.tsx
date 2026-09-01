@@ -71,7 +71,7 @@ cutoutTotalCount,
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
 import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS, getThemeCutoutPresets } from "@/lib/themeCatalog";
 import { SETUP_LAYOUT_TEMPLATES, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
-import SetupPreview, { useSetupPreview } from "@/components/SetupPreview";
+import SetupPreview, { useSetupPreview, type FinalRenderState } from "@/components/SetupPreview";
 
 // Controlled render limit: at most 2 backdrop pieces per setup.
 const MAX_BACKDROP_ITEMS = 2;
@@ -203,6 +203,13 @@ export default function ConfigurePage() {
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [customThemeText, setCustomThemeText] = useState("");
   const [showCustomThemeInput, setShowCustomThemeInput] = useState(false);
+
+  // Tracks the live Final Design Render's state so the Decor step's footer CTA
+  // can point the user at the render card instead of letting them continue
+  // without ever having generated one.
+  const [finalRenderState, setFinalRenderState] = useState<FinalRenderState>({
+    hasRender: false, isStale: false, generating: false,
+  });
 
   const theme = themeById(config.theme) ?? THEMES[0];
   const accentStyle = useMemo(
@@ -386,6 +393,16 @@ export default function ConfigurePage() {
   const canSubmit =
     config.customer.name.trim().length > 1 && config.customer.whatsapp.trim().length >= 7;
 
+  // Decor step (index 2): don't let the user Continue past their decor choices
+  // without ever having generated the Final Design Render — swap the CTA for
+  // "Generate Render" and scroll them to the render card instead. Once a
+  // non-stale render exists, the footer reverts to a normal Continue.
+  const isDecorStep = step === 2;
+  const decorRenderReady = finalRenderState.hasRender && !finalRenderState.isStale;
+  const scrollToPreviewCard = () => {
+    document.getElementById("party-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const Preview = (
     <div className="space-y-3">
       <SetupPreview
@@ -460,6 +477,7 @@ export default function ConfigurePage() {
                   isIncremental={preview.isIncremental}
                   onRegenerate={preview.regenerate}
                   onPatchDecor={patchDecor}
+                  onFinalRenderStateChange={setFinalRenderState}
                 />
               </div>
               <PriceSummary config={config} className="hidden lg:block" />
@@ -742,10 +760,22 @@ export default function ConfigurePage() {
       <StickyBottomCTA
         config={config}
         stepName={STEPS[step]}
-        ctaLabel={isReview ? "Request Final Quote" : "Continue"}
+        ctaLabel={
+          isReview
+            ? "Request Final Quote"
+            : isDecorStep && !decorRenderReady
+            ? "✨ Generate Render"
+            : "Continue"
+        }
         showBack={step > 0}
         onBack={() => setStep((s) => Math.max(0, s - 1))}
-        onNext={isReview ? submit : () => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
+        onNext={
+          isReview
+            ? submit
+            : isDecorStep && !decorRenderReady
+            ? scrollToPreviewCard
+            : () => setStep((s) => Math.min(STEPS.length - 1, s + 1))
+        }
         // Theme step is a required choice — everything downstream (palette,
         // graphics, standee suggestions) is themed, so continuing without one
         // silently applied the default theme.

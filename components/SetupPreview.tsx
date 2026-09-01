@@ -1124,14 +1124,19 @@ export function useSetupPreview(config: BuilderConfig) {
 // Preview component
 // ---------------------------------------------------------------------------
 
+export type FinalRenderState = { hasRender: boolean; isStale: boolean; generating: boolean };
+
 export default function SetupPreview({
   config, status, imageUrl, isIncremental = false, onRegenerate, showControls = true,
-  onPatchDecor,
+  onPatchDecor, onFinalRenderStateChange,
 }: {
   config: BuilderConfig; status: PreviewStatus; imageUrl: string | null;
   isIncremental?: boolean; onRegenerate: () => void; showControls?: boolean;
   /** Optional — enables the Ask for a change prompt when provided. */
   onPatchDecor?: (patch: Partial<import("@/lib/config").DecorConfig>) => void;
+  /** Optional — reports the Final Design Render's live state up to the parent
+   *  (used by the Decor step to gate its Continue/Generate Render CTA). */
+  onFinalRenderStateChange?: (state: FinalRenderState) => void;
 }) {
   const themeAccent = THEMES.find((t) => t.id === config.theme)?.accent ?? "#C77DD6";
 
@@ -1176,8 +1181,13 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
 
   const finalIsLoading = finalStatus === "loading";
 
+  useEffect(() => {
+    onFinalRenderStateChange?.({ hasRender: !!finalUrl, isStale, generating: finalIsLoading });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalUrl, isStale, finalIsLoading]);
+
   return (
-    <div className="space-y-4">
+    <div id="party-preview-card" className="space-y-4">
       {/* ─── 1. Final Design Render (top) — Claude Design: image first, footer row below ── */}
       <div>
         <div

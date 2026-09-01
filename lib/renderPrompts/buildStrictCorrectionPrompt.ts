@@ -42,6 +42,10 @@ export function buildStrictCorrectionPrompt(
           "For oyster/off-white selections, use cool pearl white or cool off-white only, never beige, ivory, cream-gold, warm cream, or champagne.",
           "Correct any global warm tint or creamy cast on the entire scene. Keep the scene neutral and color-accurate. Do not add haze, matte wash, sepia warmth, beige cast, or editorial filtering. Keep whites neutral white, not ivory or creamy. Preserve true pastel color separation.",
           "Remove any color cast from the window daylight on the balloons: every balloon keeps its exact selected color on both its window-lit side and its shadow side — no blue, golden, or warm tint from the window light on balloon surfaces.",
+          // 2026-09-01: the correction pass was flattening balloons into solid
+          // flat-colored discs while fixing their hue — it only spoke about
+          // color, never about preserving the round 3D shape underneath.
+          "This is a color correction only. Every balloon must keep its existing round, three-dimensional spherical shape with a visible highlight on its lit side and a soft shadow on its rim. Do not flatten any balloon into a flat solid-colored disc or circle. Only change the hue of each balloon; keep its existing shading, highlight, and shadow exactly as rendered.",
         ]
       : [];
 
