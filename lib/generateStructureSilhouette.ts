@@ -676,7 +676,19 @@ export function generateStructureSilhouette(
       return `fill="${fill}" ${stroke}`;
     };
 
-    if (balloonStyle === "half") {
+    // Every paid garland tier draws from the SAME organic-mass engine below.
+    //
+    // 2026-09-01: this dispatch used to be gated on `balloonStyle === "half"`,
+    // so Full Garland and Premium Organic — the two more expensive tiers — fell
+    // through to a legacy path that drew 10 thin circles offset 5% of the canvas
+    // width OUTSIDE each panel edge plus a row of circles floating in the air
+    // above the panels. Detached from the panels, those guide dots read to the
+    // edit model as helium balloons on strings rather than a garland, and a
+    // Double Arch render came back with no garland at all (the model ignored the
+    // floating dots) — the downstream correction pass then invented balloon
+    // bouquets. Tier now controls DENSITY and COVERAGE, never geometry.
+    const isFullerTier = balloonStyle === "full" || balloonStyle === "premium";
+    if (balloonStyle === "half" || isFullerTier) {
       // Detect single round panel — needs an arc garland, not a vertical side garland.
       // A vertical line of circles next to a circle reads as a support pillar or full ring to the model.
       const isRoundScene =
@@ -1076,6 +1088,12 @@ export function generateStructureSilhouette(
           // thin, gappy stretches (2026-07-20 feedback: "balloons have very
           // thin parts, should look fuller").
           drawThickOrganicMainGarland(archPanels[0], "right", 0, true);
+          // Full / Premium mirror the mass onto the left edge too, so the
+          // customer sees the extra coverage they paid for. Half stays
+          // one-sided (that asymmetry is the look Half Garland sells).
+          if (isFullerTier) {
+            drawThickOrganicMainGarland(archPanels[0], "left", 62, true);
+          }
         } else {
           // Multi-panel fallback: right-side vertical garland from top-right corner to floor
           const outerOffset = Math.round(W * 0.055);
@@ -1096,28 +1114,6 @@ export function generateStructureSilhouette(
         }
       }
 
-    } else if (balloonStyle === "full" || balloonStyle === "premium") {
-      const numPerSide = balloonStyle === "premium" ? 14 : 10;
-      const offset     = Math.round(W * 0.05);
-
-      const drawSide = (edgeX: number, dir: 1 | -1, colorOffset = 0) => {
-        for (let i = 0; i < numPerSide; i++) {
-          const t  = i / (numPerSide - 1);
-          const bx = edgeX + dir * (offset + (((i * 5) % 14)));
-          const by = groupTop + t * dy;
-          const r  = 12 + ((i * 7) % 9);
-          content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" ${balloonAttrs(colorOffset + i)}/>`);
-        }
-      };
-      drawSide(groupRight,  1, 0);
-      drawSide(groupLeft,  -1, numPerSide);
-      // Top arc circles
-      for (let i = 0; i < numPerSide; i++) {
-        const t  = i / (numPerSide - 1);
-        const bx = groupLeft + t * (groupRight - groupLeft);
-        const by = groupTop - offset + (((i * 5) % 12));
-        content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${12 + ((i * 3) % 7)}" ${balloonAttrs(numPerSide * 2 + i)}/>`);
-      }
     }
   }
 

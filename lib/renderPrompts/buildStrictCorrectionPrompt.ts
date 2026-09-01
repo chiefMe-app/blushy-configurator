@@ -49,6 +49,13 @@ export function buildStrictCorrectionPrompt(
     ? `The backdrop must remain a single large thin vertical circular event backdrop panel, ${opts.roundDiameterCm ?? 200} x ${opts.roundDiameterCm ?? 200} cm. The visible front bottom edge must touch the floor directly. It has hidden rear support only, invisible from the front. Remove any stage, platform, riser, support disc, pedestal, base block, rectangular box, circular base, oval base, second plinth, extra cylinder, or furniture-like support under it. The round panel must remain visually large and dominant, not shrunken, not miniaturized, not converted into an arch, and not surrounded by a full 360-degree balloon ring.`
     : "";
 
+  // Both arch panels are one product in one fabric — the correction pass is a
+  // full-image edit and has repainted the second arch a different colour
+  // (2026-09-01: left arch blue, right arch white/lilac in the same render).
+  const doubleArchColorParityClause = opts.isDoubleArch
+    ? `Both arch panels are the SAME product in the SAME fabric: they must keep the identical backdrop colour, identical finish, and identical surface texture as each other. Do not recolour, lighten, darken, or restyle either arch. Do not make one arch white while the other is coloured. The only permitted difference between the two arches is their size.`
+    : "";
+
   const plinthClause = opts.hasPlinth
     ? `Preserve the single selected white cylindrical plinth ${
         opts.isDoubleArch
@@ -67,8 +74,10 @@ export function buildStrictCorrectionPrompt(
     "Do NOT redesign or rearrange the setup.",
     ...colorLockClauses,
     roundClause,
+    doubleArchColorParityClause,
     plinthClause,
     "Keep the balloons attached to the backdrop contour. Do not add floor scatter unrelated to the garland base.",
+    "Never add helium balloons on strings, balloon bouquets, or loose balloon clusters standing in front of or beside the backdrop. Every balloon belongs to the organic garland physically attached to a backdrop edge.",
     "Do not add any new object that was not in the original layout reference.",
   ]
     .filter(Boolean)
