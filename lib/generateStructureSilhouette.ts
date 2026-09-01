@@ -505,11 +505,20 @@ export function generateStructureSilhouette(
   // got one blue arch next to one white arch even though both were ordered in
   // the same colour (2026-09-01 report). Same-type sets share one fill; mixed
   // sets (arch + shimmer wall) keep the distinguishing hues.
+  //
+  // 2026-09-01 (2): the neutral fills also meant the guide carried NO colour
+  // information at all, so setting the large arch to white changed nothing in
+  // the render — the edit model had only the prompt to go on and painted the
+  // panels whatever the theme suggested. The panel's own configured colour now
+  // wins whenever one is set; the neutral fills remain the fallback.
   const uniformPanelFill =
     backdropItems.length > 1 &&
     backdropItems.every((i) => i.type === backdropItems[0].type);
-  const fillForPanel = (sortedIdx: number): string =>
-    MULTI_PANEL_FILLS[(uniformPanelFill ? 0 : sortedIdx) % MULTI_PANEL_FILLS.length];
+  const fillForPanel = (sortedIdx: number, panelIdx?: number): string => {
+    const own = (backdropItems[panelIdx ?? sortedIdx] as { color?: string } | undefined)?.color;
+    if (own && /^#[0-9a-fA-F]{6}$/.test(own)) return own;
+    return MULTI_PANEL_FILLS[(uniformPanelFill ? 0 : sortedIdx) % MULTI_PANEL_FILLS.length];
+  };
 
   const sorted = [...layout.panels].sort((a, b) => a.zOrder - b.zOrder);
   sorted.forEach((panel, sortedIdx) => {
@@ -521,7 +530,7 @@ export function generateStructureSilhouette(
     // same neutral fill family as the paired solid arch (MULTI_PANEL_FILLS),
     // so the pair reads as one coordinated set, not a wire outline vs a board.
     if (shape === "open_arch_frame") {
-      const frameFill = fillForPanel(sortedIdx);
+      const frameFill = fillForPanel(sortedIdx, panel.idx);
       const frame = openArchFramePath(panel.cx, panel.pw, panel.apexY, panel.floorY, frameFill);
       content.push(frame.svg);
       archOpenFrameFrameThicknessPx = frame.frameThicknessPx;
@@ -529,7 +538,7 @@ export function generateStructureSilhouette(
     }
 
     if (isMultiPanel) {
-      const baseFill = fillForPanel(sortedIdx);
+      const baseFill = fillForPanel(sortedIdx, panel.idx);
 
       if (isShimmer) {
         // Shimmer wall: dense small tile grid so the edit model reads it as a
@@ -541,7 +550,7 @@ export function generateStructureSilhouette(
         content.push(shimmerTilePatternDefs(patId, tileSize, shimmerTileFill));
         content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, `url(#${patId})`));
       } else {
-        content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, fillForPanel(sortedIdx)));
+        content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, fillForPanel(sortedIdx, panel.idx)));
       }
     } else if (isShimmer) {
       // Single shimmer wall: force a clean rectangle (never arch edges) with tile grid.
@@ -663,17 +672,50 @@ export function generateStructureSilhouette(
       return `rgba(${r},${g},${b},${alpha})`;
     };
 
+    // Guide balloons are shaded spheres, not flat discs.
+    //
+    // 2026-09-01: with flat single-colour fills the edit model reproduced the
+    // guide literally and the garland came back as stacked overlapping DISCS
+    // rather than balloons. A radial gradient with an off-centre highlight and
+    // a darker rim gives each guide balloon the light falloff of a real latex
+    // sphere, so copying the guide closely now produces the right result
+    // instead of the wrong one.
+    const shade = (hex: string, factor: number): string => {
+      const h = hex.replace("#", "");
+      const ch = (i: number) => {
+        const v = parseInt(h.slice(i, i + 2), 16);
+        return Math.max(0, Math.min(255, Math.round(factor < 1 ? v * factor : v + (255 - v) * (factor - 1))));
+      };
+      return `rgb(${ch(0)},${ch(2)},${ch(4)})`;
+    };
+
+    const gradientIds = new Map<string, string>();
+    if (hasSelectedColors) {
+      colors.forEach((hex, i) => {
+        if (gradientIds.has(hex)) return;
+        const id = `balloonSphere_${i}`;
+        gradientIds.set(hex, id);
+        // No separate <defs> block exists in this SVG builder — every element
+        // goes into the flat `content` array. A <radialGradient> pushed here
+        // still resolves correctly via url(#id) regardless of position.
+        content.push(
+          `<radialGradient id="${id}" cx="35%" cy="30%" r="72%">` +
+            `<stop offset="0%" stop-color="${shade(hex, 1.55)}" stop-opacity="0.95"/>` +
+            `<stop offset="55%" stop-color="${hex}" stop-opacity="0.9"/>` +
+            `<stop offset="100%" stop-color="${shade(hex, 0.72)}" stop-opacity="0.95"/>` +
+          `</radialGradient>`,
+        );
+      });
+    }
+
     const balloonAttrs = (idx: number): string => {
       if (!hasSelectedColors) {
         return `fill="rgba(200,218,235,0.08)" stroke="rgba(85,85,85,0.30)" stroke-width="1"`;
       }
-      const hex     = colors[idx % colors.length] ?? colors[0];
-      const isWhite = hex.toLowerCase() === "#ffffff" || hex.toLowerCase() === "#fff";
-      const fill    = hexToRgba(hex, 0.76);
-      const stroke  = isWhite
-        ? `stroke="rgba(160,160,160,0.72)" stroke-width="1.4"`
-        : `stroke="rgba(55,55,55,0.22)" stroke-width="1"`;
-      return `fill="${fill}" ${stroke}`;
+      const hex = colors[idx % colors.length] ?? colors[0];
+      const id  = gradientIds.get(hex);
+      const fill = id ? `url(#${id})` : hexToRgba(hex, 0.76);
+      return `fill="${fill}" stroke="${shade(hex, 0.6)}" stroke-width="1" stroke-opacity="0.45"`;
     };
 
     // Every paid garland tier draws from the SAME organic-mass engine below.

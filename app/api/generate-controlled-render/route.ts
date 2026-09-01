@@ -146,7 +146,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "all-garland-tiers-organic-mass-v10";
+const RENDER_CACHE_VERSION = "panel-color-and-sphere-balloons-v11";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -710,8 +710,15 @@ async function generateLayoutReferencePng(
   // Stage 1: SVG generation — derive plinth sizes from sceneModel for type safety
   let silhouette: ReturnType<typeof generateStructureSilhouette>;
   try {
+    // Hand the guide each panel's RESOLVED colour (own colour, or the global
+    // backdrop colour when the panel has none). promptInput.backdropItems keeps
+    // an empty string for "inherit", which the guide cannot interpret.
+    const colouredBackdropItems = (promptInput.backdropItems ?? []).map((item, i) => ({
+      ...item,
+      color: sceneModel.panels[i]?.color || item.color,
+    }));
     silhouette = generateStructureSilhouette(
-      promptInput.backdropItems ?? [],
+      colouredBackdropItems,
       sceneModel.plinths.map((p) => p.size),
       (sceneModel.balloons.style ?? "none") as BalloonStyleId,
       selectedHexColors.length > 0

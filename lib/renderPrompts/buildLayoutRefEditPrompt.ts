@@ -4,10 +4,25 @@ import { getVisualLabel, renderSafeBalloonLabel, getPositiveLabel } from "./colo
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 
+// A raw hex means nothing to the edit model, and "#FFFFFF" used to collapse into
+// the same "cream-white" as an unset panel — so choosing white for one arch read
+// as no change at all (2026-09-01). Known product colours now get a plain-English
+// name, and anything unrecognised is described as a hex swatch rather than shown bare.
+const BACKDROP_COLOR_NAMES: Record<string, string> = {
+  "#ffffff": "pure bright white",
+  "#e8f4fd": "very pale ice blue",
+  "#bae6fd": "soft arctic blue",
+  "#ede9fe": "pale cool lavender",
+  "#e5e7eb": "light cool grey",
+  "#fdf2f8": "soft blush pink",
+  "#fce7f3": "pale rose pink",
+  "#f5f5f4": "warm off-white",
+};
+
 function backdropColorLabel(color: string): string {
   const c = (color || "").toLowerCase().trim();
-  if (!c || c === "#fff" || c === "#ffffff") return "cream-white";
-  return color;
+  if (!c) return "cream-white";
+  return BACKDROP_COLOR_NAMES[c] ?? `the exact colour ${c.toUpperCase()}`;
 }
 
 // Human-readable label for a shimmer color id, e.g. "gold" -> "Gold".
