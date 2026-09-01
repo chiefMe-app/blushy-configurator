@@ -288,10 +288,19 @@ export function buildLayoutRefEditPrompt(
       `detached vertical balloon column, NOT a bead chain, NOT a pearl necklace string, NOT tiny beads, ` +
       `NOT a thin single-file chain, NOT a sparse dotted border, NOT scattered or randomly floating ` +
       `balloons, NOT balloons drifting away from the arch. ` +
-      `CONNECTED MASS RULE: every single balloon must visibly touch and overlap at least one neighboring ` +
-      `balloon so each garland reads as ONE continuous connected mass — absolutely no isolated single ` +
-      `balloons, no lone balloons hovering in the air beside the garland, no small balloons poking out ` +
-      `separately from the cluster, no stray balloons detached from the mass anywhere in the scene. ` +
+      // 2026-09-01: the old "CONNECTED MASS RULE" below demanded every single
+      // balloon visibly touch AND overlap a neighbor. Single Arch has no such
+      // rule (it only asks for the same general "FULLNESS RULE" as here) and
+      // renders as a pleasant, clearly individual-balloon garland — the user's
+      // own reference for what "good" looks like. Double Arch's extra overlap
+      // mandate was the one thing making its garlands look noticeably denser
+      // and more packed/melted-together than Single Arch's. Softened to match
+      // Single Arch's tone: connected and gap-free, but not forcibly fused.
+      `Each garland reads as one connected cluster with no visible gaps in its outline — no isolated ` +
+      `single balloons floating apart from the group, no lone balloons hovering in the air beside the ` +
+      `garland, no stray balloons detached from the mass anywhere in the scene. Individual balloon ` +
+      `spheres must stay clearly distinguishable from one another, exactly like a real single-arch ` +
+      `garland — do not melt or blur neighboring balloons into one indistinct blob. ` +
       `The INNER side of each arch (the side facing the other arch) and the entire CENTER GAP between the ` +
       `two arches must stay balloon-free — no balloons of any kind in the gap, no ` +
       `balloons bridging or connecting the two arches, no balloons crossing from one arch toward the other` +
