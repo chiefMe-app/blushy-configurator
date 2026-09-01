@@ -1128,7 +1128,7 @@ export type FinalRenderState = { hasRender: boolean; isStale: boolean; generatin
 
 export default function SetupPreview({
   config, status, imageUrl, isIncremental = false, onRegenerate, showControls = true,
-  onPatchDecor, onFinalRenderStateChange,
+  onPatchDecor, onFinalRenderStateChange, onGenerateReady,
 }: {
   config: BuilderConfig; status: PreviewStatus; imageUrl: string | null;
   isIncremental?: boolean; onRegenerate: () => void; showControls?: boolean;
@@ -1137,6 +1137,10 @@ export default function SetupPreview({
   /** Optional — reports the Final Design Render's live state up to the parent
    *  (used by the Decor step to gate its Continue/Generate Render CTA). */
   onFinalRenderStateChange?: (state: FinalRenderState) => void;
+  /** Optional — hands the parent a reference to this card's own Generate
+   *  Render trigger, so an external button (the Decor step footer CTA) can
+   *  fire the exact same render pass instead of duplicating the request. */
+  onGenerateReady?: (fn: () => void) => void;
 }) {
   const themeAccent = THEMES.find((t) => t.id === config.theme)?.accent ?? "#C77DD6";
 
@@ -1185,6 +1189,11 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
     onFinalRenderStateChange?.({ hasRender: !!finalUrl, isStale, generating: finalIsLoading });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalUrl, isStale, finalIsLoading]);
+
+  useEffect(() => {
+    onGenerateReady?.(generateFinalRender);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generateFinalRender]);
 
   return (
     <div id="party-preview-card" className="space-y-4">

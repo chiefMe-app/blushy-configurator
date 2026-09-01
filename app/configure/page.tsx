@@ -210,6 +210,7 @@ export default function ConfigurePage() {
   const [finalRenderState, setFinalRenderState] = useState<FinalRenderState>({
     hasRender: false, isStale: false, generating: false,
   });
+  const [generateFinalRender, setGenerateFinalRender] = useState<(() => void) | null>(null);
 
   const theme = themeById(config.theme) ?? THEMES[0];
   const accentStyle = useMemo(
@@ -399,8 +400,9 @@ export default function ConfigurePage() {
   // non-stale render exists, the footer reverts to a normal Continue.
   const isDecorStep = step === 2;
   const decorRenderReady = finalRenderState.hasRender && !finalRenderState.isStale;
-  const scrollToPreviewCard = () => {
+  const triggerDecorGenerateRender = () => {
     document.getElementById("party-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    generateFinalRender?.();
   };
 
   const Preview = (
@@ -478,6 +480,7 @@ export default function ConfigurePage() {
                   onRegenerate={preview.regenerate}
                   onPatchDecor={patchDecor}
                   onFinalRenderStateChange={setFinalRenderState}
+                  onGenerateReady={(fn) => setGenerateFinalRender(() => fn)}
                 />
               </div>
               <PriceSummary config={config} className="hidden lg:block" />
@@ -764,7 +767,7 @@ export default function ConfigurePage() {
           isReview
             ? "Request Final Quote"
             : isDecorStep && !decorRenderReady
-            ? "✨ Generate Render"
+            ? "Generate Render"
             : "Continue"
         }
         showBack={step > 0}
@@ -773,14 +776,20 @@ export default function ConfigurePage() {
           isReview
             ? submit
             : isDecorStep && !decorRenderReady
-            ? scrollToPreviewCard
+            ? triggerDecorGenerateRender
             : () => setStep((s) => Math.min(STEPS.length - 1, s + 1))
         }
         // Theme step is a required choice — everything downstream (palette,
         // graphics, standee suggestions) is themed, so continuing without one
-        // silently applied the default theme.
-        disabled={(isReview && !canSubmit) || (step === 1 && !config.themeSelected)}
-        busy={submitting}
+        // silently applied the default theme. On Decor, the CTA is disabled
+        // while an arch panel is missing a size — generating would be a no-op.
+        disabled={
+          (isReview && !canSubmit) ||
+          (step === 1 && !config.themeSelected) ||
+          (isDecorStep && !decorRenderReady &&
+            config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId))
+        }
+        busy={submitting || (isDecorStep && finalRenderState.generating)}
       />
     </main>
   );
