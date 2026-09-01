@@ -61,8 +61,16 @@ export function calculateExactLayout(
 
   const maxHeightCm = Math.max(...items.map(it => it.heightCm ?? 200), 1);
 
-  // Max panel width per count — keeps groups tight without overflow
-  const maxPwByCount = count === 1 ? canvasW * 0.70 : count === 2 ? canvasW * 0.42 : canvasW * 0.30;
+  // Max panel width per count — keeps groups tight without overflow.
+  //
+  // 2026-09-01: the two-panel cap used to be 0.42 x canvasW, which squeezed a
+  // 120x220 arch well below its true aspect. The guide compensated by drawing
+  // multi-panel scenes on a 1.4x wider virtual canvas — but that canvas no
+  // longer matched the rendered image's aspect, so the edit model squashed the
+  // whole reference horizontally and produced flat, disc-shaped balloons. The
+  // cap is now generous; the group-scale step below keeps things on canvas and
+  // preserves aspect while doing it.
+  const maxPwByCount = count === 1 ? canvasW * 0.70 : count === 2 ? canvasW * 0.60 : canvasW * 0.36;
 
   // Tallest panel's own height budget — apex fixed at 5% of canvas height,
   // exactly the old single-panel apexFactor baseline (heightRatio=1 always
@@ -113,14 +121,18 @@ export function calculateExactLayout(
   const maxPlinthDiameterCm = hasPlinthForGap
     ? Math.max(...plinthSizes.map((s) => getPlinthDimensions(s).diameterCm))
     : 0;
-  const plinthGapPaddingPx = hasPlinthForGap ? maxPlinthDiameterCm * approxPxPerCm * 1.7 : 0;
-  const gap = count === 1 ? 0 : Math.max(6, canvasW * 0.008, plinthGapPaddingPx);
+  const plinthGapPaddingPx = hasPlinthForGap ? maxPlinthDiameterCm * approxPxPerCm * 1.25 : 0;
+  const rawGap = count === 1 ? 0 : Math.max(6, canvasW * 0.008, plinthGapPaddingPx);
 
-  // Scale group down if it overflows canvas
-  let totalGroupW = rawPanels.reduce((s, p) => s + p.pw, 0) + (count - 1) * gap;
+  // Scale group down if it overflows canvas. The gap has to shrink with the
+  // panels — scaling only the panels (the old behaviour) left a full-size gap
+  // in a smaller group, so the last panel ran off the canvas edge once the
+  // guide stopped being drawn on an over-wide virtual canvas (2026-09-01).
+  const rawTotalW = rawPanels.reduce((s, p) => s + p.pw, 0) + (count - 1) * rawGap;
   const maxGroupW = canvasW * 0.90;
-  const groupScale = totalGroupW > maxGroupW ? maxGroupW / totalGroupW : 1;
-  totalGroupW *= groupScale;
+  const groupScale = rawTotalW > maxGroupW ? maxGroupW / rawTotalW : 1;
+  const gap = rawGap * groupScale;
+  const totalGroupW = rawTotalW * groupScale;
 
   // --- Assign x positions (selection order = left-to-right) ---
   const panels: PanelLayout[] = [];
@@ -131,15 +143,20 @@ export function calculateExactLayout(
     const cx  = xCursor + pw / 2;
     xCursor  += pw + gap;
 
+    // Scale height by the same factor as width — scaling width alone (the old
+    // behaviour) squashed each panel's aspect ratio, and the edit model copied
+    // that distortion into the photograph.
+    const apexY = floorY - (floorY - raw.apexY) * groupScale;
+
     const safeXPct = ((cx - pw / 2) / canvasW) * 100;
-    const safeYPct = (raw.apexY / canvasH) * 100;
+    const safeYPct = (apexY / canvasH) * 100;
     const safeWPct = (pw / canvasW) * 100;
-    const safeHPct = ((floorY - raw.apexY) / canvasH) * 100 * 0.7;
+    const safeHPct = ((floorY - apexY) / canvasH) * 100 * 0.7;
 
     panels.push({
       idx:         raw.i,
       cx, pw,
-      apexY:       raw.apexY,
+      apexY,
       floorY,
       widthCm:     raw.wCm,
       heightCm:    raw.hCm,

@@ -146,7 +146,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "standee-truescale-floorline-v7";
+const RENDER_CACHE_VERSION = "double-arch-aspect-uniform-fill-v8";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1527,9 +1527,22 @@ forbiddenBalloonColorLabels: hasSempertexLock
   // overlay. Text sits behind standees. All stages share one working buffer.
   let outputImageUrl         = finalImageUrl;
   let workingImageBuf: Buffer | null = null;
+  // Retried: a single transient "fetch failed" here silently costs the customer
+  // their composited standees/text on an already-paid render (seen 2026-09-01),
+  // because every composite stage falls back to the bare AI image.
   const fetchFinalImage = async (): Promise<Buffer | null> => {
-    const resp = await fetch(finalImageUrl);
-    return resp.ok ? Buffer.from(await resp.arrayBuffer()) : null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const resp = await fetch(finalImageUrl);
+        if (resp.ok) return Buffer.from(await resp.arrayBuffer());
+      } catch (err) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn(`[generate-controlled-render] final image fetch attempt ${attempt + 1} failed:`, String(err));
+        }
+      }
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+    }
+    return null;
   };
 
   // ── Deterministic shimmer wall recolor ───────────────────────────────────

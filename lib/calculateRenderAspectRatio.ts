@@ -64,13 +64,19 @@ export function calculateRenderAspectRatio(
 
   if (!backdropItems || backdropItems.length === 0) return defaults;
 
-  // Overlap-aware total width:
-  // First panel contributes its full width; each additional panel adds
-  // only the visible portion (widthCm - 35 cm overlap, minimum 20 cm).
+  // Total composed width.
+  //
+  // This used to assume panels OVERLAP by 35cm, but calculateExactLayout never
+  // overlaps them — it lays them side by side with a gap wide enough for the
+  // plinth. The frame was therefore chosen for a narrower setup than the one
+  // actually drawn, so a Double Arch (120 + 100 cm plus its gap) was squeezed
+  // into a portrait frame and rendered small and squat (2026-09-01). Each
+  // extra panel now contributes its full width plus a modest separation gap.
+  const PANEL_GAP_CM = 20;
   const [first, ...rest] = backdropItems;
   const totalWidthCm =
     (first?.widthCm || 100) +
-    rest.reduce((sum, item) => sum + Math.max((item.widthCm || 100) - 35, 20), 0);
+    rest.reduce((sum, item) => sum + (item.widthCm || 100) + PANEL_GAP_CM, 0);
 
   const maxHeightCm = Math.max(...backdropItems.map((item) => item.heightCm || 200), 1);
 

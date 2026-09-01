@@ -417,12 +417,15 @@ export function generateStructureSilhouette(
   const { falImageSize } = calculateRenderAspectRatio(backdropItems);
   const [Wbase, H]       = VIEWBOX[falImageSize];
 
-  // For multi-panel setups, widen the layout canvas so calculateExactLayout's
-  // maxPwByCount cap (0.42 × canvasW) doesn't compress panel widths below their
-  // true aspect ratio. A 1.4× wider virtual canvas gives each panel enough
-  // room to render at its configured widthCm / heightCm ratio.
+  // The layout canvas must match the rendered image's aspect ratio EXACTLY.
+  // Multi-panel scenes used to be laid out on a 1.4x wider virtual canvas (to
+  // dodge the old panel-width cap); the guide PNG was then 1075x1024 while the
+  // render was 768x1024, so the edit model compressed the whole reference
+  // horizontally — arches came out narrow and balloons came out as flat discs
+  // (2026-09-01 report: "I really don't like the balloons the Double Arch
+  // produces"). calculateExactLayout now preserves aspect on its own.
   const isMultiPanel = backdropItems.length > 1;
-  const W = isMultiPanel ? Math.round(Wbase * 1.4) : Wbase;
+  const W = Wbase;
 
   const layout = calculateExactLayout(backdropItems, plinthSizes, W, H);
 
@@ -496,6 +499,18 @@ export function generateStructureSilhouette(
   // Single panel: v4 edge-only (proven to work well for single-panel).
   // Multi-panel: filled with distinct per-panel hues so the edit model can distinguish
   // each board as a separate physical object and not merge or omit panels.
+  //
+  // ...EXCEPT when every panel is the same product type (Double Arch): the
+  // distinct hues were copied straight into the photograph, so the customer
+  // got one blue arch next to one white arch even though both were ordered in
+  // the same colour (2026-09-01 report). Same-type sets share one fill; mixed
+  // sets (arch + shimmer wall) keep the distinguishing hues.
+  const uniformPanelFill =
+    backdropItems.length > 1 &&
+    backdropItems.every((i) => i.type === backdropItems[0].type);
+  const fillForPanel = (sortedIdx: number): string =>
+    MULTI_PANEL_FILLS[(uniformPanelFill ? 0 : sortedIdx) % MULTI_PANEL_FILLS.length];
+
   const sorted = [...layout.panels].sort((a, b) => a.zOrder - b.zOrder);
   sorted.forEach((panel, sortedIdx) => {
     const item      = backdropItems[panel.idx];
@@ -506,7 +521,7 @@ export function generateStructureSilhouette(
     // same neutral fill family as the paired solid arch (MULTI_PANEL_FILLS),
     // so the pair reads as one coordinated set, not a wire outline vs a board.
     if (shape === "open_arch_frame") {
-      const frameFill = MULTI_PANEL_FILLS[sortedIdx % MULTI_PANEL_FILLS.length];
+      const frameFill = fillForPanel(sortedIdx);
       const frame = openArchFramePath(panel.cx, panel.pw, panel.apexY, panel.floorY, frameFill);
       content.push(frame.svg);
       archOpenFrameFrameThicknessPx = frame.frameThicknessPx;
@@ -514,7 +529,7 @@ export function generateStructureSilhouette(
     }
 
     if (isMultiPanel) {
-      const baseFill = MULTI_PANEL_FILLS[sortedIdx % MULTI_PANEL_FILLS.length];
+      const baseFill = fillForPanel(sortedIdx);
 
       if (isShimmer) {
         // Shimmer wall: dense small tile grid so the edit model reads it as a
@@ -526,7 +541,7 @@ export function generateStructureSilhouette(
         content.push(shimmerTilePatternDefs(patId, tileSize, shimmerTileFill));
         content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, `url(#${patId})`));
       } else {
-        content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, MULTI_PANEL_FILLS[sortedIdx % MULTI_PANEL_FILLS.length]));
+        content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, fillForPanel(sortedIdx)));
       }
     } else if (isShimmer) {
       // Single shimmer wall: force a clean rectangle (never arch edges) with tile grid.
@@ -1230,7 +1245,7 @@ export function computeShimmerWallMaskGeometry(
   const { falImageSize } = calculateRenderAspectRatio(backdropItems);
   const [Wbase, H]       = VIEWBOX[falImageSize];
   const isMultiPanel     = backdropItems.length > 1;
-  const W                = isMultiPanel ? Math.round(Wbase * 1.4) : Wbase;
+  const W                = Wbase; void isMultiPanel;
   const layout           = calculateExactLayout(backdropItems, plinthSizes, W, H);
 
   const shimmerIdx = backdropItems.findIndex((item) => item.type === "shimmer_wall");
@@ -1342,7 +1357,7 @@ export function panelRectToFraction(
   const { falImageSize } = calculateRenderAspectRatio(backdropItems);
   const [Wbase, H]       = VIEWBOX[falImageSize];
   const isMultiPanel     = backdropItems.length > 1;
-  const W                = isMultiPanel ? Math.round(Wbase * 1.4) : Wbase;
+  const W                = Wbase; void isMultiPanel;
   const SCALE   = 0.80;
   const marginX = Math.round(W * (1 - SCALE) / 2);
   const marginY = Math.round(H * (1 - SCALE) / 2);
@@ -1434,7 +1449,7 @@ export function computeBackdropGroupGeometry(
   const { falImageSize } = calculateRenderAspectRatio(backdropItems);
   const [Wbase, H]       = VIEWBOX[falImageSize];
   const isMultiPanel     = backdropItems.length > 1;
-  const W                = isMultiPanel ? Math.round(Wbase * 1.4) : Wbase;
+  const W                = Wbase; void isMultiPanel;
   const layout           = calculateExactLayout(backdropItems, plinthSizes, W, H);
   if (layout.panels.length === 0) return null;
 
