@@ -729,6 +729,20 @@ const setupTemplateClause = setupTemplate
     cutoutClause+
     (plinthDesc ? `${plinthDesc}. ` : noPlinthDesc) +
     `${garlandDesc}. ` +
+    // 2026-09-01: user kept reporting flat-disc balloons across renders even
+    // after the correction-pass shading fix, because the FIRST-generate pass
+    // (this prompt) never told the model each balloon should be a shaded
+    // sphere — only that the garland mass has "layered 3D depth". A model can
+    // satisfy that by overlapping flat circles. State the per-balloon shape
+    // explicitly, matching the gradient sphere shading baked into the SVG
+    // layout guide in generateStructureSilhouette.ts.
+    (hasGarland
+      ? `Every individual balloon in the garland renders as a real inflated latex sphere: fully round, ` +
+        `with a soft directional highlight on its lit side and gentle shadow gradient toward its rim, giving it ` +
+        `visible three-dimensional volume. Do not render any balloon as a flat coin, flat disc, flat circle, ` +
+        `paper cutout, or sticker shape — every balloon must look physically round and inflated, matching a ` +
+        `real photograph of a balloon garland. `
+      : "") +
     multiPanelNegs +
     shimmerNegs +
     neutralStyleClause +

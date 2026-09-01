@@ -146,7 +146,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "strict-correction-preserve-shading-v12";
+const RENDER_CACHE_VERSION = "explicit-balloon-sphere-shape-v13";
 
 interface RenderCacheEntry {
   imageUrl: string;
