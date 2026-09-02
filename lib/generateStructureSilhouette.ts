@@ -842,12 +842,12 @@ export function generateStructureSilhouette(
         // that still overlap their neighbors), halves the jitter, and pulls
         // the crown's outer depth lane in — every guide balloon then overlaps
         // the connected mass, so nothing reads as a stray floating balloon.
-        // `matchSingleArchProportions` (2026-09-02) makes a narrow panel draw
+        // `singleArchLook` (2026-09-02) makes a narrow panel draw
         // the same garland Single Arch draws, in panel-relative terms — see
         // the SINGLE_ARCH_RATIO note on the radii below.
         const drawThickOrganicMainGarland = (
           p: typeof layout.panels[0], side: "left" | "right", colorOffset: number,
-          tight = false, matchSingleArchProportions = false,
+          tight = false, singleArchLook = false,
         ): { count: number; minR: number; maxR: number; lanes: number } => {
           const dir       = side === "left" ? -1 : 1;
           const panelEdge = p.cx + dir * (p.pw / 2);
@@ -877,7 +877,7 @@ export function generateStructureSilhouette(
           // garland in panel-relative terms — "like the second one, mirrored".
           const SINGLE_ARCH_RATIO = { L: 0.124, M: 0.084, S: 0.055, X: 0.198 };
           const r = (capped: number, ratio: number) =>
-            matchSingleArchProportions ? p.pw * ratio : capped;
+            singleArchLook ? p.pw * ratio : capped;
 
           const rLarge  = r(Math.max(20, Math.min(50, p.pw * 0.17)), SINGLE_ARCH_RATIO.L);
           const rMed    = r(Math.max(14, Math.min(34, p.pw * 0.12)), SINGLE_ARCH_RATIO.M);
@@ -916,7 +916,14 @@ export function generateStructureSilhouette(
           // 12in, fewer 5in"): the S slot stops being a 5-inch filler and
           // becomes a near-medium balloon, so the band has no thin gappy
           // stretches. 5-inch balloons remain only as prompt-level accents.
-          const sizeR = { X: rXL, L: rLarge, M: rMed, S: tight ? rMed * 0.86 : rSmall };
+          // tight mode inflates the small size to 0.86 x medium, which deletes
+          // the 5-inch accent. singleArchLook keeps the real accent so tiny
+          // balloons can sit tucked between big ones, which is what makes the
+          // reference photo's garland read as organic rather than as a coil.
+          const sizeR = {
+            X: rXL, L: rLarge, M: rMed,
+            S: tight && !singleArchLook ? rMed * 0.86 : rSmall,
+          };
           // Tight (double_arch) is also BOTTOM-HEAVY (2026-07-19): a real
           // render at uniform density read as an evenly spaced side border /
           // trim rather than a decorator garland. The base cluster is
@@ -948,12 +955,22 @@ export function generateStructureSilhouette(
           // Bigger balloons need proportionally fewer of them to fill the same
           // climb — otherwise they simply pile up on top of each other.
           const climbN  = 30;
-          const laneOffsets = tight
-            ? [-rLarge * 0.5, rLarge * 0.1, rLarge * 0.7, rLarge * 1.3]
-            : [-rLarge * 0.5, rLarge * 0.15, rLarge * 0.85, rLarge * 1.5, rLarge * 2.1];
-          const laneSizes: ("L" | "M" | "S")[] = tight
-            ? ["M", "L", "L", "M"] // bigger overall body (2026-07-20 feedback)
-            : ["M", "L", "M", "S", "S"];
+          // singleArchLook widens the band (2.6 vs 1.8 radii) for front-to-back
+          // depth, and cycles giant / small / large / medium so every four
+          // balloons up the climb span the full 36in..5in range. An earlier
+          // attempt at this cycle produced huge merged blobs, but that was
+          // because it ran on the oversized radii since corrected above — with
+          // Single Arch's proportions the giant is only 0.198 of panel width.
+          const laneOffsets = singleArchLook
+            ? [-rLarge * 1.0, rLarge * 0.0, rLarge * 0.8, rLarge * 1.6]
+            : tight
+              ? [-rLarge * 0.5, rLarge * 0.1, rLarge * 0.7, rLarge * 1.3]
+              : [-rLarge * 0.5, rLarge * 0.15, rLarge * 0.85, rLarge * 1.5, rLarge * 2.1];
+          const laneSizes: ("X" | "L" | "M" | "S")[] = singleArchLook
+            ? ["X", "S", "L", "M"]
+            : tight
+              ? ["M", "L", "L", "M"] // bigger overall body (2026-07-20 feedback)
+              : ["M", "L", "M", "S", "S"];
           const wobbleMod = tight ? 7 : 13;
           for (let i = 0; i < climbN; i++) {
             const t = i / (climbN - 1);
@@ -965,7 +982,10 @@ export function generateStructureSilhouette(
             const rTaper = tight ? 1.3 - 0.55 * tEase : 1; // balloons shrink as they rise
             const x = edgeX + dir * (laneOffsets[lane] * spread + wobble);
             const sz = laneSizes[lane];
-            put(x, y, sizeR[sz] * rTaper);
+            // rTaper peaks at 1.3 low down. Applied to the giant that would
+            // push it past the base anchors and back into blob territory, so
+            // the giant is never enlarged — only tapered as it rises.
+            put(x, y, sizeR[sz] * (sz === "X" ? Math.min(rTaper, 1) : rTaper));
           }
 
           // 3) Crown curl — balloons wrapping the outer shoulder over the
