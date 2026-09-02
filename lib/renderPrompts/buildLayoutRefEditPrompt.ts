@@ -514,6 +514,13 @@ export function buildLayoutRefEditPrompt(
       `sparingly as tiny accents tucked between big balloons, never as a large group. ` +
       `FULLNESS RULE: every part of each garland is plump and packed — no thin, sparse, or gappy stretches ` +
       `anywhere along its length, and no section that narrows to a single file of balloons. ` +
+      // 2026-09-02: fullness was being read as "cram in as many balloons as
+      // possible", producing a dense column of small merged circles. Fullness
+      // comes from BIG balloons, not from many small ones.
+      `Achieve that fullness with FEWER, LARGER balloons — not with a large number of small ones. Each ` +
+      `balloon is a big, generously sized sphere whose own outline stays clearly readable against its ` +
+      `neighbours; they nest and touch, but never dissolve into an indistinct mass of small overlapping ` +
+      `circles. ` +
       `Any balloons resting on the floor must be part of their garland's base cluster, visually connected ` +
       `to and touching that garland — never scattered, detached, or floating separately on the floor.`
     : ` Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
