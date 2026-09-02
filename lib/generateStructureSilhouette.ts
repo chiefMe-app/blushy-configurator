@@ -857,9 +857,9 @@ export function generateStructureSilhouette(
           p: typeof layout.panels[0], side: "left" | "right", colorOffset: number,
           tight = false, sizeScale = 1,
         ): { count: number; minR: number; maxR: number; lanes: number } => {
-          const dir   = side === "left" ? -1 : 1;
-          const edgeX = p.cx + dir * (p.pw / 2);
-          const Hp    = p.floorY - p.apexY;
+          const dir       = side === "left" ? -1 : 1;
+          const panelEdge = p.cx + dir * (p.pw / 2);
+          const Hp        = p.floorY - p.apexY;
           let n = 0;
           let minR = Infinity, maxR = 0;
           const put = (bx: number, by: number, br: number) => {
@@ -879,6 +879,21 @@ export function generateStructureSilhouette(
           // (2026-07-20 product feedback: balloons too small, not enough mass
           // low down; sizes must read as 36" / 12" / 5").
           const rXL     = Math.max(30, Math.min(80, p.pw * 0.28)) * sizeScale;
+
+          // 2026-09-02: rendering the guide to PNG and actually LOOKING at it
+          // finally explained the flat-disc bug that five prompt/count fixes
+          // could not touch. Three of the four climb lanes, and most of the
+          // base cluster, carry POSITIVE (outward) offsets from panelEdge, so
+          // the garland mass was being drawn almost entirely in the empty wall
+          // BESIDE the arch instead of on it — a free-standing tower of hugely
+          // overlapping circles whose union silhouette is a scalloped column.
+          // The edit model was reproducing that guide faithfully; the render
+          // was correct, the guide was wrong. (Line ~1066 records the same
+          // "line sat OUTSIDE the panel edge" failure from 2026-07-18.)
+          // Anchoring the offsets about one balloon inboard of the edge makes
+          // the mass straddle the arch, which is how a decorator actually ties
+          // a garland on, and is what the working Single Arch guide looks like.
+          const edgeX = panelEdge - dir * rLarge * 0.9;
 
           // 1) Floor/base cluster — 16 heavily overlapping balloons mounded at
           //    the outer base, several large anchors for a dense floor pile.
@@ -1071,16 +1086,15 @@ export function generateStructureSilhouette(
           // shoulder — heavily overlapping large/medium/small radii scaled
           // to the panel's own width, a genuine 2-D organic mass rather than
           // any dotted path. Outer sides only — the center gap stays clean.
-          // 2026-09-02: sizeScale 1.4 — a double-arch panel is roughly half the
-          // width of a single-arch one, so its balloons were drawn at half the
-          // size while the climb kept single arch's 30-balloon count. Scaling
-          // up the radii (and thereby down the count, to ~21) restores the
-          // Single Arch proportions the customer confirmed as the target look:
-          // fewer, larger, individually readable spheres instead of a dense
-          // column of small overlapping circles.
+          // 2026-09-02: sizeScale was briefly raised to 1.4 on the theory that
+          // double-arch balloons were too small. Rendering the guide to PNG
+          // disproved that — at 1.4 each balloon was about a third of the
+          // arch's width and the garland dwarfed the panel it was supposed to
+          // decorate. Back to 1.0; the real defect was the outward anchoring
+          // fixed in drawThickOrganicMainGarland, not the balloon size.
           const pair = [...archPanels].sort((a, b) => a.cx - b.cx);
-          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true, 1.4).count;
-          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true, 1.4).count;
+          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true).count;
+          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true).count;
         } else if (framePanel && archPanels.length === 1) {
           // Arch + Open Frame: the SOLID ARCH carries a thick organic-mass
           // garland (floor base → outer edge climb → over the crown, ~62

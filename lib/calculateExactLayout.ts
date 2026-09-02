@@ -129,7 +129,17 @@ export function calculateExactLayout(
   // in a smaller group, so the last panel ran off the canvas edge once the
   // guide stopped being drawn on an over-wide virtual canvas (2026-09-01).
   const rawTotalW = rawPanels.reduce((s, p) => s + p.pw, 0) + (count - 1) * rawGap;
-  const maxGroupW = canvasW * 0.90;
+  // 2026-09-02: the panel group used to be allowed 90% of the canvas, leaving
+  // only ~5% (38px of 768) of clear wall on each side. Multi-panel setups hang
+  // a balloon garland off each OUTER edge, and that garland needs roughly 75px
+  // — so it was drawn straight off the edge of the canvas and clipped, which
+  // is why Double Arch's garlands rendered as flat towers cut down one side
+  // instead of rounded balloons (measured by rendering the guide to PNG:
+  // garland xSpan -33..215 on a 0..768 canvas). The frame has to hold the
+  // whole installation, arches AND garlands, exactly like a real venue photo,
+  // so multi-panel groups now reserve that margin. Single-panel scenes are
+  // unchanged — their panel cap already leaves room and they render correctly.
+  const maxGroupW = canvasW * (count === 1 ? 0.90 : 0.78);
   const groupScale = rawTotalW > maxGroupW ? maxGroupW / rawTotalW : 1;
   const gap = rawGap * groupScale;
   const totalGroupW = rawTotalW * groupScale;
