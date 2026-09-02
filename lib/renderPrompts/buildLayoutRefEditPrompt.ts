@@ -262,52 +262,40 @@ export function buildLayoutRefEditPrompt(
   // Single Arch designs" per product direction. Matches the guide-drawing
   // change in generateStructureSilhouette.ts (thick-organic-mass guide)
   // and the catalog's double_arch garlandInstruction.
+  // 2026-09-02: this clause used to be ~45 lines of stacked, shouty negation
+  // (ALL-CAPS rule names plus eleven consecutive "NOT a ..." items). Four
+  // render attempts fixing wording, guide shading and balloon counts all
+  // failed to stop Double Arch's garlands coming back as flat overlapping
+  // discs, while Single Arch — whose garland clause is a single short,
+  // positive paragraph — kept rendering correctly from the SAME guide
+  // function. That matches a failure mode this codebase has already
+  // documented three times (see the shimmer notes at the top of this file
+  // and in buildStrictCorrectionPrompt): heavy repeated negation makes the
+  // edit model stop elaborating the 2-D guide and start copying it
+  // literally, and a literal copy of a garland guide is exactly a stack of
+  // flat overlapping circles. Double Arch is the only layout carrying this
+  // much negation (it also has SIZE LOCK, SEPARATION LOCK, PLINTH HARD LOCK
+  // and the multi-panel negatives), so it was the only one that broke.
+  // Rewritten as the proven Single Arch paragraph, mirrored onto both
+  // arches, and kept positive. The structural locks are left alone — they
+  // guard separately-confirmed bugs — but the garland is described, not
+  // forbidden.
   const doubleArchMirroredGarlandClause = isDoubleArchScene
-    ? ` DOUBLE ARCH MIRRORED GARLAND: each of the two arch panels has its own premium organic balloon ` +
-      `garland, built the exact same proven way as a classic single-arch garland, mirrored between the ` +
-      `two arches — this must look like two mirrored Single Arch designs, not a custom double-arch treatment. ` +
-      `ATTACHMENT IS MANDATORY: each garland is physically installed ON its arch board — the balloons ` +
-      `press against, touch, and slightly overlap the arch panel's outer edge along the garland's whole ` +
-      `length, exactly like a real decorator ties a garland onto the board itself. ` +
-      `The garland must never float in the empty wall space beside the arch, never stand apart from the ` +
-      `arch as its own separate column, and never leave a visible gap between the balloons and the arch edge. ` +
-      `EACH GARLAND IS BOTTOM-HEAVY: its largest and densest mass is the floor-level base cluster — a fat ` +
-      `mound of big statement balloons pooled at the arch's outer base corner. From that mound the garland ` +
-      `rises in a lush organic upward flow along the outer edge, gradually TAPERING as it climbs — the band ` +
-      `gets narrower and the balloons get smaller with height — and finishes as a lighter, more delicate ` +
-      `crown/shoulder curl of medium and small balloons over the top of the arch. ` +
-      `The LEFT arch's garland lives on its OUTER LEFT side: dense floor mound at the bottom-left outer ` +
-      `corner, organic tapering climb up the left outer edge, light crown curl over the top-left ` +
-      `shoulder — stopping well before the center gap. ` +
-      `The RIGHT arch's garland mirrors this exactly on its OUTER RIGHT side: dense floor mound at the ` +
-      `bottom-right outer corner, organic tapering climb up the right outer edge, light crown curl over ` +
-      `the top-right shoulder — stopping well before the center gap. ` +
-      `Both garlands are clustered organic masses with real visual width, layered 3D depth, and clearly ` +
-      `varied balloon sizes nested together, premium event-decorator style — NOT an evenly spaced side ` +
-      `border, NOT a uniform balloon strip or trim, NOT the same thickness from bottom to top, NOT a ` +
-      `detached vertical balloon column, NOT a bead chain, NOT a pearl necklace string, NOT tiny beads, ` +
-      `NOT a thin single-file chain, NOT a sparse dotted border, NOT scattered or randomly floating ` +
-      `balloons, NOT balloons drifting away from the arch. ` +
-      // 2026-09-01: the old "CONNECTED MASS RULE" below demanded every single
-      // balloon visibly touch AND overlap a neighbor. Single Arch has no such
-      // rule (it only asks for the same general "FULLNESS RULE" as here) and
-      // renders as a pleasant, clearly individual-balloon garland — the user's
-      // own reference for what "good" looks like. Double Arch's extra overlap
-      // mandate was the one thing making its garlands look noticeably denser
-      // and more packed/melted-together than Single Arch's. Softened to match
-      // Single Arch's tone: connected and gap-free, but not forcibly fused.
-      `Each garland reads as one connected cluster with no visible gaps in its outline — no isolated ` +
-      `single balloons floating apart from the group, no lone balloons hovering in the air beside the ` +
-      `garland, no stray balloons detached from the mass anywhere in the scene. Individual balloon ` +
-      `spheres must stay clearly distinguishable from one another, exactly like a real single-arch ` +
-      `garland — do not melt or blur neighboring balloons into one indistinct blob. ` +
-      `The INNER side of each arch (the side facing the other arch) and the entire CENTER GAP between the ` +
-      `two arches must stay balloon-free — no balloons of any kind in the gap, no ` +
-      `balloons bridging or connecting the two arches, no balloons crossing from one arch toward the other` +
+    ? ` Each of the two arches carries its own premium organic balloon garland, with large, medium and ` +
+      `small balloons nested together in lush clustered bunches, installed on that arch's own OUTER side ` +
+      `edge — the left arch's garland on its left outer edge, the right arch's garland mirroring it on its ` +
+      `right outer edge. Each garland flows naturally and continuously from the arch's top outer corner, ` +
+      `down along the outer side edge, and ends in a connected floor-level cluster at that arch's outer ` +
+      `bottom corner — a single smooth top-to-bottom flow, tied onto the board itself so the balloons touch ` +
+      `and slightly overlap the arch's outer edge along the whole length. ` +
+      `Each garland is bottom-heavy: its fullest, largest balloons pool in the floor cluster at the outer ` +
+      `base, and the band grows lighter and slimmer as it rises into a delicate crown curl over the top ` +
+      `outer shoulder. Both garlands are clustered organic masses with real visual width, layered depth and ` +
+      `clearly varied balloon sizes, premium event-decorator style. Not a thin single-file chain. ` +
+      `The inner side of each arch and the centre gap between the two arches stay clear of balloons` +
       (sceneModel.plinths.length > 0
-        ? ` (balloon-free does NOT mean empty: the white cylindrical display plinth stands in this gap and must remain). `
-        : `. `) +
-      `Each arch's garland is fully independent from the other's — they must never touch, merge, or share balloons.`
+        ? ` — the white cylindrical display plinth stands alone in that gap and remains. `
+        : `. `)
     : "";
 
   // ── Plinth description ────────────────────────────────────────────────────
@@ -498,31 +486,21 @@ export function buildLayoutRefEditPrompt(
   // sparse bead-chain than the intended "two mirrored Single Arch designs").
   // Making the requirement explicitly per-garland fixes that dilution.
   const balloonSizeDesc = isDoubleArchScene
-    ? ` Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
-      `standard balloons, and small 5 inch filler balloons — for EACH of the two garlands independently, ` +
-      `not divided or shared between them. ` +
-      `EACH garland (left arch's garland AND right arch's garland, separately) must include its own at ` +
-      `least 5 visible 36 inch statement balloons — 10 total 36 inch balloons across the full scene, ` +
-      `5 per side, never fewer on either side. ` +
-      `MOST 36 inch balloons sit LOW: seated in and just above each garland's floor-level base mound. ` +
-      `The lower half of each garland carries most of its volume — the biggest, densest balloons are at ` +
-      `and near the floor; the upper half stays lighter with progressively smaller balloons. ` +
-      `Do not thin out, shrink, or reduce either garland's balloon count or size to compensate for having ` +
-      `two garlands in the scene — both garlands must independently look as full and dense as a single ` +
-      `standalone Single Arch garland. ` +
-      `36 inch balloons must be clearly larger than all others. Use only a FEW 5 inch balloons — they appear ` +
-      `sparingly as tiny accents tucked between big balloons, never as a large group. ` +
-      `FULLNESS RULE: every part of each garland is plump and packed — no thin, sparse, or gappy stretches ` +
-      `anywhere along its length, and no section that narrows to a single file of balloons. ` +
-      // 2026-09-02: fullness was being read as "cram in as many balloons as
-      // possible", producing a dense column of small merged circles. Fullness
-      // comes from BIG balloons, not from many small ones.
-      `Achieve that fullness with FEWER, LARGER balloons — not with a large number of small ones. Each ` +
-      `balloon is a big, generously sized sphere whose own outline stays clearly readable against its ` +
-      `neighbours; they nest and touch, but never dissolve into an indistinct mass of small overlapping ` +
-      `circles. ` +
-      `Any balloons resting on the floor must be part of their garland's base cluster, visually connected ` +
-      `to and touching that garland — never scattered, detached, or floating separately on the floor.`
+    ? // 2026-09-02: trimmed for the same reason as the garland clause above —
+      // this was the longest, most rule-laden size paragraph in the file and
+      // fed the negation overload that made the model copy the guide as flat
+      // discs. Keeps the two points that came from real fixes (per-garland
+      // independence, and big balloons sitting low) and drops the rest.
+      ` Use exactly three balloon size families in EACH of the two garlands independently, not divided or ` +
+      `shared between them: several large 36 inch statement balloons, many 12 inch standard balloons, and ` +
+      `a few small 5 inch accent balloons. Each garland has its own at least 5 visible 36 inch statement ` +
+      `balloons, clearly larger than everything around them, and most of them sit low — seated in and just ` +
+      `above that garland's floor-level base mound, so the lower half carries the volume and the upper half ` +
+      `stays lighter. Both garlands independently look as full as a standalone Single Arch garland. ` +
+      `That fullness comes from big, generously sized balloons whose own round outlines stay clearly ` +
+      `readable against their neighbours — they nest and touch, rather than being a large number of small ` +
+      `circles. Any balloons resting on the floor are part of their garland's base cluster, touching and ` +
+      `visually connected to it.`
     : ` Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
       `standard balloons, and a FEW small 5 inch accent balloons. Include at least 6 visible 36 inch statement ` +
       `balloons distributed through the garland at the top, side, and base. 36 inch balloons must be clearly ` +
