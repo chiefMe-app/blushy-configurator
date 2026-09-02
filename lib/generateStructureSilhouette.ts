@@ -855,7 +855,7 @@ export function generateStructureSilhouette(
         // separable spheres — the proven Single Arch look at any panel size.
         const drawThickOrganicMainGarland = (
           p: typeof layout.panels[0], side: "left" | "right", colorOffset: number,
-          tight = false, sizeScale = 1,
+          tight = false, sizeScale = 1, varied = false,
         ): { count: number; minR: number; maxR: number; lanes: number } => {
           const dir       = side === "left" ? -1 : 1;
           const panelEdge = p.cx + dir * (p.pw / 2);
@@ -907,7 +907,17 @@ export function generateStructureSilhouette(
           // 12in, fewer 5in"): the S slot stops being a 5-inch filler and
           // becomes a near-medium balloon, so the band has no thin gappy
           // stretches. 5-inch balloons remain only as prompt-level accents.
-          const sizeR = { X: rXL, L: rLarge, M: rMed, S: tight ? rMed * 0.86 : rSmall };
+          // 2026-09-02: tight mode inflated S to 0.86 x rMed, which removed the
+          // 5-inch accent size entirely, and the tight climb below used only M
+          // and L — two nearly equal radii. The garland therefore had almost no
+          // size contrast and rendered as a uniform coil of same-sized
+          // "sausages", which is exactly what the customer rejected when
+          // comparing it against the Single Arch photo. `varied` restores the
+          // real small accent so big and small balloons sit next to each other.
+          const sizeR = {
+            X: rXL, L: rLarge, M: rMed,
+            S: tight && !varied ? rMed * 0.86 : rSmall,
+          };
           // Tight (double_arch) is also BOTTOM-HEAVY (2026-07-19): a real
           // render at uniform density read as an evenly spaced side border /
           // trim rather than a decorator garland. The base cluster is
@@ -939,12 +949,23 @@ export function generateStructureSilhouette(
           // Bigger balloons need proportionally fewer of them to fill the same
           // climb — otherwise they simply pile up on top of each other.
           const climbN  = Math.max(12, Math.round(30 / sizeScale));
-          const laneOffsets = tight
-            ? [-rLarge * 0.5, rLarge * 0.1, rLarge * 0.7, rLarge * 1.3]
-            : [-rLarge * 0.5, rLarge * 0.15, rLarge * 0.85, rLarge * 1.5, rLarge * 2.1];
-          const laneSizes: ("L" | "M" | "S")[] = tight
-            ? ["M", "L", "L", "M"] // bigger overall body (2026-07-20 feedback)
-            : ["M", "L", "M", "S", "S"];
+          // `varied` also spreads the lanes wider (2.6 vs 1.8 radii) so the
+          // climb reads as a cluster with front-to-back depth rather than a
+          // single-file coil — the other half of the reference photo's look.
+          const laneOffsets = varied
+            ? [-rLarge * 1.0, rLarge * 0.0, rLarge * 0.8, rLarge * 1.6]
+            : tight
+              ? [-rLarge * 0.5, rLarge * 0.1, rLarge * 0.7, rLarge * 1.3]
+              : [-rLarge * 0.5, rLarge * 0.15, rLarge * 0.85, rLarge * 1.5, rLarge * 2.1];
+          // `varied` cycles giant / small / large / medium so every four
+          // balloons up the climb span the full 5in..36in range, giving the
+          // dramatic size contrast of the reference Single Arch photo instead
+          // of a uniform stack.
+          const laneSizes: ("X" | "L" | "M" | "S")[] = varied
+            ? ["X", "S", "L", "M"]
+            : tight
+              ? ["M", "L", "L", "M"] // bigger overall body (2026-07-20 feedback)
+              : ["M", "L", "M", "S", "S"];
           const wobbleMod = tight ? 7 : 13;
           for (let i = 0; i < climbN; i++) {
             const t = i / (climbN - 1);
@@ -1093,8 +1114,8 @@ export function generateStructureSilhouette(
           // decorate. Back to 1.0; the real defect was the outward anchoring
           // fixed in drawThickOrganicMainGarland, not the balloon size.
           const pair = [...archPanels].sort((a, b) => a.cx - b.cx);
-          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true).count;
-          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true).count;
+          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true, 1, true).count;
+          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true, 1, true).count;
         } else if (framePanel && archPanels.length === 1) {
           // Arch + Open Frame: the SOLID ARCH carries a thick organic-mass
           // garland (floor base → outer edge climb → over the crown, ~62
