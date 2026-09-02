@@ -842,20 +842,12 @@ export function generateStructureSilhouette(
         // that still overlap their neighbors), halves the jitter, and pulls
         // the crown's outer depth lane in — every guide balloon then overlaps
         // the connected mass, so nothing reads as a stray floating balloon.
-        // `sizeScale` (2026-09-02): every balloon radius here is a fraction of
-        // the panel's own width, but the climb/crown COUNTS are fixed numbers.
-        // A double-arch panel is far narrower than a single-arch one, so it was
-        // getting single-arch's 30-balloon climb at roughly half the balloon
-        // size — ~30 small circles packed into a band barely one balloon wide,
-        // which the edit model reproduced as a mushy column of overlapping
-        // flat discs (2026-09-01/02 product feedback: "too many balloons,
-        // they've merged into each other; make it look like Single Arch").
-        // Passing a scale > 1 enlarges every balloon and proportionally thins
-        // the climb and crown, so a small panel gets FEWER, BIGGER, clearly
-        // separable spheres — the proven Single Arch look at any panel size.
+        // `matchSingleArchProportions` (2026-09-02) makes a narrow panel draw
+        // the same garland Single Arch draws, in panel-relative terms — see
+        // the SINGLE_ARCH_RATIO note on the radii below.
         const drawThickOrganicMainGarland = (
           p: typeof layout.panels[0], side: "left" | "right", colorOffset: number,
-          tight = false, sizeScale = 1, varied = false,
+          tight = false, matchSingleArchProportions = false,
         ): { count: number; minR: number; maxR: number; lanes: number } => {
           const dir       = side === "left" ? -1 : 1;
           const panelEdge = p.cx + dir * (p.pw / 2);
@@ -870,15 +862,32 @@ export function generateStructureSilhouette(
           };
 
           // Radius scale relative to panel width — large/medium/small anchors.
-          const rLarge  = Math.max(20, Math.min(50, p.pw * 0.17)) * sizeScale;
-          const rMed    = Math.max(14, Math.min(34, p.pw * 0.12)) * sizeScale;
-          const rSmall  = Math.max(9,  Math.min(22, p.pw * 0.08)) * sizeScale;
+          //
+          // 2026-09-02, the actual root cause of the Double Arch balloon
+          // complaints. These formulas are capped in ABSOLUTE pixels, and a
+          // Single Arch panel is wide enough (403px) to hit every cap:
+          // 403*0.17=68 clamps to 50, 403*0.28=113 clamps to 80. So Single
+          // Arch really draws balloons at 0.124 and 0.198 of its panel width.
+          // A Double Arch panel is narrow (266px / 222px) and never reaches a
+          // cap, so it uses the raw 0.17 and 0.28 — making its balloons 41%
+          // larger RELATIVE TO THEIR ARCH than the layout the customer
+          // approved. That is the oversized, merged-blob look, and it has been
+          // there since the caps were tuned for one panel. Double Arch now
+          // reuses Single Arch's realised ratios, so its garland is the same
+          // garland in panel-relative terms — "like the second one, mirrored".
+          const SINGLE_ARCH_RATIO = { L: 0.124, M: 0.084, S: 0.055, X: 0.198 };
+          const r = (capped: number, ratio: number) =>
+            matchSingleArchProportions ? p.pw * ratio : capped;
+
+          const rLarge  = r(Math.max(20, Math.min(50, p.pw * 0.17)), SINGLE_ARCH_RATIO.L);
+          const rMed    = r(Math.max(14, Math.min(34, p.pw * 0.12)), SINGLE_ARCH_RATIO.M);
+          const rSmall  = r(Math.max(9,  Math.min(22, p.pw * 0.08)), SINGLE_ARCH_RATIO.S);
           // 36-inch statement anchor (tight/double-arch only): a real 36"
           // balloon is ~3x a 12" one. The guide must SHOW that scale — with
           // only L/M/S circles the model rendered a uniform mid-size garland
           // (2026-07-20 product feedback: balloons too small, not enough mass
           // low down; sizes must read as 36" / 12" / 5").
-          const rXL     = Math.max(30, Math.min(80, p.pw * 0.28)) * sizeScale;
+          const rXL     = r(Math.max(30, Math.min(80, p.pw * 0.28)), SINGLE_ARCH_RATIO.X);
 
           // 2026-09-02: rendering the guide to PNG and actually LOOKING at it
           // finally explained the flat-disc bug that five prompt/count fixes
@@ -907,17 +916,7 @@ export function generateStructureSilhouette(
           // 12in, fewer 5in"): the S slot stops being a 5-inch filler and
           // becomes a near-medium balloon, so the band has no thin gappy
           // stretches. 5-inch balloons remain only as prompt-level accents.
-          // 2026-09-02: tight mode inflated S to 0.86 x rMed, which removed the
-          // 5-inch accent size entirely, and the tight climb below used only M
-          // and L — two nearly equal radii. The garland therefore had almost no
-          // size contrast and rendered as a uniform coil of same-sized
-          // "sausages", which is exactly what the customer rejected when
-          // comparing it against the Single Arch photo. `varied` restores the
-          // real small accent so big and small balloons sit next to each other.
-          const sizeR = {
-            X: rXL, L: rLarge, M: rMed,
-            S: tight && !varied ? rMed * 0.86 : rSmall,
-          };
+          const sizeR = { X: rXL, L: rLarge, M: rMed, S: tight ? rMed * 0.86 : rSmall };
           // Tight (double_arch) is also BOTTOM-HEAVY (2026-07-19): a real
           // render at uniform density read as an evenly spaced side border /
           // trim rather than a decorator garland. The base cluster is
@@ -948,24 +947,13 @@ export function generateStructureSilhouette(
           //    with height (see comment above).
           // Bigger balloons need proportionally fewer of them to fill the same
           // climb — otherwise they simply pile up on top of each other.
-          const climbN  = Math.max(12, Math.round(30 / sizeScale));
-          // `varied` also spreads the lanes wider (2.6 vs 1.8 radii) so the
-          // climb reads as a cluster with front-to-back depth rather than a
-          // single-file coil — the other half of the reference photo's look.
-          const laneOffsets = varied
-            ? [-rLarge * 1.0, rLarge * 0.0, rLarge * 0.8, rLarge * 1.6]
-            : tight
-              ? [-rLarge * 0.5, rLarge * 0.1, rLarge * 0.7, rLarge * 1.3]
-              : [-rLarge * 0.5, rLarge * 0.15, rLarge * 0.85, rLarge * 1.5, rLarge * 2.1];
-          // `varied` cycles giant / small / large / medium so every four
-          // balloons up the climb span the full 5in..36in range, giving the
-          // dramatic size contrast of the reference Single Arch photo instead
-          // of a uniform stack.
-          const laneSizes: ("X" | "L" | "M" | "S")[] = varied
-            ? ["X", "S", "L", "M"]
-            : tight
-              ? ["M", "L", "L", "M"] // bigger overall body (2026-07-20 feedback)
-              : ["M", "L", "M", "S", "S"];
+          const climbN  = 30;
+          const laneOffsets = tight
+            ? [-rLarge * 0.5, rLarge * 0.1, rLarge * 0.7, rLarge * 1.3]
+            : [-rLarge * 0.5, rLarge * 0.15, rLarge * 0.85, rLarge * 1.5, rLarge * 2.1];
+          const laneSizes: ("L" | "M" | "S")[] = tight
+            ? ["M", "L", "L", "M"] // bigger overall body (2026-07-20 feedback)
+            : ["M", "L", "M", "S", "S"];
           const wobbleMod = tight ? 7 : 13;
           for (let i = 0; i < climbN; i++) {
             const t = i / (climbN - 1);
@@ -989,7 +977,7 @@ export function generateStructureSilhouette(
           const arcCy = p.apexY + rArc;
           const angFrom = side === "left" ? 178 : 2;
           const angTo   = side === "left" ? 268 : -88;
-          const crownN = Math.max(6, Math.round((tight ? 11 : 16) / sizeScale));
+          const crownN = tight ? 11 : 16;
           for (let i = 0; i < crownN; i++) {
             const t   = i / (crownN - 1);
             const ang = ((angFrom + (angTo - angFrom) * t) * Math.PI) / 180;
@@ -1107,15 +1095,15 @@ export function generateStructureSilhouette(
           // shoulder — heavily overlapping large/medium/small radii scaled
           // to the panel's own width, a genuine 2-D organic mass rather than
           // any dotted path. Outer sides only — the center gap stays clean.
-          // 2026-09-02: sizeScale was briefly raised to 1.4 on the theory that
-          // double-arch balloons were too small. Rendering the guide to PNG
-          // disproved that — at 1.4 each balloon was about a third of the
-          // arch's width and the garland dwarfed the panel it was supposed to
-          // decorate. Back to 1.0; the real defect was the outward anchoring
-          // fixed in drawThickOrganicMainGarland, not the balloon size.
+          // Both arches draw Single Arch's exact garland recipe, mirrored, at
+          // Single Arch's panel-relative balloon size. Two experiments in
+          // between — scaling balloons UP by 1.4, and a high-contrast
+          // giant/small lane cycle — both made it worse and are reverted; the
+          // measured defect was that these narrow panels miss the absolute
+          // pixel caps that quietly shrink Single Arch's balloons.
           const pair = [...archPanels].sort((a, b) => a.cx - b.cx);
-          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true, 1, true).count;
-          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true, 1, true).count;
+          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true, true).count;
+          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true, true).count;
         } else if (framePanel && archPanels.length === 1) {
           // Arch + Open Frame: the SOLID ARCH carries a thick organic-mass
           // garland (floor base → outer edge climb → over the crown, ~62
