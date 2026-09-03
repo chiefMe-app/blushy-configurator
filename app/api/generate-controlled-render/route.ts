@@ -113,22 +113,19 @@ const SHIMMER_RECOLOR_ENABLED = process.env.ENABLE_SHIMMER_RECOLOR === "true";
 // This v2 overlay code stays intact as the fallback if the AI plinth
 // regresses to glass/omitted again.
 //
-// RE-ENABLED 2026-09-03 — that fallback case has arrived, and the tradeoff
-// has changed. Asking the AI for the plinth costs a second full generation
-// (the injection pass), and that pass was measurably destroying the balloons:
-// with it on, Double Arch rendered mushy merged sausages; the guide was by
-// then proven identical to Single Arch's, so the extra generation was the
-// only remaining difference. It is the same mechanism recorded for the
-// correction pass in buildStrictCorrectionPrompt — a flux edit pass
-// re-synthesises the whole frame no matter what the prompt asks it to
-// preserve. Turning the injection off restored the balloons but, as the 8
-// historical failures predicted, the plinth then vanished entirely.
+// Briefly re-enabled 2026-09-03 when turning the injection pass off made the
+// plinth vanish. The customer rejected the result — the overlay reads as
+// pasted on — so it is off again.
 //
-// So the plinth is composited again. Balloon quality is the thing the
-// customer is judging, and this buys it back at the cost of a plinth that is
-// overlaid rather than AI-lit — while also making Double Arch a single
-// generation, which is what made Single Arch look good in the first place.
-const DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED = true;
+// The plinth is now obtained the way Single Arch obtains it: painted by the
+// primary pass from plinthDesc alone, with no injection pass and no overlay.
+// That is the whole point of this round's change — Double Arch copies Single
+// Arch feature-for-feature and only the backdrop differs — and it is also the
+// only option that keeps Double Arch to a single generation, which is what
+// protects the balloons. The prompt asks for it far more gently than during
+// the 8 historical failures: the PLINTH HARD LOCK clause and the bespoke
+// double-arch garland paragraph that used to crowd it out are both gone.
+const DOUBLE_ARCH_PLINTH_COMPOSITE_ENABLED = false;
 function getThemeSempertexDefaults(themeId: string): SempertexColor[] {
   const entry = THEME_CATALOG.find((t) => t.id === themeId);
   if (!entry || entry.sempertexPaletteIds.length === 0) return [];
@@ -162,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "white-backdrop-default-plinth-composite-v24";
+const RENDER_CACHE_VERSION = "double-arch-copies-single-arch-v25";
 
 interface RenderCacheEntry {
   imageUrl: string;

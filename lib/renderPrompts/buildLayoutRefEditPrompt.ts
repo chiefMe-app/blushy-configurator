@@ -280,21 +280,15 @@ export function buildLayoutRefEditPrompt(
   // arches, and kept positive. The structural locks are left alone — they
   // guard separately-confirmed bugs — but the garland is described, not
   // forbidden.
+  // 2026-09-03: retired. Double Arch now uses Single Arch's archGarlandExtra
+  // (with only the outer-edge phrase adapted) rather than its own bespoke
+  // garland paragraph, per product request to copy Single Arch exactly. Only
+  // the one genuinely backdrop-specific fact is kept: the centre gap is not
+  // a place for balloons.
   const doubleArchMirroredGarlandClause = isDoubleArchScene
-    ? ` Each of the two arches carries its own premium organic balloon garland, with large, medium and ` +
-      `small balloons nested together in lush clustered bunches, installed on that arch's own OUTER side ` +
-      `edge — the left arch's garland on its left outer edge, the right arch's garland mirroring it on its ` +
-      `right outer edge. Each garland flows naturally and continuously from the arch's top outer corner, ` +
-      `down along the outer side edge, and ends in a connected floor-level cluster at that arch's outer ` +
-      `bottom corner — a single smooth top-to-bottom flow, tied onto the board itself so the balloons touch ` +
-      `and slightly overlap the arch's outer edge along the whole length. ` +
-      `Each garland is bottom-heavy: its fullest, largest balloons pool in the floor cluster at the outer ` +
-      `base, and the band grows lighter and slimmer as it rises into a delicate crown curl over the top ` +
-      `outer shoulder. Both garlands are clustered organic masses with real visual width, layered depth and ` +
-      `clearly varied balloon sizes, premium event-decorator style. Not a thin single-file chain. ` +
-      `The inner side of each arch and the centre gap between the two arches stay clear of balloons` +
+    ? ` The inner side of each arch and the centre gap between the two arches stay clear of balloons` +
       (sceneModel.plinths.length > 0
-        ? ` — the white cylindrical display plinth stands alone in that gap and remains. `
+        ? ` — the white cylindrical display plinth stands alone in that gap. `
         : `. `)
     : "";
 
@@ -315,16 +309,12 @@ export function buildLayoutRefEditPrompt(
   // dominate. This clause explicitly names the guide-marker cylinder as a
   // mandatory scene object, in the same authoritative HARD LOCK style that
   // fixed the round-panel and arch-size fidelity issues.
-  const doubleArchPlinthHardLockClause = isDoubleArchScene && plinth
-    ? ` PLINTH HARD LOCK: the layout reference image shows a small solid vertical cylinder standing on ` +
-      `the floor in the gap between the two arches. That cylinder is a real product — a cylindrical ` +
-      `display plinth — and it MUST appear in the final photograph exactly where the reference shows it: ` +
-      `a solid opaque matte white cylinder, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm in ` +
-      `diameter, standing upright on the floor centered between the two arch bases. ` +
-      `Rendering this scene without the plinth is WRONG and unacceptable — never omit it, never fade it ` +
-      `into the background, never replace it with empty floor. It is the third object in the scene: ` +
-      `left arch, right arch, and the white plinth between them.`
-    : "";
+  // 2026-09-03: retired. Single Arch gets its plinth painted in the primary
+  // pass from plinthDesc alone, with no hard lock and no second pass, and
+  // Single Arch is the layout the customer is happy with — so Double Arch now
+  // asks the same way. This shouty clause also ran counter to what the rest of
+  // this file has learned about heavy negation degrading the render.
+  const doubleArchPlinthHardLockClause = "";
   // Character standees are composited on the viewer's LEFT in front of the
   // backdrop, so a front-left plinth ends up hidden behind them (2026-07-20
   // bug: "the plinth disappears when a character is added"). With standees in
@@ -452,14 +442,19 @@ export function buildLayoutRefEditPrompt(
   // (setupTemplateClause) had already been producing. Restoring the older,
   // visually-successful default for all arch scenes.
   //
-  // Excluded for Double Arch (2026-07-18 restoration): this clause is
-  // written for exactly one arch with garland on "the right outer edge —
-  // and nowhere else" — literally wrong for a double-arch scene's left arch,
-  // and contradicting the mirrored instruction below. Double Arch gets its
-  // own doubleArchMirroredGarlandClause instead.
-  const archGarlandExtra = hasArchPanelInPrompt && !isDoubleArchScene
+  // 2026-09-03 — Double Arch now uses this clause too, per product request to
+  // copy Single Arch feature-for-feature and let only the backdrop differ.
+  // The one adaptation is the side phrase: a two-arch scene has an outer edge
+  // per arch, so naming "the right outer edge" alone would be wrong for the
+  // left one. Everything else is Single Arch's proven wording verbatim, and
+  // the long bespoke doubleArchMirroredGarlandClause it replaces is gone.
+  const outerEdgePhrase = isDoubleArchScene
+    ? `each arch's own OUTER side edge — the left arch's left edge and the right arch's right edge`
+    : `the right outer edge`;
+
+  const archGarlandExtra = hasArchPanelInPrompt
     ? ` Premium organic balloon garland with large, medium, and small balloons nested together ` +
-      `in lush clustered bunches, attached ONLY to ONE OUTER SIDE of the arch — the right outer edge — ` +
+      `in lush clustered bunches, attached ONLY to ONE OUTER SIDE of the arch — ${outerEdgePhrase} — ` +
       `and nowhere else on the structure. ` +
       `The garland flows naturally and continuously starting at the top outer corner of the arch, ` +
       `following the outer side edge downward, ending in a connected floor-level cluster at the outer ` +
@@ -479,29 +474,13 @@ export function buildLayoutRefEditPrompt(
       `support block, base, riser, second cylinder, secondary display column, or additional prop.`
     : "";
 
-  // Double Arch (2026-07-18 restoration): this density bar is written singular
-  // ("the garland") — a real render showed the model reading that as a
-  // scene-wide total and splitting it across the two garlands, so each side
-  // came out visibly thinner than a genuine single-arch garland (closer to a
-  // sparse bead-chain than the intended "two mirrored Single Arch designs").
-  // Making the requirement explicitly per-garland fixes that dilution.
-  const balloonSizeDesc = isDoubleArchScene
-    ? // 2026-09-02: trimmed for the same reason as the garland clause above —
-      // this was the longest, most rule-laden size paragraph in the file and
-      // fed the negation overload that made the model copy the guide as flat
-      // discs. Keeps the two points that came from real fixes (per-garland
-      // independence, and big balloons sitting low) and drops the rest.
-      ` Use exactly three balloon size families in EACH of the two garlands independently, not divided or ` +
-      `shared between them: several large 36 inch statement balloons, many 12 inch standard balloons, and ` +
-      `a few small 5 inch accent balloons. Each garland has its own at least 5 visible 36 inch statement ` +
-      `balloons, clearly larger than everything around them, and most of them sit low — seated in and just ` +
-      `above that garland's floor-level base mound, so the lower half carries the volume and the upper half ` +
-      `stays lighter. Both garlands independently look as full as a standalone Single Arch garland. ` +
-      `That fullness comes from big, generously sized balloons whose own round outlines stay clearly ` +
-      `readable against their neighbours — they nest and touch, rather than being a large number of small ` +
-      `circles. Any balloons resting on the floor are part of their garland's base cluster, touching and ` +
-      `visually connected to it.`
-    : ` Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
+  // 2026-09-03: Single Arch's size paragraph is now used for both layouts.
+  // Double Arch had its own per-garland variant; per product request to copy
+  // Single Arch feature-for-feature, the wording no longer forks. It reads
+  // singular ("the garland"), which each of the two garlands applies to
+  // itself — the same way archGarlandExtra above now does.
+  const balloonSizeDesc =
+    ` Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
       `standard balloons, and a FEW small 5 inch accent balloons. Include at least 6 visible 36 inch statement ` +
       `balloons distributed through the garland at the top, side, and base. 36 inch balloons must be clearly ` +
       `larger than all others. Use 5 inch balloons sparingly — only a few tiny accents tucked between big ` +
