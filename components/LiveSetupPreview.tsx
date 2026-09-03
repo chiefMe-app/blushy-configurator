@@ -12,6 +12,7 @@ import {
   type PlinthSize,
   type GraphicStyle,
   DEFAULT_BACKDROP_COLOR,
+  normalizeBalloonStyle,
 } from "@/lib/config";
 import { calculateExactLayout, debugLayout } from "@/lib/calculateExactLayout";
 import { getPlinthDimensions } from "@/lib/layoutDimensions";
@@ -40,7 +41,7 @@ export default function LiveSetupPreview({
   const sig = JSON.stringify({
     t:   config.theme,
     items: config.decor.backdropItems,   // includes item.text, item.graphic, item.color
-    b:   config.decor.balloonStyle,
+    b:   normalizeBalloonStyle(config.decor.balloonStyle),
     bc:  config.decor.backdropColor,
     blc: config.decor.balloonColors,
     p:   config.decor.plinthSizes,
@@ -240,10 +241,13 @@ function renderScene(
     const isOuterRight = i === count - 1;
     const isSingleOrOuter = count === 1 || isOuterLeft || isOuterRight;
     const outline = backdropOutline(cx, pw, floorY, H, shape, apexY);
+    // A stored config can still hold a retired tier (half/premium). The render
+    // pipeline folds those into "full" in buildSceneModel; do the same here so
+    // the live preview and the render never disagree about an old config.
+    const selectedStyle = normalizeBalloonStyle(config.decor.balloonStyle);
     const garlandStyle: BalloonStyleId =
-      isSingleOrOuter ? config.decor.balloonStyle
-        : config.decor.balloonStyle === "none" ? "none"
-        : config.decor.balloonStyle === "half"  ? "none"   // centre panels: top-only
+      isSingleOrOuter ? selectedStyle
+        : selectedStyle === "none" ? "none"
         : "half";                                            // centre: lighter density
     drawGarland(ctx, outline, floorY, pw, palette, garlandStyle, i * 97 + 13);
   }

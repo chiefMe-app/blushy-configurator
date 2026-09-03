@@ -212,7 +212,7 @@ export const PACKAGES: Package[] = [
       backdropItems: [
         { id: "medium", type: "arch", sizeId: "medium", widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
-      balloonStyle: "half",
+      balloonStyle: "full",
       plinths: 1,
       plinthSizes: ["medium"],
       cutouts: { size: "none", position: "floor" },
@@ -259,7 +259,7 @@ export const PACKAGES: Package[] = [
         { id: "medium", type: "arch", sizeId: "medium", widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
         { id: "small",  type: "arch", sizeId: "small",  widthCm: 80,  heightCm: 180, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
-      balloonStyle: "premium",
+      balloonStyle: "full",
       plinths: 3,
       plinthSizes: ["large", "medium", "medium"] as PlinthSize[],
       cutouts: { size: "medium", position: "floor" },
@@ -600,12 +600,23 @@ export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   // for backward compat with old saved configs.
 ];
 
+/**
+ * Balloons are sold as one garland or none (2026-09-03, product decision).
+ * The old Half Garland / Premium Organic tiers were retired; "full" is the
+ * surviving garland and keeps its id, price and behaviour so saved configs
+ * and the render pipeline are unaffected. Legacy "half"/"premium" values in
+ * stored configs are folded into it by normalizeBalloonStyle() below rather
+ * than being dropped, which would have silently priced them at zero.
+ */
 export const BALLOON_STYLES: Option<BalloonStyleId>[] = [
   { id: "none", label: "None", price: 0 },
-  { id: "half", label: "Half Garland", price: 150 },
-  { id: "full", label: "Full Garland", price: 250 },
-  { id: "premium", label: "Premium Organic", price: 420 },
+  { id: "full", label: "Balloon Garland", price: 250 },
 ];
+
+/** Retired tier ids, folded into the surviving garland. */
+export function normalizeBalloonStyle(id: string): BalloonStyleId {
+  return id === "half" || id === "premium" ? "full" : (id as BalloonStyleId);
+}
 
 export const PLINTH_SIZES: Option<PlinthSize>[] = [
   // Real product sizes (2026-09-03): L 60cm x ⌀33, XL 75cm x ⌀36, XXL 90cm x ⌀40.
@@ -1031,7 +1042,7 @@ export function priceBreakdown(config: BuilderConfig): {
     });
   }
 
-  const style = balloonStyleById(d.balloonStyle);
+  const style = balloonStyleById(normalizeBalloonStyle(d.balloonStyle));
   if (style && style.price > 0) {
     lines.push({ label: `Balloons - ${style.label}`, amount: style.price, section: "design" });
   }

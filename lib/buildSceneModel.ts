@@ -25,7 +25,7 @@ import type {
   ShimmerColorId,
 } from "./config";
 import { getPlinthDimensions } from "./layoutDimensions";
-import { normalizeCutouts } from "@/lib/config";
+import { normalizeCutouts, normalizeBalloonStyle } from "@/lib/config";
 
 // ---------------------------------------------------------------------------
 // Legacy shimmer_wall sanitization
@@ -168,7 +168,9 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
     }));
 
   const balloons: SceneBalloons = {
-    style:  d.balloonStyle,
+    // Fold retired tiers (half/premium) into the surviving garland so the
+    // guide and the prompt never see an id that is no longer sold.
+    style:  normalizeBalloonStyle(d.balloonStyle),
     colors: d.balloonColors.length > 0 ? [...d.balloonColors] : [],
   };
 
@@ -245,7 +247,7 @@ export function buildSceneModelFromItems(
   return {
   theme,
   panels,
-  balloons: { style: balloonStyle, colors: balloonColors },
+  balloons: { style: normalizeBalloonStyle(balloonStyle), colors: balloonColors },
   plinths,
   cutouts,
   totalPrice: 0,

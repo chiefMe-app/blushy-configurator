@@ -96,9 +96,11 @@ function findColor(prompt: string): string | null {
 const re = (pattern: string) => new RegExp(pattern, "i");
 
 const BALLOON_STYLE_PATTERNS: [RegExp, DecorConfig["balloonStyle"]][] = [
-  [re("half.garland|one.side|single.side|partial.balloon"), "half"],
+  // Half and Premium were retired 2026-09-03; the phrases still match so a
+  // user asking for "a half garland" gets the garland rather than nothing.
+  [re("half.garland|one.side|single.side|partial.balloon"), "full"],
   [re("full.garland|full.frame|both.side"), "full"],
-  [re("premium.balloon|organic.balloon|luxury.balloon|dense.balloon"), "premium"],
+  [re("premium.balloon|organic.balloon|luxury.balloon|dense.balloon"), "full"],
   [re("no.balloon|remove.balloon|without.balloon|balloon.off"), "none"],
 ];
 
