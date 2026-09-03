@@ -259,7 +259,12 @@ function panelEdgeOnly(
 // Cylindrical plinth edge guide — two vertical lines + top and bottom ellipses.
 // No rectangular fill, no block, no base platform.
 function plinthEdge(cx: number, bottomY: number, heightPx: number, diameterPx: number): string {
-  const visualWidth = Math.min(diameterPx, Math.round(heightPx / 3.0));
+  // Draw the real diameter. This used to be Math.min(diameterPx, heightPx/3),
+  // which forced every plinth to a 3:1 silhouette and threw the configured
+  // diameter away — L, XL and XXL all came out identical in the guide even
+  // though they are 60x33, 75x36 and 90x40. Guide and prompt then disagreed
+  // (guide 3.0, prompt 1.8) and the render landed at 1.17: short and fat.
+  const visualWidth = diameterPx;
   const rx    = visualWidth / 2;
   const ryTop = Math.max(3, Math.round(rx * 0.45));
   const topY  = bottomY - heightPx;
@@ -287,7 +292,8 @@ function plinthEdge(cx: number, bottomY: number, heightPx: number, diameterPx: n
 // cap ellipses, giving the model an unmissable object to paint as the white
 // cylinder.
 function plinthFilledCylinder(cx: number, bottomY: number, heightPx: number, diameterPx: number): string {
-  const visualWidth = Math.min(diameterPx, Math.round(heightPx / 3.0));
+  // Real diameter — see the note in plinthEdge.
+  const visualWidth = diameterPx;
   const rx    = visualWidth / 2;
   const ry    = Math.max(3, Math.round(rx * 0.45));
   const topY  = bottomY - heightPx;
@@ -352,28 +358,73 @@ function escapeXml(s: string): string {
 // Customized text guide — the exact selected text drawn faintly on the target
 // solid panel (upper-middle) so the edit model bakes it into the board surface.
 // Never drawn on shimmer walls or open arch frames.
+/** Guide lettering styled like the customer's own font and colour choice. */
+const TEXT_GUIDE_FONT: Record<string, { family: string; weight: string }> = {
+  script:  { family: "Segoe Script, Brush Script MT, Comic Sans MS, cursive", weight: "600" },
+  block:   { family: "Arial Black, Impact, DejaVu Sans, sans-serif",         weight: "900" },
+  elegant: { family: "Georgia, Times New Roman, DejaVu Serif, serif",        weight: "600" },
+};
+/** Accent has no fixed hex here (it is per theme); a soft pink stands in for
+ *  it, matching the "theme accent pink" wording the prompt already uses. */
+const TEXT_GUIDE_FILL: Record<string, string> = {
+  white: "#FFFFFF", gold: "#C9A227", black: "#1E1E1E", accent: "#E39BB4",
+};
+
 function customTextGuide(
   cx: number, pw: number, apexY: number, floorY: number, text: string,
-  hasGraphicBelow = false,
+  opts: {
+    hasGraphicBelow?: boolean;
+    /** Which side(s) of this panel the garland covers, so the lettering can
+     *  be placed where the balloons are not. */
+    garlandSide?: "left" | "right" | "both" | "none";
+    fontStyle?: string;
+    color?: string;
+  } = {},
 ): string {
-  const panelH   = floorY - apexY;
+  const { hasGraphicBelow = false, garlandSide = "none", fontStyle = "script", color = "white" } = opts;
+  const panelH = floorY - apexY;
   // The illustration zone starts at 32% of the panel height, so a text
   // baseline at 30% sat right on top of it and the printed artwork swallowed
   // the lettering (2026-09-03). When both are on the same panel the text moves
   // up into the panel's own top band and the zone below starts lower.
-  const y        = apexY + panelH * (hasGraphicBelow ? 0.17 : 0.30);
-  // Scale font to fit the panel width for the given string length
-  const fontSize = Math.max(12, Math.min(Math.round(pw * 0.12), Math.round((pw * 0.85) / Math.max(4, text.length) * 1.9)));
-  const safe     = escapeXml(text);
+  const y = apexY + panelH * (hasGraphicBelow ? 0.17 : 0.30);
+
+  // The garland covers roughly the outer 30% of the board it hangs on. Text
+  // drawn across the full width therefore had its first letters hidden behind
+  // balloons, and the edit model read the half-covered word off the guide and
+  // painted it wrong ("Happy Birthday" came back as "Dopy Birthday"). Drawing
+  // the lettering on TOP of the balloons instead fixed the spelling but made
+  // the model paint the words floating in front of the garland rather than
+  // printed on the board. So the lettering stays under the balloons, in the
+  // band of board they leave clear.
+  const cover = 0.30;
+  const clearW =
+    garlandSide === "both" ? pw * (1 - 2 * cover) :
+    garlandSide === "none" ? pw * 0.85 :
+    pw * (1 - cover) * 0.92;
+  const shift =
+    garlandSide === "left"  ?  pw * cover / 2 :
+    garlandSide === "right" ? -pw * cover / 2 : 0;
+  const tx = cx + shift;
+
+  const fontSize = Math.max(11, Math.min(
+    Math.round(pw * 0.12),
+    Math.round(clearW / Math.max(4, text.length) * 1.75),
+  ));
+  const safe = escapeXml(text);
+  const font = TEXT_GUIDE_FONT[fontStyle] ?? TEXT_GUIDE_FONT.script;
+  const fill = TEXT_GUIDE_FILL[color] ?? TEXT_GUIDE_FILL.black;
+  // White lettering needs an outline to exist at all against a white board.
+  const outline = color === "white"
+    ? ` stroke="rgba(120,120,120,0.85)" stroke-width="1.2"`
+    : "";
+  const attrs =
+    `x="${tx.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" ` +
+    `font-family="${font.family}" font-weight="${font.weight}" font-size="${fontSize}"`;
   return (
-    // White halo stroke behind for contrast, then the gray fill copy on top —
-    // subtle but legible enough for the edit model to read and follow.
-    `<text x="${cx.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" ` +
-      `font-family="DejaVu Sans, Arial, sans-serif" font-weight="600" font-size="${fontSize}" ` +
-      `fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="4" stroke-linejoin="round">${safe}</text>` +
-    `<text x="${cx.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" ` +
-      `font-family="DejaVu Sans, Arial, sans-serif" font-weight="600" font-size="${fontSize}" ` +
-      `fill="rgba(110,110,110,0.65)">${safe}</text>`
+    // Halo first so the word stays legible wherever it meets a balloon edge.
+    `<text ${attrs} fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="4" stroke-linejoin="round">${safe}</text>` +
+    `<text ${attrs} fill="${fill}"${outline}>${safe}</text>`
   );
 }
 
@@ -496,11 +547,6 @@ export function generateStructureSilhouette(
   const bgLines: string[] = [];
   // content: everything else — scaled and centered
   const content: string[] = [];
-  // Lettering is collected separately and appended last so it is drawn OVER
-  // the garland. Drawn in place it sat under the balloons, and the edit model
-  // then read the half-covered word off the guide and painted it wrong
-  // ("Happy Birthday" came back as "Dopy Birthday", 2026-09-03).
-  const textLayer: string[] = [];
 
   // Dense garland guide counters — set only in their layout branches,
   // reported in the result for diagnostics.
@@ -609,9 +655,24 @@ export function generateStructureSilhouette(
     // Customized text guide — exact text, upper-middle of solid panels only.
     // (Open arch frames return early above; shimmer walls are excluded here.)
     if (panelTextValue && !isShimmer) {
-      textLayer.push(customTextGuide(
+      // Which side the garland will hang on, mirroring the dispatch further
+      // down so the lettering can sit in the clear part of the board.
+      const bothArches = backdropItems.length === 2 && backdropItems.every((i) => i.type === "arch");
+      const fullerTier = balloonStyle === "full" || balloonStyle === "premium";
+      const meanCx     = layout.panels.reduce((sum, p) => sum + p.cx, 0) / layout.panels.length;
+      const garlandSide: "left" | "right" | "both" | "none" =
+        balloonStyle === "none" ? "none"
+          : bothArches ? (panel.cx < meanCx ? "left" : "right")
+          : layout.panels.length === 1 && shape === "arch" ? (fullerTier ? "both" : "right")
+          : "none";
+      content.push(customTextGuide(
         panel.cx, panel.pw, panel.apexY, panel.floorY, panelTextValue,
-        !!item?.graphic?.enabled,
+        {
+          hasGraphicBelow: !!item?.graphic?.enabled,
+          garlandSide,
+          fontStyle: item?.text?.fontStyle,
+          color:     item?.text?.color,
+        },
       ));
     }
   });
@@ -1348,7 +1409,7 @@ export function generateStructureSilhouette(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`,
     `  ${bgLines.join("\n  ")}`,
     `  <g transform="translate(${marginX},${marginY}) scale(${SCALE})">`,
-    `    ${content.concat(textLayer).join("\n    ")}`,
+    `    ${content.join("\n    ")}`,
     `  </g>`,
     `</svg>`,
   ].join("\n");

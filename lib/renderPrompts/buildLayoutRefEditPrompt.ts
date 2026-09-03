@@ -366,7 +366,8 @@ export function buildLayoutRefEditPrompt(
     (sceneModel.cutouts?.items ?? []).some((i) => (i?.quantity ?? 0) > 0);
 
   const plinthDesc   = plinth
-    ? `Keep exactly one visible white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter. ` +
+    ? `Keep exactly one visible white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter — ` +
+      `a slim column, about ${(plinth.heightCm / plinth.diameterCm).toFixed(1)} times taller than it is wide, not a short fat drum. ` +
       `This is a separate display plinth, not a support base for the backdrop. ` +
       // 2026-09-03: Double Arch no longer asks for the gap. It uses Single
       // Arch's own placement — in front of a backdrop panel — because that is
