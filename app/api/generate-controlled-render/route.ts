@@ -146,7 +146,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "double-arch-organic-varied-v20";
+const RENDER_CACHE_VERSION = "no-strict-correction-speed-v21";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1414,9 +1414,20 @@ forbiddenBalloonColorLabels: hasSempertexLock
   // edit pass on the primary render — the result is still fully AI-painted
   // with real scene lighting, shadows, and floor reflection, exactly like
   // Single Arch's plinth (per product request).
+  //
+  // 2026-09-03: considered disabling this to save a round trip, on the theory
+  // that v17's narrower panel group had widened the centre gap. Measured it
+  // before changing anything and the opposite is true — the gap went from
+  // 128px to 111px, because the gap scales down with the group. The plinth is
+  // 89px wide, so it now fills 80% of the space it has to appear in. The
+  // conditions that made those 5 renders come back plinth-less are, if
+  // anything, tighter than before, so this pass stays.
+  const DOUBLE_ARCH_PLINTH_INJECTION_ENABLED = true;
+
   let plinthSourceUrl = imageUrl;
   let doubleArchPlinthInjectionApplied = false;
-  if (setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0) {
+  if (DOUBLE_ARCH_PLINTH_INJECTION_ENABLED &&
+      setupLayoutTemplateId === "double_arch" && sceneModel.plinths.length > 0) {
     const pl = sceneModel.plinths[0];
     const injectionPrompt =
       `Edit the existing photograph ONLY. Add exactly one cylindrical display plinth standing upright ` +
@@ -1473,7 +1484,27 @@ forbiddenBalloonColorLabels: hasSempertexLock
     ? "round_primary_test"
     : null;
 
+  // 2026-09-03 — strict correction DISABLED as a speed experiment, per product
+  // decision to cut render time. It is a second full image generation, so it
+  // costs roughly a third of a Double Arch render's wall time.
+  //
+  // Two reasons it is the right pass to drop first. It is largely redundant:
+  // the primary layout-reference prompt already carries the full BALLOON COLOR
+  // LOCK with the exact Sempertex palette plus the paletteEnforcement
+  // sentences, so the colours are locked before this pass ever runs. And it
+  // has a recorded history of making things worse — see the 2026-09-01 note in
+  // buildStrictCorrectionPrompt: this pass was itself flattening balloons into
+  // solid flat-coloured discs while fixing their hue. Dropping it should help
+  // the organic balloon look, not just the clock.
+  //
+  // TO REVERT: set this back to true. The whole correction block below is
+  // intact and simply gated. Check the render diagnostics — if balloon colours
+  // drift off-palette (silver going gold/bronze is the classic failure) with
+  // `strictCorrectionApplied: false`, this flips back on.
+  const STRICT_CORRECTION_ENABLED = false;
+
   const needsStrictCorrection =
+    STRICT_CORRECTION_ENABLED &&
     !isMaxEditModel &&
     !skipStrictCorrection &&
     strictCorrectionSkippedReason === null &&
