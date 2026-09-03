@@ -547,6 +547,14 @@ export function generateStructureSilhouette(
   const bgLines: string[] = [];
   // content: everything else — scaled and centered
   const content: string[] = [];
+  // The plinth marker is collected separately and appended after the balloons.
+  // Drawn in place it went into the guide BEFORE the garland, so balloon
+  // circles covered its base and sides and the model saw a stub of a cylinder
+  // — which is why the plinth came out short and fat as soon as a garland was
+  // added, and looked right without one (2026-09-03). Drawing it last is also
+  // what the real scene looks like: the plinth stands on open floor in FRONT
+  // of the boards and the garland, not behind them.
+  const plinthLayer: string[] = [];
 
   // Dense garland guide counters — set only in their layout branches,
   // reported in the result for diagnostics.
@@ -678,69 +686,38 @@ export function generateStructureSilhouette(
   });
 
   // v4: Cylindrical plinth edge guide — no fill, no block
-  const singleShimmer = backdropItems.length === 1 && backdropItems[0]?.type === "shimmer_wall";
-  const singleRound   = backdropItems.length === 1 && backdropItems[0]?.type === "round";
-  const isDoubleArch  = backdropItems.length === 2 && backdropItems.every((i) => i.type === "arch");
-  // Double Arch plinth history: 8 real-render attempts (2026-07-12) under
-  // the OLD prompt/garland pipeline couldn't get the AI to paint a solid
-  // plinth from a guide marker, so it was suppressed and later composited
-  // deterministically (SVG overlay). RE-ATTEMPTED 2026-07-19 by product
-  // request ("plinth same as single arch"): the prompt pipeline has since
-  // been rewritten (mirrored-single-arch garland clauses, no contradictory
-  // "keep the gap bare" wording, connected-mass negatives). First retry used
-  // the same faint plinthEdge marker Single Arch uses, but centered in the
-  // empty white gap that outline is nearly invisible and the model omitted
-  // the plinth — Single Arch only gets away with it because its marker
-  // overlaps the tinted panel. Double Arch therefore uses the FILLED
-  // plinthFilledCylinder marker (solid shape, like the arch panels the model
-  // copies faithfully), centered in the gap (the same gap-midpoint math
-  // computeDoubleArchPlinthOverlayGeometry uses).
-  // Standees are composited on the VIEWER'S LEFT, directly in front of the
-  // backdrop (see ZONES_STANDARD). The half-garland plinth normally sits on
-  // that same open left side, so it ended up hidden underneath the standee —
-  // the plinth appeared to vanish whenever a character was added
-  // (2026-07-20 bug report). When standees are present the plinth moves to
-  // the right of centre instead, keeping both objects visible.
-  const hasStandeeGuideItems = (cutoutGuideItems ?? []).some((i) => i.quantity > 0);
+  const singleRound = backdropItems.length === 1 && backdropItems[0]?.type === "round";
 
-  for (const p of layout.plinths) {
-    let plinthCx: number;
-    if (isDoubleArch) {
-      // 2026-09-03: Double Arch now places its plinth exactly where Single
-      // Arch places its own — in front of a backdrop panel, moved right of
-      // centre when a standee owns the left — rather than in the gap between
-      // the two arches.
-      //
-      // Every gap placement has failed. The plinth was first drawn mid-gap,
-      // then anchored on the left arch's inner edge to half-overlap the panel,
-      // drawn filled instead of outlined, and hard-locked in the prompt; it
-      // was still dropped, across roughly ten renders and the 8 historical
-      // failures before them. A narrow slot between two boards is simply a
-      // place this model will not put an object — the plinth is 89px wide in a
-      // 111px gap. Single Arch, meanwhile, gets its plinth painted every time
-      // from a plain outline marker, because it stands in open floor in front
-      // of a panel. That is the difference, so this copies it.
-      plinthCx = hasStandeeGuideItems
-        ? Math.round(W * 0.62)
-        : Math.round(W * 0.38);
-    } else if (singleShimmer) {
-      plinthCx = Math.round(W * 0.50); // centered in front of shimmer wall
-    } else if (singleRound && balloonStyle === "half" && layout.panels.length === 1) {
-      // Left side of the round circle, clear of the right-arc garland
-      const rPanel = layout.panels[0];
-      plinthCx = Math.round(rPanel.cx - rPanel.pw * 0.40);
-    } else if (balloonStyle === "half") {
-      plinthCx = hasStandeeGuideItems
-        ? Math.round(W * 0.62)  // standee owns the left — plinth sits right of centre
-        : Math.round(W * 0.28); // open left side, away from right-side garland
-    } else {
-      plinthCx = p.cx;
-    }
+  // Plinths are centred on the decor (2026-09-03, product decision: "the
+  // plinths should always centre the decor"). Every layout used to have its
+  // own rule — Double Arch at 38% or 62% of the canvas, the half-garland tier
+  // at 28% or 62%, the round panel offset left of its own centre — so the
+  // plinth sat off to one side and read as a stray object instead of the
+  // centrepiece. The backdrop group's midpoint replaces all of them, and
+  // several plinths stay a centred group, spread symmetrically about that
+  // midpoint so they cannot stack on each other.
+  //
+  // Worth keeping from the placement history this replaces: for Double Arch
+  // the midpoint is in front of the boards, on open floor — it is NOT the gap
+  // between them. The gap is a narrow slot this model refuses to put an
+  // object into (an 89px plinth in a 111px gap), and roughly ten renders plus
+  // 8 earlier attempts were lost to it before the placement left the gap.
+  const groupLeftEdge  = Math.min(...layout.panels.map((pl) => pl.cx - pl.pw / 2));
+  const groupRightEdge = Math.max(...layout.panels.map((pl) => pl.cx + pl.pw / 2));
+  const decorCx        = (groupLeftEdge + groupRightEdge) / 2;
+  const plinthCount    = layout.plinths.length;
+  const plinthSpacing  = Math.max(...layout.plinths.map((pl) => pl.diameterPx), 1) * 1.5;
+
+  layout.plinths.forEach((p, plinthIdx) => {
+    // One plinth lands on the midpoint; two straddle it; three sit centred.
+    const plinthCx = Math.round(
+      decorCx + (plinthIdx - (plinthCount - 1) / 2) * plinthSpacing,
+    );
     // Round scenes: use filled cylinder so the plinth reads as a clear
     // solid object, not just outline edges that the model may skip or
     // merge with the background.
     if (singleRound) {
-      content.push(plinthCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
+      plinthLayer.push(plinthCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
     } else {
       // Double Arch falls through to Single Arch's marker as well. The filled
       // variant and the dropped baseline it used to get were both compensating
@@ -753,11 +730,11 @@ export function generateStructureSilhouette(
       const panelsCarrySurfaceContent = backdropItems.some(
         (it) => it?.text?.enabled || it?.graphic?.enabled,
       );
-      content.push(panelsCarrySurfaceContent
+      plinthLayer.push(panelsCarrySurfaceContent
         ? plinthFilledCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx)
         : plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
     }
-  }
+  });
 
   // v4: Individual balloon circles — no filled blob, organic circles follow right-side path.
   // Avoids vertical slab boundary that the filled blob created.
@@ -1409,7 +1386,7 @@ export function generateStructureSilhouette(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`,
     `  ${bgLines.join("\n  ")}`,
     `  <g transform="translate(${marginX},${marginY}) scale(${SCALE})">`,
-    `    ${content.join("\n    ")}`,
+    `    ${content.concat(plinthLayer).join("\n    ")}`,
     `  </g>`,
     `</svg>`,
   ].join("\n");
