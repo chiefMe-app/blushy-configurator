@@ -247,9 +247,7 @@ export function buildLayoutRefEditPrompt(
       `each with its own independent floor footprint and base contact point. ` +
       `Maintain a small but clearly visible gap between the two arch bases at all times — ` +
       `the bases must never touch, merge, overlap, or blend into a single connected shape. ` +
-      (sceneModel.plinths.length > 0
-        ? `The only object standing in this gap is the single white cylindrical display plinth. `
-        : `The floor in this gap stays completely bare. `) +
+      `The floor in this gap stays completely bare — the plinth stands in front of a panel, not in the gap. ` +
       `Each arch must read as a distinct standalone board, not fused, joined, or leaning into the other.`
     : "";
 
@@ -286,10 +284,7 @@ export function buildLayoutRefEditPrompt(
   // the one genuinely backdrop-specific fact is kept: the centre gap is not
   // a place for balloons.
   const doubleArchMirroredGarlandClause = isDoubleArchScene
-    ? ` The inner side of each arch and the centre gap between the two arches stay clear of balloons` +
-      (sceneModel.plinths.length > 0
-        ? ` — the white cylindrical display plinth stands alone in that gap. `
-        : `. `)
+    ? ` The inner side of each arch and the centre gap between the two arches stay clear of balloons. `
     : "";
 
   // ── Plinth description ────────────────────────────────────────────────────
@@ -326,12 +321,14 @@ export function buildLayoutRefEditPrompt(
   const plinthDesc   = plinth
     ? `Keep exactly one visible white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter. ` +
       `This is a separate display plinth, not a support base for the backdrop. ` +
-      (isDoubleArchScene
-        ? `Place it centered in the clean gap between the two arches, standing directly on the floor in front of the gap. `
-        : hasStandeesInScene
-          ? `Place it to the RIGHT of centre, standing on the floor directly in front of the backdrop panel. ` +
-            `Keep the left-hand floor area in front of the backdrop completely clear and empty — a character standee is added there afterwards. `
-          : `Place it front-left of the backdrop. `) +
+      // 2026-09-03: Double Arch no longer asks for the gap. It uses Single
+      // Arch's own placement — in front of a backdrop panel — because that is
+      // the placement the model actually paints; see the note in
+      // generateStructureSilhouette where the guide marker moved to match.
+      (hasStandeesInScene
+        ? `Place it to the RIGHT of centre, standing on the floor directly in front of the backdrop panel. ` +
+          `Keep the left-hand floor area in front of the backdrop completely clear and empty — a character standee is added there afterwards. `
+        : `Place it front-left of the backdrop. `) +
       `It must remain fully visible from base to rounded top. ` +
       `It is a solid opaque matte white column — NOT glass, NOT transparent, NOT clear acrylic. ` +
       `Do not hide it behind balloons. ` +
@@ -339,11 +336,9 @@ export function buildLayoutRefEditPrompt(
       `Do not convert it into a base, podium, riser, or stage. ` +
       (hasRoundPanelInScene
         ? `Stand it close to the round backdrop panel, not set too far forward into the room.`
-        : isDoubleArchScene
-          ? `It stands alone in the gap — the balloons stay on the outer sides of the arches, far from the plinth.`
-          : hasStandeesInScene
-            ? `Stand it close to the backdrop panel, right of centre, fully visible.`
-            : `Place it on the open side near the arch backdrop.`)
+        : hasStandeesInScene
+          ? `Stand it close to the backdrop panel, right of centre, fully visible.`
+          : `Place it on the open side near the arch backdrop.`)
     : "";
   const noPlinthDesc = plinth
     ? ""

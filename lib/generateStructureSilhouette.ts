@@ -624,13 +624,23 @@ export function generateStructureSilhouette(
   for (const p of layout.plinths) {
     let plinthCx: number;
     if (isDoubleArch) {
-      // Anchor on the LEFT arch's inner edge so the marker half-overlaps the
-      // filled panel — the same overlap cue that makes Single Arch's plinth
-      // render reliably. A cylinder floating fully inside the empty gap was
-      // ignored by the edit model in three verification renders (2026-07-19),
-      // even drawn filled and prompt-hard-locked.
-      const leftPanel = layout.panels.reduce((a, b) => (a.cx <= b.cx ? a : b));
-      plinthCx = Math.round(leftPanel.cx + leftPanel.pw / 2);
+      // 2026-09-03: Double Arch now places its plinth exactly where Single
+      // Arch places its own — in front of a backdrop panel, moved right of
+      // centre when a standee owns the left — rather than in the gap between
+      // the two arches.
+      //
+      // Every gap placement has failed. The plinth was first drawn mid-gap,
+      // then anchored on the left arch's inner edge to half-overlap the panel,
+      // drawn filled instead of outlined, and hard-locked in the prompt; it
+      // was still dropped, across roughly ten renders and the 8 historical
+      // failures before them. A narrow slot between two boards is simply a
+      // place this model will not put an object — the plinth is 89px wide in a
+      // 111px gap. Single Arch, meanwhile, gets its plinth painted every time
+      // from a plain outline marker, because it stands in open floor in front
+      // of a panel. That is the difference, so this copies it.
+      plinthCx = hasStandeeGuideItems
+        ? Math.round(W * 0.62)
+        : Math.round(W * 0.38);
     } else if (singleShimmer) {
       plinthCx = Math.round(W * 0.50); // centered in front of shimmer wall
     } else if (singleRound && balloonStyle === "half" && layout.panels.length === 1) {
@@ -649,14 +659,11 @@ export function generateStructureSilhouette(
     // merge with the background.
     if (singleRound) {
       content.push(plinthCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
-    } else if (isDoubleArch) {
-      // Foreground cue: drop the plinth base ~5% below the arch floor line so
-      // it reads as standing IN FRONT of the gap, not as a background artifact
-      // between the panels — mid-gap objects at the shared floor line were
-      // smoothed away by the edit model even when drawn filled (2026-07-19).
-      const daBottomY = Math.min(p.bottomY + Math.round(H * 0.05), H - 6);
-      content.push(plinthFilledCylinder(plinthCx, daBottomY, p.heightPx, p.diameterPx));
     } else {
+      // Double Arch falls through to Single Arch's marker as well. The filled
+      // variant and the dropped baseline it used to get were both compensating
+      // for the gap placement removed above; standing in front of a panel, the
+      // plain outline is what Single Arch renders reliably from.
       content.push(plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
     }
   }
