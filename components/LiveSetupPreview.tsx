@@ -11,6 +11,7 @@ import {
   type BalloonStyleId,
   type PlinthSize,
   type GraphicStyle,
+  DEFAULT_BACKDROP_COLOR,
 } from "@/lib/config";
 import { calculateExactLayout, debugLayout } from "@/lib/calculateExactLayout";
 import { getPlinthDimensions } from "@/lib/layoutDimensions";
@@ -106,7 +107,7 @@ function renderScene(
 ) {
   const theme = themeById(config.theme)!;
   // User-overridable colors (Change 4) fall back to the theme suggestions.
-  const backdropColor = config.decor.backdropColor || theme.backdropColors[0];
+  const backdropColor = config.decor.backdropColor || DEFAULT_BACKDROP_COLOR;
   const palette =
     config.decor.balloonColors.length > 0 ? config.decor.balloonColors : theme.balloonColors;
   const accent = theme.accent;

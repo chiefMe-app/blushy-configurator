@@ -67,6 +67,7 @@ cutoutTotalCount,
   type TextAlign,
   SHIMMER_COLORS,
   type ShimmerColorId,
+  DEFAULT_BACKDROP_COLOR,
 } from "@/lib/config";
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
 import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS, getThemeCutoutPresets } from "@/lib/themeCatalog";
@@ -246,7 +247,11 @@ export default function ConfigurePage() {
       decor: t
         ? {
             ...c.decor,
-            backdropColor: t.backdropColors[0],
+            // Theme drives the balloon palette only — boards stay white
+            // unless the customer changes them (see DEFAULT_BACKDROP_COLOR).
+            // Switching theme must not silently re-tint a board the customer
+            // has already chosen a colour for, so an existing choice is kept.
+            backdropColor: c.decor.backdropColor || DEFAULT_BACKDROP_COLOR,
             balloonColors: t.balloonColors.slice(0, 5),
           }
         : c.decor,

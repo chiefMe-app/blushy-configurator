@@ -67,6 +67,16 @@ export interface Theme {
   accent: string;
 }
 
+/**
+ * Backdrop panels always start white, whatever the theme (2026-09-03 product
+ * decision). Picking a theme used to also tint the boards — Frozen set them to
+ * #E8F4FD — so a customer who only wanted themed BALLOONS silently got pale
+ * blue boards too. The theme now drives the balloon palette only; the boards
+ * stay white until the customer changes them, and `theme.backdropColors` is
+ * still offered as suggested swatches when they do.
+ */
+export const DEFAULT_BACKDROP_COLOR = "#FFFFFF";
+
 export const THEMES: Theme[] = [
   { id: "frozen", name: "Frozen", emoji: "--", desc: "Icy satin, silver frost", backdropColors: ["#E8F4FD", "#B3D9F2", "#FFFFFF"], balloonColors: ["#B3D9F2", "#E8F4FD", "#C8E6FA", "#FFFFFF", "#A8D4EF"], priceModifier: 50, accent: "#4A90D9" },
   { id: "unicorn", name: "Unicorn", emoji: "-", desc: "Pearlescent pastels, soft iridescence", backdropColors: ["#F9D5DF", "#E8C8F0", "#FFFFFF"], balloonColors: ["#F9D5DF", "#C4F0E8", "#E8C8F0", "#FFF0A0", "#FFFFFF"], priceModifier: 50, accent: "#C77DD6" },
@@ -926,7 +936,7 @@ export function defaultConfig(): BuilderConfig {
       balloonStyle: "none",
       plinths: 0,
       plinthSizes: [],
-      backdropColor: theme.backdropColors[0],
+      backdropColor: DEFAULT_BACKDROP_COLOR,
       balloonColors: theme.balloonColors.slice(0, 5),
     },
     addOns: [],
