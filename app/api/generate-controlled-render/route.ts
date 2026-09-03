@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "plinth-centred-and-in-front-v37";
+const RENDER_CACHE_VERSION = "ai-text-only-plinth-calibrated-v38";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1081,6 +1081,10 @@ customizedTextValue:         customizedTextPanels[0]?.text.value.trim() ?? null,
 customizedTextPanelIds:      customizedTextPanels.map((p) => p.id),
 customizedTextGuideApplied:  customizedTextSolidPanels.length > 0,
 renderTextInAi:              customizedTextPanels.length > 0,
+  // Reported so a render can be traced to the code that produced it. Without
+  // it there is no way to tell a stale deployment from a real defect, which
+  // cost several rounds of debugging on 2026-09-03.
+  renderCacheVersion:          RENDER_CACHE_VERSION,
 
   selectedArchSize:         firstArchDiag?.sizeId       ?? null,
   resolvedArchWidthCm:      firstArchDiag?.widthCm      ?? null,
@@ -1769,7 +1773,18 @@ forbiddenBalloonColorLabels: hasSempertexLock
   let customTextCompositePosition: { x: number; y: number } | null = null;
   let preTextCompositeImageUrl: string | null = null;
 
-  if (customizedTextSolidPanels.length > 0) {
+  // The edit model now paints the lettering itself, on the right board, in the
+  // chosen font and colour (2026-09-03). This stage used to be how text got
+  // into a render at all, but it draws only ONE panel's words and it draws
+  // them over what the model already painted -- so a Double Arch came back
+  // with the first board's text twice, the composited copy sitting slightly
+  // high and leaving the model's own lettering showing underneath as a dark
+  // smudge, while the second board's word was missing entirely because this
+  // stage never handled it. Turned off; the code is kept in case the model
+  // path ever needs to be backed out.
+  const CUSTOM_TEXT_COMPOSITE_ENABLED = false;
+
+  if (CUSTOM_TEXT_COMPOSITE_ENABLED && customizedTextSolidPanels.length > 0) {
     try {
       // Chain from the shimmer-recolored buffer when present (matches the
       // cutout-overlay stage below) — otherwise a prior shimmer recolor

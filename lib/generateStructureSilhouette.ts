@@ -258,13 +258,32 @@ function panelEdgeOnly(
 
 // Cylindrical plinth edge guide — two vertical lines + top and bottom ellipses.
 // No rectangular fill, no block, no base platform.
+/**
+ * The edit model has its own idea of what a plinth looks like and pulls every
+ * cylinder towards roughly 1.9 tall-to-wide, whatever the guide shows. Drawing
+ * the true product ratio therefore renders the tall sizes too fat: measured on
+ * 2026-09-03, an XXL (90x40, ratio 2.25) came back at 1.72, while an L
+ * (60x33, ratio 1.82) came back at 2.02 — right, because it was already near
+ * the model's own prior. The marker is drawn slimmer than life for the sizes
+ * that sit above that prior, by exactly the factor the model pulls them back,
+ * so what lands in the photograph is the real proportion.
+ */
+const PLINTH_MODEL_PRIOR_ASPECT = 1.9;
+
+function plinthGuideWidth(heightPx: number, diameterPx: number): number {
+  const target = heightPx / diameterPx;
+  if (target <= PLINTH_MODEL_PRIOR_ASPECT) return diameterPx;
+  return diameterPx * (PLINTH_MODEL_PRIOR_ASPECT / target);
+}
+
 function plinthEdge(cx: number, bottomY: number, heightPx: number, diameterPx: number): string {
-  // Draw the real diameter. This used to be Math.min(diameterPx, heightPx/3),
-  // which forced every plinth to a 3:1 silhouette and threw the configured
-  // diameter away — L, XL and XXL all came out identical in the guide even
-  // though they are 60x33, 75x36 and 90x40. Guide and prompt then disagreed
-  // (guide 3.0, prompt 1.8) and the render landed at 1.17: short and fat.
-  const visualWidth = diameterPx;
+  // Draw the real diameter, pre-compensated (see plinthGuideWidth). This used
+  // to be Math.min(diameterPx, heightPx/3), which forced every plinth to a 3:1
+  // silhouette and threw the configured diameter away — L, XL and XXL all came
+  // out identical in the guide even though they are 60x33, 75x36 and 90x40.
+  // Guide and prompt then disagreed (guide 3.0, prompt 1.8) and the render
+  // landed at 1.17: short and fat.
+  const visualWidth = plinthGuideWidth(heightPx, diameterPx);
   const rx    = visualWidth / 2;
   const ryTop = Math.max(3, Math.round(rx * 0.45));
   const topY  = bottomY - heightPx;
@@ -292,8 +311,8 @@ function plinthEdge(cx: number, bottomY: number, heightPx: number, diameterPx: n
 // cap ellipses, giving the model an unmissable object to paint as the white
 // cylinder.
 function plinthFilledCylinder(cx: number, bottomY: number, heightPx: number, diameterPx: number): string {
-  // Real diameter — see the note in plinthEdge.
-  const visualWidth = diameterPx;
+  // Real diameter, pre-compensated — see plinthGuideWidth above.
+  const visualWidth = plinthGuideWidth(heightPx, diameterPx);
   const rx    = visualWidth / 2;
   const ry    = Math.max(3, Math.round(rx * 0.45));
   const topY  = bottomY - heightPx;
