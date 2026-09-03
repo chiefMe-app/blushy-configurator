@@ -329,11 +329,12 @@ export function buildLayoutRefEditPrompt(
         ? `Place it to the RIGHT of centre, standing on the floor directly in front of the backdrop panel. ` +
           `Keep the left-hand floor area in front of the backdrop completely clear and empty — a character standee is added there afterwards. `
         : `Place it front-left of the backdrop. `) +
-      `It must remain fully visible from base to rounded top. ` +
+      `It stands fully visible from base to rounded top, in front of the backdrop and clear of the balloons. ` +
+      // The glass/acrylic guard stays — it fixed a real, repeated failure.
+      // The three "Do not hide / merge / convert" sentences that followed are
+      // gone: they were part of the negation pile that was competing with the
+      // request to paint this object at all.
       `It is a solid opaque matte white column — NOT glass, NOT transparent, NOT clear acrylic. ` +
-      `Do not hide it behind balloons. ` +
-      `Do not merge it into the backdrop. ` +
-      `Do not convert it into a base, podium, riser, or stage. ` +
       (hasRoundPanelInScene
         ? `Stand it close to the round backdrop panel, not set too far forward into the room.`
         : hasStandeesInScene
@@ -465,8 +466,15 @@ export function buildLayoutRefEditPrompt(
       `and no balloon pile or floor buildup directly in front of the arch face. ` +
       `The plinth and the front floor area in front of the arch must remain completely clean and ` +
       `unobstructed — no balloons in front of the plinth, no balloons crossing into the front floor area. ` +
-      `Only one plinth is allowed in the scene. Do not add any extra plinth, pedestal, platform, stage, ` +
-      `support block, base, riser, second cylinder, secondary display column, or additional prop.`
+      // 2026-09-03: this used to continue "Do not add any extra plinth,
+      // pedestal, platform, stage, support block, base, riser, second
+      // cylinder, secondary display column, or additional prop." Printing the
+      // assembled prompt showed 16 separate sentences forbidding
+      // column-shaped objects, in a prompt that is simultaneously asking for
+      // exactly one column to be painted. Double Arch has dropped the plinth
+      // in every render; the simplest reading is that the ban wins. Reduced to
+      // the positive count, which is the part that was actually needed.
+      `Exactly one plinth stands in the scene.`
     : "";
 
   // 2026-09-03: Single Arch's size paragraph is now used for both layouts.
@@ -722,8 +730,18 @@ const setupTemplateClause = setupTemplate
       ? `No text on backdrop. `
       : `No extra text beyond the specified custom text. No misspelled or duplicated lettering. `) +
     `No people. No cake. No table. ` +
-    `No stage. No podium. No base platform. No floor riser. ` +
-    `No rectangular box plinth. No low round podium. No flat platform under plinth. ` +
+    // 2026-09-03: these seven bans on podium/platform/riser/box shapes are
+    // only emitted when the scene has NO plinth. When one IS wanted they were
+    // fighting the request — the prompt asked for a white cylinder to be
+    // painted while separately banning podiums, platforms, risers, box
+    // plinths and low round podiums. Double Arch dropped its plinth in every
+    // render. The shape guidance survives positively in plinthDesc, which
+    // already specifies a solid opaque matte white cylinder, not glass or
+    // acrylic; what is removed is only the blanket ban.
+    (plinth
+      ? ``
+      : `No stage. No podium. No base platform. No floor riser. ` +
+        `No rectangular box plinth. No low round podium. No flat platform under plinth. `) +
     `No extra side panel. No extra wall or slab. ` +
     `No warm yellow lighting. No golden ambient light. No beige hotel interior. No yellow color cast. ` +
     `No ornate luxury room. No cream or brown walls. No orange or yellow white balance. ` +
