@@ -1355,11 +1355,50 @@ function clearAllStandees() {
               background: item.text.enabled ? accent : "rgba(0,0,0,0.06)", color: item.text.enabled ? "white" : "#555" }}>+AED 80</span>
           </div>
           {item.text.enabled && (
-            <div style={{ padding: "10px 12px", background: "#FAFAFA", borderRadius: 10, border: "1px solid rgba(0,0,0,0.06)" }}>
+            <div style={{ padding: "10px 12px", background: "#FAFAFA", borderRadius: 10, border: "1px solid rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 10 }}>
               <textarea rows={2} value={item.text.value}
                 onChange={(e) => patchItemText(itemIdx, { value: e.target.value })}
                 placeholder="Type the name or message..."
                 style={{ width: "100%", resize: "none", borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", padding: "8px 10px", fontSize: 13, outline: "none" }} />
+              <div>
+                <span style={{ fontSize: 10.5, fontWeight: 600, color: "#888", display: "block", marginBottom: 5 }}>Font</span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {FONT_STYLES.map((f) => {
+                    const sel = item.text.fontStyle === f.id;
+                    return (
+                      <button key={f.id} type="button"
+                        onClick={(e) => { e.stopPropagation(); patchItemText(itemIdx, { fontStyle: f.id as FontStyle }); }}
+                        style={{ padding: "4px 11px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                          border: sel ? `1.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
+                          background: sel ? accent + "12" : "white", color: sel ? accent : "#555",
+                          fontFamily: f.id === "script" ? "'Segoe Script','Brush Script MT',cursive"
+                            : f.id === "elegant" ? "Georgia,'Times New Roman',serif" : "inherit",
+                          fontStyle: f.id === "script" ? "italic" : "normal" }}>
+                        {f.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: 10.5, fontWeight: 600, color: "#888", display: "block", marginBottom: 5 }}>Text color</span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {TEXT_COLORS.map((c) => {
+                    const sel = item.text.color === c.id;
+                    return (
+                      <button key={c.id} type="button"
+                        onClick={(e) => { e.stopPropagation(); patchItemText(itemIdx, { color: c.id as TextColor }); }}
+                        style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                          border: sel ? `1.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
+                          background: sel ? accent + "12" : "white", color: sel ? accent : "#555" }}>
+                        <span style={{ width: 12, height: 12, borderRadius: "50%", border: "1px solid rgba(0,0,0,0.15)",
+                          background: c.id === "accent" ? accent : c.swatch }} />
+                        {c.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
@@ -1557,7 +1596,13 @@ function clearAllStandees() {
                             const isSel = item.sizeId === size.id;
                             return (
                               <button key={size.id} type="button"
-                                onClick={() => patchItem(itemIdx, { sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm })}
+                                onClick={() => {
+                                  patchItem(itemIdx, { sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm });
+                                  // Sizing a piece is what unlocks its add-ons, so open the
+                                  // panel straight away instead of making the customer find
+                                  // the Customize button.
+                                  setOpenCustomizeIds(prev => { const n = new Set(prev); n.add(item.id); return n; });
+                                }}
                                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, padding: "6px 13px", borderRadius: 13, cursor: "pointer", transition: "all 0.15s",
                                   background: isSel ? DC.chipBg : "white",
                                   border: `1.5px solid ${isSel ? DC.dashedBd : DC.cardBd}` }}>
@@ -1592,7 +1637,10 @@ function clearAllStandees() {
                   const isSel = rectItem.sizeId === size.id;
                   return (
                     <button key={size.id} type="button"
-                      onClick={() => patchDecor({ backdropItems: d.backdropItems.map(i => i.id === rectItem.id ? { ...i, sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm } : i) })}
+                      onClick={() => {
+                        patchDecor({ backdropItems: d.backdropItems.map(i => i.id === rectItem.id ? { ...i, sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm } : i) });
+                        setOpenCustomizeIds(prev => { const n = new Set(prev); n.add(rectItem.id); return n; });
+                      }}
                       style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 14px", borderRadius: 10, cursor: "pointer",
                         border: isSel ? "2px solid #EC4D8D" : "1.5px solid #ECEAF1",
                         background: "white", boxShadow: isSel ? "0 2px 10px rgba(236,77,141,0.12)" : "none", transition: "all 0.15s" }}>
@@ -1752,6 +1800,9 @@ function clearAllStandees() {
                                   : item
                               );
                               patchDecor({ backdropItems: updated });
+                              if (firstRectItem?.id) {
+                                setOpenCustomizeIds(prev => { const n = new Set(prev); n.add(firstRectItem.id); return n; });
+                              }
                             }}
                             style={{
                               display: "flex", justifyContent: "space-between", alignItems: "center",
