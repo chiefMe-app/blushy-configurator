@@ -365,10 +365,38 @@ export function buildLayoutRefEditPrompt(
   const hasStandeesInScene =
     (sceneModel.cutouts?.items ?? []).some((i) => (i?.quantity ?? 0) > 0);
 
+  // How wide the plinth is next to the board it stands in front of. The model
+  // can see that board, so a comparison against it lands where a measurement in
+  // centimetres does not (see plinthDesc below).
+  const plinthBoardWidthCm = Math.max(
+    ...sceneModel.panels.map((p) => p.widthCm ?? 0), plinth?.diameterCm ?? 1,
+  );
+  const plinthWidthFraction = (() => {
+    if (!plinth) return "";
+    const n = Math.round(plinthBoardWidthCm / plinth.diameterCm);
+    const words: Record<number, string> = { 2: "half", 3: "a third", 4: "a quarter", 5: "a fifth", 6: "a sixth" };
+    return words[n] ?? `1/${n}`;
+  })();
+
+  // The word "plinth" is what was making these render as squat drums. Measured
+  // 2026-09-03 across seven controlled renders on one fixed scene and seed: the
+  // guide marker's proportions do NOT control the rendered plinth at all —
+  // marker aspects of 1.4, 2.0, 2.3 and 4.6, drawn faint and drawn in strong
+  // contrast, every one of them came back at roughly 1:1, and the SLIMMEST
+  // marker produced the FATTEST plinth. Stating the ratio in centimetres did
+  // not move it either; that wording was already in this prompt. What did move
+  // it, with the guide and seed held identical, was calling the object a
+  // "pedestal column" instead of a "plinth" and comparing its width to the
+  // board behind it — the model has a squat-drum prior attached to the word
+  // "plinth", and the fix is to stop using it rather than to fight it. Height
+  // was always roughly right; only the diameter was wrong, so the comparison
+  // is what carries the correction.
   const plinthDesc   = plinth
-    ? `Keep exactly one visible white cylindrical plinth, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm diameter — ` +
-      `a slim column, about ${(plinth.heightCm / plinth.diameterCm).toFixed(1)} times taller than it is wide, not a short fat drum. ` +
-      `This is a separate display plinth, not a support base for the backdrop. ` +
+    ? `Keep exactly one visible white cylindrical pedestal column, ${plinth.heightCm}cm tall on a ${plinth.diameterCm}cm diameter circular base. ` +
+      `It is a slim upright column: about ${(plinth.heightCm / plinth.diameterCm).toFixed(1)} times taller than it is wide, ` +
+      `and its diameter is roughly ${plinthWidthFraction} of the width of the backdrop board behind it. ` +
+      `It is NOT a wide squat drum, NOT a round coffee table, NOT a low cake stand. ` +
+      `This is a separate display pedestal, not a support base for the backdrop. ` +
       // 2026-09-03: Double Arch no longer asks for the gap. It uses Single
       // Arch's own placement — in front of a backdrop panel — because that is
       // the placement the model actually paints; see the note in
@@ -818,7 +846,9 @@ const setupTemplateClause = setupTemplate
     inventoryItems.push(panelCount === 1 ? `the balloon garland` : `a balloon garland on each board`);
   }
   if (plinth) {
-    inventoryItems.push(`one white cylindrical plinth standing on the floor in front of the boards`);
+    // "pedestal column", not "plinth", here too — the inventory is the first
+    // line the model reads, and the squat-drum prior rides on that one word.
+    inventoryItems.push(`one slim white cylindrical pedestal column standing on the floor in front of the boards`);
   }
   for (const i of textPanelIdx) {
     inventoryItems.push(`the words "${sceneModel.panels[i].text.value.trim()}" printed on the ${panelPositionLabel(i)}`);
