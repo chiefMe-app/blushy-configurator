@@ -135,36 +135,42 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     maxBackdrops: 2,
     badge: "Popular",
     miniPreview: ["arch_large", "arch_small"],
+    // 2026-09-03: trimmed to one sentence. The previous version ("Do not
+    // overlap ... Do not create a third panel. No shimmer wall. No open
+    // frame. No perspective tunnel") made the plinth vanish on its own in a
+    // local reproduction — see the Double Arch branch of backdropDesc in
+    // buildLayoutRefEditPrompt.ts for the full finding.
     panelInstruction:
-      "Use exactly two solid arch backdrop panels side-by-side, bases aligned on the same floor line, " +
-      "with a small clean gap between them. The left arch and the right arch are each independent " +
-      "freestanding solid backdrop panels rendered at their own configured size. " +
-      "Do not overlap them front/back. Do not merge them into one shape. Do not create a third panel. " +
-      "No shimmer wall. No open frame. No perspective tunnel — a curated flat pair of arches.",
+      "Two freestanding solid arch backdrop panels standing side by side with a small clean gap " +
+      "between them, the left arch visibly larger than the right.",
     // Simplified 2026-07-18: reuses the exact proven Single Arch half-garland
     // description twice, mirrored, instead of the old bespoke dense/mirror
     // garland algorithm that produced unreliable-looking results. See the
     // matching doubleArchMirroredGarlandClause in buildLayoutRefEditPrompt.ts
     // and the guide-drawing change in generateStructureSilhouette.ts.
+    // 2026-09-03: replaced. The long paragraph that used to be here described
+    // the garland the way the layout guide already draws it, and that turned
+    // out to be the root cause of Double Arch's flat, blobby balloons: when
+    // the prompt agrees with the guide, flux-2 flash/edit copies the guide's
+    // overlapping circles literally. Single Arch never hit this because its
+    // prompt says "the left side stays clean" while its guide draws BOTH
+    // sides — the conflict forces the model to re-paint the garland, and the
+    // re-painted garland is the good-looking one. Proven by swapping prompts
+    // between the two guides (single prompt on the double guide: good; double
+    // prompt on the single guide: blobs). The fix is to say so explicitly:
+    // the circles are placeholders, re-create the garland. Single Arch's own
+    // catalog sentence is reused, mirrored, and the wording is colour-neutral
+    // on purpose — a version that said "using only the selected balloon
+    // colours" produced gold and pink balloons on a white/blue palette.
     garlandInstruction:
-      "Balloon design: each arch gets its own single-arch-style half-garland on its OUTER side — " +
-      "the exact same proven Single Arch look, mirrored between the two arches. " +
-      "Each garland is physically installed on its arch board: the balloons touch and slightly overlap " +
-      "the arch panel's outer edge along the garland's whole length, never floating in the empty wall " +
-      "space beside the arch and never standing apart as a separate column. " +
-      "Each garland is bottom-heavy: its largest, densest mass is a fat floor-level mound of big " +
-      "balloons at the arch's outer base corner, from which it rises in a lush organic flow that " +
-      "gradually tapers — narrower band, smaller balloons — up the outer edge, finishing as a lighter " +
-      "crown/shoulder curl over the top. " +
-      "The LEFT arch's garland does this on its outer-left side; the RIGHT arch's garland mirrors it " +
-      "exactly on its outer-right side. " +
-      "Dense organic garlands with a large/medium/small balloon mix, heavy overlap, real visual " +
-      "thickness, premium event-decorator style — not an evenly spaced side border or trim, not the " +
-      "same thickness from bottom to top, not tiny beads, not a sparse dotted border, not a " +
-      "detached vertical balloon column, not a pearl-necklace string, not random floating balloons. " +
-      "The inner sides of both arches (facing each other) and the entire center gap between the two " +
-      "arches stay completely clean and balloon-free — no bead chain, no thin single-file row, " +
-      "no horizontal balloon bridge across both arches.",
+      "Balloon design: each arch gets one statement half-garland on its OUTER side, anchored by a dense " +
+      "cluster of large balloons at the top outer crown of the arch, cascading down the outer edge with " +
+      "gradually smaller balloons, ending in a loose trailing cluster of small balloons pooling on the " +
+      "floor at the arch base. The inner sides of both arches and the centre gap stay completely clean " +
+      "and balloon-free. The balloon circles in the layout reference only mark where each garland sits " +
+      "and how thick it is — re-create each garland as a real professional installation: dozens of " +
+      "individual glossy latex balloons in a wide range of sizes, from large statement balloons down to " +
+      "small filler balloons tucked into the gaps, each balloon a distinct sphere.",
     plinthInstruction:
       "Double Arch's plinth is AI-rendered (2026-07-19), exactly like Single Arch's — guide " +
       "plinthEdge marker + plinthDesc prompt clause, centered in the clean gap between the two " +

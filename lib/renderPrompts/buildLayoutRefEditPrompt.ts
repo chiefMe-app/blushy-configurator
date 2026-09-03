@@ -160,6 +160,33 @@ export function buildLayoutRefEditPrompt(
         `single ${panelTypeLabel(p.type)} ${backdropColorLabel(p.color)} backdrop board, ` +
         `${p.widthCm}cm wide by ${p.heightCm}cm tall, solid freestanding board, seamless matte surface`;
     }
+  } else if (isDoubleArchScene) {
+    // Double Arch gets Single Arch's own arch wording, stated once for the
+    // pair, instead of the generic multi-panel block below.
+    //
+    // 2026-09-03, found by reproducing the render locally with the exact
+    // guide/prompt/model/seed and bisecting the prompt: the generic block
+    // ("exactly 2 separate freestanding backdrop pieces ... Panel 1 (left):
+    // ... not compressed, not narrow, not a tower, correctly proportioned"
+    // twice) is what was making the plinth disappear. With it in place the
+    // plinth was absent in every Double Arch render; with this compact
+    // description — and no other change — the same seed painted the plinth.
+    // The catalog's double_arch panelInstruction was trimmed for the same
+    // reason (its "Do not create a third panel. No open frame ..." tail had
+    // the same effect on its own).
+    const [l, r] = sceneModel.panels;
+    const lColor = backdropColorLabel(l.color);
+    const rColor = backdropColorLabel(r.color);
+    const surface = lColor === rColor
+      ? `seamless matte ${lColor} surface`
+      : `seamless matte surface — the left panel ${lColor}, the right panel ${rColor}`;
+    backdropDesc =
+      `two rounded arch backdrops side by side — the left panel ${l.widthCm}cm wide by ${l.heightCm}cm tall, ` +
+      `the right panel ${r.widthCm}cm wide by ${r.heightCm}cm tall — ` +
+      `each a solid filled freestanding arch backdrop panel with a fully opaque surface. ` +
+      `Each arch face is one continuous solid board, ${surface}, ` +
+      `no cut-out opening, no hollow doorway, no empty arch frame — the full solid panel face must be visible. ` +
+      `These are solid event backdrop boards shaped like arches, not doorways or passages you can see or walk through.`;
   } else {
     const positions = ["left", "center", "right"];
     const posLabels = panelCount === 2
@@ -232,7 +259,14 @@ export function buildLayoutRefEditPrompt(
   // onto the image, which is explicitly forbidden elsewhere in this prompt.
   // Comparative wording alone ("visibly larger" / "visibly smaller") gets
   // the same result without giving the model a second number to echo.
-  const doubleArchSizeLockClause = isDoubleArchScene
+  // 2026-09-03: both locks retired. In a local reproduction of the render
+  // (same guide, model and seed) the two arches kept their different sizes
+  // and their gap in every one of ~20 variants without these clauses — the
+  // layout guide already fixes both — while the clauses were part of the
+  // verbose block that suppressed the plinth. Left as "" so the assembly
+  // below is unchanged.
+  const doubleArchSizeLockClause = "";
+  const doubleArchSizeLockClauseRetired = isDoubleArchScene
     ? ` DOUBLE ARCH SIZE LOCK: the two arch panels are DIFFERENT SIZES and must look clearly, ` +
       `obviously different in scale at a glance — the left arch is visibly larger, both taller and wider, ` +
       `than the right arch. ` +
@@ -242,7 +276,8 @@ export function buildLayoutRefEditPrompt(
       `Do not render any dimension lines, measurement arrows, or size labels on the image.`
     : "";
 
-  const doubleArchSeparationClause = isDoubleArchScene
+  const doubleArchSeparationClause = "";
+  const doubleArchSeparationClauseRetired = isDoubleArchScene
     ? ` DOUBLE ARCH SEPARATION LOCK: the two arch panels are two separate freestanding physical event props, ` +
       `each with its own independent floor footprint and base contact point. ` +
       `Maintain a small but clearly visible gap between the two arch bases at all times — ` +
@@ -250,6 +285,8 @@ export function buildLayoutRefEditPrompt(
       `The floor in this gap stays completely bare — the plinth stands in front of a panel, not in the gap. ` +
       `Each arch must read as a distinct standalone board, not fused, joined, or leaning into the other.`
     : "";
+  void doubleArchSizeLockClauseRetired;
+  void doubleArchSeparationClauseRetired;
 
   // ── Double Arch mirrored garland (2026-07-18 restoration) ─────────────────
   // Replaces the old bespoke double-arch garland wording: real renders under
@@ -556,7 +593,10 @@ export function buildLayoutRefEditPrompt(
     : "";
 
   // ── Multi-panel negatives ─────────────────────────────────────────────────
-  const multiPanelNegs = isMulti
+  // Double Arch is excluded (2026-09-03): these seventeen "No ..." sentences
+  // were in every render where the plinth went missing and in none where it
+  // was painted; the guide already fixes the panel count and widths.
+  const multiPanelNegs = isMulti && !isDoubleArchScene
     ? `Do not merge panels into one. Do not omit any panel. No extra panels beyond ${panelCount}. ` +
       `No outline-only arch. No wire-frame backdrop. No thin frame backdrop. ` +
       `No transparent backdrop board. No decorative line structure. ` +
@@ -673,7 +713,7 @@ const setupTemplateClause = setupTemplate
         `The garland must be a lush organic balloon garland with varied balloon sizes, layered clusters, ` +
         `natural asymmetry, dense premium event styling. `
       : "") +
-    (hasGarland && sceneModel.panels.length >= 2
+    (hasGarland && sceneModel.panels.length >= 2 && !isDoubleArchScene
       ? `Preserve the organic garland following the selected setup layout path. ` +
         `Do not replace it with loose balloon bouquets, simple balloon clusters, or floating balloons. `
       : "")

@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "plinth-negation-trimmed-v30";
+const RENDER_CACHE_VERSION = "double-arch-recreate-garland-v31";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1186,9 +1186,12 @@ forbiddenBalloonColorLabels: hasSempertexLock
   // strengthen for Double Arch. Field names kept stable rather than removed.
   doubleArchPlinthRetentionPromptApplied: false,
   doubleArchPlinthGuideStrengthened:      false,
-  doubleArchSizeLockStrengthened:         setupLayoutTemplateId === "double_arch",
-  doubleArchGapLockApplied:               setupLayoutTemplateId === "double_arch",
-  doubleArchPhysicalSeparationApplied:    setupLayoutTemplateId === "double_arch",
+  // 2026-09-03: the SIZE LOCK / SEPARATION LOCK clauses were retired (see
+  // buildLayoutRefEditPrompt.ts) — the guide fixes both; the clauses were
+  // part of the block that suppressed the plinth. Names kept, values false.
+  doubleArchSizeLockStrengthened:         false,
+  doubleArchGapLockApplied:               false,
+  doubleArchPhysicalSeparationApplied:    false,
 
   // Double Arch restoration diagnostics (2026-07-18) — Double Arch was
   // brought back into the product with simplified balloon behavior: each
