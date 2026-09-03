@@ -1033,7 +1033,15 @@ export function generateStructureSilhouette(
           const arcCx = p.cx;
           const arcCy = p.apexY + rArc;
           const angFrom = side === "left" ? 178 : 2;
-          const angTo   = side === "left" ? 268 : -88;
+          // Tight mode stops well short of the apex (2026-09-03): walked all
+          // the way to the top, the last few shrinking balloons stood up
+          // above the arch as a thin horn, and now that the edit model
+          // re-creates the garland from the guide it painted that horn as a
+          // pointed tip. The crown is a rounded cluster of large balloons on
+          // the shoulder — the reference Single Arch look — not a tail.
+          const angTo   = tight
+            ? (side === "left" ? 232 : -52)
+            : (side === "left" ? 268 : -88);
           // Walked along the arc the same way the climb is walked up the edge,
           // for the same reason — the old version cycled 3 depth lanes and a
           // 3-entry size pattern, which drew a beaded trim over the shoulder.
@@ -1042,7 +1050,9 @@ export function generateStructureSilhouette(
           const angStep = (angTo - angFrom) > 0 ? 1 : -1;
           while (Math.abs(crownAng - angFrom) < Math.abs(angTo - angFrom) && crownGuard++ < 40) {
             const t     = Math.abs(crownAng - angFrom) / Math.abs(angTo - angFrom);
-            const rBall = sizeR[pickSize(0.55 + 0.45 * t)] * (tight ? 0.9 : 1);
+            const rBall = tight
+              ? sizeR[pickSize(0.15 + 0.35 * t)]        // large cluster, not a shrinking trim
+              : sizeR[pickSize(0.55 + 0.45 * t)];
             const rad   = rArc + (rnd() * 1.5 - 0.4) * rMed;
             const a     = (crownAng * Math.PI) / 180;
             put(arcCx + rad * Math.cos(a), arcCy + rad * Math.sin(a), rBall);

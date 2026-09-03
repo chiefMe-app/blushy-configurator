@@ -608,9 +608,12 @@ export const BALLOON_STYLES: Option<BalloonStyleId>[] = [
 ];
 
 export const PLINTH_SIZES: Option<PlinthSize>[] = [
-  { id: "small",  label: "S - 60cm",  price: 60  },
-  { id: "medium", label: "M - 75cm",  price: 80  },
-  { id: "large",  label: "L - 90cm",  price: 110 },
+  // Real product sizes (2026-09-03): L 60cm x ⌀33, XL 75cm x ⌀36, XXL 90cm x ⌀40.
+  // Ids stay small/medium/large so saved configs keep resolving; see
+  // PLINTH_DIMS in layoutDimensions.ts for the matching cm figures.
+  { id: "small",  label: "L - 60cm",   price: 60  },
+  { id: "medium", label: "XL - 75cm",  price: 80  },
+  { id: "large",  label: "XXL - 90cm", price: 110 },
 ];
 
 /** Legacy cutout sets - kept only for backward compatibility. */

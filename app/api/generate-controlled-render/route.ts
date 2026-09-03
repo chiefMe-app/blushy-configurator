@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "double-arch-recreate-garland-v31";
+const RENDER_CACHE_VERSION = "crown-plinth-sizes-standee-floor-v32";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -2033,7 +2033,26 @@ forbiddenBalloonColorLabels: hasSempertexLock
                   left   = onLeft
                     ? Math.round(panelLeft - rw * 0.75)
                     : Math.round(panelRight - rw * 0.25);
-                  bottom = Math.round(groupGeom.floorYFrac * imgH);
+                  // groupGeom.floorYFrac is where the BACKDROP BOARDS meet the
+                  // floor — the back plane. A standee stands in FRONT of the
+                  // boards, at about the depth of the plinth, and the camera
+                  // looks slightly down, so its feet belong lower in the image
+                  // than that line. Landing them exactly on it is what made the
+                  // figure hover above the floor (2026-09-03 Double Arch).
+                  //
+                  // How far lower was measured, not guessed: in seven renders
+                  // the painted plinth base sat below the guide's floor line by
+                  // 6.1 / 6.7 / 6.9 / 7.7% of panel height in the landscape
+                  // Double Arch frame, and by 1.7 / 1.7 / 1.8% in the portrait
+                  // Single Arch frame. The gap tracks the frame's aspect ratio
+                  // (a wide frame shows more foreground floor, so the same
+                  // physical step forward covers more pixels), so it is
+                  // interpolated between those two measured points and clamped
+                  // for the frames that were not measured.
+                  const frameAspect  = imgW / imgH;
+                  const forwardFrac  = Math.min(0.075, Math.max(0.015,
+                    0.017 + 0.0623 * (frameAspect - 0.5625)));
+                  bottom = Math.round(groupGeom.floorYFrac * imgH + panelPxHeight * forwardFrac);
                   // Keep the figure fully on canvas if the panel sits near an edge
                   if (left < 0) left = 0;
                   if (left + rw > imgW) left = Math.max(0, imgW - rw);

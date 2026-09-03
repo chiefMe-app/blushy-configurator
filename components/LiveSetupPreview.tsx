@@ -875,7 +875,7 @@ const PLINTH_X: Record<number, number[]> = {
 /**
  * Draws polished cylindrical display columns using exact production dimensions
  * from layoutDimensions.ts. Rendering: floor shadow → body → bottom cap →
- * top cap. All plinths are 40 cm diameter; height varies by selected size.
+ * top cap. Diameter and height both come from PLINTH_DIMS (L/XL/XXL).
  */
 function drawPlinths(
   ctx: CanvasRenderingContext2D,

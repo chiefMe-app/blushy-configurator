@@ -17,9 +17,11 @@ export const RECT_DIMS = {
 } as const;
 
 export const PLINTH_DIMS = {
-  small:  { label: "Small",  diameterCm: 40, heightCm: 60 },
-  medium: { label: "Medium", diameterCm: 40, heightCm: 75 },
-  large:  { label: "Large",  diameterCm: 40, heightCm: 90 },
+  // Real product sizes (2026-09-03): the three cylinders are L/XL/XXL and
+  // get narrower as they get shorter — 33/36/40cm diameters, not a flat 40.
+  small:  { label: "L",   diameterCm: 33, heightCm: 60 },
+  medium: { label: "XL",  diameterCm: 36, heightCm: 75 },
+  large:  { label: "XXL", diameterCm: 40, heightCm: 90 },
   xl:     { label: "XL",     diameterCm: 40, heightCm: 120 },
 } as const;
 

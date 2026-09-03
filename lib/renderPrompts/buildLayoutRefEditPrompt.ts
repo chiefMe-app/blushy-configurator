@@ -107,6 +107,15 @@ export function buildLayoutRefEditPrompt(
   // shimmer_wall branch below, so both use one shimmer-wall creation method.
   let backdropDesc: string;
 
+  // The round-panel description compares the panel against the plinth in real
+  // cm. Those figures used to be written out as "75 cm" and "40 cm", which
+  // stopped being true on 2026-09-03 when the three plinths became L 60x33,
+  // XL 75x36 and XXL 90x40 — a scene with an L plinth was then described with
+  // another size's numbers. Read them off the selected plinth instead.
+  const firstPlinth   = sceneModel.plinths[0];
+  const plinthHeightCm   = firstPlinth?.heightCm   ?? 75;
+  const plinthDiameterCm = firstPlinth?.diameterCm ?? 40;
+
   if (!isMulti) {
     const p = sceneModel.panels[0];
     if (p.type === "shimmer_wall") {
@@ -136,8 +145,9 @@ export function buildLayoutRefEditPrompt(
         `absolutely nothing visible beneath, around, or supporting it. ` +
         `The ONLY cylinder allowed anywhere in this scene is the single selected vertical plinth — ` +
         `do not add any other cylinder, disc, or rounded object near the panel. ` +
-        `Round backdrop is exactly 200 cm diameter. It must visually appear about 2.6 times taller than the ` +
-        `75 cm plinth and about 5 times wider than the 40 cm plinth diameter. The round panel should dominate ` +
+        `Round backdrop is exactly 200 cm diameter. It must visually appear about ` +
+        `${(200 / plinthHeightCm).toFixed(1)} times taller than the ${plinthHeightCm} cm plinth and about ` +
+        `${Math.round(200 / plinthDiameterCm)} times wider than the ${plinthDiameterCm} cm plinth diameter. The round panel should dominate ` +
         `the setup and fill most of the background composition. ` +
         `Do not shrink the round panel. Do not render it as a small decorative circle. ` +
         `It must read as a full-size 2 meter event backdrop, thin and flat like a sign board, never like a piece ` +

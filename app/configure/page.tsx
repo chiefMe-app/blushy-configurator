@@ -890,11 +890,13 @@ const THEME_PRINT_SUGGESTIONS: Record<string, string> = {
 };
 
 /** Short display labels for plinth size buttons. */
+// Real product names (2026-09-03) — the three cylinders sold are L/XL/XXL.
+// Keys are the stored size ids, which stay small/medium/large.
 const PLINTH_SHORT: Record<string, string> = {
-  small: "S",
-  medium: "M",
-  large: "L",
-  xl: "XL",
+  small: "L",
+  medium: "XL",
+  large: "XXL",
+  xl: "XXL",
 };
 
 const DEFAULT_SEMPERTEX_IDS = ["fashion-005-white", "pastel-matte-609-pink", "pastel-matte-650-lilac"];
