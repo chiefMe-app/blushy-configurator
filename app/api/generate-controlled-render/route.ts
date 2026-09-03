@@ -146,7 +146,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "double-arch-guide-canvas-matches-render-v22";
+const RENDER_CACHE_VERSION = "double-arch-single-pass-like-single-arch-v23";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1415,14 +1415,28 @@ forbiddenBalloonColorLabels: hasSempertexLock
   // with real scene lighting, shadows, and floor reflection, exactly like
   // Single Arch's plinth (per product request).
   //
-  // 2026-09-03: considered disabling this to save a round trip, on the theory
-  // that v17's narrower panel group had widened the centre gap. Measured it
-  // before changing anything and the opposite is true — the gap went from
-  // 128px to 111px, because the gap scales down with the group. The plinth is
-  // 89px wide, so it now fills 80% of the space it has to appear in. The
-  // conditions that made those 5 renders come back plinth-less are, if
-  // anything, tighter than before, so this pass stays.
-  const DOUBLE_ARCH_PLINTH_INJECTION_ENABLED = true;
+  // 2026-09-03 — DISABLED, and this time not to save time but to save the
+  // balloons. With the guide canvas fixed in v22, the Double Arch and Single
+  // Arch layout guides are now pixel-for-pixel equivalent garlands (verified
+  // by rendering both to PNG and comparing side by side: identical radii,
+  // 26.5 / 41.7 / 80, identical lane structure). Single Arch still renders
+  // beautifully from that guide and Double Arch still renders mushy, merged
+  // sausages, so the defect cannot be in the guide or the garland code.
+  //
+  // The one structural difference left is round trips. With strict correction
+  // now off, Single Arch is a single generation, while Double Arch runs this
+  // second full generation on top of it. Its prompt says "preserve ... every
+  // balloon exactly as they are", but a flux edit pass re-synthesises the
+  // whole frame regardless — the exact mechanism already recorded for the
+  // correction pass in buildStrictCorrectionPrompt, which "was flattening
+  // balloons into solid flat-coloured discs while fixing their hue". Same
+  // failure, different pass.
+  //
+  // If the plinth now goes missing, do NOT simply switch this back on and
+  // accept the degraded balloons — composite it deterministically instead;
+  // computeDoubleArchPlinthOverlayGeometry already exists for that, and the
+  // doubleArchPlinthComposite* diagnostics are already wired up.
+  const DOUBLE_ARCH_PLINTH_INJECTION_ENABLED = false;
 
   let plinthSourceUrl = imageUrl;
   let doubleArchPlinthInjectionApplied = false;
