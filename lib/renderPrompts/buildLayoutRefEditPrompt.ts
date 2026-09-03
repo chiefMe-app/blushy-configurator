@@ -376,7 +376,11 @@ export function buildLayoutRefEditPrompt(
         ? `Place it to the RIGHT of centre, standing on the floor directly in front of the backdrop panel. ` +
           `Keep the left-hand floor area in front of the backdrop completely clear and empty — a character standee is added there afterwards. `
         : `Place it front-left of the backdrop. `) +
-      `It stands fully visible from base to rounded top, in front of the backdrop and clear of the balloons. ` +
+      // balloonStyle is declared further down; read the style off the scene
+      // model here so this clause can be built where the plinth is described.
+      (sceneModel.balloons.style !== "none"
+        ? `It stands fully visible from base to rounded top, in front of the backdrop and clear of the balloons. `
+        : `It stands fully visible from base to rounded top, in front of the backdrop. `) +
       // The glass/acrylic guard stays — it fixed a real, repeated failure.
       // The three "Do not hide / merge / convert" sentences that followed are
       // gone: they were part of the negation pile that was competing with the
@@ -564,7 +568,18 @@ export function buildLayoutRefEditPrompt(
 
   const garlandDesc =
     balloonStyle === "none"
-      ? "No balloon garland. "
+      // 2026-09-03: "No balloon garland." on its own did not work — a real
+      // render of a no-balloons Double Arch came back with two full balloon
+      // bouquets. Printing the assembled prompt showed why: it still carried
+      // thirteen sentences mentioning balloons, including the scene opener
+      // ("icy light blue and white balloon tones") and, at the very end,
+      // "No garland without 36 inch balloons", which asserts a garland exists
+      // and demands large balloons in it. Those are gated on the garland now;
+      // this clause states the empty scene positively instead of relying on a
+      // single bare negation.
+      ? `This setup has no balloons at all. The backdrop panels stand on their own, ` +
+        `and the floor and wall around them stay completely bare and clean — ` +
+        `no balloon garland, no balloon clusters, no balloon bouquets, no loose balloons anywhere. `
       : garlandOpeningSentence + "." +
         balloonSizeDesc +
         ` The balloon garland must be attached directly to the backdrop edge with no visible gap. ` +
@@ -686,7 +701,9 @@ export function buildLayoutRefEditPrompt(
       `gray textured plaster or concrete studio wall, polished light concrete or stone floor, ` +
       (hasSempertexLock
         ? `crisp clean whites, neutral white balance, color-accurate rendering. `
-        : `crisp clean whites, icy light blue and white balloon tones, neutral white balance, fresh modern editorial event styling. `);
+        : balloonStyle === "none"
+          ? `crisp clean whites, neutral white balance, fresh modern editorial event styling. `
+          : `crisp clean whites, icy light blue and white balloon tones, neutral white balance, fresh modern editorial event styling. `);
   const eventSetupLabel = (hasSempertexLock && isUnicornTheme)
     ? "soft pastel birthday backdrop setup"
     : "children's birthday event setup";
@@ -798,10 +815,14 @@ const setupTemplateClause = setupTemplate
     `No overly warm shadows. No dark moody room. ` +
     `No plants. No furniture. No chairs. No mirrors. No doors. No visible support legs. No black stands. ` +
     (hasArchPanelInPrompt
-      ? `No balloons across the front face. No balloons blocking the arch face. ` +
-        `No balloons covering the open center. No floor balloon pile in front of panel. ` +
-        `No garland crossing inward over the panel face. No disconnected floor balloon pile. ` +
-        `No balloons in front of plinth. ` +
+      // The balloon placement negatives are skipped for a no-balloons scene:
+      // naming balloons seven times is what a scene with none must not do.
+      ? (balloonStyle !== "none"
+          ? `No balloons across the front face. No balloons blocking the arch face. ` +
+            `No balloons covering the open center. No floor balloon pile in front of panel. ` +
+            `No garland crossing inward over the panel face. No disconnected floor balloon pile. ` +
+            `No balloons in front of plinth. `
+          : "") +
         `No hollow arch. No open doorway arch. No arch frame. No cut-out center. ` +
         `No empty opening. No see-through arch. No doorway frame. `
       : "") +
@@ -833,7 +854,9 @@ const setupTemplateClause = setupTemplate
         `No glossy balloons. No chrome balloons. No mirror metallic balloons. No reflective balloons unless selected. ` +
         `No warm cast. No creamy tint. No hazy filter. No editorial global filter. No warm amber overlay. No film-like tint. No ivory whites. No beige whites. `
       : "") +
-    `No balloons all the same size. No mostly small balloons. No garland without 36 inch balloons. ` +
-    `No tiny-only garland. No micro-balloon chain.`
+    (balloonStyle !== "none"
+      ? `No balloons all the same size. No mostly small balloons. No garland without 36 inch balloons. ` +
+        `No tiny-only garland. No micro-balloon chain.`
+      : "")
   );
 }

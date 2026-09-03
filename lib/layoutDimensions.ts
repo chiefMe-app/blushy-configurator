@@ -62,8 +62,27 @@ export function getPanelDimensions(
   return { widthCm: 100, heightCm: 200 };
 }
 
-/** Resolve plinth production dimensions. */
+/**
+ * Resolve plinth production dimensions.
+ *
+ * An id that is not in PLINTH_DIMS falls back to medium, which is 75cm x 36cm.
+ * That fallback is silent, so a bad id anywhere upstream looks exactly like a
+ * deliberate XL selection (2026-09-03: a plinth reported as the wrong size had
+ * precisely those dimensions). It still falls back rather than throwing — a
+ * render must not fail over this — but it now says so in the server log, and
+ * resolvePlinthSize below lets callers report what actually happened.
+ */
 export function getPlinthDimensions(size: string): { diameterCm: number; heightCm: number } {
   if (size in PLINTH_DIMS) return PLINTH_DIMS[size as PlinthDimKey];
+  console.warn(`[layoutDimensions] unknown plinth size "${size}" — falling back to medium (75cm x 36cm)`);
   return PLINTH_DIMS.medium;
+}
+
+/** Same lookup, plus whether the id was recognised. For diagnostics. */
+export function resolvePlinthSize(size: string): {
+  diameterCm: number; heightCm: number; recognised: boolean;
+} {
+  const recognised = size in PLINTH_DIMS;
+  const dims = recognised ? PLINTH_DIMS[size as PlinthDimKey] : PLINTH_DIMS.medium;
+  return { ...dims, recognised };
 }
