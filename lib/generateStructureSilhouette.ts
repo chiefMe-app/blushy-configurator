@@ -16,6 +16,7 @@
  */
 
 import type { BackdropItem, PlinthSize, BackdropShapeId, BalloonStyleId } from "./config";
+import { resolveTextColorHex } from "./config";
 import { calculateExactLayout } from "./calculateExactLayout";
 import { calculateRenderAspectRatio } from "./calculateRenderAspectRatio";
 import type { FalImageSize } from "./calculateRenderAspectRatio";
@@ -378,11 +379,8 @@ const TEXT_GUIDE_FONT: Record<string, { family: string; weight: string }> = {
   block:   { family: "Arial Black, Impact, DejaVu Sans, sans-serif",         weight: "900" },
   elegant: { family: "Georgia, Times New Roman, DejaVu Serif, serif",        weight: "600" },
 };
-/** Accent has no fixed hex here (it is per theme); a soft pink stands in for
- *  it, matching the "theme accent pink" wording the prompt already uses. */
-const TEXT_GUIDE_FILL: Record<string, string> = {
-  white: "#FFFFFF", gold: "#C9A227", black: "#1E1E1E", accent: "#E39BB4",
-};
+// Colour comes from resolveTextColorHex so a customer-picked hex is drawn as
+// itself. The four presets still resolve to their own fixed values.
 
 function customTextGuide(
   cx: number, pw: number, apexY: number, floorY: number, text: string,
@@ -427,17 +425,26 @@ function customTextGuide(
   ));
   const safe = escapeXml(text);
   const font = TEXT_GUIDE_FONT[fontStyle] ?? TEXT_GUIDE_FONT.script;
-  const fill = TEXT_GUIDE_FILL[color] ?? TEXT_GUIDE_FILL.black;
-  // White lettering needs an outline to exist at all against a white board.
-  const outline = color === "white"
+  const fill = resolveTextColorHex(color);
+  // Any near-white lettering needs an outline to exist at all against a white
+  // board — judged on the resolved colour, so a customer-picked pale hex gets
+  // the same treatment the "white" preset always had.
+  const lum = (() => {
+    const r = parseInt(fill.slice(1, 3), 16), g = parseInt(fill.slice(3, 5), 16), b = parseInt(fill.slice(5, 7), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  })();
+  const outline = lum > 0.82
     ? ` stroke="rgba(120,120,120,0.85)" stroke-width="1.2"`
     : "";
+  // A pale colour would be washed out by the white halo, so the halo darkens
+  // for light lettering instead of fighting it.
+  const halo = lum > 0.82 ? "rgba(140,140,140,0.55)" : "rgba(255,255,255,0.9)";
   const attrs =
     `x="${tx.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" ` +
     `font-family="${font.family}" font-weight="${font.weight}" font-size="${fontSize}"`;
   return (
     // Halo first so the word stays legible wherever it meets a balloon edge.
-    `<text ${attrs} fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="4" stroke-linejoin="round">${safe}</text>` +
+    `<text ${attrs} fill="none" stroke="${halo}" stroke-width="4" stroke-linejoin="round">${safe}</text>` +
     `<text ${attrs} fill="${fill}"${outline}>${safe}</text>`
   );
 }

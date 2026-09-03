@@ -13,6 +13,7 @@ import {
   type GraphicStyle,
   DEFAULT_BACKDROP_COLOR,
   normalizeBalloonStyle,
+  resolveTextColorHex,
 } from "@/lib/config";
 import { calculateExactLayout, debugLayout } from "@/lib/calculateExactLayout";
 import { getPlinthDimensions } from "@/lib/layoutDimensions";
@@ -1000,11 +1001,8 @@ function drawPanelText(
   const safeH   = panelH * 0.55;
   const textTop = safeTop + (layout.verticalOffset / 90) * safeH - totalH / 2;
 
-  const resolvedColor =
-    text.color === "white"  ? "#FFFFFF"
-    : text.color === "gold" ? "#D4AF37"
-    : text.color === "black"? "#222222"
-    : accent;
+  // Any customer-picked hex resolves to itself; the presets keep their values.
+  const resolvedColor = resolveTextColorHex(text.color, accent);
 
   const fontStr =
     text.fontStyle === "block"

@@ -28,6 +28,8 @@ cutoutTotalCount,
   GRAPHIC_STYLES,
   FONT_STYLES,
   TEXT_COLORS,
+  resolveTextColorHex,
+  isCustomTextColor,
   ADDONS,
   CAKE_TABLE_PRICE,
   PER_BACKDROP,
@@ -1397,6 +1399,25 @@ function clearAllStandees() {
                       </button>
                     );
                   })}
+                  {/* Anything outside the four presets. Customer request
+                      2026-09-03: "the colour options for text are very limited,
+                      let us make it so any colour can be chosen." The swatch
+                      shows the picked colour and stays highlighted while a
+                      custom hex is active. */}
+                  <label
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                      border: isCustomTextColor(item.text.color) ? `1.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
+                      background: isCustomTextColor(item.text.color) ? accent + "12" : "white",
+                      color: isCustomTextColor(item.text.color) ? accent : "#555" }}
+                    onClick={(e) => e.stopPropagation()}>
+                    <span style={{ width: 12, height: 12, borderRadius: "50%", border: "1px solid rgba(0,0,0,0.15)",
+                      background: resolveTextColorHex(item.text.color, accent) }} />
+                    Custom
+                    <input type="color"
+                      value={resolveTextColorHex(item.text.color, accent)}
+                      onChange={(e) => patchItemText(itemIdx, { color: e.target.value.toUpperCase() })}
+                      style={{ width: 0, height: 0, padding: 0, border: 0, opacity: 0, position: "absolute" }} />
+                  </label>
                 </div>
               </div>
             </div>

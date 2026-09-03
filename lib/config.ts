@@ -437,7 +437,75 @@ export interface CutoutSelection {
 }
 export type BackdropTextType = "birthday" | "custom";
 export type FontStyle = "script" | "block" | "elegant";
-export type TextColor = "white" | "gold" | "black" | "accent";
+/**
+ * Lettering colour. Either one of the four preset ids below, or any CSS hex
+ * the customer picks for themselves ("#7B2D8E"). Widened from the fixed union
+ * on 2026-09-03 at customer request — the four presets were too limiting.
+ * Always read through resolveTextColorHex/describeTextColor rather than
+ * comparing against the preset ids, so a custom hex is never silently dropped.
+ */
+export type TextColor = string;
+
+export const TEXT_COLOR_PRESET_HEX: Record<string, string> = {
+  white: "#FFFFFF", gold: "#D4AF37", black: "#1E1E1E",
+};
+
+/** Default stand-in for the "accent" preset when no theme accent is supplied. */
+export const DEFAULT_TEXT_ACCENT_HEX = "#E39BB4";
+
+/** Resolve a stored text colour to a concrete hex. */
+export function resolveTextColorHex(color: TextColor | undefined, accentHex?: string): string {
+  if (!color) return TEXT_COLOR_PRESET_HEX.white;
+  if (color === "accent") return accentHex || DEFAULT_TEXT_ACCENT_HEX;
+  if (TEXT_COLOR_PRESET_HEX[color]) return TEXT_COLOR_PRESET_HEX[color];
+  return /^#[0-9a-fA-F]{6}$/.test(color) ? color : TEXT_COLOR_PRESET_HEX.white;
+}
+
+/** Is this a colour the customer picked themselves, rather than a preset? */
+export function isCustomTextColor(color: TextColor | undefined): boolean {
+  return !!color && color !== "accent" && !TEXT_COLOR_PRESET_HEX[color];
+}
+
+// Named anchors for describing an arbitrary hex to the render model in words.
+// The model is told the colour by name, not by hex — hex in a prompt is
+// unreliable, a plain colour name is not.
+const TEXT_COLOR_NAMES: { name: string; hex: string }[] = [
+  { name: "deep black",        hex: "#1E1E1E" },
+  { name: "charcoal gray",     hex: "#555555" },
+  { name: "clean white",       hex: "#FFFFFF" },
+  { name: "silver gray",       hex: "#C0C0C0" },
+  { name: "metallic gold",     hex: "#D4AF37" },
+  { name: "warm cream",        hex: "#F5E6C8" },
+  { name: "rose gold",         hex: "#E0A899" },
+  { name: "soft blush pink",   hex: "#E39BB4" },
+  { name: "hot pink",          hex: "#E5197F" },
+  { name: "deep red",          hex: "#C1121F" },
+  { name: "burnt orange",      hex: "#E07A28" },
+  { name: "sunny yellow",      hex: "#F2C64B" },
+  { name: "fresh green",       hex: "#3FA34D" },
+  { name: "deep emerald",      hex: "#0B6E4F" },
+  { name: "sky blue",          hex: "#7FC4E8" },
+  { name: "royal blue",        hex: "#1D4ED8" },
+  { name: "navy blue",         hex: "#12224A" },
+  { name: "soft lilac",        hex: "#C9AEE4" },
+  { name: "deep purple",       hex: "#5B2A86" },
+  { name: "chocolate brown",   hex: "#5C4033" },
+];
+
+/** Plain-English name for a text colour, for use in a render prompt. */
+export function describeTextColor(color: TextColor | undefined, accentHex?: string): string {
+  const hex = resolveTextColorHex(color, accentHex);
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  let best = TEXT_COLOR_NAMES[0], bestD = Infinity;
+  for (const c of TEXT_COLOR_NAMES) {
+    const cr = parseInt(c.hex.slice(1, 3), 16), cg = parseInt(c.hex.slice(3, 5), 16), cb = parseInt(c.hex.slice(5, 7), 16);
+    // Weighted RGB distance — closer to how the eye ranks colour difference
+    // than a plain euclidean one, and enough to pick the right name.
+    const d = 2 * (r - cr) ** 2 + 4 * (g - cg) ** 2 + 3 * (b - cb) ** 2;
+    if (d < bestD) { bestD = d; best = c; }
+  }
+  return best.name;
+}
 export type TextAlign = "left" | "center" | "right";
 export type BackdropPrintType = "none" | "name_only" | "theme_print" | "custom_upload";
 export type GraphicStyle = "illustrated" | "realistic" | "minimal" | "pattern" | "full_scene";

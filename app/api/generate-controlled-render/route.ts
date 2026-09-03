@@ -43,7 +43,7 @@ import { type SceneModel } from "@/lib/buildSceneModel";
 import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
 import { generateStructureSilhouette, computeShimmerWallMaskGeometry, panelRectToFraction, computeDoubleArchPlinthOverlayGeometry, computeBackdropGroupGeometry, type CutoutGuideItem } from "@/lib/generateStructureSilhouette";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems, type LayoutZone } from "@/lib/setupLayoutCatalog";
-import { type BalloonStyleId, SHIMMER_COLOR_HEX, SHIMMER_COLORS, type ShimmerColorId } from "@/lib/config";
+import { type BalloonStyleId, SHIMMER_COLOR_HEX, SHIMMER_COLORS, type ShimmerColorId, resolveTextColorHex, describeTextColor } from "@/lib/config";
 import { SEMPERTEX_CATALOG, type SempertexColor } from "@/lib/sempertexCatalog";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { type SempertexSelectionItem } from "@/lib/renderPrompts/types";
@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "plinth-pedestal-column-v39";
+const RENDER_CACHE_VERSION = "text-color-framing-standee-v40";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -602,7 +602,7 @@ function buildVisibleTextRenderClause(sceneModel: SceneModel): string {
     const fontDesc       = p.text.fontStyle === "block" ? "bold block" : p.text.fontStyle === "elegant" ? "elegant serif" : "script cursive";
     return (
       `Render the exact text "${p.text.value}" visibly on the ${panelTypeLabel} backdrop panel ` +
-      `in ${fontDesc} style, ${p.text.color} color, centered. ` +
+      `in ${fontDesc} style, ${describeTextColor(p.text.color)} color, centered. ` +
       `The text must be clearly legible, not omitted, not hidden behind balloons, ` +
       `and not blended into the backdrop surface. ` +
       `Do not place any balloon or object over the text area. ` +
@@ -1810,10 +1810,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
         const cx = Math.round(imgW * xFrac);
         const cy = Math.round(imgH * yFrac);
 
-        const TEXT_HEX: Record<string, string> = {
-          white: "#FFFFFF", gold: "#D4AF6A", black: "#2A2A2A", accent: "#EC4D8D",
-        };
-        const fillHex = TEXT_HEX[targetPanel.text.color] ?? "#FFFFFF";
+        const fillHex = resolveTextColorHex(targetPanel.text.color, "#EC4D8D");
         // Fit font to ~34% of image width for the string length, clamped.
         const safeLen  = Math.max(4, textValue.length);
         const fontSize = Math.max(18, Math.min(Math.round(imgW * 0.06), Math.round((imgW * 0.34) / safeLen * 1.9)));
@@ -2068,9 +2065,16 @@ forbiddenBalloonColorLabels: hasSempertexLock
                   const forwardFrac  = Math.min(0.075, Math.max(0.015,
                     0.017 + 0.0623 * (frameAspect - 0.5625)));
                   bottom = Math.round(groupGeom.floorYFrac * imgH + panelPxHeight * forwardFrac);
-                  // Keep the figure fully on canvas if the panel sits near an edge
-                  if (left < 0) left = 0;
-                  if (left + rw > imgW) left = Math.max(0, imgW - rw);
+                  // A left-hand standee used to be clamped flush to x=0, which
+                  // pushed the whole figure back over the board and buried the
+                  // lettering (customer report, 2026-09-03: "the cutout needs to
+                  // go further left so the text shows"). It is allowed to run off
+                  // the left edge instead, the way a real standee at the edge of
+                  // a photograph does, capped so no more than a quarter of it is
+                  // ever lost.
+                  const maxBleed = Math.round(rw * 0.25);
+                  if (left < -maxBleed) left = -maxBleed;
+                  if (left + rw > imgW + maxBleed) left = Math.max(-maxBleed, imgW + maxBleed - rw);
                 } else {
                   const anchorX = Math.round(zone.x * imgW);
                   left   = onLeft ? anchorX : anchorX - rw;
@@ -2087,7 +2091,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
                 left   = rightEdge - rw;
                 bottom = floorY;
               }
-              left = Math.max(0, Math.min(left, imgW - rw));
+              // Left may be negative for an edge-bled standee (see above); only
+              // the no-zone fallback path is clamped to the canvas.
+              if (!zone) left = Math.max(0, Math.min(left, imgW - rw));
               const top = Math.max(0, bottom - rh);
 
               // Soft floor shadow ellipse under the asset — grounds the PNG
@@ -2110,7 +2116,24 @@ forbiddenBalloonColorLabels: hasSempertexLock
                 blend: "over",
               });
 
-              composites.push({ input: resizedBuf, left, top, blend: "over" });
+              // sharp cannot composite at a negative offset, so an edge-bled
+              // standee is cropped rather than moved back onto the canvas —
+              // moving it back is exactly the behaviour being fixed here.
+              let placeBuf  = resizedBuf;
+              let placeLeft = left;
+              if (left < 0) {
+                const cut = Math.min(-left, rw - 1);
+                placeBuf  = await (sharpFn2(resizedBuf)
+                  .extract({ left: cut, top: 0, width: rw - cut, height: rh })
+                  .png().toBuffer()) as Buffer;
+                placeLeft = 0;
+              } else if (left + rw > imgW) {
+                const visible = Math.max(1, imgW - left);
+                placeBuf = await (sharpFn2(resizedBuf)
+                  .extract({ left: 0, top: 0, width: visible, height: rh })
+                  .png().toBuffer()) as Buffer;
+              }
+              composites.push({ input: placeBuf, left: placeLeft, top, blend: "over" });
               cutoutOverlayAssetPaths.push(`/cutouts/${themeIdForAsset}/${standee.assetId}.png`);
               // Report the first (tallest) asset's rendered dimensions
               if (cutoutOverlayRenderedAssetWidthPx === null) {

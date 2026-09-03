@@ -3,6 +3,7 @@ import type { SempertexSelectionItem } from "./types";
 import { getVisualLabel, renderSafeBalloonLabel, getPositiveLabel } from "./colorLabels";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
+import { describeTextColor } from "@/lib/config";
 
 // A raw hex means nothing to the edit model, and "#FFFFFF" used to collapse into
 // the same "cream-white" as an unset panel — so choosing white for one arch read
@@ -713,9 +714,9 @@ export function buildLayoutRefEditPrompt(
   const panelsWithText = sceneModel.panels.filter(
     (p) => p.text.enabled && p.text.value.trim().length > 0,
   );
-  const TEXT_COLOR_LABEL: Record<string, string> = {
-    white: "clean white", gold: "metallic gold", black: "deep black", accent: "theme accent pink",
-  };
+  // Colour is named, not listed as a hex — describeTextColor picks the nearest
+  // plain-English name, so a customer-picked hex reaches the model as words it
+  // can act on. The four presets keep the names they always had.
   const TEXT_FONT_LABEL: Record<string, string> = {
     script: "flowing script", block: "bold block", elegant: "elegant serif",
   };
@@ -740,9 +741,15 @@ export function buildLayoutRefEditPrompt(
         const place = p.graphic.enabled
           ? "across the top of that board, above the printed illustration"
           : "across the upper-middle of that board";
+        const colourName = describeTextColor(p.text.color);
         return `The ${panelPositionLabel(i)} reads exactly "${v}", ${place}, in ` +
-          `${TEXT_FONT_LABEL[p.text.fontStyle] ?? p.text.fontStyle} ${TEXT_COLOR_LABEL[p.text.color] ?? p.text.color} ` +
-          `lettering, spelled exactly as "${v}" and clearly readable. `;
+          `${TEXT_FONT_LABEL[p.text.fontStyle] ?? p.text.fontStyle} lettering, spelled exactly as "${v}" and clearly readable. ` +
+          // The colour is stated on its own and repeated, because the round-
+          // backdrop path (fal-ai/flux-2/edit) was quietly recolouring the
+          // lettering to match the balloons: black was reported coming back
+          // pale blue whatever the customer picked (2026-09-03).
+          `Those letters are ${colourName} — solid ${colourName} lettering, the exact colour shown in the reference image. ` +
+          `Do not recolour the lettering to match the balloons, the backdrop, or the room. `;
       }).join("") +
       (textPanelIdx.length > 1
         ? `Each board shows only its own words: "${textPanelIdx.map((i) => sceneModel.panels[i].text.value.trim()).join('" and "')}" are different words on different boards. `
@@ -788,8 +795,18 @@ export function buildLayoutRefEditPrompt(
       `Medium-close full-body event photography — the round backdrop, balloon garland, and plinth fill the frame ` +
       `with strong visual presence and prominence, similar closeness and scale to a close-up arch backdrop photograph, ` +
       `while still keeping the entire setup fully visible with minimal extra empty space around it. `
-    : `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
-      `Wide full-body event photography — entire setup fully visible with breathing room, nothing cropped. `;
+    : panelCount === 1
+      // 2026-09-03: a single arch was rendering far too zoomed out — "wide" plus
+      // "breathing room" left the backdrop as a small object in a large empty
+      // room. One panel does not fill a frame the way two side-by-side panels
+      // do, so it gets the closer framing the round backdrop already uses.
+      // Multi-panel scenes keep the wide framing, which suits them.
+      ? `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
+        `Medium-close full-body event photography — the backdrop, balloon garland and plinth fill the frame with strong ` +
+        `presence, the setup reaching close to the top and bottom of the image, with only a small margin of floor and ` +
+        `wall around it. Keep the whole setup visible and nothing cropped, but do not leave large empty areas. `
+      : `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
+        `Wide full-body event photography — entire setup fully visible with breathing room, nothing cropped. `;
     
 const cutouts = sceneModel.cutouts;
 const cutoutItems = cutouts?.items?.filter((item) => item.quantity > 0) ?? [];
