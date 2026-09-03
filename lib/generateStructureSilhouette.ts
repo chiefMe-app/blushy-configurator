@@ -868,6 +868,16 @@ export function generateStructureSilhouette(
             if (br > maxR) maxR = br;
           };
 
+          // Seeded per garland (via colorOffset, which differs left vs right)
+          // so placement is organic but a given setup always renders the same
+          // guide — the render cache and the fixed seed both depend on that.
+          let prngState = (colorOffset + 1) * 9973;
+          const rnd = () => {
+            prngState = (prngState * 1664525 + 1013904223) >>> 0;
+            return prngState / 4294967296;
+          };
+          const baseRnd = rnd;
+
           // Radius scale relative to panel width — large/medium/small anchors.
           // These caps are what actually set Single Arch's balloon size; with
           // the guide canvas now matching the rendered size, a Double Arch
@@ -929,40 +939,83 @@ export function generateStructureSilhouette(
             put(edgeX + dir * -24, p.floorY - rXL * 0.60, rXL * 0.88);
             put(edgeX + dir * 54,  p.floorY - rXL * 0.55, rXL * 0.78);
           }
+          // Jittered off the fixed table so the mound is a pile rather than a
+          // repeatable arrangement, and every fourth balloon is bumped up a
+          // size — a real floor cluster is where the biggest balloons land.
           for (const [ox, up, sz] of BASE) {
-            put(edgeX + dir * ox * (tight ? 1.15 : 1), p.floorY - up * upScale, sizeR[sz] * baseScale);
+            const jx = (baseRnd() * 2 - 1) * rMed * 0.45;
+            const jy = (baseRnd() * 2 - 1) * rMed * 0.35;
+            const bumped = baseRnd() < 0.25 ? "L" : sz;
+            put(
+              edgeX + dir * (ox * (tight ? 1.15 : 1)) + jx,
+              p.floorY - up * upScale + jy,
+              sizeR[bumped] * baseScale,
+            );
           }
 
-          // 2) Side climb — 30 balloons across staggered lanes, overlapping
-          //    35–60% between neighbors, forming a genuinely thick band from
-          //    just above the base to the spring line. Tight mode: 4 compact
-          //    lanes, medium outer balloons, half jitter, and a bottom-heavy
-          //    taper — tEase concentrates balloons low, spread/radius shrink
-          //    with height (see comment above).
-          // Bigger balloons need proportionally fewer of them to fill the same
-          // climb — otherwise they simply pile up on top of each other.
-          const climbN  = 30;
-          const laneOffsets = tight
-            ? [-rLarge * 0.5, rLarge * 0.1, rLarge * 0.7, rLarge * 1.3]
-            : [-rLarge * 0.5, rLarge * 0.15, rLarge * 0.85, rLarge * 1.5, rLarge * 2.1];
-          const laneSizes: ("L" | "M" | "S")[] = tight
-            ? ["M", "L", "L", "M"] // bigger overall body (2026-07-20 feedback)
-            : ["M", "L", "M", "S", "S"];
-          const wobbleMod = tight ? 7 : 13;
-          for (let i = 0; i < climbN; i++) {
-            const t = i / (climbN - 1);
-            const tEase = tight ? Math.pow(t, 1.5) : t; // tight: denser sampling near the floor
-            const y = p.floorY - Hp * (0.16 + tEase * 0.62); // 16% → 78% panel height
-            const lane = i % laneOffsets.length;
-            const wobble = ((i * 17) % wobbleMod) - Math.floor(wobbleMod / 2); // deterministic organic jitter
-            const spread = tight ? 1 - 0.42 * tEase : 1;   // band narrows as it rises
-            const rTaper = tight ? 1.3 - 0.55 * tEase : 1; // balloons shrink as they rise
-            const x = edgeX + dir * (laneOffsets[lane] * spread + wobble);
-            const sz = laneSizes[lane];
-            // rTaper peaks at 1.3 low down. Applied to the giant that would
-            // push it past the base anchors and back into blob territory, so
-            // the giant is never enlarged — only tapered as it rises.
-            put(x, y, sizeR[sz] * rTaper);
+          // 2) Side climb.
+          //
+          // 2026-09-03 rewrite. The old climb placed a fixed 30 balloons at a
+          // fixed vertical pitch, cycling 4 lane offsets and a 4-entry size
+          // pattern with a +/-3px wobble. Three things followed from that, and
+          // together they are why the render never looked like a real garland
+          // however the sizes were tuned (customer: "the shape and size the
+          // balloons should be isn't organic"):
+          //   - the pitch was unrelated to balloon size, so neighbours sat ~14px
+          //     apart while being ~100px across, i.e. ~87% overlapped, fusing
+          //     into one scalloped mass rather than reading as balloons;
+          //   - cycling the lanes put every 4th balloon at the same offset,
+          //     drawing visible columns;
+          //   - cycling the sizes made the pattern repeat on the same period.
+          // The result is a woven, mechanical lattice — which is exactly what
+          // the renders came back as.
+          //
+          // Now it walks up the spine instead: each step advances by a fraction
+          // of the balloon just placed, so spacing tracks size and neighbours
+          // touch and nest instead of stacking; the perpendicular offset and
+          // the size are both drawn from a seeded PRNG, so nothing repeats on a
+          // period. Weights approximate a real decorator's mix — mostly 12in
+          // with several 36in statement balloons and 5in fillers — and shift
+          // with height so the giants sit low and the accents drift to the top.
+          // Seeded per garland, so a given setup still renders identically.
+          const pickSize = (t: number): "X" | "L" | "M" | "S" => {
+            // t: 0 at the floor, 1 at the spring line.
+            const roll = rnd();
+            const xlChance = 0.20 * (1 - t);          // giants belong low down
+            const sChance  = 0.12 + 0.20 * t;         // fillers drift upward
+            if (roll < xlChance) return "X";
+            if (roll < xlChance + sChance) return "S";
+            return rnd() < 0.55 ? "L" : "M";
+          };
+
+          const climbFromY = p.floorY - Hp * 0.16;
+          const climbToY   = p.floorY - Hp * 0.78;
+          let   climbY     = climbFromY;
+          let   guard      = 0;
+          while (climbY > climbToY && guard++ < 80) {
+            const t      = (climbFromY - climbY) / (climbFromY - climbToY);
+            const spread = tight ? 1 - 0.42 * t : 1;    // band narrows as it rises
+            const rTaper = tight ? 1.25 - 0.45 * t : 1; // balloons shrink as they rise
+            const rBall  = sizeR[pickSize(t)] * rTaper;
+
+            // Perpendicular offset across the band, straddling the panel edge.
+            const off = (rnd() * 1.7 - 0.75) * rLarge * spread;
+            put(edgeX + dir * off, climbY, rBall);
+
+            // A real garland is two balloons deep, not a single file. Most
+            // steps drop a companion on the opposite side of the spine at a
+            // slightly different height, which fills the gaps between the
+            // main balloons and gives the band front-to-back depth without
+            // reintroducing a repeating lane.
+            if (rnd() < 0.75) {
+              const cSize = sizeR[pickSize(Math.min(1, t + 0.25))] * rTaper * 0.85;
+              const cOff  = off + (off > 0 ? -1 : 1) * (0.5 + rnd() * 0.6) * rLarge * spread;
+              put(edgeX + dir * cOff, climbY - rBall * (rnd() * 0.5 - 0.25), cSize);
+            }
+
+            // Advance by most of this balloon's own size: enough overlap to
+            // read as a connected garland, little enough to stay individual.
+            climbY -= rBall * (0.55 + rnd() * 0.25);
           }
 
           // 3) Crown curl — balloons wrapping the outer shoulder over the
@@ -974,23 +1027,23 @@ export function generateStructureSilhouette(
           const arcCy = p.apexY + rArc;
           const angFrom = side === "left" ? 178 : 2;
           const angTo   = side === "left" ? 268 : -88;
-          const crownN = tight ? 11 : 16;
-          for (let i = 0; i < crownN; i++) {
-            const t   = i / (crownN - 1);
-            const ang = ((angFrom + (angTo - angFrom) * t) * Math.PI) / 180;
-            const depthLane = i % 3;
-            const rad = rArc + (tight
-              ? [-rSmall * 0.4, rMed * 0.35, rMed * 0.6]
-              : [-rSmall * 0.4, rMed * 0.6, rLarge * 0.85])[depthLane];
-            const x   = arcCx + rad * Math.cos(ang);
-            const y   = arcCy + rad * Math.sin(ang);
-            const sz: "L" | "M" | "S" = tight
-              ? (depthLane === 2 ? "M" : "S")
-              : (depthLane === 2 ? "L" : depthLane === 1 ? "M" : "S");
-            put(x, y, sizeR[sz]);
+          // Walked along the arc the same way the climb is walked up the edge,
+          // for the same reason — the old version cycled 3 depth lanes and a
+          // 3-entry size pattern, which drew a beaded trim over the shoulder.
+          let crownAng = angFrom;
+          let crownGuard = 0;
+          const angStep = (angTo - angFrom) > 0 ? 1 : -1;
+          while (Math.abs(crownAng - angFrom) < Math.abs(angTo - angFrom) && crownGuard++ < 40) {
+            const t     = Math.abs(crownAng - angFrom) / Math.abs(angTo - angFrom);
+            const rBall = sizeR[pickSize(0.55 + 0.45 * t)] * (tight ? 0.9 : 1);
+            const rad   = rArc + (rnd() * 1.5 - 0.4) * rMed;
+            const a     = (crownAng * Math.PI) / 180;
+            put(arcCx + rad * Math.cos(a), arcCy + rad * Math.sin(a), rBall);
+            // Advance along the arc by roughly this balloon's own footprint.
+            crownAng += angStep * ((rBall * (0.62 + rnd() * 0.28)) / rArc) * (180 / Math.PI);
           }
 
-          return { count: n, minR: Math.round(minR), maxR: Math.round(maxR), lanes: laneOffsets.length };
+          return { count: n, minR: Math.round(minR), maxR: Math.round(maxR), lanes: 4 };
         };
 
         // Arch + Shimmer composition — TWO independently well-composed
