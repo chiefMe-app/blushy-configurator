@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "organic-garland-placement-v27";
+const RENDER_CACHE_VERSION = "double-arch-landscape-frame-v28";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -921,19 +921,17 @@ const strictColorModelApplied =
 // for flash being the weak link on the harder layout: round scenes were moved
 // off it because it invented a base/stage. Multi-panel arch scenes now use
 // the same non-flash model those round scenes use.
-const isMultiPanelArchScene = hasArchPanelInScene && sceneModel.panels.length > 1;
-
+// 2026-09-03, later: the multi-panel split above is REVERTED. Moving Double
+// Arch to the non-flash model did not improve it, and it was itself a
+// difference from Single Arch — which renders beautifully on flash — at the
+// same time as the customer asked for the two to be made identical. Both arch
+// layouts are back on flash.
 let resolvedEditModelId = getEditModelId(modelMode);
 let actualModelReason: string = `mode_default_${modelMode}`;
 
 if (hasArchPanelInScene && !hasRoundPanelInScene) {
-  if (isMultiPanelArchScene) {
-    resolvedEditModelId = "fal-ai/flux-2/edit";
-    actualModelReason   = "multi_panel_arch_scene_edit";
-  } else {
-    resolvedEditModelId = "fal-ai/flux-2/flash/edit";
-    actualModelReason   = "arch_scene_flash_edit";
-  }
+  resolvedEditModelId = "fal-ai/flux-2/flash/edit";
+  actualModelReason   = "arch_scene_flash_edit";
 } else if (hasRoundPanelInScene) {
   resolvedEditModelId = "fal-ai/flux-2/edit";
   actualModelReason   = "round_scene_edit";

@@ -74,9 +74,26 @@ export function calculateRenderAspectRatio(
   // extra panel now contributes its full width plus a modest separation gap.
   const PANEL_GAP_CM = 20;
   const [first, ...rest] = backdropItems;
-  const totalWidthCm =
+  const panelsWidthCm =
     (first?.widthCm || 100) +
     rest.reduce((sum, item) => sum + (item.widthCm || 100) + PANEL_GAP_CM, 0);
+
+  // A multi-panel setup hangs a balloon garland off each OUTER edge, and those
+  // garlands are part of the photograph even though they are not panels. Sizing
+  // the frame from the boards alone made a Double Arch (240cm of board, 220cm
+  // tall, ratio 1.09) land in a square frame, where the group had to shrink to
+  // fit the width and ended up filling only 64% of the frame height — a quarter
+  // of the picture was empty wall above the arches, and every balloon lost
+  // resolution to it. Single Arch fills 85% of its frame height, which is a
+  // large part of why its balloons come out crisp and round.
+  //
+  // Counting the garlands puts a Double Arch at ratio ~1.41, i.e. a landscape
+  // frame, where it also fills 85% of the height with the panels no narrower
+  // than before. Single-panel setups are deliberately left alone: their narrow
+  // portrait frame is what makes them fill, and that is the look being copied.
+  const OUTER_GARLAND_WIDTH_CM = 35;
+  const totalWidthCm =
+    panelsWidthCm + (backdropItems.length > 1 ? 2 * OUTER_GARLAND_WIDTH_CM : 0);
 
   const maxHeightCm = Math.max(...backdropItems.map((item) => item.heightCm || 200), 1);
 
