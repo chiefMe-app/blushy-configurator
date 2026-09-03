@@ -631,49 +631,96 @@ export function buildLayoutRefEditPrompt(
       `Do not shrink panel widths. Do not turn panels into slim columns. `
     : "";
 
-  // Theme graphic clause — included when any panel has a printed graphic enabled
+  // Which panel is which, in the same words backdropDesc uses above, so a
+  // per-panel instruction can name its panel unambiguously.
+  const panelPositionLabel = (i: number): string => {
+    if (panelCount === 1) return "backdrop panel";
+    const names = panelCount === 2 ? ["LEFT", "RIGHT"] : ["LEFT", "CENTER", "RIGHT"];
+    return names[i] ? `${names[i]} backdrop panel` : `backdrop panel ${i + 1}`;
+  };
+
+  // Theme graphic clause — printed illustration, per panel.
+  //
+  // 2026-09-03: this clause used to say "The backdrop has a printed theme
+  // illustration" with no panel named, and read the preset off the FIRST
+  // panel that had one. Enabling the graphic on a single panel of a Double
+  // Arch therefore printed it on both, because nothing in the prompt said
+  // which board it belonged to. It now names the panels that carry it and
+  // states that the others stay plain.
   const panelsWithGraphic = sceneModel.panels.filter(p => p.graphic.enabled);
-  const firstGraphicPanel = panelsWithGraphic[0];
   const themeEntry = THEME_CATALOG.find(t => t.id === String(sceneModel.theme ?? "").toLowerCase());
-  const selectedPreset = themeEntry?.graphicPresets.find(p => p.assetId === firstGraphicPanel?.graphic.assetId);
-  const presetDesc = (selectedPreset as { promptDescription?: string } | undefined)?.promptDescription
-    ?? selectedPreset?.desc ?? null;
-  const themeGraphicClause = panelsWithGraphic.length > 0
-    ? `The backdrop has a printed theme illustration integrated directly onto the backdrop surface, ` +
-      `following the panel perspective and lighting, printed into the board material itself — ` +
-      `not a sticker, not a separate poster, not floating in front of the panel.` +
-      (presetDesc ? ` The printed illustration depicts: ${presetDesc}.` : "") + ` ` +
-      `No floating sticker. No separate poster. No decal peeling off. No rigid pasted rectangle. `
+  const graphicPanelIdx = sceneModel.panels
+    .map((p, i) => (p.graphic.enabled ? i : -1))
+    .filter((i) => i >= 0);
+  const graphicPresetDescFor = (assetId: string | undefined): string | null => {
+    const preset = themeEntry?.graphicPresets.find(p => p.assetId === assetId);
+    return (preset as { promptDescription?: string } | undefined)?.promptDescription
+      ?? preset?.desc ?? null;
+  };
+  // Stated positively and once. An earlier version of this clause added four
+  // "No floating sticker / No separate poster / ..." sentences plus a
+  // "no illustration, no pattern, no print, no artwork" list for the plain
+  // panel; that pile of negation cost the scene its plinth in a verification
+  // render, the same failure this file has now hit several times. The print
+  // is described instead, and the plain board is described as plain.
+  const graphicSentences = graphicPanelIdx.map((i) => {
+    const p = sceneModel.panels[i];
+    const desc = graphicPresetDescFor(p.graphic.assetId);
+    return `The ${panelPositionLabel(i)} has a theme illustration printed into its board surface, ` +
+      `following that panel's own perspective and lighting${desc ? `, depicting: ${desc}` : ""}. `;
+  }).join("");
+  const plainPanelIdx = sceneModel.panels
+    .map((p, i) => (p.graphic.enabled ? -1 : i))
+    .filter((i) => i >= 0);
+  const plainPanelSentence =
+    graphicPanelIdx.length > 0 && plainPanelIdx.length > 0
+      ? `The ${plainPanelIdx.map(panelPositionLabel).join(" and the ")} ${plainPanelIdx.length > 1 ? "keep" : "keeps"} a plain empty board face. `
+      : "";
+  const themeGraphicClause = graphicPanelIdx.length > 0
+    ? graphicSentences + plainPanelSentence
     : "";
 
   // Customized text — baked directly into the backdrop surface, never an overlay/sticker
   const panelsWithText = sceneModel.panels.filter(
     (p) => p.text.enabled && p.text.value.trim().length > 0,
   );
-  const firstTextPanel = panelsWithText[0];
   const TEXT_COLOR_LABEL: Record<string, string> = {
     white: "clean white", gold: "metallic gold", black: "deep black", accent: "theme accent pink",
   };
   const TEXT_FONT_LABEL: Record<string, string> = {
     script: "flowing script", block: "bold block", elegant: "elegant serif",
   };
-  const textPanelLabel = firstTextPanel
-    ? (firstTextPanel.type === "arch" ? "main solid arch backdrop" : `${panelTypeLabel(firstTextPanel.type)} backdrop`)
-    : "";
-  const customTextClause = firstTextPanel
-    ? (() => {
-        const v = firstTextPanel.text.value.trim();
-        return (
-          `The exact custom text "${v}" must appear once on the ${textPanelLabel} surface, ` +
-          `centered in the upper-middle area of the panel face. ` +
-          `It is printed directly into the board finish, perspective-aware and lighting-aware — ` +
-          `the lettering follows the panel's surface angle and receives the same scene lighting as the board itself. ` +
-          `Render it in ${TEXT_FONT_LABEL[firstTextPanel.text.fontStyle] ?? firstTextPanel.text.fontStyle} lettering, ` +
-          `${TEXT_COLOR_LABEL[firstTextPanel.text.color] ?? firstTextPanel.text.color} colored, clearly readable. ` +
-          `Not floating, not a sticker, not a separate overlay, not a hanging sign, not pasted on top. ` +
-          `Spell it exactly as "${v}" — once, correctly, with no duplicate, missing, or extra letters. `
-        );
-      })()
+  // 2026-09-03: this described panelsWithText[0] only, so on a Double Arch
+  // with a different word typed on each board the second word was never in
+  // the prompt at all and never appeared in the render. Every panel's text is
+  // described now, each naming its own panel.
+  const textPanelIdx = sceneModel.panels
+    .map((p, i) => (p.text.enabled && p.text.value.trim().length > 0 ? i : -1))
+    .filter((i) => i >= 0);
+  // One short line per board, with the shared "how it is printed" wording
+  // stated once. The first per-panel version repeated a six-sentence block for
+  // every board; the second board's word was still dropped from the render,
+  // and the bulk pushed the plinth out. Reading as a list of what each board
+  // says is both shorter and closer to how the guide shows it.
+  const customTextClause = textPanelIdx.length > 0
+    ? `Lettering is printed into the board finish itself, following each panel's surface angle and ` +
+      `scene lighting — part of the board, not a sign standing in front of it. ` +
+      textPanelIdx.map((i) => {
+        const p = sceneModel.panels[i];
+        const v = p.text.value.trim();
+        const place = p.graphic.enabled
+          ? "across the top of that board, above the printed illustration"
+          : "across the upper-middle of that board";
+        return `The ${panelPositionLabel(i)} reads exactly "${v}", ${place}, in ` +
+          `${TEXT_FONT_LABEL[p.text.fontStyle] ?? p.text.fontStyle} ${TEXT_COLOR_LABEL[p.text.color] ?? p.text.color} ` +
+          `lettering, spelled exactly as "${v}" and clearly readable. `;
+      }).join("") +
+      (textPanelIdx.length > 1
+        ? `Each board shows only its own words: "${textPanelIdx.map((i) => sceneModel.panels[i].text.value.trim()).join('" and "')}" are different words on different boards. `
+        : "") +
+      (textPanelIdx.length < panelCount
+        ? `The other ${panelCount - textPanelIdx.length > 1 ? "boards stay" : "board stays"} blank. `
+        : "")
     : "";
 
   const isRoundScene = hasRoundPanelInScene && !isMulti;
@@ -750,8 +797,45 @@ const setupTemplateClause = setupTemplate
     // plinthDesc/noPlinthDesc block above.
   : "";
 
+  // ── Scene inventory ───────────────────────────────────────────────────────
+  // The edit model paints a limited number of "extras" and silently drops the
+  // rest. Measured on 2026-09-03 with one scene and a fixed seed: with no text
+  // and no printed illustration the plinth was painted; adding either one made
+  // the plinth disappear, and neither moving the plinth wording to the end of
+  // the prompt nor drawing a bolder plinth marker in the guide brought it
+  // back. Listing the scene's contents once, up front, did — and when that
+  // first list named only the boards, garlands and plinth, the model dropped
+  // the lettering instead, which is what identified the mechanism. The list
+  // therefore has to name every element that was asked for.
+  const inventoryItems: string[] = [];
+  inventoryItems.push(
+    panelCount === 1
+      ? `the arch backdrop board`
+      : `the ${panelCount} backdrop boards`,
+  );
+  if (sceneModel.balloons.style !== "none") {
+    inventoryItems.push(panelCount === 1 ? `the balloon garland` : `a balloon garland on each board`);
+  }
+  if (plinth) {
+    inventoryItems.push(`one white cylindrical plinth standing on the floor in front of the boards`);
+  }
+  for (const i of textPanelIdx) {
+    inventoryItems.push(`the words "${sceneModel.panels[i].text.value.trim()}" printed on the ${panelPositionLabel(i)}`);
+  }
+  for (const i of graphicPanelIdx) {
+    const desc = graphicPresetDescFor(sceneModel.panels[i].graphic.assetId);
+    inventoryItems.push(
+      `the printed ${desc ? `${desc} ` : ""}illustration on the ${panelPositionLabel(i)}`,
+    );
+  }
+  const sceneInventoryClause = inventoryItems.length > 1
+    ? `Everything listed here appears in the finished photograph: ${inventoryItems.join("; ")}. ` +
+      `Every one of these is visible. `
+    : "";
+
   return (
     photographyOpening +
+    sceneInventoryClause +
     framingClause +
     `${backdropDesc}. ` +
     doubleArchSizeLockClause +

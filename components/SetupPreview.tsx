@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cutoutTotalCount } from "@/lib/config";
 import type {
   BuilderConfig,
@@ -1034,7 +1034,34 @@ export function useFinalRender(config: BuilderConfig) {
     currentFinalRenderSceneHash.current = null;
   }
 
-  return { status, finalUrl, generateFinalRender, isStale, requestRenderEdit, markStale, appliedChangeLabel };
+  // The three functions above are re-declared on every render. Their bodies
+  // read nothing but refs and state setters, so that is harmless — but handing
+  // consumers a fresh identity each render is not: SetupPreview reports
+  // generateFinalRender up to the Decor step inside an effect keyed on it, and
+  // the parent stores it in state. A new identity every render made that effect
+  // fire every render, which re-rendered the parent, which re-rendered this
+  // hook — React's "Maximum update depth exceeded" loop. Route the calls
+  // through a ref so callers always see one constant function that runs the
+  // latest body.
+  const latest = useRef({ generateFinalRender, requestRenderEdit, markStale });
+  latest.current = { generateFinalRender, requestRenderEdit, markStale };
+
+  const stableGenerateFinalRender = useCallback(() => latest.current.generateFinalRender(), []);
+  const stableRequestRenderEdit   = useCallback(
+    (editDescription: string) => latest.current.requestRenderEdit(editDescription),
+    [],
+  );
+  const stableMarkStale = useCallback(() => latest.current.markStale(), []);
+
+  return {
+    status,
+    finalUrl,
+    generateFinalRender: stableGenerateFinalRender,
+    isStale,
+    requestRenderEdit:   stableRequestRenderEdit,
+    markStale:           stableMarkStale,
+    appliedChangeLabel,
+  };
 }
 
 // ---------------------------------------------------------------------------

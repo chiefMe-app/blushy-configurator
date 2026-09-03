@@ -352,9 +352,16 @@ function escapeXml(s: string): string {
 // Customized text guide — the exact selected text drawn faintly on the target
 // solid panel (upper-middle) so the edit model bakes it into the board surface.
 // Never drawn on shimmer walls or open arch frames.
-function customTextGuide(cx: number, pw: number, apexY: number, floorY: number, text: string): string {
+function customTextGuide(
+  cx: number, pw: number, apexY: number, floorY: number, text: string,
+  hasGraphicBelow = false,
+): string {
   const panelH   = floorY - apexY;
-  const y        = apexY + panelH * 0.30;
+  // The illustration zone starts at 32% of the panel height, so a text
+  // baseline at 30% sat right on top of it and the printed artwork swallowed
+  // the lettering (2026-09-03). When both are on the same panel the text moves
+  // up into the panel's own top band and the zone below starts lower.
+  const y        = apexY + panelH * (hasGraphicBelow ? 0.17 : 0.30);
   // Scale font to fit the panel width for the given string length
   const fontSize = Math.max(12, Math.min(Math.round(pw * 0.12), Math.round((pw * 0.85) / Math.max(4, text.length) * 1.9)));
   const safe     = escapeXml(text);
@@ -372,12 +379,16 @@ function customTextGuide(cx: number, pw: number, apexY: number, floorY: number, 
 
 // Low-opacity theme-graphic guide area on the panel surface — helps the edit
 // model bake the printed illustration into the backdrop, not paste a sticker.
-function themeGraphicGuideArea(cx: number, pw: number, apexY: number, floorY: number): string {
+function themeGraphicGuideArea(
+  cx: number, pw: number, apexY: number, floorY: number,
+  hasTextAbove = false,
+): string {
   const panelH = floorY - apexY;
   const gw = pw * 0.55;
   const gh = panelH * 0.35;
   const gx = cx - gw / 2;
-  const gy = apexY + panelH * 0.32;
+  // Dropped clear of the text band when the same panel also carries lettering.
+  const gy = apexY + panelH * (hasTextAbove ? 0.42 : 0.32);
   return `<rect x="${gx.toFixed(1)}" y="${gy.toFixed(1)}" width="${gw.toFixed(1)}" height="${gh.toFixed(1)}" rx="${Math.round(gw * 0.06)}" ` +
     `fill="rgba(175,175,200,0.14)" stroke="rgba(130,130,160,0.22)" stroke-width="1" stroke-dasharray="4,3"/>`;
 }
@@ -485,6 +496,11 @@ export function generateStructureSilhouette(
   const bgLines: string[] = [];
   // content: everything else — scaled and centered
   const content: string[] = [];
+  // Lettering is collected separately and appended last so it is drawn OVER
+  // the garland. Drawn in place it sat under the balloons, and the edit model
+  // then read the half-covered word off the guide and painted it wrong
+  // ("Happy Birthday" came back as "Dopy Birthday", 2026-09-03).
+  const textLayer: string[] = [];
 
   // Dense garland guide counters — set only in their layout branches,
   // reported in the result for diagnostics.
@@ -583,15 +599,20 @@ export function generateStructureSilhouette(
 
     // Theme graphic guide area — faint print zone on the panel surface so the
     // edit model bakes the illustration into the backdrop (not a sticker).
+    const panelTextValue = item?.text?.enabled ? (item.text.value ?? "").trim() : "";
     if (item?.graphic?.enabled && !isShimmer) {
-      content.push(themeGraphicGuideArea(panel.cx, panel.pw, panel.apexY, panel.floorY));
+      content.push(themeGraphicGuideArea(
+        panel.cx, panel.pw, panel.apexY, panel.floorY, panelTextValue.length > 0,
+      ));
     }
 
     // Customized text guide — exact text, upper-middle of solid panels only.
     // (Open arch frames return early above; shimmer walls are excluded here.)
-    const textValue = item?.text?.enabled ? (item.text.value ?? "").trim() : "";
-    if (textValue && !isShimmer) {
-      content.push(customTextGuide(panel.cx, panel.pw, panel.apexY, panel.floorY, textValue));
+    if (panelTextValue && !isShimmer) {
+      textLayer.push(customTextGuide(
+        panel.cx, panel.pw, panel.apexY, panel.floorY, panelTextValue,
+        !!item?.graphic?.enabled,
+      ));
     }
   });
 
@@ -664,7 +685,16 @@ export function generateStructureSilhouette(
       // variant and the dropped baseline it used to get were both compensating
       // for the gap placement removed above; standing in front of a panel, the
       // plain outline is what Single Arch renders reliably from.
-      content.push(plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
+      // plinthEdge is a faint outline. It survives on a bare panel, but once
+      // the boards carry lettering or a printed illustration it is the weakest
+      // mark in the guide and the plinth stops being painted — so those scenes
+      // get the solid marker instead (see the plinthFilledCylinder comment).
+      const panelsCarrySurfaceContent = backdropItems.some(
+        (it) => it?.text?.enabled || it?.graphic?.enabled,
+      );
+      content.push(panelsCarrySurfaceContent
+        ? plinthFilledCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx)
+        : plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
     }
   }
 
@@ -1318,7 +1348,7 @@ export function generateStructureSilhouette(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`,
     `  ${bgLines.join("\n  ")}`,
     `  <g transform="translate(${marginX},${marginY}) scale(${SCALE})">`,
-    `    ${content.join("\n    ")}`,
+    `    ${content.concat(textLayer).join("\n    ")}`,
     `  </g>`,
     `</svg>`,
   ].join("\n");
