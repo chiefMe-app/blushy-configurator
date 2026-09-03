@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "double-arch-copies-single-arch-v25";
+const RENDER_CACHE_VERSION = "double-arch-non-flash-model-v26";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -904,12 +904,36 @@ const strictColorModelApplied =
 // Fast Stable Arch Profile:
 // Arch scenes use flash/edit because it is fast and looked good in testing.
 // Round scenes stay away from flash for now because flash added a base/stage.
+//
+// 2026-09-03 — MULTI-PANEL arch scenes move off flash. Double Arch has now
+// been made identical to Single Arch everywhere it could be: the layout guide
+// regenerates with the same balloon radii and lane structure, the prompt uses
+// the same garland, balloon-size and plinth clauses, and it runs as a single
+// generation with no correction, injection or composite pass. Single Arch
+// renders beautifully under those conditions and Double Arch still returns
+// merged, sausage-shaped balloons and drops the plinth entirely, so the
+// remaining variables are the model and the frame it is asked to fill.
+//
+// flash is the cheapest member of the family and a two-panel scene is
+// materially harder than a one-panel one — more objects, a centre gap to
+// respect, and each garland occupying roughly half the linear resolution it
+// gets in Single Arch's portrait frame. This codebase already has precedent
+// for flash being the weak link on the harder layout: round scenes were moved
+// off it because it invented a base/stage. Multi-panel arch scenes now use
+// the same non-flash model those round scenes use.
+const isMultiPanelArchScene = hasArchPanelInScene && sceneModel.panels.length > 1;
+
 let resolvedEditModelId = getEditModelId(modelMode);
 let actualModelReason: string = `mode_default_${modelMode}`;
 
 if (hasArchPanelInScene && !hasRoundPanelInScene) {
-  resolvedEditModelId = "fal-ai/flux-2/flash/edit";
-  actualModelReason   = "arch_scene_flash_edit";
+  if (isMultiPanelArchScene) {
+    resolvedEditModelId = "fal-ai/flux-2/edit";
+    actualModelReason   = "multi_panel_arch_scene_edit";
+  } else {
+    resolvedEditModelId = "fal-ai/flux-2/flash/edit";
+    actualModelReason   = "arch_scene_flash_edit";
+  }
 } else if (hasRoundPanelInScene) {
   resolvedEditModelId = "fal-ai/flux-2/edit";
   actualModelReason   = "round_scene_edit";
