@@ -762,7 +762,11 @@ export function buildLayoutRefEditPrompt(
           // lettering to match the balloons: black was reported coming back
           // pale blue whatever the customer picked (2026-09-03).
           `Those letters are ${colourName} — solid ${colourName} lettering, the exact colour shown in the reference image. ` +
-          `Do not recolour the lettering to match the balloons, the backdrop, or the room. `;
+          `Do not recolour the lettering to match the balloons, the backdrop, or the room. ` +
+          // 2026-09-04: a three-word message came back as "Happy Birthday /
+          // Arya / Arya" — the model echoed the last line. It may wrap the
+          // words onto as many lines as it likes, but each word appears once.
+          `Those words appear exactly once on that board: do not repeat, echo or duplicate any word or line. `;
       }).join("") +
       (textPanelIdx.length > 1
         ? `Each board shows only its own words: "${textPanelIdx.map((i) => sceneModel.panels[i].text.value.trim()).join('" and "')}" are different words on different boards. `

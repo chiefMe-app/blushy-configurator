@@ -429,11 +429,30 @@ function customTextGuide(
     garlandSide === "right" ? -pw * cover / 2 : 0;
   const tx = cx + shift;
 
-  const fontSize = Math.max(11, Math.min(
-    Math.round(pw * 0.12),
-    Math.round(clearW / Math.max(4, text.length) * 1.75),
-  ));
-  const safe = escapeXml(text);
+  // Wrap the message across lines instead of squeezing it onto one.
+  //
+  // The old single line shrank the type to fit the clear band, which on
+  // anything longer than two words bottomed out at the 11px floor — a
+  // three-word message was drawn at 11px on a 228px board. With that little to
+  // copy the model improvised: "Happy Birthday Arya" came back as "Happy
+  // Birthday / Arya / Arya", the last line echoed, and saying "do not repeat
+  // any word" in the prompt did not stop it (2026-09-04). Wrapping at a
+  // readable size gives it the real thing to reproduce.
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  // ~0.5em average glyph advance for the script faces used here.
+  const fitFont = (lineChars: number) => (clearW / Math.max(1, lineChars)) / 0.5;
+  // Start from a comfortable display size and only shrink if a line demands it.
+  let fontSize = Math.round(Math.min(pw * 0.17, fitFont(Math.max(...words.map((w) => w.length)))));
+  fontSize = Math.max(12, fontSize);
+  const maxChars = Math.max(1, Math.floor(clearW / (fontSize * 0.5)));
+  const lines: string[] = [];
+  for (const w of words) {
+    const last = lines[lines.length - 1];
+    if (last && (last + " " + w).length <= maxChars) lines[lines.length - 1] = last + " " + w;
+    else lines.push(w);
+  }
+  if (lines.length === 0) lines.push(text.trim());
+  const lineGap = fontSize * 1.18;
   const font = TEXT_GUIDE_FONT[fontStyle] ?? TEXT_GUIDE_FONT.script;
   const fill = resolveTextColorHex(color);
   // Any near-white lettering needs an outline to exist at all against a white
@@ -449,14 +468,20 @@ function customTextGuide(
   // A pale colour would be washed out by the white halo, so the halo darkens
   // for light lettering instead of fighting it.
   const halo = lum > 0.82 ? "rgba(140,140,140,0.55)" : "rgba(255,255,255,0.9)";
-  const attrs =
-    `x="${tx.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" ` +
-    `font-family="${font.family}" font-weight="${font.weight}" font-size="${fontSize}"`;
+  // Centre the block on the intended baseline rather than hanging it below.
+  const firstY = y - ((lines.length - 1) * lineGap) / 2;
+  const svg = lines.map((line, i) => {
+    const ly    = firstY + i * lineGap;
+    const safe  = escapeXml(line);
+    const attrs =
+      `x="${tx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" ` +
+      `font-family="${font.family}" font-weight="${font.weight}" font-size="${fontSize}"`;
+    // Halo first so the word stays legible wherever it meets a balloon edge.
+    return `<text ${attrs} fill="none" stroke="${halo}" stroke-width="4" stroke-linejoin="round">${safe}</text>` +
+           `<text ${attrs} fill="${fill}"${outline}>${safe}</text>`;
+  }).join("");
   return {
-    svg:
-      // Halo first so the word stays legible wherever it meets a balloon edge.
-      `<text ${attrs} fill="none" stroke="${halo}" stroke-width="4" stroke-linejoin="round">${safe}</text>` +
-      `<text ${attrs} fill="${fill}"${outline}>${safe}</text>`,
+    svg,
     // Deliberately larger than the guide's own lettering: the render model
     // draws the words bigger and lower than the guide does, and a box sized to
     // the guide caught only part of them (measured 2026-09-04 — the guide box
@@ -466,8 +491,17 @@ function customTextGuide(
     zone: {
       xMin: Math.max(cx - pw / 2 + pw * 0.04, tx - clearW / 2 - pw * 0.06),
       xMax: Math.min(cx + pw / 2 - pw * 0.04, tx + clearW / 2 + pw * 0.06),
-      yMin: Math.max(apexY + panelH * 0.03, y - fontSize * 2.0),
-      yMax: Math.min(floorY - panelH * 0.05, y + fontSize * 1.4),
+      // Measured against the BOARD, not against the guide's own font size.
+      // The guide always draws one line and shrinks the type to fit, hitting
+      // its 11px floor on anything long, while the model ignores both and sets
+      // the words large across several lines: "Happy Birthday Arya" came back
+      // as three lines spanning about a fifth of the board, against a guide
+      // font of 11px. A box derived from that font covered the first two lines
+      // and left the third the model's black (2026-09-04). The band below is
+      // where lettering actually lands on a board, and the pixel tests decide
+      // what inside it is ink.
+      yMin: apexY + panelH * 0.08,
+      yMax: apexY + panelH * 0.55,
     },
     fill,
   };
@@ -988,13 +1022,35 @@ export function generateStructureSilhouette(
         const drawThickOrganicMainGarland = (
           p: typeof layout.panels[0], side: "left" | "right", colorOffset: number,
           tight = false,
+          // Single Arch passes this. It cannot be inferred from `tight`, which
+          // Single Arch also sets — that flag selects the fuller, bottom-heavy
+          // mass and both layouts want it. This one is specifically about how
+          // closely balloons may be packed.
+          looseSpacing = false,
         ): { count: number; minR: number; maxR: number; lanes: number } => {
           const dir       = side === "left" ? -1 : 1;
           const panelEdge = p.cx + dir * (p.pw / 2);
           const Hp        = p.floorY - p.apexY;
           let n = 0;
           let minR = Infinity, maxR = 0;
+          // Placed balloons, kept so new ones can be checked against them.
+          const placed: { x: number; y: number; r: number }[] = [];
+          // How deeply a balloon may sit inside its neighbour, as a fraction of
+          // the smaller one's diameter. Measured on the single-arch guide
+          // before this existed: 99% of balloons were overlapped by more than
+          // 55%, which is why the render came back as fused blobs rather than
+          // balloons ("some of them look very fat and cramped"). Real garland
+          // balloons touch and nest a little; they do not swallow each other.
+          // Double Arch is left alone at its previous behaviour, which the
+          // customer approved, by allowing it a much deeper limit.
+          const maxNestFrac = looseSpacing ? 0.55 : 0.95;
           const put = (bx: number, by: number, br: number) => {
+            for (const q of placed) {
+              const d  = Math.hypot(bx - q.x, by - q.y);
+              const ov = (br + q.r - d) / (2 * Math.min(br, q.r));
+              if (ov > maxNestFrac) return;   // too deeply buried — skip it
+            }
+            placed.push({ x: bx, y: by, r: br });
             content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(colorOffset + n)}/>`);
             n++;
             if (br < minR) minR = br;
@@ -1114,7 +1170,10 @@ export function generateStructureSilhouette(
           const pickSize = (t: number): "X" | "L" | "M" | "S" => {
             // t: 0 at the floor, 1 at the spring line.
             const roll = rnd();
-            const xlChance = 0.20 * (1 - t);          // giants belong low down
+            // Fewer giants outside tight mode: with the wider spacing above,
+            // two 36in balloons landing near each other low down were the
+            // fused white blobs in the lower third of the single-arch garland.
+            const xlChance = (looseSpacing ? 0.10 : 0.20) * (1 - t);  // giants belong low down
             const sChance  = 0.12 + 0.20 * t;         // fillers drift upward
             if (roll < xlChance) return "X";
             if (roll < xlChance + sChance) return "S";
@@ -1140,7 +1199,13 @@ export function generateStructureSilhouette(
             // slightly different height, which fills the gaps between the
             // main balloons and gives the band front-to-back depth without
             // reintroducing a repeating lane.
-            if (rnd() < 0.75) {
+            // 2026-09-04: the single-arch garland was reading as fat and
+            // cramped — balloons fusing into blobs rather than sitting as
+            // individual spheres. On this layout the band is not narrowed by
+            // the tight-mode taper, so the companion drop and the deep overlap
+            // that suit Double Arch stack up into a solid mass here. Double
+            // Arch keeps its own values, which the customer approved.
+            if (rnd() < (looseSpacing ? 0.85 : 0.75)) {
               const cSize = sizeR[pickSize(Math.min(1, t + 0.25))] * rTaper * 0.85;
               const cOff  = off + (off > 0 ? -1 : 1) * (0.5 + rnd() * 0.6) * rLarge * spread;
               put(edgeX + dir * cOff, climbY - rBall * (rnd() * 0.5 - 0.25), cSize);
@@ -1148,7 +1213,10 @@ export function generateStructureSilhouette(
 
             // Advance by most of this balloon's own size: enough overlap to
             // read as a connected garland, little enough to stay individual.
-            climbY -= rBall * (0.55 + rnd() * 0.25);
+            // Advance further per step when not in tight mode, so neighbours
+            // touch and nest instead of merging: at 0.55 of a radius they
+            // overlapped by more than half and fused.
+            climbY -= rBall * (looseSpacing ? 0.95 + rnd() * 0.30 : 0.55 + rnd() * 0.25);
           }
 
           // 3) Crown curl — balloons wrapping the outer shoulder over the
@@ -1364,12 +1432,12 @@ export function generateStructureSilhouette(
           // column of 22 circles, which the edit model reproduced with visibly
           // thin, gappy stretches (2026-07-20 feedback: "balloons have very
           // thin parts, should look fuller").
-          drawThickOrganicMainGarland(archPanels[0], "right", 0, true);
+          drawThickOrganicMainGarland(archPanels[0], "right", 0, true, true);
           // Full / Premium mirror the mass onto the left edge too, so the
           // customer sees the extra coverage they paid for. Half stays
           // one-sided (that asymmetry is the look Half Garland sells).
           if (isFullerTier) {
-            drawThickOrganicMainGarland(archPanels[0], "left", 62, true);
+            drawThickOrganicMainGarland(archPanels[0], "left", 62, true, true);
           }
         } else {
           // Multi-panel fallback: right-side vertical garland from top-right corner to floor
