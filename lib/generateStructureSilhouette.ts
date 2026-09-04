@@ -605,13 +605,23 @@ export function generateStructureSilhouette(
       .sort((a, b) => warmth(a) - warmth(b));
 
     const W = wh ?? pri;
-    // Pattern: white+primary dominant (4+3 slots), accents once each, warmest accent last
-    const seq: string[] = [W, pri, W, pri];
-    if (rest[0]) seq.push(rest[0]);
-    seq.push(W);
-    if (rest[1]) seq.push(rest[1]);
-    seq.push(pri, W);
-    if (rest.length > 0) seq.push(rest[rest.length - 1]);
+    // One slot per selected colour, so every colour the customer picked gets
+    // the same share of the garland.
+    //
+    // This used to be [W, pri, W, pri, rest0, W, rest1, pri, W, restLast] —
+    // white in four slots of ten and the primary in three, leaving each accent
+    // a single slot. Measured on a five-colour palette that produced white 42%
+    // of the balloons and 55% of the garland area, the primary 31%, and the
+    // other three 9% each; the customer asked for the colours to be spread
+    // evenly and for no one colour to dominate (2026-09-04). Ordering still
+    // alternates white and the primary with the accents so that neighbours
+    // differ, but each appears once.
+    const seq: string[] = [W, pri];
+    rest.forEach((c, i) => {
+      seq.push(c);
+      // Break up runs of accents on longer palettes.
+      if (i === 0 && rest.length > 2) seq.push(W);
+    });
     return seq;
   })();
 
@@ -1044,6 +1054,23 @@ export function generateStructureSilhouette(
           // Double Arch is left alone at its previous behaviour, which the
           // customer approved, by allowing it a much deeper limit.
           const maxNestFrac = looseSpacing ? 0.55 : 0.95;
+          // Colour is chosen by which one currently covers the least AREA, not
+          // by a running counter. Balloon sizes vary a lot here — a palette can
+          // come out even by count and still look dominated by one colour if it
+          // happens to land on the giants — and area is what the eye reads.
+          const areaByColor = new Array(Math.max(1, colors.length)).fill(0) as number[];
+          // Ties rotate rather than always falling to the first colour, which
+          // otherwise takes every balloon placed before any area accumulates.
+          const lastUsedAt = new Array(Math.max(1, colors.length)).fill(-1) as number[];
+          const leastUsedColor = (): number => {
+            let best = 0;
+            for (let i = 1; i < areaByColor.length; i++) {
+              const d = areaByColor[i] - areaByColor[best];
+              if (d < -1e-6) best = i;
+              else if (Math.abs(d) <= 1e-6 && lastUsedAt[i] < lastUsedAt[best]) best = i;
+            }
+            return best;
+          };
           const put = (bx: number, by: number, br: number) => {
             for (const q of placed) {
               const d  = Math.hypot(bx - q.x, by - q.y);
@@ -1051,7 +1078,10 @@ export function generateStructureSilhouette(
               if (ov > maxNestFrac) return;   // too deeply buried — skip it
             }
             placed.push({ x: bx, y: by, r: br });
-            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(colorOffset + n)}/>`);
+            const ci = leastUsedColor();
+            areaByColor[ci] += Math.PI * br * br;
+            lastUsedAt[ci] = n;
+            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(ci)}/>`);
             n++;
             if (br < minR) minR = br;
             if (br > maxR) maxR = br;

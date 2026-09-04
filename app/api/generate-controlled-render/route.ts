@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "single-arch-garland-spacing-wrapped-text-v47";
+const RENDER_CACHE_VERSION = "even-palette-no-text-bleed-v48";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1898,6 +1898,11 @@ forbiddenBalloonColorLabels: hasSempertexLock
           `Recolor every balloon using ONLY the following selected Sempertex palette: ${swatches}. ` +
           `These are the ONLY allowed balloon colors. Use exactly these ${colourCount} balloon colors: ${names}. ` +
           `Every one of these colours must be clearly present and clearly distinguishable in the garland. ` +
+          // 2026-09-04: the customer asked for an even spread — one colour was
+          // taking most of the garland while others appeared two or three times.
+          `Spread the colours EVENLY through the whole garland: each colour covers a similar share of the balloons, ` +
+          `top to bottom, with no colour dominating and none reduced to one or two balloons. ` +
+          `Do not group all of one colour together — mix them so neighbouring balloons differ. ` +
           `Do not introduce any additional balloon color. Any balloon outside this list must be recolored to ` +
           `the nearest allowed palette colour. ` +
           `Forbidden balloon colors: pink, blush, rose, peach, coral, orange, terracotta, yellow, gold, bronze, ` +
@@ -1985,9 +1990,15 @@ forbiddenBalloonColorLabels: hasSempertexLock
           // words about twice as wide as the guide draws them, and slightly
           // lower. The padding is safe because the tests below decide what is
           // ink, not the box.
+          // Padded only slightly. It used to be 90px, from when the guide drew
+          // the words on one shrunken line and the model set them far wider.
+          // Now that the guide wraps at a real size the two agree, and the wide
+          // pad only reached into the garland: measured on this scene the
+          // lettering occupies x 201-360 and the pad took the box to 445,
+          // which is where the red flecks on the chrome balloons came from.
           const f = panelRectToFraction(promptInput.backdropItems ?? [], {
-            xMin: zone.xMin - 90, xMax: zone.xMax + 90,
-            yMin: zone.yMin - 45, yMax: zone.yMax + 45,
+            xMin: zone.xMin - 12, xMax: zone.xMax + 12,
+            yMin: zone.yMin - 20, yMax: zone.yMax + 20,
           });
           const x0 = Math.max(0, Math.floor(f.xFrac * imgW));
           const x1 = Math.min(imgW, Math.ceil((f.xFrac + f.wFrac) * imgW));
@@ -2026,6 +2037,20 @@ forbiddenBalloonColorLabels: hasSempertexLock
                 }
               }
               if (nearBalloon) continue;
+              // Lettering is made of THIN strokes. A dark reflection on a chrome
+              // balloon is wide — and silver is neutral, so the coloured-
+              // neighbour test above does not see it at all, which is how a red
+              // patch ended up painted across a silver balloon (customer report,
+              // 2026-09-04). Measure the run of ink this pixel belongs to.
+              const maxStroke = Math.max(18, Math.round(W * 0.06));
+              let sa = x, sb = x;
+              const inkAt = (xx: number) => {
+                const j = (y * W + xx) * C;
+                return (0.299 * orig[j] + 0.587 * orig[j + 1] + 0.114 * orig[j + 2]) / 255 < 0.55;
+              };
+              while (sa > 0 && inkAt(sa - 1)) sa--;
+              while (sb < W - 1 && inkAt(sb + 1)) sb++;
+              if (sb - sa + 1 > maxStroke) continue;
               const a = Math.min(1, Math.max(0, (0.42 - lum) / 0.34));
               data[i]     = Math.round(r * (1 - a) + tr * a);
               data[i + 1] = Math.round(g * (1 - a) + tg * a);
