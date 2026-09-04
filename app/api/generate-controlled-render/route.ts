@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "round-framing-plinth-base-foot-shadow-v41";
+const RENDER_CACHE_VERSION = "single-arch-framing-plinth-tube-standee-forward-v42";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -2088,7 +2088,20 @@ forbiddenBalloonColorLabels: hasSempertexLock
                   const frameAspect  = imgW / imgH;
                   const forwardFrac  = Math.min(0.075, Math.max(0.015,
                     0.017 + 0.0623 * (frameAspect - 0.5625)));
-                  bottom = Math.round(groupGeom.floorYFrac * imgH + panelPxHeight * forwardFrac);
+                  // That interpolation puts an object at the depth of the
+                  // PLINTH, which is where the backdrop's own floor line sits.
+                  // A standee stands beside the setup, and the model piles
+                  // balloons on the floor around the backdrop base, so at that
+                  // exact depth the figure's feet disappear into the balloon
+                  // pile and it reads as standing on the balloons rather than
+                  // on the floor (customer report, 2026-09-04, Single Arch).
+                  // It therefore stands a little further forward, onto the
+                  // clear floor. Measured on that scene: the plinth base and
+                  // the feet both landed at y=851 in a 576x1024 frame, while
+                  // the bare floor in front of the balloons started around
+                  // y=872 — which is this extra 3% of panel height.
+                  const standeeForwardFrac = forwardFrac + 0.030;
+                  bottom = Math.round(groupGeom.floorYFrac * imgH + panelPxHeight * standeeForwardFrac);
                   // A left-hand standee used to be clamped flush to x=0, which
                   // pushed the whole figure back over the board and buried the
                   // lettering (customer report, 2026-09-03: "the cutout needs to

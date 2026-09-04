@@ -393,16 +393,24 @@ export function buildLayoutRefEditPrompt(
   // was always roughly right; only the diameter was wrong, so the comparison
   // is what carries the correction.
   const plinthDesc   = plinth
-    ? `Keep exactly one visible white cylindrical pedestal column, ${plinth.heightCm}cm tall on a ${plinth.diameterCm}cm diameter circular base. ` +
+    // 2026-09-04: the model kept painting a wide flat plate under the column
+    // and standing it on that. Naming the shape was not enough on its own —
+    // this clause already forbade a "platform, riser, plate, step or second
+    // disc" and the plate was drawn anyway. Two things changed and the plate
+    // went away, verified on the customer's own Single Arch scene at a fixed
+    // seed: the word "base" stopped being used for the plinth itself (it said
+    // "on a 36cm diameter circular base" and "on its own flat circular base",
+    // which reads as a part the column stands on), and the width is now pinned
+    // top-to-bottom, because a plate is simply the bottom being wider.
+    ? `Keep exactly one visible white cylindrical pedestal column, ${plinth.heightCm}cm tall and ${plinth.diameterCm}cm wide. ` +
       `It is a slim upright column: about ${(plinth.heightCm / plinth.diameterCm).toFixed(1)} times taller than it is wide, ` +
-      `and its diameter is roughly ${plinthWidthFraction} of the width of the backdrop board behind it. ` +
+      `and its width is roughly ${plinthWidthFraction} of the width of the backdrop board behind it. ` +
+      `It is one seamless tube of the SAME width from the floor all the way up to its flat top — the bottom is ` +
+      `exactly as wide as the top, never wider. ` +
       `It is NOT a wide squat drum, NOT a round coffee table, NOT a low cake stand. ` +
       `This is a separate display pedestal, not a support base for the backdrop. ` +
-      // 2026-09-04: the model was inventing a second, wider disc under the
-      // column and standing it on that, which also raised the apparent floor
-      // line and left the composited standee looking like it was hovering.
-      `The column meets the floor directly on its own flat circular base — there is NO separate platform, riser, ` +
-      `plate, pedestal box, step or second disc underneath it, and it does not stand on any tray or podium. ` +
+      `Nothing sits underneath it: no wider foot, no base plate, no base ring, no skirt, no platform, no riser, ` +
+      `no step, no tray, no podium and no second disc — the cylinder meets the bare floor directly. ` +
       // 2026-09-03: Double Arch no longer asks for the gap. It uses Single
       // Arch's own placement — in front of a backdrop panel — because that is
       // the placement the model actually paints; see the note in
@@ -807,10 +815,15 @@ export function buildLayoutRefEditPrompt(
       // room. One panel does not fill a frame the way two side-by-side panels
       // do, so it gets the closer framing the round backdrop already uses.
       // Multi-panel scenes keep the wide framing, which suits them.
+      // 2026-09-04: the first attempt at this ("medium-close ... only a small
+      // margin") still left a single arch sitting small in a large grey room.
+      // Naming what should touch the edges — the top balloon, and how much
+      // floor is allowed — moved it where the general wording did not.
       ? `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
-        `Medium-close full-body event photography — the backdrop, balloon garland and plinth fill the frame with strong ` +
-        `presence, the setup reaching close to the top and bottom of the image, with only a small margin of floor and ` +
-        `wall around it. Keep the whole setup visible and nothing cropped, but do not leave large empty areas. `
+        `Tight medium-close full-body event photography. The setup is the subject and must DOMINATE the frame: ` +
+        `the highest balloon of the garland sits just below the top edge of the image, and the floor occupies no ` +
+        `more than the bottom eighth of the frame. Leave only a narrow margin of wall on either side. ` +
+        `Keep the whole setup visible and nothing cropped, but do not render the setup small in a large empty room. `
       : `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
         `Wide full-body event photography — entire setup fully visible with breathing room, nothing cropped. `;
     

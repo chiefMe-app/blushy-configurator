@@ -289,8 +289,12 @@ function plinthEdge(cx: number, bottomY: number, heightPx: number, diameterPx: n
     `<line x1="${cx - rx}" y1="${topY}" x2="${cx - rx}" y2="${bottomY}" stroke="rgba(90,90,90,0.22)" stroke-width="0.8"/>`,
     // Right vertical edge — very faint
     `<line x1="${cx + rx}" y1="${topY}" x2="${cx + rx}" y2="${bottomY}" stroke="rgba(90,90,90,0.22)" stroke-width="0.8"/>`,
-    // Bottom ellipse — subtle, faint
-    `<ellipse cx="${cx}" cy="${bottomY}" rx="${rx}" ry="${ryTop}" fill="none" stroke="rgba(90,90,90,0.20)" stroke-width="0.8"/>`,
+    // Bottom cap — FRONT arc only. Drawing the whole ellipse here put a
+    // complete disc on the floor around the base, and the edit model painted
+    // exactly that: a wide flat plate under the column, which is what the
+    // customer reported as an extra platform (2026-09-04). An opaque cylinder
+    // hides the back half of its own base, so only the near half is drawn.
+    `<path d="M ${cx - rx},${bottomY} A ${rx},${ryTop} 0 0 0 ${cx + rx},${bottomY}" fill="none" stroke="rgba(90,90,90,0.20)" stroke-width="0.8"/>`,
     // Top ellipse — primary cylinder cue, clearly visible
     `<ellipse cx="${cx}" cy="${topY}" rx="${rx}" ry="${ryTop}" fill="none" stroke="rgba(80,80,80,0.48)" stroke-width="1.6"/>`,
   ].join("\n    ");
@@ -318,8 +322,9 @@ function plinthFilledCylinder(cx: number, bottomY: number, heightPx: number, dia
     // partially overlaps (a light-gray fill blended into the beige panel and
     // the model dropped it)
     `<rect x="${cx - rx}" y="${topY}" width="${visualWidth}" height="${heightPx}" fill="#FFFFFF" stroke="rgba(85,85,85,0.72)" stroke-width="2"/>`,
-    // Bottom cap — grounds the cylinder on the floor line
-    `<ellipse cx="${cx}" cy="${bottomY}" rx="${rx}" ry="${ry}" fill="#F1EEEA" stroke="rgba(85,85,85,0.60)" stroke-width="1.6"/>`,
+    // Bottom cap — front arc only, for the reason given in plinthEdge: a
+    // full ellipse here reads as a separate disc lying on the floor.
+    `<path d="M ${cx - rx},${bottomY} A ${rx},${ry} 0 0 0 ${cx + rx},${bottomY}" fill="none" stroke="rgba(85,85,85,0.60)" stroke-width="1.6"/>`,
     // Top cap — primary cylinder cue
     `<ellipse cx="${cx}" cy="${topY}" rx="${rx}" ry="${ry}" fill="#FBFAF8" stroke="rgba(75,75,75,0.75)" stroke-width="2"/>`,
   ].join("\n    ");
