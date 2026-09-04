@@ -144,21 +144,35 @@ export function buildLayoutRefEditPrompt(
         `If the panel is structurally supported, that support must be fully hidden directly behind the thin panel ` +
         `and completely invisible in the photograph — the panel must read as a clean thin circular surface with ` +
         `absolutely nothing visible beneath, around, or supporting it. ` +
-        `The ONLY cylinder allowed anywhere in this scene is the single selected vertical plinth — ` +
-        `do not add any other cylinder, disc, or rounded object near the panel. ` +
-        `Round backdrop is exactly 200 cm diameter. It must visually appear about ` +
-        `${(200 / plinthHeightCm).toFixed(1)} times taller than the ${plinthHeightCm} cm plinth and about ` +
-        `${Math.round(200 / plinthDiameterCm)} times wider than the ${plinthDiameterCm} cm plinth diameter. The round panel should dominate ` +
-        `the setup and fill most of the background composition. ` +
+        // 2026-09-04: every sentence in this block that mentions the plinth is
+        // now conditional on one actually being selected. It used to name "the
+        // single selected vertical plinth" three times and scale the backdrop
+        // against a 75cm/40cm default even for a scene with no plinth at all,
+        // which is why a round setup rendered a pedestal the customer never
+        // added. With no plinth the same sentences say the opposite.
+        (firstPlinth
+          ? `The ONLY cylinder allowed anywhere in this scene is the single selected vertical plinth — ` +
+            `do not add any other cylinder, disc, or rounded object near the panel. `
+          : `NO cylinder of any kind is allowed anywhere in this scene — no plinth, no pedestal, no column, ` +
+            `no podium, no riser and no drum. The floor in front of the panel is bare. `) +
+        `Round backdrop is exactly 200 cm diameter. ` +
+        (firstPlinth
+          ? `It must visually appear about ` +
+            `${(200 / plinthHeightCm).toFixed(1)} times taller than the ${plinthHeightCm} cm plinth and about ` +
+            `${Math.round(200 / plinthDiameterCm)} times wider than the ${plinthDiameterCm} cm plinth diameter. `
+          : `It stands roughly as tall as an adult and reads as a full-size two-metre event backdrop. `) +
+        `The round panel should dominate the setup and fill most of the background composition. ` +
         `Do not shrink the round panel. Do not render it as a small decorative circle. ` +
         `It must read as a full-size 2 meter event backdrop, thin and flat like a sign board, never like a piece ` +
         `of furniture or a display fixture. ` +
-        `Only one visible prop is allowed in the entire scene: the single selected vertical cylindrical plinth. ` +
+        (firstPlinth
+          ? `Only one visible prop is allowed in the entire scene: the single selected vertical cylindrical plinth. `
+          : `No prop of any kind stands in this scene — only the round panel and its balloon garland. `) +
         `The round backdrop itself has no visible base, no stage, no platform, no pedestal, no riser, ` +
         `no support block, no support disc, no display base, no furniture base, no stand, no feet, ` +
-        `and no second plinth. Do not invent any extra white cylinder, oval base, round base, or low platform ` +
+        `and no plinth. Do not invent any extra white cylinder, oval base, round base, or low platform ` +
         `under or beside the round panel — the floor beneath and around the panel must be completely bare ` +
-        `except for the one selected plinth and the balloon garland.`;
+        (firstPlinth ? `except for the one selected plinth and the balloon garland.` : `except for the balloon garland.`);
     } else if (p.type === "arch") {
       backdropDesc =
         `single rounded arch backdrop, ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
@@ -439,7 +453,16 @@ export function buildLayoutRefEditPrompt(
     ? ""
     : isDoubleArchScene
       ? `No plinths, pedestals, podiums, or display columns of any kind. The floor area between the two arches stays completely bare and empty — no object of any kind stands there. `
-      : "No plinths. ";
+      // 2026-09-04: a round scene with no plinth selected rendered one anyway,
+      // every time. "No plinths." on its own was never the problem — the round
+      // panel description above it spent five sentences talking about "the
+      // single selected vertical plinth" and sized the backdrop against a
+      // 75cm one, regardless of whether the customer had added a plinth. Those
+      // sentences are now conditional, and this one names the object the way
+      // the plinth-present branch does so it is refused as specifically as it
+      // was previously requested.
+      : `No plinth, pedestal, podium, display column, cylinder, riser, stand or platform of any kind stands anywhere in this scene. ` +
+        `The floor in front of the backdrop is completely bare and empty apart from the balloon garland. `;
 
   // ── Balloon garland description ───────────────────────────────────────────
   const balloonStyle = sceneModel.balloons.style;
@@ -502,6 +525,58 @@ export function buildLayoutRefEditPrompt(
     const family = String((c as SempertexSelectionItem & { family?: string }).family ?? "").toLowerCase();
     return name.includes("blue") || family === "blue";
   });
+
+  // 2026-09-04: the hue and finish bans further down were fighting the
+  // customer's own selection. "No lavender balloons. No lilac balloons. No
+  // violet balloons. No purple balloons." and "No chrome balloons. No mirror
+  // metallic balloons." were emitted for EVERY scene — including a Double Arch
+  // whose selected palette was white + lilac + silver metallic. The model was
+  // handed the palette and, in the same breath, told not to paint two of its
+  // colours; what came back had gold/champagne balloons scattered through the
+  // garland, because forbidden lilac and forbidden chrome leave the nearest
+  // warm metallic as the only thing left to paint. Every hue/finish ban is now
+  // conditional on that hue or finish being absent from the selection — the
+  // treatment yellow, green and blue already had.
+  const paletteHas = (
+    test: (name: string, family: string, finish: string) => boolean,
+  ): boolean => selectedSempertexColors.some((c) => test(
+    String(c.colorName ?? "").toLowerCase(),
+    String((c as SempertexSelectionItem & { family?: string }).family ?? "").toLowerCase(),
+    String(c.finish ?? "").toLowerCase(),
+  ));
+  const hasPurpleInPalette   = paletteHas((n, f) => f === "purple" || /purple|violet|lilac|lavender|amethyst|mauve/.test(n));
+  const hasGoldInPalette     = paletteHas((n, f) => f === "gold"   || /gold|champagne/.test(n));
+  const hasPinkInPalette     = paletteHas((n, f) => f === "pink"   || f === "peach" || /pink|blush|rose|coral|peach/.test(n));
+  const hasCreamInPalette    = paletteHas((n, f) => f === "neutral" || /cream|beige|ivory|sand|nude|oyster/.test(n));
+  const hasOrangeInPalette   = paletteHas((n, f) => f === "orange" || /orange|terracotta|copper|bronze/.test(n));
+  // Silver, gold and every Reflex/Metallic finish are shiny by definition, so a
+  // blanket "no chrome / no reflective balloons" contradicts them outright.
+  const hasMetallicInPalette = paletteHas((n, f, fin) =>
+    fin === "metallic" || fin === "reflex" || f === "silver" || f === "gold" || /chrome|metallic|silver/.test(n));
+
+  // 2026-09-04, isolated by controlled render: a Double Arch on white + lilac +
+  // silver came back with gold, copper and champagne balloons scattered through
+  // both garlands. Re-rendering the SAME guide, prompt and seed with the silver
+  // swapped for Arctic Blue produced zero warm balloons — so the golds were not
+  // coming from the theme, the guide or the negatives, but from the silver slot
+  // itself: a shiny neutral-grey sphere reads as "chrome", and chrome in the
+  // model's training data is overwhelmingly gold, champagne or rose gold.
+  //
+  // The palette block cannot pin it, because getPositiveLabel deliberately
+  // strips the ", not gold, not bronze, not copper" tail off every label to keep
+  // bias words out of the positive prompt — which leaves "cool silver gray" and
+  // nothing holding it there. This says what the metal IS, positively and
+  // specifically, rather than relying on a ban buried in the negative list.
+  const hasCoolMetallicInPalette = paletteHas((n, f, fin) =>
+    (fin === "metallic" || fin === "reflex" || /chrome|metallic/.test(n)) && f !== "gold" && !/gold|champagne|bronze|copper/.test(n)
+    || f === "silver" || /silver/.test(n));
+  const coolMetallicSentence = hasCoolMetallicInPalette
+    ? `The metallic balloons in this palette are COOL metal: polished stainless steel, mirror chrome and ` +
+      `platinum, reflecting the grey wall and the neutral daylight around them. Their highlights are white ` +
+      `and their shadows are blue-grey. They are silver-grey through and through, never warm — not gold, ` +
+      `not champagne, not bronze, not copper, not brass and not rose gold. `
+    : "";
+
 
   // When a Sempertex palette is selected it fully overrides the theme palette.
   // Use a short "selected-palette soft pastel" phrase in the garland sentence so
@@ -592,6 +667,7 @@ export function buildLayoutRefEditPrompt(
     ? ` BALLOON COLOR SOURCE OVERRIDE: The theme name is not a balloon color instruction. Balloon colors must be copied from the selected Sempertex palette and from the colored layout reference guide only. ` +
       `BALLOON COLOR LOCK — ${allowedPaletteBlock}. ` +
       `Use ONLY these exact visual balloon colors for every balloon in the garland. ` +
+      coolMetallicSentence +
       `These are the ONLY allowed balloon colors in the scene. ${paletteEnforcementSentences} ` +
       targetAppearanceSentence +
       exactColorCountSentence +
@@ -789,6 +865,20 @@ export function buildLayoutRefEditPrompt(
       `window light on any balloon surface — every balloon keeps its exact specified color on both its ` +
       `window-lit side and its shadow side, with only neutral highlights and neutral gray shading. `
     : "";
+  // 2026-09-04. Round scenes get their own photography opening — "Bright ...
+  // normal punchy contrast, well-lit and clear" — while every arch scene gets
+  // "Cool neutral daylight ... soft natural light". The customer asked for one
+  // look across all layouts, so this block was unified onto the arch wording.
+  // That was reverted after testing it: the round path is fal-ai/flux-2/edit
+  // driven by a guide that is only a thin arc of ~20 dots, and it is extremely
+  // sensitive to any change here. On a white + Arctic Blue + Silver scene,
+  // rendered at a fixed seed with everything else on this page already changed:
+  //   round's own opening        -> correct white / icy blue / pearl garland
+  //   arch opening + even-light  -> pastel RAINBOW (yellow, pink, peach)
+  //   round's opening + even-light -> primary-colour rainbow, worse still
+  // The wording is load-bearing for the round palette, so it stays. The
+  // even-light sentence below — which is what actually removes the single
+  // arch's sunbeam — is applied to arch layouts only, for the same reason.
   const photographyOpening = isRoundScene
     ? `Bright, sharp, premium studio photography with clean natural daylight from the left, ` +
       `gray textured plaster or concrete studio wall, polished light concrete or stone floor, ` +
@@ -803,7 +893,17 @@ export function buildLayoutRefEditPrompt(
         ? `crisp clean whites, neutral white balance, color-accurate rendering. `
         : balloonStyle === "none"
           ? `crisp clean whites, neutral white balance, fresh modern editorial event styling. `
-          : `crisp clean whites, icy light blue and white balloon tones, neutral white balance, fresh modern editorial event styling. `);
+          : `crisp clean whites, icy light blue and white balloon tones, neutral white balance, fresh modern editorial event styling. `) +
+      // The single arch was coming back with a hard sunbeam across the wall and
+      // a long diagonal cast shadow, which bleached the balloons on the lit side
+      // and buried them in shadow on the other — the reason its colours read as
+      // washed-out pastel next to the Double Arch's. "Soft natural light from the
+      // left" never ruled that out; the tight portrait frame just made the model
+      // reach for drama. Naming it is what removes it.
+      `The light is soft, even and diffuse across the whole scene, like a large north-facing window ` +
+      `far off to the left: no hard sunbeam, no sun patch or bright pool of light on the wall or floor, ` +
+      `no sharp-edged cast shadow stretching across the room, no blown-out white highlights, no lens flare, ` +
+      `no dramatic contrast. Both sides of every balloon stay clearly readable in their own colour. `;
   const eventSetupLabel = (hasSempertexLock && isUnicornTheme)
     ? "soft pastel birthday backdrop setup"
     : "children's birthday event setup";
@@ -968,6 +1068,10 @@ const setupTemplateClause = setupTemplate
     `No warm yellow lighting. No golden ambient light. No beige hotel interior. No yellow color cast. ` +
     `No ornate luxury room. No cream or brown walls. No orange or yellow white balance. ` +
     `No overly warm shadows. No dark moody room. ` +
+    // Matches the even-light sentence in photographyOpening — the single arch
+    // kept rendering a sunbeam and a long hard shadow across the floor.
+    `No sunbeam. No sun patch. No shaft of light. No harsh direct sunlight. No hard-edged cast shadow. ` +
+    `No long diagonal shadow across the floor. No blown-out highlights. No lens flare. No high-contrast lighting. `+
     `No plants. No furniture. No chairs. No mirrors. No doors. No visible support legs. No black stands. ` +
     (hasArchPanelInPrompt
       // The balloon placement negatives are skipped for a no-balloons scene:
@@ -983,10 +1087,22 @@ const setupTemplateClause = setupTemplate
       : "") +
     (hasRoundPanelInScene
       ? `No small round backdrop. No undersized circle. No decorative wall circle. ` +
-        `No round panel smaller than plinth scale. No distant tiny round panel. ` +
-        `No extra plinth. No second plinth. No duplicate plinth. No low white platform. No oval base. ` +
-        `No round base. No stage. No podium. No riser. No pedestal. No support block. No support disc. ` +
-        `No base cylinder. No round backdrop base. No display base. No furniture base. No extra cylinder. ` +
+        (plinth ? `No round panel smaller than plinth scale. ` : "") + `No distant tiny round panel. ` +
+        // With no plinth selected, "no EXTRA plinth" still implies one belongs
+        // in the picture. Say there is none.
+        (plinth
+          ? `No extra plinth. No second plinth. No duplicate plinth. `
+          : `No plinth. No pedestal. No cylinder. No white column. No display column. `) +
+        `No low white platform. No oval base. ` +
+        // These bans are about the ROUND PANEL's own supports. Two of them —
+        // "No pedestal" and "No extra cylinder" — used to be emitted even when
+        // the customer had asked for a plinth, contradicting plinthDesc, which
+        // requests exactly one white cylindrical pedestal column.
+        `No round base. No stage. No podium. No riser. ` +
+        (plinth ? "" : `No pedestal. `) +
+        `No support block. No support disc. ` +
+        `No base cylinder. No round backdrop base. No display base. No furniture base. ` +
+        (plinth ? "" : `No extra cylinder. `) +
         `No floating support. No visible stand. No visible feet. No visible wheels. No visible frame. ` +
         `No visible support bar. No round backdrop on furniture. No round backdrop mounted on a stand. ` +
         `No full balloon ring. No 360-degree balloon wreath. No circular balloon frame. No balloon halo. ` +
@@ -996,17 +1112,29 @@ const setupTemplateClause = setupTemplate
       ? `No wrong balloon colors. No unrelated balloon colors. No theme-default balloon colors. ` +
         `No unselected balloon colors. No extra balloon colors. No substitute colors. No approximate palette. ` +
         `No ignoring selected palette. No changing backdrop size when color changes. ` +
-        `No orange balloons when not selected. ` +
+        (!hasOrangeInPalette ? `No orange balloons when not selected. ` : "") +
         (!hasYellowInPalette ? `No yellow balloons when not selected. ` : "") +
         (!hasGreenInPalette  ? `No green balloons when not selected. `  : "") +
         (!hasBlueInPalette   ? `No blue balloons when not selected. `   : "") +
-        `No teal balloons. No turquoise balloons. ` +
-        `No unrelated metallic balloons. No unselected gold balloons. No unselected rose gold balloons. ` +
-        `No peach balloons. No coral balloons. No terracotta balloons. ` +
-        `No beige balloons. No cream balloons. No bronze balloons. No copper balloons. ` +
-        `No gold balloons unless selected. ` +
-        `No lavender balloons. No lilac balloons. No violet balloons. No purple balloons. No rainbow balloons. ` +
-        `No glossy balloons. No chrome balloons. No mirror metallic balloons. No reflective balloons unless selected. ` +
+        (!hasGreenInPalette && !hasBlueInPalette ? `No teal balloons. No turquoise balloons. ` : "") +
+        (!hasGoldInPalette
+          ? `No unrelated metallic balloons. No unselected gold balloons. No unselected rose gold balloons. ` +
+            `No gold balloons unless selected. No champagne balloons. `
+          : "") +
+        (!hasPinkInPalette ? `No peach balloons. No coral balloons. ` : "") +
+        (!hasOrangeInPalette ? `No terracotta balloons. No bronze balloons. No copper balloons. ` : "") +
+        (!hasCreamInPalette ? `No beige balloons. No cream balloons. ` : "") +
+        (!hasPurpleInPalette
+          ? `No lavender balloons. No lilac balloons. No violet balloons. No purple balloons. `
+          : "") +
+        `No rainbow balloons. ` +
+        (!hasMetallicInPalette
+          ? `No glossy balloons. No chrome balloons. No mirror metallic balloons. No reflective balloons unless selected. `
+          // A metallic IS in the palette, so shine is wanted — but only on the
+          // balloons that asked for it, and never warmed into gold.
+          : `The metallic balloons in the palette keep the exact metallic tone listed for them and are never warmed, ` +
+            `tinted or shifted toward gold, champagne, bronze or copper. The matte and satin balloons in the palette ` +
+            `stay matte — do not make every balloon shiny. `) +
         `No warm cast. No creamy tint. No hazy filter. No editorial global filter. No warm amber overlay. No film-like tint. No ivory whites. No beige whites. `
       : "") +
     (balloonStyle !== "none"

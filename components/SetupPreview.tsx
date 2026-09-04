@@ -1001,6 +1001,16 @@ export function useFinalRender(config: BuilderConfig) {
           },
           sceneModel:            buildSceneModel(configRef.current),
           previousFinalRenderUrl: currentFinalRenderUrl.current,
+          // 2026-09-04: this was the only render call that never sent an aspect
+          // ratio, so the route fell back to its landscape_4_3 default. A round
+          // setup is generated square (200x200cm -> square_hd); changing only the
+          // balloon colours took this path and re-rendered that square image into
+          // a 1024x768 frame, which came back visibly stretched sideways — the
+          // circular backdrop as a wide ellipse. Every path now sends the frame
+          // computed from the real panel dimensions.
+          renderAspectRatio:     calculateRenderAspectRatio(
+            configRef.current.decor.backdropItems,
+          ).falImageSize,
           renderMode:            "edit_existing",
           editDescription,
           currentSceneHash:      computeSceneHash(configRef.current),

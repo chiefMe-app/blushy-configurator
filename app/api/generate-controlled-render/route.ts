@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "even-palette-no-text-bleed-v48";
+const RENDER_CACHE_VERSION = "cool-metal-even-light-plinth-aware-v49";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -722,6 +722,10 @@ async function generateLayoutReferencePng(
   promptInput:       PromptInput,
   selectedHexColors: string[] = [],
   cutoutGuideItems:  CutoutGuideItem[] = [],
+  // Hexes among selectedHexColors that are cool metals (silver/platinum/chrome).
+  // See the note in generateStructureSilhouette: the guide draws these a little
+  // cool so the edit model stops inventing gold and rose-gold chrome balloons.
+  coolMetalHexes:    string[] = [],
 ): Promise<LayoutRefPngResult> {
   // Stage 1: SVG generation — derive plinth sizes from sceneModel for type safety
   let silhouette: ReturnType<typeof generateStructureSilhouette>;
@@ -744,6 +748,7 @@ async function generateLayoutReferencePng(
           : promptInput.balloonColors,
       cutoutGuideItems,
       sceneModel.shimmerColor ? SHIMMER_COLOR_HEX[sceneModel.shimmerColor as ShimmerColorId] : undefined,
+      coolMetalHexes,
     );
   } catch (err) {
     const msg = String(err);
@@ -870,6 +875,24 @@ const paletteHasBlue = effectiveSempertexSelection.some((c) => {
   const family = String((c as SempertexSelectionItem & { family?: string }).family ?? "").toLowerCase();
   return name.includes("blue") || family === "blue";
 });
+
+// Cool metals in the selection — silver, platinum, chrome, but never gold or
+// rose gold. The layout guide draws these a shade cooler than their catalogue
+// hex so the edit model stops turning them into gold and copper chrome; see the
+// measurements in generateStructureSilhouette. Decided on family and finish
+// rather than the hex, because #D1D5DB Silver Satin and #D9D9D6 Oyster White
+// are indistinguishable by luminance and chroma.
+const coolMetalHexes: string[] = effectiveSempertexSelection
+  .filter((c) => {
+    const name   = String(c.colorName ?? "").toLowerCase();
+    const family = String((c as SempertexSelectionItem & { family?: string }).family ?? "").toLowerCase();
+    const finish = String(c.finish ?? "").toLowerCase();
+    if (family === "gold" || /gold|champagne|bronze|copper|brass/.test(name)) return false;
+    return family === "silver"
+      || ((finish === "metallic" || finish === "reflex") && /silver|chrome|platinum|steel/.test(name));
+  })
+  .map((c) => String((c as SempertexSelectionItem & { hex?: string }).hex ?? ""))
+  .filter((h) => /^#[0-9a-fA-F]{6}$/.test(h));
 
 // Hex colors for the layout-reference balloon guide dots.
 // When a Sempertex palette is locked, pass the exact hex values so the SVG
@@ -1380,7 +1403,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
 
     // ── Primary path: layout-reference edit ────────────────────────────────
     // Same proven pattern as fal-layout-reference-test in the structure test route.
-    const pngResult       = await generateLayoutReferencePng(sceneModel, promptInputForAi, effectiveBalloonHexColors, cutoutGuideItems);
+    const pngResult       = await generateLayoutReferencePng(sceneModel, promptInputForAi, effectiveBalloonHexColors, cutoutGuideItems, coolMetalHexes);
     const layoutRefPrompt = buildLayoutRefEditPrompt(sceneModel, effectiveSempertexSelection);
 
     // Debug shortcut: return the layout reference PNG without calling fal.
@@ -1911,8 +1934,18 @@ forbiddenBalloonColorLabels: hasSempertexLock
           `not glossy, not chrome, not mirror metallic. ` +
           `Keep the scene neutral and color-accurate: no warm tint, no creamy cast, no sepia, no haze, no ` +
           `filtering. Keep whites neutral white, not ivory and not cream. Preserve true pastel colour separation. ` +
-          `Preserve the white cylindrical plinth exactly as it is, and do not add any extra plinth, riser, ` +
-          `platform or base. Do not add any new object that was not already in the image.`;
+          // 2026-09-04: this used to say "Preserve the white cylindrical plinth"
+          // unconditionally. On a round setup with NO plinth selected, the
+          // recolour pass was therefore told to keep a plinth that was never
+          // asked for — the second of two places that quietly requested one
+          // (the round backdrop description was the first). A scene without a
+          // plinth now says so here too.
+          (sceneModel.plinths.length > 0
+            ? `Preserve the white cylindrical plinth exactly as it is, and do not add any extra plinth, riser, ` +
+              `platform or base. `
+            : `There is no plinth in this scene. Do not add a plinth, pedestal, cylinder, column, riser, ` +
+              `platform or base of any kind — the floor stays bare. `) +
+          `Do not add any new object that was not already in the image.`;
 
         const lockResult = await fal.subscribe(editModelId, {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
