@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "sempertex-hex-correction-v44";
+const RENDER_CACHE_VERSION = "balloon-colour-correction-v45";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1879,6 +1879,11 @@ forbiddenBalloonColorLabels: hasSempertexLock
   // skipped, so white and silver balloons, the boards, the wall and the floor
   // are untouched, and the strength is derived from the palette itself rather
   // than fixed: a palette of near-neutrals asks for no correction at all.
+  // The chroma floor of 10 in the tests below is what keeps this off the room.
+  // At a floor of 5 the faint tint in the wall and floor was amplified too
+  // (measured wall tint 4.8 to 6.4); at 10 the wall and floor come out
+  // unchanged from the uncorrected render while the balloons get the full
+  // correction.
   let balloonSaturationFactor = 1;
   let balloonSaturationApplied = false;
   const chromaOf = (hex: string): number => {
@@ -1904,7 +1909,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
             const i = (y * W + x) * C, r = data[i], g = data[i + 1], b = data[i + 2];
             const ch = Math.max(r, g, b) - Math.min(r, g, b);
             const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-            if (ch < 8 || lum < 0.45 || lum > 0.985) continue;
+            if (ch < 10 || lum < 0.45 || lum > 0.985) continue;
             n++; sum += ch;
           }
         }
@@ -1912,19 +1917,22 @@ forbiddenBalloonColorLabels: hasSempertexLock
           const renderChroma = sum / n;
           // Capped: beyond this the correction starts to look like a filter
           // rather than the right latex colour.
-          balloonSaturationFactor = Math.min(3.2, Math.max(1, targetChroma / renderChroma));
+          balloonSaturationFactor = Math.min(3.6, Math.max(1, targetChroma / renderChroma));
           if (balloonSaturationFactor > 1.05) {
             for (let y = 0; y < H; y++) {
               for (let x = 0; x < W; x++) {
                 const i = (y * W + x) * C, r = data[i], g = data[i + 1], b = data[i + 2];
                 const mx = Math.max(r, g, b), mn = Math.min(r, g, b), ch = mx - mn;
                 const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-                if (ch < 8 || lum < 0.45 || lum > 0.985) continue;
+                if (ch < 10 || lum < 0.45 || lum > 0.985) continue;
                 const mid = (mx + mn) / 2;
-                // Eased in over the first few units of chroma so a faint tint
-                // is nudged rather than jumped.
+                // Eased in over the first units of chroma so a faint tint is
+                // nudged rather than jumped. The ease used to run to 40, which
+                // held back exactly the pale pastels this is meant to rescue:
+                // a rendered Arctic Blue sits around a chroma of 25 and was
+                // getting only 60% of the correction.
                 const f = Math.min(balloonSaturationFactor,
-                  1 + (balloonSaturationFactor - 1) * Math.min(1, ch / 40));
+                  1 + (balloonSaturationFactor - 1) * Math.min(1, ch / 18));
                 data[i]     = Math.round(Math.max(0, Math.min(255, mid + (r - mid) * f)));
                 data[i + 1] = Math.round(Math.max(0, Math.min(255, mid + (g - mid) * f)));
                 data[i + 2] = Math.round(Math.max(0, Math.min(255, mid + (b - mid) * f)));
