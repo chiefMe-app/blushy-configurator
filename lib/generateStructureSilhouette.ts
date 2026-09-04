@@ -71,6 +71,11 @@ export interface SilhouetteResult {
    *  post-render shimmer recolor mask so those balloons are never tinted.
    *  Null when not that layout. */
   archShimmerAccentZone: { xMin: number; xMax: number; yMin: number; yMax: number } | null;
+  /** Where each panel's lettering sits, in inner viewBox px (pre-transform).
+   *  Feed through panelRectToFraction to get canvas fractions. Used to
+   *  recolour the rendered lettering, which the arch edit model paints black
+   *  whatever colour it is asked for. */
+  textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[];
 }
 
 /** One size tier of standee cutout to draw in the guide. */
@@ -397,7 +402,7 @@ function customTextGuide(
     fontStyle?: string;
     color?: string;
   } = {},
-): string {
+): { svg: string; zone: { xMin: number; xMax: number; yMin: number; yMax: number }; fill: string } {
   const { hasGraphicBelow = false, garlandSide = "none", fontStyle = "script", color = "white" } = opts;
   const panelH = floorY - apexY;
   // The illustration zone starts at 32% of the panel height, so a text
@@ -447,11 +452,25 @@ function customTextGuide(
   const attrs =
     `x="${tx.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" ` +
     `font-family="${font.family}" font-weight="${font.weight}" font-size="${fontSize}"`;
-  return (
-    // Halo first so the word stays legible wherever it meets a balloon edge.
-    `<text ${attrs} fill="none" stroke="${halo}" stroke-width="4" stroke-linejoin="round">${safe}</text>` +
-    `<text ${attrs} fill="${fill}"${outline}>${safe}</text>`
-  );
+  return {
+    svg:
+      // Halo first so the word stays legible wherever it meets a balloon edge.
+      `<text ${attrs} fill="none" stroke="${halo}" stroke-width="4" stroke-linejoin="round">${safe}</text>` +
+      `<text ${attrs} fill="${fill}"${outline}>${safe}</text>`,
+    // Deliberately larger than the guide's own lettering: the render model
+    // draws the words bigger and lower than the guide does, and a box sized to
+    // the guide caught only part of them (measured 2026-09-04 — the guide box
+    // covered x 223..353 while the painted word ran x 165..365). It is clamped
+    // to the board itself, because the recolour keys on dark neutral pixels
+    // and the grey wall behind the panel would qualify.
+    zone: {
+      xMin: Math.max(cx - pw / 2 + pw * 0.04, tx - clearW / 2 - pw * 0.06),
+      xMax: Math.min(cx + pw / 2 - pw * 0.04, tx + clearW / 2 + pw * 0.06),
+      yMin: Math.max(apexY + panelH * 0.03, y - fontSize * 2.0),
+      yMax: Math.min(floorY - panelH * 0.05, y + fontSize * 1.4),
+    },
+    fill,
+  };
 }
 
 // Low-opacity theme-graphic guide area on the panel surface — helps the edit
@@ -573,6 +592,7 @@ export function generateStructureSilhouette(
   const bgLines: string[] = [];
   // content: everything else — scaled and centered
   const content: string[] = [];
+  const textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[] = [];
   // The plinth marker is collected separately and appended after the balloons.
   // Drawn in place it went into the guide BEFORE the garland, so balloon
   // circles covered its base and sides and the model saw a stub of a cylinder
@@ -699,7 +719,7 @@ export function generateStructureSilhouette(
           : bothArches ? (panel.cx < meanCx ? "left" : "right")
           : layout.panels.length === 1 && shape === "arch" ? (fullerTier ? "both" : "right")
           : "none";
-      content.push(customTextGuide(
+      const textGuide = customTextGuide(
         panel.cx, panel.pw, panel.apexY, panel.floorY, panelTextValue,
         {
           hasGraphicBelow: !!item?.graphic?.enabled,
@@ -707,7 +727,9 @@ export function generateStructureSilhouette(
           fontStyle: item?.text?.fontStyle,
           color:     item?.text?.color,
         },
-      ));
+      );
+      content.push(textGuide.svg);
+      textZones.push({ panelIdx: panel.idx, colorHex: textGuide.fill, ...textGuide.zone });
     }
   });
 
@@ -810,10 +832,20 @@ export function generateStructureSilhouette(
         // goes into the flat `content` array. A <radialGradient> pushed here
         // still resolves correctly via url(#id) regardless of position.
         content.push(
+          // The highlight used to be lightened 55% towards white and sat over
+          // the inner 55% of every balloon at 90-95% opacity, so most of each
+          // guide balloon was a washed-out near-white and the white page showed
+          // through on top of that. The edit model copied exactly that: measured
+          // 2026-09-04 on the customer palette, Arctic Blue #BAE6FD has a chroma
+          // of 67 but the rendered garland averaged a chroma of 8 — grey, not
+          // blue, which is what the customer was reporting. The sphere still
+          // needs light falloff to avoid rendering as flat discs, so the
+          // highlight is kept but pulled back, the true colour now covers more
+          // of the balloon, and nothing is translucent.
           `<radialGradient id="${id}" cx="35%" cy="30%" r="72%">` +
-            `<stop offset="0%" stop-color="${shade(hex, 1.55)}" stop-opacity="0.95"/>` +
-            `<stop offset="55%" stop-color="${hex}" stop-opacity="0.9"/>` +
-            `<stop offset="100%" stop-color="${shade(hex, 0.72)}" stop-opacity="0.95"/>` +
+            `<stop offset="0%" stop-color="${shade(hex, 1.28)}" stop-opacity="1"/>` +
+            `<stop offset="42%" stop-color="${hex}" stop-opacity="1"/>` +
+            `<stop offset="100%" stop-color="${shade(hex, 0.78)}" stop-opacity="1"/>` +
           `</radialGradient>`,
         );
       });
@@ -1436,6 +1468,7 @@ export function generateStructureSilhouette(
     archOpenFrameGeometryStyle: archOpenFrameFrameThicknessPx > 0 ? "thick_decor_prop_v2" : "none",
     archShimmerCompositionBalloons,
     archShimmerAccentZone,
+    textZones,
   };
 }
 

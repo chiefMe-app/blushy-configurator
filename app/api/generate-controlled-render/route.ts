@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "single-arch-framing-plinth-tube-standee-forward-v42";
+const RENDER_CACHE_VERSION = "text-recolour-balloon-saturation-v43";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -707,6 +707,9 @@ interface LayoutRefPngResult {
   /** Bounding box (panel-local px) of the shimmer-side accent cluster — used
    *  to exclude it from the shimmer recolor mask. Null when not that layout. */
   archShimmerAccentZone: { xMin: number; xMax: number; yMin: number; yMax: number } | null;
+  /** Where the guide drew each panel's lettering (inner viewBox px), so the
+   *  render stage can recolour it — see the recolour block further down. */
+  textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[];
 }
 
 /**
@@ -745,7 +748,7 @@ async function generateLayoutReferencePng(
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] SVG generation failed:", msg);
-    return { dataUri: null, error: msg, stage: "svg-generation", bytes: null, doubleArchGarlandBalloonsLeft: 0, doubleArchGarlandBalloonsRight: 0, archOpenFrameMainGarlandBalloons: 0, archOpenFrameMiniClusterBalloons: 0, archOpenFrameMainGarlandMinRadiusPx: 0, archOpenFrameMainGarlandMaxRadiusPx: 0, archOpenFrameMainGarlandLaneCount: 0, archOpenFrameMainGarlandStyle: "none", archOpenFrameFrameThicknessPx: 0, archOpenFrameGeometryStyle: "none", archShimmerCompositionBalloons: 0, archShimmerAccentZone: null };
+    return { dataUri: null, error: msg, stage: "svg-generation", bytes: null, doubleArchGarlandBalloonsLeft: 0, doubleArchGarlandBalloonsRight: 0, archOpenFrameMainGarlandBalloons: 0, archOpenFrameMiniClusterBalloons: 0, archOpenFrameMainGarlandMinRadiusPx: 0, archOpenFrameMainGarlandMaxRadiusPx: 0, archOpenFrameMainGarlandLaneCount: 0, archOpenFrameMainGarlandStyle: "none", archOpenFrameFrameThicknessPx: 0, archOpenFrameGeometryStyle: "none", archShimmerCompositionBalloons: 0, archShimmerAccentZone: null, textZones: [] };
   }
 
   // Stage 2: sharp import — direct dynamic import so webpack/Vercel can trace and bundle it
@@ -756,7 +759,7 @@ async function generateLayoutReferencePng(
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] sharp import failed:", msg);
-    return { dataUri: null, error: msg, stage: "sharp-import", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle, archOpenFrameFrameThicknessPx: silhouette.archOpenFrameFrameThicknessPx, archOpenFrameGeometryStyle: silhouette.archOpenFrameGeometryStyle, archShimmerCompositionBalloons: silhouette.archShimmerCompositionBalloons, archShimmerAccentZone: silhouette.archShimmerAccentZone };
+    return { dataUri: null, error: msg, stage: "sharp-import", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle, archOpenFrameFrameThicknessPx: silhouette.archOpenFrameFrameThicknessPx, archOpenFrameGeometryStyle: silhouette.archOpenFrameGeometryStyle, archShimmerCompositionBalloons: silhouette.archShimmerCompositionBalloons, archShimmerAccentZone: silhouette.archShimmerAccentZone, textZones: silhouette.textZones };
   }
 
   // Stage 3: rasterize SVG → PNG
@@ -767,6 +770,7 @@ async function generateLayoutReferencePng(
     console.log("[generate-controlled-render] layout reference PNG ready, bytes:", pngBuffer.length);
     return {
       dataUri, error: null, stage: null, bytes: pngBuffer.length,
+      textZones: silhouette.textZones,
       doubleArchGarlandBalloonsLeft:  silhouette.doubleArchGarlandBalloonsLeft,
       doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight,
       archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons,
@@ -783,7 +787,7 @@ async function generateLayoutReferencePng(
   } catch (err) {
     const msg = String(err);
     console.error("[generate-controlled-render] rasterization failed:", msg);
-    return { dataUri: null, error: msg, stage: "rasterization", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle, archOpenFrameFrameThicknessPx: silhouette.archOpenFrameFrameThicknessPx, archOpenFrameGeometryStyle: silhouette.archOpenFrameGeometryStyle, archShimmerCompositionBalloons: silhouette.archShimmerCompositionBalloons, archShimmerAccentZone: silhouette.archShimmerAccentZone };
+    return { dataUri: null, error: msg, stage: "rasterization", bytes: null, doubleArchGarlandBalloonsLeft: silhouette.doubleArchGarlandBalloonsLeft, doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight, archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons, archOpenFrameMiniClusterBalloons: silhouette.archOpenFrameMiniClusterBalloons, archOpenFrameMainGarlandMinRadiusPx: silhouette.archOpenFrameMainGarlandMinRadiusPx, archOpenFrameMainGarlandMaxRadiusPx: silhouette.archOpenFrameMainGarlandMaxRadiusPx, archOpenFrameMainGarlandLaneCount: silhouette.archOpenFrameMainGarlandLaneCount, archOpenFrameMainGarlandStyle: silhouette.archOpenFrameMainGarlandStyle, archOpenFrameFrameThicknessPx: silhouette.archOpenFrameFrameThicknessPx, archOpenFrameGeometryStyle: silhouette.archOpenFrameGeometryStyle, archShimmerCompositionBalloons: silhouette.archShimmerCompositionBalloons, archShimmerAccentZone: silhouette.archShimmerAccentZone, textZones: silhouette.textZones };
   }
 }
 
@@ -1855,6 +1859,200 @@ forbiddenBalloonColorLabels: hasSempertexLock
     }
   }
 
+  // ── Bring the balloons back to the selected palette ──────────────────────
+  // The render desaturates the chosen balloon colours badly. Measured
+  // 2026-09-04 on the customer palette: Arctic Blue #BAE6FD has a red-to-blue
+  // separation of 67, and the balloons it produced averaged 24 — a dusty grey
+  // blue rather than the shade that will actually be inflated.
+  //
+  // Neither of the usual levers reaches it. The prompt already locks the
+  // palette in six separate sentences, and rewording the parts that pull
+  // towards grey ("low-saturation", "no blue cast", "neutral gray shading")
+  // changed nothing measurable. The guide does drive the colour, but far too
+  // weakly to matter: pushing the guide's blue from a separation of 67 to 162
+  // moved the render only from 24 to 39, so reaching 67 would need a guide
+  // colour beyond what 8-bit RGB can express.
+  //
+  // So the correction is applied to the render instead. Each already-tinted
+  // pixel has its colour pushed away from its own mid-tone, which raises
+  // saturation while leaving hue and brightness alone. Neutral pixels are
+  // skipped, so white and silver balloons, the boards, the wall and the floor
+  // are untouched, and the strength is derived from the palette itself rather
+  // than fixed: a palette of near-neutrals asks for no correction at all.
+  let balloonSaturationFactor = 1;
+  let balloonSaturationApplied = false;
+  const chromaOf = (hex: string): number => {
+    if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return 0;
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    return Math.max(r, g, b) - Math.min(r, g, b);
+  };
+  const colouredPaletteChroma = effectiveBalloonHexColors.map(chromaOf).filter((c) => c >= 12);
+  if (colouredPaletteChroma.length > 0) {
+    try {
+      const baseBuf = workingImageBuf ?? await fetchFinalImage();
+      if (baseBuf) {
+        const sharpPkgS = await import("sharp");
+        const sharpFnS  = ((sharpPkgS as any).default ?? sharpPkgS) as (b: Buffer) => any;
+        const { data, info } = await (sharpFnS(baseBuf).ensureAlpha().raw()
+          .toBuffer({ resolveWithObject: true })) as { data: Buffer; info: { width: number; height: number; channels: number } };
+        const W = info.width, H = info.height, C = info.channels;
+        const targetChroma = colouredPaletteChroma.reduce((a, b) => a + b, 0) / colouredPaletteChroma.length;
+
+        let n = 0, sum = 0;
+        for (let y = 0; y < H; y++) {
+          for (let x = 0; x < W; x++) {
+            const i = (y * W + x) * C, r = data[i], g = data[i + 1], b = data[i + 2];
+            const ch = Math.max(r, g, b) - Math.min(r, g, b);
+            const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            if (ch < 8 || lum < 0.45 || lum > 0.985) continue;
+            n++; sum += ch;
+          }
+        }
+        if (n > 500) {
+          const renderChroma = sum / n;
+          // Capped: beyond this the correction starts to look like a filter
+          // rather than the right latex colour.
+          balloonSaturationFactor = Math.min(3.2, Math.max(1, targetChroma / renderChroma));
+          if (balloonSaturationFactor > 1.05) {
+            for (let y = 0; y < H; y++) {
+              for (let x = 0; x < W; x++) {
+                const i = (y * W + x) * C, r = data[i], g = data[i + 1], b = data[i + 2];
+                const mx = Math.max(r, g, b), mn = Math.min(r, g, b), ch = mx - mn;
+                const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                if (ch < 8 || lum < 0.45 || lum > 0.985) continue;
+                const mid = (mx + mn) / 2;
+                // Eased in over the first few units of chroma so a faint tint
+                // is nudged rather than jumped.
+                const f = Math.min(balloonSaturationFactor,
+                  1 + (balloonSaturationFactor - 1) * Math.min(1, ch / 40));
+                data[i]     = Math.round(Math.max(0, Math.min(255, mid + (r - mid) * f)));
+                data[i + 1] = Math.round(Math.max(0, Math.min(255, mid + (g - mid) * f)));
+                data[i + 2] = Math.round(Math.max(0, Math.min(255, mid + (b - mid) * f)));
+              }
+            }
+            const sharpRawS = sharpFnS as unknown as (b: Buffer, o: Record<string, unknown>) => any;
+            workingImageBuf = await (sharpRawS(data, { raw: { width: W, height: H, channels: C } })
+              .png().toBuffer()) as Buffer;
+            outputImageUrl = `data:image/jpeg;base64,${(await (sharpFnS(workingImageBuf).jpeg({ quality: 93 }).toBuffer()) as Buffer).toString("base64")}`;
+            balloonSaturationApplied = true;
+          }
+        }
+      }
+    } catch (satErr) {
+      console.warn("[generate-controlled-render] balloon colour correction failed, keeping render as-is:", String(satErr));
+    }
+  }
+
+  // ── Recolour the rendered lettering ──────────────────────────────────────
+  // The arch path (fal-ai/flux-2/flash/edit) paints the lettering BLACK no
+  // matter what colour it is asked for. Verified 2026-09-04 on the customer
+  // scene at a fixed seed: the guide drew the word in #5B2A86, the prompt
+  // named it "deep purple" twice and forbade black explicitly, and the render
+  // still came back black. (The round path, which runs a different model,
+  // honours the colour — so this only ever has work to do on some scenes.)
+  //
+  // The model does place the lettering well, in the right font, printed into
+  // the board with the scene lighting on it. So rather than compositing our
+  // own flat text over the top — which is what used to be done, and which drew
+  // the word twice — the model's own letters are recoloured in place. Their
+  // shape, edges and shading are kept; only the hue changes.
+  let textRecolourApplied = false;
+  let textRecolourZones   = 0;
+  const silhouetteTextZones = pngResult.textZones ?? [];
+  if (silhouetteTextZones.length > 0) {
+    try {
+      const baseBuf = workingImageBuf ?? await fetchFinalImage();
+      if (baseBuf) {
+        const sharpPkgR = await import("sharp");
+        const sharpFnR  = ((sharpPkgR as any).default ?? sharpPkgR) as (b: Buffer) => any;
+        const metaR     = await sharpFnR(baseBuf).metadata() as { width?: number; height?: number };
+        const imgW = metaR.width ?? 1024, imgH = metaR.height ?? 1024;
+        const { data, info } = await (sharpFnR(baseBuf).ensureAlpha().raw()
+          .toBuffer({ resolveWithObject: true })) as { data: Buffer; info: { width: number; height: number; channels: number } };
+        const W = info.width, C = info.channels, Hh = info.height;
+        // Neighbour tests must read the untouched render: recolouring in place
+        // and then sampling the same buffer makes each new purple pixel look
+        // like a balloon to the pixel beside it, which stopped the recolour a
+        // few letters in.
+        const orig = Buffer.from(data);
+
+        for (const zone of silhouetteTextZones) {
+          const target = zone.colorHex;
+          const tr = parseInt(target.slice(1, 3), 16);
+          const tg = parseInt(target.slice(3, 5), 16);
+          const tb = parseInt(target.slice(5, 7), 16);
+          // Black lettering is what the model produces and what a customer who
+          // picked black already wanted, so leave those alone.
+          if (0.299 * tr + 0.587 * tg + 0.114 * tb < 60) continue;
+
+          // Padded well beyond the guide's own lettering: the model paints the
+          // words about twice as wide as the guide draws them, and slightly
+          // lower. The padding is safe because the tests below decide what is
+          // ink, not the box.
+          const f = panelRectToFraction(promptInput.backdropItems ?? [], {
+            xMin: zone.xMin - 90, xMax: zone.xMax + 90,
+            yMin: zone.yMin - 45, yMax: zone.yMax + 45,
+          });
+          const x0 = Math.max(0, Math.floor(f.xFrac * imgW));
+          const x1 = Math.min(imgW, Math.ceil((f.xFrac + f.wFrac) * imgW));
+          const y0 = Math.max(0, Math.floor(f.yFrac * imgH));
+          const y1 = Math.min(imgH, Math.ceil((f.yFrac + f.hFrac) * imgH));
+          let touched = 0;
+          for (let y = y0; y < y1; y++) {
+            for (let x = x0; x < x1; x++) {
+              const i = (y * W + x) * C;
+              const r = orig[i], g = orig[i + 1], b = orig[i + 2];
+              const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+              // Ink is dark and near-neutral. Measured on the reference render:
+              // the lettering sits at 0.0-0.3 luminance, while the dark crevices
+              // between balloons sit at 0.4-0.6, so 0.42 separates them.
+              const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+              if (lum > 0.42 || chroma > 46) continue;
+              // ...and it sits on the white board. The grey wall behind the
+              // panel is dark and neutral too, but has no bright board beside
+              // it (board ~0.80, wall ~0.50 on that render).
+              let onBoard = false;
+              for (let dx = -20; dx <= 20 && !onBoard; dx += 2) {
+                const xx = x + dx; if (xx < 0 || xx >= W) continue;
+                const j = (y * W + xx) * C;
+                if ((0.299 * orig[j] + 0.587 * orig[j + 1] + 0.114 * orig[j + 2]) / 255 > 0.72) onBoard = true;
+              }
+              if (!onBoard) continue;
+              // ...and not tucked inside the garland, where a coloured balloon
+              // is always close by.
+              let nearBalloon = false;
+              for (let dy = -12; dy <= 12 && !nearBalloon; dy += 4) {
+                for (let dx = -16; dx <= 16 && !nearBalloon; dx += 4) {
+                  const xx = x + dx, yy = y + dy;
+                  if (xx < 0 || xx >= W || yy < 0 || yy >= Hh) continue;
+                  const j = (yy * W + xx) * C;
+                  if (Math.max(orig[j], orig[j + 1], orig[j + 2]) - Math.min(orig[j], orig[j + 1], orig[j + 2]) > 30) nearBalloon = true;
+                }
+              }
+              if (nearBalloon) continue;
+              const a = Math.min(1, Math.max(0, (0.42 - lum) / 0.34));
+              data[i]     = Math.round(r * (1 - a) + tr * a);
+              data[i + 1] = Math.round(g * (1 - a) + tg * a);
+              data[i + 2] = Math.round(b * (1 - a) + tb * a);
+              touched++;
+            }
+          }
+          if (touched > 0) { textRecolourZones++; }
+        }
+
+        if (textRecolourZones > 0) {
+          const sharpRaw = sharpFnR as unknown as (b: Buffer, o: Record<string, unknown>) => any;
+          workingImageBuf = await (sharpRaw(data, { raw: { width: info.width, height: info.height, channels: info.channels } })
+            .png().toBuffer()) as Buffer;
+          outputImageUrl = `data:image/jpeg;base64,${(await (sharpFnR(workingImageBuf).jpeg({ quality: 92 }).toBuffer()) as Buffer).toString("base64")}`;
+          textRecolourApplied = true;
+        }
+      }
+    } catch (recolourErr) {
+      console.warn("[generate-controlled-render] text recolour failed, keeping AI lettering:", String(recolourErr));
+    }
+  }
+
   // ── Deterministic cutout standee overlay ─────────────────────────────────
   // Character standees are suppressed in the AI prompt and composited here
   // instead, so quantity and placement are always exact.
@@ -2414,6 +2612,10 @@ forbiddenBalloonColorLabels: hasSempertexLock
     customTextCompositeTargetPanelId,
     customTextCompositePosition,
     preTextCompositeImageUrl,
+    balloonSaturationApplied,
+    balloonSaturationFactor: Number(balloonSaturationFactor.toFixed(2)),
+    textRecolourApplied,
+    textRecolourZones,
     cutoutOverlayApplied,
     cutoutOverlayCount,
     cutoutOverlayHeightsCm,
