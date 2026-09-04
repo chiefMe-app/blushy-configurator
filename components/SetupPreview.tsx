@@ -1222,6 +1222,17 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generateFinalRender]);
 
+  // The shape of the image actually on screen. Taken from the loaded file
+  // rather than from the current scene, because the two can disagree: the
+  // displayed render belongs to whatever the scene was when it was generated,
+  // and sizing the card from the live scene would letterbox the image again
+  // the moment someone changes a backdrop. The scene-derived value is only a
+  // starting point, used until the image reports its own size.
+  const [loadedAspect, setLoadedAspect] = useState<string | null>(null);
+  const renderCssAspect = loadedAspect ?? calculateRenderAspectRatio(
+    config.decor.backdropItems ?? [],
+  ).cssAspectRatio;
+
   return (
     <div id="party-preview-card" className="space-y-4">
       {/* ─── 1. Final Design Render (top) — Claude Design: image first, footer row below ── */}
@@ -1233,9 +1244,16 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             border: "1px solid #F3D7E1",
             borderBottom: "none",
             boxShadow: "0 8px 24px rgba(216,84,138,.08)",
-            aspectRatio: (finalUrl || finalIsLoading) ? "4 / 3" : undefined,
-            minHeight: (finalUrl || finalIsLoading) ? 300 : 300,
-            maxHeight: 460,
+            // Follow the render's own shape instead of forcing 4:3. A single
+            // arch is generated portrait (9:16); shown in a 4:3 box with
+            // object-contain it was letterboxed down to a sliver with candy
+            // stripes either side — the customer's words were that it comes out
+            // "tiny on screen" and should dominate. The card now takes the
+            // aspect the render was generated at, so the image fills it, and it
+            // is allowed to be considerably taller.
+            aspectRatio: (finalUrl || finalIsLoading) ? renderCssAspect : undefined,
+            minHeight: 300,
+            maxHeight: "min(74vh, 760px)",
             background: (finalUrl || finalIsLoading)
               ? "repeating-linear-gradient(45deg,#FBE9EF 0 12px,#FDF3F6 12px 24px)"
               : "white",
@@ -1259,6 +1277,12 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
               key={finalKey}
               src={finalUrl}
               alt="Final design render"
+              onLoad={(e) => {
+                const el = e.currentTarget;
+                if (el.naturalWidth > 0 && el.naturalHeight > 0) {
+                  setLoadedAspect(`${el.naturalWidth} / ${el.naturalHeight}`);
+                }
+              }}
               style={{ opacity: finalOpacity, transition: "opacity 0.4s ease" }}
               className="h-full w-full object-contain object-center"
             />

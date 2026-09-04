@@ -47,7 +47,7 @@ export const SEMPERTEX_CATALOG: SempertexColor[] = [
   { id:"satin-405-white",               code:"405", brand:"Sempertex", colorName:"White",           finish:"Satin",        family:"white",   hex:"#FEFEFE", availableSizes:["11"] },
   { id:"satin-406-pearl",               code:"406", brand:"Sempertex", colorName:"Pearl",           finish:"Satin",        family:"white",   hex:"#F5F0EE", availableSizes:["11"] },
   { id:"pastel-dusk-107-cream",         code:"107", brand:"Sempertex", colorName:"Cream",           finish:"Pastel Dusk",  family:"neutral", hex:"#FFF8E7", availableSizes:["11"] },
-  { id:"silk-806-oyster-white",         code:"806", brand:"Sempertex", colorName:"Oyster White",    finish:"Silk",         family:"white",   hex:"#FAF6F0", availableSizes:["11"] },
+  { id:"silk-806-oyster-white",         code:"806", brand:"Sempertex", colorName:"Oyster White",    finish:"Silk",         family:"white",   hex:"#D9D9D6", pms:"427", renderLabel:"cool pearl white, light grey-white, not beige, not cream, not champagne", availableSizes:["11"] },
   { id:"fashion-071-white-sand",        code:"071", brand:"Sempertex", colorName:"White Sand",      finish:"Fashion",      family:"neutral", hex:"#F5EDD6", availableSizes:["11"] },
   { id:"pastel-matte-620-yellow",       code:"620", brand:"Sempertex", colorName:"Yellow",          finish:"Pastel Matte", family:"yellow",  hex:"#FEF08A", renderLabel:"pale vanilla cream, matte pastel", availableSizes:["11"] },
   { id:"neon-220-yellow",               code:"220", brand:"Sempertex", colorName:"Yellow",          finish:"Neon",         family:"yellow",  hex:"#FEFF38", availableSizes:["11"] },
@@ -73,9 +73,9 @@ export const SEMPERTEX_CATALOG: SempertexColor[] = [
   { id:"metallic-515-red",              code:"515", brand:"Sempertex", colorName:"Red",             finish:"Metallic",     family:"red",     hex:"#E53E3E", availableSizes:["11"] },
   { id:"reflex-915-crystal-red",        code:"915", brand:"Sempertex", colorName:"Crystal Red",     finish:"Reflex",       family:"red",     hex:"#FC5C65", availableSizes:["11"] },
   { id:"fashion-018-merlot",            code:"018", brand:"Sempertex", colorName:"Merlot",          finish:"Fashion",      family:"red",     hex:"#800020", availableSizes:["11"] },
-  { id:"reflex-912-fuchsia",            code:"912", brand:"Sempertex", colorName:"Fuchsia",         finish:"Reflex",       family:"pink",    hex:"#E879F9", availableSizes:["11"] },
+  { id:"reflex-912-fuchsia",            code:"912", brand:"Sempertex", colorName:"Fuchsia",         finish:"Reflex",       family:"pink",    hex:"#C2185B", pms:"10421", renderLabel:"vivid reflective fuchsia", availableSizes:["11"] },
   { id:"fashion-009-pink",              code:"009", brand:"Sempertex", colorName:"Pink",            finish:"Fashion",      family:"pink",    hex:"#F9A8D4", availableSizes:["11"] },
-  { id:"pastel-matte-609-pink",         code:"609", brand:"Sempertex", colorName:"Pink",            finish:"Pastel Matte", family:"pink",    hex:"#FBCFE8", renderLabel:"soft baby pink, matte pastel", availableSizes:["11"] },
+  { id:"pastel-matte-609-pink",         code:"609", brand:"Sempertex", colorName:"Pink",            finish:"Pastel Matte", family:"pink",    hex:"#F8BBD0", pms:"677", renderLabel:"soft baby pink, matte pastel", availableSizes:["11"] },
   { id:"pastel-dusk-110-rose",          code:"110", brand:"Sempertex", colorName:"Rose",            finish:"Pastel Dusk",  family:"pink",    hex:"#FDA4AF", availableSizes:["11"] },
   { id:"fashion-010-rosewood",          code:"010", brand:"Sempertex", colorName:"Rosewood",        finish:"Fashion",      family:"pink",    hex:"#DB7093", availableSizes:["11"] },
   { id:"fashion-059-tropical-coral",    code:"059", brand:"Sempertex", colorName:"Tropical Coral",  finish:"Fashion",      family:"pink",    hex:"#FF6B6B", availableSizes:["11"] },
@@ -85,9 +85,9 @@ export const SEMPERTEX_CATALOG: SempertexColor[] = [
   { id:"neon-212-fuchsia",              code:"212", brand:"Sempertex", colorName:"Fuchsia",         finish:"Neon",         family:"pink",    hex:"#FF10F0", availableSizes:["11"] },
   { id:"satin-409-pink",                code:"409", brand:"Sempertex", colorName:"Pink",            finish:"Satin",        family:"pink",    hex:"#F9A8D4", availableSizes:["11"] },
   { id:"silk-809-pink-blossom",         code:"809", brand:"Sempertex", colorName:"Pink Blossom",    finish:"Silk",         family:"pink",    hex:"#FBCFE8", availableSizes:["11"] },
-  { id:"reflex-909-pink",               code:"909", brand:"Sempertex", colorName:"Pink",            finish:"Reflex",       family:"pink",    hex:"#FC9CB4", availableSizes:["11"] },
-  { id:"reflex-968-rose-gold",          code:"968", brand:"Sempertex", colorName:"Rose Gold",       finish:"Reflex",       family:"pink",    hex:"#FECDD3", renderLabel:"blush pearl pink, very light soft pearlescent pink, subtle sheen, not gold, not copper, not bronze", availableSizes:["11"] },
-  { id:"silk-850-light-amethyst",       code:"850", brand:"Sempertex", colorName:"Light Amethyst",  finish:"Silk",         family:"purple",  hex:"#EDE9FE", availableSizes:["11"] },
+  { id:"reflex-909-pink",               code:"909", brand:"Sempertex", colorName:"Pink",            finish:"Reflex",       family:"pink",    hex:"#D8899B", pms:"10420", renderLabel:"cool reflective pink", availableSizes:["11"] },
+  { id:"reflex-968-rose-gold",          code:"968", brand:"Sempertex", colorName:"Rose Gold",       finish:"Reflex",       family:"pink",    hex:"#B76E79", pms:"10410", renderLabel:"blush pearl pink, very light soft pearlescent pink, subtle sheen, not gold, not copper, not bronze", availableSizes:["11"] },
+  { id:"silk-850-light-amethyst",       code:"850", brand:"Sempertex", colorName:"Light Amethyst",  finish:"Silk",         family:"purple",  hex:"#DCD7F2", pms:"10220", renderLabel:"very pale cool lavender, almost white", availableSizes:["11"] },
   { id:"pastel-matte-650-lilac",        code:"650", brand:"Sempertex", colorName:"Lilac",           finish:"Pastel Matte", family:"purple",  hex:"#DDD6FE", availableSizes:["11"] },
   { id:"fashion-050-lilac",             code:"050", brand:"Sempertex", colorName:"Lilac",           finish:"Fashion",      family:"purple",  hex:"#C084FC", availableSizes:["11"] },
   { id:"pastel-dusk-150-lavender",      code:"150", brand:"Sempertex", colorName:"Lavender",        finish:"Pastel Dusk",  family:"purple",  hex:"#E9D5FF", availableSizes:["11"] },
@@ -100,7 +100,7 @@ export const SEMPERTEX_CATALOG: SempertexColor[] = [
   { id:"fashion-035-deep-teal",         code:"035", brand:"Sempertex", colorName:"Deep Teal",       finish:"Fashion",      family:"blue",    hex:"#0F766E", availableSizes:["11"] },
   { id:"metallic-540-blue",             code:"540", brand:"Sempertex", colorName:"Blue",            finish:"Metallic",     family:"blue",    hex:"#60A5FA", availableSizes:["11"] },
   { id:"fashion-041-royal-blue",        code:"041", brand:"Sempertex", colorName:"Royal Blue",      finish:"Fashion",      family:"blue",    hex:"#2563EB", availableSizes:["11"] },
-  { id:"silk-839-arctic-blue",          code:"839", brand:"Sempertex", colorName:"Arctic Blue",     finish:"Silk",         family:"blue",    hex:"#BAE6FD", availableSizes:["11"] },
+  { id:"silk-839-arctic-blue",          code:"839", brand:"Sempertex", colorName:"Arctic Blue",     finish:"Silk",         family:"blue",    hex:"#B9D9EB", pms:"10431", renderLabel:"soft icy blue", availableSizes:["11"] },
   { id:"pastel-dusk-140-blue",          code:"140", brand:"Sempertex", colorName:"Blue",            finish:"Pastel Dusk",  family:"blue",    hex:"#BFDBFE", availableSizes:["11"] },
   { id:"neon-240-blue",                 code:"240", brand:"Sempertex", colorName:"Blue",            finish:"Neon",         family:"blue",    hex:"#00BFFF", availableSizes:["11"] },
   { id:"fashion-040-blue",              code:"040", brand:"Sempertex", colorName:"Blue",            finish:"Fashion",      family:"blue",    hex:"#3B82F6", availableSizes:["11"] },
@@ -124,7 +124,58 @@ export const SEMPERTEX_CATALOG: SempertexColor[] = [
   { id:"fashion-081-grey",              code:"081", brand:"Sempertex", colorName:"Grey",            finish:"Fashion",      family:"silver",  hex:"#9CA3AF", availableSizes:["11"] },
   { id:"satin-481-silver",              code:"481", brand:"Sempertex", colorName:"Silver",          finish:"Satin",        family:"silver",  hex:"#D1D5DB", availableSizes:["11"] },
   { id:"silk-873-cream-pearl",          code:"873", brand:"Sempertex", colorName:"Cream Pearl",     finish:"Silk",         family:"white",   hex:"#FEF3C7", availableSizes:["11"] },
-  { id:"reflex-981-silver",             code:"981", brand:"Sempertex", colorName:"Silver",          finish:"Reflex",       family:"silver",  hex:"#E5E7EB", availableSizes:["11"] },
+  { id:"reflex-981-silver",             code:"981", brand:"Sempertex", colorName:"Silver",          finish:"Reflex",       family:"silver",  hex:"#C7C9C7", pms:"877", renderLabel:"cool metallic silver, not gold, not bronze, not champagne", availableSizes:["11"] },
   { id:"metallic-580-black",            code:"580", brand:"Sempertex", colorName:"Black",           finish:"Metallic",     family:"black",   hex:"#374151", availableSizes:["11"] },
   { id:"fashion-080-black",             code:"080", brand:"Sempertex", colorName:"Black",           finish:"Fashion",      family:"black",   hex:"#1F2937", availableSizes:["11"] },
 ];
+/**
+ * Data-quality audit for the balloon catalogue.
+ *
+ * Added 2026-09-04 after the customer asked whether these colours were
+ * trustworthy. They were not: 14 entries carried Tailwind CSS swatch values
+ * instead of balloon colours (#BAE6FD is sky-200, #E5E7EB is gray-200,
+ * #EDE9FE is violet-100, and so on), and nine colours appeared twice under
+ * two different codes with two different hexes — one copy PMS-verified from
+ * the Sempertex chart, the other invented. The frozen theme happened to point
+ * at the invented copies, so a customer picking "839 Arctic Blue" and "640
+ * Blue" got two balloons that were the SAME colour, and the renders were
+ * faithfully reproducing values that were wrong at source.
+ *
+ * The duplicates that had a verified twin have been corrected to it. The rest
+ * still need checking against the official chart — this reports them.
+ */
+export interface SempertexCatalogAudit {
+  duplicateHexes:  { hex: string; codes: string[] }[];
+  duplicateNames:  { name: string; finish: string; codes: string[] }[];
+  missingPms:      { code: string; colorName: string; finish: string; hex: string }[];
+}
+
+export function auditSempertexCatalog(): SempertexCatalogAudit {
+  const byHex  = new Map<string, string[]>();
+  const byName = new Map<string, string[]>();
+  const missingPms: SempertexCatalogAudit["missingPms"] = [];
+
+  for (const c of SEMPERTEX_CATALOG) {
+    const hex = c.hex.toUpperCase();
+    byHex.set(hex, [...(byHex.get(hex) ?? []), c.code]);
+    const nameKey = `${c.colorName.toLowerCase()}|${c.finish.toLowerCase()}`;
+    byName.set(nameKey, [...(byName.get(nameKey) ?? []), c.code]);
+    // White is legitimately #FFFFFF and needs no chart reference.
+    if (!c.pms && hex !== "#FFFFFF") {
+      missingPms.push({ code: c.code, colorName: c.colorName, finish: c.finish, hex });
+    }
+  }
+
+  return {
+    duplicateHexes: Array.from(byHex.entries())
+      .filter(([, codes]) => codes.length > 1)
+      .map(([hex, codes]) => ({ hex, codes })),
+    duplicateNames: Array.from(byName.entries())
+      .filter(([, codes]) => codes.length > 1)
+      .map(([key, codes]) => {
+        const [name, finish] = key.split("|");
+        return { name, finish, codes };
+      }),
+    missingPms,
+  };
+}
