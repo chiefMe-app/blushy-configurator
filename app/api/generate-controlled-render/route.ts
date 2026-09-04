@@ -47,7 +47,7 @@ import { type BalloonStyleId, SHIMMER_COLOR_HEX, SHIMMER_COLORS, type ShimmerCol
 import { SEMPERTEX_CATALOG, type SempertexColor } from "@/lib/sempertexCatalog";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { type SempertexSelectionItem } from "@/lib/renderPrompts/types";
-import { getVisualLabel } from "@/lib/renderPrompts/colorLabels";
+import { getVisualLabel, renderSafeBalloonLabel } from "@/lib/renderPrompts/colorLabels";
 import { buildNegativePrompt } from "@/lib/renderPrompts/buildNegativePrompt";
 import { buildStrictCorrectionPrompt } from "@/lib/renderPrompts/buildStrictCorrectionPrompt";
 import { buildLayoutRefEditPrompt } from "@/lib/renderPrompts/buildLayoutRefEditPrompt";
@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "balloon-colour-correction-v45";
+const RENDER_CACHE_VERSION = "balloon-colour-lock-pass-v46";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1859,97 +1859,85 @@ forbiddenBalloonColorLabels: hasSempertexLock
     }
   }
 
-  // ── Bring the balloons back to the selected palette ──────────────────────
-  // The render desaturates the chosen balloon colours badly. Measured
-  // 2026-09-04 on the customer palette: Arctic Blue #BAE6FD has a red-to-blue
-  // separation of 67, and the balloons it produced averaged 24 — a dusty grey
-  // blue rather than the shade that will actually be inflated.
+  // ── Lock the balloons to the selected palette ────────────────────────────
+  // A second edit pass over the finished render that changes colour only.
   //
-  // Neither of the usual levers reaches it. The prompt already locks the
-  // palette in six separate sentences, and rewording the parts that pull
-  // towards grey ("low-saturation", "no blue cast", "neutral gray shading")
-  // changed nothing measurable. The guide does drive the colour, but far too
-  // weakly to matter: pushing the guide's blue from a separation of 67 to 162
-  // moved the render only from 24 to 39, so reaching 67 would need a guide
-  // colour beyond what 8-bit RGB can express.
+  // This replaces a pixel-level saturation boost that lived here for one
+  // afternoon and was wrong: it amplified whatever tint a pixel already had,
+  // so the faint warm cast on near-white balloons was pushed into visible
+  // PINK — a colour in nobody's palette. Measured on the customer's scene, it
+  // took blue from 9.3% to 22.4% but also produced 1.7% pink pixels, and it
+  // could never recover Light Amethyst at all, because the render contained no
+  // purple to amplify (0.0% lavender before and after).
   //
-  // So the correction is applied to the render instead. Each already-tinted
-  // pixel has its colour pushed away from its own mid-tone, which raises
-  // saturation while leaving hue and brightness alone. Neutral pixels are
-  // skipped, so white and silver balloons, the boards, the wall and the floor
-  // are untouched, and the strength is derived from the palette itself rather
-  // than fixed: a palette of near-neutrals asks for no correction at all.
-  // The chroma floor of 10 in the tests below is what keeps this off the room.
-  // At a floor of 5 the faint tint in the wall and floor was amplified too
-  // (measured wall tint 4.8 to 6.4); at 10 the wall and floor come out
-  // unchanged from the uncorrected render while the balloons get the full
-  // correction.
-  let balloonSaturationFactor = 1;
-  let balloonSaturationApplied = false;
-  const chromaOf = (hex: string): number => {
-    if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return 0;
-    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-    return Math.max(r, g, b) - Math.min(r, g, b);
-  };
-  const colouredPaletteChroma = effectiveBalloonHexColors.map(chromaOf).filter((c) => c >= 12);
-  if (colouredPaletteChroma.length > 0) {
+  // This pass, which the app already used for colour-only edits and which
+  // produced the render the customer singled out as the one they wanted, does
+  // what arithmetic cannot: it repaints balloons rather than stretching what is
+  // there. Same scene, measured: blue 19.2%, lavender 8.4% (from nothing), and
+  // zero pink. It costs one extra model call per render, which is the price of
+  // the palette actually being the palette.
+  let balloonColorLockPassApplied = false;
+  if (effectiveBalloonHexColors.length > 0 && sceneModel.balloons.style !== "none") {
     try {
       const baseBuf = workingImageBuf ?? await fetchFinalImage();
       if (baseBuf) {
-        const sharpPkgS = await import("sharp");
-        const sharpFnS  = ((sharpPkgS as any).default ?? sharpPkgS) as (b: Buffer) => any;
-        const { data, info } = await (sharpFnS(baseBuf).ensureAlpha().raw()
-          .toBuffer({ resolveWithObject: true })) as { data: Buffer; info: { width: number; height: number; channels: number } };
-        const W = info.width, H = info.height, C = info.channels;
-        const targetChroma = colouredPaletteChroma.reduce((a, b) => a + b, 0) / colouredPaletteChroma.length;
+        const swatches = effectiveSempertexSelection.length > 0
+          ? effectiveSempertexSelection.map((c) =>
+              `${c.code}: ${c.hex} - ${renderSafeBalloonLabel(c)}`).join("; ")
+          : effectiveBalloonHexColors.join("; ");
+        const names = effectiveSempertexSelection.length > 0
+          ? effectiveSempertexSelection.map((c) => renderSafeBalloonLabel(c)).join(", ")
+          : effectiveBalloonHexColors.join(", ");
+        const colourCount = effectiveSempertexSelection.length > 0
+          ? effectiveSempertexSelection.length
+          : effectiveBalloonHexColors.length;
+        const lockPrompt =
+          `Edit the existing render ONLY. Preserve the exact camera angle, room, floor, lighting, backdrop ` +
+          `position, backdrop shape, backdrop scale, balloon arrangement, balloon shapes, balloon sizes, ` +
+          `lettering and overall composition. Do NOT redesign or rearrange the setup. ` +
+          `Recolor every balloon using ONLY the following selected Sempertex palette: ${swatches}. ` +
+          `These are the ONLY allowed balloon colors. Use exactly these ${colourCount} balloon colors: ${names}. ` +
+          `Every one of these colours must be clearly present and clearly distinguishable in the garland. ` +
+          `Do not introduce any additional balloon color. Any balloon outside this list must be recolored to ` +
+          `the nearest allowed palette colour. ` +
+          `Forbidden balloon colors: pink, blush, rose, peach, coral, orange, terracotta, yellow, gold, bronze, ` +
+          `copper, beige, cream, ivory, champagne, red, teal, turquoise, green, and any other non-selected tone. ` +
+          `Overall balloon finish is mostly matte pastel with a soft satin sheen on silk and metallic colours; ` +
+          `not glossy, not chrome, not mirror metallic. ` +
+          `Keep the scene neutral and color-accurate: no warm tint, no creamy cast, no sepia, no haze, no ` +
+          `filtering. Keep whites neutral white, not ivory and not cream. Preserve true pastel colour separation. ` +
+          `Preserve the white cylindrical plinth exactly as it is, and do not add any extra plinth, riser, ` +
+          `platform or base. Do not add any new object that was not already in the image.`;
 
-        let n = 0, sum = 0;
-        for (let y = 0; y < H; y++) {
-          for (let x = 0; x < W; x++) {
-            const i = (y * W + x) * C, r = data[i], g = data[i + 1], b = data[i + 2];
-            const ch = Math.max(r, g, b) - Math.min(r, g, b);
-            const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-            if (ch < 10 || lum < 0.45 || lum > 0.985) continue;
-            n++; sum += ch;
-          }
-        }
-        if (n > 500) {
-          const renderChroma = sum / n;
-          // Capped: beyond this the correction starts to look like a filter
-          // rather than the right latex colour.
-          balloonSaturationFactor = Math.min(3.6, Math.max(1, targetChroma / renderChroma));
-          if (balloonSaturationFactor > 1.05) {
-            for (let y = 0; y < H; y++) {
-              for (let x = 0; x < W; x++) {
-                const i = (y * W + x) * C, r = data[i], g = data[i + 1], b = data[i + 2];
-                const mx = Math.max(r, g, b), mn = Math.min(r, g, b), ch = mx - mn;
-                const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-                if (ch < 10 || lum < 0.45 || lum > 0.985) continue;
-                const mid = (mx + mn) / 2;
-                // Eased in over the first units of chroma so a faint tint is
-                // nudged rather than jumped. The ease used to run to 40, which
-                // held back exactly the pale pastels this is meant to rescue:
-                // a rendered Arctic Blue sits around a chroma of 25 and was
-                // getting only 60% of the correction.
-                const f = Math.min(balloonSaturationFactor,
-                  1 + (balloonSaturationFactor - 1) * Math.min(1, ch / 18));
-                data[i]     = Math.round(Math.max(0, Math.min(255, mid + (r - mid) * f)));
-                data[i + 1] = Math.round(Math.max(0, Math.min(255, mid + (g - mid) * f)));
-                data[i + 2] = Math.round(Math.max(0, Math.min(255, mid + (b - mid) * f)));
-              }
-            }
-            const sharpRawS = sharpFnS as unknown as (b: Buffer, o: Record<string, unknown>) => any;
-            workingImageBuf = await (sharpRawS(data, { raw: { width: W, height: H, channels: C } })
-              .png().toBuffer()) as Buffer;
-            outputImageUrl = `data:image/jpeg;base64,${(await (sharpFnS(workingImageBuf).jpeg({ quality: 93 }).toBuffer()) as Buffer).toString("base64")}`;
-            balloonSaturationApplied = true;
+        const lockResult = await fal.subscribe(editModelId, {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          input: {
+            prompt:        lockPrompt,
+            image_urls:    [`data:image/jpeg;base64,${baseBuf.toString("base64")}`],
+            image_size:    renderAspectRatio,
+            seed:          FINAL_RENDER_SEED,
+            output_format: "jpeg",
+          } as any,
+          logs: false,
+        });
+        const ld   = lockResult.data as Record<string, unknown>;
+        const larr = Array.isArray(ld?.["images"]) ? (ld["images"] as Record<string, unknown>[]) : null;
+        const lurl = (larr?.[0]?.["url"] as string | undefined) ?? null;
+        if (lurl) {
+          const resp = await fetch(lurl);
+          if (resp.ok) {
+            workingImageBuf = Buffer.from(await resp.arrayBuffer());
+            outputImageUrl  = lurl;
+            balloonColorLockPassApplied = true;
           }
         }
       }
-    } catch (satErr) {
-      console.warn("[generate-controlled-render] balloon colour correction failed, keeping render as-is:", String(satErr));
+    } catch (lockErr) {
+      // A failed colour pass must never lose the render that already succeeded.
+      console.warn("[generate-controlled-render] balloon colour lock pass failed, keeping the primary render:", String(lockErr));
     }
   }
+
 
   // ── Recolour the rendered lettering ──────────────────────────────────────
   // The arch path (fal-ai/flux-2/flash/edit) paints the lettering BLACK no
@@ -2620,8 +2608,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
     customTextCompositeTargetPanelId,
     customTextCompositePosition,
     preTextCompositeImageUrl,
-    balloonSaturationApplied,
-    balloonSaturationFactor: Number(balloonSaturationFactor.toFixed(2)),
+    balloonColorLockPassApplied,
     textRecolourApplied,
     textRecolourZones,
     cutoutOverlayApplied,
