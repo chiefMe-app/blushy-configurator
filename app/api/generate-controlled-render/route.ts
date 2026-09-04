@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "text-color-framing-standee-v40";
+const RENDER_CACHE_VERSION = "round-framing-plinth-base-foot-shadow-v41";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1910,6 +1910,12 @@ forbiddenBalloonColorLabels: hasSempertexLock
             // canvas padding so the visible artwork — not the PNG canvas — is
             // what gets scaled to the target height.
             const trimmedBufs = new Map<string, Buffer>();
+            // Where the figure actually touches the floor, as a fraction across
+            // its own width. The contact shadow used to be centred on the
+            // bounding box, which put it beside the feet whenever the artwork is
+            // asymmetric: the Elsa cape sweeps far to one side, so the dark
+            // patch landed under the cape and she read as hovering (2026-09-04).
+            const footCenterFracs = new Map<string, number>();
             for (const id of uniqueAssetIds) {
               const rawBuf = fs.readFileSync(assetPathFor(id));
               let buf: Buffer = rawBuf;
@@ -1923,6 +1929,24 @@ forbiddenBalloonColorLabels: hasSempertexLock
                 buf = rawBuf;
               }
               trimmedBufs.set(id, buf);
+              try {
+                const { data, info } = await (sharpFn2(buf).ensureAlpha().raw()
+                  .toBuffer({ resolveWithObject: true })) as { data: Buffer; info: { width: number; height: number; channels: number } };
+                const aw = info.width, ah = info.height, ac = info.channels;
+                // Alpha-weighted centre of the bottom slice: the feet, hem or
+                // base the figure actually stands on.
+                const fromY = Math.max(0, ah - Math.max(2, Math.round(ah * 0.04)));
+                let sum = 0, wsum = 0;
+                for (let y = fromY; y < ah; y++) {
+                  for (let x = 0; x < aw; x++) {
+                    const a = data[(y * aw + x) * ac + 3];
+                    if (a > 12) { sum += x * a; wsum += a; }
+                  }
+                }
+                if (wsum > 0) footCenterFracs.set(id, sum / wsum / aw);
+              } catch (footErr) {
+                console.warn("[generate-controlled-render] foot centre scan failed, using bbox centre:", String(footErr));
+              }
             }
 
             // Height is authoritative: a 150cm cutout beside a 200cm arch
@@ -2096,22 +2120,52 @@ forbiddenBalloonColorLabels: hasSempertexLock
               if (!zone) left = Math.max(0, Math.min(left, imgW - rw));
               const top = Math.max(0, bottom - rh);
 
-              // Soft floor shadow ellipse under the asset — grounds the PNG
-              // so it reads as a freestanding standee, not a pasted sticker.
-              const shW = Math.round(rw * 1.05);
-              const shH = Math.max(10, Math.round(rw * 0.14));
+              // Floor shadow under the asset. This used to be a single ellipse
+              // as wide as the figure and very diffuse, which read as a haze on
+              // the floor rather than as contact — the customer reported the
+              // standee looking like it was hovering (2026-09-04). What sells
+              // contact is a small, comparatively dark patch right where the
+              // feet meet the floor, so there are now two: a wide soft ambient
+              // pool, and a tight contact shadow inside it.
+              const shW = Math.round(rw * 0.92);
+              const shH = Math.max(10, Math.round(rw * 0.13));
+              const ctW = Math.max(12, Math.round(rw * 0.42));
+              const ctH = Math.max(6,  Math.round(rw * 0.05));
+              // Foot position measured on the artwork, expressed inside the
+              // ambient shadow box (which is narrower than the figure itself).
+              const footFrac = footCenterFracs.get(standee.assetId) ?? 0.5;
+              const ctCx     = Math.round(rw * footFrac - (rw - shW) / 2);
               const shadowSvg =
                 `<svg xmlns="http://www.w3.org/2000/svg" width="${shW}" height="${shH}" viewBox="0 0 ${shW} ${shH}">` +
                 `<defs><radialGradient id="sh" cx="50%" cy="50%" r="50%">` +
-                `<stop offset="0%" stop-color="rgba(0,0,0,0.22)"/>` +
-                `<stop offset="70%" stop-color="rgba(0,0,0,0.10)"/>` +
+                `<stop offset="0%" stop-color="rgba(0,0,0,0.16)"/>` +
+                `<stop offset="65%" stop-color="rgba(0,0,0,0.07)"/>` +
+                `<stop offset="100%" stop-color="rgba(0,0,0,0)"/>` +
+                `</radialGradient>` +
+                `<radialGradient id="ct" cx="50%" cy="50%" r="50%">` +
+                `<stop offset="0%" stop-color="rgba(0,0,0,0.45)"/>` +
+                `<stop offset="55%" stop-color="rgba(0,0,0,0.26)"/>` +
                 `<stop offset="100%" stop-color="rgba(0,0,0,0)"/>` +
                 `</radialGradient></defs>` +
                 `<ellipse cx="${shW / 2}" cy="${shH / 2}" rx="${shW / 2}" ry="${shH / 2}" fill="url(#sh)"/>` +
+                `<ellipse cx="${ctCx}" cy="${shH / 2}" rx="${ctW / 2}" ry="${ctH / 2}" fill="url(#ct)"/>` +
                 `</svg>`;
+              // The shadow is cropped, not clamped, for the same reason the
+              // figure is: clamping it to x=0 slides it out from under the feet
+              // whenever the standee bleeds off the left edge.
+              const shadowLeftRaw = left + Math.round((rw - shW) / 2);
+              let shadowBuf  = await (sharpFn2(Buffer.from(shadowSvg, "utf8")).png().toBuffer()) as Buffer;
+              let shadowLeft = shadowLeftRaw;
+              if (shadowLeftRaw < 0) {
+                const cut = Math.min(-shadowLeftRaw, shW - 1);
+                shadowBuf = await (sharpFn2(shadowBuf)
+                  .extract({ left: cut, top: 0, width: shW - cut, height: shH })
+                  .png().toBuffer()) as Buffer;
+                shadowLeft = 0;
+              }
               composites.push({
-                input: Buffer.from(shadowSvg, "utf8"),
-                left:  Math.max(0, left + Math.round((rw - shW) / 2)),
+                input: shadowBuf,
+                left:  shadowLeft,
                 top:   Math.max(0, (top + rh) - Math.round(shH / 2)),
                 blend: "over",
               });

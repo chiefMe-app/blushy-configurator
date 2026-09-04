@@ -398,6 +398,11 @@ export function buildLayoutRefEditPrompt(
       `and its diameter is roughly ${plinthWidthFraction} of the width of the backdrop board behind it. ` +
       `It is NOT a wide squat drum, NOT a round coffee table, NOT a low cake stand. ` +
       `This is a separate display pedestal, not a support base for the backdrop. ` +
+      // 2026-09-04: the model was inventing a second, wider disc under the
+      // column and standing it on that, which also raised the apparent floor
+      // line and left the composited standee looking like it was hovering.
+      `The column meets the floor directly on its own flat circular base — there is NO separate platform, riser, ` +
+      `plate, pedestal box, step or second disc underneath it, and it does not stand on any tray or podium. ` +
       // 2026-09-03: Double Arch no longer asks for the gap. It uses Single
       // Arch's own placement — in front of a backdrop panel — because that is
       // the placement the model actually paints; see the note in
@@ -792,9 +797,10 @@ export function buildLayoutRefEditPrompt(
     : "children's birthday event setup";
   const framingClause = isRoundScene
     ? `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
-      `Medium-close full-body event photography — the round backdrop, balloon garland, and plinth fill the frame ` +
-      `with strong visual presence and prominence, similar closeness and scale to a close-up arch backdrop photograph, ` +
-      `while still keeping the entire setup fully visible with minimal extra empty space around it. `
+      `Medium-close full-body event photography — the round backdrop, balloon garland and pedestal fill the frame, ` +
+      `the setup reaching close to the top and bottom edges of the image with only a narrow margin of floor and wall ` +
+      `around it. Keep the whole setup visible and nothing cropped, but do not leave large empty areas of floor or ` +
+      `wall — the setup is the subject and should dominate the frame. `
     : panelCount === 1
       // 2026-09-03: a single arch was rendering far too zoomed out — "wide" plus
       // "breathing room" left the backdrop as a small object in a large empty

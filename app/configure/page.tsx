@@ -968,6 +968,25 @@ function DecorStep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveSempertexSelection]);
 
+  // A lone arch is only sold Large (see the size chips further down). If a
+  // scene arrives on Medium or Small — a saved draft, or a second arch that was
+  // just removed — bring it up to Large so the state matches what is offered.
+  useEffect(() => {
+    const arches = config.decor.backdropItems.filter((i: BackdropItem) => i.type === "arch");
+    if (arches.length !== 1) return;
+    const only = arches[0];
+    if (only.sizeId === "large") return;
+    const large = ARCH_SIZES.find((s) => s.id === "large");
+    if (!large) return;
+    patchDecor({
+      backdropItems: config.decor.backdropItems.map((i: BackdropItem) =>
+        i.id === only.id
+          ? { ...i, sizeId: large.id, widthCm: large.widthCm, heightCm: large.heightCm }
+          : i),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.decor.backdropItems]);
+
   const toggleSempertex = (id: string) => {
     setSempertexManual(true);
     setSempertexIds(prev => {
@@ -1540,7 +1559,7 @@ function clearAllStandees() {
         {showManualPieces && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
           {[
-            { type: "arch" as const, label: "Arch Backdrop", badge: "Most popular", click: () => { const hasArch = d.backdropItems.some(i=>i.type==="arch"); if(!hasArch) toggleArchSize(ARCH_SIZES[1]); else patchDecor({ backdropItems: d.backdropItems.filter(i=>i.type!=="arch") }); } },
+            { type: "arch" as const, label: "Arch Backdrop", badge: "Most popular", click: () => { const hasArch = d.backdropItems.some(i=>i.type==="arch"); if(!hasArch) toggleArchSize(ARCH_SIZES.find(s=>s.id==="large") ?? ARCH_SIZES[2]); else patchDecor({ backdropItems: d.backdropItems.filter(i=>i.type!=="arch") }); } },
             { type: "rect" as const, label: "Rectangular Backdrop", badge: null, click: () => toggleOtherType("rect") },
             { type: "round" as const, label: "Round Backdrop", badge: null, click: () => toggleRound() },
           ].map(({ type, label, badge, click }) => {
@@ -1613,7 +1632,11 @@ function clearAllStandees() {
                           </div>
                         </div>
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          {ARCH_SIZES.map((size) => {
+                          {/* A lone arch is only sold in the Large board
+                              (customer decision 2026-09-04). Double Arch still
+                              offers all three, because its second board is
+                              deliberately a smaller size. */}
+                          {(archCount > 1 ? ARCH_SIZES : ARCH_SIZES.filter((s) => s.id === "large")).map((size) => {
                             const isSel = item.sizeId === size.id;
                             return (
                               <button key={size.id} type="button"
