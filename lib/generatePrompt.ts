@@ -41,6 +41,9 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
     "one symmetrical full arch vertical panel with a rounded top center, standing directly on the floor",
   round:
     "one perfect circular round vertical backdrop panel, standing directly on the floor",
+  banner:
+    "one flat square printed banner backdrop, 2 metres by 2 metres, a taut printed fabric banner " +
+    "stretched on a slim freestanding frame, standing directly on the floor",
   rect:
     "one rectangular vertical backdrop panel with a straight horizontal top edge, straight vertical sides, flat horizontal top, clear 90-degree top corners, and a flat bottom resting on the floor — " +
     "NOT an arch, NOT a curved-top panel, NOT a rounded-top backdrop, NOT a semicircle top, NOT a tombstone shape, NOT a dome top",
@@ -533,6 +536,7 @@ export function generatePrompt(input: PromptInput): {
     arch:            "arch (semicircular top)",
     round:           "round circular disc",
     rect:            "flat rectangular",
+    banner:          "square printed banner",
     shimmer_wall:    "rectangular shimmer wall",
     open_arch_frame: "hollow open arch frame",
     wavy:            "wavy top",

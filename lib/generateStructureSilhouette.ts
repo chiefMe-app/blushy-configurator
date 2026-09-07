@@ -149,6 +149,17 @@ function panelPathOrShape(
     return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="${fillColor}" ${stroke}/>`;
   }
 
+  if (shape === "banner") {
+    // 2026-09-05: a banner is 200x200cm and must render SQUARE.
+    // calculateExactLayout fits width and height to separate fractions of the
+    // canvas and does not preserve a panel's own aspect — measured, a banner
+    // came out at 717 x 870, i.e. portrait. Round gets away with this because
+    // its circle is drawn from pw alone; a rect is drawn at the full height, so
+    // the banner needs the square built here, bottom-aligned to the floor.
+    const side = Math.min(pw, floorY - apexY);
+    return `<rect x="${cx - side / 2}" y="${floorY - side}" width="${side}" height="${side}" fill="${fillColor}" ${stroke}/>`;
+  }
+
   if (shape === "rect" || shape === "shimmer_wall") {
     const h = floorY - apexY;
     return `<rect x="${left}" y="${apexY}" width="${pw}" height="${h}" fill="${fillColor}" ${stroke}/>`;
@@ -231,6 +242,14 @@ function panelEdgeOnly(
     const centerY = floorY - r;
     return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="none" stroke="rgba(95,95,95,0.42)" stroke-width="2"/>`;
   }
+  if (shape === "banner") {
+    // Square, for the reason given in panelShape.
+    const side = Math.min(pw, floorY - apexY);
+    const l = cx - side / 2, r2 = cx + side / 2, t = floorY - side;
+    const d = `M ${l},${floorY} L ${l},${t} L ${r2},${t} L ${r2},${floorY}`;
+    return `<path d="${d}" ${edgeStroke}/>`;
+  }
+
   if (shape === "rect" || shape === "shimmer_wall") {
     // Three sides only (no bottom) so there's no horizontal base-line signal
     const d = `M ${left},${floorY} L ${left},${apexY} L ${right},${apexY} L ${right},${floorY}`;
@@ -1485,6 +1504,18 @@ export function generateStructureSilhouette(
           const result = drawArchShimmerComposition(archPanels[0], shimmerPanels[0], 0);
           archShimmerCompositionBalloons = result.total;
           archShimmerAccentZone = result.accentZone;
+        } else if (
+          layout.panels.length === 1 &&
+          (backdropItems[layout.panels[0].idx]?.type ?? "") === "banner"
+        ) {
+          // 2026-09-05: a single Banner takes the Single Arch garland. Without
+          // this it fell to the multi-panel fallback below — a 22-circle
+          // sine-wave column — and the render turned that thin bead line into a
+          // garland wrapping the whole banner, which is not what the setup sells.
+          drawThickOrganicMainGarland(layout.panels[0], "right", 0, true, true);
+          if (isFullerTier) {
+            drawThickOrganicMainGarland(layout.panels[0], "left", 62, true, true);
+          }
         } else if (archPanels.length === 1 && layout.panels.length === 1) {
           // Single arch: use the same thick organic mass the Double Arch
           // garlands use. The previous guide here was a single-file sine-wave

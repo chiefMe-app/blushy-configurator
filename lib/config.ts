@@ -280,6 +280,7 @@ export type BackdropShapeId =
   | "arch"
   | "round"
   | "rect"
+  | "banner"
   | "shimmer_wall"
   | "open_arch_frame"
   | "wavy";
@@ -327,6 +328,14 @@ export interface BackdropItemGraphic {
   style: GraphicStyle;
   source?: "preset" | "custom";
   assetId?: string;
+  /**
+   * Customer-written description of the artwork, used when source === "custom".
+   * This is what a Banner Backdrop is designed with: the customer types what
+   * they want on the banner and the render draws it, held to the theme by
+   * buildLayoutRefEditPrompt. Free text, trimmed and length-capped before it
+   * reaches the prompt.
+   */
+  customPrompt?: string;
 }
 
 /**
@@ -368,6 +377,10 @@ export function makeBackdropItem(
   } else if (type === "rect" && sizeId) {
     const s = RECT_SIZES.find((r) => r.id === sizeId);
     if (s) { widthCm = s.widthCm; heightCm = s.heightCm; }
+  } else if (type === "banner") {
+    // 2m x 2m printed banner backdrop. Square, so it lands in a square render
+    // frame the same way the round backdrop does.
+    widthCm = 200; heightCm = 200;
   } else if (type === "round") {
     widthCm = 200; heightCm = 200;
   } else if (type === "shimmer_wall") {
@@ -662,6 +675,9 @@ export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   { id: "arch",         label: "Arch Backdrop",        price: 0 },
   { id: "round",        label: "Round Backdrop",       price: 0 },
   { id: "rect",         label: "Rectangular Backdrop", price: 0 },
+  // 2026-09-05: 2m x 2m printed banner. Price left at 0 alongside the other
+  // shapes — no price was given for it, so it is not being invented here.
+  { id: "banner",       label: "Banner Backdrop 2x2m", price: 0 },
   // "wavy" removed from product - not selectable. Kept in BackdropShapeId for backward compat.
   // "shimmer_wall" removed from product (2026-07-12) - shimmer pipeline too
   // unreliable, focus shifted to arch-based designs. Kept in BackdropShapeId

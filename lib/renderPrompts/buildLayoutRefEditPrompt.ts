@@ -173,6 +173,20 @@ export function buildLayoutRefEditPrompt(
         `and no plinth. Do not invent any extra white cylinder, oval base, round base, or low platform ` +
         `under or beside the round panel — the floor beneath and around the panel must be completely bare ` +
         (firstPlinth ? `except for the one selected plinth and the balloon garland.` : `except for the balloon garland.`);
+    } else if (p.type === "banner") {
+      // 2026-09-05: 2m x 2m printed banner backdrop. Described as a taut printed
+      // fabric banner on a slim frame rather than a board, because that is what
+      // it is — and because "board" pulls the same art-print/podium prior that
+      // put the round backdrop on a plinth (see frontStructureLine).
+      backdropDesc =
+        `one flat square printed banner backdrop, exactly ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
+        `a taut printed fabric banner stretched flat on a slim freestanding frame, standing directly on the floor. ` +
+        `The banner face is one continuous flat printed surface with straight vertical sides, a straight ` +
+        `horizontal top edge and clean 90-degree corners. ` +
+        `NOT an arch, NOT a rounded top, NOT a circle, NOT a hanging cloth with folds or ripples, ` +
+        `NOT a roll-up banner stand, NOT a poster in a frame on an easel. ` +
+        `The fabric is flat and smooth with no sagging, no creases and no visible seams. ` +
+        `Nothing stands underneath it: no podium, no plinth, no base, no platform — the frame meets the bare floor.`;
     } else if (p.type === "arch") {
       backdropDesc =
         `single rounded arch backdrop, ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
@@ -609,6 +623,22 @@ export function buildLayoutRefEditPrompt(
   // positional effect the palette line depends on. Scoped like the palette line:
   // single-panel arch is excluded, because first position displaces its own
   // structural wording and breaks it.
+  // 2026-09-05: a Banner printed with customer artwork came back with faint
+  // script lettering on a dozen balloons. Saying so inside the artwork sentence
+  // did nothing, the same way every mid-prompt rule on this pipeline does
+  // nothing. At the front it works — but length matters as much as position:
+  //   "The balloons are plain: no writing, letters, words or logos on any
+  //    balloon."  -> lettering gone, but it displaced the artwork and the
+  //                  castle the customer asked for vanished from the banner
+  //   "Plain balloons, no writing on them."
+  //                 -> lettering gone AND the artwork intact
+  // Only for a customer-designed banner, which is the case that has the
+  // problem; a printed banner is what invites writing onto everything near it.
+  const frontPlainBalloonsLine =
+    sceneModel.panels.some((p) => p.type === "banner" && p.graphic.enabled && p.graphic.source === "custom")
+      ? `Plain balloons, no writing on them. `
+      : "";
+
   const frontStructureLine = sceneModel.panels.some((p) => p.graphic.enabled) && (isMulti || hasRoundPanelInPrompt)
     ? `The backdrop ${panelCount > 1 ? "panels are full-size freestanding party backdrops standing" : "panel is a full-size freestanding party backdrop standing"} ` +
       `directly on the bare floor. Nothing is underneath: no podium, no disc, no platform, no base. `
@@ -834,8 +864,63 @@ export function buildLayoutRefEditPrompt(
   // panel; that pile of negation cost the scene its plinth in a verification
   // render, the same failure this file has now hit several times. The print
   // is described instead, and the plain board is described as plain.
+  // 2026-09-05: a Banner Backdrop is designed by the customer typing what they
+  // want on it, so its artwork comes from graphic.customPrompt rather than a
+  // preset. Their words are quoted into the prompt, but held to the theme: the
+  // theme sentence goes first, and the palette and finish are stated after, so
+  // a stray request cannot pull the whole scene somewhere else.
+  //
+  // The text is treated as DATA, not as instructions to follow. It is trimmed,
+  // capped, stripped of newlines and of characters that could end the quoted
+  // span, and it is described as "the artwork shows" — it never becomes a
+  // directive about the room, the camera, the balloons or the panel itself.
+  const CUSTOM_ARTWORK_MAX = 300;
+  const sanitizeCustomArtwork = (raw: string | undefined): string | null => {
+    const t = String(raw ?? "")
+      .replace(/[\r\n]+/g, " ")
+      .replace(/[`"<>{}]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, CUSTOM_ARTWORK_MAX)
+      .trim();
+    return t.length > 0 ? t : null;
+  };
   const graphicSentences = graphicPanelIdx.map((i) => {
     const p = sceneModel.panels[i];
+    const custom = p.graphic.source === "custom"
+      ? sanitizeCustomArtwork(p.graphic.customPrompt)
+      : null;
+    if (custom) {
+      // 2026-09-05: the first version put the theme NAME and renderDescription
+      // in here — "It is a Frozen party banner: Frozen winter wonderland theme
+      // ...". The render came back with a Disney FROZEN logo across the banner,
+      // more FROZEN wordmarks printed on the balloons, and a line of gibberish
+      // lettering. Naming a licensed property is what invited the branding.
+      // The theme now reaches the banner as its colours and motifs only
+      // (ThemeCatalogEntry.description, e.g. "Icy blues, silver, snowflakes"),
+      // and lettering is refused outright unless the customer turned text on
+      // for this panel, which is handled separately by customTextClause.
+      const themeLine = themeEntry?.description
+        ? `Its colours and motifs are: ${themeEntry.description}. `
+        : "";
+      const p2 = sceneModel.panels[i];
+      const wantsText = p2.text.enabled && p2.text.value.trim().length > 0;
+      const noBrandingLine =
+        `No logo, no brand name, no trademark, no watermark and no studio or film branding anywhere ` +
+        `on the banner or on any balloon. ` +
+        (wantsText
+          ? `The only words anywhere in the scene are the ones specified for this panel. `
+          : `No lettering, words, letters, numbers or captions of any kind appear on the banner or on ` +
+            `any balloon — the artwork is picture only. `);
+      return `The ${panelPositionLabel(i)} is printed edge to edge with artwork designed by the customer. ` +
+        themeLine +
+        `The artwork shows: ${custom}. ` +
+        `Render that artwork as a flat printed graphic on the banner face, following the panel's own ` +
+        `perspective and lighting — part of the print, not an object standing in the room. ` +
+        `Keep it inside the banner: the artwork never extends past the banner edges and never changes ` +
+        `the room, the floor, the camera angle or the balloons. ` +
+        noBrandingLine;
+    }
     const desc = graphicPresetDescFor(p.graphic.assetId);
     return `The ${panelPositionLabel(i)} has a theme illustration printed into its board surface, ` +
       `following that panel's own perspective and lighting${desc ? `, depicting: ${desc}` : ""}. `;
@@ -1084,6 +1169,7 @@ const setupTemplateClause = setupTemplate
     : "";
 
   return (
+    frontPlainBalloonsLine +
     frontPaletteLine +
     frontStructureLine +
     photographyOpening +

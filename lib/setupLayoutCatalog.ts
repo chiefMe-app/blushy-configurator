@@ -55,7 +55,7 @@ export interface LayoutZone {
 /** Shape tokens for the playful mini preview illustration on setup cards. */
 export type MiniPreviewShape =
   | "arch" | "arch_large" | "arch_small"
-  | "round" | "shimmer" | "open_frame" | "balloons";
+  | "round" | "shimmer" | "open_frame" | "banner" | "balloons";
 
 export interface SetupLayoutTemplate {
   id: string;
@@ -125,6 +125,28 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     panelInstruction: "A single freestanding circular round backdrop panel centered in the scene. No second backdrop of any kind.",
     garlandInstruction: "Preserve one organic balloon garland arcing along the upper-right perimeter of the round backdrop only — a partial arc, never a full ring.",
     plinthInstruction: "Place cylinder plinths on the left/front side of the round panel, away from the right-side garland.",
+    standeeZones: ZONES_STANDARD,
+  },
+  {
+    // 2026-09-05: 2m x 2m printed banner. Unlike the other setups, the customer
+    // designs the face themselves — they type what they want on it and the
+    // render draws that, held to the theme (see graphicSentences in
+    // buildLayoutRefEditPrompt).
+    id: "single_banner",
+    name: "Banner Backdrop",
+    description: "2x2m printed banner, designed by you",
+    backdropTypes: ["banner"],
+    maxBackdrops: 1,
+    badge: "New",
+    miniPreview: ["banner", "balloons"],
+    panelInstruction:
+      "A single flat square printed banner backdrop, 2 metres by 2 metres, a taut printed fabric " +
+      "banner stretched on a slim freestanding frame standing directly on the floor. No second backdrop.",
+    garlandInstruction:
+      "Balloon design: one organic half-garland anchored at the top-right corner of the banner, " +
+      "running down the right edge and ending in a loose cluster on the floor at the banner base. " +
+      "The left side stays clean. Balloons never cover the printed banner face.",
+    plinthInstruction: "Place cylinder plinths on the left/front side of the banner, clear of the garland.",
     standeeZones: ZONES_STANDARD,
   },
   {

@@ -77,6 +77,8 @@ const BACKDROP_SAFE_AREA: Record<BackdropShapeId, { x: number; y: number; w: num
   open_arch_frame: { x: 22, y: 16, w: 56, h: 40 },
   round:           { x: 26, y: 22, w: 48, h: 32 },
   rect:            { x: 20, y: 15, w: 60, h: 44 },
+  // A 2x2m banner is one big printed face, so the usable area is nearly all of it.
+  banner:          { x: 12, y: 12, w: 76, h: 60 },
   shimmer_wall: { x: 16, y: 14, w: 68, h: 46 },
   wavy:         { x: 18, y: 16, w: 64, h: 40 },
 };
