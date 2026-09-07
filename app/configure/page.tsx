@@ -1339,6 +1339,11 @@ function clearAllStandees() {
     switch (templateId) {
       case "single_arch":        panels = [makeArchUnsized("arch-1")]; break;
       case "single_round":       panels = [makeBackdropItem("round")]; break;
+      // 2026-09-05: the Banner card was in the setup list but clicking it did
+      // nothing — this switch had no case for it, so it fell to `default:
+      // return`. A banner has one fixed size (2x2m), so unlike an arch it needs
+      // no size step and is created ready to use.
+      case "single_banner":      panels = [makeBackdropItem("banner")]; break;
       case "double_arch":        panels = [makeArchUnsized("arch-1"), makeArchUnsized("arch-2")]; break;
       // arch_open_frame / shimmer_open_frame / single_shimmer / arch_shimmer
       // removed from product — no longer selectable, so no case needed;
@@ -1353,7 +1358,7 @@ function clearAllStandees() {
   const activeSetupTemplateId = inferSetupLayoutTemplateIdFromBackdropItems(d.backdropItems);
 
   // Readable type labels for summaries
-  const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", shimmer_wall: "Shimmer Wall", open_arch_frame: "Open Arch Frame" };
+  const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", banner: "Banner Backdrop", shimmer_wall: "Shimmer Wall", open_arch_frame: "Open Arch Frame" };
 
   // Collapsible customize row -shows summary + button, expands on demand
   function BackdropCustomizeRow({ item, itemIdx }: { item: BackdropItem; itemIdx: number }) {
@@ -1665,7 +1670,12 @@ function clearAllStandees() {
           <div>
             <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 18, color: DC.plum, lineHeight: 1.15 }}>Size your pieces</div>
             <div style={{ fontSize: 11.5, color: DC.muted }}>Choose a size for each piece — add-ons unlock once it&apos;s sized.</div>
-            {d.backdropItems.length > 0 && d.backdropItems.some((i) => !i.sizeId) && nextCue("Pick a size next")}
+            {/* Round and Banner are sold in one fixed size, so they never have a
+                sizeId and must not raise a "pick a size" cue that can never be
+                satisfied — which is what left the Banner setup looking broken. */}
+            {d.backdropItems.length > 0
+              && d.backdropItems.some((i) => !i.sizeId && i.type !== "round" && i.type !== "banner")
+              && nextCue("Pick a size next")}
           </div>
         </div>
 
@@ -1774,6 +1784,16 @@ function clearAllStandees() {
           const roundItem = d.backdropItems.find(i => i.type === "round");
           const itemIdx = roundItem ? d.backdropItems.findIndex(i => i.id === roundItem.id) : -1;
           return roundItem && itemIdx >= 0 ? BackdropCustomizeRow({ item: roundItem, itemIdx }) : null;
+        })()}
+
+        {/* 2026-09-05: a Banner is a single fixed 2x2m size, so like the round
+            panel it has nothing to choose here — its customize row (and with it
+            the Banner Design field) goes straight in. Without this the setup
+            could be picked but never configured. */}
+        {d.backdropItems.some(i => i.type === "banner") && (() => {
+          const bannerItem = d.backdropItems.find(i => i.type === "banner");
+          const itemIdx = bannerItem ? d.backdropItems.findIndex(i => i.id === bannerItem.id) : -1;
+          return bannerItem && itemIdx >= 0 ? BackdropCustomizeRow({ item: bannerItem, itemIdx }) : null;
         })()}
 
         {/* Shimmer color picker intentionally removed (2026-07-12) — shimmer

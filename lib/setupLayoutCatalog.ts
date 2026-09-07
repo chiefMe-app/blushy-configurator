@@ -254,6 +254,7 @@ export function inferSetupLayoutTemplateIdFromBackdropItems(
   const key = types.join("+");
   if (key === "arch") return "single_arch";
   if (key === "round") return "single_round";
+  if (key === "banner") return "single_banner";
   if (key === "shimmer_wall") return "single_arch";
   if (key === "arch+arch") return "double_arch";
   if (key === "arch+shimmer_wall") return "single_arch";
