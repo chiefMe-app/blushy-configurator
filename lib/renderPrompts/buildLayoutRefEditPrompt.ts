@@ -640,9 +640,28 @@ export function buildLayoutRefEditPrompt(
   // single-panel arch is excluded, because first position displaces its own
   // structural wording and breaks it.
 
-  const frontStructureLine = sceneModel.panels.some((p) => p.graphic.enabled) && (isMulti || hasRoundPanelInPrompt || hasBannerPanelInPrompt)
-    ? `The backdrop ${panelCount > 1 ? "panels are full-size freestanding party backdrops standing" : "panel is a full-size freestanding party backdrop standing"} ` +
-      `directly on the bare floor. Nothing is underneath: no podium, no disc, no platform, no base. `
+  // A Banner also states its SHAPE here. The guide draws a true 716.8 x 716.8
+  // square and the description says "exactly 200cm x 200cm, a perfect square",
+  // but that sits mid-prompt and the render kept coming back portrait — the
+  // customer asked outright whether it was really 2m x 2m. Front position is
+  // what binds on this pipeline, so the aspect is stated here too. It fires for
+  // a banner whether or not it carries a graphic, because the shape is wrong
+  // either way.
+  const frontStructureLine =
+    (sceneModel.panels.some((p) => p.graphic.enabled) || hasBannerPanelInPrompt)
+    && (isMulti || hasRoundPanelInPrompt || hasBannerPanelInPrompt)
+      ? `The backdrop ${panelCount > 1 ? "panels are full-size freestanding party backdrops standing" : "panel is a full-size freestanding party backdrop standing"} ` +
+        `directly on the bare floor. Nothing is underneath: no podium, no disc, no platform, no base. `
+      : "";
+
+  // The banner's aspect goes in FIRST, ahead of even the palette line. Second
+  // position was not enough: the board still rendered noticeably taller than
+  // wide. Moved to first it renders 1:1, and the palette lock it displaces is
+  // unaffected — measured on the same scene, warm 0.02% -> 0.01%, pink 0.01%
+  // -> 0.01%, lilac 3.06% -> 3.29%.
+  const frontBannerAspectLine = hasBannerPanelInPrompt && !isMulti
+    ? `The backdrop is a SQUARE board, as wide as it is tall — 2 metres by 2 metres, a 1:1 square, ` +
+      `not taller than it is wide. `
     : "";
 
   const frontPaletteLine = (isMulti || hasRoundPanelInPrompt || hasBannerPanelInPrompt)
@@ -1115,6 +1134,7 @@ const setupTemplateClause = setupTemplate
     : "";
 
   return (
+    frontBannerAspectLine +
     frontPaletteLine +
     frontStructureLine +
     photographyOpening +

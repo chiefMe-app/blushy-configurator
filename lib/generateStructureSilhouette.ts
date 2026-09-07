@@ -1077,7 +1077,7 @@ export function generateStructureSilhouette(
           let st = (seed + 1) * 9973;
           const rnd = () => { st = (st * 1664525 + 1013904223) >>> 0; return st / 4294967296; };
 
-          const rXL = Math.max(30, Math.min(80, side * 0.115));
+          const rXL = Math.max(28, Math.min(66, side * 0.092));
           const rL  = Math.max(20, Math.min(52, side * 0.075));
           const rM  = Math.max(14, Math.min(36, side * 0.052));
           const rS  = Math.max(10, Math.min(24, side * 0.034));
@@ -1125,9 +1125,15 @@ export function generateStructureSilhouette(
             let guard = 0;
             while (t < len && guard++ < 120) {
               const r = pickR();
-              // Centre of the band sits about half a balloon outboard of the
-              // edge, so the mass hangs off the board rather than on it.
-              const off = r * (0.45 + rnd() * 0.55);
+              // 2026-09-05: this used to be r * (0.45..1.0) — always OUTWARD, so
+              // no balloon ever touched the board. The guide's garland bbox then
+              // spanned the whole 1024px canvas around a 717px board, and the
+              // render came back as a free-standing balloon arch with the banner
+              // shrunk to fit inside it (customer: "suanda havada balonlar", and
+              // the board no longer read as square). A real garland is tied TO
+              // the board edge, so the band straddles it: mostly outboard, but
+              // overlapping onto the face, the way the arch garland does.
+              const off = r * (rnd() * 1.15 - 0.45);
               put(fromX + ux * t + outX * off, fromY + uy * t + outY * off, r);
               // Two more lanes at different depths. One lane reads as a string
               // of beads however the sizes are varied — the customer wanted it
@@ -1136,15 +1142,15 @@ export function generateStructureSilhouette(
               // off it, so the union silhouette is a thick band rather than a line.
               const r2 = pickR() * 0.9;
               put(
-                fromX + ux * (t + r * 0.45) + outX * r2 * 1.15,
-                fromY + uy * (t + r * 0.45) + outY * r2 * 1.15,
+                fromX + ux * (t + r * 0.45) + outX * r2 * (0.35 + rnd() * 0.45),
+                fromY + uy * (t + r * 0.45) + outY * r2 * (0.35 + rnd() * 0.45),
                 r2,
               );
               if (rnd() < 0.75) {
                 const r3 = pickR() * 0.7;
                 put(
-                  fromX + ux * (t + r * 0.8) - outX * r3 * 0.25,
-                  fromY + uy * (t + r * 0.8) - outY * r3 * 0.25,
+                  fromX + ux * (t + r * 0.8) - outX * r3 * (0.35 + rnd() * 0.35),
+                  fromY + uy * (t + r * 0.8) - outY * r3 * (0.35 + rnd() * 0.35),
                   r3,
                 );
               }
@@ -1162,7 +1168,7 @@ export function generateStructureSilhouette(
             for (const [ox, up, sc] of table) {
               const r = rXL * sc;
               put(
-                mx + dir * ox * rXL + (rnd() * 2 - 1) * rM * 0.35,
+                mx + dir * (ox * rXL * 0.62 - rXL * 0.30) + (rnd() * 2 - 1) * rM * 0.35,
                 p.floorY - up * rXL * 0.62 + (rnd() * 2 - 1) * rM * 0.25,
                 r,
               );
