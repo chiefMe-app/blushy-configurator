@@ -128,20 +128,19 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     standeeZones: ZONES_STANDARD,
   },
   {
-    // 2026-09-05: 2m x 2m printed banner. Unlike the other setups, the customer
-    // designs the face themselves — they type what they want on it and the
-    // render draws that, held to the theme (see graphicSentences in
-    // buildLayoutRefEditPrompt).
+    // 2026-09-05: the Single Round setup with a square board instead of a
+    // circle. A first version let the customer type the artwork and had the AI
+    // draw it; that is reverted — see the banner branch of backdropDesc.
     id: "single_banner",
     name: "Banner Backdrop",
-    description: "2x2m printed banner, designed by you",
+    description: "2x2m square printed backdrop",
     backdropTypes: ["banner"],
     maxBackdrops: 1,
     badge: "New",
     miniPreview: ["banner", "balloons"],
     panelInstruction:
-      "A single flat square printed banner backdrop, 2 metres by 2 metres, a taut printed fabric " +
-      "banner stretched on a slim freestanding frame standing directly on the floor. No second backdrop.",
+      "A single flat square backdrop panel, 2 metres by 2 metres, standing freestanding directly on the " +
+      "floor. No second backdrop of any kind.",
     garlandInstruction:
       "Balloon design: one organic half-garland anchored at the top-right corner of the banner, " +
       "running down the right edge and ending in a loose cluster on the floor at the banner base. " +

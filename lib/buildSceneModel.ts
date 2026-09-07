@@ -91,8 +91,6 @@ export interface ScenePanel {
     style:   GraphicStyle;
     source?: "preset" | "custom";
     assetId?: string;
-    /** Customer-written banner artwork description; see BackdropItemGraphic. */
-    customPrompt?: string;
   };
 }
 
@@ -166,7 +164,6 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
         style:   item.graphic.style,
         source:  item.graphic.source,
         assetId: item.graphic.assetId,
-        customPrompt: item.graphic.customPrompt,
       },
     }));
 
@@ -234,7 +231,6 @@ export function buildSceneModelFromItems(
       style:   item.graphic.style,
       source:  item.graphic.source,
       assetId: item.graphic.assetId,
-      customPrompt: item.graphic.customPrompt,
     },
   }));
 

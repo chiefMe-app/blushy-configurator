@@ -74,51 +74,6 @@ cutoutTotalCount,
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
 import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS, getThemeCutoutPresets } from "@/lib/themeCatalog";
 
-/**
- * Banner Backdrop artwork field.
- *
- * A Banner is designed by the customer describing what they want on it; the
- * render draws that, held to the selected theme by buildLayoutRefEditPrompt.
- * Free text, so it is capped here as well as in the prompt builder.
- */
-const BANNER_DESIGN_MAX = 300;
-
-function BannerDesignField({
-  value, themeName, accent, onChange,
-}: {
-  value: string;
-  themeName: string;
-  accent: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div style={{ paddingLeft: 4, paddingTop: 8 }} onClick={(e) => e.stopPropagation()}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: "#666", display: "block", marginBottom: 5 }}>
-        Describe your banner artwork
-      </label>
-      <textarea
-        value={value}
-        maxLength={BANNER_DESIGN_MAX}
-        rows={3}
-        onChange={(e) => onChange(e.target.value.slice(0, BANNER_DESIGN_MAX))}
-        placeholder={`e.g. a snowy castle with falling snowflakes and a pale blue sky`}
-        style={{
-          width: "100%", borderRadius: 10, padding: "9px 11px", fontSize: 12.5,
-          lineHeight: 1.45, border: "1.5px solid rgba(0,0,0,0.12)", outline: "none",
-          resize: "vertical", fontFamily: "inherit", color: "#1A1A2E",
-        }}
-      />
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-        <span style={{ fontSize: 10.5, color: "#999" }}>
-          Drawn in your {themeName} colours and style.
-        </span>
-        <span style={{ fontSize: 10.5, color: value.length >= BANNER_DESIGN_MAX ? accent : "#BBB" }}>
-          {value.length}/{BANNER_DESIGN_MAX}
-        </span>
-      </div>
-    </div>
-  );
-}
 import { SETUP_LAYOUT_TEMPLATES, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 import SetupPreview, { useSetupPreview, type FinalRenderState } from "@/components/SetupPreview";
 
@@ -1505,9 +1460,7 @@ function clearAllStandees() {
           {/* Theme Graphic — a Banner is designed by the customer instead */}
           <div onClick={() => {
             const enabling = !item.graphic.enabled;
-            if (enabling && item.type === "banner") {
-              patchItemGraphic(itemIdx, { enabled: true, source: "custom", customPrompt: item.graphic.customPrompt ?? "" });
-            } else if (enabling && !item.graphic.assetId) {
+            if (enabling && !item.graphic.assetId) {
               const catalogEntry = getThemeCatalogEntry(config.theme);
               const presets = catalogEntry?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
               const first = presets[0];
@@ -1521,21 +1474,13 @@ function clearAllStandees() {
               background: item.graphic.enabled ? accent + "0E" : "white", transition: "all 0.15s" }}>
             <span style={{ fontSize: 18 }}></span>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: item.graphic.enabled ? accent : "#1A1A2E" }}>{item.type === "banner" ? "Banner Design" : "Theme Graphic"}</div>
-              <div style={{ fontSize: 11, color: "#999" }}>{item.type === "banner" ? "Describe the artwork — we draw it in your theme" : "Add a printed theme illustration"}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: item.graphic.enabled ? accent : "#1A1A2E" }}>Theme Graphic</div>
+              <div style={{ fontSize: 11, color: "#999" }}>Add a printed theme illustration</div>
             </div>
             <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
               background: item.graphic.enabled ? accent : "rgba(0,0,0,0.06)", color: item.graphic.enabled ? "white" : "#555" }}>+AED 150</span>
           </div>
-          {item.graphic.enabled && item.type === "banner" && (
-            <BannerDesignField
-              value={item.graphic.customPrompt ?? ""}
-              themeName={theme.name}
-              accent={accent}
-              onChange={(v) => patchItemGraphic(itemIdx, { source: "custom", customPrompt: v })}
-            />
-          )}
-          {item.graphic.enabled && item.type !== "banner" && (() => {
+          {item.graphic.enabled && (() => {
             const catalogEntry = getThemeCatalogEntry(config.theme);
             const presets = catalogEntry?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
             return (
@@ -1788,7 +1733,7 @@ function clearAllStandees() {
 
         {/* 2026-09-05: a Banner is a single fixed 2x2m size, so like the round
             panel it has nothing to choose here — its customize row (and with it
-            the Banner Design field) goes straight in. Without this the setup
+            its Theme Graphic picker) goes straight in. Without this the setup
             could be picked but never configured. */}
         {d.backdropItems.some(i => i.type === "banner") && (() => {
           const bannerItem = d.backdropItems.find(i => i.type === "banner");
@@ -2206,9 +2151,7 @@ function clearAllStandees() {
                     <div
                       onClick={() => {
                         const enabling = !item.graphic.enabled;
-                        if (enabling && item.type === "banner") {
-                          patchItemGraphic(idx, { enabled: true, source: "custom", customPrompt: item.graphic.customPrompt ?? "" });
-                        } else if (enabling && !item.graphic.assetId) {
+                        if (enabling && !item.graphic.assetId) {
                           const catalogEntry = getThemeCatalogEntry(config.theme);
                           const presets = catalogEntry?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
                           const first = presets[0];
@@ -2226,7 +2169,7 @@ function clearAllStandees() {
                     >
                       <div style={{ fontSize: 22 }}></div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: item.graphic.enabled ? accent : "#1A1A2E" }}>{item.type === "banner" ? "Banner Design" : "Theme Graphic"}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: item.graphic.enabled ? accent : "#1A1A2E" }}>Theme Graphic</div>
                         <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>Add a printed theme illustration</div>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
@@ -2234,17 +2177,8 @@ function clearAllStandees() {
                         {item.graphic.enabled && <span style={{ fontSize: 14 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
                       </div>
                     </div>
-                    {/* A Banner is designed by the customer; every other panel picks a preset. */}
-                    {item.graphic.enabled && item.type === "banner" && (
-                      <BannerDesignField
-                        value={item.graphic.customPrompt ?? ""}
-                        themeName={theme.name}
-                        accent={accent}
-                        onChange={(v) => patchItemGraphic(idx, { source: "custom", customPrompt: v })}
-                      />
-                    )}
                     {/* Graphic preset sub-options when enabled */}
-                    {item.graphic.enabled && item.type !== "banner" && (() => {
+                    {item.graphic.enabled && (() => {
                       const catalogEntry = getThemeCatalogEntry(config.theme);
                       const presets = catalogEntry?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
                       return (

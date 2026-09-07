@@ -328,14 +328,6 @@ export interface BackdropItemGraphic {
   style: GraphicStyle;
   source?: "preset" | "custom";
   assetId?: string;
-  /**
-   * Customer-written description of the artwork, used when source === "custom".
-   * This is what a Banner Backdrop is designed with: the customer types what
-   * they want on the banner and the render draws it, held to the theme by
-   * buildLayoutRefEditPrompt. Free text, trimmed and length-capped before it
-   * reaches the prompt.
-   */
-  customPrompt?: string;
 }
 
 /**
