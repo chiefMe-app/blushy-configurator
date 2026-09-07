@@ -1367,26 +1367,52 @@ function clearAllStandees() {
     return (
       <div>
         <div style={{ padding: "14px 14px 14px" }}>
-        {/* Color */}
-        <div style={{ marginBottom: 12 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#12162F", display: "block", marginBottom: 6 }}>Backdrop color</span>
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-            {theme.backdropColors.map((hex) => (
-              <button key={hex} type="button" onClick={() => patchItem(itemIdx, { color: hex })}
-                style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: hex, border: item.color === hex ? `2.5px solid ${accent}` : "2px solid rgba(0,0,0,0.12)", cursor: "pointer", transition: "all 0.15s" }} title={hex} />
-            ))}
-            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#888", cursor: "pointer" }}>
-              Custom
-              <input type="color" value={item.color || d.backdropColor || "#FFFFFF"}
-                onChange={(e) => patchItem(itemIdx, { color: e.target.value })}
-                style={{ width: 20, height: 20, border: "none", background: "transparent", cursor: "pointer", padding: 0 }} />
-            </label>
+        {/* 2026-09-05: a shimmer wall has no painted backdrop colour — its
+            colour IS the sequin finish, so that picker takes this slot instead
+            of the backdrop swatches. */}
+        {item.type === "shimmer_wall" ? (
+          <div style={{ marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#12162F", display: "block", marginBottom: 6 }}>Shimmer wall color</span>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+              {SHIMMER_COLORS.map((sc) => {
+                const active = (d.shimmerColor ?? "silver") === sc.id;
+                return (
+                  <button key={sc.id} type="button" onClick={() => patchDecor({ shimmerColor: sc.id })}
+                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 20,
+                      fontSize: 11, fontWeight: 600, cursor: "pointer",
+                      border: active ? `1.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
+                      background: active ? accent + "12" : "white", color: active ? accent : "#555" }}>
+                    <span style={{ width: 12, height: 12, borderRadius: 3, flexShrink: 0,
+                      background: SHIMMER_COLOR_HEX[sc.id], border: "1px solid rgba(0,0,0,0.15)" }} />
+                    {sc.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-
+        ) : (
+          <div style={{ marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#12162F", display: "block", marginBottom: 6 }}>Backdrop color</span>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+              {theme.backdropColors.map((hex) => (
+                <button key={hex} type="button" onClick={() => patchItem(itemIdx, { color: hex })}
+                  style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: hex, border: item.color === hex ? `2.5px solid ${accent}` : "2px solid rgba(0,0,0,0.12)", cursor: "pointer", transition: "all 0.15s" }} title={hex} />
+              ))}
+              <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#888", cursor: "pointer" }}>
+                Custom
+                <input type="color" value={item.color || d.backdropColor || "#FFFFFF"}
+                  onChange={(e) => patchItem(itemIdx, { color: e.target.value })}
+                  style={{ width: 20, height: 20, border: "none", background: "transparent", cursor: "pointer", padding: 0 }} />
+              </label>
+            </div>
+          </div>
+        )}
         {/* Add-ons */}
         <span style={{ fontSize: 11, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Add-ons for this backdrop</span>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {/* 2026-09-05: a shimmer wall is a sequin surface — nothing is printed
+              on it, so it offers neither customized text nor a theme graphic. */}
+          {item.type !== "shimmer_wall" && (<>
           {/* Customized text */}
           <div onClick={() => patchItemText(itemIdx, { enabled: !item.text.enabled })}
             style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
@@ -1508,6 +1534,7 @@ function clearAllStandees() {
               </div>
             );
           })()}
+          </>)}
 
         </div>
         </div>
@@ -2104,6 +2131,9 @@ function clearAllStandees() {
                 <div style={{ marginBottom: 0 }}>
                   <span style={{ fontSize: 12, fontWeight: 700, color: "#555", display: "block", marginBottom: 8 }}>Add-ons for this backdrop</span>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {/* A shimmer wall is a sequin surface — nothing is printed on
+                        it, so neither card is offered for one. */}
+                    {item.type !== "shimmer_wall" && (<>
 
                     {/* Name Text card */}
                     <div
@@ -2219,6 +2249,7 @@ function clearAllStandees() {
                         </div>
                       );
                     })()}
+                    </>)}
 
                   </div>{/* -"--"- end add-ons div */}
                 </div>
@@ -2762,42 +2793,6 @@ function clearAllStandees() {
           </div>
         )}
       </div>
-
-      {/* SHIMMER COLOUR — only when a shimmer wall is in the setup. */}
-      {d.backdropItems.some((i) => i.type === "shimmer_wall") && (
-        <div style={card}>
-          <div style={{ marginBottom: 8 }}>
-            <div style={{ fontWeight: 600, fontSize: 13.5, color: DC.plum }}>Shimmer wall colour</div>
-            <div style={{ fontSize: 11.5, color: DC.muted }}>The sequin finish of the shimmer panel.</div>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {SHIMMER_COLORS.map((sc) => {
-              const active = (d.shimmerColor ?? "silver") === sc.id;
-              return (
-                <button
-                  key={sc.id}
-                  type="button"
-                  onClick={() => patchDecor({ shimmerColor: sc.id })}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 7,
-                    padding: "5px 11px", borderRadius: 20, fontSize: 11.5, fontWeight: 600, cursor: "pointer",
-                    border: `1.5px solid ${active ? DC.rose : "rgba(0,0,0,0.12)"}`,
-                    background: active ? DC.rose + "12" : "white",
-                    color: active ? DC.rose : "#555",
-                  }}
-                >
-                  <span style={{
-                    width: 13, height: 13, borderRadius: 3, flexShrink: 0,
-                    background: SHIMMER_COLOR_HEX[sc.id],
-                    border: "1px solid rgba(0,0,0,0.15)",
-                  }} />
-                  {sc.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* NUMBER LIGHT — 2026-09-05 */}
       <div style={card}>

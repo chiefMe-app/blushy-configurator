@@ -85,6 +85,14 @@ export function buildLayoutRefEditPrompt(
   // the palette line and the "nothing underneath it" line for the same reasons.
   const hasBannerPanelInPrompt = sceneModel.panels.some((p) => p.type === "banner");
   const hasRingPanelInPrompt = sceneModel.panels.some((p) => p.type === "balloon_ring");
+  // 2026-09-05: the front-loaded lines used to be allowed only on multi-panel,
+  // round and banner scenes. That list was built one setup at a time and it left
+  // a lone Shimmer Wall out — its render dropped the lavender from the palette
+  // entirely, which is what "secili balon renkleri calismiyor mor yok" was. The
+  // gate is inverted now: every layout gets them EXCEPT the one they are known
+  // to break, a single plain arch, where first position displaces the structural
+  // wording and the panel comes back rectangular with a horseshoe garland.
+  const isLonePlainArch = panelCount === 1 && sceneModel.panels[0]?.type === "arch";
   // Same definition used by generateStructureSilhouette.ts's guide drawing —
   // exactly two arch panels, nothing else. Used to fix a set of Double Arch
   // fidelity issues (2026-07-12): missing plinth, near-identical arch sizes,
@@ -660,7 +668,7 @@ export function buildLayoutRefEditPrompt(
   // either way.
   const frontStructureLine =
     (sceneModel.panels.some((p) => p.graphic.enabled) || hasBannerPanelInPrompt)
-    && (isMulti || hasRoundPanelInPrompt || hasBannerPanelInPrompt)
+    && (!isLonePlainArch)
       ? `The backdrop ${panelCount > 1 ? "panels are full-size freestanding party backdrops standing" : "panel is a full-size freestanding party backdrop standing"} ` +
         `directly on the bare floor. Nothing is underneath: no podium, no disc, no platform, no base. `
       : "";
@@ -683,6 +691,13 @@ export function buildLayoutRefEditPrompt(
   // request near the front of the prompt.
   // Like the light-up number, the neon needs a short front-loaded request as
   // well as its guide marker; the detailed clause on its own does nothing.
+  // The sequin colour is in the guide (the tiles are drawn in it) and in the
+  // body wording, and the render still came back silver whatever was picked.
+  // Same fix as everything else on this pipeline: say it at the front.
+  const frontShimmerLine = sceneModel.shimmerColor
+    ? `The sequin shimmer wall is ${shimmerColorLabel(sceneModel.shimmerColor).toLowerCase()}. `
+    : "";
+
   const frontNeonText = String(sceneModel.neonSign?.text ?? "")
     .replace(/[^A-Za-z0-9 \x27!?&-]/g, " ")
     .replace(/\s+/g, " ")
@@ -702,7 +717,7 @@ export function buildLayoutRefEditPrompt(
       ? `A large light-up marquee number ${frontNumDigits} stands on the floor in front of the backdrop. `
       : "";
 
-  const frontPaletteLine = (isMulti || hasRoundPanelInPrompt || hasBannerPanelInPrompt)
+  const frontPaletteLine = (!isLonePlainArch)
     && hasSempertexLock && targetAppearanceParts.length > 0
     ? `Every balloon in this image is one of exactly ${targetAppearanceParts.length} colours: ` +
       `${targetAppearanceParts.join(", ")}. ` +
@@ -1244,6 +1259,7 @@ const setupTemplateClause = setupTemplate
 
   return (
     frontBannerAspectLine +
+    frontShimmerLine +
     frontNeonLine +
     frontNumberLightLine +
     frontPaletteLine +
