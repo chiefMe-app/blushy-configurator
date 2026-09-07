@@ -554,27 +554,53 @@ export function buildLayoutRefEditPrompt(
   const hasMetallicInPalette = paletteHas((n, f, fin) =>
     fin === "metallic" || fin === "reflex" || f === "silver" || f === "gold" || /chrome|metallic|silver/.test(n));
 
-  // 2026-09-04, isolated by controlled render: a Double Arch on white + lilac +
-  // silver came back with gold, copper and champagne balloons scattered through
-  // both garlands. Re-rendering the SAME guide, prompt and seed with the silver
-  // swapped for Arctic Blue produced zero warm balloons — so the golds were not
-  // coming from the theme, the guide or the negatives, but from the silver slot
-  // itself: a shiny neutral-grey sphere reads as "chrome", and chrome in the
-  // model's training data is overwhelmingly gold, champagne or rose gold.
+  // 2026-09-05. Front-loaded palette line.
   //
-  // The palette block cannot pin it, because getPositiveLabel deliberately
-  // strips the ", not gold, not bronze, not copper" tail off every label to keep
-  // bias words out of the positive prompt — which leaves "cool silver gray" and
-  // nothing holding it there. This says what the metal IS, positively and
-  // specifically, rather than relying on a ban buried in the negative list.
-  const hasCoolMetallicInPalette = paletteHas((n, f, fin) =>
-    (fin === "metallic" || fin === "reflex" || /chrome|metallic/.test(n)) && f !== "gold" && !/gold|champagne|bronze|copper/.test(n)
-    || f === "silver" || /silver/.test(n));
-  const coolMetallicSentence = hasCoolMetallicInPalette
-    ? `The metallic balloons in this palette are COOL metal: polished stainless steel, mirror chrome and ` +
-      `platinum, reflecting the grey wall and the neutral daylight around them. Their highlights are white ` +
-      `and their shadows are blue-grey. They are silver-grey through and through, never warm — not gold, ` +
-      `not champagne, not bronze, not copper, not brass and not rose gold. `
+  // The BALLOON COLOR LOCK block further down is ~500 characters deep inside an
+  // ~11,000 character prompt, and on arch scenes it was not doing the work: a
+  // Double Arch on white + lilac + silver kept painting gold, copper and
+  // champagne balloons through both garlands. Wording added down there had no
+  // effect at all — a "cool stainless steel, never gold" clause was removed and
+  // re-added at a fixed seed and the render came back PIXEL-IDENTICAL, mean
+  // absolute difference 0.000 over 2.36M bytes.
+  //
+  // The model is not ignoring the prompt: prepending "every balloon is bright
+  // red" turned the whole garland red. Position and bluntness are what matter.
+  // A short palette sentence at the very front, measured on the same scene at
+  // two seeds: warm pixels 1.16% -> 0.01% / 0.00%, pink 0.82% -> 0.00% / 0.00%,
+  // and the silver renders as true mirror silver rather than drifting warm.
+  //
+  // This also replaced a guide-side fix that tinted the silver cool. That
+  // worked at one geometry and stopped working when the garland changed (warm
+  // back to 1.16%), and it falsified the colour — silver came out slate blue.
+  // The sentence holds at both seeds with the guide left at the true hex.
+  // Scoped to MULTI-PANEL ARCH scenes, which is where the failure is and the
+  // only place this is safe. Measured, same palette, fixed seeds:
+  //   Double Arch, no line          warm 1.16%, pink 0.82% — gold through both garlands
+  //   Double Arch, line at the front warm 0.01% / 0.00% at two seeds, pink 0.00%
+  //   Single Arch, no line          warm 0.00% — it does not have this problem
+  //   Single Arch, line at the front the arch panel renders RECTANGULAR with a
+  //     horseshoe garland down both sides, at both seeds. The line is first, so
+  //     it displaces the structural wording, and one panel has less structural
+  //     signal to spare than two.
+  // Two other placements were tried and are worse than doing nothing:
+  //   same sentence at the END of the prompt   warm 2.24% (vs 1.16% with none)
+  //   only the ban half, at the front          warm 11.70%, lilac 0.00% — naming
+  //     gold without naming what the balloons ARE summons it.
+  const frontPaletteLine = isMulti && !hasRoundPanelInPrompt
+    && hasSempertexLock && targetAppearanceParts.length > 0
+    ? `Every balloon in this image is one of exactly ${targetAppearanceParts.length} colours: ` +
+      `${targetAppearanceParts.join(", ")}. ` +
+      `No balloon is ${[
+        ...(hasGoldInPalette   ? [] : ["gold", "champagne", "copper", "bronze", "rose gold"]),
+        ...(hasPinkInPalette   ? [] : ["pink", "peach", "coral"]),
+        ...(hasCreamInPalette  ? [] : ["cream", "beige"]),
+        ...(hasYellowInPalette ? [] : ["yellow"]),
+        ...(hasGreenInPalette  ? [] : ["green"]),
+        ...(hasBlueInPalette   ? [] : ["blue"]),
+        ...(hasPurpleInPalette ? [] : ["purple"]),
+        ...(hasOrangeInPalette ? [] : ["orange"]),
+      ].join(", ")}. `
     : "";
 
 
@@ -667,7 +693,6 @@ export function buildLayoutRefEditPrompt(
     ? ` BALLOON COLOR SOURCE OVERRIDE: The theme name is not a balloon color instruction. Balloon colors must be copied from the selected Sempertex palette and from the colored layout reference guide only. ` +
       `BALLOON COLOR LOCK — ${allowedPaletteBlock}. ` +
       `Use ONLY these exact visual balloon colors for every balloon in the garland. ` +
-      coolMetallicSentence +
       `These are the ONLY allowed balloon colors in the scene. ${paletteEnforcementSentences} ` +
       targetAppearanceSentence +
       exactColorCountSentence +
@@ -1005,6 +1030,7 @@ const setupTemplateClause = setupTemplate
     : "";
 
   return (
+    frontPaletteLine +
     photographyOpening +
     sceneInventoryClause +
     framingClause +

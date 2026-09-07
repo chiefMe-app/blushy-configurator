@@ -563,12 +563,6 @@ export function generateStructureSilhouette(
   // Sequin-disc tile fill for shimmer_wall panels — defaults to the original silver-gray
   // so any caller that doesn't pass it keeps the pre-existing look.
   shimmerColorHex?: string,
-  // Hexes in `balloonColors` that are COOL METALS (silver, platinum, chrome).
-  // Passed in rather than sniffed from the hex, because #D1D5DB Silver Satin and
-  // #D9D9D6 Oyster White are 0.008 apart in luminance and 7 apart in chroma —
-  // no threshold separates a metal from an off-white. The caller knows the
-  // Sempertex family and finish; this function only ever sees colours.
-  coolMetalHexes?: string[],
 ): SilhouetteResult {
   const shimmerTileFill = shimmerColorHex ?? "#D8D8E4";
   const { falImageSize } = calculateRenderAspectRatio(backdropItems);
@@ -873,39 +867,11 @@ export function generateStructureSilhouette(
     };
 
     const gradientIds = new Map<string, string>();
-    // 2026-09-04. A Double Arch on white + lilac + silver kept coming back with
-    // gold, copper and champagne balloons scattered through both garlands. Six
-    // controlled renders at a fixed seed located it: swapping the silver for
-    // Arctic Blue in the guide — same geometry, same prompt, same seed —
-    // produced ZERO warm balloons, so the warmth was coming from the silver slot
-    // itself. A shiny neutral-grey sphere reads as "party chrome", and party
-    // chrome in the model's prior is gold or rose gold. Prompt wording could not
-    // touch it: a positive "cool stainless steel, never gold" clause and the
-    // whole negative list left the render pixel-identical, and a chrome-style
-    // gradient in the guide made the silver read as real mirror silver but did
-    // not reduce the warmth (warm pixels 1.39% -> 1.33%).
-    //
-    // Biasing the guide's grey a little cool does. Measured share of off-palette
-    // warm + pink pixels, two seeds: neutral #C7C9C7 1.64% / 3.05%; slightly
-    // cool #C2C7CE 1.64% / 2.28%; cool #B8C2CC 0.82% / 1.26%. This shifts only
-    // the guide's DRAWING of the metal — the palette, the prompt and the
-    // customer's colour are untouched — and it is truthful: a real chrome
-    // balloon mirrors a grey wall and neutral daylight, which is a cool grey.
-    const coolMetal = new Set((coolMetalHexes ?? []).map((h) => h.toLowerCase()));
-    const guideHex  = (hex: string): string => {
-      if (!coolMetal.has(hex.toLowerCase())) return hex;
-      const n = hex.replace("#", "");
-      const r = parseInt(n.slice(0, 2), 16), g = parseInt(n.slice(2, 4), 16), b = parseInt(n.slice(4, 6), 16);
-      const cl = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
-      return `#${[cl(r * 0.925), cl(g * 0.965), cl(b * 1.025)]
-        .map((v) => v.toString(16).padStart(2, "0")).join("")}`;
-    };
     if (hasSelectedColors) {
-      colors.forEach((rawHex, i) => {
-        const hex = guideHex(rawHex);
-        if (gradientIds.has(rawHex)) return;
+      colors.forEach((hex, i) => {
+        if (gradientIds.has(hex)) return;
         const id = `balloonSphere_${i}`;
-        gradientIds.set(rawHex, id);
+        gradientIds.set(hex, id);
         // No separate <defs> block exists in this SVG builder — every element
         // goes into the flat `content` array. A <radialGradient> pushed here
         // still resolves correctly via url(#id) regardless of position.
@@ -933,9 +899,8 @@ export function generateStructureSilhouette(
       if (!hasSelectedColors) {
         return `fill="rgba(200,218,235,0.08)" stroke="rgba(85,85,85,0.30)" stroke-width="1"`;
       }
-      const rawHex = colors[idx % colors.length] ?? colors[0];
-      const hex = guideHex(rawHex);
-      const id  = gradientIds.get(rawHex);
+      const hex = colors[idx % colors.length] ?? colors[0];
+      const id  = gradientIds.get(hex);
       const fill = id ? `url(#${id})` : hexToRgba(hex, 0.76);
       return `fill="${fill}" stroke="${shade(hex, 0.6)}" stroke-width="1" stroke-opacity="0.45"`;
     };
@@ -1257,25 +1222,28 @@ export function generateStructureSilhouette(
 
             // Perpendicular offset across the band, straddling the panel edge.
             //
-            // 2026-09-04: on Double Arch the upper half of each garland leaned
-            // in over the board face ("sagdaki backdropun balonlarinin bir
-            // kisminda cok ice dogru kavis yapmis"). The cause is the two lines
-            // above meeting edgeX: the band is anchored 0.9 * rLarge INBOARD of
-            // the panel edge, and `spread` narrows it toward that anchor as it
-            // rises — so at the spring line the whole band has collapsed onto a
-            // point most of a balloon inside the board, and the climb reads as a
-            // curve bending inward. Drifting the band centre outward as it
-            // climbs keeps the mass on the arch low down, where a decorator ties
-            // it, and lands it ON the edge at the top instead of on the face.
-            // Measured on the Double Arch guide, mean offset of the upper climb
-            // from the panel edge (negative = inboard, in units of rLarge):
-            // right panel -0.94 before, -0.16 after; the lower climb is
-            // unchanged at -0.80. 1.8 was also tried and pushed the left
-            // panel's crown out to +0.40, i.e. off the arch into bare wall,
-            // which is the 2026-09-02 floating-column failure. Single Arch is
-            // left alone: it does not narrow the same way and was approved.
-            const climbDrift = tight && !looseSpacing ? rLarge * 1.5 * t : 0;
-            const off = (rnd() * 1.7 - 0.75) * rLarge * spread + climbDrift;
+            // 2026-09-04, and then reverted on 2026-09-05.
+            //
+            // Double Arch's garland was leaning in over the board face near the
+            // top, so a drift term pushed the band centre outward as it climbed
+            // (rLarge * 1.5 * t). It moved the wrong thing. Measured on the
+            // guide, band centre by height as a fraction of rLarge, negative =
+            // inboard of the panel edge, right panel:
+            //   with drift:  -0.76 -0.45 -1.06 -0.85 -0.45 -0.17 -0.04 +0.52 -0.45 -0.78
+            //   single arch: -0.58 -1.04 -1.22 -1.09 -0.84 -0.24 -0.75 -0.41 +0.21 -0.43
+            // The drift made the climb swing 1.6 * rLarge from inboard to
+            // outboard and then the crown pulled it back in — an S, with the
+            // middle of the garland detached from the arch and floating in the
+            // wall (customer, 2026-09-05: "S ciziyor gibi"). The single arch
+            // they asked it to match holds a roughly straight column near
+            // -0.8, which is what this line gives with no drift at all.
+            //
+            // The inward curl that started this was never the climb: it is the
+            // CROWN, which walks the shoulder arc from 2 deg to -52 deg at
+            // radius rArc about the panel centre, so its last balloons sit up
+            // to 0.6 * rArc inboard. Single Arch's crown does the same and
+            // reads correctly there, so it is left alone.
+            const off = (rnd() * 1.7 - 0.75) * rLarge * spread;
             put(edgeX + dir * off, climbY, rBall);
 
             // A real garland is two balloons deep, not a single file. Most
