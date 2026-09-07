@@ -149,6 +149,13 @@ function panelPathOrShape(
     return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="${fillColor}" ${stroke}/>`;
   }
 
+  if (shape === "balloon_ring") {
+    // No board at all — the ring IS balloons. Only a faint circle to say where
+    // they sit; the balloons themselves are drawn by the garland dispatch.
+    const centerY = floorY - r;
+    return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="none" stroke="rgba(150,150,150,0.10)" stroke-width="1"/>`;
+  }
+
   if (shape === "banner") {
     // 2026-09-05: a banner is 200x200cm and must render SQUARE.
     // calculateExactLayout fits width and height to separate fractions of the
@@ -242,6 +249,11 @@ function panelEdgeOnly(
     const centerY = floorY - r;
     return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="none" stroke="rgba(95,95,95,0.42)" stroke-width="2"/>`;
   }
+  if (shape === "balloon_ring") {
+    const centerY = floorY - r;
+    return `<circle cx="${cx}" cy="${centerY}" r="${r}" fill="none" stroke="rgba(150,150,150,0.10)" stroke-width="1"/>`;
+  }
+
   if (shape === "banner") {
     // Square, for the reason given in panelShape.
     const side = Math.min(pw, floorY - apexY);
@@ -587,7 +599,11 @@ export function generateStructureSilhouette(
   // did nothing at all — the render came back pixel-identical with and without
   // them, which is what every mid-prompt addition on this pipeline does. Placed
   // objects belong in the guide.
-  extras?: { florals?: boolean; numberLight?: { enabled: boolean; value: string } },
+  extras?: {
+    florals?: boolean;
+    numberLight?: { enabled: boolean; value: string };
+    neonSign?: { enabled: boolean; text: string };
+  },
 ): SilhouetteResult {
   const shimmerTileFill = shimmerColorHex ?? "#D8D8E4";
   const { falImageSize } = calculateRenderAspectRatio(backdropItems);
@@ -1670,6 +1686,68 @@ export function generateStructureSilhouette(
           archShimmerAccentZone = result.accentZone;
         } else if (
           layout.panels.length === 1 &&
+          (backdropItems[layout.panels[0].idx]?.type ?? "") === "balloon_ring"
+        ) {
+          // Hollow balloon ring: a dense hoop of balloons with a completely open
+          // centre. Reuses the banner frame walk's ideas — several lanes of
+          // heavily overlapping balloons of mixed size — but around a circle, and
+          // biased OUTWARD so nothing creeps into the opening, which is the whole
+          // point of the setup (and where the neon sign goes).
+          const rp = layout.panels[0];
+          const ringR = Math.min(rp.pw, rp.floorY - rp.apexY) / 2;
+          const ringCx = rp.cx;
+          const ringCy = rp.floorY - ringR;
+          let rst = 777331;
+          const rrnd = () => { rst = (rst * 1664525 + 1013904223) >>> 0; return rst / 4294967296; };
+          const rXLr = Math.max(26, Math.min(62, ringR * 0.20));
+          const rLr  = Math.max(18, Math.min(46, ringR * 0.145));
+          const rMr  = Math.max(12, Math.min(32, ringR * 0.100));
+          const rSr  = Math.max(8,  Math.min(20, ringR * 0.066));
+          const pickRing = (): number => {
+            const roll = rrnd();
+            if (roll < 0.16) return rXLr;
+            if (roll < 0.50) return rLr;
+            if (roll < 0.82) return rMr;
+            return rSr;
+          };
+          const ringPlaced: { x: number; y: number; r: number }[] = [];
+          const ringArea = new Array(Math.max(1, colors.length)).fill(0) as number[];
+          const ringLast = new Array(Math.max(1, colors.length)).fill(-1) as number[];
+          let rn = 0;
+          const ringPut = (bx: number, by: number, br: number) => {
+            for (const q of ringPlaced) {
+              const d = Math.hypot(bx - q.x, by - q.y);
+              if ((br + q.r - d) / (2 * Math.min(br, q.r)) > 0.86) return;
+            }
+            ringPlaced.push({ x: bx, y: by, r: br });
+            let best = 0;
+            for (let i = 1; i < ringArea.length; i++) {
+              const dd = ringArea[i] - ringArea[best];
+              if (dd < -1e-6) best = i;
+              else if (Math.abs(dd) <= 1e-6 && ringLast[i] < ringLast[best]) best = i;
+            }
+            ringArea[best] += Math.PI * br * br;
+            ringLast[best] = rn;
+            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(best)}/>`);
+            rn++;
+          };
+          let ang = 0;
+          let ringGuard = 0;
+          while (ang < Math.PI * 2 && ringGuard++ < 260) {
+            const r1 = pickRing();
+            // Offsets are >= 0 measured outward from the ring line, so the
+            // opening stays clear.
+            for (const [mul, scale] of [[0.15, 1], [0.95, 0.85], [1.75, 0.62]] as [number, number][]) {
+              if (mul > 0.5 && rrnd() > 0.82) continue;
+              const rr = r1 * scale;
+              const rad = ringR + rr * mul;
+              const a2 = ang + (rrnd() * 0.10 - 0.05);
+              ringPut(ringCx + rad * Math.cos(a2), ringCy + rad * Math.sin(a2), rr);
+            }
+            ang += (r1 * (0.62 + rrnd() * 0.28)) / ringR;
+          }
+        } else if (
+          layout.panels.length === 1 &&
           (backdropItems[layout.panels[0].idx]?.type ?? "") === "banner"
         ) {
           // 2026-09-05: a single Banner takes the Single Arch garland. Without
@@ -1817,6 +1895,35 @@ export function generateStructureSilhouette(
         content.push(`<circle cx="${tipX.toFixed(1)}" cy="${tipY.toFixed(1)}" r="${br.toFixed(1)}" fill="${BLOOM}"/>`);
       }
     }
+  }
+
+  // ── Neon LED sign ────────────────────────────────────────────────────────
+  // Script lettering with a glow, on the panel face — or in the middle of a
+  // balloon ring, which is the setup it was asked for. Drawn with a strong
+  // stroke for the same reason the marquee number is: a faint marker on the
+  // white ground gets dropped from the render.
+  const neonWords = String(extras?.neonSign?.text ?? "").replace(/[<>&]/g, "").trim().slice(0, 40);
+  if (extras?.neonSign?.enabled && neonWords.length > 0 && layout.panels.length > 0) {
+    const np = layout.panels[0];
+    const isRing = (backdropItems[np.idx]?.type ?? "") === "balloon_ring";
+    const panelH = np.floorY - np.apexY;
+    const cxN = np.cx;
+    const cyN = isRing ? np.floorY - Math.min(np.pw, panelH) / 2 : np.apexY + panelH * 0.34;
+    const words = neonWords.split(" ").filter(Boolean);
+    const lines = words.length > 2 ? [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")] : [neonWords];
+    const widest = Math.max(...lines.map((l) => l.length));
+    const fontSize = Math.max(14, Math.min(np.pw * 0.20, (np.pw * 0.62) / Math.max(1, widest) / 0.46));
+    const lineGap = fontSize * 1.22;
+    const firstY = cyN - ((lines.length - 1) * lineGap) / 2;
+    lines.forEach((ln, i) => {
+      const y = firstY + i * lineGap;
+      const esc = ln.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const attrs = `x="${cxN.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" ` +
+        `font-family="Brush Script MT, Segoe Script, cursive" font-size="${fontSize.toFixed(0)}" font-style="italic"`;
+      // Halo first, then the tube — reads as a glowing sign rather than as text.
+      content.push(`<text ${attrs} fill="none" stroke="#FFE9A8" stroke-width="${(fontSize * 0.34).toFixed(1)}" stroke-linejoin="round" opacity="0.75">${esc}</text>`);
+      content.push(`<text ${attrs} fill="#FFFDF2" stroke="#C9922B" stroke-width="${Math.max(2, fontSize * 0.07).toFixed(1)}" stroke-linejoin="round">${esc}</text>`);
+    });
   }
 
   // ── Light-up marquee number ──────────────────────────────────────────────

@@ -68,6 +68,8 @@ cutoutTotalCount,
   type TextColor,
   type TextAlign,
   SHIMMER_COLORS,
+  SHIMMER_COLOR_HEX,
+  NEON_SIGN_PRESETS,
   type ShimmerColorId,
   DEFAULT_BACKDROP_COLOR,
 } from "@/lib/config";
@@ -133,6 +135,10 @@ function SetupMiniPreview({ shapes }: { shapes: string[] }) {
           {[25, 34, 43, 52].map(y => <line key={`h${y}`} x1={cx - 19} y1={y} x2={cx + 19} y2={y} stroke="white" strokeWidth={1.2} opacity={0.65} />)}
           {[-9.5, 0, 9.5].map(dx => <line key={`v${dx}`} x1={cx + dx} y1={16} x2={cx + dx} y2={60} stroke="white" strokeWidth={1.2} opacity={0.65} />)}
         </g>
+      );
+    } else if (shape === "ring") {
+      els.push(
+        <circle key={key} cx={cx} cy={34} r={22} fill="none" stroke="url(#gradRound)" strokeWidth={9} />
       );
     } else if (shape === "banner") {
       // Square 2x2m banner — a flat panel on a slim frame.
@@ -1300,6 +1306,9 @@ function clearAllStandees() {
       // no size step and is created ready to use.
       case "single_banner":      panels = [makeBackdropItem("banner")]; break;
       case "arch_open_frame":    panels = [makeArchUnsized("arch-1"), makeBackdropItem("open_arch_frame")]; break;
+      case "single_shimmer":     panels = [makeBackdropItem("shimmer_wall")]; break;
+      case "arch_shimmer":       panels = [makeArchUnsized("arch-1"), makeBackdropItem("shimmer_wall")]; break;
+      case "balloon_ring":       panels = [makeBackdropItem("balloon_ring")]; break;
       case "double_arch":        panels = [makeArchUnsized("arch-1"), makeArchUnsized("arch-2")]; break;
       // arch_open_frame / shimmer_open_frame / single_shimmer / arch_shimmer
       // removed from product — no longer selectable, so no case needed;
@@ -1314,7 +1323,7 @@ function clearAllStandees() {
   const activeSetupTemplateId = inferSetupLayoutTemplateIdFromBackdropItems(d.backdropItems);
 
   // Readable type labels for summaries
-  const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", banner: "Banner Backdrop", shimmer_wall: "Shimmer Wall", open_arch_frame: "Open Arch Frame" };
+  const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", banner: "Banner Backdrop", balloon_ring: "Balloon Ring", shimmer_wall: "Shimmer Wall", open_arch_frame: "Open Arch Frame" };
 
   // Collapsible customize row -shows summary + button, expands on demand
   function BackdropCustomizeRow({ item, itemIdx }: { item: BackdropItem; itemIdx: number }) {
@@ -1620,7 +1629,7 @@ function clearAllStandees() {
                 sizeId and must not raise a "pick a size" cue that can never be
                 satisfied — which is what left the Banner setup looking broken. */}
             {d.backdropItems.length > 0
-              && d.backdropItems.some((i) => !i.sizeId && i.type !== "round" && i.type !== "banner" && i.type !== "open_arch_frame")
+              && d.backdropItems.some((i) => !i.sizeId && !["round", "banner", "open_arch_frame", "shimmer_wall", "balloon_ring"].includes(i.type))
               && nextCue("Pick a size next")}
           </div>
         </div>
@@ -1742,12 +1751,15 @@ function clearAllStandees() {
           return bannerItem && itemIdx >= 0 ? BackdropCustomizeRow({ item: bannerItem, itemIdx }) : null;
         })()}
 
-        {/* The hollow arch frame has no size choice either. */}
-        {d.backdropItems.some(i => i.type === "open_arch_frame") && (() => {
-          const frameItem = d.backdropItems.find(i => i.type === "open_arch_frame");
-          const itemIdx = frameItem ? d.backdropItems.findIndex(i => i.id === frameItem.id) : -1;
-          return frameItem && itemIdx >= 0 ? BackdropCustomizeRow({ item: frameItem, itemIdx }) : null;
-        })()}
+        {/* Every fixed-size piece renders its customize row directly — there is
+            no size step for them to unlock it. */}
+        {(["open_arch_frame", "shimmer_wall", "balloon_ring"] as const).map((ty) => {
+          const it = d.backdropItems.find(i => i.type === ty);
+          const itemIdx = it ? d.backdropItems.findIndex(i => i.id === it.id) : -1;
+          return it && itemIdx >= 0
+            ? <div key={ty}>{BackdropCustomizeRow({ item: it, itemIdx })}</div>
+            : null;
+        })}
 
         {/* Shimmer color picker intentionally removed (2026-07-12) — shimmer
             wall is no longer a selectable product path. Left unconditional
@@ -2679,6 +2691,113 @@ function clearAllStandees() {
           <div style={{ fontSize: 10.5, color: DC.faint, marginTop: 6 }}>Pick a balloon garland first.</div>
         )}
       </div>
+
+      {/* NEON SIGN — 2026-09-05. Goes in the open centre of a balloon ring, or
+          on the backdrop face for every other setup. */}
+      <div style={card}>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontWeight: 600, fontSize: 13.5, color: DC.plum }}>Neon LED sign</div>
+          <div style={{ fontSize: 11.5, color: DC.muted }}>
+            {d.backdropItems.some((i) => i.type === "balloon_ring")
+              ? "Glowing script hung in the middle of the balloon ring."
+              : "Glowing script mounted on the backdrop."}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => patchDecor({ neonSign: { text: d.neonSign?.text ?? "Happy Birthday", enabled: !(d.neonSign?.enabled) } })}
+          style={{
+            display: "flex", alignItems: "center", gap: 10, width: "100%",
+            padding: "11px 13px", borderRadius: 12, cursor: "pointer",
+            border: `1.5px solid ${d.neonSign?.enabled ? DC.rose : DC.cardBd}`,
+            background: d.neonSign?.enabled ? DC.rose + "12" : "white", transition: "all 0.15s",
+          }}
+        >
+          <span style={{
+            width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+            border: `1.5px solid ${d.neonSign?.enabled ? DC.rose : DC.cardBd}`,
+            background: d.neonSign?.enabled ? DC.rose : "white",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            {d.neonSign?.enabled && (
+              <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
+                <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </span>
+          <span style={{ flex: 1, textAlign: "left", fontSize: 12.5, fontWeight: 600, color: DC.plum }}>
+            Add a neon sign
+          </span>
+        </button>
+        {d.neonSign?.enabled && (
+          <div style={{ marginTop: 10 }}>
+            <div className="flex flex-wrap gap-1.5" style={{ marginBottom: 8 }}>
+              {NEON_SIGN_PRESETS.map((phrase) => (
+                <button
+                  key={phrase}
+                  type="button"
+                  onClick={() => patchDecor({ neonSign: { enabled: true, text: phrase } })}
+                  style={{
+                    padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                    border: `1.5px solid ${d.neonSign?.text === phrase ? DC.rose : "rgba(0,0,0,0.12)"}`,
+                    background: d.neonSign?.text === phrase ? DC.rose + "12" : "white",
+                    color: d.neonSign?.text === phrase ? DC.rose : "#555",
+                  }}
+                >
+                  {phrase}
+                </button>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={d.neonSign?.text ?? ""}
+              maxLength={40}
+              onChange={(e) => patchDecor({ neonSign: { enabled: true, text: e.target.value.slice(0, 40) } })}
+              placeholder="Or type your own"
+              style={{
+                width: "100%", fontSize: 12.5, color: DC.plum, padding: "9px 11px",
+                borderRadius: 12, border: `1.5px solid ${DC.cardBd}`, outline: "none",
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* SHIMMER COLOUR — only when a shimmer wall is in the setup. */}
+      {d.backdropItems.some((i) => i.type === "shimmer_wall") && (
+        <div style={card}>
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ fontWeight: 600, fontSize: 13.5, color: DC.plum }}>Shimmer wall colour</div>
+            <div style={{ fontSize: 11.5, color: DC.muted }}>The sequin finish of the shimmer panel.</div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {SHIMMER_COLORS.map((sc) => {
+              const active = (d.shimmerColor ?? "silver") === sc.id;
+              return (
+                <button
+                  key={sc.id}
+                  type="button"
+                  onClick={() => patchDecor({ shimmerColor: sc.id })}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 7,
+                    padding: "5px 11px", borderRadius: 20, fontSize: 11.5, fontWeight: 600, cursor: "pointer",
+                    border: `1.5px solid ${active ? DC.rose : "rgba(0,0,0,0.12)"}`,
+                    background: active ? DC.rose + "12" : "white",
+                    color: active ? DC.rose : "#555",
+                  }}
+                >
+                  <span style={{
+                    width: 13, height: 13, borderRadius: 3, flexShrink: 0,
+                    background: SHIMMER_COLOR_HEX[sc.id],
+                    border: "1px solid rgba(0,0,0,0.15)",
+                  }} />
+                  {sc.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* NUMBER LIGHT — 2026-09-05 */}
       <div style={card}>

@@ -84,6 +84,7 @@ export function buildLayoutRefEditPrompt(
   // lines: it is a graphic-carrying panel that is not a single arch, so it needs
   // the palette line and the "nothing underneath it" line for the same reasons.
   const hasBannerPanelInPrompt = sceneModel.panels.some((p) => p.type === "banner");
+  const hasRingPanelInPrompt = sceneModel.panels.some((p) => p.type === "balloon_ring");
   // Same definition used by generateStructureSilhouette.ts's guide drawing —
   // exactly two arch panels, nothing else. Used to fix a set of Double Arch
   // fidelity issues (2026-07-12): missing plinth, near-identical arch sizes,
@@ -177,6 +178,16 @@ export function buildLayoutRefEditPrompt(
         `and no plinth. Do not invent any extra white cylinder, oval base, round base, or low platform ` +
         `under or beside the round panel — the floor beneath and around the panel must be completely bare ` +
         (firstPlinth ? `except for the one selected plinth and the balloon garland.` : `except for the balloon garland.`);
+    } else if (p.type === "balloon_ring") {
+      // No board at all — the ring IS the backdrop, and its open centre is the
+      // point of the setup, so the wording spends most of its words defending it.
+      backdropDesc =
+        `one freestanding circular balloon ring about ${p.widthCm}cm across, standing upright on the floor: ` +
+        `a thick hoop built entirely from balloons, packed shoulder to shoulder all the way round. ` +
+        `The CENTRE OF THE RING IS COMPLETELY OPEN and empty — the grey studio wall shows straight through it. ` +
+        `No backdrop board, no panel, no disc, no fabric and no balloons of any kind inside the opening. ` +
+        `There is no board behind the ring. ` +
+        `The hoop itself is dense and organic, mixing large and small balloons, thickest where it meets the floor.`;
     } else if (p.type === "banner") {
       // 2026-09-05, rewritten. The first version described this as "a taut
       // printed fabric banner stretched on a slim freestanding frame", and that
@@ -670,6 +681,21 @@ export function buildLayoutRefEditPrompt(
   // marker in the guide was still dropped. Both together put it in the picture —
   // the same combination the plinth needs, a filled guide marker plus an actual
   // request near the front of the prompt.
+  // Like the light-up number, the neon needs a short front-loaded request as
+  // well as its guide marker; the detailed clause on its own does nothing.
+  const frontNeonText = String(sceneModel.neonSign?.text ?? "")
+    .replace(/[^A-Za-z0-9 \x27!?&-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 40);
+  const frontNeonLine = sceneModel.neonSign?.enabled && frontNeonText.length > 0
+    ? (hasRingPanelInPrompt
+        // The customer asked for it in the middle of the ring; left to the body
+        // clause alone the render hung it above the hoop instead.
+        ? `A glowing neon sign reading "${frontNeonText}" hangs INSIDE the open centre of the balloon ring. `
+        : `A glowing neon sign reading "${frontNeonText}" is part of this setup. `)
+    : "";
+
   const frontNumDigits = String(sceneModel.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
   const frontNumberLightLine =
     sceneModel.numberLight?.enabled && frontNumDigits.length > 0
@@ -781,6 +807,27 @@ export function buildLayoutRefEditPrompt(
   // Florals and greenery worked into the garland. Only meaningful when there IS
   // a garland, and deliberately described as tucked BETWEEN balloons rather than
   // as a separate arrangement, which is how a decorator actually adds them.
+  // Neon LED sign. Customer text, so it is sanitised and capped — it reaches the
+  // prompt as the words the sign spells, never as an instruction.
+  const neonText = String(sceneModel.neonSign?.text ?? "")
+    .replace(/[\r\n]+/g, " ")
+    .replace(/[`"<>{}]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 40)
+    .trim();
+  const hasNeon = sceneModel.neonSign?.enabled === true && neonText.length > 0;
+  const neonClause = hasNeon
+    ? `A neon LED sign reads exactly "${neonText}" — those words, spelled exactly as "${neonText}", ` +
+      `and no other words anywhere. ` +
+      `It is a made-to-order neon sign: flowing script lettering in a continuous glowing tube, warm white, ` +
+      `mounted on a clear acrylic backing, casting a soft halo of its own light. ` +
+      (hasRingPanelInPrompt
+        ? `It hangs in the OPEN CENTRE of the balloon ring, floating clear of the balloons. `
+        : `It is mounted on the backdrop face, centred in the clear area above the middle. `) +
+      `It is NOT printed on the board, NOT painted, NOT made of balloons and NOT a paper cut-out. `
+    : "";
+
   const floralsClause = sceneModel.garlandFlorals && balloonStyle !== "none"
     ? `Fresh florals and greenery are worked into the balloon garland: sprigs of eucalyptus and soft dried ` +
       `grasses, with a few delicate blooms, tucked into the gaps BETWEEN the balloons along the whole ` +
@@ -1197,6 +1244,7 @@ const setupTemplateClause = setupTemplate
 
   return (
     frontBannerAspectLine +
+    frontNeonLine +
     frontNumberLightLine +
     frontPaletteLine +
     frontStructureLine +
@@ -1224,6 +1272,7 @@ const setupTemplateClause = setupTemplate
     `${garlandDesc}. ` +
     floralsClause +
     numberLightClause +
+    neonClause +
     // 2026-09-01: user kept reporting flat-disc balloons across renders even
     // after the correction-pass shading fix, because the FIRST-generate pass
     // (this prompt) never told the model each balloon should be a shaded

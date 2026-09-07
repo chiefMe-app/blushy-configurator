@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "florals-number-light-open-frame-v58";
+const RENDER_CACHE_VERSION = "shimmer-ring-neon-v59";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -744,7 +744,7 @@ async function generateLayoutReferencePng(
           : promptInput.balloonColors,
       cutoutGuideItems,
       sceneModel.shimmerColor ? SHIMMER_COLOR_HEX[sceneModel.shimmerColor as ShimmerColorId] : undefined,
-      { florals: sceneModel.garlandFlorals, numberLight: sceneModel.numberLight },
+      { florals: sceneModel.garlandFlorals, numberLight: sceneModel.numberLight, neonSign: sceneModel.neonSign },
     );
   } catch (err) {
     const msg = String(err);

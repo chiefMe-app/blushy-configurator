@@ -24,6 +24,7 @@ import type {
   CutoutPosition,
   ShimmerColorId,
   NumberLight,
+  NeonSign,
 } from "./config";
 import { getPlinthDimensions } from "./layoutDimensions";
 import { normalizeCutouts, normalizeBalloonStyle } from "@/lib/config";
@@ -52,14 +53,12 @@ import { normalizeCutouts, normalizeBalloonStyle } from "@/lib/config";
  * shimmer_wall or extra-arch handling.
  */
 function sanitizeBackdropItems(items: BackdropItem[]): BackdropItem[] {
-  const shimmerMapped = items.map((item) =>
-    item.type === "shimmer_wall"
-      ? { ...item, type: "arch" as const, sizeId: "medium", widthCm: 100, heightCm: 200 }
-      : item
-  );
-
+  // 2026-09-05: shimmer_wall is a supported panel again, so it is no longer
+  // remapped to an arch on the way through. The guide and prompt branches for it
+  // were never deleted — see the GOLDEN SHIMMER METHOD block in
+  // buildLayoutRefEditPrompt — only the way to select one.
   let archCount = 0;
-  return shimmerMapped.filter((item) => {
+  return items.filter((item) => {
     if (item.type !== "arch") return true;
     archCount++;
     return archCount <= 2;
@@ -125,6 +124,8 @@ export interface SceneModel {
   garlandFlorals: boolean;
   /** Illuminated marquee number standing beside the backdrop. */
   numberLight: NumberLight;
+  /** Neon LED sign on the backdrop, or in a balloon ring's open centre. */
+  neonSign: NeonSign;
   /** Estimated total price in AED — from config.estimatedTotal */
   totalPrice: number;
   /**
@@ -196,11 +197,13 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
     cutouts,
     garlandFlorals: d.garlandFlorals === true,
     numberLight:    d.numberLight ?? { enabled: false, value: "1" },
+    neonSign:       d.neonSign ?? { enabled: false, text: "Happy Birthday" },
     totalPrice:   config.estimatedTotal,
-    // Shimmer wall is no longer a supported panel type — sanitizeBackdropItems()
-    // above already remaps any legacy shimmer_wall item to arch, so `panels`
-    // never contains one and this is always null.
-    shimmerColor: null,
+    // Resolved only when a shimmer wall is actually in the scene; defaults to
+    // silver for older saved configs that predate the colour picker.
+    shimmerColor: panels.some((p) => p.type === "shimmer_wall")
+      ? (d.shimmerColor ?? "silver")
+      : null,
   };
 }
 
@@ -259,10 +262,8 @@ export function buildSceneModelFromItems(
   cutouts,
   garlandFlorals: false,
   numberLight: { enabled: false, value: "1" },
+  neonSign: { enabled: false, text: "Happy Birthday" },
   totalPrice: 0,
-  // Shimmer wall is no longer a supported panel type — sanitizeBackdropItems()
-  // above already remaps any legacy shimmer_wall item to arch, so `panels`
-  // never contains one and this is always null.
-  shimmerColor: null,
+  shimmerColor: panels.some((p) => p.type === "shimmer_wall") ? "silver" : null,
 };
 }

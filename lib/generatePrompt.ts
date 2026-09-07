@@ -41,6 +41,9 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
     "one symmetrical full arch vertical panel with a rounded top center, standing directly on the floor",
   round:
     "one perfect circular round vertical backdrop panel, standing directly on the floor",
+  balloon_ring:
+    "one freestanding circular balloon ring, a hoop of balloons about 2 metres across with a completely " +
+    "open empty centre, standing on the floor",
   banner:
     "one flat square printed banner backdrop, 2 metres by 2 metres, a taut printed fabric banner " +
     "stretched on a slim freestanding frame, standing directly on the floor",
@@ -537,6 +540,7 @@ export function generatePrompt(input: PromptInput): {
     round:           "round circular disc",
     rect:            "flat rectangular",
     banner:          "square printed banner",
+    balloon_ring:    "hollow balloon ring",
     shimmer_wall:    "rectangular shimmer wall",
     open_arch_frame: "hollow open arch frame",
     wavy:            "wavy top",

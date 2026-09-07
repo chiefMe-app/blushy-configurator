@@ -79,6 +79,8 @@ const BACKDROP_SAFE_AREA: Record<BackdropShapeId, { x: number; y: number; w: num
   rect:            { x: 20, y: 15, w: 60, h: 44 },
   // A 2x2m banner is one big printed face, so the usable area is nearly all of it.
   banner:          { x: 12, y: 12, w: 76, h: 60 },
+  // The ring is hollow — its usable area is the open centre.
+  balloon_ring:    { x: 30, y: 28, w: 40, h: 30 },
   shimmer_wall: { x: 16, y: 14, w: 68, h: 46 },
   wavy:         { x: 18, y: 16, w: 64, h: 40 },
 };

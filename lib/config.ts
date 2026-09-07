@@ -281,6 +281,7 @@ export type BackdropShapeId =
   | "round"
   | "rect"
   | "banner"
+  | "balloon_ring"
   | "shimmer_wall"
   | "open_arch_frame"
   | "wavy";
@@ -369,6 +370,9 @@ export function makeBackdropItem(
   } else if (type === "rect" && sizeId) {
     const s = RECT_SIZES.find((r) => r.id === sizeId);
     if (s) { widthCm = s.widthCm; heightCm = s.heightCm; }
+  } else if (type === "balloon_ring") {
+    // A freestanding 2m balloon ring — a hoop of balloons with an open centre.
+    widthCm = 200; heightCm = 200;
   } else if (type === "banner") {
     // 2m x 2m printed banner backdrop. Square, so it lands in a square render
     // frame the same way the round backdrop does.
@@ -655,7 +659,32 @@ export interface DecorConfig {
   garlandFlorals?: boolean;
   /** Illuminated marquee number standing on the floor beside the backdrop. */
   numberLight?: NumberLight;
+  /**
+   * Neon LED sign mounted on the backdrop — or in the open centre of a balloon
+   * ring, which is the setup it was asked for.
+   */
+  neonSign?: NeonSign;
 }
+
+export interface NeonSign {
+  enabled: boolean;
+  /** The words the sign spells. Short free text, capped before it reaches a prompt. */
+  text: string;
+}
+
+export const DEFAULT_NEON_SIGN: NeonSign = { enabled: false, text: "Happy Birthday" };
+
+/** Ready-made neon phrases; the customer can also type their own. */
+export const NEON_SIGN_PRESETS: string[] = [
+  "Happy Birthday",
+  "Oh Baby",
+  "Let's Party",
+  "Bride To Be",
+  "Congrats",
+];
+
+/** Neon LED sign — one made-to-order unit. */
+export const NEON_SIGN_PRICE = 0;
 
 export interface NumberLight {
   enabled: boolean;
@@ -694,6 +723,9 @@ export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   // 2026-09-05: brought back so the Arch + Open Frame setup can be offered. The
   // guide and prompt branches for it were never removed, only the way in.
   { id: "open_arch_frame", label: "Open Arch Frame",   price: 0 },
+  // 2026-09-05: shimmer wall is offered again, and a hollow balloon ring is new.
+  { id: "shimmer_wall", label: "Shimmer Wall",         price: 0 },
+  { id: "balloon_ring", label: "Balloon Ring",         price: 0 },
   // "wavy" removed from product - not selectable. Kept in BackdropShapeId for backward compat.
   // "shimmer_wall" removed from product (2026-07-12) - shimmer pipeline too
   // unreliable, focus shifted to arch-based designs. Kept in BackdropShapeId

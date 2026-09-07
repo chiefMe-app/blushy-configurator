@@ -55,7 +55,7 @@ export interface LayoutZone {
 /** Shape tokens for the playful mini preview illustration on setup cards. */
 export type MiniPreviewShape =
   | "arch" | "arch_large" | "arch_small"
-  | "round" | "shimmer" | "open_frame" | "banner" | "balloons";
+  | "round" | "shimmer" | "open_frame" | "banner" | "ring" | "balloons";
 
 export interface SetupLayoutTemplate {
   id: string;
@@ -146,6 +146,61 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
       "running down the right edge and ending in a loose cluster on the floor at the banner base. " +
       "The left side stays clean. Balloons never cover the printed banner face.",
     plinthInstruction: "Place cylinder plinths on the left/front side of the banner, clear of the garland.",
+    standeeZones: ZONES_STANDARD,
+  },
+  {
+    // 2026-09-05: shimmer wall offered again. It was pulled from the product on
+    // 2026-07-12 because its recolour pipeline was unreliable; the panel itself,
+    // its guide branch and the GOLDEN SHIMMER METHOD prompt wording all stayed.
+    id: "single_shimmer",
+    name: "Shimmer Wall",
+    description: "Sequin shimmer wall backdrop",
+    backdropTypes: ["shimmer_wall"],
+    maxBackdrops: 1,
+    badge: "New",
+    miniPreview: ["shimmer", "balloons"],
+    panelInstruction:
+      "A single freestanding square sequin shimmer wall standing directly on the floor. No second backdrop.",
+    garlandInstruction:
+      "Balloon design: one organic half-garland anchored at the top-right corner of the shimmer wall, " +
+      "running down the right edge to a cluster on the floor. The left side stays clean.",
+    plinthInstruction: "Place cylinder plinths on the left/front side of the shimmer wall, clear of the garland.",
+    standeeZones: ZONES_STANDARD,
+  },
+  {
+    id: "arch_shimmer",
+    name: "Arch + Shimmer",
+    description: "Solid arch beside a shimmer wall",
+    backdropTypes: ["arch", "shimmer_wall"],
+    maxBackdrops: 2,
+    badge: "New",
+    miniPreview: ["arch", "shimmer", "balloons"],
+    panelInstruction:
+      "Two freestanding backdrop pieces side by side: a solid arch backdrop panel and a square sequin " +
+      "shimmer wall. Both stand directly on the floor.",
+    garlandInstruction:
+      "Balloon design: the arch carries a full organic garland down its outer edge and over its top " +
+      "shoulder; the shimmer wall carries a smaller accent cluster on its near top corner only.",
+    plinthInstruction: "Place cylinder plinths in front of the arch, clear of the garland.",
+    standeeZones: ZONES_STANDARD,
+  },
+  {
+    // A hoop of balloons with nothing inside it — the opening is the setup, and
+    // it is where the neon sign goes.
+    id: "balloon_ring",
+    name: "Balloon Ring",
+    description: "Hollow balloon hoop, open centre",
+    backdropTypes: ["balloon_ring"],
+    maxBackdrops: 1,
+    badge: "New",
+    miniPreview: ["ring", "balloons"],
+    panelInstruction:
+      "A single freestanding circular balloon ring standing on the floor, built entirely from balloons, " +
+      "with a completely open empty centre. There is no backdrop board anywhere in the scene.",
+    garlandInstruction:
+      "Balloon design: the ring itself is the balloon work — a dense hoop of mixed-size balloons all the " +
+      "way round, thickest where it meets the floor. No balloons inside the opening.",
+    plinthInstruction: "Place cylinder plinths to one side of the ring, on open floor.",
     standeeZones: ZONES_STANDARD,
   },
   {
@@ -246,8 +301,6 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
  * SETUP_LAYOUT_TEMPLATES above). Only genuinely removed ids map here.
  */
 export const LEGACY_TEMPLATE_ID_REMAP: Record<string, string> = {
-  shimmer_open_frame: "single_arch",
-  single_shimmer: "single_arch",
   arch_shimmer: "single_arch",
 };
 
@@ -274,9 +327,10 @@ export function inferSetupLayoutTemplateIdFromBackdropItems(
   if (key === "arch") return "single_arch";
   if (key === "round") return "single_round";
   if (key === "banner") return "single_banner";
-  if (key === "shimmer_wall") return "single_arch";
+  if (key === "balloon_ring") return "balloon_ring";
+  if (key === "shimmer_wall") return "single_shimmer";
+  if (key === "arch+shimmer_wall") return "arch_shimmer";
   if (key === "arch+arch") return "double_arch";
-  if (key === "arch+shimmer_wall") return "single_arch";
   if (key === "arch+open_arch_frame") return "arch_open_frame";
   if (key === "open_arch_frame+shimmer_wall") return "single_arch";
   return null;
