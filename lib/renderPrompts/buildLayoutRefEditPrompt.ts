@@ -598,6 +598,22 @@ export function buildLayoutRefEditPrompt(
   //
   // Single-panel arch remains the one exclusion: it does not have the problem
   // and the line breaks its structure. See the measurements below.
+  // 2026-09-05: adding a theme graphic to a Round backdrop shrank the panel and
+  // stood it on a low white podium disc. Isolated at a fixed seed: the guide's
+  // graphic-zone rect alone renders correctly; the graphic SENTENCE alone
+  // reproduces the bug. Describing the board as carrying a printed illustration
+  // makes it read as an art print, and an art print stands on a podium.
+  //
+  // Restating the structure next to that sentence did NOT work — same podium,
+  // same shrunken panel. Restating it at the FRONT does, which is the same
+  // positional effect the palette line depends on. Scoped like the palette line:
+  // single-panel arch is excluded, because first position displaces its own
+  // structural wording and breaks it.
+  const frontStructureLine = sceneModel.panels.some((p) => p.graphic.enabled) && (isMulti || hasRoundPanelInPrompt)
+    ? `The backdrop ${panelCount > 1 ? "panels are full-size freestanding party backdrops standing" : "panel is a full-size freestanding party backdrop standing"} ` +
+      `directly on the bare floor. Nothing is underneath: no podium, no disc, no platform, no base. `
+    : "";
+
   const frontPaletteLine = (isMulti || hasRoundPanelInPrompt)
     && hasSempertexLock && targetAppearanceParts.length > 0
     ? `Every balloon in this image is one of exactly ${targetAppearanceParts.length} colours: ` +
@@ -831,6 +847,17 @@ export function buildLayoutRefEditPrompt(
     graphicPanelIdx.length > 0 && plainPanelIdx.length > 0
       ? `The ${plainPanelIdx.map(panelPositionLabel).join(" and the ")} ${plainPanelIdx.length > 1 ? "keep" : "keeps"} a plain empty board face. `
       : "";
+  // 2026-09-05: adding a theme graphic to a Round backdrop shrank the panel and
+  // put a low white podium disc under it. Isolated with two renders at a fixed
+  // seed — guide graphic-zone rect but no sentence: correct, full-size panel on
+  // the floor; sentence but no rect: the bug, exactly as reported. So it is this
+  // wording, not the guide. Describing the board as carrying a printed
+  // illustration makes it read as an art print, and an art print in the model’s
+  // prior stands on a podium, lifted off the floor.
+  //
+  // The round backdrop description already says the panel is full size and has
+  // nothing under it, but it is far earlier in the prompt and loses. Stated here,
+  // next to the sentence that causes the damage.
   const themeGraphicClause = graphicPanelIdx.length > 0
     ? graphicSentences + plainPanelSentence
     : "";
@@ -1058,6 +1085,7 @@ const setupTemplateClause = setupTemplate
 
   return (
     frontPaletteLine +
+    frontStructureLine +
     photographyOpening +
     sceneInventoryClause +
     framingClause +
