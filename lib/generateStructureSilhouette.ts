@@ -1115,6 +1115,16 @@ export function generateStructureSilhouette(
 
           // Walk the outline. `outward` is the unit normal pointing away from
           // the board, so the band can be biased off the artwork.
+          // How full the band is at a given height. 1 at the floor, falling as it
+          // rises: real garlands pool at the base and thin out toward the top,
+          // and a band of constant thickness is what made this read as a rope
+          // ("ip gibi duruyor"). Drives radius, depth AND spacing together —
+          // varying only one of them still looks mechanical.
+          const fullness = (y: number): number => {
+            const u = Math.max(0, Math.min(1, (p.floorY - y) / side));
+            return 1 - 0.30 * u;
+          };
+
           const walk = (
             fromX: number, fromY: number, toX: number, toY: number,
             outX: number, outY: number,
@@ -1123,35 +1133,41 @@ export function generateStructureSilhouette(
             const ux = (toX - fromX) / len, uy = (toY - fromY) / len;
             let t = 0;
             let guard = 0;
-            while (t < len && guard++ < 120) {
-              const r = pickR();
-              // 2026-09-05: this used to be r * (0.45..1.0) — always OUTWARD, so
-              // no balloon ever touched the board. The guide's garland bbox then
-              // spanned the whole 1024px canvas around a 717px board, and the
-              // render came back as a free-standing balloon arch with the banner
-              // shrunk to fit inside it (customer: "suanda havada balonlar", and
-              // the board no longer read as square). A real garland is tied TO
-              // the board edge, so the band straddles it: mostly outboard, but
-              // overlapping onto the face, the way the arch garland does.
+            while (t < len && guard++ < 160) {
+              const y0 = fromY + uy * t;
+              const f = fullness(y0);
+              const r = pickR() * f;
+              // The band straddles the board edge — mostly outboard, but
+              // overlapping onto the face, the way the arch garland does. It used
+              // to be r * (0.45..1.0), always OUTWARD, so no balloon touched the
+              // board and the render came back as a free-standing arch.
               const off = r * (rnd() * 1.15 - 0.45);
-              put(fromX + ux * t + outX * off, fromY + uy * t + outY * off, r);
-              // Two more lanes at different depths. One lane reads as a string
-              // of beads however the sizes are varied — the customer wanted it
-              // "dolgun", and depth is what makes a garland look full. The inner
-              // lane is allowed slightly onto the board edge, the outer one hangs
-              // off it, so the union silhouette is a thick band rather than a line.
-              const r2 = pickR() * 0.9;
+              put(fromX + ux * t + outX * off, y0 + outY * off, r);
+              // Second lane, just outboard.
+              const r2 = pickR() * 0.9 * f;
               put(
                 fromX + ux * (t + r * 0.45) + outX * r2 * (0.35 + rnd() * 0.45),
                 fromY + uy * (t + r * 0.45) + outY * r2 * (0.35 + rnd() * 0.45),
                 r2,
               );
-              if (rnd() < 0.75) {
-                const r3 = pickR() * 0.7;
+              // Third lane sits on the board face. Near the floor it is always
+              // there; near the top it mostly is not, which is the taper.
+              if (rnd() < 0.45 + 0.55 * f) {
+                const r3 = pickR() * 0.7 * f;
                 put(
                   fromX + ux * (t + r * 0.8) - outX * r3 * (0.35 + rnd() * 0.35),
                   fromY + uy * (t + r * 0.8) - outY * r3 * (0.35 + rnd() * 0.35),
                   r3,
+                );
+              }
+              // A fourth, occasional balloon breaks the even edge that reads as a
+              // rope. Low down only.
+              if (rnd() < 0.45 * f * f) {
+                const r4 = pickR() * 0.8 * f;
+                put(
+                  fromX + ux * (t + r * 1.1) + outX * r4 * (1.0 + rnd() * 0.5),
+                  fromY + uy * (t + r * 1.1) + outY * r4 * (1.0 + rnd() * 0.5),
+                  r4,
                 );
               }
               t += r * (0.40 + rnd() * 0.25);
@@ -1160,10 +1176,17 @@ export function generateStructureSilhouette(
 
           // Floor mound at a bottom corner — where a real garland pools.
           const mound = (mx: number, dir: number) => {
+            // 2026-09-05: enlarged. The customer wants the garland fullest where
+            // it meets the floor ("yere degen yerler daha dolu"), and nine
+            // balloons in three rows was a neat little heap rather than a pile.
             const table: [number, number, number][] = [
-              [0, 0.55, 1.0], [0.75, 0.42, 0.72], [-0.55, 0.40, 0.66],
-              [0.35, 1.15, 0.62], [-0.30, 1.05, 0.52], [1.25, 0.95, 0.48],
-              [0.10, 1.80, 0.44], [0.95, 1.70, 0.38], [-0.70, 1.55, 0.36],
+              [0, 0.50, 1.00], [0.80, 0.40, 0.86], [-0.62, 0.38, 0.78],
+              [1.50, 0.45, 0.62], [-1.20, 0.44, 0.56],
+              [0.35, 1.15, 0.78], [-0.35, 1.05, 0.68], [1.25, 0.95, 0.60],
+              [-1.05, 1.20, 0.48], [1.85, 1.05, 0.42],
+              [0.10, 1.85, 0.62], [0.95, 1.75, 0.52], [-0.72, 1.60, 0.50],
+              [1.60, 1.80, 0.38], [-1.30, 1.90, 0.34],
+              [0.45, 2.55, 0.44], [-0.40, 2.45, 0.40], [1.20, 2.40, 0.34],
             ];
             for (const [ox, up, sc] of table) {
               const r = rXL * sc;

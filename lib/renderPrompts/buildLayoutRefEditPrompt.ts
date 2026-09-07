@@ -1036,7 +1036,21 @@ export function buildLayoutRefEditPrompt(
   const eventSetupLabel = (hasSempertexLock && isUnicornTheme)
     ? "soft pastel birthday backdrop setup"
     : "children's birthday event setup";
-  const framingClause = isRoundScene
+  // 2026-09-05: a Banner gets its own framing. It was falling into the
+  // single-panel branch below, which is written for a tall portrait arch ("the
+  // highest balloon sits just below the top edge, the floor no more than the
+  // bottom eighth") — wording that does not bind on a square board in a square
+  // frame, and the board came back small with wide margins of empty wall
+  // ("simdide kucuk oldu"). This names the square itself as the thing that
+  // fills the frame.
+  const framingClause = (hasBannerPanelInPrompt && !isMulti)
+    ? `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
+      `Tight medium-close event photography. The square banner board is the subject and must DOMINATE the ` +
+      `frame: it fills almost the whole picture, its top edge close to the top of the image and its bottom ` +
+      `edge close to the bottom, with only a narrow strip of wall to either side and a shallow strip of floor ` +
+      `beneath it. Keep the whole board and its balloons visible and nothing cropped, but do not render the ` +
+      `board small in a large empty room and do not leave wide empty margins of wall around it. `
+    : isRoundScene
     ? `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
       `Medium-close full-body event photography — the round backdrop, balloon garland and pedestal fill the frame, ` +
       `the setup reaching close to the top and bottom edges of the image with only a narrow margin of floor and wall ` +
