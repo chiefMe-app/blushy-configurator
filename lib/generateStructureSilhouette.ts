@@ -1414,8 +1414,15 @@ export function generateStructureSilhouette(
           // ratios, a high-contrast giant/small lane cycle) all failed; the
           // real difference was the guide canvas, fixed in VIEWBOX.
           const pair = [...archPanels].sort((a, b) => a.cx - b.cx);
-          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true).count;
-          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true).count;
+          // 2026-09-05: looseSpacing added here too. The customer asked for the
+          // Double Arch garland to be arranged like the Single Arch one they
+          // approved, and that flag IS the difference between the two: nesting
+          // depth 0.55 vs 0.95 of a diameter, giant chance 0.10 vs 0.20,
+          // companion chance 0.85 vs 0.75, and a climb step of 0.95-1.25 of a
+          // radius vs 0.55-0.80. Double Arch was left on the tighter numbers
+          // only because it had been approved earlier.
+          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true, true).count;
+          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true, true).count;
         } else if (framePanel && archPanels.length === 1) {
           // Arch + Open Frame: the SOLID ARCH carries a thick organic-mass
           // garland (floor base → outer edge climb → over the crown, ~62

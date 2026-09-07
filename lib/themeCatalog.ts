@@ -63,7 +63,12 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     price: 50,
     description: "Icy blues, silver, snowflakes",
     swatchHexes: ["#E8F4FD", "#B3D9F2", "#FFFFFF"],
-    sempertexPaletteIds: ["fashion-005-white", "silk-839-arctic-blue", "pastel-matte-640-blue", "silk-850-light-amethyst", "reflex-981-silver"],
+    // 2026-09-05: 839 Arctic Blue removed at the customers request. It and 640
+    // Blue are both pale blues — #B9D9EB against #BAE6FD — close enough that a
+    // render cannot show them as two distinct colours, so the palette spent two
+    // of its five slots on one visible colour. Four slots, four colours the eye
+    // can actually separate: white, pastel blue, pastel purple, silver.
+    sempertexPaletteIds: ["fashion-005-white", "pastel-matte-640-blue", "silk-850-light-amethyst", "reflex-981-silver"],
     renderDescription: "Frozen winter wonderland theme with icy blues, white, and silver; snowflake and ice crystal motifs",
     graphicPresets: [
       { id: "frozen_castle",    assetId: "frozen-01", label: "Frozen Castle",    desc: "Arendelle castle with snowflakes" },

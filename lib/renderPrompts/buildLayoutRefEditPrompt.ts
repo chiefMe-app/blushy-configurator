@@ -587,7 +587,18 @@ export function buildLayoutRefEditPrompt(
   //   same sentence at the END of the prompt   warm 2.24% (vs 1.16% with none)
   //   only the ban half, at the front          warm 11.70%, lilac 0.00% — naming
   //     gold without naming what the balloons ARE summons it.
-  const frontPaletteLine = isMulti && !hasRoundPanelInPrompt
+  // 2026-09-05: extended to ROUND scenes as well. Round had the same buried-lock
+  // failure — the customer reported its balloon colours were simply wrong, and
+  // the reproduction showed why: silver and lavender barely appeared, and at one
+  // seed 2.98% of pixels came back warm cream/beige, which is what they were
+  // looking at. With the line, both seeds: warm 0.00%, pink 0.00%, and lilac up
+  // from 0.97%/0.87% to 2.94%/3.52% with the silver rendering as real silver.
+  // Round tolerates this even though it did NOT tolerate a changed photography
+  // opening, so the two are not interchangeable and this was tested on its own.
+  //
+  // Single-panel arch remains the one exclusion: it does not have the problem
+  // and the line breaks its structure. See the measurements below.
+  const frontPaletteLine = (isMulti || hasRoundPanelInPrompt)
     && hasSempertexLock && targetAppearanceParts.length > 0
     ? `Every balloon in this image is one of exactly ${targetAppearanceParts.length} colours: ` +
       `${targetAppearanceParts.join(", ")}. ` +
@@ -927,8 +938,24 @@ export function buildLayoutRefEditPrompt(
       // reach for drama. Naming it is what removes it.
       `The light is soft, even and diffuse across the whole scene, like a large north-facing window ` +
       `far off to the left: no hard sunbeam, no sun patch or bright pool of light on the wall or floor, ` +
-      `no sharp-edged cast shadow stretching across the room, no blown-out white highlights, no lens flare, ` +
-      `no dramatic contrast. Both sides of every balloon stay clearly readable in their own colour. `;
+      `no sharp-edged cast shadow stretching across the room, no blown-out white highlights, no lens flare. ` +
+      // 2026-09-05: "no dramatic contrast", added with the anti-sunbeam clause,
+      // flattened the picture — the customer: "filtre var gibi cok soluk butun
+      // renkler ... canli gozle nasil goreceksek oyle olsun renk". It is gone,
+      // and the sentence now says the colours hold instead.
+      //
+      // Deliberately a short clause bolted onto an existing sentence. A fuller
+      // paragraph was tried first — "Even light, but NOT flat: full natural
+      // colour saturation ... NOT hazy, NOT desaturated, NOT grey-filtered, NOT
+      // washed out ..." — and it wrecked the Single Arch exactly the way the
+      // front-loaded palette line did: rectangular panel, horseshoe garland
+      // down both sides, gibberish text printed on the balloons, and 2.99% warm
+      // plus 2.47% pink pixels off-palette. Its mean chroma was HIGHER (8.49 vs
+      // 4.81), which is a warning about the metric, not a result: the extra
+      // colour was contamination. This shorter version measures lilac 2.70% (vs
+      // 1.76% before), chroma 5.19, and zero warm and zero pink.
+      `Both sides of every balloon stay clearly readable in their own colour, at full natural saturation — ` +
+      `NOT hazy, NOT washed out, NOT faded. `;
   const eventSetupLabel = (hasSempertexLock && isUnicornTheme)
     ? "soft pastel birthday backdrop setup"
     : "children's birthday event setup";
