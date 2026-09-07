@@ -1048,6 +1048,135 @@ export function generateStructureSilhouette(
         // that still overlap their neighbors), halves the jitter, and pulls
         // the crown's outer depth lane in — every guide balloon then overlaps
         // the connected mass, so nothing reads as a stray floating balloon.
+        // Banner frame garland — for the square 2x2m board.
+        //
+        // 2026-09-05. The banner first borrowed the arch garland, and the guide
+        // showed why that cannot work: the arch crown walks an arc of radius
+        // pw/2 centred at the arch spring line, which on a square board runs
+        // from the mid-right edge up to the top corner and NEVER crosses the
+        // top. The banner came back with two thin side columns, no top band and
+        // a single balloon on the floor. An arch garland follows a curved top;
+        // a square has corners.
+        //
+        // This walks the board OUTLINE instead — up the left side, across the
+        // top, down the right side — dropping heavily overlapping balloons of
+        // varied size along it, two deep, with a mound at each bottom corner.
+        // The band straddles the edge and leans outward so it frames the board
+        // without covering the artwork (customer: "banneri cok kapatmasin").
+        const drawBannerFrameGarland = (
+          p: typeof layout.panels[0],
+          side: number,
+          seed: number,
+        ): number => {
+          const left = p.cx - side / 2;
+          const right = p.cx + side / 2;
+          const top = p.floorY - side;
+          let n = 0;
+          const placed: { x: number; y: number; r: number }[] = [];
+
+          let st = (seed + 1) * 9973;
+          const rnd = () => { st = (st * 1664525 + 1013904223) >>> 0; return st / 4294967296; };
+
+          const rXL = Math.max(30, Math.min(80, side * 0.115));
+          const rL  = Math.max(20, Math.min(52, side * 0.075));
+          const rM  = Math.max(14, Math.min(36, side * 0.052));
+          const rS  = Math.max(10, Math.min(24, side * 0.034));
+
+          const areaByColor = new Array(Math.max(1, colors.length)).fill(0) as number[];
+          const lastUsedAt  = new Array(Math.max(1, colors.length)).fill(-1) as number[];
+          const leastUsedColor = (): number => {
+            let best = 0;
+            for (let i = 1; i < areaByColor.length; i++) {
+              const d = areaByColor[i] - areaByColor[best];
+              if (d < -1e-6) best = i;
+              else if (Math.abs(d) <= 1e-6 && lastUsedAt[i] < lastUsedAt[best]) best = i;
+            }
+            return best;
+          };
+          const put = (bx: number, by: number, br: number) => {
+            for (const q of placed) {
+              const d = Math.hypot(bx - q.x, by - q.y);
+              if ((br + q.r - d) / (2 * Math.min(br, q.r)) > 0.88) return;
+            }
+            placed.push({ x: bx, y: by, r: br });
+            const ci = leastUsedColor();
+            areaByColor[ci] += Math.PI * br * br;
+            lastUsedAt[ci] = n;
+            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(ci)}/>`);
+            n++;
+          };
+          const pickR = (): number => {
+            const roll = rnd();
+            if (roll < 0.20) return rXL;
+            if (roll < 0.52) return rL;
+            if (roll < 0.80) return rM;
+            return rS;
+          };
+
+          // Walk the outline. `outward` is the unit normal pointing away from
+          // the board, so the band can be biased off the artwork.
+          const walk = (
+            fromX: number, fromY: number, toX: number, toY: number,
+            outX: number, outY: number,
+          ) => {
+            const len = Math.hypot(toX - fromX, toY - fromY);
+            const ux = (toX - fromX) / len, uy = (toY - fromY) / len;
+            let t = 0;
+            let guard = 0;
+            while (t < len && guard++ < 120) {
+              const r = pickR();
+              // Centre of the band sits about half a balloon outboard of the
+              // edge, so the mass hangs off the board rather than on it.
+              const off = r * (0.45 + rnd() * 0.55);
+              put(fromX + ux * t + outX * off, fromY + uy * t + outY * off, r);
+              // Two more lanes at different depths. One lane reads as a string
+              // of beads however the sizes are varied — the customer wanted it
+              // "dolgun", and depth is what makes a garland look full. The inner
+              // lane is allowed slightly onto the board edge, the outer one hangs
+              // off it, so the union silhouette is a thick band rather than a line.
+              const r2 = pickR() * 0.9;
+              put(
+                fromX + ux * (t + r * 0.45) + outX * r2 * 1.15,
+                fromY + uy * (t + r * 0.45) + outY * r2 * 1.15,
+                r2,
+              );
+              if (rnd() < 0.75) {
+                const r3 = pickR() * 0.7;
+                put(
+                  fromX + ux * (t + r * 0.8) - outX * r3 * 0.25,
+                  fromY + uy * (t + r * 0.8) - outY * r3 * 0.25,
+                  r3,
+                );
+              }
+              t += r * (0.40 + rnd() * 0.25);
+            }
+          };
+
+          // Floor mound at a bottom corner — where a real garland pools.
+          const mound = (mx: number, dir: number) => {
+            const table: [number, number, number][] = [
+              [0, 0.55, 1.0], [0.75, 0.42, 0.72], [-0.55, 0.40, 0.66],
+              [0.35, 1.15, 0.62], [-0.30, 1.05, 0.52], [1.25, 0.95, 0.48],
+              [0.10, 1.80, 0.44], [0.95, 1.70, 0.38], [-0.70, 1.55, 0.36],
+            ];
+            for (const [ox, up, sc] of table) {
+              const r = rXL * sc;
+              put(
+                mx + dir * ox * rXL + (rnd() * 2 - 1) * rM * 0.35,
+                p.floorY - up * rXL * 0.62 + (rnd() * 2 - 1) * rM * 0.25,
+                r,
+              );
+            }
+          };
+
+          mound(left, -1);
+          mound(right, 1);
+          walk(left,  p.floorY - rXL * 0.6, left,  top,  -1, 0);
+          walk(left,  top, right, top, 0, -1);
+          walk(right, top, right, p.floorY - rXL * 0.6, 1, 0);
+          return n;
+        };
+
         const drawThickOrganicMainGarland = (
           p: typeof layout.panels[0], side: "left" | "right", colorOffset: number,
           tight = false,
@@ -1512,10 +1641,18 @@ export function generateStructureSilhouette(
           // this it fell to the multi-panel fallback below — a 22-circle
           // sine-wave column — and the render turned that thin bead line into a
           // garland wrapping the whole banner, which is not what the setup sells.
-          drawThickOrganicMainGarland(layout.panels[0], "right", 0, true, true);
-          if (isFullerTier) {
-            drawThickOrganicMainGarland(layout.panels[0], "left", 62, true, true);
-          }
+          //
+          // The garland must be measured against the SQUARE, not against the
+          // layout rect. calculateExactLayout hands back 717 x 870 for a 2x2m
+          // banner (it fits width and height to separate fractions of the
+          // canvas), and panelShape builds the square from min(pw, height) —
+          // so the board top is 154px BELOW layout.apexY. Passing the layout
+          // panel straight in climbed the garland against a board 154px taller
+          // than the one actually drawn, which is why the top band floated above
+          // the banner and the sides stopped short of the floor.
+          const bp = layout.panels[0];
+          const bSide = Math.min(bp.pw, bp.floorY - bp.apexY);
+          drawBannerFrameGarland(bp, bSide, 0);
         } else if (archPanels.length === 1 && layout.panels.length === 1) {
           // Single arch: use the same thick organic mass the Double Arch
           // garlands use. The previous guide here was a single-file sine-wave
