@@ -2736,7 +2736,7 @@ function clearAllStandees() {
         </div>
         <button
           type="button"
-          onClick={() => patchDecor({ neonSign: { text: d.neonSign?.text ?? "Happy Birthday", enabled: !(d.neonSign?.enabled) } })}
+          onClick={() => patchDecor({ neonSign: { text: d.neonSign?.text ?? "Happy Birthday", panelIndex: d.neonSign?.panelIndex ?? 0, enabled: !(d.neonSign?.enabled) } })}
           style={{
             display: "flex", alignItems: "center", gap: 10, width: "100%",
             padding: "11px 13px", borderRadius: 12, cursor: "pointer",
@@ -2767,7 +2767,7 @@ function clearAllStandees() {
                 <button
                   key={phrase}
                   type="button"
-                  onClick={() => patchDecor({ neonSign: { enabled: true, text: phrase } })}
+                  onClick={() => patchDecor({ neonSign: { enabled: true, text: phrase, panelIndex: d.neonSign?.panelIndex ?? 0 } })}
                   style={{
                     padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
                     border: `1.5px solid ${d.neonSign?.text === phrase ? DC.rose : "rgba(0,0,0,0.12)"}`,
@@ -2779,11 +2779,35 @@ function clearAllStandees() {
                 </button>
               ))}
             </div>
+            {/* 2026-09-05: on a two-piece setup the customer picks which board
+                carries the sign. */}
+            {d.backdropItems.length > 1 && (
+              <div style={{ marginBottom: 8 }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#666", display: "block", marginBottom: 5 }}>
+                  Which backdrop?
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {d.backdropItems.map((it, i) => {
+                    const active = (d.neonSign?.panelIndex ?? 0) === i;
+                    const label = `${i === 0 ? "Left" : "Right"} · ${TYPE_LABEL[it.type] ?? it.type}`;
+                    return (
+                      <button key={it.id} type="button"
+                        onClick={() => patchDecor({ neonSign: { enabled: true, text: d.neonSign?.text ?? "Happy Birthday", panelIndex: i } })}
+                        style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                          border: `1.5px solid ${active ? DC.rose : "rgba(0,0,0,0.12)"}`,
+                          background: active ? DC.rose + "12" : "white", color: active ? DC.rose : "#555" }}>
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <input
               type="text"
               value={d.neonSign?.text ?? ""}
               maxLength={40}
-              onChange={(e) => patchDecor({ neonSign: { enabled: true, text: e.target.value.slice(0, 40) } })}
+              onChange={(e) => patchDecor({ neonSign: { enabled: true, text: e.target.value.slice(0, 40), panelIndex: d.neonSign?.panelIndex ?? 0 } })}
               placeholder="Or type your own"
               style={{
                 width: "100%", fontSize: 12.5, color: DC.plum, padding: "9px 11px",

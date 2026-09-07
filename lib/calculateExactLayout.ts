@@ -116,7 +116,13 @@ export function calculateExactLayout(
   // tallestPanelHeightPx/maxHeightCm scale used for panels) guarantees the
   // plinth always has genuine standalone floor space, which also directly
   // improves the two panels' visual separation at the base.
-  const hasPlinthForGap = count === 2 && plinthSizes.length > 0;
+  // 2026-09-05: only when BOTH panels are arches. The wide gap exists so a
+  // Double Arch's plinth has real floor space between the boards. On Arch +
+  // Shimmer the plinth stands in front of the arch, not between the pieces, and
+  // the customer wants those two touching ("dipdibe olsunlar") — the plinth-sized
+  // gap was pushing them apart for no reason.
+  const bothArches = count === 2 && items.every((it) => it?.type === "arch");
+  const hasPlinthForGap = bothArches && plinthSizes.length > 0;
   const approxPxPerCm = tallestPanelHeightPx / maxHeightCm;
   const maxPlinthDiameterCm = hasPlinthForGap
     ? Math.max(...plinthSizes.map((s) => getPlinthDimensions(s).diameterCm))

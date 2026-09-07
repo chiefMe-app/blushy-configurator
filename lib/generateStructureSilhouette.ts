@@ -1533,7 +1533,12 @@ export function generateStructureSilhouette(
         ): { total: number; accentZone: { xMin: number; xMax: number; yMin: number; yMax: number } } => {
           const shimmerOnRight = shimmerP.cx > archP.cx;
           const archOuterSide: "left" | "right" = shimmerOnRight ? "left" : "right";
-          const archCount = drawDenseGarland(archP, archOuterSide, colorOffset);
+          // 2026-09-05: was drawDenseGarland, which is the thin one — the arch
+          // ended up with a bead line while the shimmer wall carried the mass,
+          // the reverse of what this composition is for. It now takes the same
+          // organic mass Single Arch uses, so the arch side reads big and full
+          // ("soldaki balonlar daha buyuk ve daha cok olsunlar").
+          const archCount = drawThickOrganicMainGarland(archP, archOuterSide, colorOffset, true, false).count;
 
           const dir = shimmerOnRight ? 1 : -1;
           const shimmerNearX = shimmerOnRight ? shimmerP.cx - shimmerP.pw / 2 : shimmerP.cx + shimmerP.pw / 2;
@@ -1942,8 +1947,14 @@ export function generateStructureSilhouette(
     // edge it landed on top of the garland column. Inside the board's left third
     // is clear floor on every layout, and it shifts further left again when
     // plinths are present so the two do not collide.
-    const startX = tallest.cx - tallest.pw * 0.45
+    //
+    // 2026-09-05: clamped. On a single Shimmer Wall with a plinth the shift put
+    // the marker at x = -10, i.e. running off the left edge of the guide, and the
+    // render filled the gap with stray helium balloons on strings. Nothing may be
+    // drawn outside the canvas.
+    const wantX = tallest.cx - tallest.pw * 0.45
       - (layout.plinths.length > 0 ? groupW * 0.85 : 0);
+    const startX = Math.max(digitW * 0.12, Math.min(wantX, W - groupW - digitW * 0.12));
     const baseY = tallest.floorY;
     for (let d = 0; d < numDigits.length; d++) {
       const x = startX + d * (digitW + gap);

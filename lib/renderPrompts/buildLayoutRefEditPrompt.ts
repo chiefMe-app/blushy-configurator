@@ -694,10 +694,40 @@ export function buildLayoutRefEditPrompt(
   // The sequin colour is in the guide (the tiles are drawn in it) and in the
   // body wording, and the render still came back silver whatever was picked.
   // Same fix as everything else on this pipeline: say it at the front.
-  const frontShimmerLine = sceneModel.shimmerColor
-    ? `The sequin shimmer wall is ${shimmerColorLabel(sceneModel.shimmerColor).toLowerCase()}. `
+  // 2026-09-05: naming the colour was not enough on its own. With Light Amethyst
+  // in the balloon palette a PINK wall came back lilac — the model split the
+  // difference. Each colour now says what it is not, against its nearest
+  // neighbours in this palette.
+  const SHIMMER_NOT: Record<string, string> = {
+    pink:       "a warm rose pink, NOT purple, NOT lilac, NOT lavender and NOT silver",
+    purple:     "purple",
+    gold:       "a warm gold, NOT silver and NOT bronze",
+    silver:     "a cool silver, NOT gold, NOT pink and NOT lilac",
+    black:      "a true black, NOT grey and NOT charcoal",
+    blue:       "a clear blue, NOT lilac and NOT silver",
+    red:        "a deep red, NOT pink and NOT orange",
+    iridescent: "a pale iridescent pearl that shifts colour, NOT flat white",
+  };
+  // 2026-09-05: the panel has to be NAMED here. Said as a bare "the sequin
+  // shimmer wall is pink" at the very front of an Arch + Shimmer prompt, the
+  // model made BOTH boards pink sequin — the arch included. The panel
+  // descriptions further down do distinguish them, and are ignored, as the
+  // middle of this prompt always is.
+  const shimmerIdx = sceneModel.panels.findIndex((p) => p.type === "shimmer_wall");
+  const otherIdx = sceneModel.panels.findIndex((p) => p.type !== "shimmer_wall");
+  const sideWord = (i: number) => (panelCount > 1 ? (i === 0 ? "LEFT" : "RIGHT") : "");
+  const frontShimmerLine = sceneModel.shimmerColor && shimmerIdx >= 0
+    ? (panelCount > 1
+        ? `The ${sideWord(shimmerIdx)} backdrop is a sequin shimmer wall, ` +
+          `${SHIMMER_NOT[sceneModel.shimmerColor] ?? shimmerColorLabel(sceneModel.shimmerColor).toLowerCase()}. ` +
+          `The ${sideWord(otherIdx)} backdrop is a plain smooth matte board — NOT sequin, NOT shimmer, ` +
+          `no sequins on it at all. `
+        : `The sequin shimmer wall is ${shimmerColorLabel(sceneModel.shimmerColor).toLowerCase()} — ` +
+          `${SHIMMER_NOT[sceneModel.shimmerColor] ?? shimmerColorLabel(sceneModel.shimmerColor).toLowerCase()}. `)
     : "";
 
+  const frontNeonPanelIdx = Math.max(0, Math.min(panelCount - 1,
+    Number.isInteger(sceneModel.neonSign?.panelIndex) ? Number(sceneModel.neonSign?.panelIndex) : 0));
   const frontNeonText = String(sceneModel.neonSign?.text ?? "")
     .replace(/[^A-Za-z0-9 \x27!?&-]/g, " ")
     .replace(/\s+/g, " ")
@@ -707,14 +737,20 @@ export function buildLayoutRefEditPrompt(
     ? (hasRingPanelInPrompt
         // The customer asked for it in the middle of the ring; left to the body
         // clause alone the render hung it above the hoop instead.
-        ? `A glowing neon sign reading "${frontNeonText}" hangs INSIDE the open centre of the balloon ring. `
-        : `A glowing neon sign reading "${frontNeonText}" is part of this setup. `)
+        ? `A warm white glowing neon sign reading "${frontNeonText}" hangs INSIDE the open centre of the balloon ring. `
+        : panelCount > 1
+          // Named at the front for the same reason the shimmer colour is: left to
+          // the body clause the sign appeared on BOTH boards.
+          ? `A warm white glowing neon sign reading "${frontNeonText}" is mounted on the ` +
+            `${frontNeonPanelIdx === 0 ? "LEFT" : "RIGHT"} backdrop only — the other backdrop has no sign. `
+          : `A warm white glowing neon sign reading "${frontNeonText}" is part of this setup. `)
     : "";
 
   const frontNumDigits = String(sceneModel.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
   const frontNumberLightLine =
     sceneModel.numberLight?.enabled && frontNumDigits.length > 0
-      ? `A large light-up marquee number ${frontNumDigits} stands on the floor in front of the backdrop. `
+      ? `A large light-up marquee number ${frontNumDigits} with warm white bulbs stands on the floor in ` +
+        `front of the backdrop. No loose helium balloons on strings anywhere in the scene. `
       : "";
 
   const frontPaletteLine = (!isLonePlainArch)
@@ -831,15 +867,42 @@ export function buildLayoutRefEditPrompt(
     .trim()
     .slice(0, 40)
     .trim();
+  // Named locally rather than via panelPositionLabel, which is declared further
+  // down this function.
+  const neonPanelIdx = Math.max(0, Math.min(
+    panelCount - 1,
+    Number.isInteger(sceneModel.neonSign?.panelIndex) ? Number(sceneModel.neonSign?.panelIndex) : 0,
+  ));
+  const neonPanelLabel = (() => {
+    const p = sceneModel.panels[neonPanelIdx];
+    const what = p?.type === "shimmer_wall" ? "shimmer wall"
+      : p?.type === "arch" ? "arch backdrop"
+      : p?.type === "round" ? "round backdrop"
+      : p?.type === "banner" ? "banner board"
+      : "backdrop";
+    const side = panelCount > 1 ? (neonPanelIdx === 0 ? "left " : "right ") : "";
+    return `${side}${what}`;
+  })();
   const hasNeon = sceneModel.neonSign?.enabled === true && neonText.length > 0;
   const neonClause = hasNeon
     ? `A neon LED sign reads exactly "${neonText}" — those words, spelled exactly as "${neonText}", ` +
       `and no other words anywhere. ` +
-      `It is a made-to-order neon sign: flowing script lettering in a continuous glowing tube, warm white, ` +
-      `mounted on a clear acrylic backing, casting a soft halo of its own light. ` +
+      // 2026-09-05: the acrylic backing is gone from the wording. Described, the
+      // render drew it as a visible tan rectangle sitting under the letters
+      // ("lets partynin altindaki yama gibi sey"). A real sign has one, but it
+      // is invisible against the wall and does not need describing.
+      `It is a made-to-order neon sign: flowing script lettering in a continuous glowing tube, ` +
+      `casting a soft halo of its own light. The tube glows WARM WHITE — never pink, never coloured, ` +
+      `whatever colour the backdrop behind it is. No visible backing board, no plaque, no panel and no ` +
+      `patch behind the letters. ` +
       (hasRingPanelInPrompt
         ? `It hangs in the OPEN CENTRE of the balloon ring, floating clear of the balloons. `
-        : `It is mounted on the backdrop face, centred in the clear area above the middle. `) +
+        // 2026-09-05: on a two-piece setup the customer chooses which board
+        // carries it, so the panel is named rather than left to the model.
+        : panelCount > 1
+          ? `It is mounted on the ${neonPanelLabel} only, centred in the clear area above ` +
+            `the middle of that board. The other board carries no sign. `
+          : `It is mounted on the backdrop face, centred in the clear area above the middle. `) +
       `It is NOT printed on the board, NOT painted, NOT made of balloons and NOT a paper cut-out. `
     : "";
 
@@ -1144,7 +1207,21 @@ export function buildLayoutRefEditPrompt(
   // frame, and the board came back small with wide margins of empty wall
   // ("simdide kucuk oldu"). This names the square itself as the thing that
   // fills the frame.
-  const framingClause = (hasBannerPanelInPrompt && !isMulti)
+  // Arch + Shimmer needs its own framing. It was falling into the generic
+  // multi-panel branch, which is written wide for two arches plus two outer
+  // garlands, and this pair came back small in a large empty room
+  // ("cok uzaklasiyor renderi. daha zoom in olsun").
+  const isArchShimmer = panelCount === 2
+    && sceneModel.panels.some((p) => p.type === "arch")
+    && sceneModel.panels.some((p) => p.type === "shimmer_wall");
+  const framingClause = isArchShimmer
+    ? `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
+      `Tight medium-close event photography. The two backdrop pieces stand SIDE BY SIDE AND TOUCHING, ` +
+      `edge to edge with no gap between them, and together they must DOMINATE the frame: they fill almost ` +
+      `the whole picture, close to the top and bottom edges, with only a narrow strip of wall to either ` +
+      `side and a shallow strip of floor beneath. Keep both pieces and all the balloons visible and ` +
+      `nothing cropped, but do not render the setup small in a large empty room. `
+    : (hasBannerPanelInPrompt && !isMulti)
     ? `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
       `Tight medium-close event photography. The square banner board and the balloon garland framing it are ` +
       `ONE object and must DOMINATE the frame together: the board fills almost the whole picture, with only a ` +

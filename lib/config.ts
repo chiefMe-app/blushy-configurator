@@ -670,6 +670,11 @@ export interface NeonSign {
   enabled: boolean;
   /** The words the sign spells. Short free text, capped before it reaches a prompt. */
   text: string;
+  /**
+   * Which backdrop panel carries the sign, by index into backdropItems. Only
+   * meaningful on a two-piece setup; undefined means the first panel.
+   */
+  panelIndex?: number;
 }
 
 export const DEFAULT_NEON_SIGN: NeonSign = { enabled: false, text: "Happy Birthday" };
