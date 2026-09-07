@@ -23,6 +23,7 @@ import type {
   CutoutSize,
   CutoutPosition,
   ShimmerColorId,
+  NumberLight,
 } from "./config";
 import { getPlinthDimensions } from "./layoutDimensions";
 import { normalizeCutouts, normalizeBalloonStyle } from "@/lib/config";
@@ -120,6 +121,10 @@ export interface SceneModel {
   balloons:   SceneBalloons;
   plinths:    ScenePlinth[];
   cutouts:    SceneCutouts;
+  /** Florals and greenery worked into the balloon garland. */
+  garlandFlorals: boolean;
+  /** Illuminated marquee number standing beside the backdrop. */
+  numberLight: NumberLight;
   /** Estimated total price in AED — from config.estimatedTotal */
   totalPrice: number;
   /**
@@ -189,6 +194,8 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
     balloons,
     plinths,
     cutouts,
+    garlandFlorals: d.garlandFlorals === true,
+    numberLight:    d.numberLight ?? { enabled: false, value: "1" },
     totalPrice:   config.estimatedTotal,
     // Shimmer wall is no longer a supported panel type — sanitizeBackdropItems()
     // above already remaps any legacy shimmer_wall item to arch, so `panels`
@@ -250,6 +257,8 @@ export function buildSceneModelFromItems(
   balloons: { style: normalizeBalloonStyle(balloonStyle), colors: balloonColors },
   plinths,
   cutouts,
+  garlandFlorals: false,
+  numberLight: { enabled: false, value: "1" },
   totalPrice: 0,
   // Shimmer wall is no longer a supported panel type — sanitizeBackdropItems()
   // above already remaps any legacy shimmer_wall item to arch, so `panels`

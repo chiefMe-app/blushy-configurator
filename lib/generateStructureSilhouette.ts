@@ -582,6 +582,12 @@ export function generateStructureSilhouette(
   // Sequin-disc tile fill for shimmer_wall panels — defaults to the original silver-gray
   // so any caller that doesn't pass it keeps the pre-existing look.
   shimmerColorHex?: string,
+  // 2026-09-05: florals and the light-up number are drawn HERE rather than
+  // described in the prompt. Both were written as prompt clauses first and both
+  // did nothing at all — the render came back pixel-identical with and without
+  // them, which is what every mid-prompt addition on this pipeline does. Placed
+  // objects belong in the guide.
+  extras?: { florals?: boolean; numberLight?: { enabled: boolean; value: string } },
 ): SilhouetteResult {
   const shimmerTileFill = shimmerColorHex ?? "#D8D8E4";
   const { falImageSize } = calculateRenderAspectRatio(backdropItems);
@@ -1760,6 +1766,108 @@ export function generateStructureSilhouette(
       content.push(standeeGuide(cx, floorY, heightPx, standee.label));
       cutoutPlaceholderHeightsCm.push(standee.heightCm);
       curRight = cx - widthPx / 2 - betweenGap;
+    }
+  }
+
+  // ── Florals and greenery tucked into the garland ─────────────────────────
+  // Drawn over the balloons that are already in `content`, in the gaps between
+  // them: a sprig is a few small sage leaves on a short stem. Sampled from the
+  // balloons actually placed, so the foliage follows whatever garland the layout
+  // drew rather than needing its own path.
+  if (extras?.florals && balloonStyle !== "none") {
+    const balloons = content
+      .map((el) => /<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([\d.]+)"/.exec(el))
+      .filter((m): m is RegExpExecArray => m !== null)
+      .map((m) => ({ x: +m[1], y: +m[2], r: +m[3] }));
+    let fst = 20260905;
+    const frnd = () => { fst = (fst * 1664525 + 1013904223) >>> 0; return fst / 4294967296; };
+    const SAGE = "#8FA68A", SAGE_D = "#6E8A6B", BLOOM = "#F3E7EE";
+    // Roughly one sprig per four balloons, biased to the larger ones, which is
+    // where the real gaps are.
+    const sprigs = balloons
+      .filter((b) => b.r > 12)
+      .filter(() => frnd() < 0.28);
+    for (const b of sprigs) {
+      const ang = frnd() * Math.PI * 2;
+      const ox = b.x + Math.cos(ang) * b.r * 0.95;
+      const oy = b.y + Math.sin(ang) * b.r * 0.95;
+      const len = b.r * (0.75 + frnd() * 0.6);
+      const dir = Math.cos(ang) >= 0 ? 1 : -1;
+      const tipX = ox + dir * len * 0.8;
+      const tipY = oy - len * (0.35 + frnd() * 0.5);
+      content.push(
+        `<path d="M ${ox.toFixed(1)},${oy.toFixed(1)} Q ${((ox + tipX) / 2).toFixed(1)},${(oy - len * 0.55).toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)}" ` +
+        `fill="none" stroke="${SAGE_D}" stroke-width="1.6" stroke-linecap="round"/>`,
+      );
+      const leaves = 3 + Math.floor(frnd() * 3);
+      for (let i = 0; i < leaves; i++) {
+        const t = (i + 1) / (leaves + 1);
+        const lx = ox + (tipX - ox) * t;
+        const ly = oy + (tipY - oy) * t;
+        const lr = Math.max(2.2, b.r * (0.16 - 0.05 * t));
+        content.push(
+          `<ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="${(lr * 1.7).toFixed(1)}" ry="${lr.toFixed(1)}" ` +
+          `transform="rotate(${(dir * (18 + frnd() * 34)).toFixed(0)} ${lx.toFixed(1)} ${ly.toFixed(1)})" ` +
+          `fill="${i % 2 === 0 ? SAGE : SAGE_D}"/>`,
+        );
+      }
+      // A few of the sprigs carry a pale bloom.
+      if (frnd() < 0.35) {
+        const br = Math.max(3, b.r * 0.20);
+        content.push(`<circle cx="${tipX.toFixed(1)}" cy="${tipY.toFixed(1)}" r="${br.toFixed(1)}" fill="${BLOOM}"/>`);
+      }
+    }
+  }
+
+  // ── Light-up marquee number ──────────────────────────────────────────────
+  // A block digit with bulbs set into its face, standing on the floor beside the
+  // decor. Height is tied to the tallest panel so 100cm reads correctly against
+  // a 200-220cm backdrop.
+  const numDigits = String(extras?.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
+  if (extras?.numberLight?.enabled && numDigits.length > 0 && layout.panels.length > 0) {
+    const tallest = layout.panels.reduce((a, b) => (b.floorY - b.apexY > a.floorY - a.apexY ? b : a));
+    const panelH = tallest.floorY - tallest.apexY;
+    const digitH = panelH * 0.45;
+    const digitW = digitH * 0.60;
+    const gap = digitW * 0.14;
+    const groupW = digitW * numDigits.length + gap * (numDigits.length - 1);
+    // It stands IN FRONT of the board, not out beside it: placed off the panel
+    // edge it landed on top of the garland column. Inside the board's left third
+    // is clear floor on every layout, and it shifts further left again when
+    // plinths are present so the two do not collide.
+    const startX = tallest.cx - tallest.pw * 0.45
+      - (layout.plinths.length > 0 ? groupW * 0.85 : 0);
+    const baseY = tallest.floorY;
+    for (let d = 0; d < numDigits.length; d++) {
+      const x = startX + d * (digitW + gap);
+      const y = baseY - digitH;
+      content.push(
+        `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${digitW.toFixed(1)}" height="${digitH.toFixed(1)}" ` +
+        // 2026-09-05: drawn near-white on the guide's white ground, this marker
+        // was dropped from the render entirely — the same failure the plinth
+        // marker had (see plinthFilledCylinder). Faint outlines get ignored;
+        // filled shapes with a strong edge get reproduced. High contrast now.
+        `rx="${(digitW * 0.10).toFixed(1)}" fill="#FFFFFF" stroke="rgba(55,55,55,0.92)" stroke-width="3"/>`,
+      );
+      content.push(
+        `<text x="${(x + digitW / 2).toFixed(1)}" y="${(y + digitH * 0.72).toFixed(1)}" text-anchor="middle" ` +
+        `font-family="Arial Black, Arial, sans-serif" font-size="${(digitH * 0.78).toFixed(0)}" ` +
+        `fill="#5A5A5A" stroke="rgba(40,40,40,0.85)" stroke-width="2">${numDigits[d]}</text>`,
+      );
+      // Bulbs around the face edge — the detail that makes it read as a marquee
+      // letter rather than a plain block.
+      const bulbR = Math.max(2.5, digitW * 0.045);
+      const stepsX = 5, stepsY = 8;
+      for (let i = 0; i <= stepsX; i++) {
+        const bx = x + (digitW * i) / stepsX;
+        content.push(`<circle cx="${bx.toFixed(1)}" cy="${(y + bulbR * 1.6).toFixed(1)}" r="${bulbR.toFixed(1)}" fill="#FFF3C4" stroke="rgba(70,70,70,0.85)" stroke-width="1.2"/>`);
+        content.push(`<circle cx="${bx.toFixed(1)}" cy="${(y + digitH - bulbR * 1.6).toFixed(1)}" r="${bulbR.toFixed(1)}" fill="#FFF3C4" stroke="rgba(70,70,70,0.85)" stroke-width="1.2"/>`);
+      }
+      for (let i = 1; i < stepsY; i++) {
+        const by = y + (digitH * i) / stepsY;
+        content.push(`<circle cx="${(x + bulbR * 1.6).toFixed(1)}" cy="${by.toFixed(1)}" r="${bulbR.toFixed(1)}" fill="#FFF3C4" stroke="rgba(70,70,70,0.85)" stroke-width="1.2"/>`);
+        content.push(`<circle cx="${(x + digitW - bulbR * 1.6).toFixed(1)}" cy="${by.toFixed(1)}" r="${bulbR.toFixed(1)}" fill="#FFF3C4" stroke="rgba(70,70,70,0.85)" stroke-width="1.2"/>`);
+      }
     }
   }
 

@@ -1299,6 +1299,7 @@ function clearAllStandees() {
       // return`. A banner has one fixed size (2x2m), so unlike an arch it needs
       // no size step and is created ready to use.
       case "single_banner":      panels = [makeBackdropItem("banner")]; break;
+      case "arch_open_frame":    panels = [makeArchUnsized("arch-1"), makeBackdropItem("open_arch_frame")]; break;
       case "double_arch":        panels = [makeArchUnsized("arch-1"), makeArchUnsized("arch-2")]; break;
       // arch_open_frame / shimmer_open_frame / single_shimmer / arch_shimmer
       // removed from product — no longer selectable, so no case needed;
@@ -1619,7 +1620,7 @@ function clearAllStandees() {
                 sizeId and must not raise a "pick a size" cue that can never be
                 satisfied — which is what left the Banner setup looking broken. */}
             {d.backdropItems.length > 0
-              && d.backdropItems.some((i) => !i.sizeId && i.type !== "round" && i.type !== "banner")
+              && d.backdropItems.some((i) => !i.sizeId && i.type !== "round" && i.type !== "banner" && i.type !== "open_arch_frame")
               && nextCue("Pick a size next")}
           </div>
         </div>
@@ -1739,6 +1740,13 @@ function clearAllStandees() {
           const bannerItem = d.backdropItems.find(i => i.type === "banner");
           const itemIdx = bannerItem ? d.backdropItems.findIndex(i => i.id === bannerItem.id) : -1;
           return bannerItem && itemIdx >= 0 ? BackdropCustomizeRow({ item: bannerItem, itemIdx }) : null;
+        })()}
+
+        {/* The hollow arch frame has no size choice either. */}
+        {d.backdropItems.some(i => i.type === "open_arch_frame") && (() => {
+          const frameItem = d.backdropItems.find(i => i.type === "open_arch_frame");
+          const itemIdx = frameItem ? d.backdropItems.findIndex(i => i.id === frameItem.id) : -1;
+          return frameItem && itemIdx >= 0 ? BackdropCustomizeRow({ item: frameItem, itemIdx }) : null;
         })()}
 
         {/* Shimmer color picker intentionally removed (2026-07-12) — shimmer
@@ -2629,6 +2637,101 @@ function clearAllStandees() {
     })()}
   </div>
 </div>
+
+      {/* FLORALS — 2026-09-05. Applies to every setup; only does anything when
+          a garland is selected, so it says so rather than hiding itself. */}
+      <div style={card}>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontWeight: 600, fontSize: 13.5, color: DC.plum }}>Florals in the garland</div>
+          <div style={{ fontSize: 11.5, color: DC.muted }}>
+            Eucalyptus, dried grasses and soft blooms tucked between the balloons.
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => patchDecor({ garlandFlorals: !d.garlandFlorals })}
+          disabled={d.balloonStyle === "none"}
+          style={{
+            display: "flex", alignItems: "center", gap: 10, width: "100%",
+            padding: "11px 13px", borderRadius: 12, cursor: d.balloonStyle === "none" ? "not-allowed" : "pointer",
+            opacity: d.balloonStyle === "none" ? 0.5 : 1,
+            border: `1.5px solid ${d.garlandFlorals ? DC.rose : DC.cardBd}`,
+            background: d.garlandFlorals ? DC.rose + "12" : "white", transition: "all 0.15s",
+          }}
+        >
+          <span style={{
+            width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+            border: `1.5px solid ${d.garlandFlorals ? DC.rose : DC.cardBd}`,
+            background: d.garlandFlorals ? DC.rose : "white",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            {d.garlandFlorals && (
+              <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
+                <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </span>
+          <span style={{ flex: 1, textAlign: "left", fontSize: 12.5, fontWeight: 600, color: DC.plum }}>
+            Add florals &amp; greenery
+          </span>
+        </button>
+        {d.balloonStyle === "none" && (
+          <div style={{ fontSize: 10.5, color: DC.faint, marginTop: 6 }}>Pick a balloon garland first.</div>
+        )}
+      </div>
+
+      {/* NUMBER LIGHT — 2026-09-05 */}
+      <div style={card}>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontWeight: 600, fontSize: 13.5, color: DC.plum }}>Light-up number</div>
+          <div style={{ fontSize: 11.5, color: DC.muted }}>
+            A 100 cm illuminated marquee number standing beside the backdrop.
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => patchDecor({ numberLight: { value: d.numberLight?.value ?? "1", enabled: !(d.numberLight?.enabled) } })}
+            style={{
+              display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200,
+              padding: "11px 13px", borderRadius: 12, cursor: "pointer",
+              border: `1.5px solid ${d.numberLight?.enabled ? DC.rose : DC.cardBd}`,
+              background: d.numberLight?.enabled ? DC.rose + "12" : "white", transition: "all 0.15s",
+            }}
+          >
+            <span style={{
+              width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+              border: `1.5px solid ${d.numberLight?.enabled ? DC.rose : DC.cardBd}`,
+              background: d.numberLight?.enabled ? DC.rose : "white",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              {d.numberLight?.enabled && (
+                <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
+                  <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </span>
+            <span style={{ flex: 1, textAlign: "left", fontSize: 12.5, fontWeight: 600, color: DC.plum }}>
+              Add a light-up number
+            </span>
+          </button>
+          {d.numberLight?.enabled && (
+            <input
+              type="text"
+              inputMode="numeric"
+              value={d.numberLight?.value ?? ""}
+              onChange={(e) => patchDecor({
+                numberLight: { enabled: true, value: e.target.value.replace(/[^0-9]/g, "").slice(0, 2) },
+              })}
+              placeholder="1"
+              style={{
+                width: 68, textAlign: "center", fontSize: 16, fontWeight: 700, color: DC.plum,
+                padding: "10px 8px", borderRadius: 12, border: `1.5px solid ${DC.cardBd}`, outline: "none",
+              }}
+            />
+          )}
+        </div>
+      </div>
 
       {/* PLINTHS */}
       <div style={card}>

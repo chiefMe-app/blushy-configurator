@@ -149,6 +149,27 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     standeeZones: ZONES_STANDARD,
   },
   {
+    // 2026-09-05: a solid arch backdrop beside a hollow arch frame, the second
+    // filled with balloons through the opening. The guide and prompt branches
+    // for open_arch_frame were still here — only the way to select it was gone.
+    id: "arch_open_frame",
+    name: "Arch + Open Frame",
+    description: "Solid arch beside a hollow arch",
+    backdropTypes: ["arch", "open_arch_frame"],
+    maxBackdrops: 2,
+    badge: "New",
+    miniPreview: ["arch", "open_frame", "balloons"],
+    panelInstruction:
+      "Two freestanding backdrop pieces side by side: a solid arch backdrop panel, and beside it a hollow " +
+      "open arch frame whose centre is completely open. Both stand directly on the floor.",
+    garlandInstruction:
+      "Balloon design: the solid arch carries a full organic garland down its outer edge and over its top " +
+      "shoulder, ending in a cluster on the floor. The open frame carries a smaller cluster on its outer " +
+      "top shoulder only — balloons never fill or cross the hollow opening.",
+    plinthInstruction: "Place cylinder plinths in front of the solid arch, clear of the garland.",
+    standeeZones: ZONES_STANDARD,
+  },
+  {
     id: "double_arch",
     name: "Double Arch",
     description: "Two arches, side by side",
@@ -225,7 +246,6 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
  * SETUP_LAYOUT_TEMPLATES above). Only genuinely removed ids map here.
  */
 export const LEGACY_TEMPLATE_ID_REMAP: Record<string, string> = {
-  arch_open_frame: "single_arch",
   shimmer_open_frame: "single_arch",
   single_shimmer: "single_arch",
   arch_shimmer: "single_arch",
@@ -257,7 +277,7 @@ export function inferSetupLayoutTemplateIdFromBackdropItems(
   if (key === "shimmer_wall") return "single_arch";
   if (key === "arch+arch") return "double_arch";
   if (key === "arch+shimmer_wall") return "single_arch";
-  if (key === "arch+open_arch_frame") return "single_arch";
+  if (key === "arch+open_arch_frame") return "arch_open_frame";
   if (key === "open_arch_frame+shimmer_wall") return "single_arch";
   return null;
 }

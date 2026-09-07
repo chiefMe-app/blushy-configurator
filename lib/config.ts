@@ -647,7 +647,28 @@ export interface DecorConfig {
    * exact-palette render instruction. Empty/undefined falls back to theme palette.
    */
   sempertexSelection?: SempertexSelection[];
+  /**
+   * Fresh florals and greenery tucked into the balloon garland — eucalyptus,
+   * dried grasses and a few soft blooms in the theme colours. Applies to every
+   * setup; only meaningful when a garland is selected.
+   */
+  garlandFlorals?: boolean;
+  /** Illuminated marquee number standing on the floor beside the backdrop. */
+  numberLight?: NumberLight;
 }
+
+export interface NumberLight {
+  enabled: boolean;
+  /** What the light-up number reads, e.g. "1" or "10". Digits only, 1-2 of them. */
+  value: string;
+}
+
+export const DEFAULT_NUMBER_LIGHT: NumberLight = { enabled: false, value: "1" };
+
+/** Marquee number stand — one 100cm illuminated digit unit. */
+export const NUMBER_LIGHT_PRICE = 0;
+/** Florals and greenery worked through the garland. */
+export const GARLAND_FLORALS_PRICE = 0;
 
 export interface SempertexSelection {
   code: string;
@@ -670,6 +691,9 @@ export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   // 2026-09-05: 2m x 2m printed banner. Price left at 0 alongside the other
   // shapes — no price was given for it, so it is not being invented here.
   { id: "banner",       label: "Banner Backdrop 2x2m", price: 0 },
+  // 2026-09-05: brought back so the Arch + Open Frame setup can be offered. The
+  // guide and prompt branches for it were never removed, only the way in.
+  { id: "open_arch_frame", label: "Open Arch Frame",   price: 0 },
   // "wavy" removed from product - not selectable. Kept in BackdropShapeId for backward compat.
   // "shimmer_wall" removed from product (2026-07-12) - shimmer pipeline too
   // unreliable, focus shifted to arch-based designs. Kept in BackdropShapeId

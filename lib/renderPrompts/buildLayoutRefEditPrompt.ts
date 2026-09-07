@@ -664,6 +664,18 @@ export function buildLayoutRefEditPrompt(
       `not taller than it is wide. `
     : "";
 
+  // The light-up number needs a front-loaded mention as well as its guide marker.
+  // Neither alone was enough: the detailed clause further down did nothing (the
+  // render came back without any number at all), and a high-contrast marquee
+  // marker in the guide was still dropped. Both together put it in the picture —
+  // the same combination the plinth needs, a filled guide marker plus an actual
+  // request near the front of the prompt.
+  const frontNumDigits = String(sceneModel.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
+  const frontNumberLightLine =
+    sceneModel.numberLight?.enabled && frontNumDigits.length > 0
+      ? `A large light-up marquee number ${frontNumDigits} stands on the floor in front of the backdrop. `
+      : "";
+
   const frontPaletteLine = (isMulti || hasRoundPanelInPrompt || hasBannerPanelInPrompt)
     && hasSempertexLock && targetAppearanceParts.length > 0
     ? `Every balloon in this image is one of exactly ${targetAppearanceParts.length} colours: ` +
@@ -765,6 +777,33 @@ export function buildLayoutRefEditPrompt(
       `through the middle of the garland band. ` +
       `Any balloons resting on the floor must be part of the garland's base cluster, visually connected to ` +
       `and touching the main garland — never scattered, detached, or floating separately on the floor.`;
+
+  // Florals and greenery worked into the garland. Only meaningful when there IS
+  // a garland, and deliberately described as tucked BETWEEN balloons rather than
+  // as a separate arrangement, which is how a decorator actually adds them.
+  const floralsClause = sceneModel.garlandFlorals && balloonStyle !== "none"
+    ? `Fresh florals and greenery are worked into the balloon garland: sprigs of eucalyptus and soft dried ` +
+      `grasses, with a few delicate blooms, tucked into the gaps BETWEEN the balloons along the whole ` +
+      `garland — heaviest in the fuller clusters, sparse in the thin stretches. ` +
+      `The foliage is muted sage green and the blooms are soft and pale, picking up the balloon colours. ` +
+      `They sit among the balloons as part of the same garland, not as a separate bouquet, not in vases, ` +
+      `and never covering the backdrop face. `
+    : "";
+
+  // Illuminated marquee number. Digits only and length-capped — it reaches the
+  // prompt as content, never as an instruction.
+  const numberLightDigits = String(sceneModel.numberLight?.value ?? "")
+    .replace(/[^0-9]/g, "")
+    .slice(0, 2);
+  const numberLightClause = sceneModel.numberLight?.enabled && numberLightDigits.length > 0
+    ? `One large illuminated marquee number stands on the floor in front of the backdrop, to the ` +
+      `${hasStandeesInScene ? "right" : "left"} of centre and clear of the balloon garland. ` +
+      `It reads exactly "${numberLightDigits}" — ${numberLightDigits.length > 1 ? "two digits" : "a single digit"}, ` +
+      `spelled exactly as "${numberLightDigits}" and nothing else. ` +
+      `It is a freestanding light-up number roughly 100cm tall: a white block digit with a flat face, ` +
+      `edged with round warm-white bulbs set into the front, standing on a slim base. ` +
+      `It is NOT a balloon number, NOT a foil number, NOT printed on the backdrop and NOT floating. `
+    : "";
 
   const sempertexClause = hasSempertexLock
     ? ` BALLOON COLOR SOURCE OVERRIDE: The theme name is not a balloon color instruction. Balloon colors must be copied from the selected Sempertex palette and from the colored layout reference guide only. ` +
@@ -1045,10 +1084,19 @@ export function buildLayoutRefEditPrompt(
   // fills the frame.
   const framingClause = (hasBannerPanelInPrompt && !isMulti)
     ? `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
-      `Tight medium-close event photography. The square banner board is the subject and must DOMINATE the ` +
-      `frame: it fills almost the whole picture, its top edge close to the top of the image and its bottom ` +
-      `edge close to the bottom, with only a narrow strip of wall to either side and a shallow strip of floor ` +
-      `beneath it. Keep the whole board and its balloons visible and nothing cropped, but do not render the ` +
+      `Tight medium-close event photography. The square banner board and the balloon garland framing it are ` +
+      `ONE object and must DOMINATE the frame together: the board fills almost the whole picture, with only a ` +
+      `narrow strip of wall to either side and a shallow strip of floor beneath it. ` +
+      // 2026-09-05: the previous version said only that the BOARD fills the frame.
+      // The model obeyed by enlarging the board and left the balloons at their
+      // guide size, so the garland ended up floating inset inside the board with
+      // bare board showing all around it ("gene tamfit olmuyor square e"). The
+      // two have to be locked to each other, not sized independently.
+      `The garland is fixed ALONG THE BOARD'S OWN OUTER EDGES: it runs up the left edge, across the top edge ` +
+      `and down the right edge, sitting exactly on those edges with its outer balloons overhanging them and ` +
+      `its inner balloons resting on the board face. It is exactly as tall and as wide as the board — it never ` +
+      `shrinks inside the board leaving bare board around it, and never floats free of it. ` +
+      `Keep the whole board and its balloons visible and nothing cropped, but do not render the ` +
       `board small in a large empty room and do not leave wide empty margins of wall around it. `
     : isRoundScene
     ? `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
@@ -1149,6 +1197,7 @@ const setupTemplateClause = setupTemplate
 
   return (
     frontBannerAspectLine +
+    frontNumberLightLine +
     frontPaletteLine +
     frontStructureLine +
     photographyOpening +
@@ -1173,6 +1222,8 @@ const setupTemplateClause = setupTemplate
     cutoutClause+
     (plinthDesc ? `${plinthDesc}. ` : noPlinthDesc) +
     `${garlandDesc}. ` +
+    floralsClause +
+    numberLightClause +
     // 2026-09-01: user kept reporting flat-disc balloons across renders even
     // after the correction-pass shading fix, because the FIRST-generate pass
     // (this prompt) never told the model each balloon should be a shaded
