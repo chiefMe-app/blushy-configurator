@@ -1080,14 +1080,14 @@ export function defaultConfig(): BuilderConfig {
     decor: {
       ...pkg.defaultDecor,
       backdropItems: [],        // no default backdrop - user chooses
-      // Nothing else is pre-added to the quote (2026-07-20): the package's
-      // defaultDecor pre-selected a half garland + one plinth, so the
-      // Estimated total opened at AED 480 for choices the user had not made
-      // yet. Start at the service package price only and grow as they pick.
-      balloonStyle: "none",
-      // 2026-09-08: the cake plinth is the one exception the customer asked
-      // for — every setup gets one, so it comes pre-selected at XL (75cm).
-      // This does put AED 80 on the opening Estimated total.
+      // 2026-07-20 had this open on nothing at all: the package's defaultDecor
+      // pre-selected a half garland + one plinth, so the Estimated total opened
+      // at AED 480 for choices the user had not made yet.
+      // 2026-09-08: the customer wants the two things every setup actually has
+      // pre-selected — a balloon garland and one XL cake plinth — so no setup
+      // ever opens in the "no balloons" state. The opening total is therefore
+      // AED 250 service + 250 garland + 80 plinth.
+      balloonStyle: "full",
       plinths: 1,
       plinthSizes: ["medium"],
       backdropColor: DEFAULT_BACKDROP_COLOR,

@@ -297,6 +297,7 @@ export function buildLayoutRefEditPrompt(
             `An arch-shaped opening is cut straight through the center with no board behind it, and that ` +
             `opening is packed full of a dense organic balloon cluster from the crown down to the floor. ` +
             `NOT chrome, NOT mirrored, NOT polished metal, NOT stainless steel, NOT glossy, ` +
+            `NOT moulded, NOT stepped, NOT ridged, NOT bevelled, NOT a picture-frame profile, ` +
             `NOT a thin doorway frame, NOT a skinny architectural portal, NOT a wire or metal outline, ` +
             `NOT tubular or pipe-like, NOT inflatable, NOT a deep 3D tunnel or hallway, ` +
             `NOT a second solid backdrop panel, NOT a doorway with a door`
@@ -686,10 +687,39 @@ export function buildLayoutRefEditPrompt(
   // 2026-09-08: the open arch rendered as a polished chrome pipe. The clause
   // further down already said flat, not tubular, not metal — mid-prompt, so it
   // did nothing. Front-loaded and short.
-  const frontOpenFrameLine = sceneModel.panels.some((p) => p.type === "open_arch_frame")
-    ? `The open arch is a FLAT MATTE painted board — a smooth, even, non-reflective panel face. ` +
-      `It is not chrome, not mirrored, not metal, not glossy and not a rounded tube. ` +
-      `Its opening is packed full of balloons. `
+  // 2026-09-08 (later), three tries on the same day, each one recorded because
+  // each failed differently:
+  //   "one flat slab ... no moulding"          -> matte, but a stepped
+  //                                               picture-frame profile.
+  //   "a flat sheet of matte MDF, 4cm thick,
+  //    standing on edge"                       -> a WOODEN box on a plinth.
+  //   "the SAME kind of board as the solid
+  //    arch beside it, with a hole cut
+  //    through"                                -> chrome again, AND the hole
+  //                                               bled onto the SOLID arch.
+  // What is left names each piece by its side, so the "hole" cannot migrate,
+  // and never uses the word "frame" — that noun is what pulls the model toward
+  // metal in the first place.
+  const openFrameIdx = sceneModel.panels.findIndex((p) => p.type === "open_arch_frame");
+  const openFrameSide = openFrameIdx < 0 ? "" : openFrameIdx === 0 ? "left" : "right";
+  const solidSide     = openFrameSide === "left" ? "right" : "left";
+  const hasOpenFramePair = openFrameIdx >= 0 && sceneModel.panels.length === 2;
+  // Kept SHORT and first. The ~90-word version of this line rendered the rim as
+  // a moulding anyway; length costs as much as position on this pipeline, so
+  // everything that is not about flatness moved to openFrameDetailLine below.
+  const frontOpenFrameLine = hasOpenFramePair
+    ? `The ${openFrameSide}-hand board is a FLAT MATTE PAINTED BOARD — not shiny, not metal, not chrome. ` +
+      `One plain surface with a plain arch hole cut in it, no moulding and no raised border around the hole. `
+    : "";
+  const openFrameDetailLine = hasOpenFramePair
+    ? `The ${openFrameSide}-hand board is the same flat matte panel as the ${solidSide}-hand one, with an ` +
+      `arch-shaped hole cut out of its centre; that hole is packed full of balloons. The ${solidSide}-hand ` +
+      `backdrop stays completely solid with NO hole in it. Neither board is metal, chrome, glossy, wooden, ` +
+      `a doorway, a niche or a box. ` +
+      (sceneModel.panels.some((p) => p.text.enabled || p.graphic.enabled)
+        ? `No lettering and no artwork on the ${openFrameSide}-hand board — any text or illustration belongs ` +
+          `on the ${solidSide}-hand one only. `
+        : `No lettering and no artwork on the ${openFrameSide}-hand board. `)
     : "";
 
   const frontBannerAspectLine = hasBannerPanelInPrompt && !isMulti
@@ -1415,6 +1445,7 @@ const setupTemplateClause = setupTemplate
     frontNumberLightLine +
     frontPaletteLine +
     frontStructureLine +
+    openFrameDetailLine +
     photographyOpening +
     sceneInventoryClause +
     framingClause +
@@ -1432,7 +1463,9 @@ const setupTemplateClause = setupTemplate
         `material presence, not a thin wire outline or skinny doorway trim. ` +
         `Its surface is COMPLETELY FLAT and MATTE — a smooth painted or upholstered board face, evenly lit, ` +
         `non-reflective. It is NOT chrome, NOT mirrored, NOT polished metal, NOT stainless steel, NOT glossy, ` +
-        `NOT a shiny tube, NOT rounded or pipe-like in section, not inflatable, not a deep 3D tunnel. ` +
+        `NOT a shiny tube, NOT rounded or pipe-like in section, NOT moulded, NOT stepped, NOT ridged, ` +
+        `NOT bevelled, NOT a picture-frame profile, not inflatable, not a deep 3D tunnel. ` +
+        `No lettering and no printed artwork anywhere on the open arch. ` +
         `Exactly the listed pieces — do not add any extra panel. `
       : "") +
     setupTemplateClause +

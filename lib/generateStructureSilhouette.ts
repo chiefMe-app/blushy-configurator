@@ -383,7 +383,10 @@ function openArchFramePath(
   // Bold, substantial frame border — roughly a fifth of the panel's own
   // width, clamped so the hollow opening always stays clearly visible
   // (inner radius never collapses below ~54% of the outer radius).
-  const frameT = Math.max(20, Math.min(rOuter * 0.46, pw * 0.20));
+  // 2026-09-08: 0.20 -> 0.12 of the panel width. The customer reference has a
+  // THIN border, and a thick one gives the render room to carve a stepped
+  // architrave into it — which is what "tirtikli" was.
+  const frameT = Math.max(14, Math.min(rOuter * 0.42, pw * 0.15));
   const rInner = rOuter - frameT;
 
   const outerPath = closedArch(rOuter, cx - rOuter, cx + rOuter, apexY);
@@ -392,10 +395,18 @@ function openArchFramePath(
   const svg = [
     // Solid filled band — outer arch silhouette with the inner arch punched
     // out (evenodd). This is the frame's real material, giving it visual weight.
-    `<path d="${outerPath} ${innerPath}" fill-rule="evenodd" fill="${fillColor}" stroke="rgba(120,120,120,0.30)" stroke-width="1.5"/>`,
-    // Inner-rim shading — a subtle darker line along the hollow opening to
-    // sell material depth/thickness, not just a flat painted outline.
-    `<path d="${innerPath}" fill="none" stroke="rgba(90,90,90,0.30)" stroke-width="1.2"/>`,
+    // 2026-09-08: NO stroke. White-on-white, the fill was invisible and the
+    // only thing the model could see was two thin concentric outlines — which
+    // is a moulding, and is exactly what it painted. The band is now carried
+    // entirely by a flat fill, so what the guide shows is a solid band of
+    // material with no lines on it at all.
+    `<path d="${outerPath} ${innerPath}" fill-rule="evenodd" fill="${fillColor}"/>`,
+    // 2026-09-08: the second, inner-rim path is GONE. The path above already
+    // strokes BOTH subpaths, so this drew the inner edge a second time — a
+    // double-weight line right where a moulding step would be, and the
+    // render duly came back with a stepped picture-frame profile (the
+    // customer: "hala flat gelmiyor yuzeyi, tirtikli gibi"). One band, one
+    // uniform edge.
   ].join("\n    ");
 
   return { svg, frameThicknessPx: Math.round(frameT) };
@@ -767,7 +778,7 @@ export function generateStructureSilhouette(
         const v = parseInt(m[1], 16);
         return (0.2126 * ((v >> 16) & 255) + 0.7152 * ((v >> 8) & 255) + 0.0722 * (v & 255)) / 255;
       })();
-      if (lum > 0.93) frameFill = "#E2E2E8";
+      if (lum > 0.93) frameFill = "#D6D8E2";
       const frame = openArchFramePath(panel.cx, panel.pw, panel.apexY, panel.floorY, frameFill);
       content.push(frame.svg);
       archOpenFrameFrameThicknessPx = frame.frameThicknessPx;
@@ -1708,7 +1719,21 @@ export function generateStructureSilhouette(
           // OPENING, plus a spill over its outer shoulder and base.
           const solidArch = archPanels[0];
           const archOuterSide: "left" | "right" = solidArch.cx < framePanel.cx ? "left" : "right";
+          // 2026-09-08: switched to the tight + looseSpacing variant, i.e. the
+          // exact call Single Arch and Double Arch make. Arch + Open Frame was
+          // the last layout still on the thin default: no 36" statement
+          // anchors, a 1.0x floor mound instead of 1.3x, and an even climb
+          // rather than a bottom-heavy one — which is precisely the sparse
+          // climb and thin floor the customer circled.
+          // 2026-09-08: drawn TWICE at different seeds, the same trick
+          // drawArchShimmerComposition already uses. The customer circled three
+          // holes in the climb and a thin floor pile; a single pass leaves gaps
+          // wherever its overlap check rejects a candidate, and a second pass
+          // with a different seed lands in exactly those holes. Switching the
+          // single pass to the tight/loose variants was tried first and made it
+          // worse — both reject MORE candidates, not fewer.
           const mainResult = drawThickOrganicMainGarland(solidArch, archOuterSide, 0);
+          drawThickOrganicMainGarland(solidArch, archOuterSide, 62);
           archOpenFrameMainGarlandBalloons     = mainResult.count;
           archOpenFrameMainGarlandMinRadiusPx  = mainResult.minR;
           archOpenFrameMainGarlandMaxRadiusPx  = mainResult.maxR;
@@ -1801,14 +1826,38 @@ export function generateStructureSilhouette(
               0.55,
             );
           }
-          for (let i = 0; i < 10; i++) {
-            const ox = dirF * (rI * 0.55 + rndI() * rF * 0.55);
-            const up = rndI() * rMf * 3.4;
+          // 2026-09-08: 10 -> 20 and spread wider and further forward. The
+          // customer circled this floor area as needing far more balloons.
+          for (let i = 0; i < 20; i++) {
+            const ox = dirF * (rI * 0.35 + rndI() * rF * 0.95);
+            const up = rndI() * rMf * 3.8;
             putI(
               framePanel.cx + ox,
-              floorYF - up - rMf * 0.5,
-              i % 3 === 0 ? rLf : rMf * (0.85 + rndI() * 0.30),
-              0.55,
+              floorYF - up - rMf * 0.4,
+              i % 3 === 0 ? rLf : rMf * (0.80 + rndI() * 0.45),
+              0.62,
+            );
+          }
+
+          // Floor spread at the SOLID arch's outer base — circled as too thin
+          // as well. Wider and further out than the garland's own base mound,
+          // and allowed to run a little back under the panel edge so it reads
+          // as a pile rather than a stack against the edge.
+          const dirA  = archOuterSide === "left" ? -1 : 1;
+          const edgeA = solidArch.cx + dirA * (solidArch.pw / 2);
+          const rMa   = Math.max(14, solidArch.pw * 0.115);
+          const rLa   = Math.max(20, solidArch.pw * 0.160);
+          for (let i = 0; i < 18; i++) {
+            // Biased toward the panel edge so the pile stays CONNECTED — a flat
+            // uniform draw left isolated balloons stranded out on the floor.
+            const t  = Math.pow(rndI(), 1.6) * 1.12 - 0.12;
+            const ox = dirA * t * solidArch.pw * 0.34;
+            const up = rndI() * rMa * 3.4;
+            putI(
+              edgeA + ox + (rndI() * 2 - 1) * rMa * 0.45,
+              solidArch.floorY - up - rMa * 0.4,
+              i % 4 === 0 ? rLa : rMa * (0.80 + rndI() * 0.45),
+              0.62,
             );
           }
 

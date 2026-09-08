@@ -1422,7 +1422,10 @@ function clearAllStandees() {
               on it, so it offers neither customized text nor a theme graphic. */}
           {/* 2026-09-05: a Balloon Ring has no board at all, so like the shimmer
               wall it offers neither customized text nor a theme graphic. */}
-          {item.type !== "shimmer_wall" && item.type !== "balloon_ring" && (<>
+          {/* 2026-09-08: an open arch frame is a plain painted band with a
+              balloon-filled opening — nothing is printed on it either, so it
+              offers only the colour picker above. */}
+          {item.type !== "shimmer_wall" && item.type !== "balloon_ring" && item.type !== "open_arch_frame" && (<>
           {/* Customized text */}
           <div onClick={() => patchItemText(itemIdx, { enabled: !item.text.enabled })}
             style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,

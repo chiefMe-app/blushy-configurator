@@ -58,11 +58,25 @@ function sanitizeBackdropItems(items: BackdropItem[]): BackdropItem[] {
   // were never deleted — see the GOLDEN SHIMMER METHOD block in
   // buildLayoutRefEditPrompt — only the way to select one.
   let archCount = 0;
-  return items.filter((item) => {
-    if (item.type !== "arch") return true;
-    archCount++;
-    return archCount <= 2;
-  });
+  return items
+    .filter((item) => {
+      if (item.type !== "arch") return true;
+      archCount++;
+      return archCount <= 2;
+    })
+    // 2026-09-08: nothing is printed on an open arch frame — the customer
+    // asked for it to offer colour only. The options are hidden in the UI;
+    // this makes sure a config saved before that change cannot still send
+    // lettering or a graphic through to the render.
+    .map((item) =>
+      item.type === "open_arch_frame"
+        ? {
+            ...item,
+            text:    { ...item.text, enabled: false },
+            graphic: { ...item.graphic, enabled: false },
+          }
+        : item,
+    );
 }
 
 // ---------------------------------------------------------------------------
