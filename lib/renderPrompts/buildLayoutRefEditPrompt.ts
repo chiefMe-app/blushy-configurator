@@ -745,7 +745,7 @@ export function buildLayoutRefEditPrompt(
     ? (hasRingPanelInPrompt
         // The customer asked for it in the middle of the ring; left to the body
         // clause alone the render hung it above the hoop instead.
-        ? `A warm white glowing neon sign reading "${frontNeonText}" hangs INSIDE the open centre of the balloon ring. `
+        ? `A warm white glowing neon sign reading "${frontNeonText}" hangs in the DEAD CENTRE of the balloon ring's open middle, centred both horizontally and vertically in the opening. `
         : panelCount > 1
           // Named at the front for the same reason the shimmer colour is: left to
           // the body clause the sign appeared on BOTH boards.
@@ -754,11 +754,22 @@ export function buildLayoutRefEditPrompt(
           : `A warm white glowing neon sign reading "${frontNeonText}" is part of this setup. `)
     : "";
 
+  // 2026-09-05: the "do not generate character cutouts" clause has been in this
+  // prompt all along, mid-document, and does nothing — the render painted its
+  // own character in the standee's reserved footprint and the real cutout was
+  // then composited on top, leaving a second figure half-hidden behind the
+  // first. Front-loaded it binds.
+  const frontNoCharactersLine = sceneModel.cutouts?.mode === "standees"
+    ? `Do NOT draw any person, character, figure, doll or cutout in this image — characters are added ` +
+      `afterwards. The floor stays empty where one would stand. `
+    : "";
+
   const frontNumDigits = String(sceneModel.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
   const frontNumberLightLine =
     sceneModel.numberLight?.enabled && frontNumDigits.length > 0
       ? `A 90cm modern matte white marquee number ${frontNumDigits}, with warm white bulbs recessed into its ` +
-        `flat face, stands on the floor in front of the backdrop` +
+        `flat face, stands on the floor in front of the backdrop, FACING THE CAMERA SQUARE-ON — its front ` +
+        `face flat to the viewer, not turned, not angled, not in three-quarter view` +
         (hasStandeesInScene
           // Both in the scene and unplaced, the standee stood across the digits.
           ? `, to the RIGHT of centre. The character standee stands on the LEFT, clear of it — the two never ` +
@@ -1371,6 +1382,7 @@ const setupTemplateClause = setupTemplate
   return (
     frontBannerAspectLine +
     frontShimmerLine +
+    frontNoCharactersLine +
     frontNeonLine +
     frontNumberLightLine +
     frontPaletteLine +

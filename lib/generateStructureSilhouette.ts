@@ -886,6 +886,25 @@ export function generateStructureSilhouette(
     }
   });
 
+  // One px-per-cm for a Balloon Ring scene, shared by the hoop and the marquee
+  // number so they stay in proportion to each other.
+  //
+  // 2026-09-05: the panel box alone is not enough. A 200cm metal frame with
+  // balloons tied on top measures about 250cm finished, and at the panel's own
+  // 4.35 px/cm that is 1084px on a 1024px canvas — drawn straight off both
+  // edges. Clipped guide content is what produced stray balloons the last time
+  // it happened, so the scene scale is capped to whatever makes the finished
+  // hoop fit with a margin. 1.25 is the measured finished-over-frame ratio.
+  const ringLayoutPanel = backdropItems[0]?.type === "balloon_ring" ? layout.panels[0] : null;
+  const ringScenePxPerCm = ringLayoutPanel
+    ? Math.min(
+        (ringLayoutPanel.floorY - ringLayoutPanel.apexY)
+          / Math.max(1, backdropItems[0]?.heightCm ?? 200),
+        (Math.min(W, H) * 0.92)
+          / Math.max(1, (backdropItems[0]?.widthCm ?? 200) * 1.25),
+      )
+    : null;
+
   // v4: Individual balloon circles — no filled blob, organic circles follow right-side path.
   // Avoids vertical slab boundary that the filled blob created.
   if (balloonStyle !== "none" && layout.panels.length > 0) {
@@ -1735,15 +1754,17 @@ export function generateStructureSilhouette(
           // ring, so 2m is what the FINISHED hoop measures — the thing you would
           // put a tape across.
           //
+          // 2026-09-05, corrected: the 200cm is the METAL RING itself. The
+          // balloons are tied onto that frame and sit outside it, so the finished
+          // piece measures more than 2m — the first version targeted the finished
+          // hoop instead, which made the frame only 149cm.
+          //
           // Everything else in the guide scales off the panel height (the marquee
           // number measures a correct 90cm that way), so the same px-per-cm is
-          // used here. The 1.34 is the measured ratio between the hoop's outer
-          // edge and its centre-line for the lane offsets below; asserted by the
-          // ring-diameter check rather than assumed.
-          const ringPxPerCm = (rp.floorY - rp.apexY) / Math.max(1, backdropItems[rp.idx]?.heightCm ?? 200);
-          const RING_OUTER_CM = backdropItems[rp.idx]?.widthCm ?? 200;
-          const HOOP_OUTER_OVER_LINE = 1.34;
-          const ringR = (RING_OUTER_CM / 2) * ringPxPerCm / HOOP_OUTER_OVER_LINE;
+          // used here.
+          const ringPxPerCm = ringScenePxPerCm ?? ((rp.floorY - rp.apexY) / Math.max(1, backdropItems[rp.idx]?.heightCm ?? 200));
+          const RING_FRAME_CM = backdropItems[rp.idx]?.widthCm ?? 200;
+          const ringR = (RING_FRAME_CM / 2) * ringPxPerCm;
           const ringCx = rp.cx;
           const ringCy = rp.floorY - ringR;
           let rst = 777331;
@@ -1957,10 +1978,12 @@ export function generateStructureSilhouette(
     const isRing = (backdropItems[np.idx]?.type ?? "") === "balloon_ring";
     const panelH = np.floorY - np.apexY;
     const cxN = np.cx;
-    // On a ring the sign sits in the upper half of the opening, not dead centre:
-    // the plinth stands in the middle of the hoop and the two overlapped.
-    const ringMidY = np.floorY - Math.min(np.pw, panelH) / 2;
-    const cyN = isRing ? ringMidY - Math.min(np.pw, panelH) * 0.16 : np.apexY + panelH * 0.34;
+    // 2026-09-05: back to dead centre of the ring. It was raised because the
+    // plinth stood in the middle of the hoop; the plinth is forward of the decor
+    // now, so the middle of the opening is free.
+    const ringR2 = (Math.max(1, backdropItems[np.idx]?.widthCm ?? 200) / 2)
+      * (ringScenePxPerCm ?? (panelH / Math.max(1, backdropItems[np.idx]?.heightCm ?? 200)));
+    const cyN = isRing ? np.floorY - ringR2 : np.apexY + panelH * 0.34;
     const words = neonWords.split(" ").filter(Boolean);
     const lines = words.length > 2 ? [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")] : [neonWords];
     const widest = Math.max(...lines.map((l) => l.length));
@@ -2002,7 +2025,7 @@ export function generateStructureSilhouette(
     // panel and against a 200cm ring 45% — the old flat 0.45 was drawing it
     // over-tall on the taller boards.
     const NUMBER_H_CM = 90;
-    const pxPerCmN = panelH / Math.max(1, backdropItems[tallest.idx]?.heightCm ?? 200);
+    const pxPerCmN = ringScenePxPerCm ?? (panelH / Math.max(1, backdropItems[tallest.idx]?.heightCm ?? 200));
     const digitH = NUMBER_H_CM * pxPerCmN;
     const digitW = digitH * 0.60;
     const gap = digitW * 0.14;
@@ -2016,8 +2039,10 @@ export function generateStructureSilhouette(
     // The prompt already said "right of centre when there are standees"; the
     // guide was still putting it left, and the guide is what gets copied.
     const hasStandees = (cutoutGuideItems ?? []).length > 0;
+    // 2026-09-05: further right. At 0.45 of the half-width it sat over the decor;
+    // the customer wants it clear of it, out on the open floor.
     const wantX = hasStandees
-      ? tallest.cx + tallest.pw * 0.45 - groupW
+      ? tallest.cx + tallest.pw * 0.62 - groupW * 0.35
       : tallest.cx - tallest.pw * 0.45
         - (layout.plinths.length > 0 ? groupW * 0.85 : 0);
     // Nothing may be drawn outside the canvas: unclamped, a single Shimmer Wall
