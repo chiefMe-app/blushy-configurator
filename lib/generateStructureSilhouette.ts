@@ -1312,6 +1312,13 @@ export function generateStructureSilhouette(
           // mass and both layouts want it. This one is specifically about how
           // closely balloons may be packed.
           looseSpacing = false,
+          // 2026-09-08: Double Arch turns this OFF. The three 36" anchors below
+          // came out of 2026-07-20 feedback that the garland had no mass low
+          // down, but on Double Arch they read as one enormous ball parked at
+          // the foot of each leg — the customer crossed both of them out and
+          // asked for the same volume built from 12" and 5" balloons instead.
+          // Single Arch keeps them; its look was approved with them in.
+          giantAnchors = true,
         ): { count: number; minR: number; maxR: number; lanes: number } => {
           const dir       = side === "left" ? -1 : 1;
           const panelEdge = p.cx + dir * (p.pw / 2);
@@ -1425,13 +1432,24 @@ export function generateStructureSilhouette(
           // then reproduces instead of an even strip.
           const baseScale = tight ? 1.3 : 1;
           const upScale   = tight ? 1.25 : 1; // taller mound — more volume low down
-          if (tight) {
+          if (tight && giantAnchors) {
             // Three 36" giant statement anchors seated IN the floor mound —
             // the biggest objects in the garland, unmistakably larger than
             // everything else, exactly where a decorator parks them.
             put(edgeX + dir * 16,  p.floorY - rXL * 0.72, rXL);
             put(edgeX + dir * -24, p.floorY - rXL * 0.60, rXL * 0.88);
             put(edgeX + dir * 54,  p.floorY - rXL * 0.55, rXL * 0.78);
+          } else if (tight) {
+            // Same mass, no single giant: three large anchors instead of three
+            // 36" ones, then a scatter of 12" and 5" balloons through the mound
+            // so the volume is built out of many balloons rather than one.
+            put(edgeX + dir * 16,  p.floorY - rLarge * 0.95, rLarge * 1.05);
+            put(edgeX + dir * -24, p.floorY - rLarge * 0.80, rLarge * 0.92);
+            put(edgeX + dir * 54,  p.floorY - rLarge * 0.72, rLarge * 0.85);
+            // The 12"/5" scatter that replaces the giant is placed at the END of
+            // this function, not here: run before the climb it consumed the
+            // space the climb needed and the overlap check then rejected most
+            // of it, leaving the garland in disconnected clumps.
           }
           // Jittered off the fixed table so the mound is a pile rather than a
           // repeatable arrangement, and every fourth balloon is bumped up a
@@ -1581,6 +1599,20 @@ export function generateStructureSilhouette(
             crownAng += angStep * ((rBall * (0.62 + rnd() * 0.28)) / rArc) * (180 / Math.PI);
           }
 
+          // Last pass: 12" and 5" balloons packed into whatever gaps are left in
+          // the floor mound. Placed last so it fills the garland rather than
+          // crowding it out (see the note in the base cluster).
+          if (tight && !giantAnchors) {
+            for (let i = 0; i < 18; i++) {
+              const ox = (baseRnd() * 2 - 1) * rLarge * 2.2;
+              const up = baseRnd() * rLarge * 3.0;
+              put(
+                edgeX + dir * 12 + ox,
+                p.floorY - up,
+                (i % 3 === 0 ? rSmall : rMed) * (0.85 + baseRnd() * 0.35),
+                );
+            }
+          }
           return { count: n, minR: Math.round(minR), maxR: Math.round(maxR), lanes: 4 };
         };
 
@@ -1712,8 +1744,11 @@ export function generateStructureSilhouette(
           // companion chance 0.85 vs 0.75, and a climb step of 0.95-1.25 of a
           // radius vs 0.55-0.80. Double Arch was left on the tighter numbers
           // only because it had been approved earlier.
-          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true, true).count;
-          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true, true).count;
+          // 2026-09-08: giantAnchors off — see the flag. The customer crossed
+          // out the single huge balloon at the foot of each leg and asked for
+          // the same volume in 12" and 5" balloons.
+          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true, true, false).count;
+          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true, true, false).count;
         } else if (framePanel && archPanels.length === 1) {
           // Arch + Open Frame: the SOLID ARCH carries a thick organic-mass
           // garland (floor base → outer edge climb → over the crown, ~62
@@ -1795,9 +1830,13 @@ export function generateStructureSilhouette(
           };
 
           // 1) Statement balloons first — the biggest objects win their space.
-          putI(framePanel.cx - rI * 0.10, springYi + rI * 0.20, rXLf, 0.65);
-          putI(framePanel.cx + rI * 0.40, springYi + rI * 1.10, rXLf * 0.72, 0.65);
+          //    2026-09-08: the top one is gone. At the crown of the arch it read
+          //    as one oversized ball dominating the whole piece (the customer
+          //    circled it), so the cluster now grows out of the floor: the
+          //    biggest balloons sit low and everything tapers upward.
           putI(framePanel.cx - rI * 0.42, floorYF - rXLf * 0.80, rXLf * 0.80, 0.65);
+          putI(framePanel.cx + rI * 0.40, floorYF - rXLf * 1.55, rXLf * 0.66, 0.65);
+          putI(framePanel.cx - rI * 0.05, springYi + rI * 0.55, rLf * 1.05, 0.65);
 
           // 1b) A run of balloons sitting ON the opening's edge, all the way
           //     round both jambs and over the arc. 2026-09-08: four prompt
@@ -1841,7 +1880,12 @@ export function generateStructureSilhouette(
                 const bx = x + (rndI() * 2 - 1) * R * 0.45;
                 const by = y + (rndI() * 2 - 1) * R * 0.40;
                 if (!insideOpening(bx, by)) continue;
-                putI(bx, by, R * (0.85 + rndI() * 0.30));
+                // Taper upward: full size at the floor, two thirds at the
+                // crown. A real cluster is heaviest at the bottom, and the
+                // even-sized version put big balloons at the top where the
+                // customer said they looked far too large.
+                const up = Math.min(1, Math.max(0, (floorYF - by) / Math.max(1, floorYF - framePanel.apexY)));
+                putI(bx, by, R * (1 - 0.34 * up) * (0.85 + rndI() * 0.30));
               }
             }
           }

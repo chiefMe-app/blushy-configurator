@@ -105,30 +105,21 @@ export function calculateExactLayout(
     return { i, wCm, hCm, apexY, pw, aspect, zOrder };
   });
 
-  // Gap between panels (tight, event-like) — widened when a plinth is
-  // configured alongside 2 panels (Double Arch's only real 2-panel case
-  // post-shimmer-removal): a real guide render showed the default gap
-  // (~0.8% of canvas width) is far narrower than a 40cm plinth's own
-  // footprint, so the plinth guide had to overlap both arch edges to fit,
-  // reading as a thin sliver wedged in a crack rather than a distinct
-  // freestanding object — which real renders then dropped entirely. Sizing
-  // the gap off the plinth's actual diameter (in px, via the same
-  // tallestPanelHeightPx/maxHeightCm scale used for panels) guarantees the
-  // plinth always has genuine standalone floor space, which also directly
-  // improves the two panels' visual separation at the base.
-  // 2026-09-05: only when BOTH panels are arches. The wide gap exists so a
-  // Double Arch's plinth has real floor space between the boards. On Arch +
-  // Shimmer the plinth stands in front of the arch, not between the pieces, and
-  // the customer wants those two touching ("dipdibe olsunlar") — the plinth-sized
-  // gap was pushing them apart for no reason.
+  // Gap between panels (tight, event-like).
+  //
+  // History, because it flip-flopped: the gap used to be widened to a plinth's
+  // own diameter whenever a Double Arch had a plinth, so the plinth had real
+  // floor space BETWEEN the two boards. Since 2026-09-05 the plinth stands
+  // centred in FRONT of the whole group instead, so that padding was pushing
+  // the boards apart for no reason at all.
+  // 2026-09-08: removed, and Double Arch goes further — the customer wants the
+  // two boards touching, with the shorter one standing slightly in FRONT of the
+  // taller ("dipdibe olsunlar hatta small/medium olan biraz onunde olsun").
+  // When the two arches are different heights they now OVERLAP slightly and the
+  // shorter one is stepped forward; the z-order already draws the shorter one
+  // last, so the overlap reads as depth rather than as a collision.
   const bothArches = count === 2 && items.every((it) => it?.type === "arch");
-  const hasPlinthForGap = bothArches && plinthSizes.length > 0;
-  const approxPxPerCm = tallestPanelHeightPx / maxHeightCm;
-  const maxPlinthDiameterCm = hasPlinthForGap
-    ? Math.max(...plinthSizes.map((s) => getPlinthDimensions(s).diameterCm))
-    : 0;
-  const plinthGapPaddingPx = hasPlinthForGap ? maxPlinthDiameterCm * approxPxPerCm * 1.25 : 0;
-  const rawGap = count === 1 ? 0 : Math.max(6, canvasW * 0.008, plinthGapPaddingPx);
+  const rawGap = count === 1 ? 0 : Math.max(6, canvasW * 0.008);
 
   // Scale group down if it overflows canvas. The gap has to shrink with the
   // panels — scaling only the panels (the old behaviour) left a full-size gap
@@ -148,7 +139,21 @@ export function calculateExactLayout(
   const maxGroupW = canvasW * (count === 1 ? 0.90 : 0.78);
   const groupScale = rawTotalW > maxGroupW ? maxGroupW / rawTotalW : 1;
   const gap = rawGap * groupScale;
-  const totalGroupW = rawTotalW * groupScale;
+
+  // Two arches of DIFFERENT heights sit shoulder to shoulder with a small
+  // overlap, the shorter one stepped forward. Equal-height pairs keep the plain
+  // gap — overlapping two identical silhouettes just looks like a mistake.
+  const heightsDiffer = bothArches && new Set(rawPanels.map((r) => r.hCm)).size > 1;
+  const minPwScaled   = Math.min(...rawPanels.map((r) => r.pw * groupScale));
+  const effGap        = heightsDiffer ? -minPwScaled * 0.035 : gap;
+  // How far forward the shorter board stands, as a share of the tallest board's
+  // own height. Same idea as plinthForwardPx in the guide: in this projection,
+  // nearer the camera means lower on the canvas.
+  const tallestPanelPx = Math.max(...rawPanels.map((r) => (floorY - r.apexY) * groupScale));
+  const forwardStepPx  = heightsDiffer ? tallestPanelPx * 0.030 : 0;
+
+  const totalGroupW = rawPanels.reduce((s, p) => s + p.pw * groupScale, 0)
+    + (count - 1) * effGap;
 
   // --- Assign x positions (selection order = left-to-right) ---
   const panels: PanelLayout[] = [];
@@ -157,12 +162,17 @@ export function calculateExactLayout(
   for (const raw of rawPanels) {
     const pw  = raw.pw * groupScale;
     const cx  = xCursor + pw / 2;
-    xCursor  += pw + gap;
+    xCursor  += pw + effGap;
+
+    // zOrder 0 is the tallest, drawn first and therefore behind. Anything after
+    // it is a shorter board, and that is the one that steps forward.
+    const forward = raw.zOrder > 0 ? forwardStepPx : 0;
+    const panelFloorY = floorY + forward;
 
     // Scale height by the same factor as width — scaling width alone (the old
     // behaviour) squashed each panel's aspect ratio, and the edit model copied
     // that distortion into the photograph.
-    const apexY = floorY - (floorY - raw.apexY) * groupScale;
+    const apexY = floorY - (floorY - raw.apexY) * groupScale + forward;
 
     const safeXPct = ((cx - pw / 2) / canvasW) * 100;
     const safeYPct = (apexY / canvasH) * 100;
@@ -173,7 +183,7 @@ export function calculateExactLayout(
       idx:         raw.i,
       cx, pw,
       apexY,
-      floorY,
+      floorY: panelFloorY,
       widthCm:     raw.wCm,
       heightCm:    raw.hCm,
       aspectRatio: raw.aspect,
