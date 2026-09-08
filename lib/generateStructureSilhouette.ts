@@ -754,7 +754,20 @@ export function generateStructureSilhouette(
     // same neutral fill family as the paired solid arch (MULTI_PANEL_FILLS),
     // so the pair reads as one coordinated set, not a wire outline vs a board.
     if (shape === "open_arch_frame") {
-      const frameFill = fillForPanel(sortedIdx, panel.idx);
+      let frameFill = fillForPanel(sortedIdx, panel.idx);
+      // 2026-09-08: the customer's frame kept rendering as a polished chrome
+      // pipe. Looking at the guide explained it: the panel's own colour is
+      // white by default, so the band was white-on-white — two hairline
+      // outlines with no material between them, and the model filled the
+      // vacuum with the shiniest thing it knows. A near-white fill is replaced
+      // with a flat light neutral so the band reads as a solid matte board.
+      const lum = (() => {
+        const m = /^#([0-9a-fA-F]{6})$/.exec(frameFill);
+        if (!m) return 0;
+        const v = parseInt(m[1], 16);
+        return (0.2126 * ((v >> 16) & 255) + 0.7152 * ((v >> 8) & 255) + 0.0722 * (v & 255)) / 255;
+      })();
+      if (lum > 0.93) frameFill = "#E2E2E8";
       const frame = openArchFramePath(panel.cx, panel.pw, panel.apexY, panel.floorY, frameFill);
       content.push(frame.svg);
       archOpenFrameFrameThicknessPx = frame.frameThicknessPx;
@@ -1691,8 +1704,8 @@ export function generateStructureSilhouette(
           // Arch + Open Frame: the SOLID ARCH carries a thick organic-mass
           // garland (floor base → outer edge climb → over the crown, ~62
           // heavily overlapping balloons in varied sizes — not a dotted
-          // outline). The hollow frame gets only a small matching mini-cluster
-          // on its OUTER top shoulder — never inside the hollow opening.
+          // outline). The open frame gets a dense organic cluster filling its
+          // OPENING, plus a spill over its outer shoulder and base.
           const solidArch = archPanels[0];
           const archOuterSide: "left" | "right" = solidArch.cx < framePanel.cx ? "left" : "right";
           const mainResult = drawThickOrganicMainGarland(solidArch, archOuterSide, 0);
@@ -1701,30 +1714,105 @@ export function generateStructureSilhouette(
           archOpenFrameMainGarlandMaxRadiusPx  = mainResult.maxR;
           archOpenFrameMainGarlandLaneCount    = mainResult.lanes;
 
-          // Mini shoulder cluster — 15 balloons (medium + small, no tiny dots)
-          // in two overlapping depth lanes hugging the frame's outer shoulder
-          // arc (upper quarter only), all OUTSIDE the hollow band.
-          const rF        = framePanel.pw / 2;
-          const springCy  = framePanel.apexY + rF;
-          const rFMed     = Math.max(13, Math.min(26, framePanel.pw * 0.11));
-          const rFSmall   = Math.max(9,  Math.min(18, framePanel.pw * 0.075));
-          const frameOuterRight = framePanel.cx > solidArch.cx; // frame's outer side faces away from the arch
-          const angFrom = frameOuterRight ? -80 : 260;
-          const angTo   = frameOuterRight ? -4  : 184;
-          const miniN = 15;
-          let miniCount = 0;
-          for (let i = 0; i < miniN; i++) {
-            const t    = i / (miniN - 1);
-            const ang  = ((angFrom + (angTo - angFrom) * t) * Math.PI) / 180;
-            const lane = i % 2;
-            const rad  = rF + (lane === 0 ? rFMed * 0.7 : rFMed * 1.5) + (i % 3 === 0 ? 4 : 0);
-            const bx   = framePanel.cx + rad * Math.cos(ang);
-            const by   = springCy + rad * Math.sin(ang);
-            const br   = lane === 0 ? rFMed : rFSmall;
-            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(9 + miniCount)}/>`);
-            miniCount++;
+          // 2026-09-08: the customer's Frozen/Elsa reference shows the open
+          // arch's opening PACKED with an organic balloon cluster — a couple of
+          // statement balloons, mediums and smalls filling every gap, and a few
+          // spilling over the frame band and down to the floor on the outer
+          // side. The old 15-balloon shoulder cluster left the opening empty,
+          // which is not what they asked for ("arch+open framedeki balonlar
+          // ornek ELSA koydum ordaki gibi olcak birebir").
+          const rF       = framePanel.pw / 2;
+          // Same formula as openArchFramePath, so the infill matches the band
+          // that is actually drawn.
+          const frameT   = Math.max(20, Math.min(rF * 0.46, framePanel.pw * 0.20));
+          const rI       = rF - frameT;
+          const springYi = framePanel.apexY + frameT + rI;
+          const floorYF  = framePanel.floorY;
+          const frameOuterRight = framePanel.cx > solidArch.cx;
+
+          const rXLf = Math.max(26, framePanel.pw * 0.200);
+          const rLf  = Math.max(18, framePanel.pw * 0.140);
+          const rMf  = Math.max(13, framePanel.pw * 0.098);
+          const rSf  = Math.max(9,  framePanel.pw * 0.068);
+
+          let seedI = 20260908;
+          const rndI = () => { seedI = (seedI * 1664525 + 1013904223) >>> 0; return seedI / 4294967296; };
+
+          const areaI = new Array(Math.max(1, colors.length)).fill(0) as number[];
+          const pickI = (): number => {
+            let b = 0;
+            for (let i = 1; i < areaI.length; i++) if (areaI[i] < areaI[b]) b = i;
+            return b;
+          };
+          const placedI: { x: number; y: number; r: number }[] = [];
+          let infillCount = 0;
+          const putI = (x: number, y: number, r: number, maxNest = 0.50): void => {
+            for (const q of placedI) {
+              const d = Math.hypot(x - q.x, y - q.y);
+              if ((r + q.r - d) / (2 * Math.min(r, q.r)) > maxNest) return;
+            }
+            placedI.push({ x, y, r });
+            const ci = pickI();
+            areaI[ci] += Math.PI * r * r;
+            content.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" ${balloonAttrs(ci)}/>`);
+            infillCount++;
+          };
+          // A balloon counts as inside when its CENTRE is inside the opening,
+          // so the cluster naturally laps over the frame band at the edges —
+          // which is how a real one is tied on.
+          const insideOpening = (x: number, y: number): boolean => {
+            if (Math.abs(x - framePanel.cx) > rI) return false;
+            if (y > floorYF) return false;
+            return y >= springYi ? true : Math.hypot(x - framePanel.cx, y - springYi) <= rI;
+          };
+
+          // 1) Statement balloons first — the biggest objects win their space.
+          putI(framePanel.cx - rI * 0.10, springYi + rI * 0.20, rXLf, 0.65);
+          putI(framePanel.cx + rI * 0.40, springYi + rI * 1.10, rXLf * 0.72, 0.65);
+          putI(framePanel.cx - rI * 0.42, floorYF - rXLf * 0.80, rXLf * 0.80, 0.65);
+
+          // 2) Jittered rows from the crown down to the floor, largest radius
+          //    first so the mediums and smalls fill what is left.
+          for (const R of [rLf, rMf, rSf]) {
+            const step = R * 1.35;
+            for (let y = framePanel.apexY + frameT + R * 0.4; y < floorYF; y += step) {
+              for (let x = framePanel.cx - rI; x <= framePanel.cx + rI; x += step) {
+                const bx = x + (rndI() * 2 - 1) * R * 0.45;
+                const by = y + (rndI() * 2 - 1) * R * 0.40;
+                if (!insideOpening(bx, by)) continue;
+                putI(bx, by, R * (0.85 + rndI() * 0.30));
+              }
+            }
           }
-          archOpenFrameMiniClusterBalloons = miniCount;
+
+          // 3) Spill over the outer shoulder and a mound at the outer base, so
+          //    the cluster reads as tied to the frame rather than as a disc
+          //    floating inside a hole.
+          const springCyF = framePanel.apexY + rF;
+          const dirF = frameOuterRight ? 1 : -1;
+          for (let i = 0; i < 9; i++) {
+            const t   = i / 8;
+            const ang = ((frameOuterRight ? -78 + t * 72 : 258 - t * 72) * Math.PI) / 180;
+            const rad = rF + (i % 2 === 0 ? rMf * 0.55 : rMf * 1.25);
+            putI(
+              framePanel.cx + rad * Math.cos(ang),
+              springCyF + rad * Math.sin(ang),
+              i % 3 === 0 ? rLf * 0.85 : rMf,
+              0.55,
+            );
+          }
+          for (let i = 0; i < 10; i++) {
+            const ox = dirF * (rI * 0.55 + rndI() * rF * 0.55);
+            const up = rndI() * rMf * 3.4;
+            putI(
+              framePanel.cx + ox,
+              floorYF - up - rMf * 0.5,
+              i % 3 === 0 ? rLf : rMf * (0.85 + rndI() * 0.30),
+              0.55,
+            );
+          }
+
+          archOpenFrameMiniClusterBalloons = infillCount;
         } else if (framePanel) {
           // Shimmer + Open Frame (no solid arch): compact accent cluster on the
           // frame's top-right shoulder only — hollow silhouette stays visible.
@@ -2052,28 +2140,35 @@ export function generateStructureSilhouette(
     //
     // 2026-09-05: moved to the RIGHT of centre when standees were in the scene,
     // because the character was standing across the digits.
-    // 2026-09-08: back to the LEFT — the customer wants the number on the side
-    // it used to be on ("yenisini eskisinin oldugu tarafa koyalim"). It no
-    // longer collides with the character because it is now placed against the
-    // measured right edge of the reserved standee band rather than against the
-    // panel centre, so the two stand side by side with clear air between them.
+    // 2026-09-08: back to the LEFT — placed against the measured right edge of
+    // the reserved standee band rather than against the panel centre, so the
+    // two stand side by side with clear air between them.
+    // 2026-09-08 (later, same day): EXCEPT on the balloon ring, where the
+    // customer wants the cutout left and the number right — "balloon ringte,
+    // cutout solda number sagda olmali". Only the ring: every other setup keeps
+    // the left placement they asked for in the message before.
     const hasStandees = (cutoutGuideItems ?? []).length > 0;
-    const wantX = hasStandees && standeeBandRightPx !== null
-      ? standeeBandRightPx + digitW * 0.30
-      : tallest.cx - tallest.pw * 0.45
-        - (layout.plinths.length > 0 ? groupW * 0.85 : 0);
+    const numberGoesRight = isRingScene && hasStandees;
+    const wantX = numberGoesRight
+      ? tallest.cx + tallest.pw * 0.62 - groupW * 0.35
+      : hasStandees && standeeBandRightPx !== null
+        ? standeeBandRightPx + digitW * 0.30
+        : tallest.cx - tallest.pw * 0.45
+          - (layout.plinths.length > 0 ? groupW * 0.85 : 0);
     // Nothing may be drawn outside the canvas: unclamped, a single Shimmer Wall
     // with a plinth put the marker at x = -10 and the render filled the clipped
     // gap with stray helium balloons. It also never crosses the setup's centre
     // line — past that it stops reading as "on the left".
     const leftHalfLimit = tallest.cx - groupW * 0.55;
     const canvasLimit = W - groupW - digitW * 0.12;
-    let limitRight = hasStandees ? Math.min(leftHalfLimit, canvasLimit) : canvasLimit;
+    let limitRight = hasStandees && !numberGoesRight
+      ? Math.min(leftHalfLimit, canvasLimit)
+      : canvasLimit;
     // 2026-09-08: and never drawn across the plinth. Standing on the same floor
     // line, overlapping markers had the render fusing the two into one confused
     // object. Only applied when it still leaves the digits clear of the standee
     // band — with all three in a narrow frame, something has to give.
-    if (layout.plinths.length > 0) {
+    if (layout.plinths.length > 0 && !numberGoesRight) {
       const plinthLeftEdge =
         decorCx
         - ((plinthCount - 1) / 2) * plinthSpacing
@@ -2082,7 +2177,16 @@ export function generateStructureSilhouette(
       const leftFloor = standeeBandRightPx !== null ? standeeBandRightPx + digitW * 0.15 : digitW * 0.12;
       if (clearOfPlinth > leftFloor) limitRight = Math.min(limitRight, clearOfPlinth);
     }
-    const startX = Math.max(digitW * 0.12, Math.min(wantX, limitRight));
+    // On the ring the digits must also clear the plinth on the RIGHT side.
+    const startXRaw = Math.max(digitW * 0.12, Math.min(wantX, limitRight));
+    let startX = startXRaw;
+    if (numberGoesRight && layout.plinths.length > 0) {
+      const plinthRightEdge =
+        decorCx
+        + ((plinthCount - 1) / 2) * plinthSpacing
+        + Math.max(...layout.plinths.map((pl) => pl.diameterPx)) / 2;
+      startX = Math.max(startX, Math.min(plinthRightEdge + digitW * 0.10, canvasLimit));
+    }
     const baseY = tallest.floorY;
     for (let d = 0; d < numDigits.length; d++) {
       const x = startX + d * (digitW + gap);

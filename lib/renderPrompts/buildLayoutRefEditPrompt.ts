@@ -85,6 +85,7 @@ export function buildLayoutRefEditPrompt(
   // the palette line and the "nothing underneath it" line for the same reasons.
   const hasBannerPanelInPrompt = sceneModel.panels.some((p) => p.type === "banner");
   const hasRingPanelInPrompt = sceneModel.panels.some((p) => p.type === "balloon_ring");
+  const hasOpenFramePanelInPrompt = sceneModel.panels.some((p) => p.type === "open_arch_frame");
   // 2026-09-05: the front-loaded lines used to be allowed only on multi-panel,
   // round and banner scenes. That list was built one setup at a time and it left
   // a lone Shimmer Wall out — its render dropped the lavender from the palette
@@ -289,13 +290,15 @@ export function buildLayoutRefEditPrompt(
           shimmerColorLockClause(shimmerC)
         : isOpenFrame
           ? `freestanding open arch decor prop — a premium event-styling arch cutout with a bold, thick, ` +
-            `substantial frame border roughly 25-35cm wide, front-facing and flat like a large painted or ` +
-            `upholstered arch panel, with real visual weight and material presence — matching the same premium ` +
-            `finish and color family as the solid arch beside it so the two read as one coordinated decor set. ` +
-            `A clean hollow arch-shaped opening is cut straight through the center, with no solid fill inside it — ` +
-            `you can see straight through the opening to the room behind it. ` +
+            `substantial frame border roughly 25-35cm wide, front-facing, with a COMPLETELY FLAT MATTE face ` +
+            `like a large painted or upholstered arch panel — smooth, evenly lit, non-reflective — with real ` +
+            `visual weight and material presence, matching the same premium finish and color family as the ` +
+            `solid arch beside it so the two read as one coordinated decor set. ` +
+            `An arch-shaped opening is cut straight through the center with no board behind it, and that ` +
+            `opening is packed full of a dense organic balloon cluster from the crown down to the floor. ` +
+            `NOT chrome, NOT mirrored, NOT polished metal, NOT stainless steel, NOT glossy, ` +
             `NOT a thin doorway frame, NOT a skinny architectural portal, NOT a wire or metal outline, ` +
-            `NOT tubular, NOT inflatable, NOT a balloon arch, NOT a deep 3D tunnel or hallway, ` +
+            `NOT tubular or pipe-like, NOT inflatable, NOT a deep 3D tunnel or hallway, ` +
             `NOT a second solid backdrop panel, NOT a doorway with a door`
           : isArch
             ? `solid filled freestanding arch backdrop panel, fully opaque surface, seamless matte ${pColor} surface, ` +
@@ -680,6 +683,15 @@ export function buildLayoutRefEditPrompt(
   // wide. Moved to first it renders 1:1, and the palette lock it displaces is
   // unaffected — measured on the same scene, warm 0.02% -> 0.01%, pink 0.01%
   // -> 0.01%, lilac 3.06% -> 3.29%.
+  // 2026-09-08: the open arch rendered as a polished chrome pipe. The clause
+  // further down already said flat, not tubular, not metal — mid-prompt, so it
+  // did nothing. Front-loaded and short.
+  const frontOpenFrameLine = sceneModel.panels.some((p) => p.type === "open_arch_frame")
+    ? `The open arch is a FLAT MATTE painted board — a smooth, even, non-reflective panel face. ` +
+      `It is not chrome, not mirrored, not metal, not glossy and not a rounded tube. ` +
+      `Its opening is packed full of balloons. `
+    : "";
+
   const frontBannerAspectLine = hasBannerPanelInPrompt && !isMulti
     ? `The backdrop is a SQUARE board, as wide as it is tall — 2 metres by 2 metres, a 1:1 square, ` +
       `not taller than it is wide. `
@@ -771,10 +783,15 @@ export function buildLayoutRefEditPrompt(
         `flat face, stands on the floor in front of the backdrop, FACING THE CAMERA SQUARE-ON — its front ` +
         `face flat to the viewer, not turned, not angled, not in three-quarter view` +
         (hasStandeesInScene
-          // 2026-09-08: back on the LEFT, beside the character rather than
-          // opposite it — "yenisini eskisinin oldugu tarafa koyalim".
-          ? `, on the LEFT side of the setup, standing beside the character with clear air between them — ` +
-            `they never overlap and BOTH are fully visible. `
+          // 2026-09-08: on the LEFT beside the character on every setup —
+          // "yenisini eskisinin oldugu tarafa koyalim" — EXCEPT the balloon
+          // ring, where the customer wants them the other way round:
+          // "balloon ringte, cutout solda number sagda olmali".
+          ? (hasRingPanelInPrompt
+              ? `, on the RIGHT side of the setup. The character standee stands on the LEFT — the two never ` +
+                `overlap and BOTH are fully visible. `
+              : `, on the LEFT side of the setup, standing beside the character with clear air between them — ` +
+                `they never overlap and BOTH are fully visible. `)
           : `. `) +
         `There is EXACTLY ONE marquee number in the entire image — never a second number, never the same ` +
         `digit repeated elsewhere in the frame. ` +
@@ -849,10 +866,17 @@ export function buildLayoutRefEditPrompt(
       `outer bottom side/corner only — never placed in front of the panel, never centered, never spread ` +
       `across the base. ` +
       `Not a thin single-file chain. ` +
-      `The arch front face, the open center opening, and the readable surface of the arch must stay ` +
-      `completely clean, unobstructed, and fully visible at all times — absolutely no balloons crossing ` +
-      `in front of the arch panel, no balloons covering the open center, no balloons blocking the arch face, ` +
-      `and no balloon pile or floor buildup directly in front of the arch face. ` +
+      (hasOpenFramePanelInPrompt
+        // 2026-09-08: on Arch + Open Frame the open arch is meant to be FULL
+        // of balloons, so this clause must not also forbid it there. It still
+        // protects the SOLID arch face, which is all it was ever for.
+        ? `The SOLID arch panel front face and its readable surface must stay completely clean, ` +
+          `unobstructed and fully visible — no balloons crossing in front of the solid arch panel, ` +
+          `no balloon pile directly in front of its face. `
+        : `The arch front face, the open center opening, and the readable surface of the arch must stay ` +
+          `completely clean, unobstructed, and fully visible at all times — absolutely no balloons crossing ` +
+          `in front of the arch panel, no balloons covering the open center, no balloons blocking the arch face, ` +
+          `and no balloon pile or floor buildup directly in front of the arch face. `) +
       `The plinth and the front floor area in front of the arch must remain completely clean and ` +
       `unobstructed — no balloons in front of the plinth, no balloons crossing into the front floor area. ` +
       // 2026-09-03: this used to continue "Do not add any extra plinth,
@@ -954,7 +978,7 @@ export function buildLayoutRefEditPrompt(
     .slice(0, 2);
   const numberLightClause = sceneModel.numberLight?.enabled && numberLightDigits.length > 0
     ? `One large illuminated marquee number stands on the floor in front of the backdrop, to the ` +
-      `left of centre and clear of the balloon garland. ` +
+      `${hasStandeesInScene && hasRingPanelInPrompt ? "right" : "left"} of centre and clear of the balloon garland. ` +
       `It reads exactly "${numberLightDigits}" — ${numberLightDigits.length > 1 ? "two digits" : "a single digit"}, ` +
       `spelled exactly as "${numberLightDigits}" and nothing else. ` +
       // 2026-09-05: the render came back as a vintage carnival letter — gold
@@ -1384,6 +1408,7 @@ const setupTemplateClause = setupTemplate
 
   return (
     frontBannerAspectLine +
+    frontOpenFrameLine +
     frontShimmerLine +
     frontNoCharactersLine +
     frontNeonLine +
@@ -1398,12 +1423,16 @@ const setupTemplateClause = setupTemplate
     doubleArchSeparationClause +
     doubleArchPlinthHardLockClause +
     (sceneModel.panels.some((p) => p.type === "open_arch_frame")
-      ? `The open arch frame's CENTER is completely hollow: no backdrop panel behind the frame, no solid surface filling ` +
-        `the opening, no hidden second backdrop, no curtain or board filling the arch. The area inside and behind the ` +
-        `opening shows only the room. The frame's own border, however, must be thick, bold, and visually substantial — ` +
-        `a real premium decor prop with genuine material presence, not a thin wire outline or skinny doorway trim. ` +
-        `It stays flat-fronted and freestanding — not a tube-shaped balloon arch, not inflatable, not a deep 3D tunnel. ` +
-        `Balloons must never fill, cross, or block the hollow opening — the opening stays fully clear. ` +
+      ? `The open arch frame has NO backdrop panel behind it: no solid board, no hidden second backdrop, no ` +
+        `curtain filling the arch. Its arch-shaped opening is FILLED WITH BALLOONS — a dense organic balloon ` +
+        `cluster packed into the opening from the crown down to the floor, big statement balloons with mediums ` +
+        `and smalls filling every gap, exactly as drawn in the layout reference. Wherever a gap between the ` +
+        `balloons shows through, it shows the room behind, not a board. ` +
+        `The frame's own border is thick, bold and visually substantial — a real premium decor prop with genuine ` +
+        `material presence, not a thin wire outline or skinny doorway trim. ` +
+        `Its surface is COMPLETELY FLAT and MATTE — a smooth painted or upholstered board face, evenly lit, ` +
+        `non-reflective. It is NOT chrome, NOT mirrored, NOT polished metal, NOT stainless steel, NOT glossy, ` +
+        `NOT a shiny tube, NOT rounded or pipe-like in section, not inflatable, not a deep 3D tunnel. ` +
         `Exactly the listed pieces — do not add any extra panel. `
       : "") +
     setupTemplateClause +
