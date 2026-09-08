@@ -1967,27 +1967,37 @@ export function generateStructureSilhouette(
 
   // ── Light-up marquee number ──────────────────────────────────────────────
   // A block digit with bulbs set into its face, standing on the floor beside the
-  // decor. Height is tied to the tallest panel so 100cm reads correctly against
-  // a 200-220cm backdrop.
+  // decor.
   const numDigits = String(extras?.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
   if (extras?.numberLight?.enabled && numDigits.length > 0 && layout.panels.length > 0) {
     const tallest = layout.panels.reduce((a, b) => (b.floorY - b.apexY > a.floorY - a.apexY ? b : a));
     const panelH = tallest.floorY - tallest.apexY;
-    const digitH = panelH * 0.45;
+    // 2026-09-05: sized from real centimetres rather than a fraction of the
+    // panel. The unit is 90cm tall, so against a 220cm arch it is 41% of the
+    // panel and against a 200cm ring 45% — the old flat 0.45 was drawing it
+    // over-tall on the taller boards.
+    const NUMBER_H_CM = 90;
+    const pxPerCmN = panelH / Math.max(1, backdropItems[tallest.idx]?.heightCm ?? 200);
+    const digitH = NUMBER_H_CM * pxPerCmN;
     const digitW = digitH * 0.60;
     const gap = digitW * 0.14;
     const groupW = digitW * numDigits.length + gap * (numDigits.length - 1);
-    // It stands IN FRONT of the board, not out beside it: placed off the panel
-    // edge it landed on top of the garland column. Inside the board's left third
-    // is clear floor on every layout, and it shifts further left again when
-    // plinths are present so the two do not collide.
+    // It stands IN FRONT of the board, on clear floor.
     //
-    // 2026-09-05: clamped. On a single Shimmer Wall with a plinth the shift put
-    // the marker at x = -10, i.e. running off the left edge of the guide, and the
-    // render filled the gap with stray helium balloons on strings. Nothing may be
-    // drawn outside the canvas.
-    const wantX = tallest.cx - tallest.pw * 0.45
-      - (layout.plinths.length > 0 ? groupW * 0.85 : 0);
+    // 2026-09-05: it goes to the RIGHT of centre when standees are in the scene.
+    // Standees are placed on the left (see the plinth clause, which keeps the
+    // left clear for them), and with both in the scene the character was
+    // standing across the digits — the customer could not see either.
+    // The prompt already said "right of centre when there are standees"; the
+    // guide was still putting it left, and the guide is what gets copied.
+    const hasStandees = (cutoutGuideItems ?? []).length > 0;
+    const wantX = hasStandees
+      ? tallest.cx + tallest.pw * 0.45 - groupW
+      : tallest.cx - tallest.pw * 0.45
+        - (layout.plinths.length > 0 ? groupW * 0.85 : 0);
+    // Nothing may be drawn outside the canvas: unclamped, a single Shimmer Wall
+    // with a plinth put the marker at x = -10 and the render filled the clipped
+    // gap with stray helium balloons.
     const startX = Math.max(digitW * 0.12, Math.min(wantX, W - groupW - digitW * 0.12));
     const baseY = tallest.floorY;
     for (let d = 0; d < numDigits.length; d++) {

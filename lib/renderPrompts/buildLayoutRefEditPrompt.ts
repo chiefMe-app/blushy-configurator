@@ -757,8 +757,14 @@ export function buildLayoutRefEditPrompt(
   const frontNumDigits = String(sceneModel.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
   const frontNumberLightLine =
     sceneModel.numberLight?.enabled && frontNumDigits.length > 0
-      ? `A large light-up marquee number ${frontNumDigits} with warm white bulbs stands on the floor in ` +
-        `front of the backdrop. No loose helium balloons on strings anywhere in the scene. `
+      ? `A 90cm modern matte white marquee number ${frontNumDigits}, with warm white bulbs recessed into its ` +
+        `flat face, stands on the floor in front of the backdrop` +
+        (hasStandeesInScene
+          // Both in the scene and unplaced, the standee stood across the digits.
+          ? `, to the RIGHT of centre. The character standee stands on the LEFT, clear of it — the two never ` +
+            `overlap and BOTH are fully visible. `
+          : `. `) +
+        `No loose helium balloons on strings anywhere in the scene. `
       : "";
 
   const frontPaletteLine = (!isLonePlainArch)
@@ -937,8 +943,16 @@ export function buildLayoutRefEditPrompt(
       `${hasStandeesInScene ? "right" : "left"} of centre and clear of the balloon garland. ` +
       `It reads exactly "${numberLightDigits}" — ${numberLightDigits.length > 1 ? "two digits" : "a single digit"}, ` +
       `spelled exactly as "${numberLightDigits}" and nothing else. ` +
-      `It is a freestanding light-up number roughly 100cm tall: a white block digit with a flat face, ` +
-      `edged with round warm-white bulbs set into the front, standing on a slim base. ` +
+      // 2026-09-05: the render came back as a vintage carnival letter — gold
+      // frame, exposed round bulbs, brass fittings. The product is a modern
+      // mosaic-style number: a clean matte white shell with bulbs recessed into
+      // the flat front face. Height corrected to the real 90cm.
+      `It is a freestanding light-up marquee number exactly 90cm tall: a modern mosaic-style number, ` +
+      `a clean smooth MATTE WHITE shell with flat faces and crisp straight edges, standing directly on ` +
+      `the floor. Round warm white bulbs are recessed INTO its flat front face in an even row, flush with ` +
+      `the surface and glowing softly. ` +
+      `It is NOT vintage, NOT retro, NOT a carnival or fairground letter, NOT gold, NOT brass, NOT wooden, ` +
+      `NOT weathered — no exposed bulb sockets, no metal frame, no visible wiring, no distressed paint. ` +
       `It is NOT a balloon number, NOT a foil number, NOT printed on the backdrop and NOT floating. `
     : "";
 

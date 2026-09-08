@@ -2836,7 +2836,7 @@ function clearAllStandees() {
         <div style={{ marginBottom: 8 }}>
           <div style={{ fontWeight: 600, fontSize: 13.5, color: DC.plum }}>Light-up number</div>
           <div style={{ fontSize: 11.5, color: DC.muted }}>
-            A 100 cm illuminated marquee number standing beside the backdrop.
+            A 90 cm illuminated marquee number standing beside the backdrop.
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
