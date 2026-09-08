@@ -211,7 +211,16 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
     cutouts,
     garlandFlorals: d.garlandFlorals === true,
     numberLight:    d.numberLight ?? { enabled: false, value: "1" },
-    neonSign:       d.neonSign ?? { enabled: false, text: "Happy Birthday" },
+    // 2026-09-08: the sign never lands on an open arch frame — there is no
+    // board face for it to hang on. The option is hidden in the UI; this
+    // moves an older saved choice onto the first piece that can carry it.
+    neonSign:       (() => {
+      const n = d.neonSign ?? { enabled: false, text: "Happy Birthday" };
+      const idx = Number.isInteger(n.panelIndex) ? Number(n.panelIndex) : 0;
+      if (panels[idx]?.type !== "open_arch_frame") return n;
+      const alt = panels.findIndex((p) => p.type !== "open_arch_frame");
+      return { ...n, panelIndex: alt < 0 ? 0 : alt };
+    })(),
     totalPrice:   config.estimatedTotal,
     // Resolved only when a shimmer wall is actually in the scene; defaults to
     // silver for older saved configs that predate the colour picker.

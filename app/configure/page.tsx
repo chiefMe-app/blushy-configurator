@@ -2796,29 +2796,39 @@ function clearAllStandees() {
               ))}
             </div>
             {/* 2026-09-05: on a two-piece setup the customer picks which board
-                carries the sign. */}
-            {d.backdropItems.length > 1 && (
-              <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#666", display: "block", marginBottom: 5 }}>
-                  Which backdrop?
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {d.backdropItems.map((it, i) => {
-                    const active = (d.neonSign?.panelIndex ?? 0) === i;
-                    const label = `${i === 0 ? "Left" : "Right"} · ${TYPE_LABEL[it.type] ?? it.type}`;
-                    return (
-                      <button key={it.id} type="button"
-                        onClick={() => patchDecor({ neonSign: { enabled: true, text: d.neonSign?.text ?? "Happy Birthday", panelIndex: i } })}
-                        style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                          border: `1.5px solid ${active ? DC.rose : "rgba(0,0,0,0.12)"}`,
-                          background: active ? DC.rose + "12" : "white", color: active ? DC.rose : "#555" }}>
-                        {label}
-                      </button>
-                    );
-                  })}
+                carries the sign.
+                2026-09-08: an open arch frame is not offered — it is a narrow
+                band around a balloon-filled hole, with no board face for a sign
+                to hang on. If it is the only other piece, the chooser is hidden
+                and the sign stays on the solid board. */}
+            {(() => {
+              const neonEligible = d.backdropItems
+                .map((it, i) => ({ it, i }))
+                .filter(({ it }) => it.type !== "open_arch_frame");
+              if (neonEligible.length < 2) return null;
+              return (
+                <div style={{ marginBottom: 8 }}>
+                  <span style={{ fontSize: 10.5, fontWeight: 700, color: "#666", display: "block", marginBottom: 5 }}>
+                    Which backdrop?
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {neonEligible.map(({ it, i }) => {
+                      const active = (d.neonSign?.panelIndex ?? 0) === i;
+                      const label = `${i === 0 ? "Left" : "Right"} · ${TYPE_LABEL[it.type] ?? it.type}`;
+                      return (
+                        <button key={it.id} type="button"
+                          onClick={() => patchDecor({ neonSign: { enabled: true, text: d.neonSign?.text ?? "Happy Birthday", panelIndex: i } })}
+                          style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                            border: `1.5px solid ${active ? DC.rose : "rgba(0,0,0,0.12)"}`,
+                            background: active ? DC.rose + "12" : "white", color: active ? DC.rose : "#555" }}>
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
             <input
               type="text"
               value={d.neonSign?.text ?? ""}

@@ -707,6 +707,13 @@ export function buildLayoutRefEditPrompt(
   // Kept SHORT and first. The ~90-word version of this line rendered the rim as
   // a moulding anyway; length costs as much as position on this pipeline, so
   // everything that is not about flatness moved to openFrameDetailLine below.
+  // 2026-09-08, fourth attempt and REVERTED: the customer's reference photo is a
+  // real product — a fabric open arch backdrop stand — so the line was rewritten
+  // as "matte stretch fabric pulled tight over a thin tube frame ... small metal
+  // feet". The render turned the whole piece into a square pull-up banner stand
+  // with a CHROME TUBE arch inside it: "tube" and "stand" are both stronger
+  // priors than "fabric". Back to the board wording, which at the production
+  // seed renders a flat matte board; the rim is fought in the guide instead.
   const frontOpenFrameLine = hasOpenFramePair
     ? `The ${openFrameSide}-hand board is a FLAT MATTE PAINTED BOARD — not shiny, not metal, not chrome. ` +
       `One plain surface with a plain arch hole cut in it, no moulding and no raised border around the hole. `

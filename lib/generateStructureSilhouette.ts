@@ -1796,6 +1796,39 @@ export function generateStructureSilhouette(
           putI(framePanel.cx + rI * 0.40, springYi + rI * 1.10, rXLf * 0.72, 0.65);
           putI(framePanel.cx - rI * 0.42, floorYF - rXLf * 0.80, rXLf * 0.80, 0.65);
 
+          // 1b) A run of balloons sitting ON the opening's edge, all the way
+          //     round both jambs and over the arc. 2026-09-08: four prompt
+          //     rewrites failed to stop the render carving a moulding around
+          //     this edge, and the reason is in the guide — a clean, continuous,
+          //     unbroken arch line is exactly the cue for one. Straddled by
+          //     balloons it is no longer a line the model can trace.
+          {
+            const jambTop = springYi;
+            const jambLen = Math.max(1, floorYF - jambTop);
+            const perSide = 7;
+            for (let side = -1; side <= 1; side += 2) {
+              for (let i = 0; i < perSide; i++) {
+                const y = jambTop + (i + 0.5) / perSide * jambLen;
+                putI(
+                  framePanel.cx + side * rI + (rndI() * 2 - 1) * rMf * 0.35,
+                  y + (rndI() * 2 - 1) * rMf * 0.30,
+                  rMf * (0.80 + rndI() * 0.45),
+                  0.62,
+                );
+              }
+            }
+            const arcN = 11;
+            for (let i = 0; i < arcN; i++) {
+              const ang = Math.PI + (i + 0.5) / arcN * Math.PI;   // 180 -> 360 deg
+              putI(
+                framePanel.cx + rI * Math.cos(ang) + (rndI() * 2 - 1) * rMf * 0.30,
+                springYi + rI * Math.sin(ang) + (rndI() * 2 - 1) * rMf * 0.30,
+                rMf * (0.80 + rndI() * 0.45),
+                0.62,
+              );
+            }
+          }
+
           // 2) Jittered rows from the crown down to the floor, largest radius
           //    first so the mediums and smalls fill what is left.
           for (const R of [rLf, rMf, rSf]) {
@@ -1835,6 +1868,25 @@ export function generateStructureSilhouette(
               framePanel.cx + ox,
               floorYF - up - rMf * 0.4,
               i % 3 === 0 ? rLf : rMf * (0.80 + rndI() * 0.45),
+              0.62,
+            );
+          }
+
+          // 2026-09-08: a floor cluster IN FRONT of the open arch, across its
+          // whole width and stepped forward of the panel's own floor line — the
+          // customer asked for far more balloons on the floor there, and the
+          // outer-side mound above only covers one corner. Drawn a little BELOW
+          // floorY, which is how anything nearer the camera is placed in this
+          // projection (see plinthForwardPx).
+          const frameForwardPx = (floorYF - framePanel.apexY) * 0.045;
+          for (let i = 0; i < 22; i++) {
+            const across = (rndI() * 2 - 1) * rF * 1.05;
+            const fwd    = rndI() * frameForwardPx;
+            const up     = rndI() * rMf * 2.2;
+            putI(
+              framePanel.cx + across,
+              floorYF + fwd - up - rMf * 0.35,
+              i % 4 === 0 ? rLf * 0.95 : rMf * (0.80 + rndI() * 0.50),
               0.62,
             );
           }
