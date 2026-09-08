@@ -731,6 +731,16 @@ export function buildLayoutRefEditPrompt(
         : `No lettering and no artwork on the ${openFrameSide}-hand backdrop. `)
     : "";
 
+  // 2026-09-08: the detailed florals clause is mid-prompt, so like every other
+  // mid-prompt addition on this pipeline it did nothing — the customer turned
+  // the option on and got no flowers at all. Front-loaded and short, paired
+  // with proper filled flower clusters in the guide.
+  const frontFloralsLine = sceneModel.garlandFlorals && sceneModel.balloons.style !== "none"
+    ? `Real flowers are part of this garland: a full floral cluster mounded at the foot of each garland ` +
+      `and smaller bunches tucked between the balloons up the climb, drawn exactly where the layout ` +
+      `reference shows them. Cream, white and blush blooms with sage eucalyptus foliage. `
+    : "";
+
   const frontBannerAspectLine = hasBannerPanelInPrompt && !isMulti
     ? `The backdrop is a SQUARE board, as wide as it is tall — 2 metres by 2 metres, a 1:1 square, ` +
       `not taller than it is wide. `
@@ -1448,6 +1458,7 @@ const setupTemplateClause = setupTemplate
   return (
     frontBannerAspectLine +
     frontOpenFrameLine +
+    frontFloralsLine +
     frontShimmerLine +
     frontNoCharactersLine +
     frontNeonLine +
