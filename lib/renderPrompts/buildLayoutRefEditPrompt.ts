@@ -899,7 +899,11 @@ export function buildLayoutRefEditPrompt(
       // render drew it as a visible tan rectangle sitting under the letters
       // ("lets partynin altindaki yama gibi sey"). A real sign has one, but it
       // is invisible against the wall and does not need describing.
-      `It is a made-to-order neon sign: flowing script lettering in a continuous glowing tube, ` +
+      // 2026-09-05: the real product is 16.5 x 12 inches. Without a size the
+      // render drew it a metre wide across the board.
+      `It is a small made-to-order neon sign, about 42cm wide and 30cm tall — roughly a third of the ` +
+      `width of the board, a tabletop-sized sign, NOT a huge sign spanning the backdrop. ` +
+      `Flowing script lettering in a continuous glowing tube, ` +
       `casting a soft halo of its own light. The tube glows WARM WHITE — never pink, never coloured, ` +
       `whatever colour the backdrop behind it is. No visible backing board, no plaque, no panel and no ` +
       `patch behind the letters. ` +

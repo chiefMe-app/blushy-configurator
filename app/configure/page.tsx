@@ -1311,7 +1311,12 @@ function clearAllStandees() {
       case "arch_open_frame":    panels = [makeArchUnsized("arch-1"), makeBackdropItem("open_arch_frame")]; break;
       case "single_shimmer":     panels = [makeBackdropItem("shimmer_wall")]; break;
       case "arch_shimmer":       panels = [makeArchUnsized("arch-1"), makeBackdropItem("shimmer_wall")]; break;
-      case "balloon_ring":       panels = [makeBackdropItem("balloon_ring")]; break;
+      case "balloon_ring":
+        panels = [makeBackdropItem("balloon_ring")];
+        // The ring is made of balloons, so a "none" tier carried over from a
+        // previous setup would leave the scene empty.
+        if (d.balloonStyle === "none") patchDecor({ balloonStyle: "full" });
+        break;
       case "double_arch":        panels = [makeArchUnsized("arch-1"), makeArchUnsized("arch-2")]; break;
       // arch_open_frame / shimmer_open_frame / single_shimmer / arch_shimmer
       // removed from product — no longer selectable, so no case needed;
@@ -1393,7 +1398,7 @@ function clearAllStandees() {
               })}
             </div>
           </div>
-        ) : (
+        ) : item.type === "balloon_ring" ? null : (
           <div style={{ marginBottom: 12 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#12162F", display: "block", marginBottom: 6 }}>Backdrop color</span>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
@@ -1415,7 +1420,9 @@ function clearAllStandees() {
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {/* 2026-09-05: a shimmer wall is a sequin surface — nothing is printed
               on it, so it offers neither customized text nor a theme graphic. */}
-          {item.type !== "shimmer_wall" && (<>
+          {/* 2026-09-05: a Balloon Ring has no board at all, so like the shimmer
+              wall it offers neither customized text nor a theme graphic. */}
+          {item.type !== "shimmer_wall" && item.type !== "balloon_ring" && (<>
           {/* Customized text */}
           <div onClick={() => patchItemText(itemIdx, { enabled: !item.text.enabled })}
             style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
@@ -2333,7 +2340,10 @@ function clearAllStandees() {
           Balloon garland
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {BALLOON_STYLES.map((b) => {
+          {/* A Balloon Ring IS the balloons — "No balloons" would leave nothing. */}
+          {BALLOON_STYLES
+            .filter((b) => !(b.id === "none" && d.backdropItems.some((i) => i.type === "balloon_ring")))
+            .map((b) => {
             const active = d.balloonStyle === b.id;
             return (
               <button key={b.id} type="button" onClick={() => patchDecor({ balloonStyle: b.id })} aria-pressed={active}

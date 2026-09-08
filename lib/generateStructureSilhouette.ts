@@ -837,16 +837,11 @@ export function generateStructureSilhouette(
   // 8 earlier attempts were lost to it before the placement left the gap.
   const groupLeftEdge  = Math.min(...layout.panels.map((pl) => pl.cx - pl.pw / 2));
   const groupRightEdge = Math.max(...layout.panels.map((pl) => pl.cx + pl.pw / 2));
-  // 2026-09-05: on Arch + Shimmer the group midpoint falls inside the shimmer
-  // wall now that the two pieces touch, so the plinth marker was drawn on the
-  // sequin panel. The plinth belongs in front of the arch on that pair.
-  const archShimmerPair = layout.panels.length === 2
-    && layout.panels.some((pl) => (backdropItems[pl.idx]?.type ?? "") === "arch")
-    && layout.panels.some((pl) => (backdropItems[pl.idx]?.type ?? "") === "shimmer_wall");
-  const archPanelForPlinth = layout.panels.find((pl) => (backdropItems[pl.idx]?.type ?? "") === "arch");
-  const decorCx = archShimmerPair && archPanelForPlinth
-    ? archPanelForPlinth.cx
-    : (groupLeftEdge + groupRightEdge) / 2;
+  // 2026-09-05: the plinth stands centred in FRONT of the whole setup, on every
+  // layout — dead centre of the two boards when there are two, dead centre of
+  // the board when there is one. It was briefly moved in front of the arch on
+  // Arch + Shimmer; the customer wants it centred there too.
+  const decorCx = (groupLeftEdge + groupRightEdge) / 2;
   const plinthCount    = layout.plinths.length;
   const plinthSpacing  = Math.max(...layout.plinths.map((pl) => pl.diameterPx), 1) * 1.5;
 
@@ -869,8 +864,12 @@ export function generateStructureSilhouette(
       // the boards carry lettering or a printed illustration it is the weakest
       // mark in the guide and the plinth stops being painted — so those scenes
       // get the solid marker instead (see the plinthFilledCylinder comment).
+      // 2026-09-05: a shimmer wall counts as surface content. Its guide is a
+      // dense sequin grid, and now that the plinth stands at the centre of the
+      // group it lands ON that grid — a faint outline there is exactly the
+      // "thin sliver in a busy panel" the filled marker exists for.
       const panelsCarrySurfaceContent = backdropItems.some(
-        (it) => it?.text?.enabled || it?.graphic?.enabled,
+        (it) => it?.text?.enabled || it?.graphic?.enabled || it?.type === "shimmer_wall",
       );
       plinthLayer.push(panelsCarrySurfaceContent
         ? plinthFilledCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx)
@@ -1572,7 +1571,11 @@ export function generateStructureSilhouette(
             content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(colorOffset + archCount + accentN)}/>`);
             accentN++;
           };
-          const accentCount = 12;
+          // 2026-09-05: was 12. On Arch + Shimmer the two garlands hang off the
+          // OUTER edges, and this inner cluster read as a couple of stray
+          // balloons floating in the seam between the boards — the customer
+          // circled exactly those. The composition is the two outer garlands.
+          const accentCount = 0;
           for (let i = 0; i < accentCount; i++) {
             const t    = i / (accentCount - 1);
             const lane = i % 3;
@@ -1929,11 +1932,23 @@ export function generateStructureSilhouette(
     const isRing = (backdropItems[np.idx]?.type ?? "") === "balloon_ring";
     const panelH = np.floorY - np.apexY;
     const cxN = np.cx;
-    const cyN = isRing ? np.floorY - Math.min(np.pw, panelH) / 2 : np.apexY + panelH * 0.34;
+    // On a ring the sign sits in the upper half of the opening, not dead centre:
+    // the plinth stands in the middle of the hoop and the two overlapped.
+    const ringMidY = np.floorY - Math.min(np.pw, panelH) / 2;
+    const cyN = isRing ? ringMidY - Math.min(np.pw, panelH) * 0.16 : np.apexY + panelH * 0.34;
     const words = neonWords.split(" ").filter(Boolean);
     const lines = words.length > 2 ? [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")] : [neonWords];
     const widest = Math.max(...lines.map((l) => l.length));
-    const fontSize = Math.max(14, Math.min(np.pw * 0.20, (np.pw * 0.62) / Math.max(1, widest) / 0.46));
+    // 2026-09-05: sized from the REAL product, not from a fraction of the panel.
+    // The sign is 16.5 x 12 inches — about 42cm wide — and the guide was drawing
+    // it at up to 62% of a 200cm board, i.e. roughly three times life size.
+    // Panel width in px over panel width in cm gives px-per-cm; 42cm of that is
+    // the sign, and the font follows from how many characters share the widest
+    // line. Capped so a long phrase on one line still fits the board.
+    const SIGN_W_CM = 42;
+    const pxPerCm = np.pw / Math.max(1, backdropItems[np.idx]?.widthCm ?? 200);
+    const signW = Math.min(np.pw * 0.62, SIGN_W_CM * pxPerCm);
+    const fontSize = Math.max(9, Math.min(signW / Math.max(1, widest) / 0.46, signW * 0.42));
     const lineGap = fontSize * 1.22;
     const firstY = cyN - ((lines.length - 1) * lineGap) / 2;
     lines.forEach((ln, i) => {
@@ -2013,7 +2028,14 @@ export function generateStructureSilhouette(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`,
     `  ${bgLines.join("\n  ")}`,
     `  <g transform="translate(${marginX},${marginY}) scale(${SCALE})">`,
-    `    ${content.concat(plinthLayer).join("\n    ")}`,
+    // 2026-09-05: the plinth layer is normally drawn last, over the balloons,
+    // because it stands in front of a backdrop. A balloon ring is different —
+    // the hoop is nearer the camera than a plinth inside it, and drawn last the
+    // plinth cut into the balloons ("plinth icine girmis"). On a ring it goes
+    // down first so the balloons sit in front of it.
+    `    ${(backdropItems[0]?.type === "balloon_ring"
+      ? plinthLayer.concat(content)
+      : content.concat(plinthLayer)).join("\n    ")}`,
     `  </g>`,
     `</svg>`,
   ].join("\n");
