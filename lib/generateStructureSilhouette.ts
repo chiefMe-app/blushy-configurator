@@ -845,16 +845,25 @@ export function generateStructureSilhouette(
   const plinthCount    = layout.plinths.length;
   const plinthSpacing  = Math.max(...layout.plinths.map((pl) => pl.diameterPx), 1) * 1.5;
 
+  // 2026-09-05: the plinth stands FORWARD of the decor, nearer the camera, not
+  // level with the backdrop. On a balloon ring especially it was sitting on the
+  // same floor line as the hoop and reading as though it were inside it. Moving
+  // its base down the canvas is what puts it in front in this projection.
+  const isRingScene = backdropItems[0]?.type === "balloon_ring";
+  const plinthForwardPx = isRingScene
+    ? (layout.floorY - Math.min(...layout.panels.map((pl) => pl.apexY))) * 0.10
+    : 0;
   layout.plinths.forEach((p, plinthIdx) => {
     // One plinth lands on the midpoint; two straddle it; three sit centred.
     const plinthCx = Math.round(
       decorCx + (plinthIdx - (plinthCount - 1) / 2) * plinthSpacing,
     );
+    const plinthBottomY = p.bottomY + plinthForwardPx;
     // Round scenes: use filled cylinder so the plinth reads as a clear
     // solid object, not just outline edges that the model may skip or
     // merge with the background.
     if (singleRound) {
-      plinthLayer.push(plinthCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
+      plinthLayer.push(plinthCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
     } else {
       // Double Arch falls through to Single Arch's marker as well. The filled
       // variant and the dropped baseline it used to get were both compensating
@@ -872,8 +881,8 @@ export function generateStructureSilhouette(
         (it) => it?.text?.enabled || it?.graphic?.enabled || it?.type === "shimmer_wall",
       );
       plinthLayer.push(panelsCarrySurfaceContent
-        ? plinthFilledCylinder(plinthCx, p.bottomY, p.heightPx, p.diameterPx)
-        : plinthEdge(plinthCx, p.bottomY, p.heightPx, p.diameterPx));
+        ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx)
+        : plinthEdge(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
     }
   });
 
@@ -1718,7 +1727,23 @@ export function generateStructureSilhouette(
           // biased OUTWARD so nothing creeps into the opening, which is the whole
           // point of the setup (and where the neon sign goes).
           const rp = layout.panels[0];
-          const ringR = Math.min(rp.pw, rp.floorY - rp.apexY) / 2;
+          // 2026-09-05: the ring was NOT 2 metres. It was sized as half the
+          // smaller of the panel box (calculateExactLayout returns 717 x 870 for
+          // a 200x200cm ring — it does not preserve a panel's own aspect), which
+          // put the balloon centre-line at 165cm while the balloons themselves
+          // pushed the finished hoop out to 221cm. The customer asked for a 2m
+          // ring, so 2m is what the FINISHED hoop measures — the thing you would
+          // put a tape across.
+          //
+          // Everything else in the guide scales off the panel height (the marquee
+          // number measures a correct 90cm that way), so the same px-per-cm is
+          // used here. The 1.34 is the measured ratio between the hoop's outer
+          // edge and its centre-line for the lane offsets below; asserted by the
+          // ring-diameter check rather than assumed.
+          const ringPxPerCm = (rp.floorY - rp.apexY) / Math.max(1, backdropItems[rp.idx]?.heightCm ?? 200);
+          const RING_OUTER_CM = backdropItems[rp.idx]?.widthCm ?? 200;
+          const HOOP_OUTER_OVER_LINE = 1.34;
+          const ringR = (RING_OUTER_CM / 2) * ringPxPerCm / HOOP_OUTER_OVER_LINE;
           const ringCx = rp.cx;
           const ringCy = rp.floorY - ringR;
           let rst = 777331;
@@ -2003,33 +2028,17 @@ export function generateStructureSilhouette(
     for (let d = 0; d < numDigits.length; d++) {
       const x = startX + d * (digitW + gap);
       const y = baseY - digitH;
+      // 2026-09-05: the surrounding rounded rect is gone. Drawn as a rect with a
+      // digit inside and bulbs around its border, the render sometimes copied it
+      // literally — a rectangular light-box plaque with a number cut out of it,
+      // instead of a free-standing digit. Without the rect there is nothing to
+      // read as a plaque. The bulbs go in the prompt, which describes them as
+      // recessed into the digit's own face.
       content.push(
-        `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${digitW.toFixed(1)}" height="${digitH.toFixed(1)}" ` +
-        // 2026-09-05: drawn near-white on the guide's white ground, this marker
-        // was dropped from the render entirely — the same failure the plinth
-        // marker had (see plinthFilledCylinder). Faint outlines get ignored;
-        // filled shapes with a strong edge get reproduced. High contrast now.
-        `rx="${(digitW * 0.10).toFixed(1)}" fill="#FFFFFF" stroke="rgba(55,55,55,0.92)" stroke-width="3"/>`,
+        `<text x="${(x + digitW / 2).toFixed(1)}" y="${(y + digitH * 0.92).toFixed(1)}" text-anchor="middle" ` +
+        `font-family="Arial Black, Arial, sans-serif" font-size="${digitH.toFixed(0)}" ` +
+        `fill="#FFFFFF" stroke="rgba(45,45,45,0.92)" stroke-width="4" stroke-linejoin="round">${numDigits[d]}</text>`,
       );
-      content.push(
-        `<text x="${(x + digitW / 2).toFixed(1)}" y="${(y + digitH * 0.72).toFixed(1)}" text-anchor="middle" ` +
-        `font-family="Arial Black, Arial, sans-serif" font-size="${(digitH * 0.78).toFixed(0)}" ` +
-        `fill="#5A5A5A" stroke="rgba(40,40,40,0.85)" stroke-width="2">${numDigits[d]}</text>`,
-      );
-      // Bulbs around the face edge — the detail that makes it read as a marquee
-      // letter rather than a plain block.
-      const bulbR = Math.max(2.5, digitW * 0.045);
-      const stepsX = 5, stepsY = 8;
-      for (let i = 0; i <= stepsX; i++) {
-        const bx = x + (digitW * i) / stepsX;
-        content.push(`<circle cx="${bx.toFixed(1)}" cy="${(y + bulbR * 1.6).toFixed(1)}" r="${bulbR.toFixed(1)}" fill="#FFF3C4" stroke="rgba(70,70,70,0.85)" stroke-width="1.2"/>`);
-        content.push(`<circle cx="${bx.toFixed(1)}" cy="${(y + digitH - bulbR * 1.6).toFixed(1)}" r="${bulbR.toFixed(1)}" fill="#FFF3C4" stroke="rgba(70,70,70,0.85)" stroke-width="1.2"/>`);
-      }
-      for (let i = 1; i < stepsY; i++) {
-        const by = y + (digitH * i) / stepsY;
-        content.push(`<circle cx="${(x + bulbR * 1.6).toFixed(1)}" cy="${by.toFixed(1)}" r="${bulbR.toFixed(1)}" fill="#FFF3C4" stroke="rgba(70,70,70,0.85)" stroke-width="1.2"/>`);
-        content.push(`<circle cx="${(x + digitW - bulbR * 1.6).toFixed(1)}" cy="${by.toFixed(1)}" r="${bulbR.toFixed(1)}" fill="#FFF3C4" stroke="rgba(70,70,70,0.85)" stroke-width="1.2"/>`);
-      }
     }
   }
 
@@ -2038,14 +2047,11 @@ export function generateStructureSilhouette(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`,
     `  ${bgLines.join("\n  ")}`,
     `  <g transform="translate(${marginX},${marginY}) scale(${SCALE})">`,
-    // 2026-09-05: the plinth layer is normally drawn last, over the balloons,
-    // because it stands in front of a backdrop. A balloon ring is different —
-    // the hoop is nearer the camera than a plinth inside it, and drawn last the
-    // plinth cut into the balloons ("plinth icine girmis"). On a ring it goes
-    // down first so the balloons sit in front of it.
-    `    ${(backdropItems[0]?.type === "balloon_ring"
-      ? plinthLayer.concat(content)
-      : content.concat(plinthLayer)).join("\n    ")}`,
+    // The plinth layer is drawn last: it stands in FRONT of the decor, so it
+    // occludes what is behind it. On a ring that only works because its base is
+    // pushed forward above — drawn last at the ring's own floor line it cut
+    // across the hoop instead.
+    `    ${content.concat(plinthLayer).join("\n    ")}`,
     `  </g>`,
     `</svg>`,
   ].join("\n");
