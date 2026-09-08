@@ -573,11 +573,24 @@ function standeeGuide(cx: number, bottomY: number, heightPx: number, label: stri
   // very low-contrast fill, no dashes, no stroke, no text. The prompt
   // ("keep the left-hand floor area clear") does the rest of the work.
   void cornerR; void fontSize; void label;
+  // 2026-09-08: the crisp white rounded rect WAS the second number. With a
+  // light-up marquee digit also described in the prompt, the model read this
+  // tall white rounded shape as another one and painted it — the customer saw
+  // two numbers, the left one half-buried behind the composited character
+  // ("neden 2 tane number var?"). The footprint is still reserved, but as a
+  // soft neutral haze with no crisp edge and no upright silhouette, so there
+  // is no shape left to reinterpret as a letterform.
+  const gid = `stg${Math.round(cx)}_${Math.round(bottomY)}`;
   return [
-    `<rect x="${(cx - rx).toFixed(1)}" y="${topY.toFixed(1)}" width="${widthPx.toFixed(1)}" height="${heightPx.toFixed(1)}" ` +
-      `rx="${(widthPx * 0.3).toFixed(1)}" ry="${(widthPx * 0.3).toFixed(1)}" fill="#FAFAFA" opacity="0.55"/>`,
+    `<defs><radialGradient id="${gid}" cx="50%" cy="55%" r="58%">` +
+      `<stop offset="0%" stop-color="#F7F7F7" stop-opacity="0.38"/>` +
+      `<stop offset="70%" stop-color="#F7F7F7" stop-opacity="0.15"/>` +
+      `<stop offset="100%" stop-color="#F7F7F7" stop-opacity="0"/>` +
+      `</radialGradient></defs>`,
+    `<ellipse cx="${cx.toFixed(1)}" cy="${(topY + heightPx / 2).toFixed(1)}" ` +
+      `rx="${(rx * 1.45).toFixed(1)}" ry="${(heightPx / 2).toFixed(1)}" fill="url(#${gid})"/>`,
     `<ellipse cx="${cx.toFixed(1)}" cy="${bottomY.toFixed(1)}" ` +
-      `rx="${(rx * 1.15).toFixed(1)}" ry="${baseRy.toFixed(1)}" fill="#F2F2F2" opacity="0.5"/>`,
+      `rx="${(rx * 1.15).toFixed(1)}" ry="${baseRy.toFixed(1)}" fill="#F2F2F2" opacity="0.42"/>`,
   ].join("\n    ");
 }
 
@@ -1877,6 +1890,9 @@ export function generateStructureSilhouette(
   // group (opposite side from the typical right-side half garland).  Heights are
   // scaled relative to the reference backdrop panel so proportions are accurate.
   const cutoutPlaceholderHeightsCm: number[] = [];
+  // Right-hand edge of the reserved standee band, so the marquee number can be
+  // placed on the LEFT of the setup without landing on top of the character.
+  let standeeBandRightPx: number | null = null;
 
   const activeCutouts = (cutoutGuideItems ?? []).filter(i => i.quantity > 0);
   if (activeCutouts.length > 0 && layout.panels.length > 0) {
@@ -1902,6 +1918,7 @@ export function generateStructureSilhouette(
     // previously it sat fully outside the panel, so the model happily painted
     // the plinth/garland exactly where the standee would later land.
     let curRight = Math.round(groupLeft + (layout.panels[0]?.pw ?? 0) * 0.12);
+    const standeeBandStart = curRight;
 
     for (const standee of standeesToDraw) {
       const heightPx = Math.round(standee.heightCm * pxPerCm);
@@ -1913,6 +1930,7 @@ export function generateStructureSilhouette(
 
       content.push(standeeGuide(cx, floorY, heightPx, standee.label));
       cutoutPlaceholderHeightsCm.push(standee.heightCm);
+      standeeBandRightPx = standeeBandStart;
       curRight = cx - widthPx / 2 - betweenGap;
     }
   }
@@ -2032,23 +2050,39 @@ export function generateStructureSilhouette(
     const groupW = digitW * numDigits.length + gap * (numDigits.length - 1);
     // It stands IN FRONT of the board, on clear floor.
     //
-    // 2026-09-05: it goes to the RIGHT of centre when standees are in the scene.
-    // Standees are placed on the left (see the plinth clause, which keeps the
-    // left clear for them), and with both in the scene the character was
-    // standing across the digits — the customer could not see either.
-    // The prompt already said "right of centre when there are standees"; the
-    // guide was still putting it left, and the guide is what gets copied.
+    // 2026-09-05: moved to the RIGHT of centre when standees were in the scene,
+    // because the character was standing across the digits.
+    // 2026-09-08: back to the LEFT — the customer wants the number on the side
+    // it used to be on ("yenisini eskisinin oldugu tarafa koyalim"). It no
+    // longer collides with the character because it is now placed against the
+    // measured right edge of the reserved standee band rather than against the
+    // panel centre, so the two stand side by side with clear air between them.
     const hasStandees = (cutoutGuideItems ?? []).length > 0;
-    // 2026-09-05: further right. At 0.45 of the half-width it sat over the decor;
-    // the customer wants it clear of it, out on the open floor.
-    const wantX = hasStandees
-      ? tallest.cx + tallest.pw * 0.62 - groupW * 0.35
+    const wantX = hasStandees && standeeBandRightPx !== null
+      ? standeeBandRightPx + digitW * 0.30
       : tallest.cx - tallest.pw * 0.45
         - (layout.plinths.length > 0 ? groupW * 0.85 : 0);
     // Nothing may be drawn outside the canvas: unclamped, a single Shimmer Wall
     // with a plinth put the marker at x = -10 and the render filled the clipped
-    // gap with stray helium balloons.
-    const startX = Math.max(digitW * 0.12, Math.min(wantX, W - groupW - digitW * 0.12));
+    // gap with stray helium balloons. It also never crosses the setup's centre
+    // line — past that it stops reading as "on the left".
+    const leftHalfLimit = tallest.cx - groupW * 0.55;
+    const canvasLimit = W - groupW - digitW * 0.12;
+    let limitRight = hasStandees ? Math.min(leftHalfLimit, canvasLimit) : canvasLimit;
+    // 2026-09-08: and never drawn across the plinth. Standing on the same floor
+    // line, overlapping markers had the render fusing the two into one confused
+    // object. Only applied when it still leaves the digits clear of the standee
+    // band — with all three in a narrow frame, something has to give.
+    if (layout.plinths.length > 0) {
+      const plinthLeftEdge =
+        decorCx
+        - ((plinthCount - 1) / 2) * plinthSpacing
+        - Math.max(...layout.plinths.map((pl) => pl.diameterPx)) / 2;
+      const clearOfPlinth = plinthLeftEdge - groupW - digitW * 0.10;
+      const leftFloor = standeeBandRightPx !== null ? standeeBandRightPx + digitW * 0.15 : digitW * 0.12;
+      if (clearOfPlinth > leftFloor) limitRight = Math.min(limitRight, clearOfPlinth);
+    }
+    const startX = Math.max(digitW * 0.12, Math.min(wantX, limitRight));
     const baseY = tallest.floorY;
     for (let d = 0; d < numDigits.length; d++) {
       const x = startX + d * (digitW + gap);

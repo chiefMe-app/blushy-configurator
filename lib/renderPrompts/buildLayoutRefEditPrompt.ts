@@ -771,10 +771,13 @@ export function buildLayoutRefEditPrompt(
         `flat face, stands on the floor in front of the backdrop, FACING THE CAMERA SQUARE-ON — its front ` +
         `face flat to the viewer, not turned, not angled, not in three-quarter view` +
         (hasStandeesInScene
-          // Both in the scene and unplaced, the standee stood across the digits.
-          ? `, to the RIGHT of centre. The character standee stands on the LEFT, clear of it — the two never ` +
-            `overlap and BOTH are fully visible. `
+          // 2026-09-08: back on the LEFT, beside the character rather than
+          // opposite it — "yenisini eskisinin oldugu tarafa koyalim".
+          ? `, on the LEFT side of the setup, standing beside the character with clear air between them — ` +
+            `they never overlap and BOTH are fully visible. `
           : `. `) +
+        `There is EXACTLY ONE marquee number in the entire image — never a second number, never the same ` +
+        `digit repeated elsewhere in the frame. ` +
         `No loose helium balloons on strings anywhere in the scene. `
       : "";
 
@@ -951,7 +954,7 @@ export function buildLayoutRefEditPrompt(
     .slice(0, 2);
   const numberLightClause = sceneModel.numberLight?.enabled && numberLightDigits.length > 0
     ? `One large illuminated marquee number stands on the floor in front of the backdrop, to the ` +
-      `${hasStandeesInScene ? "right" : "left"} of centre and clear of the balloon garland. ` +
+      `left of centre and clear of the balloon garland. ` +
       `It reads exactly "${numberLightDigits}" — ${numberLightDigits.length > 1 ? "two digits" : "a single digit"}, ` +
       `spelled exactly as "${numberLightDigits}" and nothing else. ` +
       // 2026-09-05: the render came back as a vintage carnival letter — gold
