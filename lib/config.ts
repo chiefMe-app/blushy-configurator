@@ -77,6 +77,41 @@ export interface Theme {
  */
 export const DEFAULT_BACKDROP_COLOR = "#FFFFFF";
 
+/**
+ * 2026-09-08: three swatches per theme was too few — the customer asked for
+ * about ten, "the ones people actually use", naming cream and light pink.
+ * Rather than invent seven more hexes for each of the twenty-one themes, the
+ * theme's own suggestions still come FIRST and are then topped up from this
+ * shared list of standard event-backdrop colours. So the palette still leads
+ * with the theme while every theme offers the same dependable staples.
+ */
+export const UNIVERSAL_BACKDROP_COLORS: string[] = [
+  "#FFFFFF", // white
+  "#F7F1E6", // cream
+  "#F7D9E1", // light pink
+  "#F2E4DC", // blush nude
+  "#E9DCC9", // sand
+  "#E4DAEE", // lilac
+  "#D8E5F0", // dusty blue
+  "#DCE5D8", // sage
+  "#C7C1B9", // greige
+  "#2F2F35", // charcoal
+];
+
+/** Up to ten swatches for a theme: its own suggestions first, then the staples. */
+export function backdropSwatchesForTheme(theme: Pick<Theme, "backdropColors">): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const hex of [...theme.backdropColors, ...UNIVERSAL_BACKDROP_COLORS]) {
+    const key = hex.toUpperCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(hex);
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
 export const THEMES: Theme[] = [
   { id: "frozen", name: "Frozen", emoji: "--", desc: "Icy satin, silver frost", backdropColors: ["#E8F4FD", "#B3D9F2", "#FFFFFF"], balloonColors: ["#B3D9F2", "#E8F4FD", "#C8E6FA", "#FFFFFF", "#A8D4EF"], priceModifier: 50, accent: "#4A90D9" },
   { id: "unicorn", name: "Unicorn", emoji: "-", desc: "Pearlescent pastels, soft iridescence", backdropColors: ["#F9D5DF", "#E8C8F0", "#FFFFFF"], balloonColors: ["#F9D5DF", "#C4F0E8", "#E8C8F0", "#FFF0A0", "#FFFFFF"], priceModifier: 50, accent: "#C77DD6" },

@@ -1813,7 +1813,7 @@ export function generateStructureSilhouette(
               for (let i = 0; i < perSide; i++) {
                 const y = jambTop + (i + 0.5) / perSide * jambLen;
                 putI(
-                  framePanel.cx + side * rI + (rndI() * 2 - 1) * rMf * 0.35,
+                  framePanel.cx + side * rI * 0.94 + (rndI() * 2 - 1) * rMf * 0.30,
                   y + (rndI() * 2 - 1) * rMf * 0.30,
                   rMf * (0.80 + rndI() * 0.45),
                   0.62,
@@ -1824,8 +1824,8 @@ export function generateStructureSilhouette(
             for (let i = 0; i < arcN; i++) {
               const ang = Math.PI + (i + 0.5) / arcN * Math.PI;   // 180 -> 360 deg
               putI(
-                framePanel.cx + rI * Math.cos(ang) + (rndI() * 2 - 1) * rMf * 0.30,
-                springYi + rI * Math.sin(ang) + (rndI() * 2 - 1) * rMf * 0.30,
+                framePanel.cx + rI * 0.94 * Math.cos(ang) + (rndI() * 2 - 1) * rMf * 0.25,
+                springYi + rI * 0.94 * Math.sin(ang) + (rndI() * 2 - 1) * rMf * 0.25,
                 rMf * (0.80 + rndI() * 0.45),
                 0.62,
               );
@@ -1851,14 +1851,19 @@ export function generateStructureSilhouette(
           //    floating inside a hole.
           const springCyF = framePanel.apexY + rF;
           const dirF = frameOuterRight ? 1 : -1;
-          for (let i = 0; i < 9; i++) {
-            const t   = i / 8;
-            const ang = ((frameOuterRight ? -78 + t * 72 : 258 - t * 72) * Math.PI) / 180;
-            const rad = rF + (i % 2 === 0 ? rMf * 0.55 : rMf * 1.25);
+          // 2026-09-08: 9 -> 4, and pulled INSIDE the outer arc instead of
+          // sitting on top of it. Rising over the crown, this run buried the
+          // board's own arch top, and the customer could no longer read the
+          // piece as an arch backdrop at all — the circled area in their photo.
+          // The bare arch margin above the cluster is what makes it legible.
+          for (let i = 0; i < 4; i++) {
+            const t   = i / 3;
+            const ang = ((frameOuterRight ? -52 + t * 46 : 232 - t * 46) * Math.PI) / 180;
+            const rad = rF - frameT * 0.35 + (i % 2 === 0 ? 0 : rMf * 0.4);
             putI(
               framePanel.cx + rad * Math.cos(ang),
               springCyF + rad * Math.sin(ang),
-              i % 3 === 0 ? rLf * 0.85 : rMf,
+              i % 3 === 0 ? rLf * 0.8 : rMf,
               0.55,
             );
           }

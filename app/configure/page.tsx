@@ -72,6 +72,7 @@ cutoutTotalCount,
   NEON_SIGN_PRESETS,
   type ShimmerColorId,
   DEFAULT_BACKDROP_COLOR,
+  backdropSwatchesForTheme,
 } from "@/lib/config";
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
 import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS, getThemeCutoutPresets } from "@/lib/themeCatalog";
@@ -1402,7 +1403,7 @@ function clearAllStandees() {
           <div style={{ marginBottom: 12 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#12162F", display: "block", marginBottom: 6 }}>Backdrop color</span>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-              {theme.backdropColors.map((hex) => (
+              {backdropSwatchesForTheme(theme).map((hex) => (
                 <button key={hex} type="button" onClick={() => patchItem(itemIdx, { color: hex })}
                   style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: hex, border: item.color === hex ? `2.5px solid ${accent}` : "2px solid rgba(0,0,0,0.12)", cursor: "pointer", transition: "all 0.15s" }} title={hex} />
               ))}
@@ -2107,7 +2108,7 @@ function clearAllStandees() {
                 <div style={{ marginBottom: 12 }}>
                   <span style={{ fontSize: 11, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Color</span>
                   <div className="flex flex-wrap items-center gap-2">
-                    {theme.backdropColors.map((hex) => (
+                    {backdropSwatchesForTheme(theme).map((hex) => (
                       <button
                         key={hex}
                         type="button"
