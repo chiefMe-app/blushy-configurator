@@ -489,8 +489,11 @@ export default function ConfigurePage() {
       </header>
 
       <div style={{ maxWidth: 1360, margin: "0 auto", padding: "24px 28px 0", display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
-        {/* Left: preview rail — hero-width (~480px) on desktop, full-width when wrapped */}
-        <div style={{ flex: "0 1 480px", minWidth: 320, maxWidth: 500 }}>
+        {/* Left: preview rail. 2026-09-05: widened from a 480px cap to ~800px.
+            The render is the thing the customer is judging and it was getting a
+            third of a 1360px page while the form took the rest ("preview cok
+            kucuk, cok daha buyusun ekran"). */}
+        <div style={{ flex: "1 1 700px", minWidth: 340, maxWidth: 820 }}>
           <div className="lg:sticky" style={{ top: 76 }}>
             <div className="space-y-3.5">
               {/* Preview card — SetupPreview draws its own image + footer card */}

@@ -1266,8 +1266,8 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             // aspect the render was generated at, so the image fills it, and it
             // is allowed to be considerably taller.
             aspectRatio: (finalUrl || finalIsLoading) ? renderCssAspect : undefined,
-            minHeight: 300,
-            maxHeight: "min(74vh, 760px)",
+            minHeight: 360,
+            maxHeight: "min(86vh, 1040px)",
             background: (finalUrl || finalIsLoading)
               ? "repeating-linear-gradient(45deg,#FBE9EF 0 12px,#FDF3F6 12px 24px)"
               : "white",

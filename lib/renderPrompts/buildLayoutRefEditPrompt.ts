@@ -511,7 +511,9 @@ export function buildLayoutRefEditPrompt(
       // the plinth-present branch does so it is refused as specifically as it
       // was previously requested.
       : `No plinth, pedestal, podium, display column, cylinder, riser, stand or platform of any kind stands anywhere in this scene. ` +
-        `The floor in front of the backdrop is completely bare and empty apart from the balloon garland. `;
+        (sceneModel.balloons.style === "none"
+          ? `The floor in front of the backdrop is completely bare and empty. `
+          : `The floor in front of the backdrop is completely bare and empty apart from the balloon garland. `);
 
   // ── Balloon garland description ───────────────────────────────────────────
   const balloonStyle = sceneModel.balloons.style;
@@ -720,6 +722,12 @@ export function buildLayoutRefEditPrompt(
     ? (panelCount > 1
         ? `The ${sideWord(shimmerIdx)} backdrop is a sequin shimmer wall, ` +
           `${SHIMMER_NOT[sceneModel.shimmerColor] ?? shimmerColorLabel(sceneModel.shimmerColor).toLowerCase()}. ` +
+          // 2026-09-05: on the pair it rendered as a draped fabric curtain with
+          // folds. Rigidity has to be stated where the panel is named; the panel
+          // description further down calls it a board and is ignored.
+          `It is a RIGID FLAT PANEL of small square sequin tiles on a stiff frame, standing bolt upright with ` +
+          `a straight top edge and straight sides — NOT a curtain, NOT hanging fabric, NOT draped, ` +
+          `no folds, no ripples, no gathers. ` +
           `The ${sideWord(otherIdx)} backdrop is a plain smooth matte board — NOT sequin, NOT shimmer, ` +
           `no sequins on it at all. `
         : `The sequin shimmer wall is ${shimmerColorLabel(sceneModel.shimmerColor).toLowerCase()} — ` +
@@ -1195,8 +1203,14 @@ export function buildLayoutRefEditPrompt(
       // 4.81), which is a warning about the metric, not a result: the extra
       // colour was contamination. This shorter version measures lilac 2.70% (vs
       // 1.76% before), chroma 5.19, and zero warm and zero pink.
-      `Both sides of every balloon stay clearly readable in their own colour, at full natural saturation — ` +
-      `NOT hazy, NOT washed out, NOT faded. `;
+      // 2026-09-05: guarded. On a no-balloons scene these three sentences were
+      // the reason a bare Shimmer Wall came back covered in balloons — they
+      // talk about balloons as present, and two of them land BEFORE the "this
+      // setup has no balloons at all" line further down.
+      (balloonStyle === "none"
+        ? `Every colour stays clearly readable, at full natural saturation — NOT hazy, NOT washed out, NOT faded. `
+        : `Both sides of every balloon stay clearly readable in their own colour, at full natural saturation — ` +
+          `NOT hazy, NOT washed out, NOT faded. `);
   const eventSetupLabel = (hasSempertexLock && isUnicornTheme)
     ? "soft pastel birthday backdrop setup"
     : "children's birthday event setup";
@@ -1255,7 +1269,9 @@ export function buildLayoutRefEditPrompt(
       // floor is allowed — moved it where the general wording did not.
       ? `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
         `Tight medium-close full-body event photography. The setup is the subject and must DOMINATE the frame: ` +
-        `the highest balloon of the garland sits just below the top edge of the image, and the floor occupies no ` +
+        (balloonStyle === "none"
+          ? `the top of the backdrop sits just below the top edge of the image, and the floor occupies no `
+          : `the highest balloon of the garland sits just below the top edge of the image, and the floor occupies no `) +
         `more than the bottom eighth of the frame. Leave only a narrow margin of wall on either side. ` +
         `Keep the whole setup visible and nothing cropped, but do not render the setup small in a large empty room. `
       : `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +

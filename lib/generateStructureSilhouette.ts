@@ -837,7 +837,16 @@ export function generateStructureSilhouette(
   // 8 earlier attempts were lost to it before the placement left the gap.
   const groupLeftEdge  = Math.min(...layout.panels.map((pl) => pl.cx - pl.pw / 2));
   const groupRightEdge = Math.max(...layout.panels.map((pl) => pl.cx + pl.pw / 2));
-  const decorCx        = (groupLeftEdge + groupRightEdge) / 2;
+  // 2026-09-05: on Arch + Shimmer the group midpoint falls inside the shimmer
+  // wall now that the two pieces touch, so the plinth marker was drawn on the
+  // sequin panel. The plinth belongs in front of the arch on that pair.
+  const archShimmerPair = layout.panels.length === 2
+    && layout.panels.some((pl) => (backdropItems[pl.idx]?.type ?? "") === "arch")
+    && layout.panels.some((pl) => (backdropItems[pl.idx]?.type ?? "") === "shimmer_wall");
+  const archPanelForPlinth = layout.panels.find((pl) => (backdropItems[pl.idx]?.type ?? "") === "arch");
+  const decorCx = archShimmerPair && archPanelForPlinth
+    ? archPanelForPlinth.cx
+    : (groupLeftEdge + groupRightEdge) / 2;
   const plinthCount    = layout.plinths.length;
   const plinthSpacing  = Math.max(...layout.plinths.map((pl) => pl.diameterPx), 1) * 1.5;
 
@@ -1538,7 +1547,14 @@ export function generateStructureSilhouette(
           // the reverse of what this composition is for. It now takes the same
           // organic mass Single Arch uses, so the arch side reads big and full
           // ("soldaki balonlar daha buyuk ve daha cok olsunlar").
-          const archCount = drawThickOrganicMainGarland(archP, archOuterSide, colorOffset, true, false).count;
+          // Two passes on the same side with different seeds. One pass on this
+          // frame left visible holes — measured on the guide, the middle fifth of
+          // the column held one balloon against seven lower down, which is the
+          // "eksikler" the customer saw. The arch here is small (a 16:9 frame for
+          // a 120cm arch beside a 200cm wall) so the absolute radius caps make one
+          // walk too sparse to close.
+          const archCount = drawThickOrganicMainGarland(archP, archOuterSide, colorOffset, true, false).count
+            + drawThickOrganicMainGarland(archP, archOuterSide, colorOffset + 37, true, false).count;
 
           const dir = shimmerOnRight ? 1 : -1;
           const shimmerNearX = shimmerOnRight ? shimmerP.cx - shimmerP.pw / 2 : shimmerP.cx + shimmerP.pw / 2;
@@ -1927,7 +1943,10 @@ export function generateStructureSilhouette(
         `font-family="Brush Script MT, Segoe Script, cursive" font-size="${fontSize.toFixed(0)}" font-style="italic"`;
       // Halo first, then the tube — reads as a glowing sign rather than as text.
       content.push(`<text ${attrs} fill="none" stroke="#FFE9A8" stroke-width="${(fontSize * 0.34).toFixed(1)}" stroke-linejoin="round" opacity="0.75">${esc}</text>`);
-      content.push(`<text ${attrs} fill="#FFFDF2" stroke="#C9922B" stroke-width="${Math.max(2, fontSize * 0.07).toFixed(1)}" stroke-linejoin="round">${esc}</text>`);
+      // 2026-09-05: the tube used to be stroked in gold-brown, which is what the
+      // guide showed and, on the shimmer setups, what the render picked up. The
+      // sign is warm WHITE, so the marker is too — a pale warm outline, not gold.
+      content.push(`<text ${attrs} fill="#FFFFFF" stroke="#E8C98A" stroke-width="${Math.max(2, fontSize * 0.07).toFixed(1)}" stroke-linejoin="round">${esc}</text>`);
     });
   }
 
