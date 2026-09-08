@@ -64,7 +64,7 @@ function panelTypeLabel(type: string): string {
     case "rect":            return "rectangular flat";
     case "shimmer_wall":    return "rectangular shimmer-wall";
     case "round":           return "round circular";
-    case "open_arch_frame": return "thick open arch decor prop";
+    case "open_arch_frame": return "arch backdrop board";
     case "wavy":            return "wavy-top";
     default:                return type;
   }
@@ -289,18 +289,15 @@ export function buildLayoutRefEditPrompt(
           `NOT crumpled foil, NOT a matte board, NOT a cream panel. ` +
           shimmerColorLockClause(shimmerC)
         : isOpenFrame
-          ? `freestanding open arch decor prop — a premium event-styling arch cutout with a bold, thick, ` +
-            `substantial frame border roughly 25-35cm wide, front-facing, with a COMPLETELY FLAT MATTE face ` +
-            `like a large painted or upholstered arch panel — smooth, evenly lit, non-reflective — with real ` +
-            `visual weight and material presence, matching the same premium finish and color family as the ` +
-            `solid arch beside it so the two read as one coordinated decor set. ` +
-            `An arch-shaped opening is cut straight through the center with no board behind it, and that ` +
-            `opening is packed full of a dense organic balloon cluster from the crown down to the floor. ` +
+          ? `plain flat arch backdrop board, front-facing, with a COMPLETELY FLAT MATTE face — smooth, evenly ` +
+            `lit, non-reflective, the same finish and colour family as the solid arch beside it so the two ` +
+            `read as one coordinated set. ` +
+            `A dense organic balloon cluster is mounted on its face, covering the middle of the board from the ` +
+            `crown down to the floor and leaving a narrow margin of bare board round the edge. ` +
             `NOT chrome, NOT mirrored, NOT polished metal, NOT stainless steel, NOT glossy, ` +
             `NOT moulded, NOT stepped, NOT ridged, NOT bevelled, NOT a picture-frame profile, ` +
-            `NOT a thin doorway frame, NOT a skinny architectural portal, NOT a wire or metal outline, ` +
-            `NOT tubular or pipe-like, NOT inflatable, NOT a deep 3D tunnel or hallway, ` +
-            `NOT a second solid backdrop panel, NOT a doorway with a door`
+            `NOT a doorway frame, NOT an architectural portal, NOT a wire or metal outline, ` +
+            `NOT tubular or pipe-like, NOT inflatable, NOT a niche, alcove, tunnel or hallway`
           : isArch
             ? `solid filled freestanding arch backdrop panel, fully opaque surface, seamless matte ${pColor} surface, ` +
               `no cut-out opening, no hollow doorway, full solid panel face visible`
@@ -314,7 +311,7 @@ export function buildLayoutRefEditPrompt(
     backdropDesc =
       `exactly ${panelCount} separate freestanding backdrop pieces arranged side by side, ` +
       (hasOpenFrame
-        ? `one solid backdrop piece and one thick open arch decor prop with a bold substantial frame border, each rendered at its correct width. `
+        ? `two flat arch backdrop boards, one bare and one carrying a dense balloon cluster on its face, each rendered at its correct width. `
         : `each fully solid, opaque, and rendered at its correct width. `) +
       `Both pieces are full-size physical event structures with correct width-to-height proportions. ` +
       `The total setup should feel wide and substantial, not skinny or compressed. ` +
@@ -704,29 +701,34 @@ export function buildLayoutRefEditPrompt(
   const openFrameSide = openFrameIdx < 0 ? "" : openFrameIdx === 0 ? "left" : "right";
   const solidSide     = openFrameSide === "left" ? "right" : "left";
   const hasOpenFramePair = openFrameIdx >= 0 && sceneModel.panels.length === 2;
-  // Kept SHORT and first. The ~90-word version of this line rendered the rim as
-  // a moulding anyway; length costs as much as position on this pipeline, so
-  // everything that is not about flatness moved to openFrameDetailLine below.
-  // 2026-09-08, fourth attempt and REVERTED: the customer's reference photo is a
-  // real product — a fabric open arch backdrop stand — so the line was rewritten
-  // as "matte stretch fabric pulled tight over a thin tube frame ... small metal
-  // feet". The render turned the whole piece into a square pull-up banner stand
-  // with a CHROME TUBE arch inside it: "tube" and "stand" are both stronger
-  // priors than "fabric". Back to the board wording, which at the production
-  // seed renders a flat matte board; the rim is fought in the guide instead.
+  // 2026-09-08, sixth wording. The four that failed are recorded here so nobody
+  // spends another render on them:
+  //   "one flat slab, no moulding"          -> matte, stepped picture-frame edge
+  //   "flat sheet of MDF, standing on edge" -> a WOODEN box on a plinth
+  //   "same board as the arch beside it"    -> chrome, and the hole bled onto
+  //                                            the SOLID arch
+  //   "stretch fabric over a thin tube
+  //    frame, small metal feet"             -> a square pull-up banner stand
+  //                                            with a CHROME TUBE arch inside
+  // The words "hole", "opening" and "cut through" are all gone. The guide no
+  // longer draws a ring either (see generateStructureSilhouette): the opening is
+  // packed with balloons in every render anyway, so what the hole was really
+  // contributing was a crisp concentric arch line for the model to turn into a
+  // moulded reveal. Described as a plain arch backdrop board carrying a balloon
+  // cluster, there is nothing left to mould.
   const frontOpenFrameLine = hasOpenFramePair
-    ? `The ${openFrameSide}-hand board is a FLAT MATTE PAINTED BOARD — not shiny, not metal, not chrome. ` +
-      `One plain surface with a plain arch hole cut in it, no moulding and no raised border around the hole. `
+    ? `The ${openFrameSide}-hand backdrop is a plain FLAT arch board, exactly like the ${solidSide}-hand one — ` +
+      `one smooth matte surface, no border, no rim, no moulding and no trim anywhere on it. `
     : "";
   const openFrameDetailLine = hasOpenFramePair
-    ? `The ${openFrameSide}-hand board is the same flat matte panel as the ${solidSide}-hand one, with an ` +
-      `arch-shaped hole cut out of its centre; that hole is packed full of balloons. The ${solidSide}-hand ` +
-      `backdrop stays completely solid with NO hole in it. Neither board is metal, chrome, glossy, wooden, ` +
-      `a doorway, a niche or a box. ` +
+    ? `A dense arch-shaped balloon cluster is mounted on the face of the ${openFrameSide}-hand backdrop, ` +
+      `covering its middle from the crown right down to the floor and leaving only a narrow margin of bare ` +
+      `board showing round the edge. That margin is flat painted board — not a frame, not a moulding, not ` +
+      `metal, not chrome, not glossy, not wooden. ` +
       (sceneModel.panels.some((p) => p.text.enabled || p.graphic.enabled)
-        ? `No lettering and no artwork on the ${openFrameSide}-hand board — any text or illustration belongs ` +
-          `on the ${solidSide}-hand one only. `
-        : `No lettering and no artwork on the ${openFrameSide}-hand board. `)
+        ? `No lettering and no artwork on the ${openFrameSide}-hand backdrop — any text or illustration ` +
+          `belongs on the ${solidSide}-hand one only. `
+        : `No lettering and no artwork on the ${openFrameSide}-hand backdrop. `)
     : "";
 
   const frontBannerAspectLine = hasBannerPanelInPrompt && !isMulti
@@ -1461,18 +1463,15 @@ const setupTemplateClause = setupTemplate
     doubleArchSeparationClause +
     doubleArchPlinthHardLockClause +
     (sceneModel.panels.some((p) => p.type === "open_arch_frame")
-      ? `The open arch frame has NO backdrop panel behind it: no solid board, no hidden second backdrop, no ` +
-        `curtain filling the arch. Its arch-shaped opening is FILLED WITH BALLOONS — a dense organic balloon ` +
-        `cluster packed into the opening from the crown down to the floor, big statement balloons with mediums ` +
-        `and smalls filling every gap, exactly as drawn in the layout reference. Wherever a gap between the ` +
-        `balloons shows through, it shows the room behind, not a board. ` +
-        `The frame's own border is thick, bold and visually substantial — a real premium decor prop with genuine ` +
-        `material presence, not a thin wire outline or skinny doorway trim. ` +
-        `Its surface is COMPLETELY FLAT and MATTE — a smooth painted or upholstered board face, evenly lit, ` +
-        `non-reflective. It is NOT chrome, NOT mirrored, NOT polished metal, NOT stainless steel, NOT glossy, ` +
-        `NOT a shiny tube, NOT rounded or pipe-like in section, NOT moulded, NOT stepped, NOT ridged, ` +
-        `NOT bevelled, NOT a picture-frame profile, not inflatable, not a deep 3D tunnel. ` +
-        `No lettering and no printed artwork anywhere on the open arch. ` +
+      ? `A dense organic balloon cluster is mounted on the face of that arch board — big statement balloons ` +
+        `with mediums and smalls filling every gap, packed from the crown down to the floor, exactly as drawn ` +
+        `in the layout reference — leaving only a narrow margin of bare board showing round the edge. ` +
+        `That margin is plain flat painted board, the same smooth matte surface as the rest of the panel: ` +
+        `no border, no rim, no frame, no moulding, no step, no ridge, no bevel, no trim, no picture-frame ` +
+        `profile and no recessed reveal anywhere around the cluster. ` +
+        `It is NOT chrome, NOT mirrored, NOT polished metal, NOT stainless steel, NOT glossy, NOT a shiny ` +
+        `tube, NOT rounded or pipe-like in section, not inflatable, not a niche, alcove or 3D tunnel. ` +
+        `No lettering and no printed artwork anywhere on that board. ` +
         `Exactly the listed pieces — do not add any extra panel. `
       : "") +
     setupTemplateClause +

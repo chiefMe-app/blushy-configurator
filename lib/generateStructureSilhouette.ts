@@ -371,6 +371,11 @@ function plinthFilledCylinder(cx: number, bottomY: number, heightPx: number, dia
 // arch silhouette, via fill-rule="evenodd") so the frame has real visual
 // material/mass, matching a premium event arch cutout — with a clean hollow
 // arch-shaped opening cut through the center, never a wire outline.
+// 2026-09-08: currently UNUSED. The open arch is drawn as a solid filled arch
+// silhouette instead (see the open_arch_frame branch below) because the ring
+// this builds gave the render a crisp concentric arch line to turn into a
+// moulded reveal. Kept because it is the only thing that draws a real hollow
+// band, and because the infill still mirrors its frameT formula.
 function openArchFramePath(
   cx: number, pw: number, apexY: number, floorY: number,
   fillColor: string,
@@ -761,27 +766,25 @@ export function generateStructureSilhouette(
     const shape     = (item?.type ?? "arch") as BackdropShapeId;
     const isShimmer = shape === "shimmer_wall";
 
-    // Open arch frame: a thick filled decor-prop band with a hollow center —
-    // same neutral fill family as the paired solid arch (MULTI_PANEL_FILLS),
-    // so the pair reads as one coordinated set, not a wire outline vs a board.
+    // Open arch frame. 2026-09-08, after five prompt rewrites and three guide
+    // changes all failed to stop the render carving a stepped moulding around
+    // the opening: the guide no longer draws a RING at all. It draws the same
+    // solid filled arch silhouette the solid backdrop gets — the one shape this
+    // pipeline renders as a dead-flat board every single time — and the balloon
+    // cluster is what defines the opening on top of it.
+    //
+    // Why this is not a cheat: the opening is packed edge to edge with balloons
+    // in every render and in the customer's own reference photo, so the hole is
+    // never actually visible. What the ring was contributing was not a visible
+    // hole, it was a crisp concentric arch line, and a crisp concentric arch
+    // line in perspective is exactly the cue for a moulded reveal.
     if (shape === "open_arch_frame") {
-      let frameFill = fillForPanel(sortedIdx, panel.idx);
-      // 2026-09-08: the customer's frame kept rendering as a polished chrome
-      // pipe. Looking at the guide explained it: the panel's own colour is
-      // white by default, so the band was white-on-white — two hairline
-      // outlines with no material between them, and the model filled the
-      // vacuum with the shiniest thing it knows. A near-white fill is replaced
-      // with a flat light neutral so the band reads as a solid matte board.
-      const lum = (() => {
-        const m = /^#([0-9a-fA-F]{6})$/.exec(frameFill);
-        if (!m) return 0;
-        const v = parseInt(m[1], 16);
-        return (0.2126 * ((v >> 16) & 255) + 0.7152 * ((v >> 8) & 255) + 0.0722 * (v & 255)) / 255;
-      })();
-      if (lum > 0.93) frameFill = "#D6D8E2";
-      const frame = openArchFramePath(panel.cx, panel.pw, panel.apexY, panel.floorY, frameFill);
-      content.push(frame.svg);
-      archOpenFrameFrameThicknessPx = frame.frameThicknessPx;
+      const frameFill = fillForPanel(sortedIdx, panel.idx);
+      content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, "arch", frameFill));
+      // Still reported: route.ts and the prompt read this to describe the band.
+      archOpenFrameFrameThicknessPx = Math.round(
+        Math.max(14, Math.min((panel.pw / 2) * 0.42, panel.pw * 0.15)),
+      );
       return;
     }
 
