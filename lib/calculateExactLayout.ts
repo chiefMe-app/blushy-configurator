@@ -76,7 +76,17 @@ export function calculateExactLayout(
   // exactly the old single-panel apexFactor baseline (heightRatio=1 always
   // resolved to apexFactor=0.05), so the tallest/reference panel's position
   // is unchanged from before.
-  const tallestPanelHeightPx = floorY - canvasH * 0.05;
+  // 2026-09-09: Triple Arch — a centre board with a half arch either side. The
+  // customer reference has all three touching, so it takes the same shoulder to
+  // shoulder overlap the unequal-height arch pair gets.
+  const isTripleArch = count === 3
+    && items.filter((it) => it?.type === "half_arch").length === 2
+    && items.some((it) => it?.type === "arch");
+  // Its garland runs OVER the tops of all three boards, so unlike every other
+  // layout it needs real headroom above the tallest one. At the usual 5% the
+  // crown balloons were clamped down onto the apex and the render dropped them,
+  // leaving the centre board bare.
+  const tallestPanelHeightPx = floorY - canvasH * (isTripleArch ? 0.22 : 0.05);
 
   // --- Compute intrinsic sizes and z-orders ---
   const rawPanels = items.slice(0, count).map((item, i) => {
@@ -143,7 +153,7 @@ export function calculateExactLayout(
   // Two arches of DIFFERENT heights sit shoulder to shoulder with a small
   // overlap, the shorter one stepped forward. Equal-height pairs keep the plain
   // gap — overlapping two identical silhouettes just looks like a mistake.
-  const heightsDiffer = bothArches && new Set(rawPanels.map((r) => r.hCm)).size > 1;
+  const heightsDiffer = (bothArches && new Set(rawPanels.map((r) => r.hCm)).size > 1) || isTripleArch;
   const minPwScaled   = Math.min(...rawPanels.map((r) => r.pw * groupScale));
   const effGap        = heightsDiffer ? -minPwScaled * 0.035 : gap;
   // How far forward the shorter board stands, as a share of the tallest board's

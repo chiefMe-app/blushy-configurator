@@ -39,6 +39,9 @@ const PROMPT_SUFFIX =
 const SHAPE_DESC: Record<BackdropShapeId, string> = {
   arch:
     "one symmetrical full arch vertical panel with a rounded top center, standing directly on the floor",
+  half_arch:
+    "one half arch side panel — an arch sliced down the middle, the rounded corner facing outward and the " +
+    "straight edge facing the centre board, standing directly on the floor",
   round:
     "one perfect circular round vertical backdrop panel, standing directly on the floor",
   balloon_ring:
@@ -542,6 +545,7 @@ export function generatePrompt(input: PromptInput): {
     banner:          "square printed banner",
     balloon_ring:    "hollow balloon ring",
     shimmer_wall:    "rectangular shimmer wall",
+    half_arch:       "half arch side panel (rounded outer corner)",
     open_arch_frame: "hollow open arch frame",
     wavy:            "wavy top",
   };

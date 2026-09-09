@@ -81,7 +81,9 @@ import { SETUP_LAYOUT_TEMPLATES, inferSetupLayoutTemplateIdFromBackdropItems } f
 import SetupPreview, { useSetupPreview, type FinalRenderState } from "@/components/SetupPreview";
 
 // Controlled render limit: at most 2 backdrop pieces per setup.
-const MAX_BACKDROP_ITEMS = 2;
+// 2026-09-09: 2 -> 3 for the Triple Arch layout. calculateExactLayout has
+// always handled three panels; only the UI capped it.
+const MAX_BACKDROP_ITEMS = 3;
 
 // Elegant serif for display headings — Cormorant Garamond per the Claude Design
 // handoff, with system serif fallbacks.
@@ -1319,6 +1321,15 @@ function clearAllStandees() {
         if (d.balloonStyle === "none") patchDecor({ balloonStyle: "full" });
         break;
       case "double_arch":        panels = [makeArchUnsized("arch-1"), makeArchUnsized("arch-2")]; break;
+      // 2026-09-09: the first three-piece layout. Selection order is
+      // left-to-right, so the two half arches bracket the centre board.
+      case "triple_arch":
+        panels = [
+          { ...makeBackdropItem("half_arch"), id: "half-1" },
+          { ...makeArchUnsized("arch-1") },
+          { ...makeBackdropItem("half_arch"), id: "half-2" },
+        ];
+        break;
       // arch_open_frame / shimmer_open_frame / single_shimmer / arch_shimmer
       // removed from product — no longer selectable, so no case needed;
       // legacy ids resolve via getSetupLayoutTemplate()'s
@@ -1332,7 +1343,7 @@ function clearAllStandees() {
   const activeSetupTemplateId = inferSetupLayoutTemplateIdFromBackdropItems(d.backdropItems);
 
   // Readable type labels for summaries
-  const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", rect: "Rectangular Backdrop", round: "Round Backdrop", banner: "Banner Backdrop", balloon_ring: "Balloon Ring", shimmer_wall: "Shimmer Wall", open_arch_frame: "Open Arch Frame" };
+  const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", half_arch: "Half Arch", rect: "Rectangular Backdrop", round: "Round Backdrop", banner: "Banner Backdrop", balloon_ring: "Balloon Ring", shimmer_wall: "Shimmer Wall", open_arch_frame: "Open Arch Frame" };
 
   // Collapsible customize row -shows summary + button, expands on demand
   function BackdropCustomizeRow({ item, itemIdx }: { item: BackdropItem; itemIdx: number }) {
@@ -1630,7 +1641,7 @@ function clearAllStandees() {
           )}
           {d.backdropItems.length >= MAX_BACKDROP_ITEMS && (
             <div style={{ marginTop: 8, fontSize: 11, color: "#73778A", fontWeight: 500 }}>
-              You can select up to 2 backdrop pieces for a controlled render.
+              You can select up to 3 backdrop pieces for a controlled render.
             </div>
           )}
           <button type="button" onClick={() => setShowManualPieces(v => !v)}
@@ -1688,7 +1699,7 @@ function clearAllStandees() {
                 sizeId and must not raise a "pick a size" cue that can never be
                 satisfied — which is what left the Banner setup looking broken. */}
             {d.backdropItems.length > 0
-              && d.backdropItems.some((i) => !i.sizeId && !["round", "banner", "open_arch_frame", "shimmer_wall", "balloon_ring"].includes(i.type))
+              && d.backdropItems.some((i) => !i.sizeId && !["round", "banner", "open_arch_frame", "shimmer_wall", "balloon_ring", "half_arch"].includes(i.type))
               && nextCue("Pick a size next")}
           </div>
         </div>

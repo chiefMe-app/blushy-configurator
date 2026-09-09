@@ -276,6 +276,7 @@ export function buildLayoutRefEditPrompt(
       const isShimmer   = p.type === "shimmer_wall";
       const isArch      = p.type === "arch";
       const isOpenFrame = p.type === "open_arch_frame";
+      const isHalfArch  = p.type === "half_arch";
       const shimmerC  = sceneModel.shimmerColor ?? "silver";
       const pColor = backdropColorLabel(p.color);
       const surfaceDesc = isShimmer
@@ -298,6 +299,12 @@ export function buildLayoutRefEditPrompt(
             `NOT moulded, NOT stepped, NOT ridged, NOT bevelled, NOT a picture-frame profile, ` +
             `NOT a doorway frame, NOT an architectural portal, NOT a wire or metal outline, ` +
             `NOT tubular or pipe-like, NOT inflatable, NOT a niche, alcove, tunnel or hallway`
+          : isHalfArch
+            ? `solid flat matte ${pColor} HALF arch board — a full arch sliced straight down its middle, so ` +
+              `ONE top corner is a quarter-circle curve and the other side is a plain vertical edge running ` +
+              `full height. The curved corner faces OUTWARD, away from the centre board; the straight edge ` +
+              `is butted flat against the centre board with no gap. It is NOT a full arch, NOT symmetrical, ` +
+              `NOT rounded on both top corners`
           : isArch
             ? `solid filled freestanding arch backdrop panel, fully opaque surface, seamless matte ${pColor} surface, ` +
               `no cut-out opening, no hollow doorway, full solid panel face visible`
@@ -721,6 +728,14 @@ export function buildLayoutRefEditPrompt(
   // contributing was a crisp concentric arch line for the model to turn into a
   // moulded reveal. Described as a plain arch backdrop board carrying a balloon
   // cluster, there is nothing left to mould.
+  // 2026-09-09: Triple Arch. Short and front-loaded, because the side boards
+  // kept rendering as full symmetrical arches.
+  const halfArchCount = sceneModel.panels.filter((p) => p.type === "half_arch").length;
+  const frontTripleArchLine = halfArchCount === 2
+    ? `Exactly THREE boards, touching: a tall arch in the middle, and either side a HALF arch — one ` +
+      `curved top corner facing outward, the other edge straight and vertical against the middle board. `
+    : "";
+
   const frontOpenFrameLine = hasOpenFramePair
     ? `The ${openFrameSide}-hand backdrop is a plain FLAT arch board, exactly like the ${solidSide}-hand one — ` +
       `one smooth matte surface, no border, no rim, no moulding and no trim anywhere on it. `
@@ -1471,6 +1486,7 @@ const setupTemplateClause = setupTemplate
 
   return (
     frontBannerAspectLine +
+    frontTripleArchLine +
     frontOpenFrameLine +
     frontFloralsLine +
     frontShimmerLine +
@@ -1492,7 +1508,9 @@ const setupTemplateClause = setupTemplate
       ? `A dense organic balloon cluster is mounted on the face of that arch board — big statement balloons ` +
         `with mediums and smalls filling every gap, packed from the crown down to the floor, exactly as drawn ` +
         `in the layout reference — leaving only a narrow margin of bare board showing round the edge. ` +
-        `That margin is plain flat painted board, the same smooth matte surface as the rest of the panel: ` +
+        `Some of the balloons are arranged as BALLOON FLOWERS — five balloons of one colour ringing a ` +
+      `smaller balloon of another, exactly as drawn in the layout reference. ` +
+      `That margin is plain flat painted board, the same smooth matte surface as the rest of the panel: ` +
         `no border, no rim, no frame, no moulding, no step, no ridge, no bevel, no trim, no picture-frame ` +
         `profile and no recessed reveal anywhere around the cluster. ` +
         `It is NOT chrome, NOT mirrored, NOT polished metal, NOT stainless steel, NOT glossy, NOT a shiny ` +

@@ -313,6 +313,7 @@ export const PACKAGES: Package[] = [
 // sanitized/remapped instead of crashing.
 export type BackdropShapeId =
   | "arch"
+  | "half_arch"
   | "round"
   | "rect"
   | "banner"
@@ -419,6 +420,14 @@ export function makeBackdropItem(
   } else if (type === "open_arch_frame") {
     // Hollow open arch frame prop — arch-like footprint
     widthCm = 100; heightCm = 200;
+  } else if (type === "half_arch") {
+    // 2026-09-09: the side pieces of the Triple Arch — an arch sliced down the
+    // middle, curve facing outward, standing shoulder to shoulder with the
+    // centre board. Shorter and narrower than the centre arch, as in the
+    // customer reference.
+    // 2026-09-09: 80x180 -> 90x150. At 180cm the side boards were nearly as
+    // tall as the 220cm centre and the stepped silhouette did not read.
+    widthCm = 90; heightCm = 150;
   }
   return {
     id:      sizeId ?? type,
@@ -763,6 +772,8 @@ export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   // 2026-09-05: brought back so the Arch + Open Frame setup can be offered. The
   // guide and prompt branches for it were never removed, only the way in.
   { id: "open_arch_frame", label: "Open Arch Frame",   price: 0 },
+  // 2026-09-09: half arch side panel, for the Triple Arch setup.
+  { id: "half_arch",    label: "Half Arch Panel",      price: 0 },
   // 2026-09-05: shimmer wall is offered again, and a hollow balloon ring is new.
   { id: "shimmer_wall", label: "Shimmer Wall",         price: 0 },
   { id: "balloon_ring", label: "Balloon Ring",         price: 0 },

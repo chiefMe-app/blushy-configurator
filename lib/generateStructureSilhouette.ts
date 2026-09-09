@@ -135,6 +135,8 @@ function panelPathOrShape(
   cx: number, pw: number, apexY: number, floorY: number,
   shape: BackdropShapeId,
   fillColor = "#F0ECE8",
+  // Which side a half_arch curves toward. Ignored by every other shape.
+  facing: "left" | "right" = "left",
 ): string {
   const r     = pw / 2;
   const left  = cx - r;
@@ -165,6 +167,26 @@ function panelPathOrShape(
     // the banner needs the square built here, bottom-aligned to the floor.
     const side = Math.min(pw, floorY - apexY);
     return `<rect x="${cx - side / 2}" y="${floorY - side}" width="${side}" height="${side}" fill="${fillColor}" ${stroke}/>`;
+  }
+
+  if (shape === "half_arch") {
+    // 2026-09-09: an arch sliced down the middle. The rounded corner faces
+    // OUTWARD, away from the centre board, and the straight edge butts against
+    // it — exactly the side pieces in the customer's Triple Arch reference.
+    // Which way it faces is decided by the caller and passed in `facing`.
+    const h = floorY - apexY;
+    const rr = Math.min(pw, h);
+    const outerX = facing === "left" ? left : right;
+    const innerX = facing === "left" ? right : left;
+    const sweep  = facing === "left" ? 1 : 0;
+    const d2 = [
+      `M ${outerX},${floorY}`,
+      `L ${outerX},${(apexY + rr).toFixed(1)}`,
+      `A ${rr.toFixed(1)},${rr.toFixed(1)} 0 0 ${sweep} ${innerX},${apexY.toFixed(1)}`,
+      `L ${innerX},${floorY}`,
+      "Z",
+    ].join(" ");
+    return `<path d="${d2}" fill="${fillColor}" ${stroke}/>`;
   }
 
   if (shape === "rect" || shape === "shimmer_wall") {
@@ -754,10 +776,22 @@ export function generateStructureSilhouette(
   const uniformPanelFill =
     backdropItems.length > 1 &&
     backdropItems.every((i) => i.type === backdropItems[0].type);
+  // 2026-09-09: a Triple Arch of three WHITE boards is three invisible shapes on
+  // a white ground, and the render duly invented its own arrangement — four and
+  // five arches in the same photo. Three boards standing shoulder to shoulder
+  // only read as three if the guide actually shows where each one ends, so a
+  // near-white board in this layout is drawn with the neutral panel fill and
+  // each board gets a different one. (The prompt still states their real
+  // colour; this is a guide-legibility fill, exactly like the open arch band.)
+  const isTripleArchGuide =
+    backdropItems.filter((i) => i?.type === "half_arch").length === 2 &&
+    backdropItems.some((i) => i?.type === "arch");
   const fillForPanel = (sortedIdx: number, panelIdx?: number): string => {
     const own = (backdropItems[panelIdx ?? sortedIdx] as { color?: string } | undefined)?.color;
-    if (own && /^#[0-9a-fA-F]{6}$/.test(own)) return own;
-    return MULTI_PANEL_FILLS[(uniformPanelFill ? 0 : sortedIdx) % MULTI_PANEL_FILLS.length];
+    const nearWhite = !own || /^#(f{6}|F{6})$/.test(own) || own.toUpperCase() === "#FFFFFF";
+    if (own && /^#[0-9a-fA-F]{6}$/.test(own) && !(isTripleArchGuide && nearWhite)) return own;
+    const slot = isTripleArchGuide ? (panelIdx ?? sortedIdx) : (uniformPanelFill ? 0 : sortedIdx);
+    return MULTI_PANEL_FILLS[slot % MULTI_PANEL_FILLS.length];
   };
 
   const sorted = [...layout.panels].sort((a, b) => a.zOrder - b.zOrder);
@@ -801,7 +835,12 @@ export function generateStructureSilhouette(
         content.push(shimmerTilePatternDefs(patId, tileSize, shimmerTileFill));
         content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, `url(#${patId})`));
       } else {
-        content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape, fillForPanel(sortedIdx, panel.idx)));
+        // A half arch curves AWAY from the middle of the group, so which way it
+        // faces depends on where it stands.
+        const groupMidX = (Math.min(...layout.panels.map((q) => q.cx - q.pw / 2))
+          + Math.max(...layout.panels.map((q) => q.cx + q.pw / 2))) / 2;
+        content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape,
+          fillForPanel(sortedIdx, panel.idx), panel.cx <= groupMidX ? "left" : "right"));
       }
     } else if (isShimmer) {
       // Single shimmer wall: force a clean rectangle (never arch edges) with tile grid.
@@ -1712,8 +1751,118 @@ export function generateStructureSilhouette(
         const framePanel = layout.panels.find(
           (p) => (backdropItems[p.idx]?.type ?? "") === "open_arch_frame",
         );
+        const halfArchPanels = layout.panels.filter(
+          (p) => (backdropItems[p.idx]?.type ?? "") === "half_arch",
+        );
 
-        if (archPanels.length === 2) {
+        // 2026-09-09: Triple Arch. The reference is ONE mass: a very full
+        // garland running right across the tops of all three boards, plus a
+        // dense pile on the floor at each outer end. There is no full-height
+        // side garland — the first attempt gave each half arch one and the
+        // render read those vertical masses as EXTRA ARCHES, coming back with
+        // five boards instead of three. The crown run follows the actual
+        // silhouette of whichever board is highest at each x.
+        if (halfArchPanels.length === 2 && archPanels.length === 1) {
+          const ordered = [...layout.panels].sort((a, b) => a.cx - b.cx);
+          const leftP  = ordered[0];
+          const rightP = ordered[ordered.length - 1];
+
+          // Height of the tallest board at a given x — an arch is a semicircle
+          // on straight legs, a half arch is a quarter of one.
+          const groupMid = (leftP.cx - leftP.pw / 2 + rightP.cx + rightP.pw / 2) / 2;
+          const topYAt = (x: number): number | null => {
+            let best: number | null = null;
+            for (const p of layout.panels) {
+              const l = p.cx - p.pw / 2, r = p.cx + p.pw / 2;
+              if (x < l || x > r) continue;
+              const type = backdropItems[p.idx]?.type ?? "arch";
+              let y: number;
+              if (type === "half_arch") {
+                const h  = p.floorY - p.apexY;
+                const rr = Math.min(p.pw, h);
+                const innerX = p.cx <= groupMid ? r : l;
+                const dx = Math.min(rr, Math.abs(x - innerX));
+                y = p.apexY + rr - Math.sqrt(Math.max(0, rr * rr - dx * dx));
+              } else {
+                const rr = p.pw / 2;
+                const dx = Math.min(rr, Math.abs(x - p.cx));
+                y = p.apexY + rr - Math.sqrt(Math.max(0, rr * rr - dx * dx));
+              }
+              if (best === null || y < best) best = y;
+            }
+            return best;
+          };
+
+          // Sized off the CENTRE board, not the little side one — the customer
+          // asked for the reference density ("dolu dolu"), and scaling from the
+          // narrow half arch made every balloon a third too small.
+          const centreP = ordered[1] ?? leftP;
+          const rBig = Math.max(22, Math.min(58, centreP.pw * 0.20));
+          const rMid = rBig * 0.68;
+          const rLil = rBig * 0.45;
+          let cst = 20260909;
+          const crnd = () => { cst = (cst * 1664525 + 1013904223) >>> 0; return cst / 4294967296; };
+          const areaC = new Array(Math.max(1, colors.length)).fill(0) as number[];
+          const pickC = (): number => {
+            let b = 0;
+            for (let i = 1; i < areaC.length; i++) if (areaC[i] < areaC[b]) b = i;
+            return b;
+          };
+          const placedC: { x: number; y: number; r: number }[] = [];
+          const putC = (bx: number, byRaw: number, br: number): void => {
+            // The layout leaves only 5% of canvas height above the tallest board,
+            // so an unclamped crown lane runs straight off the top and the render
+            // fills the clipped strip with junk (the same failure the marquee
+            // number had at x = -10).
+            const by = Math.max(br + 3, byRaw);
+            for (const q of placedC) {
+              const dd = Math.hypot(bx - q.x, by - q.y);
+              if ((br + q.r - dd) / (2 * Math.min(br, q.r)) > 0.88) return;
+            }
+            placedC.push({ x: bx, y: by, r: br });
+            const ci = pickC();
+            areaC[ci] += Math.PI * br * br;
+            content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(ci)}/>`);
+          };
+
+          const runL = leftP.cx - leftP.pw / 2;
+          const runR = rightP.cx + rightP.pw / 2;
+          const step = rBig * 0.34;
+          for (let x = runL; x <= runR; x += step) {
+            const ty = topYAt(x);
+            if (ty === null) continue;
+            // Three lanes: one sitting on the board top, one riding above it,
+            // one tucked just below so the run reads as a mass, not a string.
+            for (const lane of [0, 1, 2, 3]) {
+              const rr = lane === 0 ? rBig * (0.85 + crnd() * 0.35)
+                : lane === 1 ? rMid * (0.85 + crnd() * 0.4)
+                : lane === 2 ? rLil * (0.85 + crnd() * 0.5)
+                : rMid * (0.70 + crnd() * 0.5);
+              const off = lane === 0 ? -rr * 0.15 : lane === 1 ? -rr * 0.80 : lane === 2 ? rr * 0.85 : rr * 1.85;
+              putC(
+                x + (crnd() * 2 - 1) * rMid * 0.55,
+                ty + off + (crnd() * 2 - 1) * rLil * 0.5,
+                rr,
+              );
+            }
+          }
+
+          // A dense pile on the floor at each outer end, as in the reference —
+          // this is where the mass goes instead of down the sides.
+          for (const [p, dir] of [[leftP, -1], [rightP, 1]] as const) {
+            const edgeX = p.cx + dir * (p.pw / 2);
+            for (let i = 0; i < 26; i++) {
+              const t  = Math.pow(crnd(), 1.4);
+              const ox = dir * (t * p.pw * 0.55) - dir * p.pw * 0.10;
+              const up = Math.pow(crnd(), 1.3) * rBig * 3.6;
+              putC(
+                edgeX + ox + (crnd() * 2 - 1) * rMid * 0.5,
+                p.floorY - up - rMid * 0.35,
+                i % 4 === 0 ? rBig * 0.95 : rMid * (0.80 + crnd() * 0.55),
+              );
+            }
+          }
+        } else if (archPanels.length === 2) {
           // Double arch (2026-07-18 geometry fix): each arch carries the same
           // thick organic MASS garland already proven on Arch + Open Frame's
           // solid arch (drawThickOrganicMainGarland, "thick_organic_mass_v2"),
@@ -1837,9 +1986,49 @@ export function generateStructureSilhouette(
           };
 
           // 1) Statement balloons first — the biggest objects win their space.
-          //    2026-09-08: the top one is gone. At the crown of the arch it read
-          //    as one oversized ball dominating the whole piece (the customer
-          //    circled it), so the cluster now grows out of the floor: the
+          putI(framePanel.cx - rI * 0.10, springYi + rI * 0.20, rXLf, 0.65);
+          putI(framePanel.cx + rI * 0.40, springYi + rI * 1.10, rXLf * 0.72, 0.65);
+          putI(framePanel.cx - rI * 0.42, floorYF - rXLf * 0.80, rXLf * 0.80, 0.65);
+
+          // 1a) BALLOON FLOWERS — five petals ringing a smaller centre. These
+          //     are the shapes that make the customer's Frozen reference read
+          //     the way it does; a purely random pack never produces one,
+          //     because a flower is a deliberate arrangement, not a collision.
+          //     2026-09-09, asked for "birebir" the reference.
+          {
+            const spots: [number, number][] = [
+              [-0.45, 0.35], [0.45, 0.30], [0.00, 0.85],
+              [-0.50, 1.35], [0.42, 1.62], [-0.05, 2.05],
+            ];
+            for (const [fx, fy] of spots) {
+              const cxF = framePanel.cx + fx * rI;
+              const cyF = springYi + fy * rI;
+              if (!insideOpening(cxF, cyF)) continue;
+              const petal = rMf * (0.85 + rndI() * 0.35);
+              const ring  = petal * 1.72;
+              const base  = pickI();
+              for (let k = 0; k < 5; k++) {
+                const a2 = (k / 5) * Math.PI * 2 + rndI() * 0.35;
+                const px = cxF + Math.cos(a2) * ring;
+                const py = cyF + Math.sin(a2) * ring;
+                if (!insideOpening(px, py)) continue;
+                placedI.push({ x: px, y: py, r: petal });
+                areaI[base] += Math.PI * petal * petal;
+                content.push(
+                  `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${petal.toFixed(1)}" ${balloonAttrs(base)}/>`,
+                );
+                infillCount++;
+              }
+              const heart = (base + 1 + Math.floor(rndI() * Math.max(1, colors.length - 1))) % Math.max(1, colors.length);
+              const hr = petal * 0.82;
+              placedI.push({ x: cxF, y: cyF, r: hr });
+              areaI[heart] += Math.PI * hr * hr;
+              content.push(
+                `<circle cx="${cxF.toFixed(1)}" cy="${cyF.toFixed(1)}" r="${hr.toFixed(1)}" ${balloonAttrs(heart)}/>`,
+              );
+              infillCount++;
+            }
+          }
           //    biggest balloons sit low and everything tapers upward.
           putI(framePanel.cx - rI * 0.42, floorYF - rXLf * 0.80, rXLf * 0.80, 0.65);
           putI(framePanel.cx + rI * 0.40, floorYF - rXLf * 1.55, rXLf * 0.66, 0.65);

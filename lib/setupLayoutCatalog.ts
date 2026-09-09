@@ -284,6 +284,43 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
                { x: 0.96, bottomY: 0.96, maxHeightFraction: 0.28, maxWidthFraction: 0.19, preferredSide: "right" }],
     },
   },
+  {
+    // 2026-09-09: a centre board with a half arch either side, from the
+    // customer's reference — the two side pieces are arches sliced down the
+    // middle, curve facing outward, standing shoulder to shoulder with the
+    // centre board. This is the first three-piece layout in the product;
+    // calculateExactLayout already supported three panels.
+    id: "triple_arch",
+    name: "Triple Arch",
+    description: "Large centre arch with half arches either side",
+    backdropTypes: ["half_arch", "arch", "half_arch"],
+    maxBackdrops: 3,
+    badge: "New",
+    miniPreview: ["arch_small", "arch_large", "arch_small"],
+    panelInstruction:
+      "Three freestanding backdrop boards standing shoulder to shoulder with no gap: a tall arch in the " +
+      "centre, and a half arch either side — each side board is an arch sliced down the middle, its " +
+      "rounded corner facing outward and its straight edge butted against the centre board.",
+    // Deliberately colour-neutral, and it says the guide circles are
+    // placeholders — the same wording that fixed Double Arch's blobby balloons.
+    garlandInstruction:
+      "Balloon design: one continuous, very full organic garland running right across the tops of all " +
+      "three boards, thickest over the two joins and over the centre crown, with dense clusters spilling " +
+      "down both outer edges and pooling on the floor at each end. The balloon circles in the layout " +
+      "reference only mark where the garland sits and how thick it is — re-create it as a real " +
+      "professional installation: dozens of individual glossy latex balloons in a wide range of sizes, " +
+      "from large statement balloons down to small filler balloons tucked into the gaps.",
+    plinthInstruction:
+      "The plinth stands centred in front of the middle board, as on every other layout.",
+    standeeZones: {
+      large:  [{ x: 0.02, bottomY: 0.94, maxHeightFraction: 0.60, maxWidthFraction: 0.32, preferredSide: "left" },
+               { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.60, maxWidthFraction: 0.32, preferredSide: "right" }],
+      medium: [{ x: 0.03, bottomY: 0.95, maxHeightFraction: 0.44, maxWidthFraction: 0.24, preferredSide: "left" },
+               { x: 0.99, bottomY: 0.94, maxHeightFraction: 0.44, maxWidthFraction: 0.24, preferredSide: "right" }],
+      small:  [{ x: 0.04, bottomY: 0.96, maxHeightFraction: 0.28, maxWidthFraction: 0.18, preferredSide: "left" },
+               { x: 0.96, bottomY: 0.96, maxHeightFraction: 0.28, maxWidthFraction: 0.18, preferredSide: "right" }],
+    },
+  },
 ];
 
 /**
@@ -332,6 +369,7 @@ export function inferSetupLayoutTemplateIdFromBackdropItems(
   if (key === "arch+shimmer_wall") return "arch_shimmer";
   if (key === "arch+arch") return "double_arch";
   if (key === "arch+open_arch_frame") return "arch_open_frame";
+  if (key === "arch+half_arch+half_arch") return "triple_arch";
   if (key === "open_arch_frame+shimmer_wall") return "single_arch";
   return null;
 }
