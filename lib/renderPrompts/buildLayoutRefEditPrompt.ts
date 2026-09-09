@@ -819,6 +819,14 @@ export function buildLayoutRefEditPrompt(
       `no deep shadows, not hazy, not washed out. `
     : "";
 
+  // 2026-09-09: the ROOM itself, front-loaded. On the non-flash model the wall
+  // came back as heavily mottled dark concrete and the floor as dark brown
+  // marble — "duvarlar ve yerler cok koyu kontrast olmus". The room is set
+  // dressing; it should be pale and quiet behind the setup.
+  const frontRoomLine = `The room is LIGHT and plain: a pale light-grey wall, smooth and evenly lit with only ` +
+    `faint texture, and a pale light-grey concrete floor. The wall and floor are not dark, not heavily ` +
+    `mottled or stained, not marble, not brown, and carry no strong shadows. `;
+
   // 2026-09-09: the non-flash model composes a three-quarter view of the room
   // by default — the customer wants the setup square to camera — and it drops
   // the plinth on a lone arch that has no standee. Both are stated up front,
@@ -1674,6 +1682,7 @@ const setupTemplateClause = setupTemplate
   return (
     frontShapeLine +
     frontColourLine +
+    frontRoomLine +
     frontCameraLine +
     frontPlinthLine +
     frontBannerAspectLine +
