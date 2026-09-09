@@ -1840,12 +1840,46 @@ export function generateStructureSilhouette(
                 : lane === 1 ? rMid * (0.85 + crnd() * 0.4)
                 : lane === 2 ? rLil * (0.85 + crnd() * 0.5)
                 : rMid * (0.70 + crnd() * 0.5);
-              const off = lane === 0 ? -rr * 0.15 : lane === 1 ? -rr * 0.80 : lane === 2 ? rr * 0.85 : rr * 1.85;
+              // 2026-09-09: every lane now sits ON or ABOVE the board's top
+              // edge. Two of the four used to hang BELOW it (+0.85 and +1.85 of
+              // a radius), which put balloons across the face of the boards —
+              // the customer's reference has the garland riding the top edge
+              // with the board faces left clean.
+              const off = lane === 0 ? -rr * 0.20
+                : lane === 1 ? -rr * 1.05
+                : lane === 2 ? -rr * 1.95
+                : rr * 0.45;   // just onto the edge, never across the face
               putC(
                 x + (crnd() * 2 - 1) * rMid * 0.55,
                 ty + off + (crnd() * 2 - 1) * rLil * 0.5,
                 rr,
               );
+            }
+          }
+
+          // 2026-09-09: heavy clusters over the two JOINS, and one over the
+          // centre crown. A uniform band across the tops kept being dropped by
+          // the render — it came back as two separate garlands on the side
+          // boards with the middle bare — and the customer's reference is in
+          // fact thickest exactly at these three points. A localised mass is
+          // reproduced where an even strip is not.
+          {
+            const centreP2 = ordered[1] ?? leftP;
+            const joinL = (leftP.cx + leftP.pw / 2 + centreP2.cx - centreP2.pw / 2) / 2;
+            const joinR = (centreP2.cx + centreP2.pw / 2 + rightP.cx - rightP.pw / 2) / 2;
+            for (const jx of [joinL, centreP2.cx, joinR]) {
+              const jy = topYAt(jx);
+              if (jy === null) continue;
+              for (let i = 0; i < 16; i++) {
+                const a3 = crnd() * Math.PI * 2;
+                const dd = Math.pow(crnd(), 0.7) * rBig * 1.5;
+                const rr = i % 3 === 0 ? rBig * (0.9 + crnd() * 0.3) : rMid * (0.8 + crnd() * 0.5);
+                putC(
+                  jx + Math.cos(a3) * dd,
+                  jy + Math.sin(a3) * dd * 0.75 - rr * 0.35,
+                  rr,
+                );
+              }
             }
           }
 

@@ -55,6 +55,7 @@ export interface LayoutZone {
 /** Shape tokens for the playful mini preview illustration on setup cards. */
 export type MiniPreviewShape =
   | "arch" | "arch_large" | "arch_small"
+  | "half_arch_left" | "half_arch_right"
   | "round" | "shimmer" | "open_frame" | "banner" | "ring" | "balloons";
 
 export interface SetupLayoutTemplate {
@@ -296,7 +297,7 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     backdropTypes: ["half_arch", "arch", "half_arch"],
     maxBackdrops: 3,
     badge: "New",
-    miniPreview: ["arch_small", "arch_large", "arch_small"],
+    miniPreview: ["half_arch_left", "arch_large", "half_arch_right"],
     panelInstruction:
       "Three freestanding backdrop boards standing shoulder to shoulder with no gap: a tall arch in the " +
       "centre, and a half arch either side — each side board is an arch sliced down the middle, its " +

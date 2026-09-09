@@ -155,7 +155,10 @@ export function calculateExactLayout(
   // gap — overlapping two identical silhouettes just looks like a mistake.
   const heightsDiffer = (bothArches && new Set(rawPanels.map((r) => r.hCm)).size > 1) || isTripleArch;
   const minPwScaled   = Math.min(...rawPanels.map((r) => r.pw * groupScale));
-  const effGap        = heightsDiffer ? -minPwScaled * 0.035 : gap;
+  // 2026-09-09: the Triple Arch overlaps harder than the arch pair. The
+  // customer wants all three literally touching ("dipdibe"), and at -3.5% the
+  // render still left a visible sliver of wall between the boards.
+  const effGap        = isTripleArch ? -minPwScaled * 0.10 : heightsDiffer ? -minPwScaled * 0.035 : gap;
   // How far forward the shorter board stands, as a share of the tallest board's
   // own height. Same idea as plinthForwardPx in the guide: in this projection,
   // nearer the camera means lower on the canvas.

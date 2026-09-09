@@ -432,9 +432,10 @@ export function makeBackdropItem(
     // middle, curve facing outward, standing shoulder to shoulder with the
     // centre board. Shorter and narrower than the centre arch, as in the
     // customer reference.
-    // 2026-09-09: 80x180 -> 90x150. At 180cm the side boards were nearly as
-    // tall as the 220cm centre and the stepped silhouette did not read.
-    widthCm = 90; heightCm = 150;
+    // 2026-09-09: the customer set these — side boards 180cm tall against a
+    // 200cm centre board. (An earlier 150cm was my own guess at making the
+    // stepped silhouette read; the real product dimension is 180.)
+    widthCm = 90; heightCm = 180;
   }
   return {
     id:      sizeId ?? type,

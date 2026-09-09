@@ -144,7 +144,10 @@ function SetupMiniPreview({ shapes }: { shapes: string[] }) {
   const n = drawShapes.length;
   const BASE = 60; // floor line
   drawShapes.forEach((shape, i) => {
-    const cx = n === 1 ? 60 : i === 0 ? 40 : 84;
+    // 2026-09-09: this only ever handled one or two pieces — with three, the
+    // second and third both landed on 84 and the Triple Arch icon showed two
+    // shapes instead of three.
+    const cx = n === 1 ? 60 : n === 2 ? (i === 0 ? 40 : 84) : 34 + i * 26;
     const key = `${shape}-${i}`;
     if (shape === "arch" || shape === "arch_large" || shape === "arch_small") {
       const w = shape === "arch_large" ? 38 : shape === "arch_small" ? 26 : 34;
@@ -152,6 +155,19 @@ function SetupMiniPreview({ shapes }: { shapes: string[] }) {
       const r = w / 2;
       els.push(
         <path key={key} d={`M ${cx - r},${BASE} L ${cx - r},${top + r} A ${r},${r} 0 0 1 ${cx + r},${top + r} L ${cx + r},${BASE} Z`}
+          fill={`url(#gradArch)`} />
+      );
+    } else if (shape === "half_arch_left" || shape === "half_arch_right") {
+      // An arch sliced down the middle: one quarter-round top corner facing
+      // outward, the other edge straight and full height.
+      const w = 22, top = 20, r = 22;
+      const left = cx - w / 2, right = cx + w / 2;
+      const facingLeft = shape === "half_arch_left";
+      const outer = facingLeft ? left : right;
+      const inner = facingLeft ? right : left;
+      const sweep = facingLeft ? 1 : 0;
+      els.push(
+        <path key={key} d={`M ${outer},${BASE} L ${outer},${top + r} A ${r},${r} 0 0 ${sweep} ${inner},${top} L ${inner},${BASE} Z`}
           fill={`url(#gradArch)`} />
       );
     } else if (shape === "round") {
@@ -1019,6 +1035,10 @@ function DecorStep({
   // scene arrives on Medium or Small — a saved draft, or a second arch that was
   // just removed — bring it up to Large so the state matches what is offered.
   useEffect(() => {
+    // 2026-09-09: not on a Triple Arch. It has exactly one `arch` item — the
+    // centre board — and the customer set that one to 200cm, but this effect
+    // saw a lone arch and kept forcing it back to the 220cm Large.
+    if (config.decor.backdropItems.some((i: BackdropItem) => i.type === "half_arch")) return;
     const arches = config.decor.backdropItems.filter((i: BackdropItem) => i.type === "arch");
     if (arches.length !== 1) return;
     const only = arches[0];
@@ -1349,9 +1369,13 @@ function clearAllStandees() {
       // 2026-09-09: the first three-piece layout. Selection order is
       // left-to-right, so the two half arches bracket the centre board.
       case "triple_arch":
+        // 2026-09-09: the centre board is the 200cm Medium, not the 220cm
+        // Large, and it is created already sized — the side half arches have no
+        // size step, so leaving the centre unsized stalled the whole setup on
+        // "pick a size".
         panels = [
           { ...makeBackdropItem("half_arch"), id: "half-1" },
-          { ...makeArchUnsized("arch-1") },
+          { ...makeBackdropItem("arch", "medium"), id: "arch-1" },
           { ...makeBackdropItem("half_arch"), id: "half-2" },
         ];
         break;
@@ -1782,7 +1806,10 @@ function clearAllStandees() {
                               (customer decision 2026-09-04). Double Arch still
                               offers all three, because its second board is
                               deliberately a smaller size. */}
-                          {(archCount > 1 ? ARCH_SIZES : ARCH_SIZES.filter((s) => s.id === "large")).map((size) => {
+                          {(d.backdropItems.some((i) => i.type === "half_arch")
+                            // Triple Arch: the centre board is the 200cm Medium.
+                            ? ARCH_SIZES.filter((s) => s.id === "medium")
+                            : archCount > 1 ? ARCH_SIZES : ARCH_SIZES.filter((s) => s.id === "large")).map((size) => {
                             const isSel = item.sizeId === size.id;
                             return (
                               <button key={size.id} type="button"
@@ -1875,6 +1902,39 @@ function clearAllStandees() {
           return it && itemIdx >= 0
             ? <div key={ty}>{BackdropCustomizeRow({ item: it, itemIdx })}</div>
             : null;
+        })}
+
+        {/* 2026-09-09: the half arches were missing from this step entirely —
+            the customer saw only the centre board here. They are sold in one
+            fixed size so there is nothing to choose, but they still need their
+            own card with the dimension on it and their colour picker. Unlike
+            the other fixed-size pieces there are TWO of them, so this maps over
+            every one rather than taking the first. */}
+        {d.backdropItems.map((item, itemIdx) => {
+          if (item.type !== "half_arch") return null;
+          const before = d.backdropItems.filter((i, k) => i.type === "half_arch" && k < itemIdx).length;
+          return (
+            <div key={item.id} style={{ background: DC.innerBg, borderRadius: 18, padding: 16, marginTop: 10,
+              border: `1.5px solid ${DC.cardBd}` }}>
+              <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+                <svg width="56" height="64" viewBox="0 0 56 64" style={{ flex: "none" }} aria-hidden="true">
+                  <defs><linearGradient id={`pieceHalf-${item.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#F3A9C6"/><stop offset="100%" stopColor="#E27BA4"/></linearGradient></defs>
+                  {before === 0
+                    ? <path d="M 12,60 L 12,34 A 22,22 0 0 1 34,12 L 34,60 Z" fill={`url(#pieceHalf-${item.id})`} />
+                    : <path d="M 44,60 L 44,34 A 22,22 0 0 0 22,12 L 22,60 Z" fill={`url(#pieceHalf-${item.id})`} />}
+                </svg>
+                <div style={{ flex: 1, minWidth: 220 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: DC.plum }}>
+                    {before === 0 ? "Left half arch" : "Right half arch"}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: DC.muted }}>
+                    One fixed size · {item.widthCm} × {item.heightCm} cm
+                  </div>
+                </div>
+              </div>
+              {BackdropCustomizeRow({ item, itemIdx })}
+            </div>
+          );
         })}
 
         {/* Shimmer color picker intentionally removed (2026-07-12) — shimmer
