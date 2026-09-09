@@ -831,8 +831,18 @@ export function buildLayoutRefEditPrompt(
   // by default — the customer wants the setup square to camera — and it drops
   // the plinth on a lone arch that has no standee. Both are stated up front,
   // where this pipeline actually listens.
-  const frontCameraLine = `The camera looks STRAIGHT AT the setup, square on and level — a flat front view, ` +
-    `not angled, not a three-quarter view, not from the side. `;
+  // 2026-09-10: tightened. "Square on" alone still allowed a low, wide-angle
+  // shot with the floor rising and the board leaning; the customer wants the
+  // plain eye-level product view of their reference.
+  // 2026-09-09: the ROOM CORNER is what makes it read as an angled shot. The
+  // line already said "flat frontal", and the render kept putting a receding
+  // side wall and a corner in frame anyway, which reads as a three-quarter view
+  // however square the backdrop itself is.
+  const frontCameraLine = `Camera at standing eye level, centred on the backdrop, looking STRAIGHT AT it: a flat ` +
+    `frontal product photo. The backdrop's vertical edges are perfectly vertical and the floor line is ` +
+    `horizontal — no angle, no three-quarter view, no low or high viewpoint, no wide-angle distortion. ` +
+    `One flat back wall parallel to the camera fills the frame behind the setup: no room corner, no side ` +
+    `wall running away from the camera, no ceiling. `;
   const frontPlinthLine = sceneModel.plinths.length > 0
     ? `${sceneModel.plinths.length === 1 ? "A" : String(sceneModel.plinths.length)} white cylindrical ` +
       `pedestal column${sceneModel.plinths.length === 1 ? "" : "s"} stand${sceneModel.plinths.length === 1 ? "s" : ""} ` +

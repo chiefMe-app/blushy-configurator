@@ -1463,7 +1463,9 @@ export function generateStructureSilhouette(
           // balloons touch and nest a little; they do not swallow each other.
           // Double Arch is left alone at its previous behaviour, which the
           // customer approved, by allowing it a much deeper limit.
-          const maxNestFrac = looseSpacing ? 0.55 : 0.95;
+          // crownOverTop packs tighter than plain looseSpacing: the reference
+          // band is continuous, with balloons touching, not a spaced-out string.
+          const maxNestFrac = crownOverTop ? 0.74 : looseSpacing ? 0.55 : 0.95;
           // Colour is chosen by which one currently covers the least AREA, not
           // by a running counter. Balloon sizes vary a lot here — a palette can
           // come out even by count and still look dominated by one colour if it
@@ -1512,15 +1514,21 @@ export function generateStructureSilhouette(
           // the guide canvas now matching the rendered size, a Double Arch
           // panel is wide enough to reach them too, so both layouts draw the
           // same balloons with no special-casing.
-          const rLarge  = Math.max(20, Math.min(50, p.pw * 0.17));
-          const rMed    = Math.max(14, Math.min(34, p.pw * 0.12));
-          const rSmall  = Math.max(9,  Math.min(22, p.pw * 0.08));
+          // 2026-09-09: the lone-arch composition uses BIGGER balloons. The caps
+          // were what limited them — on a 100x220 arch p.pw*0.17 is 67px but the
+          // cap held rLarge at 50, so every balloon came out the same modest
+          // size and the band read as small and scattered next to the board. The
+          // customer reference is a chunky ribbon of large balloons hugging the
+          // edge. Other layouts keep the values they were approved with.
+          const rLarge  = crownOverTop ? Math.max(26, Math.min(80, p.pw * 0.23))  : Math.max(20, Math.min(50, p.pw * 0.17));
+          const rMed    = crownOverTop ? Math.max(18, Math.min(54, p.pw * 0.160)) : Math.max(14, Math.min(34, p.pw * 0.12));
+          const rSmall  = crownOverTop ? Math.max(11, Math.min(34, p.pw * 0.105)) : Math.max(9,  Math.min(22, p.pw * 0.08));
           // 36-inch statement anchor (tight/double-arch only): a real 36"
           // balloon is ~3x a 12" one. The guide must SHOW that scale — with
           // only L/M/S circles the model rendered a uniform mid-size garland
           // (2026-07-20 product feedback: balloons too small, not enough mass
           // low down; sizes must read as 36" / 12" / 5").
-          const rXL     = Math.max(30, Math.min(80, p.pw * 0.28));
+          const rXL     = crownOverTop ? Math.max(36, Math.min(98, p.pw * 0.30)) : Math.max(30, Math.min(80, p.pw * 0.28));
 
           // 2026-09-02: rendering the guide to PNG and actually LOOKING at it
           // finally explained the flat-disc bug that five prompt/count fixes
@@ -1664,7 +1672,11 @@ export function generateStructureSilhouette(
             // radius rArc about the panel centre, so its last balloons sit up
             // to 0.6 * rArc inboard. Single Arch's crown does the same and
             // reads correctly there, so it is left alone.
-            const off = (rnd() * 1.7 - 0.75) * rLarge * spread;
+            // Narrower across the band on the lone arch, so the ribbon stays
+            // against the board edge instead of drifting into the wall.
+            const bandW = crownOverTop ? 1.15 : 1.7;
+            const bandO = crownOverTop ? 0.52 : 0.75;
+            const off = (rnd() * bandW - bandO) * rLarge * spread;
             put(edgeX + dir * off, climbY, rBall);
 
             // A real garland is two balloons deep, not a single file. Most

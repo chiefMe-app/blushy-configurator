@@ -8,7 +8,7 @@
 export const ARCH_DIMS = {
   small:  { label: "Small",            widthCm: 80,  heightCm: 180, ftLabel: "2.6 x 5.9 ft" },
   medium: { label: "Medium / Standard",widthCm: 100, heightCm: 200, ftLabel: "3.3 x 6.6 ft" },
-  large:  { label: "Large",            widthCm: 120, heightCm: 220, ftLabel: "4.0 x 7.2 ft" },
+  large:  { label: "Large",            widthCm: 100, heightCm: 220, ftLabel: "3.3 x 7.2 ft" },
 } as const;
 
 export const RECT_DIMS = {

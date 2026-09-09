@@ -1042,9 +1042,12 @@ function DecorStep({
     const arches = config.decor.backdropItems.filter((i: BackdropItem) => i.type === "arch");
     if (arches.length !== 1) return;
     const only = arches[0];
-    if (only.sizeId === "large") return;
     const large = ARCH_SIZES.find((s) => s.id === "large");
     if (!large) return;
+    // 2026-09-10: also refresh a board that is already Large but carries stale
+    // dimensions — the Large board changed from 120x220 to 100x220 and a saved
+    // draft would otherwise keep rendering at the old width forever.
+    if (only.sizeId === "large" && only.widthCm === large.widthCm && only.heightCm === large.heightCm) return;
     patchDecor({
       backdropItems: config.decor.backdropItems.map((i: BackdropItem) =>
         i.id === only.id

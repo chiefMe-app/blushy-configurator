@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "light-room-also-on-edit-path-v89";
+const RENDER_CACHE_VERSION = "arch-100x220-big-tight-garland-v90";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1971,7 +1971,17 @@ forbiddenBalloonColorLabels: hasSempertexLock
               `platform or base of any kind — the floor stays bare. `) +
           `Do not add any new object that was not already in the image.`;
 
-        const lockResult = await fal.subscribe(editModelId, {
+        // 2026-09-09: the colour-lock pass runs on FLASH, not on whatever the
+        // primary used. Measured on one render, same input image, same prompt,
+        // same seed — only the model differs:
+        //   flash : wall L 185.7 sd 18.9 | floor 199.3 sd 20.5
+        //   full  : wall L 177.8 sd 27.7 | floor 187.8 sd 30.4
+        // This is the whole reason the studio turned dark and blotchy: moving
+        // lone-arch scenes to the full model on 2026-09-09 silently moved this
+        // pass too, because it reused editModelId. The primary keeps the full
+        // model (that is what fixed the pale colour); the recolour is a light
+        // touch-up and flash does it without repainting the room.
+        const lockResult = await fal.subscribe("fal-ai/flux-2/flash/edit", {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           input: {
             prompt:        lockPrompt,

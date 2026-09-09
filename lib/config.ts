@@ -267,7 +267,7 @@ export const PACKAGES: Package[] = [
     bestFor: "Villa gardens, restaurant corners",
     defaultDecor: {
       backdropItems: [
-        { id: "large", type: "arch", sizeId: "large", widthCm: 120, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "large", type: "arch", sizeId: "large", widthCm: 100, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
         { id: "small", type: "arch", sizeId: "small", widthCm: 80,  heightCm: 180, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
       balloonStyle: "full",
@@ -292,7 +292,7 @@ export const PACKAGES: Package[] = [
     bestFor: "Full venue takeovers",
     defaultDecor: {
       backdropItems: [
-        { id: "large",  type: "arch", sizeId: "large",  widthCm: 120, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "large",  type: "arch", sizeId: "large",  widthCm: 100, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
         { id: "medium", type: "arch", sizeId: "medium", widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
         { id: "small",  type: "arch", sizeId: "small",  widthCm: 80,  heightCm: 180, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
@@ -346,7 +346,8 @@ export interface ArchSize {
 export const ARCH_SIZES: ArchSize[] = [
   { id: "small",  label: "Small",             ftLabel: "2.6 x 5.9 ft", widthCm: 80,  heightCm: 180 },
   { id: "medium", label: "Medium / Standard", ftLabel: "3.3 x 6.6 ft", widthCm: 100, heightCm: 200 },
-  { id: "large",  label: "Large",             ftLabel: "4.0 x 7.2 ft", widthCm: 120, heightCm: 220 },
+  // 2026-09-10: 120 -> 100 wide. The customer set the real board: 100cm x 220cm.
+  { id: "large",  label: "Large",             ftLabel: "3.3 x 7.2 ft", widthCm: 100, heightCm: 220 },
 ];
 
 export type RectSizeId = "rect_100x200" | "rect_80x180";
