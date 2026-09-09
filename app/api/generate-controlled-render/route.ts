@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "number-right-cutout-left-no-stand-v85";
+const RENDER_CACHE_VERSION = "lone-arch-full-model-round-shape-v86";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -937,8 +937,23 @@ let resolvedEditModelId = getEditModelId(modelMode);
 let actualModelReason: string = `mode_default_${modelMode}`;
 
 if (hasArchPanelInScene && !hasRoundPanelInScene) {
-  resolvedEditModelId = "fal-ai/flux-2/flash/edit";
-  actualModelReason   = "arch_scene_flash_edit";
+  // 2026-09-09: a SINGLE-panel arch scene moves off flash. The customer
+  // reported "single archta renkler cok soluk", and it measures: on the same
+  // scene, same guide, same prompt and the same fixed seed, flash renders at
+  // meanSat 0.0426 / chroma 8.34 and the non-flash model at 0.0755 / 14.85 —
+  // the round scenes, which have always used the non-flash model, sit at
+  // 0.0816 / 14.03. The washed-out look was the MODEL, not the wording: a
+  // colour clause added to the arch photography opening produced a
+  // byte-identical render.
+  //
+  // Deliberately limited to one-panel arch scenes. Double Arch was moved off
+  // flash once before (2026-09-03) with no improvement, and its plinth
+  // injection pass is written around flash's refusal to paint anything
+  // between the two arches — changing its primary model is a separate change
+  // with its own verification, not a side effect of a colour fix.
+  const loneArchScene = sceneModel.panels.length === 1;
+  resolvedEditModelId = loneArchScene ? "fal-ai/flux-2/edit" : "fal-ai/flux-2/flash/edit";
+  actualModelReason   = loneArchScene ? "lone_arch_scene_edit" : "arch_scene_flash_edit";
 } else if (hasRoundPanelInScene) {
   resolvedEditModelId = "fal-ai/flux-2/edit";
   actualModelReason   = "round_scene_edit";

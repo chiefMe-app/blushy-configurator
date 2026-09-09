@@ -988,7 +988,13 @@ export function generateStructureSilhouette(
     // solid object, not just outline edges that the model may skip or
     // merge with the background.
     if (singleRound) {
-      plinthLayer.push(plinthCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
+      // 2026-09-09: the round's own marker is very pale, and standing beside a
+      // bold marquee glyph it was simply dropped — the plinth vanished from a
+      // round + number render. Scenes with a number get the solid marker here
+      // too, the same rule the other layouts already follow.
+      plinthLayer.push(wantsNumberSlot
+        ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx)
+        : plinthCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
     } else {
       // Double Arch falls through to Single Arch's marker as well. The filled
       // variant and the dropped baseline it used to get were both compensating

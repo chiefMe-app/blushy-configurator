@@ -797,6 +797,38 @@ export function buildLayoutRefEditPrompt(
       `reference shows them. Cream, white and blush blooms with sage eucalyptus foliage. `
     : "";
 
+  // 2026-09-09: the backdrop SHAPE goes first when the scene carries floor
+  // extras. Measured on the failing case — a round backdrop with a neon sign,
+  // a marquee number and a cutout — the word "circular" did not appear until
+  // character 3243 of the prompt, behind ~1300 characters of number and neon
+  // wording, and the render came back with a flat rectangular board instead of
+  // the disc. One short sentence, first.
+  // 2026-09-09: the colour clause has to be FRONT-loaded. It was added to the
+  // arch branch of photographyOpening first and the render came back
+  // byte-identical — meanSat 0.0385 and meanChroma 7.48 before and after —
+  // because with ~1300 characters of number/neon/no-character lines ahead of
+  // it, photographyOpening is no longer near the front. Kept to one short
+  // sentence: the long saturation paragraph tried on 2026-09-05 wrecked the
+  // Single Arch layout (see the note in photographyOpening).
+  const frontColourLine = !hasRoundPanelInPrompt && sceneModel.balloons.style !== "none"
+    ? `Full natural colour saturation and normal punchy contrast — not hazy, not washed out, ` +
+      `not grey-filtered. `
+    : "";
+
+  const frontShapeLine = (() => {
+    if (panelCount !== 1) return "";
+    const t = sceneModel.panels[0]?.type;
+    const extrasInScene = !!sceneModel.numberLight?.enabled || !!sceneModel.neonSign?.enabled
+      || sceneModel.cutouts?.mode === "standees";
+    if (!extrasInScene) return "";
+    // Kept to one short clause each: the first version cost the plinth, which
+    // simply dropped out of the render.
+    if (t === "round")  return `The backdrop is ONE round disc, a full circle. `;
+    if (t === "arch")   return `The backdrop is ONE arch board. `;
+    if (t === "banner") return `The backdrop is ONE square board. `;
+    return "";
+  })();
+
   const frontBannerAspectLine = hasBannerPanelInPrompt && !isMulti
     ? `The backdrop is a SQUARE board, as wide as it is tall — 2 metres by 2 metres, a 1:1 square, ` +
       `not taller than it is wide. `
@@ -942,7 +974,10 @@ export function buildLayoutRefEditPrompt(
           // LEFT", which told the model there WAS a figure there and it drew
           // one — straight past the no-characters ban. The left is described
           // only as empty; the real cutout is composited later.
-          ? `, on the RIGHT-HAND side of the setup, standing on the floor in front of the balloons. It is ` +
+          // The leading ", on the..." used to follow the sentence above and
+          // produced a literal ". , on the RIGHT-HAND side" in the prompt once
+          // the shape sentences were inserted between them.
+          ? `It stands on the RIGHT-HAND side of the setup, on the floor in front of the balloons. It is ` +
             `the only object on the floor apart from the pedestal column; the left-hand floor stays empty. `
           : `. `) +
         `There is EXACTLY ONE marquee number in the entire image — never a second number, never the same ` +
@@ -1408,6 +1443,15 @@ export function buildLayoutRefEditPrompt(
         : `fresh modern editorial event styling. `)
     : `Cool neutral daylight studio photography with soft natural light from the left, ` +
       `gray textured plaster or concrete studio wall, polished light concrete or stone floor, ` +
+      // 2026-09-09: the arch scenes carry the ROUND opening's colour clause now.
+      // Measured on the customer's own two renders and on local repros: the arch
+      // comes out at about a THIRD of the round's saturation (meanSat 0.046 vs
+      // 0.145 on theirs, 0.039 vs 0.082 on mine at the same palette). The round
+      // says "natural accurate color, normal punchy contrast, well-lit and clear"
+      // and renders saturated; the arch only said "soft, even and diffuse", which
+      // is what bleached it. This is the round's exact proven wording rather than
+      // a new paragraph — a fuller one was tried on 2026-09-05 and wrecked the
+      // layout (see the note below).
       (hasSempertexLock
         ? `crisp clean whites, neutral white balance, color-accurate rendering. `
         : balloonStyle === "none"
@@ -1612,6 +1656,8 @@ const setupTemplateClause = setupTemplate
     : "";
 
   return (
+    frontShapeLine +
+    frontColourLine +
     frontBannerAspectLine +
     frontTripleArchLine +
     frontRingHalfLine +
