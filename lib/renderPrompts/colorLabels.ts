@@ -44,6 +44,13 @@ export const HEX_POSITIVE_LABEL: Record<string, string> = {
   "#bbf7d0": "pale mint green",
   "#ffffff": "pure white",
   "#fecdd3": "blush pearl pink",
+  // 2026-09-09: Silk 850 Light Amethyst. Its catalogue renderLabel is "very
+  // pale cool lavender, almost white", which is honest for the strict colour
+  // lock but flattened it to white in the POSITIVE prompt — the customer could
+  // not tell there was a purple in the palette at all. The hue is named here
+  // without the "almost white" qualifier; getVisualLabel keeps the full
+  // description for the lock.
+  "#dcd7f2": "soft lilac",
 };
 
 /**

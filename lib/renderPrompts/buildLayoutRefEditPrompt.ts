@@ -896,7 +896,12 @@ export function buildLayoutRefEditPrompt(
 
   const frontNoCharactersLine = sceneModel.cutouts?.mode === "standees"
     ? `Do NOT draw any person, character, figure, doll or cutout in this image — characters are added ` +
-      `afterwards. The floor stays empty where one would stand. `
+      `afterwards. The far LEFT of the floor and the wall above it stay completely empty — no balloons, ` +
+      `no garland, no cluster and no props there, only bare floor and bare wall. ` +
+      // 2026-09-09: the ban used to cover people only, so the render filled
+      // the reserved standee footprint with a second balloon garland instead
+      // — and the composited character then landed on top of it.
+      `The balloon garland stays on the RIGHT side only. `
     : "";
 
   const frontNumDigits = String(sceneModel.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);

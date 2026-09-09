@@ -933,20 +933,46 @@ export function generateStructureSilhouette(
     ? Math.min(plinthMaxDia * 1.5, (W * 0.86 - plinthMaxDia) / (plinthCount - 1))
     : plinthMaxDia * 1.5;
 
-  // 2026-09-09: a row of two or three plinths fills the middle of a portrait
-  // frame, and a 90cm marquee number then has nowhere to stand — it was drawn
-  // touching a column and the render stood it ON one, reported twice. When both
-  // are in the scene the plinth row slides right to open a slot on the left.
-  // With one plinth (or no number) it stays dead centre, which is where the
-  // customer asked for it on 2026-09-05.
+  // 2026-09-09: the plinth row SLIDES to open a slot for the marquee number.
+  //
+  // The number is 90cm and the frame is portrait, so on a scene that also has a
+  // character standee there is no free floor left: the standee owns the left,
+  // the plinth owns the middle, the garland owns the right, and the number was
+  // dropped into the least-bad gap — on top of the plinth, inside the cascade
+  // (customer report: "plinth+cutout+number eklenince sacmaladi").
+  //
+  // Moving the row is POSITIONING, not scaling: every prop keeps its own real
+  // centimetres, and with no number the row stays dead centre, which is where
+  // it was asked to be on 2026-09-05. An earlier attempt shifted by a flat
+  // fraction of the panel width and pushed a three-plinth row off the canvas;
+  // this one computes the exact shortfall and clamps it to what the frame has.
   const numberDigitCount = String(extras?.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2).length;
-  const wantsNumberSlot = !!extras?.numberLight?.enabled && numberDigitCount > 0 && plinthCount >= 2;
-  const widestPanelPw = Math.max(...layout.panels.map((pl) => pl.pw), 1);
-  // Sliding the row sideways was tried and pushed it off the canvas edge; the
-  // row stays centred and the number is placed into whichever floor span is
-  // actually free (see the marquee block).
-  void wantsNumberSlot; void widestPanelPw;
-  const decorCx = decorCxBase;
+  const wantsNumberSlot = !!extras?.numberLight?.enabled && numberDigitCount > 0 && plinthCount > 0;
+  const plinthShiftPx = (() => {
+    if (!wantsNumberSlot || layout.panels.length === 0) return 0;
+    const refP = layout.panels.reduce((a, b) => (b.floorY - b.apexY > a.floorY - a.apexY ? b : a));
+    const pxPerCmEarly = (refP.floorY - refP.apexY) / Math.max(1, backdropItems[refP.idx]?.heightCm ?? 200);
+    const digitHEarly  = 90 * pxPerCmEarly;
+    const digitWEarly  = digitHEarly * 0.60;
+    // Same glyph-width estimate the marquee block uses — the painted numeral,
+    // not its em box.
+    const glyphWEarly  = digitHEarly * 0.46 * numberDigitCount
+      + digitWEarly * 0.14 * (numberDigitCount - 1);
+    const marginEarly  = digitHEarly * 0.10;
+    // The standee band is reserved before it is drawn, so its right edge is
+    // recomputed here with the same formula the standee block uses.
+    const hasCutoutsEarly = (cutoutGuideItems ?? []).filter((i) => i.quantity > 0).length > 0;
+    const standeeRightEarly = hasCutoutsEarly
+      ? groupLeftEdge + (layout.panels[0]?.pw ?? 0) * 0.12
+      : 0;
+    const leftBound   = Math.max(marginEarly, standeeRightEarly + marginEarly);
+    const rowHalf     = ((plinthCount - 1) / 2) * plinthSpacing + plinthMaxDia / 2;
+    const needed      = (leftBound + glyphWEarly + marginEarly) - (decorCxBase - rowHalf);
+    if (needed <= 0) return 0;
+    const maxShift    = Math.max(0, (W - marginEarly) - (decorCxBase + rowHalf));
+    return Math.min(needed, maxShift);
+  })();
+  const decorCx = decorCxBase + plinthShiftPx;
 
   // 2026-09-05: the plinth stands FORWARD of the decor, nearer the camera, not
   // level with the backdrop. On a balloon ring especially it was sitting on the
@@ -996,7 +1022,12 @@ export function generateStructureSilhouette(
       // the model was re-inventing the row rather than copying it. Filled
       // markers get reproduced as objects; that is the whole reason
       // plinthFilledCylinder exists.
-      plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1
+      // 2026-09-09: and whenever a marquee number is in the scene. Standing
+      // next to a bold glyph, a faint outline cylinder was read as a SECOND
+      // numeral — the render came back with two 1s, the same way the standee
+      // placeholder did on 2026-09-08. A solid cylinder with an elliptical top
+      // cannot be mistaken for a letterform.
+      plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1 || wantsNumberSlot
         ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx)
         : plinthEdge(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
     }
@@ -1738,9 +1769,16 @@ export function generateStructureSilhouette(
           // band instead of scattering into the wall; `put` rejects anything
           // that would sit too deep inside a neighbour.
           if (crownOverTop) {
+            // 2026-09-09: 46 -> 70, and weighted toward the LOWER half of the
+            // cascade. The customer circled the bottom third of the vertical
+            // run as too thin; the top was already dense because the crown
+            // ramp piles mass into the corner.
             const anchors = [...placed];
-            for (let i = 0; i < 46; i++) {
-              const q = anchors[Math.floor(baseRnd() * anchors.length)];
+            const midY = p.apexY + (p.floorY - p.apexY) * 0.45;
+            const lower = anchors.filter((q) => q.y > midY);
+            for (let i = 0; i < 70; i++) {
+              const pool = (i % 3 !== 0 && lower.length > 0) ? lower : anchors;
+              const q = pool[Math.floor(baseRnd() * pool.length)];
               if (!q) break;
               const ang = baseRnd() * Math.PI * 2;
               const rr  = (baseRnd() < 0.45 ? rSmall * 0.62 : rSmall) * (0.85 + baseRnd() * 0.5);
