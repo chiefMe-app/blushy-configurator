@@ -137,13 +137,18 @@ function panelPathOrShape(
   fillColor = "#F0ECE8",
   // Which side a half_arch curves toward. Ignored by every other shape.
   facing: "left" | "right" = "left",
+  strongEdge = false,
 ): string {
   const r     = pw / 2;
   const left  = cx - r;
   const right = cx + r;
 
-  // Very light grey stroke only — avoid any hard outline that Canny reads as a structural border
-  const stroke = `stroke="rgba(150,150,150,0.14)" stroke-width="1"`;
+  // Very light grey stroke only — avoid any hard outline that Canny reads as a
+  // structural border. `strongEdge` opts a caller out of that: see the lone-arch
+  // branch, where the board's own proportions are the thing being guided.
+  const stroke = strongEdge
+    ? `stroke="rgba(90,90,95,0.80)" stroke-width="3"`
+    : `stroke="rgba(150,150,150,0.14)" stroke-width="1"`;
 
   if (shape === "round") {
     // Bottom of circle must touch floorY exactly — no floating gap
@@ -862,6 +867,24 @@ export function generateStructureSilhouette(
         // Explicit rectangle — no arch path, no rounded top, clean square silhouette
         `<rect x="${left.toFixed(1)}" y="${panel.apexY.toFixed(1)}" width="${panel.pw.toFixed(1)}" height="${panelH.toFixed(1)}" fill="url(#${patId})" stroke="rgba(100,100,130,0.35)" stroke-width="1"/>`,
       ].join("\n    "));
+    } else if (layout.panels.length === 1 && shape === "arch") {
+      // 2026-09-09: a lone arch draws its board FILLED, with a firm edge.
+      //
+      // panelEdgeOnly gives the board a 2px, 45%-opacity outline. On the
+      // 100x220 arch that outline is the ONLY thing in the guide describing the
+      // board, it is white-on-white inside, and the garland covers a third of
+      // it — so there was almost no board signal to copy and the render kept
+      // inventing its own proportions, coming back visibly wider than 100x220
+      // however the prompt was worded (customer, twice: "backdrop size dogru
+      // degil"). The measured guide was correct all along at aspect 0.4545; the
+      // guide simply was not SAYING it loudly enough. This is the same fix that
+      // made the open arch frame stop rendering as a chrome box: stop drawing a
+      // hairline, draw a filled silhouette. The fill stays a near-white warm
+      // grey, which is what a white board photographs as anyway.
+      content.push(panelPathOrShape(
+        panel.cx, panel.pw, panel.apexY, panel.floorY, shape,
+        "#F4F2EF", "left", true,
+      ));
     } else {
       content.push(panelEdgeOnly(panel.cx, panel.pw, panel.apexY, panel.floorY, shape));
     }
@@ -1514,21 +1537,26 @@ export function generateStructureSilhouette(
           // the guide canvas now matching the rendered size, a Double Arch
           // panel is wide enough to reach them too, so both layouts draw the
           // same balloons with no special-casing.
-          // 2026-09-09: the lone-arch composition uses BIGGER balloons. The caps
-          // were what limited them — on a 100x220 arch p.pw*0.17 is 67px but the
-          // cap held rLarge at 50, so every balloon came out the same modest
-          // size and the band read as small and scattered next to the board. The
-          // customer reference is a chunky ribbon of large balloons hugging the
-          // edge. Other layouts keep the values they were approved with.
-          const rLarge  = crownOverTop ? Math.max(26, Math.min(80, p.pw * 0.23))  : Math.max(20, Math.min(50, p.pw * 0.17));
-          const rMed    = crownOverTop ? Math.max(18, Math.min(54, p.pw * 0.160)) : Math.max(14, Math.min(34, p.pw * 0.12));
-          const rSmall  = crownOverTop ? Math.max(11, Math.min(34, p.pw * 0.105)) : Math.max(9,  Math.min(22, p.pw * 0.08));
+          // 2026-09-09 (second pass): the first attempt at "bigger balloons"
+          // for the lone arch was wrong by a factor of two, and rendering the
+          // guide to PNG showed it plainly — these constants are RADII, so
+          // p.pw * 0.23 draws a balloon 46% of the board's width. On a 100cm
+          // board that is a 46cm (18") balloon in the L slot and a 60cm (24")
+          // one in the XL slot, which is why the render came back as a column
+          // of beach balls and did not resemble the customer reference at all.
+          // The reference garland is 5"/10"/12" latex with the odd 18" anchor,
+          // so the lone-arch radii are derived from real balloon diameters
+          // against the panel width: r = (inches * 2.54 / widthCm) / 2.
+          // Other layouts keep the values they were approved with.
+          const rLarge  = crownOverTop ? Math.max(18, Math.min(46, p.pw * 0.150)) : Math.max(20, Math.min(50, p.pw * 0.17));
+          const rMed    = crownOverTop ? Math.max(14, Math.min(38, p.pw * 0.125)) : Math.max(14, Math.min(34, p.pw * 0.12));
+          const rSmall  = crownOverTop ? Math.max(7,  Math.min(20, p.pw * 0.065)) : Math.max(9,  Math.min(22, p.pw * 0.08));
           // 36-inch statement anchor (tight/double-arch only): a real 36"
           // balloon is ~3x a 12" one. The guide must SHOW that scale — with
           // only L/M/S circles the model rendered a uniform mid-size garland
           // (2026-07-20 product feedback: balloons too small, not enough mass
           // low down; sizes must read as 36" / 12" / 5").
-          const rXL     = crownOverTop ? Math.max(36, Math.min(98, p.pw * 0.30)) : Math.max(30, Math.min(80, p.pw * 0.28));
+          const rXL     = crownOverTop ? Math.max(24, Math.min(64, p.pw * 0.215)) : Math.max(30, Math.min(80, p.pw * 0.28));
 
           // 2026-09-02: rendering the guide to PNG and actually LOOKING at it
           // finally explained the flat-disc bug that five prompt/count fixes
@@ -1557,7 +1585,15 @@ export function generateStructureSilhouette(
           // 12in, fewer 5in"): the S slot stops being a 5-inch filler and
           // becomes a near-medium balloon, so the band has no thin gappy
           // stretches. 5-inch balloons remain only as prompt-level accents.
-          const sizeR = { X: rXL, L: rLarge, M: rMed, S: tight ? rMed * 0.86 : rSmall };
+          // crownOverTop keeps L and M close together so the ribbon reads even,
+          // and lifts S off the floor of the range so the fillers are real
+          // balloons rather than dots.
+          // The lone arch now uses the real four-size mix (18/12/10/5) rather
+          // than four shades of "large", so the band reads as a decorator
+          // garland with genuine 5-inch fillers tucked between the 12s.
+          const sizeR = crownOverTop
+            ? { X: rXL, L: rLarge, M: rMed, S: rSmall }
+            : { X: rXL, L: rLarge, M: rMed, S: tight ? rMed * 0.86 : rSmall };
           // Tight (double_arch) is also BOTTOM-HEAVY (2026-07-19): a real
           // render at uniform density read as an evenly spaced side border /
           // trim rather than a decorator garland. The base cluster is
@@ -1632,8 +1668,13 @@ export function generateStructureSilhouette(
             // Fewer giants outside tight mode: with the wider spacing above,
             // two 36in balloons landing near each other low down were the
             // fused white blobs in the lower third of the single-arch garland.
-            const xlChance = (looseSpacing ? 0.10 : 0.20) * (1 - t);  // giants belong low down
-            const sChance  = 0.12 + 0.20 * t;         // fillers drift upward
+            // 2026-09-09 (second pass): with the radii back at true balloon
+            // scale the lone arch wants MANY 5-inch fillers, which is what
+            // gives the reference garland its stuffed, gap-free look — a 5"
+            // is now genuinely small, so a high S share adds density instead
+            // of shrinking the band the way it did at the old inflated radii.
+            const xlChance = crownOverTop ? 0.05 * (1 - t) : (looseSpacing ? 0.10 : 0.20) * (1 - t);
+            const sChance  = crownOverTop ? 0.34 : 0.12 + 0.20 * t;
             if (roll < xlChance) return "X";
             if (roll < xlChance + sChance) return "S";
             return rnd() < 0.55 ? "L" : "M";
@@ -1673,9 +1714,13 @@ export function generateStructureSilhouette(
             // to 0.6 * rArc inboard. Single Arch's crown does the same and
             // reads correctly there, so it is left alone.
             // Narrower across the band on the lone arch, so the ribbon stays
-            // against the board edge instead of drifting into the wall.
-            const bandW = crownOverTop ? 1.15 : 1.7;
-            const bandO = crownOverTop ? 0.52 : 0.75;
+            // against the board edge instead of drifting into the wall — but
+            // measured in rLarge, which halved on 2026-09-09 when the radii
+            // were corrected to real balloon sizes. 1.15 rLarge was then only
+            // ~53px of band, thinner than one balloon, so the garland came out
+            // single-file. 1.9 restores a band about two balloons deep.
+            const bandW = crownOverTop ? 1.9 : 1.7;
+            const bandO = crownOverTop ? 0.85 : 0.75;
             const off = (rnd() * bandW - bandO) * rLarge * spread;
             put(edgeX + dir * off, climbY, rBall);
 
@@ -1690,7 +1735,7 @@ export function generateStructureSilhouette(
             // the tight-mode taper, so the companion drop and the deep overlap
             // that suit Double Arch stack up into a solid mass here. Double
             // Arch keeps its own values, which the customer approved.
-            if (rnd() < (looseSpacing ? 0.85 : 0.75)) {
+            if (rnd() < (crownOverTop ? 0.95 : looseSpacing ? 0.85 : 0.75)) {
               const cSize = sizeR[pickSize(Math.min(1, t + 0.25))] * rTaper * 0.85;
               const cOff  = off + (off > 0 ? -1 : 1) * (0.5 + rnd() * 0.6) * rLarge * spread;
               put(edgeX + dir * cOff, climbY - rBall * (rnd() * 0.5 - 0.25), cSize);
@@ -1701,7 +1746,12 @@ export function generateStructureSilhouette(
             // Advance further per step when not in tight mode, so neighbours
             // touch and nest instead of merging: at 0.55 of a radius they
             // overlapped by more than half and fused.
-            climbY -= rBall * (looseSpacing ? 0.95 + rnd() * 0.30 : 0.55 + rnd() * 0.25);
+            // The lone arch steps tighter than the loose default: at real
+            // balloon scale a 0.95-1.25 radius pitch left visible wall between
+            // neighbours, and the reference garland has no gaps at all.
+            climbY -= rBall * (crownOverTop
+              ? 0.58 + rnd() * 0.22
+              : looseSpacing ? 0.95 + rnd() * 0.30 : 0.55 + rnd() * 0.25);
           }
 
           // 3) Crown curl — balloons wrapping the outer shoulder over the

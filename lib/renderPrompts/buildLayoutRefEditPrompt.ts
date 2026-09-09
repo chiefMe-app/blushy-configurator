@@ -823,9 +823,13 @@ export function buildLayoutRefEditPrompt(
   // came back as heavily mottled dark concrete and the floor as dark brown
   // marble — "duvarlar ve yerler cok koyu kontrast olmus". The room is set
   // dressing; it should be pale and quiet behind the setup.
+  // 2026-09-10: and no window. "Evenly lit" still let the render put a big
+  // bright window in frame flooding the setup with daylight.
   const frontRoomLine = `The room is LIGHT and plain: a pale light-grey wall, smooth and evenly lit with only ` +
     `faint texture, and a pale light-grey concrete floor. The wall and floor are not dark, not heavily ` +
-    `mottled or stained, not marble, not brown, and carry no strong shadows. `;
+    `mottled or stained, not marble, not brown, and carry no strong shadows. ` +
+    `No window, doorway, radiator or furniture is visible, and no bright daylight floods in from the side: ` +
+    `the light is soft and even across the whole picture. `;
 
   // 2026-09-09: the non-flash model composes a three-quarter view of the room
   // by default — the customer wants the setup square to camera — and it drops
@@ -847,6 +851,16 @@ export function buildLayoutRefEditPrompt(
     ? `${sceneModel.plinths.length === 1 ? "A" : String(sceneModel.plinths.length)} white cylindrical ` +
       `pedestal column${sceneModel.plinths.length === 1 ? "" : "s"} stand${sceneModel.plinths.length === 1 ? "s" : ""} ` +
       `on the floor in front of the backdrop and must appear in the photograph. `
+    : "";
+
+  // 2026-09-10: the board keeps rendering WIDER than it is. The layout is exact
+  // — 395.6 x 870.4 px, aspect 0.4545, which is 100/220 to four places — so this
+  // is the render squaring it up, the same failure the banner had. The banner
+  // was fixed by stating its aspect in the very first sentence; a lone arch now
+  // gets the same treatment.
+  const frontArchAspectLine = panelCount === 1 && sceneModel.panels[0]?.type === "arch"
+    ? `The backdrop board is ${sceneModel.panels[0].widthCm}cm wide and ${sceneModel.panels[0].heightCm}cm tall — ` +
+      `a TALL NARROW board, more than twice as tall as it is wide. Do not widen it, do not square it up. `
     : "";
 
   const frontShapeLine = (() => {
@@ -1690,6 +1704,7 @@ const setupTemplateClause = setupTemplate
     : "";
 
   return (
+    frontArchAspectLine +
     frontShapeLine +
     frontColourLine +
     frontRoomLine +

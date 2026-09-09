@@ -1981,7 +1981,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
         // pass too, because it reused editModelId. The primary keeps the full
         // model (that is what fixed the pale colour); the recolour is a light
         // touch-up and flash does it without repainting the room.
-        const lockResult = await fal.subscribe("fal-ai/flux-2/flash/edit", {
+        // Back on the primary model: the blend below keeps its colour without
+        // its room, so there is no longer a reason to give up the colour.
+        const lockResult = await fal.subscribe(editModelId, {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           input: {
             prompt:        lockPrompt,
@@ -1998,8 +2000,63 @@ forbiddenBalloonColorLabels: hasSempertexLock
         if (lurl) {
           const resp = await fetch(lurl);
           if (resp.ok) {
-            workingImageBuf = Buffer.from(await resp.arrayBuffer());
-            outputImageUrl  = lurl;
+            const lockBuf = Buffer.from(await resp.arrayBuffer());
+            // 2026-09-10: keep this pass's BALLOON COLOUR but not its ROOM.
+            //
+            // The pass is a full img2img edit, so on the non-flash model it
+            // repaints the wall and floor every time — measured on one render,
+            // same input and seed, the mottling roughly doubles (wall sd 13.9 ->
+            // 27.7, floor 13.3 -> 30.4). Running it on flash keeps the room
+            // clean but gives up most of the colour it exists for (meanSat 0.0817
+            // -> 0.0559). Three prompt wordings were tried and all three were
+            // identical to within noise, so wording is not the lever.
+            //
+            // So take both: this pass's output inside the setup, the primary's
+            // room outside it. The mask is not guessed from pixels — the layout
+            // guide already knows exactly where the setup is, so its own drawn
+            // content, dilated, IS the mask.
+            let blended: Buffer | null = null;
+            try {
+              const guideDataUri = pngResult.dataUri;
+              if (guideDataUri) {
+                const sharpPkg = await import("sharp");
+                // Same dynamic-import shape the guide rasteriser uses.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const sh = ((sharpPkg as any).default ?? sharpPkg) as any;
+                const guideBuf = Buffer.from(guideDataUri.split(",")[1] ?? "", "base64");
+                const meta = await sh(lockBuf).metadata();
+                const W = meta.width ?? 0, H = meta.height ?? 0;
+                if (W > 0 && H > 0) {
+                  const g = await sh(guideBuf).resize(W, H, { fit: "fill" })
+                    .removeAlpha().greyscale().raw().toBuffer({ resolveWithObject: true });
+                  const mask = Buffer.alloc(W * H);
+                  const gch = g.info.channels;
+                  for (let p = 0; p < W * H; p++) {
+                    // The guide is drawn on white; anything darker is the setup.
+                    mask[p] = g.data[p * gch] < 246 ? 255 : 0;
+                  }
+                  // Dilate generously: the rendered balloons are fuller than the
+                  // guide circles that stand for them.
+                  const grow = Math.max(8, Math.round(W * 0.035));
+                  const alpha = await sh(mask, { raw: { width: W, height: H, channels: 1 } })
+                    .blur(grow).linear(4, 0).toBuffer();
+                  const lockRGBA = await sh(await sh(lockBuf).resize(W, H).removeAlpha().toBuffer())
+                    .ensureAlpha().joinChannel(alpha, { raw: { width: W, height: H, channels: 1 } })
+                    .png().toBuffer();
+                  blended = await sh(await sh(baseBuf).resize(W, H).toBuffer())
+                    .composite([{ input: lockRGBA, blend: "over" }])
+                    .jpeg({ quality: 93 }).toBuffer();
+                }
+              }
+            } catch (blendErr) {
+              console.warn("[generate-controlled-render] colour-lock blend failed, using the lock output as-is:", String(blendErr));
+            }
+            workingImageBuf = blended ?? lockBuf;
+            // A blended result exists only as a buffer, so it is emitted as a
+            // data URI exactly like the other in-process passes do.
+            outputImageUrl  = blended
+              ? `data:image/jpeg;base64,${blended.toString("base64")}`
+              : lurl;
             balloonColorLockPassApplied = true;
           }
         }
