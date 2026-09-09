@@ -1597,6 +1597,24 @@ function clearAllStandees() {
                   <SetupMiniPreview shapes={tpl.miniPreview} />
                   <div style={{ fontSize: 12.5, fontWeight: 700, color: DC.plum, lineHeight: 1.25 }}>{tpl.name}</div>
                   <div style={{ fontSize: 10.5, color: "#A78E99", lineHeight: 1.35 }}>{tpl.description}</div>
+                  {/* 2026-09-09: a real render of this setup, under the card.
+                      The line drawing above says what the pieces ARE; this says
+                      what the customer actually gets. Generated with the live
+                      pipeline at the production seed (see the samples driver in
+                      the scratchpad) and committed under public/setup-samples. */}
+                  <figure style={{ margin: "2px 0 0", width: "100%" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/setup-samples/${tpl.id}.jpg`}
+                      alt={`${tpl.name} — example render`}
+                      loading="lazy"
+                      style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", display: "block",
+                        borderRadius: 12, border: `1px solid ${DC.cardBd}`, background: "white" }}
+                    />
+                    <figcaption style={{ fontSize: 9, color: "#BFA7B3", marginTop: 3, letterSpacing: 0.2 }}>
+                      Example render
+                    </figcaption>
+                  </figure>
                   {active && (
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 9px", borderRadius: 999, background: DC.rose, color: "white", fontSize: 9.5, fontWeight: 700 }}>✓ Your setup</span>
                   )}

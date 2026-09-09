@@ -529,12 +529,17 @@ export function buildLayoutRefEditPrompt(
     .join("; ");
 
   // Allowed palette block — code + hex + positive-only label (no bias words like gold/yellow/rose-gold)
+  // 2026-09-09: the product code and the hex string are GONE from this block.
+  // Building the sample thumbnails turned up a Single Arch render, at the
+  // production seed and again at another, with words and numbers PRINTED ON THE
+  // BALLOONS. This line was the source: "005 #FFFFFF pure white; 640 #BAE6FD
+  // ..." sits immediately before "for every balloon in the garland", and the
+  // model obligingly wrote the tokens onto them. The codes never carried any
+  // visual meaning for an image model — the colour description is what locks
+  // the palette, and it is what the front-loaded palette line already uses.
   const allowedPaletteBlock = hasSempertexLock
     ? `ALLOWED BALLOON PALETTE: ` +
-      selectedSempertexColors.map((c) => {
-        const hex = String((c as SempertexSelectionItem & { hex?: string }).hex ?? "");
-        return `${c.code} ${hex} ${getPositiveLabel(c)}`;
-      }).join("; ")
+      selectedSempertexColors.map((c) => getPositiveLabel(c)).join("; ")
     : "";
 
   // Positive-only appearance labels via hex lookup — avoids bias words (gold, yellow,
@@ -820,6 +825,15 @@ export function buildLayoutRefEditPrompt(
   // own character in the standee's reserved footprint and the real cutout was
   // then composited on top, leaving a second figure half-hidden behind the
   // first. Front-loaded it binds.
+  // 2026-09-09: front-loaded, because the mid-prompt ban did not stop it — the
+  // Single Arch sample came back with a word printed on nearly every balloon.
+  // Kept to one short clause. The 16-word version did stop the printing but
+  // also pushed Single Arch into a both-sides garland — length displaces
+  // structural wording here, exactly as it does for frontPaletteLine.
+  const frontNoBalloonTextLine = sceneModel.balloons.style !== "none"
+    ? `The balloons are plain — no writing on any balloon. `
+    : "";
+
   const frontNoCharactersLine = sceneModel.cutouts?.mode === "standees"
     ? `Do NOT draw any person, character, figure, doll or cutout in this image — characters are added ` +
       `afterwards. The floor stays empty where one would stand. `
@@ -1465,6 +1479,7 @@ const setupTemplateClause = setupTemplate
     frontNumberLightLine +
     frontPaletteLine +
     frontStructureLine +
+    frontNoBalloonTextLine +
     openFrameDetailLine +
     photographyOpening +
     sceneInventoryClause +
@@ -1518,6 +1533,11 @@ const setupTemplateClause = setupTemplate
     (panelsWithText.length === 0
       ? `No text on backdrop. `
       : `No extra text beyond the specified custom text. No misspelled or duplicated lettering. `) +
+    // 2026-09-09: the balloons themselves were coming back with words and
+    // numbers printed on them (see allowedPaletteBlock). The old ban covered
+    // the backdrop only.
+    `The balloons are plain and unprinted: no writing, no letters, no numbers, no logos and no brand ` +
+    `marks on any balloon. ` +
     `No people. No cake. No table. ` +
     // 2026-09-03: these seven bans on podium/platform/riser/box shapes are
     // only emitted when the scene has NO plinth. When one IS wanted they were

@@ -2267,13 +2267,21 @@ export function generateStructureSilhouette(
       const topY   = byY[0].y;
       const botY   = byY[byY.length - 1].y;
 
-      // The big one, mounded at the foot of the garland where the reference
-      // has it. Placed a little outboard and low so it sits ON the floor.
+      // 2026-09-09: ONE size of cluster, and it is the SMALL one. The first
+      // version had a big cluster at the foot and small ones up the climb, and
+      // the customer circled the ones they wanted kept — which turned out to be
+      // the SMALL markers, not the big ones. Enlarging everything to match the
+      // big ones was tried first and made it worse: every cluster came back as
+      // the flat schematic rosette. Same rule as everywhere else on this
+      // pipeline — a big literal marker gets copied literally, a smaller one
+      // gets elaborated, and elaborated is what a loose rose-and-eucalyptus
+      // bunch needs.
       const foot = byY[byY.length - 1];
-      floralCluster(foot.x, foot.y + medianR * 0.25, medianR * 1.75);
+      floralCluster(foot.x, foot.y + medianR * 0.25, medianR * 0.95);
 
-      // Two or three smaller ones tucked into the climb.
-      for (const frac of [0.32, 0.56, 0.80]) {
+      // Three more of the same, spaced up the climb — the topmost sits on the
+      // shoulder, which is where the customer's marked ones were.
+      for (const frac of [0.05, 0.38, 0.68]) {
         const targetY = topY + (botY - topY) * frac;
         let best = byY[0];
         let bestD = Infinity;
@@ -2285,7 +2293,7 @@ export function generateStructureSilhouette(
         floralCluster(
           best.x + Math.cos(a) * best.r * 0.7,
           best.y + Math.sin(a) * best.r * 0.7,
-          Math.max(medianR * 0.70, best.r * 0.85),
+          Math.max(medianR * 0.72, best.r * 0.85),
         );
       }
     }
