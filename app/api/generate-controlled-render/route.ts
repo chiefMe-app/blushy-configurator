@@ -1920,6 +1920,24 @@ forbiddenBalloonColorLabels: hasSempertexLock
         const colourCount = effectiveSempertexSelection.length > 0
           ? effectiveSempertexSelection.length
           : effectiveBalloonHexColors.length;
+        // 2026-09-09: WORDING CANNOT FIX THE ROOM HERE - recorded so nobody
+        // spends another render on it. This pass is a full img2img edit, so it
+        // re-generates the wall and floor from its own prior whatever it is
+        // told. Measured on one render, same input image and seed, sampling the
+        // bare wall and the bare floor:
+        //   primary (before this pass)         wall 184.9 sd 13.9 | floor 209.3 sd 13.3
+        //   preserve the room/floor/lighting        177.8 sd 27.7 |       187.8 sd 30.4
+        //   keep the room light and plain           179.5 sd 26.6 |       189.2 sd 29.6
+        //   change ONLY balloon colours, do not
+        //   repaint the wall or the floor           178.9 sd 27.7 |       188.1 sd 30.5
+        // All three land in the same place: the mottling roughly doubles.
+        //
+        // The pass earns its place all the same - it is what deepens the balloon
+        // colour (coloured pixels 5.05% -> 15.16% on that render), and dropping
+        // it brings the washed-out balloons back. Separating the two means
+        // compositing this pass's balloons over the primary's room behind a
+        // chroma mask: a real change with its own regression risk, not a prompt
+        // tweak. Wording left exactly as it was.
         const lockPrompt =
           `Edit the existing render ONLY. Preserve the exact camera angle, room, floor, lighting, backdrop ` +
           `position, backdrop shape, backdrop scale, balloon arrangement, balloon shapes, balloon sizes, ` +
