@@ -655,7 +655,7 @@ export function generateStructureSilhouette(
     numberLight?: { enabled: boolean; value: string };
     neonSign?: { enabled: boolean; text: string };
     /** Balloon Ring dressing — "half" leaves the gold hoop bare on one side. */
-    ringStyle?: "full" | "half";
+    ringStyle?: "full" | "half" | "none";
   },
 ): SilhouetteResult {
   const shimmerTileFill = shimmerColorHex ?? "#D8D8E4";
@@ -985,6 +985,26 @@ export function generateStructureSilhouette(
           / Math.max(1, (backdropItems[0]?.widthCm ?? 200) * 1.25),
       )
     : null;
+
+  // 2026-09-09: the gold hoop is drawn HERE, not inside the garland dispatch.
+  // The dispatch is gated on balloonStyle !== "none", so a bare hoop with no
+  // balloons produced an empty guide and the render invented a fully wrapped
+  // balloon ring instead of the metal frame that was asked for.
+  if (extras?.ringStyle === "half" || extras?.ringStyle === "none") {
+    const hp = layout.panels[0];
+    if (hp && (backdropItems[hp.idx]?.type ?? "") === "balloon_ring") {
+      const pxc = ringScenePxPerCm ?? ((hp.floorY - hp.apexY) / Math.max(1, backdropItems[hp.idx]?.heightCm ?? 200));
+      const hr  = ((backdropItems[hp.idx]?.widthCm ?? 200) / 2) * pxc;
+      // The bare hoop is the only object in its scene, so it is drawn thicker —
+      // a hairline circle on a white ground is the kind of faint marker this
+      // pipeline drops.
+      const hw  = Math.max(3, hr * (extras.ringStyle === "none" ? 0.045 : 0.028));
+      content.push(
+        `<circle cx="${hp.cx.toFixed(1)}" cy="${(hp.floorY - hr).toFixed(1)}" r="${hr.toFixed(1)}" ` +
+        `fill="none" stroke="#C9A227" stroke-width="${hw.toFixed(1)}"/>`,
+      );
+    }
+  }
 
   // v4: Individual balloon circles — no filled blob, organic circles follow right-side path.
   // Avoids vertical slab boundary that the filled blob created.
@@ -2304,17 +2324,13 @@ export function generateStructureSilhouette(
           // full circle: from upper-left, over the top, down the right and into
           // a pile at the bottom right.
           const ringHalf = extras?.ringStyle === "half";
+          const ringBare = extras?.ringStyle === "none";
           const angFrom = ringHalf ? (-175 * Math.PI) / 180 : 0;
           const angTo   = ringHalf ? (60 * Math.PI) / 180 : Math.PI * 2;
-          if (ringHalf) {
-            const hoopW = Math.max(3, ringR * 0.028);
-            content.push(
-              `<circle cx="${ringCx.toFixed(1)}" cy="${ringCy.toFixed(1)}" r="${ringR.toFixed(1)}" ` +
-              `fill="none" stroke="#C9A227" stroke-width="${hoopW.toFixed(1)}"/>`,
-            );
-          }
+          // The hoop itself is drawn earlier, outside this dispatch — see the
+          // ringStyle block above layout-panel drawing.
           ang = angFrom;
-          while (ang < angTo && ringGuard++ < 260) {
+          while (!ringBare && ang < angTo && ringGuard++ < 260) {
             const r1 = pickRing();
             // Offsets are >= 0 measured outward from the ring line, so the
             // opening stays clear.
@@ -2331,7 +2347,7 @@ export function generateStructureSilhouette(
           // The half-wrapped ring ends in a pile on the floor at the bottom
           // right, as in the reference — the garland runs off the hoop and
           // spreads out on the ground rather than stopping in mid-air.
-          if (ringHalf) {
+          if (ringHalf && !ringBare) {
             for (let i = 0; i < 18; i++) {
               const t  = Math.pow(rrnd(), 1.3);
               const ox = ringR * (0.30 + t * 0.95);

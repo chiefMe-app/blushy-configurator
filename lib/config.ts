@@ -249,7 +249,9 @@ export const PACKAGES: Package[] = [
       ],
       balloonStyle: "full",
       plinths: 1,
-      plinthSizes: ["medium"],
+      // 2026-09-09: one plinth is the XXL (see the PLINTH_LADDER in the
+      // configure page — 1 = XXL, 2 = XXL+XL, 3 = XXL+XL+L).
+      plinthSizes: ["large"],
       cutouts: { size: "none", position: "floor" },
       backdropPrint: { type: "none" },
       backdropText: { enabled: false, type: "birthday", name: "", customText: "", fontStyle: "script", color: "white", fontSize: 4, lineHeight: 140, verticalOffset: 30, horizontalOffset: 50, align: "center" },
@@ -311,11 +313,13 @@ export const PACKAGES: Package[] = [
 // product (see BACKDROP_SHAPES / setupLayoutCatalog.ts) but stay in this
 // union so old saved BackdropItem data still type-checks and can be
 // sanitized/remapped instead of crashing.
-export type BalloonRingStyleId = "full" | "half";
+export type BalloonRingStyleId = "full" | "half" | "none";
 
 export const BALLOON_RING_STYLES: { id: BalloonRingStyleId; label: string; desc: string }[] = [
   { id: "full", label: "Fully wrapped", desc: "Balloons all the way round the hoop" },
   { id: "half", label: "Half wrapped",  desc: "Bare gold metal hoop, balloons on one side" },
+  // 2026-09-09: the hoop on its own, no balloons at all.
+  { id: "none", label: "No balloons",   desc: "Bare gold metal hoop only" },
 ];
 
 export type BackdropShapeId =

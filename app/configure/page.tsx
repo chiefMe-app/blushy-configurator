@@ -1166,10 +1166,13 @@ function clearAllStandees() {
   function setGraphicStyle(style: GraphicStyle) {
     patchDecor({ backdropPrint: { ...print, graphicStyle: style } });
   }
+  // 2026-09-09: the customer set the ladder — one plinth is the XXL, two are
+  // XXL + XL, three are XXL + XL + L. Picking a count now fills in that set
+  // rather than defaulting everything to XL. The per-plinth buttons are still
+  // there, so any of the three sizes can still be chosen afterwards.
+  const PLINTH_LADDER: PlinthSize[] = ["large", "medium", "small"]; // XXL, XL, L
   function setPlinthCount(n: number) {
-    const sizes: PlinthSize[] = [...d.plinthSizes];
-    while (sizes.length < n) sizes.push("medium");
-    sizes.length = n;
+    const sizes: PlinthSize[] = PLINTH_LADDER.slice(0, n);
     patchDecor({ plinths: n, plinthSizes: sizes });
   }
   function setPlinthSize(i: number, size: PlinthSize) {
@@ -1465,14 +1468,25 @@ function clearAllStandees() {
              one side (the style in Blushy's own Instagram post). */
           <div style={{ marginBottom: 12 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#12162F", display: "block", marginBottom: 6 }}>Ring style</span>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {/* 2026-09-09: each dressing shows a render of itself, so the
+                difference between a wrapped hoop and a bare gold one is
+                visible rather than described. */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
               {BALLOON_RING_STYLES.map((rs) => {
                 const active = (d.balloonRingStyle ?? "full") === rs.id;
                 return (
                   <button key={rs.id} type="button" onClick={() => patchDecor({ balloonRingStyle: rs.id })}
-                    style={{ textAlign: "left", padding: "6px 10px", borderRadius: 12, cursor: "pointer",
+                    style={{ textAlign: "left", padding: 8, borderRadius: 14, cursor: "pointer",
                       border: active ? `1.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
                       background: active ? accent + "12" : "white" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/option-samples/ring_${rs.id}.jpg`}
+                      alt={`${rs.label} balloon ring`}
+                      loading="lazy"
+                      style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", display: "block",
+                        borderRadius: 10, border: "1px solid #F3D7E1", background: "white", marginBottom: 6 }}
+                    />
                     <div style={{ fontSize: 11.5, fontWeight: 700, color: active ? accent : "#1A1A2E" }}>{rs.label}</div>
                     <div style={{ fontSize: 10, color: "#9A8E96" }}>{rs.desc}</div>
                   </button>

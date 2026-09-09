@@ -214,7 +214,21 @@ export function calculateExactLayout(
   const refHeightPx = refPanel ? (refPanel.floorY - refPanel.apexY) : canvasH * 0.7;
   const pxPerCm    = refHeightPx / maxHeightCm;
 
-  const plinths: PlinthLayout[] = plinthSizes.slice(0, plinthCount).map((size, i) => {
+  // 2026-09-09: the tallest plinth stands in the MIDDLE. The sizes arrive in
+  // descending order (XXL, XL, L), which would otherwise line them up as a
+  // staircase from the left; the customer wants the big one centre-stage with
+  // the smaller ones either side of it. Index 1 is the centre position in
+  // PLINTH_X_PCT, and the guide spaces them by index too.
+  const orderedPlinthSizes = (() => {
+    const src = plinthSizes.slice(0, plinthCount);
+    if (src.length < 3) return src;
+    const rank: Record<string, number> = { large: 3, medium: 2, small: 1 };
+    const desc = [...src].sort((a, b) => (rank[b] ?? 0) - (rank[a] ?? 0));
+    // biggest centre, second on the left, smallest on the right
+    return [desc[1], desc[0], ...desc.slice(2)];
+  })();
+
+  const plinths: PlinthLayout[] = orderedPlinthSizes.map((size, i) => {
     const dims = getPlinthDimensions(size);
     return {
       idx:        i,

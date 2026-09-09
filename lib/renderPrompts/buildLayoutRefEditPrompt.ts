@@ -192,7 +192,13 @@ export function buildLayoutRefEditPrompt(
       // point of the setup, so the wording spends most of its words defending it.
       // 2026-09-09: two dressings now. "half" is the customer's own Instagram
       // style — a bare gold metal hoop with the garland on one side of it.
-      backdropDesc = sceneModel.balloonRingStyle === "half"
+      backdropDesc = sceneModel.balloonRingStyle === "none"
+        ? `one freestanding circular hoop about ${p.widthCm}cm across, standing upright on the floor: a slim ` +
+          `round GOLD METAL FRAME on a small flat base, bare polished tube all the way round with NO BALLOONS ` +
+          `on it anywhere. The CENTRE OF THE RING IS COMPLETELY OPEN and empty — the grey studio wall shows ` +
+          `straight through it. No backdrop board, no panel, no disc and no balloons of any kind, on the hoop ` +
+          `or anywhere else in the scene.`
+        : sceneModel.balloonRingStyle === "half"
         ? `one freestanding circular hoop about ${p.widthCm}cm across, standing upright on the floor: a slim ` +
           `round GOLD METAL FRAME, its bare polished tube clearly visible along the lower-left of the circle, ` +
           `with a dense organic balloon garland wrapped around the rest of it — up the left shoulder, over ` +
@@ -743,10 +749,13 @@ export function buildLayoutRefEditPrompt(
   // 2026-09-09: the bare gold hoop needs a front-loaded mention like every
   // other object on this pipeline — the mid-prompt description alone leaves
   // the render wrapping the whole circle in balloons.
-  const frontRingHalfLine = hasRingPanelInPrompt && sceneModel.balloonRingStyle === "half"
-    ? `The hoop is a slim GOLD METAL frame, bare and clearly visible along its lower-left, with balloons ` +
-      `wrapped around only the other half of it. `
-    : "";
+  const frontRingHalfLine = !hasRingPanelInPrompt ? ""
+    : sceneModel.balloonRingStyle === "none"
+      ? `The hoop is a bare slim GOLD METAL frame with NO balloons on it at all. `
+      : sceneModel.balloonRingStyle === "half"
+        ? `The hoop is a slim GOLD METAL frame, bare and clearly visible along its lower-left, with balloons ` +
+          `wrapped around only the other half of it. `
+        : "";
 
   const frontTripleArchLine = halfArchCount === 2
     ? `Exactly THREE boards, touching: a tall arch in the middle, and either side a HALF arch — one ` +
@@ -1446,8 +1455,23 @@ const cutoutClause = cutouts?.mode === "standees" && cutoutTotal > 0
 const setupTemplateId = inferSetupLayoutTemplateIdFromBackdropItems(sceneModel.panels);
 const setupTemplate   = setupTemplateId ? getSetupLayoutTemplate(setupTemplateId) : undefined;
 const hasGarland      = sceneModel.balloons.style !== "none";
+// 2026-09-09: the Balloon Ring catalog entry says the hoop is "built entirely
+// from balloons", which is true of the fully wrapped dressing and flatly wrong
+// for the other two. Left in, it beat both the front-loaded gold-hoop line and
+// the backdrop description: a "no balloons" ring still rendered as a fully
+// wrapped one.
+const setupPanelInstruction = setupTemplate
+  ? (hasRingPanelInPrompt && sceneModel.balloonRingStyle === "none"
+      ? `A single freestanding circular hoop standing on the floor — a slim bare gold metal frame with a ` +
+        `completely open empty centre and no balloons on it.`
+      : hasRingPanelInPrompt && sceneModel.balloonRingStyle === "half"
+        ? `A single freestanding circular hoop standing on the floor — a slim gold metal frame, bare along ` +
+          `its lower-left, with a balloon garland wrapped around the rest of it and a completely open empty centre.`
+        : setupTemplate.panelInstruction)
+  : "";
+
 const setupTemplateClause = setupTemplate
-  ? `Use the selected setup layout: ${setupTemplate.name}. ${setupTemplate.panelInstruction} ` +
+  ? `Use the selected setup layout: ${setupTemplate.name}. ${setupPanelInstruction} ` +
     (hasGarland
       ? `${setupTemplate.garlandInstruction} ` +
         `The garland must be a lush organic balloon garland with varied balloon sizes, layered clusters, ` +
@@ -1485,7 +1509,19 @@ const setupTemplateClause = setupTemplate
   if (plinth) {
     // "pedestal column", not "plinth", here too — the inventory is the first
     // line the model reads, and the squat-drum prior rides on that one word.
-    inventoryItems.push(`one slim white cylindrical pedestal column standing on the floor in front of the boards`);
+    // 2026-09-09: and it says HOW MANY. The line was hard-coded to "one", so a
+    // three-plinth scene came back with a single column no matter what the
+    // guide drew — the customer's 3-plinth example render showed one.
+    const nP = sceneModel.plinths.length;
+    inventoryItems.push(
+      nP >= 3
+        ? `THREE slim white cylindrical pedestal columns of different heights standing side by side on the ` +
+          `floor in front of the boards, the tallest one in the middle`
+        : nP === 2
+          ? `TWO slim white cylindrical pedestal columns of different heights standing side by side on the ` +
+            `floor in front of the boards`
+          : `one slim white cylindrical pedestal column standing on the floor in front of the boards`,
+    );
   }
   for (const i of textPanelIdx) {
     inventoryItems.push(`the words "${sceneModel.panels[i].text.value.trim()}" printed on the ${panelPositionLabel(i)}`);
