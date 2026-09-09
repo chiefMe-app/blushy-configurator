@@ -136,6 +136,8 @@ export interface SceneModel {
   cutouts:    SceneCutouts;
   /** Florals and greenery worked into the balloon garland. */
   garlandFlorals: boolean;
+  /** How the balloon ring is dressed — see BalloonRingStyleId. */
+  balloonRingStyle: "full" | "half";
   /** Illuminated marquee number standing beside the backdrop. */
   numberLight: NumberLight;
   /** Neon LED sign on the backdrop, or in a balloon ring's open centre. */
@@ -210,6 +212,7 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
     plinths,
     cutouts,
     garlandFlorals: d.garlandFlorals === true,
+    balloonRingStyle: d.balloonRingStyle === "half" ? "half" : "full",
     numberLight:    d.numberLight ?? { enabled: false, value: "1" },
     // 2026-09-08: the sign never lands on an open arch frame — there is no
     // board face for it to hang on. The option is hidden in the UI; this
@@ -284,6 +287,7 @@ export function buildSceneModelFromItems(
   plinths,
   cutouts,
   garlandFlorals: false,
+  balloonRingStyle: "full",
   numberLight: { enabled: false, value: "1" },
   neonSign: { enabled: false, text: "Happy Birthday" },
   totalPrice: 0,

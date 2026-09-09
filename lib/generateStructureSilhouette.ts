@@ -654,6 +654,8 @@ export function generateStructureSilhouette(
     florals?: boolean;
     numberLight?: { enabled: boolean; value: string };
     neonSign?: { enabled: boolean; text: string };
+    /** Balloon Ring dressing — "half" leaves the gold hoop bare on one side. */
+    ringStyle?: "full" | "half";
   },
 ): SilhouetteResult {
   const shimmerTileFill = shimmerColorHex ?? "#D8D8E4";
@@ -1901,10 +1903,18 @@ export function generateStructureSilhouette(
           // customer circled a bare patch halfway up BOTH legs; a single pass
           // leaves a hole wherever its overlap check rejects a candidate, and a
           // second pass with a different seed lands in exactly those holes.
+          // 2026-09-09: a THIRD pass per leg. Two passes closed most of the
+          // holes but the customer circled a thin stretch halfway up each leg
+          // again; every pass rejects candidates that sit too deep inside an
+          // existing balloon, so the reliable way to fill what is left is
+          // another seed rather than looser packing (looser packing was tried
+          // on Arch + Open Frame and thinned the garland into a single chain).
           doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true, true, false).count
-            + drawThickOrganicMainGarland(pair[0], "left", 131, true, true, false).count;
+            + drawThickOrganicMainGarland(pair[0], "left", 131, true, true, false).count
+            + drawThickOrganicMainGarland(pair[0], "left", 311, true, true, false).count;
           doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true, true, false).count
-            + drawThickOrganicMainGarland(pair[1], "right", 197, true, true, false).count;
+            + drawThickOrganicMainGarland(pair[1], "right", 197, true, true, false).count
+            + drawThickOrganicMainGarland(pair[1], "right", 421, true, true, false).count;
         } else if (framePanel && archPanels.length === 1) {
           // Arch + Open Frame: the SOLID ARCH carries a thick organic-mass
           // garland (floor base → outer edge climb → over the crown, ~62
@@ -2253,7 +2263,24 @@ export function generateStructureSilhouette(
           };
           let ang = 0;
           let ringGuard = 0;
-          while (ang < Math.PI * 2 && ringGuard++ < 260) {
+          // 2026-09-09: "half" dresses the ring the way the customer's own
+          // Instagram post does — a bare gold metal hoop with the garland
+          // covering one side of it only. The hoop is drawn FIRST so the
+          // balloons overlap it, and the walk runs over an arc instead of the
+          // full circle: from upper-left, over the top, down the right and into
+          // a pile at the bottom right.
+          const ringHalf = extras?.ringStyle === "half";
+          const angFrom = ringHalf ? (-175 * Math.PI) / 180 : 0;
+          const angTo   = ringHalf ? (60 * Math.PI) / 180 : Math.PI * 2;
+          if (ringHalf) {
+            const hoopW = Math.max(3, ringR * 0.028);
+            content.push(
+              `<circle cx="${ringCx.toFixed(1)}" cy="${ringCy.toFixed(1)}" r="${ringR.toFixed(1)}" ` +
+              `fill="none" stroke="#C9A227" stroke-width="${hoopW.toFixed(1)}"/>`,
+            );
+          }
+          ang = angFrom;
+          while (ang < angTo && ringGuard++ < 260) {
             const r1 = pickRing();
             // Offsets are >= 0 measured outward from the ring line, so the
             // opening stays clear.
@@ -2265,6 +2292,22 @@ export function generateStructureSilhouette(
               ringPut(ringCx + rad * Math.cos(a2), ringCy + rad * Math.sin(a2), rr);
             }
             ang += (r1 * (0.62 + rrnd() * 0.28)) / ringR;
+          }
+
+          // The half-wrapped ring ends in a pile on the floor at the bottom
+          // right, as in the reference — the garland runs off the hoop and
+          // spreads out on the ground rather than stopping in mid-air.
+          if (ringHalf) {
+            for (let i = 0; i < 18; i++) {
+              const t  = Math.pow(rrnd(), 1.3);
+              const ox = ringR * (0.30 + t * 0.95);
+              const up = Math.pow(rrnd(), 1.25) * rLr * 3.0;
+              ringPut(
+                ringCx + ox + (rrnd() * 2 - 1) * rMr * 0.6,
+                rp.floorY - up - rMr * 0.3,
+                i % 4 === 0 ? rXLr * 0.9 : rLr * (0.75 + rrnd() * 0.5),
+              );
+            }
           }
         } else if (
           layout.panels.length === 1 &&

@@ -311,6 +311,13 @@ export const PACKAGES: Package[] = [
 // product (see BACKDROP_SHAPES / setupLayoutCatalog.ts) but stay in this
 // union so old saved BackdropItem data still type-checks and can be
 // sanitized/remapped instead of crashing.
+export type BalloonRingStyleId = "full" | "half";
+
+export const BALLOON_RING_STYLES: { id: BalloonRingStyleId; label: string; desc: string }[] = [
+  { id: "full", label: "Fully wrapped", desc: "Balloons all the way round the hoop" },
+  { id: "half", label: "Half wrapped",  desc: "Bare gold metal hoop, balloons on one side" },
+];
+
 export type BackdropShapeId =
   | "arch"
   | "half_arch"
@@ -701,6 +708,13 @@ export interface DecorConfig {
    * setup; only meaningful when a garland is selected.
    */
   garlandFlorals?: boolean;
+  /**
+   * 2026-09-09: how the Balloon Ring is dressed.
+   * "full"  — balloons all the way round, the metal frame hidden (the original).
+   * "half"  — a bare gold metal hoop with the garland covering roughly half of
+   *           it, the style in the customer's own Instagram reference.
+   */
+  balloonRingStyle?: BalloonRingStyleId;
   /** Illuminated marquee number standing on the floor beside the backdrop. */
   numberLight?: NumberLight;
   /**

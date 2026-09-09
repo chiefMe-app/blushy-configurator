@@ -73,6 +73,7 @@ cutoutTotalCount,
   type ShimmerColorId,
   DEFAULT_BACKDROP_COLOR,
   backdropSwatchesForTheme,
+  BALLOON_RING_STYLES,
 } from "@/lib/config";
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
 import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS, getThemeCutoutPresets } from "@/lib/themeCatalog";
@@ -84,6 +85,30 @@ import SetupPreview, { useSetupPreview, type FinalRenderState } from "@/componen
 // 2026-09-09: 2 -> 3 for the Triple Arch layout. calculateExactLayout has
 // always handled three panels; only the UI capped it.
 const MAX_BACKDROP_ITEMS = 3;
+
+/**
+ * 2026-09-09: a real render under every option, so the customer can see what
+ * they are buying instead of reading a sentence about it. Same framed tile as
+ * the setup cards. Images live in public/option-samples and are generated with
+ * the live pipeline at the production seed.
+ */
+function OptionSample({ src, alt }: { src: string; alt: string }) {
+  return (
+    <figure style={{ margin: "0 0 10px", width: "100%" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        style={{ width: "100%", maxWidth: 300, aspectRatio: "4 / 3", objectFit: "cover", display: "block",
+          borderRadius: 12, border: "1px solid #F3D7E1", background: "white" }}
+      />
+      <figcaption style={{ fontSize: 9, color: "#BFA7B3", marginTop: 3, letterSpacing: 0.2 }}>
+        Example render
+      </figcaption>
+    </figure>
+  );
+}
 
 // Elegant serif for display headings — Cormorant Garamond per the Claude Design
 // handoff, with system serif fallbacks.
@@ -1410,7 +1435,28 @@ function clearAllStandees() {
               })}
             </div>
           </div>
-        ) : item.type === "balloon_ring" ? null : (
+        ) : item.type === "balloon_ring" ? (
+          /* 2026-09-09: a ring has no board colour, but it does have two
+             dressings — fully wrapped, or a bare gold hoop with the garland on
+             one side (the style in Blushy's own Instagram post). */
+          <div style={{ marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#12162F", display: "block", marginBottom: 6 }}>Ring style</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {BALLOON_RING_STYLES.map((rs) => {
+                const active = (d.balloonRingStyle ?? "full") === rs.id;
+                return (
+                  <button key={rs.id} type="button" onClick={() => patchDecor({ balloonRingStyle: rs.id })}
+                    style={{ textAlign: "left", padding: "6px 10px", borderRadius: 12, cursor: "pointer",
+                      border: active ? `1.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
+                      background: active ? accent + "12" : "white" }}>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: active ? accent : "#1A1A2E" }}>{rs.label}</div>
+                    <div style={{ fontSize: 10, color: "#9A8E96" }}>{rs.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
           <div style={{ marginBottom: 12 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#12162F", display: "block", marginBottom: 6 }}>Backdrop color</span>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
@@ -2736,6 +2782,7 @@ function clearAllStandees() {
             Eucalyptus, dried grasses and soft blooms tucked between the balloons.
           </div>
         </div>
+        <OptionSample src="/option-samples/florals.jpg" alt="Balloon garland with florals" />
         <button
           type="button"
           onClick={() => patchDecor({ garlandFlorals: !d.garlandFlorals })}
@@ -2780,6 +2827,7 @@ function clearAllStandees() {
               : "Glowing script mounted on the backdrop."}
           </div>
         </div>
+        <OptionSample src="/option-samples/neon.jpg" alt="Backdrop with a neon LED sign" />
         <button
           type="button"
           onClick={() => patchDecor({ neonSign: { text: d.neonSign?.text ?? "Happy Birthday", panelIndex: d.neonSign?.panelIndex ?? 0, enabled: !(d.neonSign?.enabled) } })}
@@ -2882,6 +2930,7 @@ function clearAllStandees() {
             A 90 cm illuminated marquee number standing beside the backdrop.
           </div>
         </div>
+        <OptionSample src="/option-samples/number_light.jpg" alt="Backdrop with a light-up marquee number" />
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
@@ -2933,6 +2982,10 @@ function clearAllStandees() {
           <div style={{ fontWeight: 600, fontSize: 13.5, color: DC.plum }}>Cake plinths</div>
           <div style={{ fontSize: 11.5, color: DC.muted }}>Elegant columns that put your cake center-stage beside the backdrop.</div>
         </div>
+        <OptionSample
+          src={`/option-samples/plinth_${Math.min(3, Math.max(1, d.plinths || 1))}.jpg`}
+          alt={`${Math.min(3, Math.max(1, d.plinths || 1))} cake plinth example`}
+        />
         <div className="flex flex-wrap items-center gap-2">
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: DC.faint, textTransform: "uppercase", marginRight: 2 }}>How many?</span>
           {[0, 1, 2, 3].map((n) => {

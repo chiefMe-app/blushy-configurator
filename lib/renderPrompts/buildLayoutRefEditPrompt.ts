@@ -190,13 +190,22 @@ export function buildLayoutRefEditPrompt(
     } else if (p.type === "balloon_ring") {
       // No board at all — the ring IS the backdrop, and its open centre is the
       // point of the setup, so the wording spends most of its words defending it.
-      backdropDesc =
-        `one freestanding circular balloon ring about ${p.widthCm}cm across, standing upright on the floor: ` +
-        `a thick hoop built entirely from balloons, packed shoulder to shoulder all the way round. ` +
-        `The CENTRE OF THE RING IS COMPLETELY OPEN and empty — the grey studio wall shows straight through it. ` +
-        `No backdrop board, no panel, no disc, no fabric and no balloons of any kind inside the opening. ` +
-        `There is no board behind the ring. ` +
-        `The hoop itself is dense and organic, mixing large and small balloons, thickest where it meets the floor.`;
+      // 2026-09-09: two dressings now. "half" is the customer's own Instagram
+      // style — a bare gold metal hoop with the garland on one side of it.
+      backdropDesc = sceneModel.balloonRingStyle === "half"
+        ? `one freestanding circular hoop about ${p.widthCm}cm across, standing upright on the floor: a slim ` +
+          `round GOLD METAL FRAME, its bare polished tube clearly visible along the lower-left of the circle, ` +
+          `with a dense organic balloon garland wrapped around the rest of it — up the left shoulder, over ` +
+          `the top, down the right side and spilling into a pile of balloons on the floor at the bottom ` +
+          `right. Roughly half the hoop is bare metal and half is covered in balloons. ` +
+          `The CENTRE OF THE RING IS COMPLETELY OPEN and empty — the grey studio wall shows straight through ` +
+          `it. No backdrop board, no panel, no disc and no balloons of any kind inside the opening.`
+        : `one freestanding circular balloon ring about ${p.widthCm}cm across, standing upright on the floor: ` +
+          `a thick hoop built entirely from balloons, packed shoulder to shoulder all the way round. ` +
+          `The CENTRE OF THE RING IS COMPLETELY OPEN and empty — the grey studio wall shows straight through it. ` +
+          `No backdrop board, no panel, no disc, no fabric and no balloons of any kind inside the opening. ` +
+          `There is no board behind the ring. ` +
+          `The hoop itself is dense and organic, mixing large and small balloons, thickest where it meets the floor.`;
     } else if (p.type === "banner") {
       // 2026-09-05, rewritten. The first version described this as "a taut
       // printed fabric banner stretched on a slim freestanding frame", and that
@@ -731,6 +740,14 @@ export function buildLayoutRefEditPrompt(
   // 2026-09-09: Triple Arch. Short and front-loaded, because the side boards
   // kept rendering as full symmetrical arches.
   const halfArchCount = sceneModel.panels.filter((p) => p.type === "half_arch").length;
+  // 2026-09-09: the bare gold hoop needs a front-loaded mention like every
+  // other object on this pipeline — the mid-prompt description alone leaves
+  // the render wrapping the whole circle in balloons.
+  const frontRingHalfLine = hasRingPanelInPrompt && sceneModel.balloonRingStyle === "half"
+    ? `The hoop is a slim GOLD METAL frame, bare and clearly visible along its lower-left, with balloons ` +
+      `wrapped around only the other half of it. `
+    : "";
+
   const frontTripleArchLine = halfArchCount === 2
     ? `Exactly THREE boards, touching: a tall arch in the middle, and either side a HALF arch — one ` +
       `curved top corner facing outward, the other edge straight and vertical against the middle board. `
@@ -1487,6 +1504,7 @@ const setupTemplateClause = setupTemplate
   return (
     frontBannerAspectLine +
     frontTripleArchLine +
+    frontRingHalfLine +
     frontOpenFrameLine +
     frontFloralsLine +
     frontShimmerLine +
