@@ -610,7 +610,7 @@ function standeeGuide(cx: number, bottomY: number, heightPx: number, label: stri
   // composited. The placeholder now only softly reserves the footprint: a
   // very low-contrast fill, no dashes, no stroke, no text. The prompt
   // ("keep the left-hand floor area clear") does the rest of the work.
-  void cornerR; void fontSize; void label;
+  void cornerR; void fontSize; void label; void baseRy;
   // 2026-09-08: the crisp white rounded rect WAS the second number. With a
   // light-up marquee digit also described in the prompt, the model read this
   // tall white rounded shape as another one and painted it — the customer saw
@@ -627,8 +627,11 @@ function standeeGuide(cx: number, bottomY: number, heightPx: number, label: stri
       `</radialGradient></defs>`,
     `<ellipse cx="${cx.toFixed(1)}" cy="${(topY + heightPx / 2).toFixed(1)}" ` +
       `rx="${(rx * 1.45).toFixed(1)}" ry="${(heightPx / 2).toFixed(1)}" fill="url(#${gid})"/>`,
-    `<ellipse cx="${cx.toFixed(1)}" cy="${bottomY.toFixed(1)}" ` +
-      `rx="${(rx * 1.15).toFixed(1)}" ry="${baseRy.toFixed(1)}" fill="#F2F2F2" opacity="0.42"/>`,
+    // 2026-09-09: the floor disc is gone. A soft upright haze with a small round
+    // pad under it is a lamp, and that is what the render painted — a slim white
+    // pole down the left of the backdrop standing on a disc. The haze alone
+    // reserves the footprint; the contact shadow is composited with the standee
+    // afterwards anyway (see the shadow block in the render route).
   ].join("\n    ");
 }
 
@@ -948,31 +951,16 @@ export function generateStructureSilhouette(
   // this one computes the exact shortfall and clamps it to what the frame has.
   const numberDigitCount = String(extras?.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2).length;
   const wantsNumberSlot = !!extras?.numberLight?.enabled && numberDigitCount > 0 && plinthCount > 0;
-  const plinthShiftPx = (() => {
-    if (!wantsNumberSlot || layout.panels.length === 0) return 0;
-    const refP = layout.panels.reduce((a, b) => (b.floorY - b.apexY > a.floorY - a.apexY ? b : a));
-    const pxPerCmEarly = (refP.floorY - refP.apexY) / Math.max(1, backdropItems[refP.idx]?.heightCm ?? 200);
-    const digitHEarly  = 90 * pxPerCmEarly;
-    const digitWEarly  = digitHEarly * 0.60;
-    // Same glyph-width estimate the marquee block uses — the painted numeral,
-    // not its em box.
-    const glyphWEarly  = digitHEarly * 0.46 * numberDigitCount
-      + digitWEarly * 0.14 * (numberDigitCount - 1);
-    const marginEarly  = digitHEarly * 0.10;
-    // The standee band is reserved before it is drawn, so its right edge is
-    // recomputed here with the same formula the standee block uses.
-    const hasCutoutsEarly = (cutoutGuideItems ?? []).filter((i) => i.quantity > 0).length > 0;
-    const standeeRightEarly = hasCutoutsEarly
-      ? groupLeftEdge + (layout.panels[0]?.pw ?? 0) * 0.12
-      : 0;
-    const leftBound   = Math.max(marginEarly, standeeRightEarly + marginEarly);
-    const rowHalf     = ((plinthCount - 1) / 2) * plinthSpacing + plinthMaxDia / 2;
-    const needed      = (leftBound + glyphWEarly + marginEarly) - (decorCxBase - rowHalf);
-    if (needed <= 0) return 0;
-    const maxShift    = Math.max(0, (W - marginEarly) - (decorCxBase + rowHalf));
-    return Math.min(needed, maxShift);
-  })();
-  const decorCx = decorCxBase + plinthShiftPx;
+  // 2026-09-09 (later): the shift is OFF. The customer wants the plinth
+  // centred on the backdrop, or on the backdrop set, always — sliding it aside
+  // to make room for the number moved it off centre and under the garland. The
+  // number is separated by SIDE instead: cutout left, number right.
+  // 2026-09-09 (later, same day): the slide is GONE. It was added a few hours
+  // earlier to open a slot for the marquee number, and it moved the plinth off
+  // centre and under the garland — the customer's rule is that the plinth always
+  // centres on the backdrop, or on the backdrop set. The number is kept clear of
+  // it by SIDE instead: the character stands left, the number stands right.
+  const decorCx = decorCxBase;
 
   // 2026-09-05: the plinth stands FORWARD of the decor, nearer the camera, not
   // level with the backdrop. On a balloon ring especially it was sitting on the
@@ -2592,7 +2580,12 @@ export function generateStructureSilhouette(
       // Don't draw off the left canvas edge
       if (cx - widthPx / 2 < 4) break;
 
-      content.push(standeeGuide(cx, floorY, heightPx, standee.label));
+      // 2026-09-09: no footprint haze when a marquee number is in the scene.
+      // A tall pale upright shape beside a described marquee number is read as
+      // ANOTHER number — the render came back with one on each side, the same
+      // failure the old rectangular placeholder caused on 2026-09-08. The left
+      // floor is protected by the front-loaded ban instead.
+      if (!extras?.numberLight?.enabled) content.push(standeeGuide(cx, floorY, heightPx, standee.label));
       cutoutPlaceholderHeightsCm.push(standee.heightCm);
       standeeBandRightPx = standeeBandStart;
       curRight = cx - widthPx / 2 - betweenGap;
@@ -2785,8 +2778,12 @@ export function generateStructureSilhouette(
     // perfectly good slot look impossible, so the digit got squeezed against a
     // column instead. The test now uses the glyph's own width, and the number is
     // centred in whichever floor span is actually free.
+    // 2026-09-09 (later): the number goes on the OPPOSITE side from the
+    // character — "number bir tarafta cutout bir tarafta olmali". Standees are
+    // always composited on the left, so a cutout in the scene sends the number
+    // right, on every layout. The ring already did this; now they all do.
     const hasStandees = (cutoutGuideItems ?? []).length > 0;
-    const numberGoesRight = isRingScene && hasStandees;
+    const numberGoesRight = hasStandees;
     const glyphW  = digitH * 0.46 * numDigits.length + gap * (numDigits.length - 1);
     const margin  = digitH * 0.10;
     const leftBound  = standeeBandRightPx !== null ? standeeBandRightPx + margin : margin;
@@ -2798,9 +2795,12 @@ export function generateStructureSilhouette(
     const fits = (sp: { from: number; to: number }) => sp.to - sp.from >= glyphW;
     const preferRight = numberGoesRight;
     let span = preferRight
-      ? (fits(spanRight) ? spanRight : spanLeft)
+      // With a character in the scene the side is not negotiable: the number
+      // stays right even if that span is the tighter of the two, because
+      // sharing the left with the standee is what went wrong.
+      ? spanRight
       : (fits(spanLeft) ? spanLeft : spanRight);
-    if (!fits(spanLeft) && !fits(spanRight)) {
+    if (!preferRight && !fits(spanLeft) && !fits(spanRight)) {
       // Neither side can take it — use the wider one and let it sit as clear as
       // the frame allows.
       span = (spanLeft.to - spanLeft.from) >= (spanRight.to - spanRight.from) ? spanLeft : spanRight;

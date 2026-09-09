@@ -890,6 +890,16 @@ export function buildLayoutRefEditPrompt(
     ? ""   // superseded — see frontPaletteLine, now enabled for this layout too
     : "";
 
+  // 2026-09-09: the backdrop kept growing hardware — a slim white pole down
+  // its left edge standing on a small disc, which is what the render made of
+  // the faint panel outline plus the standee footprint marker. A party
+  // backdrop board hides its own support behind itself.
+  const frontNoStandLine = sceneModel.panels.some((p) => p.type === "arch" || p.type === "half_arch" || p.type === "round" || p.type === "banner")
+    ? `The backdrop board shows NO frame and NO stand: no pole, no post, no tube, no tripod, no legs, ` +
+      `no feet and no round base disc anywhere around it. Its support is hidden behind it and the board ` +
+      `meets the floor directly. `
+    : "";
+
   const frontNoBalloonTextLine = sceneModel.balloons.style !== "none"
     ? `The balloons are plain — no writing on any balloon. `
     : "";
@@ -897,7 +907,9 @@ export function buildLayoutRefEditPrompt(
   const frontNoCharactersLine = sceneModel.cutouts?.mode === "standees"
     ? `Do NOT draw any person, character, figure, doll or cutout in this image — characters are added ` +
       `afterwards. The far LEFT of the floor and the wall above it stay completely empty — no balloons, ` +
-      `no garland, no cluster and no props there, only bare floor and bare wall. ` +
+      `no garland, no cluster, no props, and NO NUMBER, no letter, no sign and no lit object of any kind ` +
+      `on that side. Only bare floor and bare wall. There is one marquee number in the picture and it ` +
+      `stands on the RIGHT. ` +
       // 2026-09-09: the ban used to cover people only, so the render filled
       // the reserved standee footprint with a second balloon garland instead
       // — and the composited character then landed on top of it.
@@ -921,15 +933,17 @@ export function buildLayoutRefEditPrompt(
             `not slanted and not a stylised shape. `
           : ``) +
         (hasStandeesInScene
-          // 2026-09-08: on the LEFT beside the character on every setup —
-          // "yenisini eskisinin oldugu tarafa koyalim" — EXCEPT the balloon
-          // ring, where the customer wants them the other way round:
-          // "balloon ringte, cutout solda number sagda olmali".
-          ? (hasRingPanelInPrompt
-              ? `, on the RIGHT side of the setup. The character standee stands on the LEFT — the two never ` +
-                `overlap and BOTH are fully visible. `
-              : `, on the LEFT side of the setup, standing beside the character with clear air between them — ` +
-                `they never overlap and BOTH are fully visible. `)
+          // 2026-09-09: on the RIGHT, on every layout — "number bir tarafta
+          // cutout bir tarafta olmali". The ring already worked this way; the
+          // other layouts said LEFT, which put the number on the same side as
+          // the character AND contradicted the guide, and the prompt won. The
+          // two must agree or the render relocates the number itself.
+          // 2026-09-09: this used to add "the character standee stands on the
+          // LEFT", which told the model there WAS a figure there and it drew
+          // one — straight past the no-characters ban. The left is described
+          // only as empty; the real cutout is composited later.
+          ? `, on the RIGHT-HAND side of the setup, standing on the floor in front of the balloons. It is ` +
+            `the only object on the floor apart from the pedestal column; the left-hand floor stays empty. `
           : `. `) +
         `There is EXACTLY ONE marquee number in the entire image — never a second number, never the same ` +
         `digit repeated elsewhere in the frame. ` +
@@ -1610,6 +1624,7 @@ const setupTemplateClause = setupTemplate
     frontPaletteLine +
     frontStructureLine +
     frontNoBalloonTextLine +
+    frontNoStandLine +
     frontMetallicLine +
     openFrameDetailLine +
     photographyOpening +
