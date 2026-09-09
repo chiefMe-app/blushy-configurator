@@ -961,7 +961,12 @@ export function generateStructureSilhouette(
       const panelsCarrySurfaceContent = backdropItems.some(
         (it) => it?.text?.enabled || it?.graphic?.enabled || it?.type === "shimmer_wall",
       );
-      plinthLayer.push(panelsCarrySurfaceContent
+      // 2026-09-09: two or three plinths also get the SOLID marker. A row of
+      // faint outlines, half-buried in the garland, came back as FOUR columns —
+      // the model was re-inventing the row rather than copying it. Filled
+      // markers get reproduced as objects; that is the whole reason
+      // plinthFilledCylinder exists.
+      plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1
         ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx)
         : plinthEdge(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
     }

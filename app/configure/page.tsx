@@ -1475,7 +1475,13 @@ function clearAllStandees() {
               {BALLOON_RING_STYLES.map((rs) => {
                 const active = (d.balloonRingStyle ?? "full") === rs.id;
                 return (
-                  <button key={rs.id} type="button" onClick={() => patchDecor({ balloonRingStyle: rs.id })}
+                  <button key={rs.id} type="button"
+                    // Choosing the bare hoop also drops the balloon tier to "No
+                    // balloons", and choosing a wrapped hoop puts a garland back —
+                    // otherwise the quote and the render disagree.
+                    onClick={() => patchDecor(rs.id === "none"
+                      ? { balloonRingStyle: rs.id, balloonStyle: "none" }
+                      : { balloonRingStyle: rs.id, balloonStyle: d.balloonStyle === "none" ? "full" : d.balloonStyle })}
                     style={{ textAlign: "left", padding: 8, borderRadius: 14, cursor: "pointer",
                       border: active ? `1.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
                       background: active ? accent + "12" : "white" }}>
@@ -2493,13 +2499,24 @@ function clearAllStandees() {
           Balloon garland
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {/* A Balloon Ring IS the balloons — "No balloons" would leave nothing. */}
+          {/* 2026-09-09: "No balloons" is offered on a Balloon Ring again. It
+              used to be hidden because a ring WAS the balloons — but the ring
+              now has a bare gold hoop dressing, and with that chosen the tier
+              below has to be able to say "no balloons" too, or the quote still
+              charges for a garland that is not in the render. The two controls
+              are kept in step in both directions. */}
           {BALLOON_STYLES
-            .filter((b) => !(b.id === "none" && d.backdropItems.some((i) => i.type === "balloon_ring")))
             .map((b) => {
             const active = d.balloonStyle === b.id;
+            const hasRing = d.backdropItems.some((i) => i.type === "balloon_ring");
             return (
-              <button key={b.id} type="button" onClick={() => patchDecor({ balloonStyle: b.id })} aria-pressed={active}
+              <button key={b.id} type="button"
+                onClick={() => patchDecor(
+                  hasRing
+                    ? { balloonStyle: b.id, balloonRingStyle: b.id === "none" ? "none" : (d.balloonRingStyle === "none" ? "full" : (d.balloonRingStyle ?? "full")) }
+                    : { balloonStyle: b.id },
+                )}
+                aria-pressed={active}
                 style={{
                   textAlign: "left", cursor: "pointer", borderRadius: 12, padding: "9px 11px",
                   border: active ? "1.5px solid #D8548A" : "1px solid #ECE7E4",
@@ -3089,8 +3106,12 @@ function clearAllStandees() {
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: "white", border: `1.5px solid ${DC.cardBd}`, borderRadius: 14, padding: "9px 13px" }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: DC.plum, minWidth: 56 }}>Plinth {i + 1}</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {PLINTH_SIZES.map((s) => {
-                    const sel = d.plinthSizes[i] === s.id;
+                  {/* 2026-09-09: one size per row, not three. The ladder decides
+                      which — plinth 1 is the XXL, 2 the XL, 3 the L — so the
+                      other two chips were dead choices that only made the set
+                      look changeable when it is not. */}
+                  {PLINTH_SIZES.filter((s) => s.id === (d.plinthSizes[i] ?? PLINTH_LADDER[i])).map((s) => {
+                    const sel = true;
                     return (
                       <button
                         key={s.id}

@@ -510,6 +510,16 @@ export function buildLayoutRefEditPrompt(
       (sceneModel.balloons.style !== "none"
         ? `It stands fully visible from base to rounded top, in front of the backdrop and clear of the balloons. `
         : `It stands fully visible from base to rounded top, in front of the backdrop. `) +
+      // 2026-09-09: state the COUNT and forbid extras. A three-plinth Single
+      // Arch came back with FOUR columns, and with stray balloons stuck to the
+      // face of a column and to the board behind it.
+      (sceneModel.plinths.length > 1
+        ? `There are EXACTLY ${sceneModel.plinths.length === 3 ? "THREE" : "TWO"} pedestal columns in the whole ` +
+          `image — no fourth column, no extra column, no duplicate. They stand in one row of ` +
+          `${sceneModel.plinths.length}, the tallest in the middle. `
+        : `There is EXACTLY ONE pedestal column in the whole image — no second column, no duplicate. `) +
+      `No balloon rests on, leans against or is stuck to any column, and no single balloon floats on the ` +
+      `backdrop board on its own. ` +
       // The glass/acrylic guard stays — it fixed a real, repeated failure.
       // The three "Do not hide / merge / convert" sentences that followed are
       // gone: they were part of the negation pile that was competing with the

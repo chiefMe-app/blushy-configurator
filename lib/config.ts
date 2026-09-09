@@ -1149,12 +1149,15 @@ export function defaultConfig(): BuilderConfig {
       // pre-selected a half garland + one plinth, so the Estimated total opened
       // at AED 480 for choices the user had not made yet.
       // 2026-09-08: the customer wants the two things every setup actually has
-      // pre-selected — a balloon garland and one XL cake plinth — so no setup
-      // ever opens in the "no balloons" state. The opening total is therefore
-      // AED 250 service + 250 garland + 80 plinth.
+      // pre-selected — a balloon garland and one cake plinth — so no setup ever
+      // opens in the "no balloons" state.
+      // 2026-09-09: that one plinth is the XXL, per the ladder (1 = XXL,
+      // 2 = XXL+XL, 3 = XXL+XL+L). This is the default the app actually reads —
+      // an earlier edit changed a package preset by the same name instead, and
+      // the configure page still opened on XL.
       balloonStyle: "full",
       plinths: 1,
-      plinthSizes: ["medium"],
+      plinthSizes: ["large"],
       backdropColor: DEFAULT_BACKDROP_COLOR,
       balloonColors: theme.balloonColors.slice(0, 5),
     },
