@@ -1868,7 +1868,8 @@ export function generateStructureSilhouette(
               const off = lane === 0 ? -rr * 0.20
                 : lane === 1 ? -rr * 1.05
                 : lane === 2 ? -rr * 1.95
-                : rr * 0.45;   // just onto the edge, never across the face
+                : -rr * 0.45;  // 2026-09-09: above the edge too — at +0.45 this
+                              // lane still sat on the board faces.
               putC(
                 x + (crnd() * 2 - 1) * rMid * 0.55,
                 ty + off + (crnd() * 2 - 1) * rLil * 0.5,
@@ -1894,9 +1895,12 @@ export function generateStructureSilhouette(
                 const a3 = crnd() * Math.PI * 2;
                 const dd = Math.pow(crnd(), 0.7) * rBig * 1.5;
                 const rr = i % 3 === 0 ? rBig * (0.9 + crnd() * 0.3) : rMid * (0.8 + crnd() * 0.5);
+                // Biased UPWARD: an even disc around the join spread balloons
+                // down over the board faces, which is what the customer keeps
+                // circling. Everything sits on or above the top line.
                 putC(
                   jx + Math.cos(a3) * dd,
-                  jy + Math.sin(a3) * dd * 0.75 - rr * 0.35,
+                  jy - Math.abs(Math.sin(a3)) * dd * 0.85 - rr * 0.30,
                   rr,
                 );
               }
@@ -2385,12 +2389,18 @@ export function generateStructureSilhouette(
           // column of 22 circles, which the edit model reproduced with visibly
           // thin, gappy stretches (2026-07-20 feedback: "balloons have very
           // thin parts, should look fuller").
-          drawThickOrganicMainGarland(archPanels[0], "right", 0, true, true);
+          // 2026-09-09: giantAnchors OFF here too. The three 36" statement
+          // balloons seated in the floor mound came back as enormous white
+          // spheres parked at the foot of the arch — the same thing the
+          // customer crossed out on Double Arch on 2026-09-08, reported again
+          // here as "single arch backdrop asiri kotu olmus balonlar". The
+          // volume low down now comes from the bottom-heavy climb alone.
+          drawThickOrganicMainGarland(archPanels[0], "right", 0, true, true, false);
           // Full / Premium mirror the mass onto the left edge too, so the
           // customer sees the extra coverage they paid for. Half stays
           // one-sided (that asymmetry is the look Half Garland sells).
           if (isFullerTier) {
-            drawThickOrganicMainGarland(archPanels[0], "left", 62, true, true);
+            drawThickOrganicMainGarland(archPanels[0], "left", 62, true, true, false);
           }
         } else {
           // Multi-panel fallback: right-side vertical garland from top-right corner to floor

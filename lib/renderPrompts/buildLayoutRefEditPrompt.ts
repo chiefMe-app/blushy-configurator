@@ -899,6 +899,7 @@ export function buildLayoutRefEditPrompt(
           : `. `) +
         `There is EXACTLY ONE marquee number in the entire image — never a second number, never the same ` +
         `digit repeated elsewhere in the frame. ` +
+        `It stands directly on the floor, never on top of the plinth. ` +
         `No loose helium balloons on strings anywhere in the scene. `
       : "";
 
