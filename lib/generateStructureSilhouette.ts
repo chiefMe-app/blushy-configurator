@@ -1415,6 +1415,13 @@ export function generateStructureSilhouette(
           // asked for the same volume built from 12" and 5" balloons instead.
           // Single Arch keeps them; its look was approved with them in.
           giantAnchors = true,
+          // 2026-09-09: Single Arch composition, from the customer's Elsa
+          // reference. The crown normally stops on the shoulder, well short of
+          // the apex, so the top of the board is bare and the garland reads as a
+          // side trim. With this on it starts PAST the apex (upper middle) and
+          // thickens toward the top outer corner before handing over to the
+          // vertical climb: top cluster -> heavy top corner -> right cascade.
+          crownOverTop = false,
         ): { count: number; minR: number; maxR: number; lanes: number } => {
           const dir       = side === "left" ? -1 : 1;
           const panelEdge = p.cx + dir * (p.pw / 2);
@@ -1667,28 +1674,42 @@ export function generateStructureSilhouette(
           const rArc  = p.pw / 2;
           const arcCx = p.cx;
           const arcCy = p.apexY + rArc;
-          const angFrom = side === "left" ? 178 : 2;
+          const angFrom = crownOverTop
+            // Starts past the apex, on the far side of the top, so the mass
+            // begins upper-middle exactly as the reference does.
+            ? (side === "left" ? 298 : -118)
+            : (side === "left" ? 178 : 2);
           // Tight mode stops well short of the apex (2026-09-03): walked all
           // the way to the top, the last few shrinking balloons stood up
           // above the arch as a thin horn, and now that the edit model
           // re-creates the garland from the guide it painted that horn as a
           // pointed tip. The crown is a rounded cluster of large balloons on
           // the shoulder — the reference Single Arch look — not a tail.
-          const angTo   = tight
-            ? (side === "left" ? 232 : -52)
-            : (side === "left" ? 268 : -88);
+          const angTo   = crownOverTop
+            ? (side === "left" ? 180 : 0)
+            : tight
+              ? (side === "left" ? 232 : -52)
+              : (side === "left" ? 268 : -88);
           // Walked along the arc the same way the climb is walked up the edge,
           // for the same reason — the old version cycled 3 depth lanes and a
           // 3-entry size pattern, which drew a beaded trim over the shoulder.
           let crownAng = angFrom;
           let crownGuard = 0;
           const angStep = (angTo - angFrom) > 0 ? 1 : -1;
-          while (Math.abs(crownAng - angFrom) < Math.abs(angTo - angFrom) && crownGuard++ < 40) {
+          while (Math.abs(crownAng - angFrom) < Math.abs(angTo - angFrom) && crownGuard++ < (crownOverTop ? 90 : 40)) {
             const t     = Math.abs(crownAng - angFrom) / Math.abs(angTo - angFrom);
-            const rBall = tight
-              ? sizeR[pickSize(0.15 + 0.35 * t)]        // large cluster, not a shrinking trim
-              : sizeR[pickSize(0.55 + 0.45 * t)];
-            const rad   = rArc + (rnd() * 1.5 - 0.4) * rMed;
+            const rBall = crownOverTop
+              // Light where it meets the apex, heaviest at the outer corner:
+              // pickSize takes 0 = biggest, so this walks DOWN as t rises.
+              ? sizeR[pickSize(Math.max(0, 0.90 - 0.80 * t))]
+              : tight
+                ? sizeR[pickSize(0.15 + 0.35 * t)]        // large cluster, not a shrinking trim
+                : sizeR[pickSize(0.55 + 0.45 * t)];
+            // Depth also grows toward the corner, so the band is a thin run over
+            // the top and a deep cluster where it turns down the side.
+            const rad   = crownOverTop
+              ? rArc + (rnd() * (0.6 + 2.2 * t) - 0.4) * rMed
+              : rArc + (rnd() * 1.5 - 0.4) * rMed;
             const a     = (crownAng * Math.PI) / 180;
             put(arcCx + rad * Math.cos(a), arcCy + rad * Math.sin(a), rBall);
             // Advance along the arc by roughly this balloon's own footprint.
@@ -1707,6 +1728,24 @@ export function generateStructureSilhouette(
                 p.floorY - up,
                 (i % 3 === 0 ? rSmall : rMed) * (0.85 + baseRnd() * 0.35),
                 );
+            }
+          }
+          // 2026-09-09: and a filler pass over the WHOLE garland, not just the
+          // floor. The customer asked for many small balloons and some very
+          // small ones tucked into the gaps — the size mix was reading as too
+          // even because the only filler ran along the base. Candidates are
+          // sampled next to balloons already placed, so the fillers land in the
+          // band instead of scattering into the wall; `put` rejects anything
+          // that would sit too deep inside a neighbour.
+          if (crownOverTop) {
+            const anchors = [...placed];
+            for (let i = 0; i < 46; i++) {
+              const q = anchors[Math.floor(baseRnd() * anchors.length)];
+              if (!q) break;
+              const ang = baseRnd() * Math.PI * 2;
+              const rr  = (baseRnd() < 0.45 ? rSmall * 0.62 : rSmall) * (0.85 + baseRnd() * 0.5);
+              const d2  = q.r + rr * (0.55 + baseRnd() * 0.5);
+              put(q.x + Math.cos(ang) * d2, q.y + Math.sin(ang) * d2, rr);
             }
           }
           return { count: n, minR: Math.round(minR), maxR: Math.round(maxR), lanes: 4 };
@@ -2435,12 +2474,19 @@ export function generateStructureSilhouette(
           // — the customer asked for the previous behaviour back by name. The
           // giant balls they crossed out on Double Arch are a Double Arch
           // problem; Single Arch was approved WITH them.
-          drawThickOrganicMainGarland(archPanels[0], "right", 0, true, true);
-          // Full / Premium mirror the mass onto the left edge too, so the
-          // customer sees the extra coverage they paid for. Half stays
-          // one-sided (that asymmetry is the look Half Garland sells).
+          // 2026-09-09: rebuilt to the customer's Elsa reference — top cluster,
+          // heavy top-right corner, vertical cascade down the right side.
+          //
+          // The left mirror is GONE. Full/Premium used to repeat the whole mass
+          // on the left edge, and with a crown on both shoulders that reads as a
+          // near-complete rectangular border round the board — the exact thing
+          // the customer rejected. The extra coverage those tiers sell is now
+          // spent on the right, where the reference puts it: a second pass at a
+          // different seed thickens the same cascade instead of opening a second
+          // one opposite it.
+          drawThickOrganicMainGarland(archPanels[0], "right", 0, true, true, true, true);
           if (isFullerTier) {
-            drawThickOrganicMainGarland(archPanels[0], "left", 62, true, true);
+            drawThickOrganicMainGarland(archPanels[0], "right", 137, true, true, true, true);
           }
         } else {
           // Multi-panel fallback: right-side vertical garland from top-right corner to floor
@@ -2743,11 +2789,65 @@ export function generateStructureSilhouette(
       // FIRST and the plinth layer last, so a digit standing next to a solid
       // plinth marker was being painted over by it — which is one more reason
       // the render kept fusing the two.
-      plinthLayer.push(
-        `<text x="${(x + digitW / 2).toFixed(1)}" y="${(y + digitH * 0.92).toFixed(1)}" text-anchor="middle" ` +
-        `font-family="Arial Black, Arial, sans-serif" font-size="${digitH.toFixed(0)}" ` +
-        `fill="#FFFFFF" stroke="rgba(45,45,45,0.92)" stroke-width="4" stroke-linejoin="round">${numDigits[d]}</text>`,
-      );
+      //
+      // 2026-09-09, two corrections:
+      //
+      // HEIGHT. font-size is the EM box, not the glyph. A digit's cap height in
+      // Arial Black is about 0.72 em, so setting font-size to the 90cm height
+      // drew a numeral roughly 65cm tall — it has never actually been 90cm
+      // against the plinth beside it. The font is now scaled so the CAP HEIGHT
+      // is the 90cm figure.
+      //
+      // SHAPE. A "1" set in a typeface is a thin stroke with a small flag, and
+      // the render kept turning it into something curved and shapeless. A real
+      // marquee 1 is a wide vertical body, an angled head and a flat base bar
+      // it stands on, so that one is drawn as an explicit path with its bulbs
+      // in it. Every other digit stays type, which renders correctly.
+      const glyph = numDigits[d];
+      if (glyph === "1") {
+        const bw = digitW;
+        const px = (fr: number) => x + bw * fr;
+        const py = (fr: number) => y + digitH * fr;
+        const d1 = [
+          `M ${px(0.62).toFixed(1)},${py(0).toFixed(1)}`,
+          `L ${px(0.62).toFixed(1)},${py(0.86).toFixed(1)}`,
+          `L ${px(0.98).toFixed(1)},${py(0.86).toFixed(1)}`,
+          `L ${px(0.98).toFixed(1)},${py(1).toFixed(1)}`,
+          `L ${px(0.02).toFixed(1)},${py(1).toFixed(1)}`,
+          `L ${px(0.02).toFixed(1)},${py(0.86).toFixed(1)}`,
+          `L ${px(0.38).toFixed(1)},${py(0.86).toFixed(1)}`,
+          `L ${px(0.38).toFixed(1)},${py(0.26).toFixed(1)}`,
+          `L ${px(0.08).toFixed(1)},${py(0.40).toFixed(1)}`,
+          `L ${px(0.08).toFixed(1)},${py(0.16).toFixed(1)}`,
+          "Z",
+        ].join(" ");
+        plinthLayer.push(
+          `<path d="${d1}" fill="#FFFFFF" stroke="rgba(45,45,45,0.92)" stroke-width="4" stroke-linejoin="round"/>`,
+        );
+        // Warm bulbs set into the face: down the body, then along the base bar.
+        const bulbR = digitW * 0.055;
+        for (let b = 0; b < 7; b++) {
+          plinthLayer.push(
+            `<circle cx="${px(0.50).toFixed(1)}" cy="${py(0.09 + b * 0.115).toFixed(1)}" ` +
+            `r="${bulbR.toFixed(1)}" fill="#FFF3D6" stroke="rgba(120,110,90,0.55)" stroke-width="1"/>`,
+          );
+        }
+        for (const fr of [0.18, 0.50, 0.82]) {
+          plinthLayer.push(
+            `<circle cx="${px(fr).toFixed(1)}" cy="${py(0.93).toFixed(1)}" ` +
+            `r="${bulbR.toFixed(1)}" fill="#FFF3D6" stroke="rgba(120,110,90,0.55)" stroke-width="1"/>`,
+          );
+        }
+      } else {
+        // 0.72 em is the cap height of Arial Black; dividing by it makes the
+        // painted numeral the height we actually mean.
+        const fontPx = digitH / 0.72;
+        plinthLayer.push(
+          `<text x="${(x + digitW / 2).toFixed(1)}" y="${(y + digitH).toFixed(1)}" text-anchor="middle" ` +
+          `font-family="Arial Black, Arial, sans-serif" font-size="${fontPx.toFixed(0)}" ` +
+          `fill="#FFFFFF" stroke="rgba(45,45,45,0.92)" stroke-width="4" stroke-linejoin="round">${glyph}</text>`,
+        );
+      }
     }
   }
 

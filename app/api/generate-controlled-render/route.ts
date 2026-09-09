@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "single-arch-palette-number-floor-v82";
+const RENDER_CACHE_VERSION = "elsa-garland-marquee-one-v83";
 
 interface RenderCacheEntry {
   imageUrl: string;

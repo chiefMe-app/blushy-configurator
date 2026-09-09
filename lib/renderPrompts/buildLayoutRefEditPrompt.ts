@@ -902,9 +902,19 @@ export function buildLayoutRefEditPrompt(
   const frontNumDigits = String(sceneModel.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
   const frontNumberLightLine =
     sceneModel.numberLight?.enabled && frontNumDigits.length > 0
-      ? `A 90cm modern matte white marquee number ${frontNumDigits}, with warm white bulbs recessed into its ` +
+      ? `A 90cm modern matte white marquee number ${frontNumDigits}, with warm round bulbs set into its ` +
         `flat face, stands on the floor in front of the backdrop, FACING THE CAMERA SQUARE-ON — its front ` +
-        `face flat to the viewer, not turned, not angled, not in three-quarter view` +
+        `face flat to the viewer, not turned, not angled, not in three-quarter view. ` +
+        // 2026-09-09: the height is stated against the object beside it. "90cm"
+        // alone is a number the model cannot see; the plinth is 60-90cm and IS
+        // in frame, so the comparison is what fixes the scale.
+        `It is about the same height as the pedestal column beside it — a floor prop, not a full-height ` +
+        `sign, and clearly shorter than the backdrop board. ` +
+        (frontNumDigits.includes("1")
+          ? `The 1 is a proper freestanding marquee numeral: one straight wide vertical body, a short angled ` +
+            `head at the top left, and a flat rectangular base it stands on. It is not thin, not curved, ` +
+            `not slanted and not a stylised shape. `
+          : ``) +
         (hasStandeesInScene
           // 2026-09-08: on the LEFT beside the character on every setup —
           // "yenisini eskisinin oldugu tarafa koyalim" — EXCEPT the balloon
@@ -985,7 +995,25 @@ export function buildLayoutRefEditPrompt(
     ? `each arch's own OUTER side edge — the left arch's left edge and the right arch's right edge`
     : `the right outer edge`;
 
-  const archGarlandExtra = hasArchPanelInPrompt
+  // 2026-09-09: a lone arch gets its own composition wording, taken from the
+  // customer's reference photo. The shared text below describes a garland that
+  // starts at the top OUTER CORNER and runs down the edge; the reference starts
+  // higher and further in — upper middle of the board — thickens into the top
+  // right corner, and only then turns down the side. Double Arch and the other
+  // arch layouts keep the shared wording, which they were approved with.
+  const isLoneArchScene = hasArchPanelInPrompt && panelCount === 1;
+  const archGarlandExtra = isLoneArchScene
+    ? ` Premium organic balloon garland, asymmetric and hand-styled. It begins as a lighter cluster at the ` +
+      `UPPER MIDDLE of the board, builds into its heaviest, densest mass at the TOP RIGHT CORNER, then ` +
+      `cascades straight down the RIGHT-HAND EDGE to a connected cluster on the floor at the bottom right. ` +
+      `The left side and the whole middle of the board stay clean and empty — no garland on the left edge, ` +
+      `no balloons across the face, and NOT a frame or border round the board. ` +
+      `The balloon sizes are strongly mixed and never in a repeating sequence: a few large statement ` +
+      `balloons, more medium ones, many small fillers and a scattering of very small balloons pushed into ` +
+      `the gaps. Balloons overlap and cluster; the outline is irregular and organic, never evenly spaced ` +
+      `and never a uniform arc. A few balloons break past the edge of the board. ` +
+      `Not a thin single-file chain. `
+    : hasArchPanelInPrompt
     ? ` Premium organic balloon garland with large, medium, and small balloons nested together ` +
       `in lush clustered bunches, attached ONLY to ONE OUTER SIDE of the arch — ${outerEdgePhrase} — ` +
       `and nowhere else on the structure. ` +
