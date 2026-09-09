@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "light-plain-room-v88";
+const RENDER_CACHE_VERSION = "light-room-also-on-edit-path-v89";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1332,11 +1332,22 @@ forbiddenBalloonColorLabels: hasSempertexLock
   try {
     // ── Edit existing render — color-only / style-tweak recolor on the previous render ──
     if (renderMode === "edit_existing" && previousFinalRenderUrl) {
+      // 2026-09-09: this used to say "Preserve the room, camera angle, floor,
+      // lighting, ..." — which froze the studio into whatever the previous
+      // render happened to have. That is why the light-room fix (v88) appeared
+      // to do nothing: a small tweak takes this path, and this path was
+      // explicitly told to keep the old dark wall and floor. The structural
+      // preservations all stay; only the room and lighting are released, and
+      // the corrected room is described instead.
+      const roomLine =
+        `The room is light and plain: a pale light-grey wall, smooth and evenly lit with only faint ` +
+        `texture, and a pale light-grey concrete floor — not dark, not heavily mottled, not marble, ` +
+        `not brown, no strong shadows, normal even contrast.`;
       const editPrompt =
-        editDescription
-          ? `${editDescription}. Preserve the room, camera angle, floor, lighting, balloon arrangement, backdrop count, panel shapes, and plinth positions exactly.`
-          : `Refine the design while keeping all structural and atmospheric elements identical.`;
-
+        (editDescription
+          ? `${editDescription}. Preserve the camera angle, balloon arrangement, backdrop count, panel shapes, and plinth positions exactly.`
+          : `Refine the design while keeping the camera angle, balloon arrangement, backdrop count, panel shapes and plinth positions identical.`)
+        + ` ${roomLine}`;
       const falResult = await fal.subscribe(editModelId, {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         input: {
