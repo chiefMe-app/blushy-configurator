@@ -922,9 +922,31 @@ export function generateStructureSilhouette(
   // layout — dead centre of the two boards when there are two, dead centre of
   // the board when there is one. It was briefly moved in front of the arch on
   // Arch + Shimmer; the customer wants it centred there too.
-  const decorCx = (groupLeftEdge + groupRightEdge) / 2;
+  const decorCxBase = (groupLeftEdge + groupRightEdge) / 2;
   const plinthCount    = layout.plinths.length;
-  const plinthSpacing  = Math.max(...layout.plinths.map((pl) => pl.diameterPx), 1) * 1.5;
+  // 2026-09-09: capped so the row FITS. Three plinths at true scale span 632px
+  // on a 576px-wide portrait frame — the row ran off both edges, which is why a
+  // three-plinth Single Arch rendered four columns: the model was completing
+  // shapes it could only half see.
+  const plinthMaxDia   = Math.max(...layout.plinths.map((pl) => pl.diameterPx), 1);
+  const plinthSpacing  = plinthCount > 1
+    ? Math.min(plinthMaxDia * 1.5, (W * 0.86 - plinthMaxDia) / (plinthCount - 1))
+    : plinthMaxDia * 1.5;
+
+  // 2026-09-09: a row of two or three plinths fills the middle of a portrait
+  // frame, and a 90cm marquee number then has nowhere to stand — it was drawn
+  // touching a column and the render stood it ON one, reported twice. When both
+  // are in the scene the plinth row slides right to open a slot on the left.
+  // With one plinth (or no number) it stays dead centre, which is where the
+  // customer asked for it on 2026-09-05.
+  const numberDigitCount = String(extras?.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2).length;
+  const wantsNumberSlot = !!extras?.numberLight?.enabled && numberDigitCount > 0 && plinthCount >= 2;
+  const widestPanelPw = Math.max(...layout.panels.map((pl) => pl.pw), 1);
+  // Sliding the row sideways was tried and pushed it off the canvas edge; the
+  // row stays centred and the number is placed into whichever floor span is
+  // actually free (see the marquee block).
+  void wantsNumberSlot; void widestPanelPw;
+  const decorCx = decorCxBase;
 
   // 2026-09-05: the plinth stands FORWARD of the decor, nearer the camera, not
   // level with the backdrop. On a balloon ring especially it was sitting on the
@@ -934,11 +956,19 @@ export function generateStructureSilhouette(
   const plinthForwardPx = isRingScene
     ? (layout.floorY - Math.min(...layout.panels.map((pl) => pl.apexY))) * 0.10
     : 0;
+  // 2026-09-09: the ACTUAL drawn extent of the plinth row. The marquee number
+  // used to be positioned against an estimate rebuilt from decorCx and
+  // plinthSpacing, which did not match what was drawn, so it landed on a
+  // column anyway.
+  let plinthDrawnLeftPx: number | null = null;
+  let plinthDrawnRightPx: number | null = null;
   layout.plinths.forEach((p, plinthIdx) => {
     // One plinth lands on the midpoint; two straddle it; three sit centred.
     const plinthCx = Math.round(
       decorCx + (plinthIdx - (plinthCount - 1) / 2) * plinthSpacing,
     );
+    plinthDrawnLeftPx  = Math.min(plinthDrawnLeftPx  ?? Infinity,  plinthCx - p.diameterPx / 2);
+    plinthDrawnRightPx = Math.max(plinthDrawnRightPx ?? -Infinity, plinthCx + p.diameterPx / 2);
     const plinthBottomY = p.bottomY + plinthForwardPx;
     // Round scenes: use filled cylinder so the plinth reads as a clear
     // solid object, not just outline edges that the model may skip or
@@ -2400,12 +2430,17 @@ export function generateStructureSilhouette(
           // customer crossed out on Double Arch on 2026-09-08, reported again
           // here as "single arch backdrop asiri kotu olmus balonlar". The
           // volume low down now comes from the bottom-heavy climb alone.
-          drawThickOrganicMainGarland(archPanels[0], "right", 0, true, true, false);
+          // 2026-09-09: giantAnchors back ON. Turning them off on 2026-09-08 was
+          // meant to fix "balonlar asiri kotu", and it made the arrangement worse
+          // — the customer asked for the previous behaviour back by name. The
+          // giant balls they crossed out on Double Arch are a Double Arch
+          // problem; Single Arch was approved WITH them.
+          drawThickOrganicMainGarland(archPanels[0], "right", 0, true, true);
           // Full / Premium mirror the mass onto the left edge too, so the
           // customer sees the extra coverage they paid for. Half stays
           // one-sided (that asymmetry is the look Half Garland sells).
           if (isFullerTier) {
-            drawThickOrganicMainGarland(archPanels[0], "left", 62, true, true, false);
+            drawThickOrganicMainGarland(archPanels[0], "left", 62, true, true);
           }
         } else {
           // Multi-panel fallback: right-side vertical garland from top-right corner to floor
@@ -2659,58 +2694,42 @@ export function generateStructureSilhouette(
     const digitW = digitH * 0.60;
     const gap = digitW * 0.14;
     const groupW = digitW * numDigits.length + gap * (numDigits.length - 1);
-    // It stands IN FRONT of the board, on clear floor.
-    //
-    // 2026-09-05: moved to the RIGHT of centre when standees were in the scene,
-    // because the character was standing across the digits.
-    // 2026-09-08: back to the LEFT — placed against the measured right edge of
-    // the reserved standee band rather than against the panel centre, so the
-    // two stand side by side with clear air between them.
-    // 2026-09-08 (later, same day): EXCEPT on the balloon ring, where the
-    // customer wants the cutout left and the number right — "balloon ringte,
-    // cutout solda number sagda olmali". Only the ring: every other setup keeps
-    // the left placement they asked for in the message before.
+    // Where it stands. Rewritten 2026-09-09 after the number kept landing on a
+    // plinth: the old code compared the digit's whole BOX against the plinth,
+    // and the box is far wider than the glyph inside it (a "1" in Arial Black
+    // fills under half of it). On a portrait Single Arch frame that made a
+    // perfectly good slot look impossible, so the digit got squeezed against a
+    // column instead. The test now uses the glyph's own width, and the number is
+    // centred in whichever floor span is actually free.
     const hasStandees = (cutoutGuideItems ?? []).length > 0;
     const numberGoesRight = isRingScene && hasStandees;
-    const wantX = numberGoesRight
-      ? tallest.cx + tallest.pw * 0.62 - groupW * 0.35
-      : hasStandees && standeeBandRightPx !== null
-        ? standeeBandRightPx + digitW * 0.30
-        : tallest.cx - tallest.pw * 0.45
-          - (layout.plinths.length > 0 ? groupW * 0.85 : 0);
-    // Nothing may be drawn outside the canvas: unclamped, a single Shimmer Wall
-    // with a plinth put the marker at x = -10 and the render filled the clipped
-    // gap with stray helium balloons. It also never crosses the setup's centre
-    // line — past that it stops reading as "on the left".
-    const leftHalfLimit = tallest.cx - groupW * 0.55;
-    const canvasLimit = W - groupW - digitW * 0.12;
-    let limitRight = hasStandees && !numberGoesRight
-      ? Math.min(leftHalfLimit, canvasLimit)
-      : canvasLimit;
-    // 2026-09-08: and never drawn across the plinth. Standing on the same floor
-    // line, overlapping markers had the render fusing the two into one confused
-    // object. Only applied when it still leaves the digits clear of the standee
-    // band — with all three in a narrow frame, something has to give.
-    if (layout.plinths.length > 0 && !numberGoesRight) {
-      const plinthLeftEdge =
-        decorCx
-        - ((plinthCount - 1) / 2) * plinthSpacing
-        - Math.max(...layout.plinths.map((pl) => pl.diameterPx)) / 2;
-      const clearOfPlinth = plinthLeftEdge - groupW - digitW * 0.10;
-      const leftFloor = standeeBandRightPx !== null ? standeeBandRightPx + digitW * 0.15 : digitW * 0.12;
-      if (clearOfPlinth > leftFloor) limitRight = Math.min(limitRight, clearOfPlinth);
+    const glyphW  = digitH * 0.46 * numDigits.length + gap * (numDigits.length - 1);
+    const margin  = digitH * 0.10;
+    const leftBound  = standeeBandRightPx !== null ? standeeBandRightPx + margin : margin;
+    const plinthL = plinthDrawnLeftPx  ?? null;
+    const plinthR = plinthDrawnRightPx ?? null;
+    // Free floor spans either side of the plinth row.
+    const spanLeft  = { from: leftBound, to: plinthL !== null ? plinthL - margin : tallest.cx };
+    const spanRight = { from: plinthR !== null ? plinthR + margin : tallest.cx, to: W - margin };
+    const fits = (sp: { from: number; to: number }) => sp.to - sp.from >= glyphW;
+    const preferRight = numberGoesRight;
+    let span = preferRight
+      ? (fits(spanRight) ? spanRight : spanLeft)
+      : (fits(spanLeft) ? spanLeft : spanRight);
+    if (!fits(spanLeft) && !fits(spanRight)) {
+      // Neither side can take it — use the wider one and let it sit as clear as
+      // the frame allows.
+      span = (spanLeft.to - spanLeft.from) >= (spanRight.to - spanRight.from) ? spanLeft : spanRight;
     }
-    // On the ring the digits must also clear the plinth on the RIGHT side.
-    const startXRaw = Math.max(digitW * 0.12, Math.min(wantX, limitRight));
-    let startX = startXRaw;
-    if (numberGoesRight && layout.plinths.length > 0) {
-      const plinthRightEdge =
-        decorCx
-        + ((plinthCount - 1) / 2) * plinthSpacing
-        + Math.max(...layout.plinths.map((pl) => pl.diameterPx)) / 2;
-      startX = Math.max(startX, Math.min(plinthRightEdge + digitW * 0.10, canvasLimit));
-    }
-    const baseY = tallest.floorY;
+    const spanCx = (span.from + span.to) / 2;
+    const startX = Math.max(
+      margin,
+      Math.min(spanCx - groupW / 2, W - groupW - margin),
+    );
+    // Stepped FORWARD of the backdrop's own floor line, the way the plinth is —
+    // otherwise the digit is drawn inside the garland's floor cluster and the
+    // render cannot tell the two apart.
+    const baseY = tallest.floorY + (tallest.floorY - tallest.apexY) * 0.05;
     for (let d = 0; d < numDigits.length; d++) {
       const x = startX + d * (digitW + gap);
       const y = baseY - digitH;
@@ -2720,7 +2739,11 @@ export function generateStructureSilhouette(
       // instead of a free-standing digit. Without the rect there is nothing to
       // read as a plaque. The bulbs go in the prompt, which describes them as
       // recessed into the digit's own face.
-      content.push(
+      // 2026-09-09: pushed into plinthLayer, not content. content is drawn
+      // FIRST and the plinth layer last, so a digit standing next to a solid
+      // plinth marker was being painted over by it — which is one more reason
+      // the render kept fusing the two.
+      plinthLayer.push(
         `<text x="${(x + digitW / 2).toFixed(1)}" y="${(y + digitH * 0.92).toFixed(1)}" text-anchor="middle" ` +
         `font-family="Arial Black, Arial, sans-serif" font-size="${digitH.toFixed(0)}" ` +
         `fill="#FFFFFF" stroke="rgba(45,45,45,0.92)" stroke-width="4" stroke-linejoin="round">${numDigits[d]}</text>`,

@@ -881,6 +881,15 @@ export function buildLayoutRefEditPrompt(
   // Kept to one short clause. The 16-word version did stop the printing but
   // also pushed Single Arch into a both-sides garland — length displaces
   // structural wording here, exactly as it does for frontPaletteLine.
+  // 2026-09-09: Single Arch is excluded from frontPaletteLine (a long front
+  // line there displaces the structural wording), and that is the ONLY place
+  // the palette is stated up front — so its silver balloons came back flat
+  // grey while every other layout rendered them chrome. This is the short
+  // version: the one fact that was missing, and nothing else.
+  const frontMetallicLine = isLonePlainArch && hasMetallicInPalette && sceneModel.balloons.style !== "none"
+    ? ""   // superseded — see frontPaletteLine, now enabled for this layout too
+    : "";
+
   const frontNoBalloonTextLine = sceneModel.balloons.style !== "none"
     ? `The balloons are plain — no writing on any balloon. `
     : "";
@@ -913,8 +922,15 @@ export function buildLayoutRefEditPrompt(
         `No loose helium balloons on strings anywhere in the scene. `
       : "";
 
-  const frontPaletteLine = (!isLonePlainArch)
-    && hasSempertexLock && targetAppearanceParts.length > 0
+  // 2026-09-09: Single Arch is no longer excluded. The exclusion dated from a
+  // time when this was the ONLY front line and it displaced the structural
+  // wording; the layout now carries several short ones without harm, and being
+  // the one layout with no up-front palette statement is why its silver came
+  // back flat grey. A bespoke "silver is chrome" line was tried instead and was
+  // worse in both directions — first everything turned chrome, then GOLD
+  // balloons appeared, which is exactly the failure this line was written to
+  // stop.
+  const frontPaletteLine = hasSempertexLock && targetAppearanceParts.length > 0
     ? `Every balloon in this image is one of exactly ${targetAppearanceParts.length} colours: ` +
       `${targetAppearanceParts.join(", ")}. ` +
       `No balloon is ${[
@@ -1561,6 +1577,7 @@ const setupTemplateClause = setupTemplate
     frontPaletteLine +
     frontStructureLine +
     frontNoBalloonTextLine +
+    frontMetallicLine +
     openFrameDetailLine +
     photographyOpening +
     sceneInventoryClause +
