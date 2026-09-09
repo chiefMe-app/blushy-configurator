@@ -811,8 +811,24 @@ export function buildLayoutRefEditPrompt(
   // sentence: the long saturation paragraph tried on 2026-09-05 wrecked the
   // Single Arch layout (see the note in photographyOpening).
   const frontColourLine = !hasRoundPanelInPrompt && sceneModel.balloons.style !== "none"
-    ? `Full natural colour saturation and normal punchy contrast — not hazy, not washed out, ` +
-      `not grey-filtered. `
+    // 2026-09-09 (later): "punchy contrast" is gone. Paired with the non-flash
+    // model it overshot — deep shadows and heavy concrete texture, and the
+    // customer asked for normal. The model supplies the saturation now; this
+    // line only has to stop it going theatrical.
+    ? `Full natural colour saturation with NORMAL, even contrast — not high-contrast, not dramatic, ` +
+      `no deep shadows, not hazy, not washed out. `
+    : "";
+
+  // 2026-09-09: the non-flash model composes a three-quarter view of the room
+  // by default — the customer wants the setup square to camera — and it drops
+  // the plinth on a lone arch that has no standee. Both are stated up front,
+  // where this pipeline actually listens.
+  const frontCameraLine = `The camera looks STRAIGHT AT the setup, square on and level — a flat front view, ` +
+    `not angled, not a three-quarter view, not from the side. `;
+  const frontPlinthLine = sceneModel.plinths.length > 0
+    ? `${sceneModel.plinths.length === 1 ? "A" : String(sceneModel.plinths.length)} white cylindrical ` +
+      `pedestal column${sceneModel.plinths.length === 1 ? "" : "s"} stand${sceneModel.plinths.length === 1 ? "s" : ""} ` +
+      `on the floor in front of the backdrop and must appear in the photograph. `
     : "";
 
   const frontShapeLine = (() => {
@@ -1658,6 +1674,8 @@ const setupTemplateClause = setupTemplate
   return (
     frontShapeLine +
     frontColourLine +
+    frontCameraLine +
+    frontPlinthLine +
     frontBannerAspectLine +
     frontTripleArchLine +
     frontRingHalfLine +
