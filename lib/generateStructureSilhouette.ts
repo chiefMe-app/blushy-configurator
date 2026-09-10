@@ -1698,8 +1698,15 @@ export function generateStructureSilhouette(
             // handful of bold statement balloons standing proud of the rest,
             // and plenty of small ones packed into the gaps between them. So
             // both ends of the mix go up: more XL, more S, fewer plain mediums.
-            const xlChance = crownOverTop ? 0.13 * (1 - t) : (looseSpacing ? 0.10 : 0.20) * (1 - t);
-            const sChance  = crownOverTop ? 0.36 : 0.12 + 0.20 * t;
+            // 2026-09-10 (later): the customer's reference is BIG balloons
+            // packed tight — the small balloons in it are almost all bundled
+            // into the rosettes below, not loose in the band. A high loose-S
+            // share (0.36) plus the old fill pass put a cloud of little
+            // balloons "flying" between the big ones ("cok fazla minik minik
+            // balonlar ucusuyor"). Small share drops hard; XL statement
+            // balloons stay, since the reference clearly has several.
+            const xlChance = crownOverTop ? 0.14 * (1 - t) : (looseSpacing ? 0.10 : 0.20) * (1 - t);
+            const sChance  = crownOverTop ? 0.12 : 0.12 + 0.20 * t;
             if (roll < xlChance) return "X";
             if (roll < xlChance + sChance) return "S";
             return rnd() < 0.55 ? "L" : "M";
@@ -1771,10 +1778,13 @@ export function generateStructureSilhouette(
               const cOff  = off + (off > 0 ? -1 : 1) * (0.5 + rnd() * 0.6) * rLarge * spread;
               put(edgeX + dir * cOff, climbY - rBall * (rnd() * 0.5 - 0.25), cSize);
             }
-            if (crownOverTop && rnd() < 0.55) {
-              const c2 = sizeR[pickSize(Math.min(1, t + 0.4))] * rTaper * 0.7;
-              const o2 = off + (rnd() * 1.4 - 0.7) * rLarge * spread;
-              put(edgeX + dir * o2, climbY - rBall * (rnd() * 0.8 - 0.1), c2);
+            // A second backer keeps the band three deep, but medium-sized and
+            // kept close to the spine so it reads as part of the packed mass,
+            // not a small balloon floating off on its own.
+            if (crownOverTop && rnd() < 0.4) {
+              const c2 = sizeR[pickSize(Math.min(1, t + 0.15))] * rTaper * 0.9;
+              const o2 = off + (rnd() * 1.0 - 0.5) * rLarge * spread;
+              put(edgeX + dir * o2, climbY - rBall * (rnd() * 0.5 - 0.1), c2);
             }
 
             // Advance by most of this balloon's own size: enough overlap to
@@ -1848,27 +1858,28 @@ export function generateStructureSilhouette(
           // Both are placed last, over the finished mass, so they fill gaps
           // rather than pushing the main balloons apart (the base-cluster note).
           if (crownOverTop) {
-            // Walk the cascade the climb just drew (its placed balloons), and at
-            // a fraction of them either tuck a 5" filler beside it or seat a
-            // rosette. Snapshot first: put() mutates `placed`.
+            // 2026-09-10 (later): rosettes only, and TIGHT. The reference's
+            // "flowers" are five 5" balloons pressed hard against a centre one
+            // so the whole thing reads as a single tight ball the size of a
+            // medium balloon. The first version spread the petals 1.5 radii out
+            // (a loose splat) and ALSO scattered loose 5" balloons beside every
+            // other spine balloon — which is the cloud of flying minis the
+            // customer flagged. The loose fill is gone; petals pull in to 1.05
+            // radii; and each flower is seated INSIDE the band (0.5 rLarge in),
+            // not hung off its outer edge.
             const spine = placed.slice();
             const rosette = (cxp: number, cyp: number, rr: number) => {
-              put(cxp, cyp, rr * 0.9);                 // heart
-              for (let k = 0; k < 6; k++) {
-                const a = (k / 6) * Math.PI * 2 + rnd();
-                put(cxp + Math.cos(a) * rr * 1.5, cyp + Math.sin(a) * rr * 1.5, rr * 0.72);
+              put(cxp, cyp, rr * 0.95);                // heart
+              for (let k = 0; k < 5; k++) {
+                const a = (k / 5) * Math.PI * 2 + rnd() * 0.6;
+                put(cxp + Math.cos(a) * rr * 1.05, cyp + Math.sin(a) * rr * 1.05, rr * 0.8);
               }
             };
             let flowers = 0;
             for (const q of spine) {
-              // rosettes only on the outer half of the band and not too near
-              // the floor mound, spaced out — at most five down the cascade.
-              if (flowers < 5 && rnd() < 0.10 && q.y < p.floorY - rLarge * 2) {
-                rosette(q.x + dir * rLarge * 0.9, q.y, rSmall);
+              if (flowers < 5 && rnd() < 0.12 && q.y < p.floorY - rLarge * 2 && q.r > rMed * 0.8) {
+                rosette(q.x - dir * rLarge * 0.5, q.y, rSmall);
                 flowers++;
-              } else if (rnd() < 0.5) {
-                const a = rnd() * Math.PI * 2;
-                put(q.x + Math.cos(a) * q.r, q.y + Math.sin(a) * q.r, rSmall * (0.7 + rnd() * 0.5));
               }
             }
           }
