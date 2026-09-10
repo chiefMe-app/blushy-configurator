@@ -92,7 +92,13 @@ export function calculateExactLayout(
   // layout it needs real headroom above the tallest one. At the usual 5% the
   // crown balloons were clamped down onto the apex and the render dropped them,
   // leaving the centre board bare.
-  const tallestPanelHeightPx = floorY - canvasH * (isTripleArch ? 0.22 : 0.05);
+  // 2026-09-10: a lone arch gets real headroom too. Its garland is now a
+  // transcription of the customer's reference photo, and that composition runs
+  // ABOVE the board's top edge (to 1.10 board-heights) and out past its right
+  // edge (to 0.27). At the old 5% the crown was clamped against the canvas top
+  // and the cascade ran off the right. 24% reproduces the reference's own
+  // framing, which carries about 22% headroom above the board.
+  const tallestPanelHeightPx = floorY - canvasH * (isTripleArch ? 0.22 : singleArch ? 0.24 : 0.05);
 
   // --- Compute intrinsic sizes and z-orders ---
   const rawPanels = items.slice(0, count).map((item, i) => {
@@ -181,7 +187,7 @@ export function calculateExactLayout(
   // keeps the right-side cascade from running off the canvas. Every other
   // single panel (round, banner) stays centred.
   let xCursor = singleArch
-    ? canvasW * 0.05
+    ? canvasW * 0.026
     : (canvasW - totalGroupW) / 2;
 
   for (const raw of rawPanels) {

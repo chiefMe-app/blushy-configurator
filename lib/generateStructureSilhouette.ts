@@ -1932,6 +1932,164 @@ export function generateStructureSilhouette(
           return { count: n, minR: Math.round(minR), maxR: Math.round(maxR), lanes: 4 };
         };
 
+        // ===================================================================
+        // Lone-arch garland TRANSCRIBED from the customer's reference photo.
+        //
+        // 2026-09-10. The customer asked for a near one-to-one copy of a
+        // specific reference image, not "something similar" — and a procedural
+        // generator cannot deliver that however its density and size knobs are
+        // tuned. Several rounds of tuning (sizes, packing, band width, rosettes)
+        // each produced a plausible garland that was not THAT garland. So the
+        // reference's own composition is read off the photo and stored here.
+        //
+        // Coordinates are anchored to the board's RIGHT EDGE and FLOOR, in
+        // units of the board's HEIGHT, because that edge is what the garland
+        // hugs and because both boards are 220cm tall — so a stored radius is
+        // a real balloon size in centimetres whatever the board's width.
+        //   dx: horizontal offset from the right edge (negative = onto the board)
+        //   dy: height above the floor (1.0 = the board's top)
+        //   rr: radius
+        // kind: "B" plain balloon, "F" ball-flower rosette (a heart ringed by
+        // five petals), "C" small tight accent cluster.
+        //
+        // Read off the reference at board cx=270, pw=254, apexY=228,
+        // floorY=815 (boardH=587) in its 576x1024 frame.
+        // ===================================================================
+        type RefBalloon = { dx: number; dy: number; rr: number; kind: "B" | "F" | "C" };
+        const REFERENCE_LONE_ARCH: RefBalloon[] = [
+          // --- top flow: starts part-way along the arch's top-left curve and
+          //     runs right, about one balloon deep, growing toward the
+          //     top-right corner where it turns down.
+          { dx: -0.336, dy: 1.010, rr: 0.044, kind: "F" },
+          { dx: -0.262, dy: 1.031, rr: 0.041, kind: "C" },
+          { dx: -0.186, dy: 1.085, rr: 0.075, kind: "B" },
+          { dx: -0.148, dy: 0.993, rr: 0.044, kind: "B" },
+          { dx: -0.123, dy: 0.974, rr: 0.048, kind: "F" },
+          { dx: -0.077, dy: 1.047, rr: 0.044, kind: "B" },
+          { dx: -0.055, dy: 1.017, rr: 0.026, kind: "B" },
+          { dx:  0.005, dy: 1.099, rr: 0.072, kind: "B" },
+          { dx:  0.060, dy: 1.017, rr: 0.051, kind: "B" },
+          { dx:  0.158, dy: 0.993, rr: 0.072, kind: "B" },
+          { dx: -0.009, dy: 0.932, rr: 0.030, kind: "C" },
+          { dx:  0.085, dy: 0.920, rr: 0.048, kind: "B" },
+          // --- right cascade: the densest run, about two balloons wide, from
+          //     the top-right corner down to the floor.
+          { dx:  0.099, dy: 0.877, rr: 0.056, kind: "B" },
+          { dx:  0.044, dy: 0.826, rr: 0.048, kind: "B" },
+          { dx:  0.189, dy: 0.826, rr: 0.044, kind: "B" },
+          { dx:  0.162, dy: 0.877, rr: 0.051, kind: "B" },
+          { dx:  0.085, dy: 0.732, rr: 0.051, kind: "F" },
+          { dx:  0.167, dy: 0.707, rr: 0.061, kind: "B" },
+          { dx:  0.111, dy: 0.601, rr: 0.058, kind: "B" },
+          { dx:  0.204, dy: 0.588, rr: 0.051, kind: "B" },
+          { dx:  0.048, dy: 0.639, rr: 0.044, kind: "B" },
+          { dx:  0.141, dy: 0.503, rr: 0.055, kind: "C" },
+          { dx:  0.060, dy: 0.503, rr: 0.048, kind: "B" },
+          { dx:  0.192, dy: 0.443, rr: 0.048, kind: "B" },
+          { dx:  0.082, dy: 0.409, rr: 0.055, kind: "B" },
+          { dx:  0.162, dy: 0.366, rr: 0.041, kind: "B" },
+          { dx:  0.073, dy: 0.289, rr: 0.051, kind: "F" },
+          { dx:  0.167, dy: 0.273, rr: 0.051, kind: "B" },
+          { dx:  0.056, dy: 0.196, rr: 0.051, kind: "B" },
+          { dx:  0.209, dy: 0.213, rr: 0.058, kind: "B" },
+          { dx:  0.124, dy: 0.162, rr: 0.048, kind: "B" },
+          // --- bottom floor buildup: spreads LEFT along the floor, wider than
+          //     the cascade, with a small accent cluster on its inboard side.
+          { dx: -0.140, dy: 0.094, rr: 0.051, kind: "B" },
+          { dx: -0.072, dy: 0.124, rr: 0.044, kind: "B" },
+          { dx: -0.046, dy: 0.119, rr: 0.034, kind: "C" },
+          { dx:  0.005, dy: 0.068, rr: 0.051, kind: "B" },
+          { dx:  0.090, dy: 0.090, rr: 0.055, kind: "B" },
+          { dx:  0.167, dy: 0.060, rr: 0.048, kind: "B" },
+          { dx:  0.218, dy: 0.111, rr: 0.044, kind: "B" },
+          { dx: -0.157, dy: 0.034, rr: 0.034, kind: "B" },
+          { dx: -0.089, dy: 0.051, rr: 0.037, kind: "B" },
+          // --- bridge: our board is proportionally wider than the reference's
+          //     (120x220 against its ~95x220), so its dome is broader and the
+          //     transcribed crown alone stops short of the top-left. These carry
+          //     the top flow further along the curve and close the gap where the
+          //     cascade meets the floor pile, keeping the run continuous.
+          // Kept close enough to the crown to stay attached: at -0.470 the last
+          // one sat on the arch curve but clear of its neighbours, and the
+          // render turned it into a single balloon floating in the wall.
+          { dx: -0.398, dy: 0.972, rr: 0.038, kind: "B" },
+          { dx: -0.434, dy: 0.930, rr: 0.032, kind: "B" },
+          { dx: -0.372, dy: 1.004, rr: 0.030, kind: "B" },
+          { dx:  0.100, dy: 0.240, rr: 0.044, kind: "B" },
+          { dx:  0.180, dy: 0.150, rr: 0.042, kind: "B" },
+          { dx:  0.040, dy: 0.120, rr: 0.040, kind: "B" },
+        ];
+
+        const drawReferenceLoneArchGarland = (
+          p: typeof layout.panels[0], side: "left" | "right",
+        ): number => {
+          const dir    = side === "left" ? -1 : 1;
+          const edge   = p.cx + dir * (p.pw / 2);
+          const boardH = p.floorY - p.apexY;
+          let n = 0;
+          // The same area-balanced colour picker the procedural garland uses, so
+          // the customer's selected palette still comes out even. Only the
+          // LAYOUT is taken from the reference; the colours stay theirs.
+          const areaByColor = new Array(Math.max(1, colors.length)).fill(0) as number[];
+          const lastUsedAt  = new Array(Math.max(1, colors.length)).fill(-1) as number[];
+          const leastUsedColor = (): number => {
+            let best = 0;
+            for (let i = 1; i < areaByColor.length; i++) {
+              const d = areaByColor[i] - areaByColor[best];
+              if (d < -1e-6) best = i;
+              else if (Math.abs(d) <= 1e-6 && lastUsedAt[i] < lastUsedAt[best]) best = i;
+            }
+            return best;
+          };
+          const put = (bx: number, by: number, br: number) => {
+            const ci = leastUsedColor();
+            areaByColor[ci] += Math.PI * br * br;
+            lastUsedAt[ci] = n;
+            content.push(`<circle cx=\"${bx.toFixed(1)}\" cy=\"${by.toFixed(1)}\" r=\"${br.toFixed(1)}\" ${balloonAttrs(ci)}/>`);
+            n++;
+          };
+          // Deterministic jitter, so a rosette's petals are not perfectly
+          // regular — a real one never is — without the layout becoming random.
+          let seed = 7919;
+          const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+
+          // The table records the garland's FRONT layer. A real garland of this
+          // kind — and the reference — is two balloons deep, and with the front
+          // layer alone the guide came out with wall showing between every
+          // balloon. Each plain balloon therefore gets one backer tucked behind
+          // it on an alternating side, which fills the interstices without
+          // moving any of the transcribed positions.
+          let bi = 0;
+          for (const b of REFERENCE_LONE_ARCH) {
+            const x = edge + dir * b.dx * boardH;
+            const y = p.floorY - b.dy * boardH;
+            const r = b.rr * boardH;
+            if (b.kind === "B") {
+              const a = (bi % 2 === 0 ? -0.7 : 0.7) + (bi % 3) * 0.55;
+              put(x + Math.cos(a) * r * 0.95, y + Math.sin(a) * r * 0.85, r * 0.82);
+              put(x, y, r);
+              bi++;
+            } else if (b.kind === "F") {
+              // Ball-flower: a heart ringed by five petals pressed against it,
+              // sized so the whole rosette fills the stored radius.
+              const petal = r * 0.46;
+              put(x, y, petal * 0.95);
+              for (let k = 0; k < 5; k++) {
+                const a = (k / 5) * Math.PI * 2 + rnd() * 0.5;
+                put(x + Math.cos(a) * (r - petal), y + Math.sin(a) * (r - petal), petal);
+              }
+            } else {
+              // Tight accent cluster — four small balloons bunched.
+              const small = r * 0.55;
+              for (let k = 0; k < 4; k++) {
+                const a = (k / 4) * Math.PI * 2 + 0.6 + rnd() * 0.4;
+                put(x + Math.cos(a) * small * 0.8, y + Math.sin(a) * small * 0.8, small);
+              }
+            }
+          }
+          return n;
+        };
+
         // Arch + Shimmer composition — TWO independently well-composed
         // treatments rather than one interpolated bridge:
         //   - the arch gets its own full, proven-good dense garland
@@ -2665,10 +2823,14 @@ export function generateStructureSilhouette(
           // spent on the right, where the reference puts it: a second pass at a
           // different seed thickens the same cascade instead of opening a second
           // one opposite it.
-          drawThickOrganicMainGarland(archPanels[0], "right", 0, true, true, true, true);
-          if (isFullerTier) {
-            drawThickOrganicMainGarland(archPanels[0], "right", 137, true, true, true, true);
-          }
+          // 2026-09-10: the lone arch no longer generates its garland — it
+          // REPLAYS the customer's reference composition (see
+          // REFERENCE_LONE_ARCH above). They asked for a near one-to-one copy
+          // of a specific photo, and tuning a generator kept producing a
+          // different-but-plausible garland instead. The tier no longer adds a
+          // second pass: the reference is one specific arrangement, and
+          // doubling it would stop being that arrangement.
+          drawReferenceLoneArchGarland(archPanels[0], "right");
         } else {
           // Multi-panel fallback: right-side vertical garland from top-right corner to floor
           const outerOffset = Math.round(W * 0.055);
