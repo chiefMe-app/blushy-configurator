@@ -1592,7 +1592,10 @@ export function generateStructureSilhouette(
           // Anchoring the offsets about one balloon inboard of the edge makes
           // the mass straddle the arch, which is how a decorator actually ties
           // a garland on, and is what the working Single Arch guide looks like.
-          const edgeX = panelEdge - dir * rLarge * 0.9;
+          // crownOverTop keeps the band right on the panel edge so it hugs the
+          // board; the wider inboard bias in bandO then lays most of the mass
+          // over the board face rather than out in the room.
+          const edgeX = panelEdge - dir * rLarge * (crownOverTop ? 0.55 : 0.9);
 
           // 1) Floor/base cluster — 16 heavily overlapping balloons mounded at
           //    the outer base, several large anchors for a dense floor pile.
@@ -1705,7 +1708,10 @@ export function generateStructureSilhouette(
             // balloons "flying" between the big ones ("cok fazla minik minik
             // balonlar ucusuyor"). Small share drops hard; XL statement
             // balloons stay, since the reference clearly has several.
-            const xlChance = crownOverTop ? 0.14 * (1 - t) : (looseSpacing ? 0.10 : 0.20) * (1 - t);
+            // A few statement balloons, not many: too many big ones made the
+            // band lumpy and uneven. The reference is mostly one size with the
+            // odd big accent.
+            const xlChance = crownOverTop ? 0.08 * (1 - t) : (looseSpacing ? 0.10 : 0.20) * (1 - t);
             const sChance  = crownOverTop ? 0.12 : 0.12 + 0.20 * t;
             if (roll < xlChance) return "X";
             if (roll < xlChance + sChance) return "S";
@@ -1751,11 +1757,15 @@ export function generateStructureSilhouette(
             // were corrected to real balloon sizes. 1.15 rLarge was then only
             // ~53px of band, thinner than one balloon, so the garland came out
             // single-file. 1.9 restores a band about two balloons deep.
-            // 2026-09-10: widened again. The reference band is a good three
-            // balloons deep where it cascades down the side; 1.9 rLarge held it
-            // to two and the render read as a flat ribbon rather than a mound.
-            const bandW = crownOverTop ? 2.4 : 1.7;
-            const bandO = crownOverTop ? 1.05 : 0.75;
+            // 2026-09-10 (later): pulled the band back IN. At 2.4/1.05 the lower
+            // cascade bulged far out into the room as a fat lumpy mass detached
+            // from the board — the customer's reference instead HUGS the arch
+            // edge in a neat band about two balloons deep that follows the
+            // board's curve. Biased inboard (more negative than positive) so the
+            // mass straddles the edge and sits mostly ON the board, the way a
+            // real garland is tied to the frame.
+            const bandW = crownOverTop ? 1.7 : 1.7;
+            const bandO = crownOverTop ? 1.15 : 0.75;
             const off = (rnd() * bandW - bandO) * rLarge * spread;
             put(edgeX + dir * off, climbY, rBall);
 
@@ -1783,7 +1793,7 @@ export function generateStructureSilhouette(
             // not a small balloon floating off on its own.
             if (crownOverTop && rnd() < 0.4) {
               const c2 = sizeR[pickSize(Math.min(1, t + 0.15))] * rTaper * 0.9;
-              const o2 = off + (rnd() * 1.0 - 0.5) * rLarge * spread;
+              const o2 = off + (rnd() * 0.7 - 0.35) * rLarge * spread;
               put(edgeX + dir * o2, climbY - rBall * (rnd() * 0.5 - 0.1), c2);
             }
 
@@ -1841,7 +1851,7 @@ export function generateStructureSilhouette(
             // Depth also grows toward the corner, so the band is a thin run over
             // the top and a deep cluster where it turns down the side.
             const rad   = crownOverTop
-              ? rArc + (rnd() * (0.6 + 2.2 * t) - 0.4) * rMed
+              ? rArc + (rnd() * (0.5 + 1.1 * t) - 0.35) * rMed
               : rArc + (rnd() * 1.5 - 0.4) * rMed;
             const a     = (crownAng * Math.PI) / 180;
             put(arcCx + rad * Math.cos(a), arcCy + rad * Math.sin(a), rBall);

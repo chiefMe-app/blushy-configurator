@@ -888,9 +888,10 @@ export function buildLayoutRefEditPrompt(
       ? `The board is ${ratio.toFixed(1)} times as tall as the ${tallest}cm plinth in front of it — ` +
         `the plinth must reach well under half the board's height. `
       : "";
+    const tallRatio = (p0.heightCm / p0.widthCm).toFixed(1);
     return `The backdrop board is ${p0.widthCm}cm wide and ${p0.heightCm}cm tall — ` +
-      `a TALL NARROW board, more than twice as tall as it is wide. Do not widen it, do not square it up. ` +
-      `It fills the frame from the floor to near the top of the picture. ` + vsPlinth;
+      `a TALL board, about ${tallRatio} times as tall as it is wide, clearly taller than it is wide. ` +
+      `Do not square it up. It fills the frame from the floor to near the top of the picture. ` + vsPlinth;
   })();
 
   const frontShapeLine = (() => {

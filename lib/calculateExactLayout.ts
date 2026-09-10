@@ -70,7 +70,13 @@ export function calculateExactLayout(
   // whole reference horizontally and produced flat, disc-shaped balloons. The
   // cap is now generous; the group-scale step below keeps things on canvas and
   // preserves aspect while doing it.
-  const maxPwByCount = count === 1 ? canvasW * 0.70 : count === 2 ? canvasW * 0.60 : canvasW * 0.36;
+  // 2026-09-10: a lone ARCH gets a higher cap so a wide board (the customer's
+  // 120x220) renders at its true aspect instead of being clamped to ~0.70
+  // canvasW and coming out too narrow. Scoped to arch only — a round backdrop
+  // is 200x200 and would balloon to a bigger disc under a higher cap. The
+  // left-shift below keeps the right-side garland inside the frame.
+  const singleArch = count === 1 && items[0]?.type === "arch";
+  const maxPwByCount = count === 1 ? (singleArch ? canvasW * 0.82 : canvasW * 0.70) : count === 2 ? canvasW * 0.60 : canvasW * 0.36;
 
   // Tallest panel's own height budget — apex fixed at 5% of canvas height,
   // exactly the old single-panel apexFactor baseline (heightRatio=1 always
@@ -170,7 +176,13 @@ export function calculateExactLayout(
 
   // --- Assign x positions (selection order = left-to-right) ---
   const panels: PanelLayout[] = [];
-  let xCursor = (canvasW - totalGroupW) / 2;
+  // A lone arch sits board-LEFT, garland-right, the way the customer's
+  // reference is framed — and, with the wider cap above, this is also what
+  // keeps the right-side cascade from running off the canvas. Every other
+  // single panel (round, banner) stays centred.
+  let xCursor = singleArch
+    ? canvasW * 0.05
+    : (canvasW - totalGroupW) / 2;
 
   for (const raw of rawPanels) {
     const pw  = raw.pw * groupScale;
