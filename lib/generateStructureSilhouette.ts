@@ -1504,7 +1504,12 @@ export function generateStructureSilhouette(
           // customer approved, by allowing it a much deeper limit.
           // crownOverTop packs tighter than plain looseSpacing: the reference
           // band is continuous, with balloons touching, not a spaced-out string.
-          const maxNestFrac = crownOverTop ? 0.74 : looseSpacing ? 0.55 : 0.95;
+          // 2026-09-10: raised to 0.86 for the lone arch. The pink reference
+          // the customer set as the target is a CONTINUOUS mass with balloons
+          // pressed into each other, no wall showing through the band; at 0.74
+          // the render still had gaps between the spheres. Not as deep as
+          // Double Arch's 0.95 (which fuses them), but enough to read as full.
+          const maxNestFrac = crownOverTop ? 0.86 : looseSpacing ? 0.55 : 0.95;
           // Colour is chosen by which one currently covers the least AREA, not
           // by a running counter. Balloon sizes vary a lot here — a palette can
           // come out even by count and still look dominated by one colour if it
@@ -1689,8 +1694,12 @@ export function generateStructureSilhouette(
             // gives the reference garland its stuffed, gap-free look — a 5"
             // is now genuinely small, so a high S share adds density instead
             // of shrinking the band the way it did at the old inflated radii.
-            const xlChance = crownOverTop ? 0.05 * (1 - t) : (looseSpacing ? 0.10 : 0.20) * (1 - t);
-            const sChance  = crownOverTop ? 0.34 : 0.12 + 0.20 * t;
+            // 2026-09-10: the pink reference is not a uniform band — it has a
+            // handful of bold statement balloons standing proud of the rest,
+            // and plenty of small ones packed into the gaps between them. So
+            // both ends of the mix go up: more XL, more S, fewer plain mediums.
+            const xlChance = crownOverTop ? 0.13 * (1 - t) : (looseSpacing ? 0.10 : 0.20) * (1 - t);
+            const sChance  = crownOverTop ? 0.36 : 0.12 + 0.20 * t;
             if (roll < xlChance) return "X";
             if (roll < xlChance + sChance) return "S";
             return rnd() < 0.55 ? "L" : "M";
@@ -1735,8 +1744,11 @@ export function generateStructureSilhouette(
             // were corrected to real balloon sizes. 1.15 rLarge was then only
             // ~53px of band, thinner than one balloon, so the garland came out
             // single-file. 1.9 restores a band about two balloons deep.
-            const bandW = crownOverTop ? 1.9 : 1.7;
-            const bandO = crownOverTop ? 0.85 : 0.75;
+            // 2026-09-10: widened again. The reference band is a good three
+            // balloons deep where it cascades down the side; 1.9 rLarge held it
+            // to two and the render read as a flat ribbon rather than a mound.
+            const bandW = crownOverTop ? 2.4 : 1.7;
+            const bandO = crownOverTop ? 1.05 : 0.75;
             const off = (rnd() * bandW - bandO) * rLarge * spread;
             put(edgeX + dir * off, climbY, rBall);
 
@@ -1751,10 +1763,18 @@ export function generateStructureSilhouette(
             // the tight-mode taper, so the companion drop and the deep overlap
             // that suit Double Arch stack up into a solid mass here. Double
             // Arch keeps its own values, which the customer approved.
-            if (rnd() < (crownOverTop ? 0.95 : looseSpacing ? 0.85 : 0.75)) {
+            // 2026-09-10: the lone arch always drops a companion, and often a
+            // SECOND one on the near side, so the cascade is three balloons deep
+            // like the reference instead of a single ribbon with one backer.
+            if (rnd() < (crownOverTop ? 1.0 : looseSpacing ? 0.85 : 0.75)) {
               const cSize = sizeR[pickSize(Math.min(1, t + 0.25))] * rTaper * 0.85;
               const cOff  = off + (off > 0 ? -1 : 1) * (0.5 + rnd() * 0.6) * rLarge * spread;
               put(edgeX + dir * cOff, climbY - rBall * (rnd() * 0.5 - 0.25), cSize);
+            }
+            if (crownOverTop && rnd() < 0.55) {
+              const c2 = sizeR[pickSize(Math.min(1, t + 0.4))] * rTaper * 0.7;
+              const o2 = off + (rnd() * 1.4 - 0.7) * rLarge * spread;
+              put(edgeX + dir * o2, climbY - rBall * (rnd() * 0.8 - 0.1), c2);
             }
 
             // Advance by most of this balloon's own size: enough overlap to
@@ -1766,7 +1786,7 @@ export function generateStructureSilhouette(
             // balloon scale a 0.95-1.25 radius pitch left visible wall between
             // neighbours, and the reference garland has no gaps at all.
             climbY -= rBall * (crownOverTop
-              ? 0.58 + rnd() * 0.22
+              ? 0.44 + rnd() * 0.16
               : looseSpacing ? 0.95 + rnd() * 0.30 : 0.55 + rnd() * 0.25);
           }
 
@@ -1819,9 +1839,39 @@ export function generateStructureSilhouette(
             crownAng += angStep * ((rBall * (0.62 + rnd() * 0.28)) / rArc) * (180 / Math.PI);
           }
 
-          // Last pass: 12" and 5" balloons packed into whatever gaps are left in
-          // the floor mound. Placed last so it fills the garland rather than
-          // crowding it out (see the note in the base cluster).
+          // 2026-09-10: lone-arch fill + balloon-flower clusters, from the pink
+          // reference. Two things the reference has that a plain climb does not:
+          //   (a) it is STUFFED — 5" balloons tucked into every interstice so no
+          //       wall shows through the band;
+          //   (b) little rosettes — a small balloon ringed by five 5" balloons —
+          //       dotted along the run, which is what reads as "flowers".
+          // Both are placed last, over the finished mass, so they fill gaps
+          // rather than pushing the main balloons apart (the base-cluster note).
+          if (crownOverTop) {
+            // Walk the cascade the climb just drew (its placed balloons), and at
+            // a fraction of them either tuck a 5" filler beside it or seat a
+            // rosette. Snapshot first: put() mutates `placed`.
+            const spine = placed.slice();
+            const rosette = (cxp: number, cyp: number, rr: number) => {
+              put(cxp, cyp, rr * 0.9);                 // heart
+              for (let k = 0; k < 6; k++) {
+                const a = (k / 6) * Math.PI * 2 + rnd();
+                put(cxp + Math.cos(a) * rr * 1.5, cyp + Math.sin(a) * rr * 1.5, rr * 0.72);
+              }
+            };
+            let flowers = 0;
+            for (const q of spine) {
+              // rosettes only on the outer half of the band and not too near
+              // the floor mound, spaced out — at most five down the cascade.
+              if (flowers < 5 && rnd() < 0.10 && q.y < p.floorY - rLarge * 2) {
+                rosette(q.x + dir * rLarge * 0.9, q.y, rSmall);
+                flowers++;
+              } else if (rnd() < 0.5) {
+                const a = rnd() * Math.PI * 2;
+                put(q.x + Math.cos(a) * q.r, q.y + Math.sin(a) * q.r, rSmall * (0.7 + rnd() * 0.5));
+              }
+            }
+          }
           if (tight && !giantAnchors) {
             for (let i = 0; i < 18; i++) {
               const ox = (baseRnd() * 2 - 1) * rLarge * 2.2;

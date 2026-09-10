@@ -811,12 +811,10 @@ export function buildLayoutRefEditPrompt(
   // sentence: the long saturation paragraph tried on 2026-09-05 wrecked the
   // Single Arch layout (see the note in photographyOpening).
   const frontColourLine = !hasRoundPanelInPrompt && sceneModel.balloons.style !== "none"
-    // 2026-09-09 (later): "punchy contrast" is gone. Paired with the non-flash
-    // model it overshot — deep shadows and heavy concrete texture, and the
-    // customer asked for normal. The model supplies the saturation now; this
-    // line only has to stop it going theatrical.
-    ? `Full natural colour saturation with NORMAL, even contrast — not high-contrast, not dramatic, ` +
-      `no deep shadows, not hazy, not washed out. `
+    // 2026-09-10: warm and full, matching the customer's pink reference — a
+    // bright, warm, editorial studio look, saturated but not theatrical.
+    ? `Full, warm natural colour saturation with a bright, clean editorial look — colours rich and lively, ` +
+      `not hazy, not washed out, not grey or flat. `
     : "";
 
   // 2026-09-09: the ROOM itself, front-loaded. On the non-flash model the wall
@@ -825,11 +823,22 @@ export function buildLayoutRefEditPrompt(
   // dressing; it should be pale and quiet behind the setup.
   // 2026-09-10: and no window. "Evenly lit" still let the render put a big
   // bright window in frame flooding the setup with daylight.
-  const frontRoomLine = `The room is LIGHT and plain: a pale light-grey wall, smooth and evenly lit with only ` +
-    `faint texture, and a pale light-grey concrete floor. The wall and floor are not dark, not heavily ` +
-    `mottled or stained, not marble, not brown, and carry no strong shadows. ` +
-    `No window, doorway, radiator or furniture is visible, and no bright daylight floods in from the side: ` +
-    `the light is soft and even across the whole picture. `;
+  // 2026-09-10: rewritten to the customer's pink reference. The earlier line
+  // drove the light dead flat and cool ("no strong shadows, soft and even")
+  // after an over-daylit render, and the flat result is exactly what the
+  // customer now rejects ("isigin ... pembeli balonun oldugu gibi olmasini
+  // istiyorum"). The reference is warm and soft-DIRECTIONAL: one gentle,
+  // diffuse soft-light source off to the side laying a soft shadow across the
+  // board, a warm mid-grey textured concrete wall, and a smooth, light,
+  // polished concrete floor with a soft reflection of the setup. The thing to
+  // rule out is not shadow, it is a hard bright window blowing the setup out.
+  const frontRoomLine = `The room is a warm, bright studio: a warm mid-grey concrete wall with soft, fine ` +
+    `texture, and a smooth, light, polished concrete floor that softly reflects the setup. Warm, soft ` +
+    `daylight comes gently from one side, laying a soft, diffuse shadow across the backdrop and giving the ` +
+    `picture a warm, inviting glow with clear but gentle contrast between the bright backdrop, the grey wall ` +
+    `and the light floor. The light is SOFT and diffuse — no hard-edged shadows, and NO bright window, lamp ` +
+    `or blown-out highlight anywhere in frame flooding the setup with glare. No doorway, radiator or ` +
+    `furniture is visible. `;
 
   // 2026-09-09: the non-flash model composes a three-quarter view of the room
   // by default — the customer wants the setup square to camera — and it drops
