@@ -858,10 +858,31 @@ export function buildLayoutRefEditPrompt(
   // is the render squaring it up, the same failure the banner had. The banner
   // was fixed by stating its aspect in the very first sentence; a lone arch now
   // gets the same treatment.
-  const frontArchAspectLine = panelCount === 1 && sceneModel.panels[0]?.type === "arch"
-    ? `The backdrop board is ${sceneModel.panels[0].widthCm}cm wide and ${sceneModel.panels[0].heightCm}cm tall — ` +
-      `a TALL NARROW board, more than twice as tall as it is wide. Do not widen it, do not square it up. `
-    : "";
+  //
+  // 2026-09-10, second pass: aspect was never the whole story. Overlaying the
+  // guide's own board outline on the render showed the render reproducing the
+  // aspect roughly right (0.438 against 0.4545) while shrinking the whole board
+  // — the top edge came in 19% low, the base stayed on the floor, and the
+  // plinth was left at nearly its guide size. The board therefore read as short
+  // and the plinth as oversized: measured, the 90cm plinth covered 48% of the
+  // board's height where 90/220 is 41%. An absolute size in centimetres gives
+  // the model nothing to check itself against inside the frame, so the line now
+  // also states the ratio against the object standing right next to it.
+  const frontArchAspectLine = (() => {
+    if (panelCount !== 1 || sceneModel.panels[0]?.type !== "arch") return "";
+    const p0 = sceneModel.panels[0];
+    const tallest = (sceneModel.plinths ?? []).reduce(
+      (m, q) => Math.max(m, q?.heightCm ?? 0), 0,
+    );
+    const ratio = tallest > 0 ? p0.heightCm / tallest : 0;
+    const vsPlinth = ratio > 0
+      ? `The board is ${ratio.toFixed(1)} times as tall as the ${tallest}cm plinth in front of it — ` +
+        `the plinth must reach well under half the board's height. `
+      : "";
+    return `The backdrop board is ${p0.widthCm}cm wide and ${p0.heightCm}cm tall — ` +
+      `a TALL NARROW board, more than twice as tall as it is wide. Do not widen it, do not square it up. ` +
+      `It fills the frame from the floor to near the top of the picture. ` + vsPlinth;
+  })();
 
   const frontShapeLine = (() => {
     if (panelCount !== 1) return "";

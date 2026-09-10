@@ -159,7 +159,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "arch-100x220-big-tight-garland-v90";
+const RENDER_CACHE_VERSION = "arch-100x220-flash-geometry-v93";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -951,9 +951,25 @@ if (hasArchPanelInScene && !hasRoundPanelInScene) {
   // injection pass is written around flash's refusal to paint anything
   // between the two arches — changing its primary model is a separate change
   // with its own verification, not a side effect of a colour fix.
-  const loneArchScene = sceneModel.panels.length === 1;
-  resolvedEditModelId = loneArchScene ? "fal-ai/flux-2/edit" : "fal-ai/flux-2/flash/edit";
-  actualModelReason   = loneArchScene ? "lone_arch_scene_edit" : "arch_scene_flash_edit";
+  //
+  // 2026-09-10: REVERTED. The colour win was real but it cost the geometry,
+  // and the geometry is what the customer was actually looking at. Overlaying
+  // the guide's own board outline on the render made it unarguable: on the
+  // same guide, same prompt, same seed, the non-flash model drops the board's
+  // top edge 19% and leaves the plinth near its guide size, so a 90cm plinth
+  // covers 48% of a 220cm board instead of 41% ("backdrop olcusu tamamen
+  // bozulmus"), while flash traces the guide outline almost exactly. No guide
+  // change moved the non-flash model — a filled board silhouette, a fill dark
+  // enough to be visible against the ground, and a solid plinth marker were
+  // each tried and each rendered the same short board.
+  //
+  // The colour is recovered instead by NOT running the colour-lock pass over a
+  // flash primary: measured on the balloon mask, flash primary 0.0856, after
+  // the non-flash lock 0.0731, after a flash lock 0.0664 — the lock desaturates
+  // this scene rather than saturating it. saturationGuard below keeps whichever
+  // is better, so the pass still protects palette adherence when it helps.
+  resolvedEditModelId = "fal-ai/flux-2/flash/edit";
+  actualModelReason   = "arch_scene_flash_edit";
 } else if (hasRoundPanelInScene) {
   resolvedEditModelId = "fal-ai/flux-2/edit";
   actualModelReason   = "round_scene_edit";
@@ -2016,6 +2032,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
             // guide already knows exactly where the setup is, so its own drawn
             // content, dilated, IS the mask.
             let blended: Buffer | null = null;
+            let lockDesaturated = false;
+            // Mean saturation over the masked setup, used by the guard below.
+            let baseSat = 0, blendSat = 0;
             try {
               const guideDataUri = pngResult.dataUri;
               if (guideDataUri) {
@@ -2043,21 +2062,61 @@ forbiddenBalloonColorLabels: hasSempertexLock
                   const lockRGBA = await sh(await sh(lockBuf).resize(W, H).removeAlpha().toBuffer())
                     .ensureAlpha().joinChannel(alpha, { raw: { width: W, height: H, channels: 1 } })
                     .png().toBuffer();
-                  blended = await sh(await sh(baseBuf).resize(W, H).toBuffer())
+                  const baseSized = await sh(baseBuf).resize(W, H).toBuffer();
+                  const blendBuf: Buffer = await sh(baseSized)
                     .composite([{ input: lockRGBA, blend: "over" }])
                     .jpeg({ quality: 93 }).toBuffer();
+                  blended = blendBuf;
+
+                  // 2026-09-10: the pass is not always an improvement. Over a
+                  // FLASH primary it desaturates the very balloons it exists to
+                  // colour — measured on the lone arch, primary 0.0856, after
+                  // the non-flash lock 0.0731, after a flash lock 0.0664. So
+                  // measure both inside the mask and keep the better one. When
+                  // the pass does its job (an off-palette primary) it wins on
+                  // this number and is kept, which is the case it exists for.
+                  const meanSat = async (buf: Buffer) => {
+                    const { data, info } = await sh(buf).resize(W, H, { fit: "fill" })
+                      .removeAlpha().raw().toBuffer({ resolveWithObject: true });
+                    const ch = info.channels;
+                    let sum = 0, n = 0;
+                    for (let q = 0; q < W * H; q++) {
+                      if (!mask[q]) continue;
+                      const r = data[q * ch], gg = data[q * ch + 1], b = data[q * ch + 2];
+                      const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b);
+                      if (mx >= 40) { sum += (mx - mn) / mx; n++; }
+                    }
+                    return n > 0 ? sum / n : 0;
+                  };
+                  baseSat  = await meanSat(baseSized);
+                  blendSat = await meanSat(blendBuf);
+                  if (blendSat < baseSat * 0.98) {
+                    console.log(
+                      "[generate-controlled-render] colour-lock pass DISCARDED — it desaturated the setup " +
+                      `(masked meanSat ${baseSat.toFixed(4)} -> ${blendSat.toFixed(4)})`,
+                    );
+                    blended = null;
+                    lockDesaturated = true;
+                  }
                 }
               }
             } catch (blendErr) {
               console.warn("[generate-controlled-render] colour-lock blend failed, using the lock output as-is:", String(blendErr));
             }
-            workingImageBuf = blended ?? lockBuf;
-            // A blended result exists only as a buffer, so it is emitted as a
-            // data URI exactly like the other in-process passes do.
-            outputImageUrl  = blended
-              ? `data:image/jpeg;base64,${blended.toString("base64")}`
-              : lurl;
-            balloonColorLockPassApplied = true;
+            if (lockDesaturated) {
+              // Keep the primary untouched — workingImageBuf and outputImageUrl
+              // already hold it — and report the pass as not applied, because
+              // it is not in the image.
+              balloonColorLockPassApplied = false;
+            } else {
+              workingImageBuf = blended ?? lockBuf;
+              // A blended result exists only as a buffer, so it is emitted as a
+              // data URI exactly like the other in-process passes do.
+              outputImageUrl  = blended
+                ? `data:image/jpeg;base64,${blended.toString("base64")}`
+                : lurl;
+              balloonColorLockPassApplied = true;
+            }
           }
         }
       }

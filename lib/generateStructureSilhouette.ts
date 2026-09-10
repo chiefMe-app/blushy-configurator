@@ -879,11 +879,18 @@ export function generateStructureSilhouette(
       // degil"). The measured guide was correct all along at aspect 0.4545; the
       // guide simply was not SAYING it loudly enough. This is the same fix that
       // made the open arch frame stop rendering as a chrome box: stop drawing a
-      // hairline, draw a filled silhouette. The fill stays a near-white warm
-      // grey, which is what a white board photographs as anyway.
+      // hairline, draw a filled silhouette.
+      //
+      // 2026-09-10: the first fill was #F4F2EF on the guide's #FFFFFF ground —
+      // four levels of difference, i.e. still invisible, so the render went on
+      // sizing the board off the garland and came back 19% short. Overlaying
+      // the guide outline on the render is what showed it. The fill is now a
+      // definite light grey that cannot be confused with the background. It
+      // does not tint the render: the board's colour comes from the prompt,
+      // and the same trick is what makes the plinth and the open frame land.
       content.push(panelPathOrShape(
         panel.cx, panel.pw, panel.apexY, panel.floorY, shape,
-        "#F4F2EF", "left", true,
+        "#DEDAD4", "left", true,
       ));
     } else {
       content.push(panelEdgeOnly(panel.cx, panel.pw, panel.apexY, panel.floorY, shape));
@@ -1044,7 +1051,16 @@ export function generateStructureSilhouette(
       // numeral — the render came back with two 1s, the same way the standee
       // placeholder did on 2026-09-08. A solid cylinder with an elliptical top
       // cannot be mistaken for a letterform.
-      plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1 || wantsNumberSlot
+      // 2026-09-10: and on a lone arch, always. Overlaying the guide on the
+      // render showed the board coming back 19% shorter than the guide asks
+      // while the plinth stayed near its guide size — so the 90cm plinth
+      // covered 48% of the board's height instead of 41%, and the whole set
+      // read as a squat board with an oversized plinth ("backdrop olcusu
+      // tamamen bozulmus"). With the board now a solid region and the plinth
+      // still a hairline, the model had one object to scale and one to guess
+      // at. Both solid gives it the RATIO, which is the thing being got wrong.
+      const loneArchPlinth = backdropItems.length === 1 && backdropItems[0]?.type === "arch";
+      plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1 || wantsNumberSlot || loneArchPlinth
         ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx)
         : plinthEdge(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
     }
