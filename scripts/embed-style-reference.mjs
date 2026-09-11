@@ -39,7 +39,8 @@ const meta = await sharp(buf).metadata();
 const dataUri = `data:image/jpeg;base64,${buf.toString("base64")}`;
 
 let ts = fs.readFileSync(target, "utf8");
-const line = /^export const LONE_ARCH_STYLE_REFERENCE: string \| null = .*$/m;
+// Matches the declaration whether its value sits on the same line or the next.
+const line = /export const LONE_ARCH_STYLE_REFERENCE: string \| null =[\s\S]*?;/m;
 if (!line.test(ts)) {
   console.error("could not find the LONE_ARCH_STYLE_REFERENCE line to replace");
   process.exit(1);

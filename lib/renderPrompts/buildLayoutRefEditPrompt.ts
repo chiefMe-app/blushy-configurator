@@ -889,16 +889,21 @@ export function buildLayoutRefEditPrompt(
   // its own board colour and its own palette, and without this line those bleed
   // into every render and override the customer's selection. Front-loaded,
   // because this pipeline only reliably obeys what comes first.
-  const frontImageRolesLine = panelCount === 1 && sceneModel.panels[0]?.type === "arch"
-    && hasLoneArchStyleReference()
-    ? `You are given TWO images. IMAGE 1 is the layout guide and is authoritative: copy its geometry ` +
-      `exactly — the backdrop's size, shape and position, the plinth, the camera, and where the balloon ` +
-      `garland sits. IMAGE 2 is a STYLING REFERENCE for the balloon garland ONLY: copy its balloon ` +
-      `arrangement, density, clustering, size mix and the way the garland hangs and pools. ` +
-      `Do NOT take any colour from IMAGE 2 — ignore its backdrop colour and ignore its balloon colours. ` +
-      `The backdrop colour and the balloon colours are specified in this text and must come only from ` +
-      `there. Do not copy IMAGE 2's room, floor, camera angle or backdrop shape either. `
-    : "";
+  const frontImageRolesLine = panelCount === 1 && sceneModel.panels[0]?.type === "arch"
+    && hasLoneArchStyleReference()
+    ? `You are given TWO images. IMAGE 1 is the layout guide and is authoritative for the WHOLE scene: ` +
+      `the backdrop's size, shape, colour and position, the plinth, the camera, the room, and where the ` +
+      `balloon garland sits. Build the photograph from IMAGE 1. ` +
+      `IMAGE 2 is NOT a scene. It is a close-up crop of a balloon garland on its own, supplied only as a ` +
+      `TEXTURE AND STYLING sample: copy how those balloons look and pack together — their density, the ` +
+      `way large, medium and small ones nest in layered clusters, their matte finish and the chrome ` +
+      `accents among them. ` +
+      `Do NOT copy anything else from IMAGE 2. It contains no backdrop, no plinth and no floor, and it ` +
+      `must not add or change any of those: the backdrop keeps the shape and colour given in IMAGE 1 and ` +
+      `in this text, and the plinth stays exactly the smooth white cylinder that IMAGE 1 shows. ` +
+      `Do NOT take balloon COLOURS from IMAGE 2 either — the palette is specified in this text and comes ` +
+      `only from there. Where the garland goes is decided by IMAGE 1, not by IMAGE 2. `
+    : "";
 
   const frontArchAspectLine = (() => {
     if (panelCount !== 1 || sceneModel.panels[0]?.type !== "arch") return "";
