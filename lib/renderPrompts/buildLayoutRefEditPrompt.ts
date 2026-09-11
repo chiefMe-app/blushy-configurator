@@ -1,6 +1,7 @@
 import { type SceneModel } from "@/lib/buildSceneModel";
 import type { SempertexSelectionItem } from "./types";
-import { getVisualLabel, renderSafeBalloonLabel, getPositiveLabel } from "./colorLabels";
+import { getVisualLabel, renderSafeBalloonLabel, getPositiveLabel } from "./colorLabels";
+import { hasLoneArchStyleReference } from "./loneArchStyleReference";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 import { describeTextColor } from "@/lib/config";
@@ -882,6 +883,23 @@ export function buildLayoutRefEditPrompt(
   // board's height where 90/220 is 41%. An absolute size in centimetres gives
   // the model nothing to check itself against inside the frame, so the line now
   // also states the ratio against the object standing right next to it.
+  // 2026-09-11: when a lone arch carries a second input image (the customer's
+  // balloon style reference), the model has to be told what each image is FOR,
+  // and above all that the reference is not a colour source. The reference has
+  // its own board colour and its own palette, and without this line those bleed
+  // into every render and override the customer's selection. Front-loaded,
+  // because this pipeline only reliably obeys what comes first.
+  const frontImageRolesLine = panelCount === 1 && sceneModel.panels[0]?.type === "arch"
+    && hasLoneArchStyleReference()
+    ? `You are given TWO images. IMAGE 1 is the layout guide and is authoritative: copy its geometry ` +
+      `exactly — the backdrop's size, shape and position, the plinth, the camera, and where the balloon ` +
+      `garland sits. IMAGE 2 is a STYLING REFERENCE for the balloon garland ONLY: copy its balloon ` +
+      `arrangement, density, clustering, size mix and the way the garland hangs and pools. ` +
+      `Do NOT take any colour from IMAGE 2 — ignore its backdrop colour and ignore its balloon colours. ` +
+      `The backdrop colour and the balloon colours are specified in this text and must come only from ` +
+      `there. Do not copy IMAGE 2's room, floor, camera angle or backdrop shape either. `
+    : "";
+
   const frontArchAspectLine = (() => {
     if (panelCount !== 1 || sceneModel.panels[0]?.type !== "arch") return "";
     const p0 = sceneModel.panels[0];
@@ -1763,6 +1781,7 @@ const setupTemplateClause = setupTemplate
     : "";
 
   return (
+    frontImageRolesLine +
     frontArchAspectLine +
     frontShapeLine +
     frontColourLine +

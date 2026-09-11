@@ -46,7 +46,8 @@ import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems, ty
 import { type BalloonStyleId, SHIMMER_COLOR_HEX, SHIMMER_COLORS, type ShimmerColorId, resolveTextColorHex, describeTextColor } from "@/lib/config";
 import { SEMPERTEX_CATALOG, type SempertexColor } from "@/lib/sempertexCatalog";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
-import { type SempertexSelectionItem } from "@/lib/renderPrompts/types";
+import { type SempertexSelectionItem } from "@/lib/renderPrompts/types";
+import { LONE_ARCH_STYLE_REFERENCE, hasLoneArchStyleReference } from "@/lib/renderPrompts/loneArchStyleReference";
 import { getVisualLabel, renderSafeBalloonLabel } from "@/lib/renderPrompts/colorLabels";
 import { buildNegativePrompt } from "@/lib/renderPrompts/buildNegativePrompt";
 import { buildStrictCorrectionPrompt } from "@/lib/renderPrompts/buildStrictCorrectionPrompt";
@@ -833,6 +834,9 @@ const modelMode = getModelMode();
 
 const hasArchPanelInScene = sceneModel.panels.some((p) => p.type === "arch");
 const hasRoundPanelInScene = sceneModel.panels.some((p) => p.type === "round");
+// A lone arch: one panel, and it is an arch. Used by the optional balloon
+// style-reference input on the first_generate call below.
+const loneArchScene = sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "arch";
 
 const selectedThemeId = String(sceneModel.theme ?? "").trim().toLowerCase();
 const themeEntry = THEME_CATALOG.find((t) => t.id === selectedThemeId);
@@ -1464,7 +1468,14 @@ forbiddenBalloonColorLabels: hasSempertexLock
           input: {
             prompt:          layoutRefPrompt,
             negative_prompt: negativePrompt,
-            image_urls:      [pngResult.dataUri],
+            // 2026-09-11: a lone arch may carry a second input image — the
+            // customer's balloon STYLE reference. The guide stays first and
+            // stays authoritative for geometry; the reference is there so the
+            // model can SEE the arrangement rather than read a description of
+            // it. Order matters: the prompt refers to them as image 1 and 2.
+            image_urls:      loneArchScene && hasLoneArchStyleReference()
+              ? [pngResult.dataUri, LONE_ARCH_STYLE_REFERENCE as string]
+              : [pngResult.dataUri],
             image_size:      renderAspectRatio,
             seed:            FINAL_RENDER_SEED,
             output_format:   "jpeg",
