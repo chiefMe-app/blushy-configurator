@@ -676,6 +676,47 @@ export function generateStructureSilhouette(
   },
 ): SilhouetteResult {
   const shimmerTileFill = shimmerColorHex ?? "#D8D8E4";
+  /**
+   * Deepen a balloon colour for the GUIDE only.
+   *
+   * 2026-09-11: the customer reported the garland as "too pastel". Measured
+   * against the swatches it is: Silk 850 Light Amethyst is hue 251 / sat
+   * 0.51, and it was rendering at sat 0.115 — under a quarter. The render
+   * bleaches pale colours, so the guide pre-compensates by drawing them
+   * deeper; the render's own wash-out then lands near the true swatch.
+   *
+   * Doing this in the guide rather than the prompt is deliberate. Every
+   * wording attempt drifted the HUE instead of the depth — asking for
+   * "warm" or "rich" turned the lilac to rose pink (hue 338) and no
+   * rewording pulled it back. Saturation is raised here with the hue left
+   * exactly alone, which is the part that was actually wrong.
+   *
+   * Only the guide's fill changes. The palette text, the colour-lock pass
+   * and everything the customer is quoted still use the true swatch hex.
+   */
+  const deepenForGuide = (hex: string): string => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+    if (!m) return hex;
+    const v = parseInt(m[1], 16);
+    let r = ((v >> 16) & 255) / 255, g = ((v >> 8) & 255) / 255, b = (v & 255) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    // Neutrals (white, silver) carry no hue and must not be tinted.
+    if (d < 0.04 || mx < 0.05) return hex;
+    const l = (mx + mn) / 2;
+    // Pull each channel away from the mid-grey of the colour: raises
+    // saturation and drops lightness a little, leaving the hue untouched.
+    // 1.55, chosen by measurement rather than taste. Pushing to 2.6 deepened
+    // the lilac no further (sat 0.128 -> 0.123) and cost most of the blue:
+    // the blue balloons fell from 21.7k to 6.9k pixels as the deepened cyan
+    // drifted out of the palette the render would accept. 1.55 gives both the
+    // deepest lilac measured AND more blue than before it existed.
+    const k = 1.55;
+    r = Math.min(1, Math.max(0, l + (r - l) * k));
+    g = Math.min(1, Math.max(0, l + (g - l) * k));
+    b = Math.min(1, Math.max(0, l + (b - l) * k));
+    const to = (x: number) => Math.round(x * 255).toString(16).padStart(2, "0");
+    return `#${to(r)}${to(g)}${to(b)}`;
+  };
   const chromeHexSet = new Set(
     (extras?.chromeColors ?? []).map((h) => String(h).toLowerCase()),
   );
@@ -1212,11 +1253,14 @@ export function generateStructureSilhouette(
                 `<stop offset="84%" stop-color="${shade(hex, 1.12)}" stop-opacity="1"/>` +
                 `<stop offset="100%" stop-color="${shade(hex, 0.55)}" stop-opacity="1"/>` +
               `</radialGradient>`
-            : `<radialGradient id="${id}" cx="35%" cy="30%" r="72%">` +
-                `<stop offset="0%" stop-color="${shade(hex, 1.28)}" stop-opacity="1"/>` +
-                `<stop offset="42%" stop-color="${hex}" stop-opacity="1"/>` +
-                `<stop offset="100%" stop-color="${shade(hex, 0.78)}" stop-opacity="1"/>` +
-              `</radialGradient>`,
+            : (() => {
+                const deep = deepenForGuide(hex);
+                return `<radialGradient id="${id}" cx="35%" cy="30%" r="72%">` +
+                  `<stop offset="0%" stop-color="${shade(deep, 1.28)}" stop-opacity="1"/>` +
+                  `<stop offset="42%" stop-color="${deep}" stop-opacity="1"/>` +
+                  `<stop offset="100%" stop-color="${shade(deep, 0.78)}" stop-opacity="1"/>` +
+                `</radialGradient>`;
+              })(),
         );
       });
     }

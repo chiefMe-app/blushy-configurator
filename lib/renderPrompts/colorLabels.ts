@@ -50,7 +50,17 @@ export const HEX_POSITIVE_LABEL: Record<string, string> = {
   // not tell there was a purple in the palette at all. The hue is named here
   // without the "almost white" qualifier; getVisualLabel keeps the full
   // description for the lock.
-  "#dcd7f2": "soft lilac",
+  // 2026-09-11: warmer and less washed out, at the customer's request. The
+  // swatch is hue 251 / sat 0.51, but it was rendering at hue 269 / sat
+  // 0.115 — under a quarter of the swatch's saturation — which is what they
+  // meant by "too pastel". Naming the mauve warmth and the depth stops it
+  // drifting to near-white.
+  // "mauve" overshot hard: measured, the purple went from hue 271 to 338 —
+  // rose pink, not lilac. The saturation gain it brought (0.114 -> 0.282) is
+  // what was wanted, so the depth wording stays and the hue is pinned to
+  // violet with pink ruled out explicitly.
+  "#dcd7f2": "soft lilac, a clear gentle violet-purple, not pink, not rose, not washed out",
+  // The blue was labelled "pale icy blue"; icy pushed it cold and pale.
   // 2026-09-11: Reflex 981 Silver. Reflex is Sempertex's CHROME line — a
   // mirror-polished balloon — but it was reaching the positive prompt as
   // "cool metallic silver", and the fallback label under its code still

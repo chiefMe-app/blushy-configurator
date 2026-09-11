@@ -592,7 +592,11 @@ export function buildLayoutRefEditPrompt(
       // which flattened a chrome balloon into matte grey — the customer's
       // "silver turned grey". The matte description now applies to the
       // pastel balloons only, and the chrome ones are called out.
-      `The pastel balloons look soft, diffuse and mostly matte. ` +
+      // 2026-09-11: "soft, diffuse" was read as low-contrast and bleached
+      // the colour out — measured at under a quarter of the swatch's
+      // saturation. The finish is still matte; the colour now has to hold.
+      `The pastel balloons have a matte skin but hold their colour fully — each one clearly its own ` +
+      `colour, soft and warm rather than pale, never bleached towards white. ` +
       (hasChromeInPalette
         ? `The silver balloons are the exception: they are bright MIRROR-CHROME metallic, polished and ` +
           `highly reflective, with sharp specular highlights and visible mirror reflections — never flat, ` +
@@ -1189,7 +1193,9 @@ export function buildLayoutRefEditPrompt(
   // Use a short "selected-palette soft pastel" phrase in the garland sentence so
   // verbose code labels don't push theme-word associations into the positive prompt.
   const balloonColors = hasSempertexLock
-    ? "selected-palette soft pastel"
+    // 2026-09-11: "soft pastel" here pushed the garland pale on top of
+    // everything else that was already doing so.
+    ? "selected-palette"
     : sceneModel.balloons.colors.length > 0
       ? sceneModel.balloons.colors.slice(0, 4).join(", ")
       : "icy blue, white, silver";
