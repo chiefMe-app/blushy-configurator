@@ -1976,21 +1976,71 @@ export function generateStructureSilhouette(
           const R5  = 0.019 * boardH;   // filler
 
           let n = 0;
-          const areaByColor = new Array(Math.max(1, colors.length)).fill(0) as number[];
-          const lastUsedAt  = new Array(Math.max(1, colors.length)).fill(-1) as number[];
-          const leastUsedColor = (): number => {
-            let best = 0;
-            for (let i = 1; i < areaByColor.length; i++) {
-              const d = areaByColor[i] - areaByColor[best];
-              if (d < -1e-6) best = i;
-              else if (Math.abs(d) <= 1e-6 && lastUsedAt[i] < lastUsedAt[best]) best = i;
-            }
-            return best;
+
+          // ---------------------------------------------------------------
+          // OMBRE colour assignment.
+          //
+          // 2026-09-11. Every other garland in this file picks the colour that
+          // currently covers the least AREA, which deliberately interleaves the
+          // palette evenly. The customer's preferred reference does the
+          // opposite: it runs an ombre down the garland. Measured on it, the
+          // mean hue of the balloon column by height goes 205, 207, 218, 243,
+          // 253, 257, 258, 287 — a clean monotonic sweep from blue at the crown
+          // to lilac at the floor. The same measurement on the area-balanced
+          // render oscillates (274, 231, 254, 225, neutral, 279, 216), i.e. no
+          // gradient at all. That is the single biggest difference between the
+          // two, so colour here is chosen by POSITION down the garland.
+          //
+          // The customer's palette still decides WHICH colours appear; only the
+          // order they appear in is derived. Chromatic colours are sorted by
+          // hue and spread across t, so the sweep runs blue -> lilac for this
+          // palette and something sensible for any other. Neutrals (white,
+          // silver, greys) carry no hue to sort by, so they are threaded
+          // through as accents the way the reference threads its chrome.
+          // ---------------------------------------------------------------
+          const hueOf = (hex: string): { h: number; s: number } => {
+            const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+            if (!m) return { h: -1, s: 0 };
+            const v = parseInt(m[1], 16);
+            const r = ((v >> 16) & 255) / 255, g = ((v >> 8) & 255) / 255, b = (v & 255) / 255;
+            const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+            const sat = mx === 0 ? 0 : d / mx;
+            if (d < 1e-6) return { h: -1, s: sat };
+            let h: number;
+            if (mx === r) h = ((g - b) / d) % 6;
+            else if (mx === g) h = (b - r) / d + 2;
+            else h = (r - g) / d + 4;
+            h *= 60; if (h < 0) h += 360;
+            return { h, s: sat };
           };
-          const put = (bx: number, by: number, br: number) => {
-            const ci = leastUsedColor();
-            areaByColor[ci] += Math.PI * br * br;
-            lastUsedAt[ci] = n;
+          const chromatic: number[] = [];
+          const neutral:   number[] = [];
+          colors.forEach((hex, i) => {
+            const { h, s } = hueOf(hex);
+            if (h >= 0 && s >= 0.08) chromatic.push(i); else neutral.push(i);
+          });
+          chromatic.sort((a, b) => hueOf(colors[a]).h - hueOf(colors[b]).h);
+          let accentTick = 0;
+          const colorAt = (t: number): number => {
+            // Thread the neutrals through as accents. Roughly every third
+            // balloon, which is about the density of chrome in the reference.
+            if (neutral.length > 0 && accentTick++ % 3 === 2) {
+              return neutral[Math.floor(accentTick / 3) % neutral.length];
+            }
+            if (chromatic.length === 0) {
+              return neutral.length > 0 ? neutral[accentTick % neutral.length] : 0;
+            }
+            const pos = Math.max(0, Math.min(0.999, t)) * chromatic.length;
+            let k = Math.floor(pos);
+            // Soften the join: near a boundary some balloons take the next
+            // colour, so the change reads as a blend rather than a hard stripe.
+            const frac = pos - k;
+            if (frac > 0.68 && k + 1 < chromatic.length && accentTick % 2 === 0) k += 1;
+            return chromatic[Math.min(k, chromatic.length - 1)];
+          };
+
+          const put = (bx: number, by: number, br: number, t = 0.5) => {
+            const ci = colorAt(t);
             content.push(`<circle cx=\"${bx.toFixed(1)}\" cy=\"${by.toFixed(1)}\" r=\"${br.toFixed(1)}\" ${balloonAttrs(ci)}/>`);
             n++;
           };
@@ -2057,15 +2107,15 @@ export function generateStructureSilhouette(
           // gradually smaller balloons down the right edge); statement balloons
           // keep their full size wherever they land, so they stay clearly the
           // largest at the top, down the side AND in the base cluster.
-          const placed: { x: number; y: number; r: number }[] = [];
+          const placed: { x: number; y: number; r: number; t: number }[] = [];
           let ni = 0;
           for (const nd of NODES) {
             const q = pathAt(nd.t);
             const r = nd.size === "L" ? R36 : R12 * (1 - 0.22 * nd.t);
             const x = q.x + q.nx * nd.off * r;
             const y = q.y + q.ny * nd.off * r;
-            put(x, y, r);
-            placed.push({ x, y, r });
+            put(x, y, r, nd.t);
+            placed.push({ x, y, r, t: nd.t });
 
             // Depth. The brief asks for a lush, layered, clustered garland and
             // rules out "a thin single-file chain", which is exactly what one
@@ -2079,17 +2129,20 @@ export function generateStructureSilhouette(
             const cr = r * (0.70 + rnd() * 0.22);
             const cx2 = x + Math.cos(ca) * r * 0.88;
             const cy2 = y + Math.sin(ca) * r * 0.88;
-            put(cx2, cy2, cr);
-            placed.push({ x: cx2, y: cy2, r: cr });
+            put(cx2, cy2, cr, nd.t);
+            placed.push({ x: cx2, y: cy2, r: cr, t: nd.t });
 
-            if (ni % 2 === 0) {
+            // Every third node, not every second: at every second the run came
+            // back visually noisy next to the reference, which is a cleaner
+            // column of larger balloons.
+            if (ni % 3 === 0) {
               // tangent = normal rotated a quarter turn, i.e. down the flow
               const ta = na + Math.PI / 2;
               const tr = r * (0.58 + rnd() * 0.2);
               const tx = x + Math.cos(ta) * r * 0.95 + q.nx * tr * 0.35;
               const ty = y + Math.sin(ta) * r * 0.95 + q.ny * tr * 0.35;
-              put(tx, ty, tr);
-              placed.push({ x: tx, y: ty, r: tr });
+              put(tx, ty, tr, nd.t);
+              placed.push({ x: tx, y: ty, r: tr, t: nd.t });
             }
             ni++;
           }
@@ -2121,8 +2174,9 @@ export function generateStructureSilhouette(
             const r = b.size === "L" ? R36 : R12;
             const x = edge + dir * b.ox * R36;
             const y = baseY + b.oy * R36 - r * 0.15;
-            put(x, y, r);
-            placed.push({ x, y, r });
+            // t = 1: the floor cluster is the far end of the ombre.
+            put(x, y, r, 1);
+            placed.push({ x, y, r, t: 1 });
           }
 
           // 5in fillers, LAST and only ever tucked against a larger balloon, so
@@ -2130,13 +2184,19 @@ export function generateStructureSilhouette(
           // loose balloons floating in the scene. Every one is pushed outward
           // from its parent's centre, so a filler can never end up in front of
           // the panel that its parent is sitting beside.
-          for (let i = 0; i < placed.length; i += 2) {
+          // 2026-09-11: far fewer of these. At one cluster on every second
+          // balloon, two or three at a time, the run carried ~75 little
+          // balloons and read as visual noise beside the reference, which is a
+          // clean column of large balloons with only occasional small ones.
+          // Each filler inherits its parent's place in the ombre so an accent
+          // never lands in the wrong colour band.
+          for (let i = 0; i < placed.length; i += 4) {
             const q = placed[i];
-            const count = 2 + Math.floor(rnd() * 2);
+            const count = 1 + (rnd() < 0.35 ? 1 : 0);
             for (let k = 0; k < count; k++) {
               const a = (-0.5 + rnd() * 1.0) + (dir > 0 ? 0 : Math.PI);
               const d = q.r + R5 * 0.6;
-              put(q.x + Math.cos(a) * d, q.y + Math.sin(a) * d * 0.8, R5 * (0.85 + rnd() * 0.4));
+              put(q.x + Math.cos(a) * d, q.y + Math.sin(a) * d * 0.8, R5 * (0.85 + rnd() * 0.4), q.t);
             }
           }
           return n;
