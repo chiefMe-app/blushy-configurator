@@ -2132,7 +2132,29 @@ export function generateStructureSilhouette(
             return chromatic[Math.min(k, chromatic.length - 1)];
           };
 
-          const put = (bx: number, by: number, br: number, t = 0.5) => {
+          // Every balloon drawn so far, so a new one can be checked against
+          // its neighbours.
+          //
+          // 2026-09-11: this garland had NO overlap check at all, unlike
+          // drawThickOrganicMainGarland which has maxNestFrac. Balloons were
+          // free to bury each other, and the customer circled the result: a
+          // balloon squashed between two larger ones, reading as crushed
+          // rather than nested. A balloon that would sit more than `maxNest`
+          // of its diameter inside a neighbour is now skipped.
+          //
+          // `guard` is off for the 5in fillers and rosette petals, which are
+          // deliberately tucked against a parent and would all be rejected.
+          const drawn: { x: number; y: number; r: number }[] = [];
+          const maxNest = 0.86;
+          const put = (bx: number, by: number, br: number, t = 0.5, guard = true) => {
+            if (guard) {
+              for (const q of drawn) {
+                const d  = Math.hypot(bx - q.x, by - q.y);
+                const ov = (br + q.r - d) / (2 * Math.min(br, q.r));
+                if (ov > maxNest) return;
+              }
+            }
+            drawn.push({ x: bx, y: by, r: br });
             const ci = colorAt(t);
             content.push(`<circle cx=\"${bx.toFixed(1)}\" cy=\"${by.toFixed(1)}\" r=\"${br.toFixed(1)}\" ${balloonAttrs(ci)}/>`);
             n++;
@@ -2240,6 +2262,43 @@ export function generateStructureSilhouette(
             ni++;
           }
 
+          // 2026-09-11: a second, outer layer down the middle of the cascade.
+          // The customer marked that stretch of the outer face as too thin and
+          // asked for more balloons there. These sit further out along the
+          // normal than the main run (0.95-1.35 radii against 0.45-0.55), so
+          // they build the band outward rather than crowding the spine, and
+          // the overlap guard above drops any that would bury a neighbour.
+          // Two staggered outer rows rather than one. The overlap guard above
+          // rejects roughly a fifth of what is offered, so offering more is how
+          // the outer face actually ends up denser — the guard keeps whichever
+          // of them fit without burying a neighbour.
+          const OUTER_FILL: { t: number; off: number; size: "L" | "M" }[] = [
+            { t: 0.425, off: 1.00, size: "M" },
+            { t: 0.445, off: 1.32, size: "M" },
+            { t: 0.478, off: 1.02, size: "M" },
+            { t: 0.495, off: 1.34, size: "M" },
+            { t: 0.522, off: 0.98, size: "L" },
+            { t: 0.545, off: 1.30, size: "M" },
+            { t: 0.575, off: 1.04, size: "M" },
+            { t: 0.600, off: 1.34, size: "M" },
+            { t: 0.628, off: 0.98, size: "M" },
+            { t: 0.650, off: 1.30, size: "L" },
+            { t: 0.678, off: 1.02, size: "M" },
+            { t: 0.700, off: 1.32, size: "M" },
+            { t: 0.726, off: 0.98, size: "M" },
+            { t: 0.750, off: 1.30, size: "L" },
+            { t: 0.775, off: 1.04, size: "M" },
+            { t: 0.795, off: 1.32, size: "M" },
+          ];
+          for (const nd of OUTER_FILL) {
+            const q = pathAt(nd.t);
+            const r = nd.size === "L" ? R36 * 0.86 : R12 * (1 - 0.18 * nd.t);
+            const x = q.x + q.nx * nd.off * r;
+            const y = q.y + q.ny * nd.off * r;
+            put(x, y, r, nd.t);
+            placed.push({ x, y, r, t: nd.t });
+          }
+
           // Floor cluster: sits on the OUTER bottom corner, trailing outward and
           // down onto the floor. Anchored to the last cascade balloon so it is
           // visibly part of the garland rather than a separate pile, and held to
@@ -2289,7 +2348,7 @@ export function generateStructureSilhouette(
             for (let k = 0; k < count; k++) {
               const a = (-0.5 + rnd() * 1.0) + (dir > 0 ? 0 : Math.PI);
               const d = q.r + R5 * 0.6;
-              put(q.x + Math.cos(a) * d, q.y + Math.sin(a) * d * 0.8, R5 * (0.85 + rnd() * 0.4), q.t);
+              put(q.x + Math.cos(a) * d, q.y + Math.sin(a) * d * 0.8, R5 * (0.85 + rnd() * 0.4), q.t, false);
             }
           }
           return n;
