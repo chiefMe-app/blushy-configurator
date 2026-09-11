@@ -839,12 +839,25 @@ export function buildLayoutRefEditPrompt(
   // 2026-09-11: neutral daylight, per the customer's brief. The soft
   // directional quality stays — their reference still carries a gentle shadow
   // and a reflective floor — but the colour of the light is neutral, not warm.
-  const frontRoomLine = `The room is a bright, neutral studio: a plain mid-grey concrete wall with soft, fine ` +
-    `texture, and a smooth, light grey concrete floor that softly reflects the setup. Soft, diffuse neutral ` +
-    `daylight comes gently from one side, laying a soft shadow across the backdrop, with clear but gentle ` +
-    `contrast between the bright backdrop, the grey wall and the light floor. The light is SOFT and neutral ` +
-    `— no hard-edged shadows, no warm or golden cast, and NO bright window, lamp or blown-out highlight ` +
-    `anywhere in frame flooding the setup with glare. No doorway, radiator or furniture is visible. `;
+  // 2026-09-11 (later): matched to the Arch + Shimmer setup, which the
+  // customer prefers the light of. Measured on the same palette and seed:
+  //   arch + shimmer   wall L 153, sd 5.5   board rgb 220,219,218 (neutral)
+  //   single arch      wall L  92, sd 13.3  board rgb 210,207,215 (blue)
+  // i.e. the single arch was coming back darker, more than twice as uneven,
+  // and colour-cast. The cause was this line itself: it asked for light
+  // "laying a soft shadow across the backdrop", which directly contradicts
+  // the anti-sunbeam sentence in photographyOpening — and being front-loaded
+  // it won. In the tight portrait frame that shadow became a hard diagonal
+  // band across the board and wall. It now reinforces that sentence instead
+  // of fighting it, and names the neutral white balance that keeps the board
+  // white rather than blue.
+  const frontRoomLine = `The room is a bright, neutral studio: a plain light-grey concrete wall with soft, fine ` +
+    `texture, and a smooth light-grey concrete floor with a soft reflection. The light is SOFT, EVEN and ` +
+    `DIFFUSE across the whole picture, like a large north-facing window far away — bright, clean and ` +
+    `consistent from side to side, with NO hard sunbeam, no bright pool or patch of light, no sharp-edged ` +
+    `or diagonal shadow cast across the backdrop, the wall or the floor, and no blown-out highlights. ` +
+    `Neutral white balance: whites render as clean neutral white, with no blue, grey, golden or warm ` +
+    `cast on the backdrop. No doorway, radiator or furniture is visible. `;
 
   // 2026-09-09: the non-flash model composes a three-quarter view of the room
   // by default — the customer wants the setup square to camera — and it drops
@@ -894,15 +907,15 @@ export function buildLayoutRefEditPrompt(
     ? `You are given TWO images. IMAGE 1 is the layout guide and is authoritative for the WHOLE scene: ` +
       `the backdrop's size, shape, colour and position, the plinth, the camera, the room, and where the ` +
       `balloon garland sits. Build the photograph from IMAGE 1. ` +
-      `IMAGE 2 is NOT a scene. It is a close-up crop of a balloon garland on its own, supplied only as a ` +
-      `TEXTURE AND STYLING sample: copy how those balloons look and pack together — their density, the ` +
-      `way large, medium and small ones nest in layered clusters, their matte finish and the chrome ` +
-      `accents among them. ` +
-      `Do NOT copy anything else from IMAGE 2. It contains no backdrop, no plinth and no floor, and it ` +
-      `must not add or change any of those: the backdrop keeps the shape and colour given in IMAGE 1 and ` +
-      `in this text, and the plinth stays exactly the smooth white cylinder that IMAGE 1 shows. ` +
-      `Do NOT take balloon COLOURS from IMAGE 2 either — the palette is specified in this text and comes ` +
-      `only from there. Where the garland goes is decided by IMAGE 1, not by IMAGE 2. `
+      `IMAGE 2 is NOT a scene and carries NO colour — it is a deliberately BLACK AND WHITE close-up crop ` +
+      `of a balloon garland, supplied only as a SHAPE AND TEXTURE sample. Copy from it only how the ` +
+      `balloons pack together: their density, the way large, medium and small ones nest into layered ` +
+      `clusters, their rounded matte finish and the occasional mirror-chrome balloon among them. ` +
+      `Every colour in the finished photograph comes from IMAGE 1 and from this text — never from ` +
+      `IMAGE 2, which has none to give. IMAGE 2 contains no backdrop, no plinth and no floor, and must ` +
+      `not add or change any of those: the backdrop keeps the shape and colour of IMAGE 1, and the ` +
+      `plinth stays the smooth white cylinder IMAGE 1 shows. Where the garland goes is decided by ` +
+      `IMAGE 1, not by IMAGE 2. `
     : "";
 
   const frontArchAspectLine = (() => {

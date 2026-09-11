@@ -888,9 +888,21 @@ export function generateStructureSilhouette(
       // definite light grey that cannot be confused with the background. It
       // does not tint the render: the board's colour comes from the prompt,
       // and the same trick is what makes the plinth and the open frame land.
+      // 2026-09-11: the fill was hardcoded to #DEDAD4, which ignored the
+      // customer's chosen backdrop colour entirely — every lone arch was
+      // guided as the same warm grey whatever they picked. It also made a
+      // WHITE board render grey-and-blue rather than white (measured
+      // 210,207,215 against Arch + Shimmer's neutral 220,219,218).
+      // The board now carries its own colour. A near-white one is nudged
+      // just off the guide's white ground so the silhouette still reads —
+      // only a few levels, since flash traces the 3px edge reliably and the
+      // fill no longer has to do that work on its own.
+      const ownFill = fillForPanel(sortedIdx, panel.idx);
+      const nearWhite = /^#(f[0-9a-f]){3}$/i.test(ownFill)
+        || ownFill.toUpperCase() === "#FFFFFF";
       content.push(panelPathOrShape(
         panel.cx, panel.pw, panel.apexY, panel.floorY, shape,
-        "#DEDAD4", "left", true,
+        nearWhite ? "#F1EFEC" : ownFill, "left", true,
       ));
     } else {
       content.push(panelEdgeOnly(panel.cx, panel.pw, panel.apexY, panel.floorY, shape));
