@@ -580,8 +580,24 @@ export function buildLayoutRefEditPrompt(
   const targetAppearanceParts = hasSempertexLock
     ? selectedSempertexColors.map((c) => getPositiveLabel(c))
     : [];
+  // A Reflex/Chrome balloon in the selection: it must not be described as matte.
+  const hasChromeInPalette = selectedSempertexColors.some((c) => {
+    const f = String((c as { finish?: string }).finish ?? "").toLowerCase();
+    return f.includes("reflex") || f.includes("chrome") || f.includes("metallic");
+  });
+
   const targetAppearanceSentence = targetAppearanceParts.length > 0
-    ? `Target balloon appearance: ${targetAppearanceParts.join(", ")} only. Overall material should look soft, low-saturation, diffuse, and mostly matte pastel. The blush pearl pink accent balloons may have only a very soft satin sheen. `
+    ? `Target balloon appearance: ${targetAppearanceParts.join(", ")} only. ` +
+      // 2026-09-11: this used to end "mostly matte pastel" with no exception,
+      // which flattened a chrome balloon into matte grey — the customer's
+      // "silver turned grey". The matte description now applies to the
+      // pastel balloons only, and the chrome ones are called out.
+      `The pastel balloons look soft, diffuse and mostly matte. ` +
+      (hasChromeInPalette
+        ? `The silver balloons are the exception: they are bright MIRROR-CHROME metallic, polished and ` +
+          `highly reflective, with sharp specular highlights and visible mirror reflections — never flat, ` +
+          `never matte, never plain grey. `
+        : `The blush pearl pink accent balloons may have only a very soft satin sheen. `)
     : "";
 
   const exactColorCountSentence = hasSempertexLock && targetAppearanceParts.length > 0
@@ -851,13 +867,28 @@ export function buildLayoutRefEditPrompt(
   // band across the board and wall. It now reinforces that sentence instead
   // of fighting it, and names the neutral white balance that keeps the board
   // white rather than blue.
-  const frontRoomLine = `The room is a bright, neutral studio: a plain light-grey concrete wall with soft, fine ` +
-    `texture, and a smooth light-grey concrete floor with a soft reflection. The light is SOFT, EVEN and ` +
+  // 2026-09-11 (later): the wall went flat WHITE (L 195) once the palette and
+  // white-balance clauses moved to the front — "clean neutral white" bled
+  // from the balloons and the board onto the room. The wall is now described
+  // by its CONTRAST with the board rather than only by name, which is what
+  // keeps the two apart: the Arch + Shimmer reference the customer likes sits
+  // at wall L 166 against a board of 220.
+  const frontRoomLine = `The room is a bright, neutral studio: a MID-GREY concrete wall with soft, fine texture ` +
+    `— clearly darker than the white backdrop board standing against it, never white, never flat ` +
+    `— and a smooth light-grey concrete floor with a soft reflection. The light is SOFT, EVEN and ` +
     `DIFFUSE across the whole picture, like a large north-facing window far away — bright, clean and ` +
     `consistent from side to side, with NO hard sunbeam, no bright pool or patch of light, no sharp-edged ` +
     `or diagonal shadow cast across the backdrop, the wall or the floor, and no blown-out highlights. ` +
-    `Neutral white balance: whites render as clean neutral white, with no blue, grey, golden or warm ` +
-    `cast on the backdrop. No doorway, radiator or furniture is visible. `;
+    `Neutral white balance: the balloons and the board read as clean neutral white where they are white, ` +
+    `with no blue, golden or warm cast. ` +
+    // A sliver of window is wanted back. It was banned outright after a render
+    // flooded the setup with daylight, but the customer's own reference has a
+    // window edge at the frame border. The glare was the problem, not the
+    // window, so the window returns as an edge detail and the glare stays
+    // banned above.
+    `At the very left edge of the frame a narrow slice of a tall window frame is visible as a quiet ` +
+    `background detail — just the edge of it, never dominating, and no daylight or glare spilling from ` +
+    `it onto the setup. No doorway, radiator or furniture is visible. `;
 
   // 2026-09-09: the non-flash model composes a three-quarter view of the room
   // by default — the customer wants the setup square to camera — and it drops
@@ -878,7 +909,13 @@ export function buildLayoutRefEditPrompt(
   const frontPlinthLine = sceneModel.plinths.length > 0
     ? `${sceneModel.plinths.length === 1 ? "A" : String(sceneModel.plinths.length)} white cylindrical ` +
       `pedestal column${sceneModel.plinths.length === 1 ? "" : "s"} stand${sceneModel.plinths.length === 1 ? "s" : ""} ` +
-      `on the floor in front of the backdrop and must appear in the photograph. `
+      `on the floor in front of the backdrop and must appear in the photograph. ` +
+      // 2026-09-11: the plinth was rendering flush against the board. It
+      // stands well forward of it, with floor visible in the gap.
+      `${sceneModel.plinths.length === 1 ? "It stands" : "They stand"} about 50cm IN FRONT of the ` +
+      `backdrop, clearly separated from it, with a visible strip of bare floor between the ` +
+      `${sceneModel.plinths.length === 1 ? "column" : "columns"} and the board — not touching the board, ` +
+      `not leaning on it, not flush against it. `
     : "";
 
   // 2026-09-10: the board keeps rendering WIDER than it is. The layout is exact
@@ -902,20 +939,28 @@ export function buildLayoutRefEditPrompt(
   // its own board colour and its own palette, and without this line those bleed
   // into every render and override the customer's selection. Front-loaded,
   // because this pipeline only reliably obeys what comes first.
+  // 2026-09-11 (later): the reference carries COLOUR again. It was stored
+  // greyscale to stop its lilac bleeding onto the board, but that was fixed
+  // properly further down — the guide now draws the board in the customer's
+  // own selected colour instead of a hardcoded grey. What the greyscale
+  // version caused instead was unstable balloon colour: a reference full of
+  // grey balloons pulled the garland grey, and whether the lilac survived
+  // came down to whether the palette clause happened to sit ahead of the room
+  // clause in the front block. Colour in the reference removes that see-saw.
+  // 2026-09-11 (later): cut to a third of its length. The front of this
+  // prompt is a scarce resource — only the first clauses bind — and at ~900
+  // characters this line was pushing the room and the palette out of that
+  // window. The symptom was a see-saw across renders: whichever of the two
+  // happened to sit earlier survived, and the other lost (a flat white wall
+  // in one render, a garland with no blue in the next). Everything dropped
+  // here is said elsewhere in the prompt; what remains is only what the
+  // second image is for.
   const frontImageRolesLine = panelCount === 1 && sceneModel.panels[0]?.type === "arch"
     && hasLoneArchStyleReference()
-    ? `You are given TWO images. IMAGE 1 is the layout guide and is authoritative for the WHOLE scene: ` +
-      `the backdrop's size, shape, colour and position, the plinth, the camera, the room, and where the ` +
-      `balloon garland sits. Build the photograph from IMAGE 1. ` +
-      `IMAGE 2 is NOT a scene and carries NO colour — it is a deliberately BLACK AND WHITE close-up crop ` +
-      `of a balloon garland, supplied only as a SHAPE AND TEXTURE sample. Copy from it only how the ` +
-      `balloons pack together: their density, the way large, medium and small ones nest into layered ` +
-      `clusters, their rounded matte finish and the occasional mirror-chrome balloon among them. ` +
-      `Every colour in the finished photograph comes from IMAGE 1 and from this text — never from ` +
-      `IMAGE 2, which has none to give. IMAGE 2 contains no backdrop, no plinth and no floor, and must ` +
-      `not add or change any of those: the backdrop keeps the shape and colour of IMAGE 1, and the ` +
-      `plinth stays the smooth white cylinder IMAGE 1 shows. Where the garland goes is decided by ` +
-      `IMAGE 1, not by IMAGE 2. `
+    ? `TWO images are given. IMAGE 1 is the layout guide and decides the whole scene: the backdrop, ` +
+      `the plinth, the room, the camera and where the garland sits. IMAGE 2 is not a scene — it is a ` +
+      `crop of a balloon garland, used ONLY for how balloons pack together and their finish: matte ` +
+      `pastel skins, polished mirror chrome. Take nothing else from IMAGE 2. `
     : "";
 
   const frontArchAspectLine = (() => {
@@ -932,7 +977,11 @@ export function buildLayoutRefEditPrompt(
     const tallRatio = (p0.heightCm / p0.widthCm).toFixed(1);
     return `The backdrop board is ${p0.widthCm}cm wide and ${p0.heightCm}cm tall — ` +
       `a TALL board, about ${tallRatio} times as tall as it is wide, clearly taller than it is wide. ` +
-      `Do not square it up. It fills the frame from the floor to near the top of the picture. ` + vsPlinth;
+      `Do not square it up. It fills the frame from the floor to near the top of the picture. ` +
+      // 2026-09-11: a second white rectangular panel started appearing behind
+      // the arch once the palette clauses moved to the front.
+      `There is exactly ONE backdrop board in the scene — no second panel, no extra board and no ` +
+      `rectangle standing behind it or beside it. ` + vsPlinth;
   })();
 
   const frontShapeLine = (() => {
@@ -1038,8 +1087,14 @@ export function buildLayoutRefEditPrompt(
   // the palette is stated up front — so its silver balloons came back flat
   // grey while every other layout rendered them chrome. This is the short
   // version: the one fact that was missing, and nothing else.
-  const frontMetallicLine = isLonePlainArch && hasMetallicInPalette && sceneModel.balloons.style !== "none"
-    ? ""   // superseded — see frontPaletteLine, now enabled for this layout too
+  // 2026-09-11: revived. It was a no-op, and with the material sentence
+  // sitting deep in the prompt the chrome finish never bound — the customer
+  // got flat grey balloons where they had selected Reflex silver. Stated up
+  // front, where this pipeline actually listens.
+  const frontMetallicLine = hasChromeInPalette && sceneModel.balloons.style !== "none"
+    ? `The silver balloons in the garland are MIRROR-CHROME: polished, highly reflective metallic ` +
+      `balloons that mirror the room around them, with bright specular highlights. They are NOT matte, ` +
+      `NOT flat grey, NOT painted grey — they read as chrome. `
     : "";
 
   // 2026-09-09: the backdrop kept growing hardware — a slim white pole down
@@ -1802,8 +1857,17 @@ const setupTemplateClause = setupTemplate
     frontImageRolesLine +
     frontArchAspectLine +
     frontShapeLine +
-    frontColourLine +
+    // 2026-09-11: the ROOM is established before the palette. With
+    // frontColourLine and frontPaletteLine leading, the front of the prompt
+    // opened on "clean neutral white" and "pure white ... " and the white
+    // bled off the balloons onto the room — the wall came back flat white at
+    // L 195 where the Arch + Shimmer reference sits at 166 against a board of
+    // 220. Naming the grey concrete room first, then the balloon palette,
+    // keeps the two apart.
     frontRoomLine +
+    frontColourLine +
+    frontPaletteLine +
+    frontMetallicLine +
     frontCameraLine +
     frontPlinthLine +
     frontBannerAspectLine +
@@ -1815,11 +1879,9 @@ const setupTemplateClause = setupTemplate
     frontNoCharactersLine +
     frontNeonLine +
     frontNumberLightLine +
-    frontPaletteLine +
     frontStructureLine +
     frontNoBalloonTextLine +
     frontNoStandLine +
-    frontMetallicLine +
     openFrameDetailLine +
     photographyOpening +
     sceneInventoryClause +

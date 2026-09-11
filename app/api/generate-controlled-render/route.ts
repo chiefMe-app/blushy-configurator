@@ -160,7 +160,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "arch-120x220-even-light-white-board-v101";
+const RENDER_CACHE_VERSION = "arch-120x220-chrome-window-plinthgap-v102";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -723,6 +723,8 @@ async function generateLayoutReferencePng(
   promptInput:       PromptInput,
   selectedHexColors: string[] = [],
   cutoutGuideItems:  CutoutGuideItem[] = [],
+  /** Hexes whose Sempertex finish is Reflex/Chrome/Metallic — drawn as mirror balls. */
+  chromeHexColors:   string[] = [],
 ): Promise<LayoutRefPngResult> {
   // Stage 1: SVG generation — derive plinth sizes from sceneModel for type safety
   let silhouette: ReturnType<typeof generateStructureSilhouette>;
@@ -746,7 +748,10 @@ async function generateLayoutReferencePng(
       cutoutGuideItems,
       sceneModel.shimmerColor ? SHIMMER_COLOR_HEX[sceneModel.shimmerColor as ShimmerColorId] : undefined,
       { florals: sceneModel.garlandFlorals, numberLight: sceneModel.numberLight, neonSign: sceneModel.neonSign,
-        ringStyle: sceneModel.balloonRingStyle },
+        ringStyle: sceneModel.balloonRingStyle,
+        // Which of the selected balloons are chrome, so the guide can draw
+        // them as mirror balls rather than matte spheres.
+        chromeColors: chromeHexColors },
     );
   } catch (err) {
     const msg = String(err);
@@ -1429,7 +1434,14 @@ forbiddenBalloonColorLabels: hasSempertexLock
 
     // ── Primary path: layout-reference edit ────────────────────────────────
     // Same proven pattern as fal-layout-reference-test in the structure test route.
-    const pngResult       = await generateLayoutReferencePng(sceneModel, promptInputForAi, effectiveBalloonHexColors, cutoutGuideItems);
+    // Reflex/Chrome/Metallic entries in the selection, so the guide can draw
+    // those balloons as mirror balls instead of matte spheres — a chrome
+    // balloon drawn flat is what made the customer's silver render as grey.
+    const chromeSelectionHexes = (effectiveSempertexSelection ?? [])
+      .filter((c) => /reflex|chrome|metallic/i.test(String((c as { finish?: string }).finish ?? "")))
+      .map((c) => String((c as { hex?: string }).hex ?? ""))
+      .filter(Boolean);
+    const pngResult       = await generateLayoutReferencePng(sceneModel, promptInputForAi, effectiveBalloonHexColors, cutoutGuideItems, chromeSelectionHexes);
     const layoutRefPrompt = buildLayoutRefEditPrompt(sceneModel, effectiveSempertexSelection);
 
     // Debug shortcut: return the layout reference PNG without calling fal.

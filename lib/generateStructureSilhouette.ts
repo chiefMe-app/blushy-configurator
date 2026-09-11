@@ -664,9 +664,21 @@ export function generateStructureSilhouette(
     neonSign?: { enabled: boolean; text: string };
     /** Balloon Ring dressing — "half" leaves the gold hoop bare on one side. */
     ringStyle?: "full" | "half" | "none";
+    /**
+     * Hexes in the palette whose Sempertex finish is Reflex/Chrome/Metallic.
+     * 2026-09-11: the guide painted every balloon with the same matte sphere
+     * gradient, so a chrome balloon was drawn as a flat grey ball and the
+     * render copied exactly that — the customer's "silver turned grey".
+     * Saying "mirror-chrome" in the prompt did not fix it on its own; like
+     * every other appearance problem on this pipeline, it had to be drawn.
+     */
+    chromeColors?: string[];
   },
 ): SilhouetteResult {
   const shimmerTileFill = shimmerColorHex ?? "#D8D8E4";
+  const chromeHexSet = new Set(
+    (extras?.chromeColors ?? []).map((h) => String(h).toLowerCase()),
+  );
   const { falImageSize } = calculateRenderAspectRatio(backdropItems);
   const [Wbase, H]       = VIEWBOX[falImageSize];
 
@@ -1009,9 +1021,21 @@ export function generateStructureSilhouette(
   // same floor line as the hoop and reading as though it were inside it. Moving
   // its base down the canvas is what puts it in front in this projection.
   const isRingScene = backdropItems[0]?.type === "balloon_ring";
+  // 2026-09-11: every other layout stood the plinth on the SAME floor line as
+  // the backdrop, so it rendered flush against the board with no gap. The
+  // customer wants it standing about 50cm forward. In this projection,
+  // forward means lower on the canvas, so the base is stepped down by the
+  // pixel equivalent of 50cm, foreshortened: at a straight-on eye-level
+  // camera a floor depth projects to roughly a third of its true length, so
+  // the 0.35 factor is that foreshortening and not a fudge.
+  const PLINTH_FRONT_GAP_CM = 50;
+  const refPanelForGap = layout.panels[0];
+  const pxPerCmForGap = refPanelForGap && refPanelForGap.heightCm > 0
+    ? (refPanelForGap.floorY - refPanelForGap.apexY) / refPanelForGap.heightCm
+    : 0;
   const plinthForwardPx = isRingScene
     ? (layout.floorY - Math.min(...layout.panels.map((pl) => pl.apexY))) * 0.10
-    : 0;
+    : PLINTH_FRONT_GAP_CM * pxPerCmForGap * 0.35;
   // 2026-09-09: the ACTUAL drawn extent of the plinth row. The marquee number
   // used to be positioned against an estimate rebuilt from decorCx and
   // plinthSpacing, which did not match what was drawn, so it landed on a
@@ -1175,11 +1199,24 @@ export function generateStructureSilhouette(
           // needs light falloff to avoid rendering as flat discs, so the
           // highlight is kept but pulled back, the true colour now covers more
           // of the balloon, and nothing is translucent.
-          `<radialGradient id="${id}" cx="35%" cy="30%" r="72%">` +
-            `<stop offset="0%" stop-color="${shade(hex, 1.28)}" stop-opacity="1"/>` +
-            `<stop offset="42%" stop-color="${hex}" stop-opacity="1"/>` +
-            `<stop offset="100%" stop-color="${shade(hex, 0.78)}" stop-opacity="1"/>` +
-          `</radialGradient>`,
+          chromeHexSet.has(hex.toLowerCase())
+            // A mirror ball, not a matte sphere: a small blown highlight, a
+            // dark reflected band through the middle and a bright rim where
+            // the room wraps around the edge. That high-contrast signature is
+            // what reads as chrome, and it is what the render copies.
+            ? `<radialGradient id="${id}" cx="34%" cy="26%" r="82%">` +
+                `<stop offset="0%" stop-color="#FFFFFF" stop-opacity="1"/>` +
+                `<stop offset="12%" stop-color="${shade(hex, 1.45)}" stop-opacity="1"/>` +
+                `<stop offset="34%" stop-color="${hex}" stop-opacity="1"/>` +
+                `<stop offset="62%" stop-color="${shade(hex, 0.42)}" stop-opacity="1"/>` +
+                `<stop offset="84%" stop-color="${shade(hex, 1.12)}" stop-opacity="1"/>` +
+                `<stop offset="100%" stop-color="${shade(hex, 0.55)}" stop-opacity="1"/>` +
+              `</radialGradient>`
+            : `<radialGradient id="${id}" cx="35%" cy="30%" r="72%">` +
+                `<stop offset="0%" stop-color="${shade(hex, 1.28)}" stop-opacity="1"/>` +
+                `<stop offset="42%" stop-color="${hex}" stop-opacity="1"/>` +
+                `<stop offset="100%" stop-color="${shade(hex, 0.78)}" stop-opacity="1"/>` +
+              `</radialGradient>`,
         );
       });
     }

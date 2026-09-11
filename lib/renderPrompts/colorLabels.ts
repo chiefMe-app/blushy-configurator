@@ -24,7 +24,7 @@ export const SAFE_VISUAL_LABEL: Record<string, string> = {
   "806": "cool off-white, not beige, not champagne, not cream",
   "640": "pale icy blue",
   "850": "very pale cool lavender, almost white",
-  "981": "cool silver gray, not gold, not bronze, not copper",
+  "981": "bright mirror-chrome metallic silver, polished and reflective, not matte grey, not gold, not bronze, not copper",
   "909": "bright cool pink",
   "912": "vivid cool fuchsia",
 };
@@ -51,6 +51,13 @@ export const HEX_POSITIVE_LABEL: Record<string, string> = {
   // without the "almost white" qualifier; getVisualLabel keeps the full
   // description for the lock.
   "#dcd7f2": "soft lilac",
+  // 2026-09-11: Reflex 981 Silver. Reflex is Sempertex's CHROME line — a
+  // mirror-polished balloon — but it was reaching the positive prompt as
+  // "cool metallic silver", and the fallback label under its code still
+  // read "cool silver gray". Combined with the "mostly matte pastel"
+  // material sentence it rendered as flat matte grey, which the customer
+  // reported as "silver turned grey". Named as chrome here.
+  "#c7c9c7": "bright mirror-chrome silver, polished reflective metallic",
 };
 
 /**
