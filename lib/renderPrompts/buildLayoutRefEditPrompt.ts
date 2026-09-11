@@ -811,10 +811,13 @@ export function buildLayoutRefEditPrompt(
   // sentence: the long saturation paragraph tried on 2026-09-05 wrecked the
   // Single Arch layout (see the note in photographyOpening).
   const frontColourLine = !hasRoundPanelInPrompt && sceneModel.balloons.style !== "none"
-    // 2026-09-10: warm and full, matching the customer's pink reference — a
-    // bright, warm, editorial studio look, saturated but not theatrical.
-    ? `Full, warm natural colour saturation with a bright, clean editorial look — colours rich and lively, ` +
-      `not hazy, not washed out, not grey or flat. `
+    // 2026-09-11: NEUTRAL, not warm. The customer's written brief asks for
+    // "neutral daylight product photography with accurate white balance" and
+    // "keep whites clean neutral white", which reverses the warm grade added on
+    // 2026-09-10 for the pink reference.
+    ? `Neutral daylight product photography with accurate white balance: full natural colour saturation, ` +
+      `colours true and clean, and whites rendered as clean neutral white — no warm or yellow cast, ` +
+      `no colour tint, not hazy, not washed out. `
     : "";
 
   // 2026-09-09: the ROOM itself, front-loaded. On the non-flash model the wall
@@ -832,13 +835,15 @@ export function buildLayoutRefEditPrompt(
   // board, a warm mid-grey textured concrete wall, and a smooth, light,
   // polished concrete floor with a soft reflection of the setup. The thing to
   // rule out is not shadow, it is a hard bright window blowing the setup out.
-  const frontRoomLine = `The room is a warm, bright studio: a warm mid-grey concrete wall with soft, fine ` +
-    `texture, and a smooth, light, polished concrete floor that softly reflects the setup. Warm, soft ` +
-    `daylight comes gently from one side, laying a soft, diffuse shadow across the backdrop and giving the ` +
-    `picture a warm, inviting glow with clear but gentle contrast between the bright backdrop, the grey wall ` +
-    `and the light floor. The light is SOFT and diffuse — no hard-edged shadows, and NO bright window, lamp ` +
-    `or blown-out highlight anywhere in frame flooding the setup with glare. No doorway, radiator or ` +
-    `furniture is visible. `;
+  // 2026-09-11: neutral daylight, per the customer's brief. The soft
+  // directional quality stays — their reference still carries a gentle shadow
+  // and a reflective floor — but the colour of the light is neutral, not warm.
+  const frontRoomLine = `The room is a bright, neutral studio: a plain mid-grey concrete wall with soft, fine ` +
+    `texture, and a smooth, light grey concrete floor that softly reflects the setup. Soft, diffuse neutral ` +
+    `daylight comes gently from one side, laying a soft shadow across the backdrop, with clear but gentle ` +
+    `contrast between the bright backdrop, the grey wall and the light floor. The light is SOFT and neutral ` +
+    `— no hard-edged shadows, no warm or golden cast, and NO bright window, lamp or blown-out highlight ` +
+    `anywhere in frame flooding the setup with glare. No doorway, radiator or furniture is visible. `;
 
   // 2026-09-09: the non-flash model composes a three-quarter view of the room
   // by default — the customer wants the setup square to camera — and it drops
@@ -1135,17 +1140,40 @@ export function buildLayoutRefEditPrompt(
   // right corner, and only then turns down the side. Double Arch and the other
   // arch layouts keep the shared wording, which they were approved with.
   const isLoneArchScene = hasArchPanelInPrompt && panelCount === 1;
+  // 2026-09-11: rewritten to the customer's written brief. The old wording
+  // started the garland as a "lighter cluster at the UPPER MIDDLE", which
+  // contradicts the brief on two counts — the anchor is a DENSE cluster of
+  // LARGE balloons and it belongs on the top-RIGHT crown, with the left side
+  // of the arch completely clean. The three size families and the "at least
+  // five statement balloons" count are stated explicitly because the guide can
+  // show a size hierarchy but cannot name it.
   const archGarlandExtra = isLoneArchScene
-    ? ` Premium organic balloon garland, asymmetric and hand-styled. It begins as a lighter cluster at the ` +
-      `UPPER MIDDLE of the board, builds into its heaviest, densest mass at the TOP RIGHT CORNER, then ` +
-      `cascades straight down the RIGHT-HAND EDGE to a connected cluster on the floor at the bottom right. ` +
-      `The left side and the whole middle of the board stay clean and empty — no garland on the left edge, ` +
-      `no balloons across the face, and NOT a frame or border round the board. ` +
-      `The balloon sizes are strongly mixed and never in a repeating sequence: a few large statement ` +
-      `balloons, more medium ones, many small fillers and a scattering of very small balloons pushed into ` +
-      `the gaps. Balloons overlap and cluster; the outline is irregular and organic, never evenly spaced ` +
-      `and never a uniform arc. A few balloons break past the edge of the board. ` +
-      `Not a thin single-file chain. `
+    ? ` One statement half-garland: a lush, organic, premium balloon garland, asymmetric and hand-styled, ` +
+      `anchored by a DENSE CLUSTER OF LARGE BALLOONS at the TOP RIGHT CROWN of the arch, cascading down ` +
+      `the RIGHT OUTER EDGE with gradually smaller balloons, and ending in a loose trailing cluster ` +
+      `pooling on the floor at the outer bottom corner of the arch. ` +
+      `The LEFT side of the arch stays completely clean and balloon-free. ` +
+      `It is attached ONLY to that one outer right edge and nowhere else on the structure — a single ` +
+      `smooth continuous top-to-bottom flow, never reversed, never starting from the bottom, never ` +
+      `doubling back. The garland is attached directly to the backdrop edge with NO VISIBLE GAP, closely ` +
+      `following the backdrop contour, looking professionally installed onto the structure. ` +
+      `Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
+      `standard balloons, and small 5 inch filler balloons. At least FIVE 36 inch statement balloons are ` +
+      `clearly visible, distributed through the garland at the top, down the side and in the base cluster, ` +
+      `and they are clearly larger than every other balloon. The 5 inch balloons appear ONLY as small ` +
+      `filler clusters tucked against larger balloons, never loose on their own. ` +
+      `Balloons overlap and nest in layered clusters with natural asymmetry and dense premium event ` +
+      `styling — not a thin single-file chain, never evenly spaced, never a uniform arc, and NOT a frame ` +
+      `or border round the board. ` +
+      `Any balloon resting on the floor is part of the garland's base cluster, visually connected to and ` +
+      `touching the main garland — never scattered, detached or floating separately on the floor — and ` +
+      `that base cluster stays at the outer bottom corner only, never centred and never spread across ` +
+      `the base. ` +
+      `The arch front face and its readable surface stay completely clean, unobstructed and fully ` +
+      `visible: no balloons crossing in front of the arch panel, no balloons blocking the arch face, and ` +
+      `no balloon pile or floor buildup directly in front of it. The plinth and the floor area in front ` +
+      `of the arch stay completely clean — no balloons in front of the plinth, none crossing into the ` +
+      `front floor area. `
     : hasArchPanelInPrompt
     ? ` Premium organic balloon garland with large, medium, and small balloons nested together ` +
       `in lush clustered bunches, attached ONLY to ONE OUTER SIDE of the arch — ${outerEdgePhrase} — ` +

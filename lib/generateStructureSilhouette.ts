@@ -1933,103 +1933,49 @@ export function generateStructureSilhouette(
         };
 
         // ===================================================================
-        // Lone-arch garland TRANSCRIBED from the customer's reference photo.
+        // Lone-arch STATEMENT HALF-GARLAND — built to the customer's written
+        // brief (2026-09-11), which replaced the earlier photo transcription.
         //
-        // 2026-09-10. The customer asked for a near one-to-one copy of a
-        // specific reference image, not "something similar" — and a procedural
-        // generator cannot deliver that however its density and size knobs are
-        // tuned. Several rounds of tuning (sizes, packing, band width, rosettes)
-        // each produced a plausible garland that was not THAT garland. So the
-        // reference's own composition is read off the photo and stored here.
+        // The brief is a set of hard rules rather than one photo, so this walks
+        // the board's own CONTOUR and places balloons against it. The contour is
+        // the thing the rules keep talking about: attached to the edge with no
+        // visible gap, following the backdrop, one smooth top-to-bottom flow.
         //
-        // Coordinates are anchored to the board's RIGHT EDGE and FLOOR, in
-        // units of the board's HEIGHT, because that edge is what the garland
-        // hugs and because both boards are 220cm tall — so a stored radius is
-        // a real balloon size in centimetres whatever the board's width.
-        //   dx: horizontal offset from the right edge (negative = onto the board)
-        //   dy: height above the floor (1.0 = the board's top)
-        //   rr: radius
-        // kind: "B" plain balloon, "F" ball-flower rosette (a heart ringed by
-        // five petals), "C" small tight accent cluster.
+        //   - one half-garland, on the RIGHT OUTER edge only; the left side of
+        //     the arch stays completely clean;
+        //   - a dense cluster of large balloons at the top-right crown, then a
+        //     cascade down the right edge whose standard balloons taper as they
+        //     fall, ending in a connected floor cluster at the OUTER bottom
+        //     corner — never centred, never spread across the base, never in
+        //     front of the panel or the plinth;
+        //   - exactly three size families (36in statement / 12in standard /
+        //     5in filler), with the statement balloons clearly the largest and
+        //     at least five of them spread over top, side and base;
+        //   - 5in balloons only ever appear as small clusters tucked against a
+        //     larger balloon, never loose on their own.
         //
-        // Read off the reference at board cx=270, pw=254, apexY=228,
-        // floorY=815 (boardH=587) in its 576x1024 frame.
+        // Sizes are in units of the board's HEIGHT, which is 220cm, so they are
+        // real balloon sizes. They are NOT literal 36/12/5 inch diameters: a
+        // true 36in balloon is 91cm, three quarters of a 120cm board, and the
+        // customer rejected that scale as beach balls on 2026-09-09. What the
+        // brief is really asking for is three clearly separated families with a
+        // bold statement size, which is what these give (about 17in / 8in / 3in
+        // on a 120cm board, a 5.2 : 2.4 : 1 ratio against the real 7.2 : 2.4 : 1).
         // ===================================================================
-        type RefBalloon = { dx: number; dy: number; rr: number; kind: "B" | "F" | "C" };
-        const REFERENCE_LONE_ARCH: RefBalloon[] = [
-          // --- top flow: starts part-way along the arch's top-left curve and
-          //     runs right, about one balloon deep, growing toward the
-          //     top-right corner where it turns down.
-          { dx: -0.336, dy: 1.010, rr: 0.044, kind: "F" },
-          { dx: -0.262, dy: 1.031, rr: 0.041, kind: "C" },
-          { dx: -0.186, dy: 1.085, rr: 0.075, kind: "B" },
-          { dx: -0.148, dy: 0.993, rr: 0.044, kind: "B" },
-          { dx: -0.123, dy: 0.974, rr: 0.048, kind: "F" },
-          { dx: -0.077, dy: 1.047, rr: 0.044, kind: "B" },
-          { dx: -0.055, dy: 1.017, rr: 0.026, kind: "B" },
-          { dx:  0.005, dy: 1.099, rr: 0.072, kind: "B" },
-          { dx:  0.060, dy: 1.017, rr: 0.051, kind: "B" },
-          { dx:  0.158, dy: 0.993, rr: 0.072, kind: "B" },
-          { dx: -0.009, dy: 0.932, rr: 0.030, kind: "C" },
-          { dx:  0.085, dy: 0.920, rr: 0.048, kind: "B" },
-          // --- right cascade: the densest run, about two balloons wide, from
-          //     the top-right corner down to the floor.
-          { dx:  0.099, dy: 0.877, rr: 0.056, kind: "B" },
-          { dx:  0.044, dy: 0.826, rr: 0.048, kind: "B" },
-          { dx:  0.189, dy: 0.826, rr: 0.044, kind: "B" },
-          { dx:  0.162, dy: 0.877, rr: 0.051, kind: "B" },
-          { dx:  0.085, dy: 0.732, rr: 0.051, kind: "F" },
-          { dx:  0.167, dy: 0.707, rr: 0.061, kind: "B" },
-          { dx:  0.111, dy: 0.601, rr: 0.058, kind: "B" },
-          { dx:  0.204, dy: 0.588, rr: 0.051, kind: "B" },
-          { dx:  0.048, dy: 0.639, rr: 0.044, kind: "B" },
-          { dx:  0.141, dy: 0.503, rr: 0.055, kind: "C" },
-          { dx:  0.060, dy: 0.503, rr: 0.048, kind: "B" },
-          { dx:  0.192, dy: 0.443, rr: 0.048, kind: "B" },
-          { dx:  0.082, dy: 0.409, rr: 0.055, kind: "B" },
-          { dx:  0.162, dy: 0.366, rr: 0.041, kind: "B" },
-          { dx:  0.073, dy: 0.289, rr: 0.051, kind: "F" },
-          { dx:  0.167, dy: 0.273, rr: 0.051, kind: "B" },
-          { dx:  0.056, dy: 0.196, rr: 0.051, kind: "B" },
-          { dx:  0.209, dy: 0.213, rr: 0.058, kind: "B" },
-          { dx:  0.124, dy: 0.162, rr: 0.048, kind: "B" },
-          // --- bottom floor buildup: spreads LEFT along the floor, wider than
-          //     the cascade, with a small accent cluster on its inboard side.
-          { dx: -0.140, dy: 0.094, rr: 0.051, kind: "B" },
-          { dx: -0.072, dy: 0.124, rr: 0.044, kind: "B" },
-          { dx: -0.046, dy: 0.119, rr: 0.034, kind: "C" },
-          { dx:  0.005, dy: 0.068, rr: 0.051, kind: "B" },
-          { dx:  0.090, dy: 0.090, rr: 0.055, kind: "B" },
-          { dx:  0.167, dy: 0.060, rr: 0.048, kind: "B" },
-          { dx:  0.218, dy: 0.111, rr: 0.044, kind: "B" },
-          { dx: -0.157, dy: 0.034, rr: 0.034, kind: "B" },
-          { dx: -0.089, dy: 0.051, rr: 0.037, kind: "B" },
-          // --- bridge: our board is proportionally wider than the reference's
-          //     (120x220 against its ~95x220), so its dome is broader and the
-          //     transcribed crown alone stops short of the top-left. These carry
-          //     the top flow further along the curve and close the gap where the
-          //     cascade meets the floor pile, keeping the run continuous.
-          // Kept close enough to the crown to stay attached: at -0.470 the last
-          // one sat on the arch curve but clear of its neighbours, and the
-          // render turned it into a single balloon floating in the wall.
-          { dx: -0.398, dy: 0.972, rr: 0.038, kind: "B" },
-          { dx: -0.434, dy: 0.930, rr: 0.032, kind: "B" },
-          { dx: -0.372, dy: 1.004, rr: 0.030, kind: "B" },
-          { dx:  0.100, dy: 0.240, rr: 0.044, kind: "B" },
-          { dx:  0.180, dy: 0.150, rr: 0.042, kind: "B" },
-          { dx:  0.040, dy: 0.120, rr: 0.040, kind: "B" },
-        ];
-
-        const drawReferenceLoneArchGarland = (
+        const drawLoneArchStatementGarland = (
           p: typeof layout.panels[0], side: "left" | "right",
         ): number => {
           const dir    = side === "left" ? -1 : 1;
           const edge   = p.cx + dir * (p.pw / 2);
           const boardH = p.floorY - p.apexY;
+          const domeR  = p.pw / 2;
+          const domeCy = p.apexY + domeR;
+
+          const R36 = 0.090 * boardH;   // statement
+          const R12 = 0.046 * boardH;   // standard
+          const R5  = 0.019 * boardH;   // filler
+
           let n = 0;
-          // The same area-balanced colour picker the procedural garland uses, so
-          // the customer's selected palette still comes out even. Only the
-          // LAYOUT is taken from the reference; the colours stay theirs.
           const areaByColor = new Array(Math.max(1, colors.length)).fill(0) as number[];
           const lastUsedAt  = new Array(Math.max(1, colors.length)).fill(-1) as number[];
           const leastUsedColor = (): number => {
@@ -2048,43 +1994,149 @@ export function generateStructureSilhouette(
             content.push(`<circle cx=\"${bx.toFixed(1)}\" cy=\"${by.toFixed(1)}\" r=\"${br.toFixed(1)}\" ${balloonAttrs(ci)}/>`);
             n++;
           };
-          // Deterministic jitter, so a rosette's petals are not perfectly
-          // regular — a real one never is — without the layout becoming random.
-          let seed = 7919;
+          let seed = 20260911;
           const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
 
-          // The table records the garland's FRONT layer. A real garland of this
-          // kind — and the reference — is two balloons deep, and with the front
-          // layer alone the guide came out with wall showing between every
-          // balloon. Each plain balloon therefore gets one backer tucked behind
-          // it on an alternating side, which fills the interstices without
-          // moving any of the transcribed positions.
-          let bi = 0;
-          for (const b of REFERENCE_LONE_ARCH) {
-            const x = edge + dir * b.dx * boardH;
-            const y = p.floorY - b.dy * boardH;
-            const r = b.rr * boardH;
-            if (b.kind === "B") {
-              const a = (bi % 2 === 0 ? -0.7 : 0.7) + (bi % 3) * 0.55;
-              put(x + Math.cos(a) * r * 0.95, y + Math.sin(a) * r * 0.85, r * 0.82);
-              put(x, y, r);
-              bi++;
-            } else if (b.kind === "F") {
-              // Ball-flower: a heart ringed by five petals pressed against it,
-              // sized so the whole rosette fills the stored radius.
-              const petal = r * 0.46;
-              put(x, y, petal * 0.95);
-              for (let k = 0; k < 5; k++) {
-                const a = (k / 5) * Math.PI * 2 + rnd() * 0.5;
-                put(x + Math.cos(a) * (r - petal), y + Math.sin(a) * (r - petal), petal);
-              }
-            } else {
-              // Tight accent cluster — four small balloons bunched.
-              const small = r * 0.55;
-              for (let k = 0; k < 4; k++) {
-                const a = (k / 4) * Math.PI * 2 + 0.6 + rnd() * 0.4;
-                put(x + Math.cos(a) * small * 0.8, y + Math.sin(a) * small * 0.8, small);
-              }
+          // The contour, as one parameter t from 0 (crown) to 1 (floor).
+          // t <= CROWN_T rides the dome from just left of the apex round to the
+          // right spring point; after that it runs straight down the right edge.
+          // The two meet exactly at the spring point, so the flow is continuous
+          // and never doubles back.
+          const CROWN_T = 0.40;
+          const A_FROM  = -16 * Math.PI / 180;   // just past the apex, so the crown
+          const A_TO    =  90 * Math.PI / 180;   // reads anchored on top, not beside
+          const pathAt = (t: number) => {
+            if (t <= CROWN_T) {
+              const a = A_FROM + (A_TO - A_FROM) * (t / CROWN_T);
+              return {
+                x: p.cx + dir * Math.sin(a) * domeR,
+                y: domeCy - Math.cos(a) * domeR,
+                nx: dir * Math.sin(a),
+                ny: -Math.cos(a),
+              };
+            }
+            const u = (t - CROWN_T) / (1 - CROWN_T);
+            return { x: edge, y: domeCy + u * (p.floorY - domeCy), nx: dir, ny: 0 };
+          };
+
+          // off is measured in units of the balloon's own radius along the
+          // OUTWARD normal. Slightly negative means the balloon laps over the
+          // board edge, which is what makes the garland read as installed ON the
+          // structure with no gap; it is never negative enough to carry a balloon
+          // across the face of the panel.
+          type Node = { t: number; off: number; size: "L" | "M" };
+          const NODES: Node[] = [
+            // dense large-balloon crown on the top right
+            { t: 0.000, off:  0.10, size: "M" },
+            { t: 0.045, off: -0.15, size: "M" },
+            { t: 0.085, off:  0.45, size: "L" },
+            { t: 0.130, off: -0.20, size: "M" },
+            { t: 0.170, off:  0.55, size: "M" },
+            { t: 0.210, off:  0.00, size: "L" },
+            { t: 0.255, off:  0.60, size: "M" },
+            { t: 0.295, off: -0.15, size: "M" },
+            { t: 0.335, off:  0.50, size: "L" },
+            { t: 0.380, off: -0.10, size: "M" },
+            // cascade down the outer edge
+            { t: 0.425, off:  0.55, size: "M" },
+            { t: 0.468, off: -0.12, size: "M" },
+            { t: 0.510, off:  0.50, size: "L" },
+            { t: 0.553, off: -0.05, size: "M" },
+            { t: 0.595, off:  0.55, size: "M" },
+            { t: 0.637, off: -0.10, size: "M" },
+            { t: 0.678, off:  0.45, size: "M" },
+            { t: 0.718, off:  0.00, size: "L" },
+            { t: 0.760, off:  0.55, size: "M" },
+            { t: 0.800, off: -0.08, size: "M" },
+            { t: 0.840, off:  0.45, size: "M" },
+            { t: 0.878, off:  0.05, size: "M" },
+            { t: 0.915, off:  0.50, size: "M" },
+          ];
+
+          // Standard balloons taper as the cascade falls (the brief asks for
+          // gradually smaller balloons down the right edge); statement balloons
+          // keep their full size wherever they land, so they stay clearly the
+          // largest at the top, down the side AND in the base cluster.
+          const placed: { x: number; y: number; r: number }[] = [];
+          let ni = 0;
+          for (const nd of NODES) {
+            const q = pathAt(nd.t);
+            const r = nd.size === "L" ? R36 : R12 * (1 - 0.22 * nd.t);
+            const x = q.x + q.nx * nd.off * r;
+            const y = q.y + q.ny * nd.off * r;
+            put(x, y, r);
+            placed.push({ x, y, r });
+
+            // Depth. The brief asks for a lush, layered, clustered garland and
+            // rules out "a thin single-file chain", which is exactly what one
+            // balloon per contour node produces. Each node therefore carries a
+            // companion nested OUTWARD of it, and every other node a second one
+            // set along the contour to close the gap to the next node. Both are
+            // pushed outward or along the flow, never inward, so the layering
+            // can never march across the face of the panel.
+            const na = Math.atan2(q.ny, q.nx);
+            const ca = na + (rnd() - 0.5) * 1.2;
+            const cr = r * (0.70 + rnd() * 0.22);
+            const cx2 = x + Math.cos(ca) * r * 0.88;
+            const cy2 = y + Math.sin(ca) * r * 0.88;
+            put(cx2, cy2, cr);
+            placed.push({ x: cx2, y: cy2, r: cr });
+
+            if (ni % 2 === 0) {
+              // tangent = normal rotated a quarter turn, i.e. down the flow
+              const ta = na + Math.PI / 2;
+              const tr = r * (0.58 + rnd() * 0.2);
+              const tx = x + Math.cos(ta) * r * 0.95 + q.nx * tr * 0.35;
+              const ty = y + Math.sin(ta) * r * 0.95 + q.ny * tr * 0.35;
+              put(tx, ty, tr);
+              placed.push({ x: tx, y: ty, r: tr });
+            }
+            ni++;
+          }
+
+          // Floor cluster: sits on the OUTER bottom corner, trailing outward and
+          // down onto the floor. Anchored to the last cascade balloon so it is
+          // visibly part of the garland rather than a separate pile, and held to
+          // the outer side — the inboard reach is capped at a third of a standard
+          // balloon so nothing builds up in front of the panel or the plinth.
+          const baseY = p.floorY;
+          const BASE: { ox: number; oy: number; size: "L" | "M" | "S" }[] = [
+            { ox:  0.10, oy: -0.34, size: "L" },
+            { ox:  0.78, oy: -0.30, size: "L" },
+            { ox:  0.62, oy: -0.16, size: "M" },
+            { ox: -0.22, oy: -0.12, size: "M" },
+            { ox:  0.34, oy: -0.05, size: "M" },
+            { ox:  0.88, oy: -0.06, size: "M" },
+            { ox:  0.18, oy: -0.60, size: "M" },
+            { ox:  0.66, oy: -0.44, size: "M" },
+            { ox:  1.06, oy: -0.22, size: "M" },
+            { ox:  1.28, oy: -0.05, size: "M" },
+            { ox: -0.06, oy: -0.62, size: "M" },
+            { ox:  0.42, oy: -0.78, size: "M" },
+            { ox:  0.96, oy: -0.62, size: "M" },
+            { ox:  1.34, oy: -0.40, size: "M" },
+            { ox:  0.02, oy: -0.04, size: "M" },
+          ];
+          for (const b of BASE) {
+            const r = b.size === "L" ? R36 : R12;
+            const x = edge + dir * b.ox * R36;
+            const y = baseY + b.oy * R36 - r * 0.15;
+            put(x, y, r);
+            placed.push({ x, y, r });
+          }
+
+          // 5in fillers, LAST and only ever tucked against a larger balloon, so
+          // they read as the small clusters the brief describes and never as
+          // loose balloons floating in the scene. Every one is pushed outward
+          // from its parent's centre, so a filler can never end up in front of
+          // the panel that its parent is sitting beside.
+          for (let i = 0; i < placed.length; i += 2) {
+            const q = placed[i];
+            const count = 2 + Math.floor(rnd() * 2);
+            for (let k = 0; k < count; k++) {
+              const a = (-0.5 + rnd() * 1.0) + (dir > 0 ? 0 : Math.PI);
+              const d = q.r + R5 * 0.6;
+              put(q.x + Math.cos(a) * d, q.y + Math.sin(a) * d * 0.8, R5 * (0.85 + rnd() * 0.4));
             }
           }
           return n;
@@ -2830,7 +2882,7 @@ export function generateStructureSilhouette(
           // different-but-plausible garland instead. The tier no longer adds a
           // second pass: the reference is one specific arrangement, and
           // doubling it would stop being that arrangement.
-          drawReferenceLoneArchGarland(archPanels[0], "right");
+          drawLoneArchStatementGarland(archPanels[0], "right");
         } else {
           // Multi-panel fallback: right-side vertical garland from top-right corner to floor
           const outerOffset = Math.round(W * 0.055);
