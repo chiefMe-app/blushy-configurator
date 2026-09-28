@@ -694,7 +694,14 @@ export function generateStructureSilhouette(
    * Only the guide's fill changes. The palette text, the colour-lock pass
    * and everything the customer is quoted still use the true swatch hex.
    */
+  // 2026-09-28: scoped to the LONE ARCH. This was measured and tuned there
+  // and then left applying to every layout, which was an unverified side
+  // effect — on Single Round, whose guide is a thin arc of small dots, it
+  // turned a pale cyan-and-lilac palette into vivid cyan and vivid purple.
+  // Other layouts keep the true swatch colour they were approved with.
+  const loneArchGuide = backdropItems.length === 1 && backdropItems[0]?.type === "arch";
   const deepenForGuide = (hex: string): string => {
+    if (!loneArchGuide) return hex;
     const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
     if (!m) return hex;
     const v = parseInt(m[1], 16);

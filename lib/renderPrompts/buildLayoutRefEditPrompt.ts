@@ -878,7 +878,7 @@ export function buildLayoutRefEditPrompt(
   // keeps the two apart: the Arch + Shimmer reference the customer likes sits
   // at wall L 166 against a board of 220.
   const frontRoomLine = `The room is a bright, neutral studio: a MID-GREY concrete wall with soft, fine texture ` +
-    `— clearly darker than the white backdrop board standing against it, never white, never flat ` +
+    `— clearly darker than the white backdrop standing against it, never white, never flat ` +
     `— and a smooth light-grey concrete floor with a soft reflection. The light is SOFT, EVEN and ` +
     `DIFFUSE across the whole picture, like a large north-facing window far away — bright, clean and ` +
     `consistent from side to side, with NO hard sunbeam, no bright pool or patch of light, no sharp-edged ` +
@@ -991,9 +991,12 @@ export function buildLayoutRefEditPrompt(
   const frontShapeLine = (() => {
     if (panelCount !== 1) return "";
     const t = sceneModel.panels[0]?.type;
-    const extrasInScene = !!sceneModel.numberLight?.enabled || !!sceneModel.neonSign?.enabled
-      || sceneModel.cutouts?.mode === "standees";
-    if (!extrasInScene) return "";
+    // 2026-09-28: this used to fire ONLY when the scene also carried a number,
+    // neon or standee. A plain Single Round therefore said nothing about being
+    // circular until char 3700 — far past where this pipeline binds — and the
+    // render came back as a SQUARE board. The extras were never what made the
+    // shape need stating; they just happened to be in the scene the first time
+    // it was noticed. Every lone panel states its shape up front now.
     // Kept to one short clause each: the first version cost the plinth, which
     // simply dropped out of the render.
     if (t === "round")  return `The backdrop is ONE round disc, a full circle. `;
