@@ -2138,9 +2138,16 @@ export function generateStructureSilhouette(
           const domeR  = p.pw / 2;
           const domeCy = p.apexY + domeR;
 
-          const R36 = 0.090 * boardH;   // statement
-          const R12 = 0.046 * boardH;   // standard
-          const R5  = 0.019 * boardH;   // filler
+          // 2026-10-15: sized off the customer's reference photo. Measured
+          // there against the board's own width, the balloons run:
+          //   statement  0.30-0.33 pw across   standard 0.20 pw   filler 0.09 pw
+          // The statement size already matched; the standard and the filler
+          // were both a little under, which is part of why the garland read
+          // as finer-grained than the reference. pw is 0.5455 of boardH on a
+          // 120x220 board, so these are those fractions converted.
+          const R36 = 0.090 * boardH;   // statement  (~0.33 pw across)
+          const R12 = 0.054 * boardH;   // standard   (~0.20 pw across)
+          const R5  = 0.024 * boardH;   // filler     (~0.09 pw across)
 
           let n = 0;
 
@@ -2266,30 +2273,34 @@ export function generateStructureSilhouette(
           type Node = { t: number; off: number; size: "L" | "M" };
           const NODES: Node[] = [
             // dense large-balloon crown on the top right
+            // 2026-10-15: statement balloons go from 5 of 23 to 12 of 23.
+            // The reference garland is BIG-dominant — large balloons carry it
+            // and the mediums fill between them — where this table had it the
+            // other way round and read as a finer, busier band.
             { t: 0.000, off:  0.10, size: "M" },
-            { t: 0.045, off: -0.15, size: "M" },
+            { t: 0.045, off: -0.15, size: "L" },
             { t: 0.085, off:  0.45, size: "L" },
             { t: 0.130, off: -0.20, size: "M" },
-            { t: 0.170, off:  0.55, size: "M" },
+            { t: 0.170, off:  0.55, size: "L" },
             { t: 0.210, off:  0.00, size: "L" },
             { t: 0.255, off:  0.60, size: "M" },
-            { t: 0.295, off: -0.15, size: "M" },
+            { t: 0.295, off: -0.15, size: "L" },
             { t: 0.335, off:  0.50, size: "L" },
             { t: 0.380, off: -0.10, size: "M" },
             // cascade down the outer edge
-            { t: 0.425, off:  0.55, size: "M" },
+            { t: 0.425, off:  0.55, size: "L" },
             { t: 0.468, off: -0.12, size: "M" },
             { t: 0.510, off:  0.50, size: "L" },
-            { t: 0.553, off: -0.05, size: "M" },
+            { t: 0.553, off: -0.05, size: "L" },
             { t: 0.595, off:  0.55, size: "M" },
-            { t: 0.637, off: -0.10, size: "M" },
+            { t: 0.637, off: -0.10, size: "L" },
             { t: 0.678, off:  0.45, size: "M" },
             { t: 0.718, off:  0.00, size: "L" },
-            { t: 0.760, off:  0.55, size: "M" },
+            { t: 0.760, off:  0.55, size: "L" },
             { t: 0.800, off: -0.08, size: "M" },
-            { t: 0.840, off:  0.45, size: "M" },
+            { t: 0.840, off:  0.45, size: "L" },
             { t: 0.878, off:  0.05, size: "M" },
-            { t: 0.915, off:  0.50, size: "M" },
+            { t: 0.915, off:  0.50, size: "L" },
           ];
 
           // Standard balloons taper as the cascade falls (the brief asks for
@@ -2300,7 +2311,10 @@ export function generateStructureSilhouette(
           let ni = 0;
           for (const nd of NODES) {
             const q = pathAt(nd.t);
-            const r = nd.size === "L" ? R36 : R12 * (1 - 0.22 * nd.t);
+            // Only a slight taper: at 0.22 the band narrowed noticeably by the
+            // floor, while the reference keeps full-size balloons all the way
+            // down into the base cluster.
+            const r = nd.size === "L" ? R36 : R12 * (1 - 0.08 * nd.t);
             const x = q.x + q.nx * nd.off * r;
             const y = q.y + q.ny * nd.off * r;
             put(x, y, r, nd.t);
@@ -2327,7 +2341,7 @@ export function generateStructureSilhouette(
             if (ni % 3 === 0) {
               // tangent = normal rotated a quarter turn, i.e. down the flow
               const ta = na + Math.PI / 2;
-              const tr = r * (0.58 + rnd() * 0.2);
+              const tr = r * (0.72 + rnd() * 0.18);
               const tx = x + Math.cos(ta) * r * 0.95 + q.nx * tr * 0.35;
               const ty = y + Math.sin(ta) * r * 0.95 + q.ny * tr * 0.35;
               put(tx, ty, tr, nd.t);
@@ -2366,7 +2380,7 @@ export function generateStructureSilhouette(
           ];
           for (const nd of OUTER_FILL) {
             const q = pathAt(nd.t);
-            const r = nd.size === "L" ? R36 * 0.86 : R12 * (1 - 0.18 * nd.t);
+            const r = nd.size === "L" ? R36 * 0.92 : R12 * (1 - 0.08 * nd.t);
             const x = q.x + q.nx * nd.off * r;
             const y = q.y + q.ny * nd.off * r;
             put(x, y, r, nd.t);
