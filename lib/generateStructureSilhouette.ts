@@ -644,6 +644,35 @@ function standeeGuide(cx: number, bottomY: number, heightPx: number, label: stri
 // Main export
 // ---------------------------------------------------------------------------
 
+/**
+ * BALLOON SIZE STANDARD — one set of families for every setup.
+ *
+ * 2026-10-15. Each garland in this file had grown its own magic numbers,
+ * expressed as a fraction of its panel's width. That is the wrong unit: a
+ * balloon is a physical object, so the same fraction gives a 26in balloon on
+ * one panel and a 7in one on another, and the setups drifted apart.
+ *
+ * These are real diameters in centimetres, measured off the customer's
+ * reference photo against the board's own width (statement 0.30-0.33 of the
+ * board, standard 0.20, filler 0.09, on a 120cm board). Converting through
+ * the panel's own widthCm gives every layout the SAME physical balloon — a
+ * 16in balloon covers a third of a 120cm arch and a fifth of a 200cm disc,
+ * which is exactly what the real thing does.
+ */
+const BALLOON_DIAMETER_CM = { statement: 40, large: 30, standard: 24, filler: 11 };
+
+/** The four radii in guide pixels for a panel of a given real width. */
+function balloonRadiiPx(widthCm: number, widthPx: number): { X: number; L: number; M: number; S: number } {
+  const pxPerCm = widthPx / Math.max(1, widthCm || 100);
+  const r = (cm: number) => (cm * pxPerCm) / 2;
+  return {
+    X: r(BALLOON_DIAMETER_CM.statement),
+    L: r(BALLOON_DIAMETER_CM.large),
+    M: r(BALLOON_DIAMETER_CM.standard),
+    S: r(BALLOON_DIAMETER_CM.filler),
+  };
+}
+
 export function generateStructureSilhouette(
   backdropItems:    BackdropItem[],
   plinthSizes:      PlinthSize[],
@@ -1326,9 +1355,14 @@ export function generateStructureSilhouette(
 
         // Three size families, scaled to the disc rather than to pixels so a
         // smaller round backdrop keeps the same proportions.
-        const rR36 = circR * 0.175;
-        const rR12 = circR * 0.090;
-        const rR5  = circR * 0.038;
+        // On the shared standard. The statement size was already about
+        // right, but the standard and filler worked out at 7in and 3in on a
+        // 200cm disc against the arch's 9.5in and 4.3in — the same garland
+        // in two different grains.
+        const famR = balloonRadiiPx(rPanel.widthCm, rPanel.pw);
+        const rR36 = famR.X;
+        const rR12 = famR.M;
+        const rR5  = famR.S;
 
         const rDrawn: { x: number; y: number; r: number }[] = [];
         const rMaxNest = 0.86;
@@ -1364,7 +1398,9 @@ export function generateStructureSilhouette(
           const roll = rRnd();
           // A few statement balloons, mostly standard, some smaller — and the
           // band thins a little as it comes down to the floor.
-          const base = roll < 0.13 ? rR36 : roll < 0.64 ? rR12 : rR12 * 0.70;
+          // Big-dominant, like the reference: statement, then large, with the
+          // standard filling between rather than carrying the run.
+          const base = roll < 0.16 ? rR36 : roll < 0.68 ? famR.L : rR12;
           const rBall = base * (1 - 0.14 * t);
           // Straddle the perimeter so the garland sits ON the disc edge.
           // Biased slightly INBOARD: with the companion below also pushed
@@ -1736,15 +1772,24 @@ export function generateStructureSilhouette(
           // so the lone-arch radii are derived from real balloon diameters
           // against the panel width: r = (inches * 2.54 / widthCm) / 2.
           // Other layouts keep the values they were approved with.
-          const rLarge  = crownOverTop ? Math.max(18, Math.min(46, p.pw * 0.150)) : Math.max(20, Math.min(50, p.pw * 0.17));
-          const rMed    = crownOverTop ? Math.max(14, Math.min(38, p.pw * 0.125)) : Math.max(14, Math.min(34, p.pw * 0.12));
-          const rSmall  = crownOverTop ? Math.max(7,  Math.min(20, p.pw * 0.065)) : Math.max(9,  Math.min(22, p.pw * 0.08));
+          // 2026-10-15: on the shared standard now (see balloonRadiiPx). The
+          // old fractions-of-pw gave each layout a different physical balloon;
+          // on a Double Arch panel the S slot was a 7.6in balloon, which is
+          // not a filler at all.
+          const famP   = balloonRadiiPx(p.widthCm, p.pw);
+          const rLarge = famP.L;
+          const rMed   = famP.M;
+          const rSmall = famP.S;
           // 36-inch statement anchor (tight/double-arch only): a real 36"
           // balloon is ~3x a 12" one. The guide must SHOW that scale — with
           // only L/M/S circles the model rendered a uniform mid-size garland
           // (2026-07-20 product feedback: balloons too small, not enough mass
           // low down; sizes must read as 36" / 12" / 5").
-          const rXL     = crownOverTop ? Math.max(24, Math.min(64, p.pw * 0.215)) : Math.max(30, Math.min(80, p.pw * 0.28));
+          // The statement anchor. At p.pw * 0.28 this was a 26in balloon on a
+          // 120cm panel — the beach-ball scale the customer rejected on
+          // 2026-09-09. It is a 40cm (16in) statement balloon now, the size
+          // measured on their reference.
+          const rXL     = famP.X;
 
           // 2026-09-02: rendering the guide to PNG and actually LOOKING at it
           // finally explained the flat-disc bug that five prompt/count fixes
@@ -1878,11 +1923,16 @@ export function generateStructureSilhouette(
             // A few statement balloons, not many: too many big ones made the
             // band lumpy and uneven. The reference is mostly one size with the
             // odd big accent.
-            const xlChance = crownOverTop ? 0.08 * (1 - t) : (looseSpacing ? 0.10 : 0.20) * (1 - t);
-            const sChance  = crownOverTop ? 0.12 : 0.12 + 0.20 * t;
+            // 2026-10-15: big-dominant everywhere, matching the customer's
+            // reference — large balloons carry the garland and the mediums
+            // fill between them. The old mix put 12-32% of the band in the
+            // filler slot and split the rest nearly evenly, which read as a
+            // fine busy band rather than a chunky one.
+            const xlChance = crownOverTop ? 0.08 * (1 - t) : 0.12 * (1 - t);
+            const sChance  = crownOverTop ? 0.12 : 0.08;
             if (roll < xlChance) return "X";
             if (roll < xlChance + sChance) return "S";
-            return rnd() < 0.55 ? "L" : "M";
+            return rnd() < 0.70 ? "L" : "M";
           };
 
           const climbFromY = p.floorY - Hp * 0.16;
@@ -2484,9 +2534,13 @@ export function generateStructureSilhouette(
           const dir = shimmerOnRight ? 1 : -1;
           const shimmerNearX = shimmerOnRight ? shimmerP.cx - shimmerP.pw / 2 : shimmerP.cx + shimmerP.pw / 2;
           const shimmerTopY  = shimmerP.apexY;
-          const rLarge = Math.max(16, Math.min(26, shimmerP.pw * 0.11));
-          const rMed   = Math.max(12, Math.min(20, shimmerP.pw * 0.08));
-          const rSmall = Math.max(9,  Math.min(15, shimmerP.pw * 0.055));
+          // On the shared standard, so the accent cluster beside a shimmer
+          // wall is made of the same balloons as every other garland. At
+          // pw * 0.11 on a 200cm wall these were 4in balloons.
+          const famS   = balloonRadiiPx(shimmerP.widthCm, shimmerP.pw);
+          const rLarge = famS.L;
+          const rMed   = famS.M;
+          const rSmall = famS.S;
 
           // Standalone accent cluster — elegant, well-composed corner accent,
           // 3 depth lanes for real volume (not a token handful of dots),
@@ -3052,15 +3106,21 @@ export function generateStructureSilhouette(
           const ringCy = rp.floorY - ringR;
           let rst = 777331;
           const rrnd = () => { rst = (rst * 1664525 + 1013904223) >>> 0; return rst / 4294967296; };
-          const rXLr = Math.max(26, Math.min(62, ringR * 0.20));
-          const rLr  = Math.max(18, Math.min(46, ringR * 0.145));
-          const rMr  = Math.max(12, Math.min(32, ringR * 0.100));
-          const rSr  = Math.max(8,  Math.min(20, ringR * 0.066));
+          // On the shared standard. The hoop's real width is its diameter,
+          // so the families come off that the same way every other layout's
+          // come off their panel width.
+          const famRing = balloonRadiiPx(RING_FRAME_CM, ringR * 2);
+          const rXLr = famRing.X;
+          const rLr  = famRing.L;
+          const rMr  = famRing.M;
+          const rSr  = famRing.S;
           const pickRing = (): number => {
             const roll = rrnd();
-            if (roll < 0.16) return rXLr;
-            if (roll < 0.50) return rLr;
-            if (roll < 0.82) return rMr;
+            // Big-dominant: large carries the hoop, standard fills between,
+            // and the filler is an accent rather than a third of the ring.
+            if (roll < 0.14) return rXLr;
+            if (roll < 0.66) return rLr;
+            if (roll < 0.92) return rMr;
             return rSr;
           };
           const ringPlaced: { x: number; y: number; r: number }[] = [];
