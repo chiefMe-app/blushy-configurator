@@ -1398,9 +1398,14 @@ export function generateStructureSilhouette(
           const roll = rRnd();
           // A few statement balloons, mostly standard, some smaller — and the
           // band thins a little as it comes down to the floor.
-          // Big-dominant, like the reference: statement, then large, with the
-          // standard filling between rather than carrying the run.
-          const base = roll < 0.16 ? rR36 : roll < 0.68 ? famR.L : rR12;
+          // Big-dominant, but with real spread. The reference's garland is
+          // not three sizes marching in order — big balloons dominate and
+          // every intermediate size appears between them, which is what
+          // stops it reading as a mechanical chain.
+          const base = roll < 0.15 ? rR36
+            : roll < 0.60 ? famR.L
+            : roll < 0.88 ? rR12
+            : rR12 * 0.72;
           const rBall = base * (1 - 0.14 * t);
           // Straddle the perimeter so the garland sits ON the disc edge.
           // Biased slightly INBOARD: with the companion below also pushed
@@ -1427,13 +1432,43 @@ export function generateStructureSilhouette(
 
         // 5in fillers last, each tucked against a larger parent and pushed
         // outward from the disc, so they never land on its face.
+        // CREVICE FILLERS.
+        //
+        // 2026-10-15: the customer's reference packs genuinely small
+        // balloons into the V between every pair of big ones, and that is
+        // what reads as organic ("organik durmuyor"). The previous pass hung
+        // one filler off every third balloon, pointing straight out from the
+        // disc — which is a decoration on a chain, not a stuffed garland.
+        //
+        // This walks PAIRS of neighbouring balloons instead and tucks a small
+        // one into the crevice between them, pushed outward just enough to
+        // sit in the notch. Not the same thing as the loose scattered minis
+        // removed on 2026-09-11: those floated free, these touch two parents
+        // each. The overlap guard still applies, so a crevice that is already
+        // full simply refuses the filler.
         const rSpine = rDrawn.slice();
-        for (let i = 0; i < rSpine.length; i += 3) {
-          const q = rSpine[i];
-          if (q.r < rR12 * 0.8) continue;
-          const away = Math.atan2(q.y - circleCy, q.x - circleCx) + (rRnd() * 1.0 - 0.5);
-          const d = q.r + rR5 * 0.6;
-          rPut(q.x + Math.cos(away) * d, q.y + Math.sin(away) * d, rR5 * (0.85 + rRnd() * 0.4), false);
+        for (let i = 0; i < rSpine.length; i++) {
+          const a = rSpine[i];
+          if (a.r < rR12 * 0.65) continue;
+          for (let j = i + 1; j < rSpine.length; j++) {
+            const b = rSpine[j];
+            if (b.r < rR12 * 0.65) continue;
+            const d = Math.hypot(a.x - b.x, a.y - b.y);
+            // Neighbours, not distant pairs and not near-coincident ones.
+            // The lower bound was 0.5 and threw away almost every real pair:
+            // consecutive balloons in this run are stepped by about 0.6 of a
+            // radius, so they sit well inside that and were all skipped. A
+            // heavily overlapping pair still has an outer notch to fill.
+            if (d > (a.r + b.r) * 1.15 || d < (a.r + b.r) * 0.28) continue;
+            if (rRnd() < 0.2) continue;
+            const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+            const out = Math.atan2(my - circleCy, mx - circleCx);
+            // Far enough out to sit in the outer notch rather than behind the
+            // two parents, where it would be invisible.
+            const push = Math.min(a.r, b.r) * (0.75 + rRnd() * 0.55);
+            const fr = rR5 * (0.65 + rRnd() * 0.75);
+            rPut(mx + Math.cos(out) * push, my + Math.sin(out) * push, fr);
+          }
         }
       } else {
         // Dense organic garland helper — thick layered band: floor/base cluster

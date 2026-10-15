@@ -999,7 +999,11 @@ export function buildLayoutRefEditPrompt(
     // it was noticed. Every lone panel states its shape up front now.
     // Kept to one short clause each: the first version cost the plinth, which
     // simply dropped out of the render.
-    if (t === "round")  return `The backdrop is ONE round disc, a full circle. `;
+    // 2026-10-15: size and grounding added. The disc was rendering with its
+    // lower edge cut flat and floating clear of the floor, and the customer
+    // asked for it to be 2 metres across and to meet the ground ("2metre
+    // gensiliginde olmali yere degmeli").
+    if (t === "round")  return `The backdrop is ONE round disc, a full circle 2 metres across, standing on the floor. `;
     if (t === "arch")   return `The backdrop is ONE arch board. `;
     if (t === "banner") return `The backdrop is ONE square board. `;
     return "";
