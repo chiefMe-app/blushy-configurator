@@ -1303,34 +1303,101 @@ export function generateStructureSilhouette(
         layout.panels.length === 1;
 
       if (isRoundScene) {
-        // Round panel: arc garland along the outer right perimeter only.
-        // From 11 o'clock (SVG -120°) clockwise through 12 → 3 → to just past 5 o'clock (SVG +75°).
-        // Makes the layout reference unambiguously a partial arc, not a full ring.
+        // Round panel: a dense organic garland hugging the outer perimeter.
+        //
+        // 2026-10-15. This used to be 18 single circles of radius 12-22px
+        // stepped evenly round an arc — a bead necklace, not a garland. The
+        // render reproduced exactly that: a thin scatter of separate balloons
+        // that came back looking like foil teardrops rather than a latex
+        // garland. Every other layout in this file got a thick layered band
+        // years ago; the round panel was simply never brought across.
+        //
+        // It now walks the perimeter the way the lone arch walks its contour:
+        // each step advances by the size of the balloon just placed, so
+        // spacing tracks size and neighbours touch and nest; a companion sits
+        // outward of each one so the band is two deep; 5in balloons are tucked
+        // against larger parents at the end; and an overlap guard stops any of
+        // them burying a neighbour.
         const rPanel   = layout.panels[0];
         const circR    = rPanel.pw / 2;
         const circleCx = rPanel.cx;
         // Anchor to floor so circle bottom == floorY (no floating gap → no invented base)
         const circleCy = rPanel.floorY - circR;
-        const outerR   = circR + Math.round(W * 0.038);
 
-        // Right-side arc only: -65° (~1 o'clock, upper-right) to 80° (~5 o'clock, lower-right).
-        // Hard guard removes any balloon that falls left of circleCx + circR*0.15
-        // so no guide dot can bleed onto the upper-left, left, or lower-left quadrant.
-        const startAngleDeg = -65; // ~1 o'clock: upper-right of circle
-        const endAngleDeg   =  80; // ~5 o'clock: lower-right, approaching floor
-        const numBalloons   = 18;
+        // Three size families, scaled to the disc rather than to pixels so a
+        // smaller round backdrop keeps the same proportions.
+        const rR36 = circR * 0.175;
+        const rR12 = circR * 0.090;
+        const rR5  = circR * 0.038;
 
-        for (let i = 0; i < numBalloons; i++) {
-          const t        = i / (numBalloons - 1);
-          const angleDeg = startAngleDeg + t * (endAngleDeg - startAngleDeg);
-          const angleRad = (angleDeg * Math.PI) / 180;
-          const radVar   = outerR + (i % 2 === 0 ? Math.round(W * 0.012) : -Math.round(W * 0.006));
-          const bx       = circleCx + radVar * Math.cos(angleRad);
-          const by       = circleCy + radVar * Math.sin(angleRad);
-          // Hard guard: skip any dot left of 15% past circle center — prevents left-side leakage
-          if (bx < circleCx + circR * 0.15) continue;
-          const br       = i < 3 ? 22 : i > numBalloons - 4 ? 16 : 12 + ((i * 7) % 10);
-          content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br}" ${balloonAttrs(i)}/>`);
+        const rDrawn: { x: number; y: number; r: number }[] = [];
+        const rMaxNest = 0.86;
+        let rIdx = 0;
+        const rPut = (bx: number, by: number, br: number, guard = true) => {
+          // Never below the floor — the disc sits on it, so a balloon past it
+          // reads as buried in the ground.
+          if (by - br > rPanel.floorY) return;
+          if (guard) {
+            for (const q of rDrawn) {
+              const d  = Math.hypot(bx - q.x, by - q.y);
+              const ov = (br + q.r - d) / (2 * Math.min(br, q.r));
+              if (ov > rMaxNest) return;
+            }
+          }
+          rDrawn.push({ x: bx, y: by, r: br });
+          content.push(`<circle cx=\"${bx.toFixed(1)}\" cy=\"${by.toFixed(1)}\" r=\"${br.toFixed(1)}\" ${balloonAttrs(rIdx)}/>`);
+          rIdx++;
+        };
+        let rSeed = 20261015;
+        const rRnd = () => { rSeed = (rSeed * 1103515245 + 12345) & 0x7fffffff; return rSeed / 0x7fffffff; };
+
+        // Starts just past 12 o'clock and runs clockwise to about 5 o'clock.
+        // Deliberately still a PARTIAL arc — the left and lower-left of the
+        // disc stay clear, which is what stops the render closing it into a
+        // full ring (the reason the old version guarded the left side).
+        const rA0 = -100 * Math.PI / 180;
+        const rA1 =   82 * Math.PI / 180;
+        let rAng = rA0;
+        let rGuard = 0;
+        while (rAng < rA1 && rGuard++ < 240) {
+          const t    = (rAng - rA0) / (rA1 - rA0);
+          const roll = rRnd();
+          // A few statement balloons, mostly standard, some smaller — and the
+          // band thins a little as it comes down to the floor.
+          const base = roll < 0.13 ? rR36 : roll < 0.64 ? rR12 : rR12 * 0.70;
+          const rBall = base * (1 - 0.14 * t);
+          // Straddle the perimeter so the garland sits ON the disc edge.
+          // Biased slightly INBOARD: with the companion below also pushed
+          // outward, an outward-biased main run made the whole band drift off
+          // the circle and float beside it instead of hugging it.
+          const off = (rRnd() * 1.5 - 0.90) * rBall;
+          const rad = circR + off;
+          const bx  = circleCx + rad * Math.cos(rAng);
+          const by  = circleCy + rad * Math.sin(rAng);
+          rPut(bx, by, rBall);
+
+          // Companion tucked OUTWARD, so the band reads two deep without
+          // creeping across the face of the disc.
+          if (rRnd() < 0.9) {
+            const cr  = rBall * (0.68 + rRnd() * 0.24);
+            // Either side of the main balloon rather than always outward, so
+            // the band thickens around the edge instead of marching away.
+            const cRad = circR + off + rBall * (rRnd() * 1.25 - 0.45);
+            const cA   = rAng + (rRnd() * 0.12 - 0.06);
+            rPut(circleCx + cRad * Math.cos(cA), circleCy + cRad * Math.sin(cA), cr);
+          }
+          rAng += (rBall * (0.60 + rRnd() * 0.26)) / circR;
+        }
+
+        // 5in fillers last, each tucked against a larger parent and pushed
+        // outward from the disc, so they never land on its face.
+        const rSpine = rDrawn.slice();
+        for (let i = 0; i < rSpine.length; i += 3) {
+          const q = rSpine[i];
+          if (q.r < rR12 * 0.8) continue;
+          const away = Math.atan2(q.y - circleCy, q.x - circleCx) + (rRnd() * 1.0 - 0.5);
+          const d = q.r + rR5 * 0.6;
+          rPut(q.x + Math.cos(away) * d, q.y + Math.sin(away) * d, rR5 * (0.85 + rRnd() * 0.4), false);
         }
       } else {
         // Dense organic garland helper — thick layered band: floor/base cluster
