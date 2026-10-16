@@ -59,7 +59,14 @@ export const HEX_POSITIVE_LABEL: Record<string, string> = {
   // rose pink, not lilac. The saturation gain it brought (0.114 -> 0.282) is
   // what was wanted, so the depth wording stays and the hue is pinned to
   // violet with pink ruled out explicitly.
-  "#dcd7f2": "soft lilac, a clear gentle violet-purple, not pink, not rose, not washed out",
+  // 2026-10-16: LIGHTNESS named, not just hue. Measured against the swatch
+  // (lightness 0.90), Single Arch renders this at 0.86 but Single Round at
+  // 0.61 — a deep violet the customer reported as "renkler bozulmus". The arch
+  // is on flash, which follows the guide's pale fill; the round is on the full
+  // model, which leans on this text, and "violet-purple ... not washed out"
+  // read to it as a saturated mid-tone purple. Naming it light and ruling out
+  // the deep end keeps the hue without the darkness.
+  "#dcd7f2": "light pastel lilac, a pale soft lavender — clearly lilac, not white, not deep purple, not dark violet, not pink",
   // The blue was labelled "pale icy blue"; icy pushed it cold and pale.
   // 2026-09-11: Reflex 981 Silver. Reflex is Sempertex's CHROME line — a
   // mirror-polished balloon — but it was reaching the positive prompt as
