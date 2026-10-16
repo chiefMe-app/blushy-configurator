@@ -1418,20 +1418,24 @@ export function generateStructureSilhouette(
           const roll = rRnd();
           // A few statement balloons, mostly standard, some smaller — and the
           // band thins a little as it comes down to the floor.
-          // Big-dominant, but with real spread. The reference's garland is
-          // not three sizes marching in order — big balloons dominate and
-          // every intermediate size appears between them, which is what
-          // stops it reading as a mechanical chain.
-          const base = roll < 0.15 ? rR36
-            : roll < 0.60 ? famR.L
-            : roll < 0.88 ? rR12
-            : rR12 * 0.72;
+          // 2026-10-16: the mix moves DOWN a size. Measured against the disc
+          // in the customer's installation photo, its balloons run 10-13% of
+          // the disc's width with the largest at 16% — i.e. a garland built
+          // from ordinary 11" latex. Ours ran 16% typical and 26% at the top,
+          // about 1.6x too big, so the same 213 balloons made a chunky ring
+          // where theirs makes a fine dense mass. The 24cm standard is the
+          // workhorse now and the 40cm statement is an occasional accent,
+          // which is how a real garland is actually built.
+          const base = roll < 0.06 ? rR36
+            : roll < 0.30 ? famR.L
+            : roll < 0.86 ? rR12
+            : rR12 * 0.80;
           const rBall = base * (1 - 0.14 * t);
           // Straddle the perimeter so the garland sits ON the disc edge.
-          // Biased slightly INBOARD: with the companion below also pushed
-          // outward, an outward-biased main run made the whole band drift off
-          // the circle and float beside it instead of hugging it.
-          const off = (rRnd() * 1.5 - 0.90) * rBall;
+          // Biased further INBOARD again (2026-10-16): in the reference the
+          // garland laps well over the face of the disc, where ours was
+          // sitting as a ring just outside it with the two barely touching.
+          const off = (rRnd() * 1.6 - 1.15) * rBall;
           const rad = circR + off;
           const bx  = circleCx + rad * Math.cos(rAng);
           const by  = circleCy + rad * Math.sin(rAng);
@@ -1440,7 +1444,12 @@ export function generateStructureSilhouette(
           // Companion tucked OUTWARD, so the band reads two deep without
           // creeping across the face of the disc.
           if (rRnd() < 0.9) {
-            const cr  = rBall * (0.68 + rRnd() * 0.24);
+            // 2026-10-16: companions are most of the band by count, so their
+            // size is what sets the median balloon — at 0.68-0.92 of their
+            // parent they held it at 8% of the disc against the reference's
+            // 10-13%. A real garland's backers are the same size as the
+            // balloons they sit behind, not noticeably smaller.
+            const cr  = rBall * (0.84 + rRnd() * 0.18);
             // Either side of the main balloon rather than always outward, so
             // the band thickens around the edge instead of marching away.
             const cRad = circR + off + rBall * (rRnd() * 1.25 - 0.45);
@@ -1452,7 +1461,7 @@ export function generateStructureSilhouette(
           // the outboard one, which is what gives the clustered bunched look
           // rather than a widening ribbon.
           if (rRnd() < 0.6) {
-            const c2 = rBall * (0.55 + rRnd() * 0.3);
+            const c2 = rBall * (0.76 + rRnd() * 0.22);
             const c2Rad = circR + off + rBall * (rRnd() * 1.6 - 0.8);
             const c2A   = rAng + (rRnd() * 0.16 - 0.08);
             rPut(circleCx + c2Rad * Math.cos(c2A), circleCy + c2Rad * Math.sin(c2A), c2);
@@ -1490,7 +1499,11 @@ export function generateStructureSilhouette(
             // radius, so they sit well inside that and were all skipped. A
             // heavily overlapping pair still has an outer notch to fill.
             if (d > (a.r + b.r) * 1.15 || d < (a.r + b.r) * 0.28) continue;
-            if (rRnd() < 0.2) continue;
+            // 2026-10-16: fewer. At a 0.2 skip the fillers outnumbered the
+            // garland proper and pulled the median balloon down to 7% of the
+            // disc's width against the reference's 10-13%. They are an accent
+            // in the notches, not the body of the band.
+            if (rRnd() < 0.55) continue;
             const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
             const out = Math.atan2(my - circleCy, mx - circleCx);
             // Far enough out to sit in the outer notch rather than behind the
