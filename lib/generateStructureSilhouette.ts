@@ -1367,6 +1367,23 @@ export function generateStructureSilhouette(
         const rDrawn: { x: number; y: number; r: number }[] = [];
         const rMaxNest = 0.86;
         let rIdx = 0;
+        // 2026-10-16: colour runs in BUNCHES. The customer's installation
+        // photo is built the way a decorator actually builds one — from
+        // bunches of one colour tied together, so the garland reads as blocks
+        // of purple, of chrome, of white. balloonAttrs(rIdx) with a counter
+        // that moves every balloon gave strict alternation instead, which is
+        // a large part of why it looked manufactured rather than organic.
+        let rColorIdx = 0;
+        let rColorRun = 0;
+        const rNextColor = (): number => {
+          if (rColorRun <= 0) {
+            const n = Math.max(1, colors.length);
+            rColorIdx = (rColorIdx + 1 + Math.floor(rRnd() * (n - 1))) % n;
+            rColorRun = 2 + Math.floor(rRnd() * 3);
+          }
+          rColorRun--;
+          return rColorIdx;
+        };
         const rPut = (bx: number, by: number, br: number, guard = true) => {
           // Never below the floor — the disc sits on it, so a balloon past it
           // reads as buried in the ground.
@@ -1379,18 +1396,21 @@ export function generateStructureSilhouette(
             }
           }
           rDrawn.push({ x: bx, y: by, r: br });
-          content.push(`<circle cx=\"${bx.toFixed(1)}\" cy=\"${by.toFixed(1)}\" r=\"${br.toFixed(1)}\" ${balloonAttrs(rIdx)}/>`);
+          content.push(`<circle cx=\"${bx.toFixed(1)}\" cy=\"${by.toFixed(1)}\" r=\"${br.toFixed(1)}\" ${balloonAttrs(rNextColor())}/>`);
           rIdx++;
         };
         let rSeed = 20261015;
         const rRnd = () => { rSeed = (rSeed * 1103515245 + 12345) & 0x7fffffff; return rSeed / 0x7fffffff; };
 
-        // Starts just past 12 o'clock and runs clockwise to about 5 o'clock.
-        // Deliberately still a PARTIAL arc — the left and lower-left of the
-        // disc stay clear, which is what stops the render closing it into a
-        // full ring (the reason the old version guarded the left side).
-        const rA0 = -100 * Math.PI / 180;
-        const rA1 =   82 * Math.PI / 180;
+        // 2026-10-16: wraps BOTH sides now. The customer's installation photo
+        // runs from the lower LEFT of the disc, up the left side, over the top
+        // and down the right to the lower right — a horseshoe, open only at
+        // the bottom where the floor and the standees are. The old arc covered
+        // the right side only, which is why one side of the disc sat bare.
+        // Still not a closed ring: about 60 degrees stay open at the bottom,
+        // which is what the old left-side guard was really protecting.
+        const rA0 = -225 * Math.PI / 180;   // ~7:30, lower left
+        const rA1 =   75 * Math.PI / 180;   // ~4:30, lower right
         let rAng = rA0;
         let rGuard = 0;
         while (rAng < rA1 && rGuard++ < 240) {
@@ -1427,7 +1447,17 @@ export function generateStructureSilhouette(
             const cA   = rAng + (rRnd() * 0.12 - 0.06);
             rPut(circleCx + cRad * Math.cos(cA), circleCy + cRad * Math.sin(cA), cr);
           }
-          rAng += (rBall * (0.60 + rRnd() * 0.26)) / circR;
+          // A second backer, so the band is three deep where the reference is
+          // three to four. Placed on the inboard side of the run as often as
+          // the outboard one, which is what gives the clustered bunched look
+          // rather than a widening ribbon.
+          if (rRnd() < 0.6) {
+            const c2 = rBall * (0.55 + rRnd() * 0.3);
+            const c2Rad = circR + off + rBall * (rRnd() * 1.6 - 0.8);
+            const c2A   = rAng + (rRnd() * 0.16 - 0.08);
+            rPut(circleCx + c2Rad * Math.cos(c2A), circleCy + c2Rad * Math.sin(c2A), c2);
+          }
+          rAng += (rBall * (0.46 + rRnd() * 0.22)) / circR;
         }
 
         // 5in fillers last, each tucked against a larger parent and pushed
