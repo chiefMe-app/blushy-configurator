@@ -1358,7 +1358,33 @@ function clearAllStandees() {
     let panels: BackdropItem[];
     switch (templateId) {
       case "single_arch":        panels = [makeArchUnsized("arch-1")]; break;
-      case "single_round":       panels = [makeBackdropItem("round")]; break;
+      case "single_round": {
+        // 2026-10-20, customer request: Single Round comes with "Happy Birthday"
+        // printed in silver and the Elsa Solo standee already on — the
+        // customer removes either below if they do not want it.
+        const round = makeBackdropItem("round");
+        panels = [{ ...round, text: { ...round.text, enabled: true, value: DEFAULT_TEXT_VALUE, color: DEFAULT_TEXT_COLOR } }];
+        const elsa = (themeCutoutPresets ?? []).find((pr) => /elsa solo/i.test(pr.label));
+        if (elsa && selectedCutoutAssets.length === 0) {
+          patchDecor({
+            cutouts: {
+              ...normalizedCut,
+              size: "none",
+              position: "floor",
+              source: "preset",
+              presetAssetId: undefined,
+              mode: "standees",
+              selectedAssets: [{
+                assetId: elsa.assetId,
+                label: elsa.label,
+                previewUrl: elsa.previewUrl,
+                quantities: { ...emptyCutoutQuantities(), large: 1 },
+              }],
+            },
+          });
+        }
+        break;
+      }
       // 2026-09-05: the Banner card was in the setup list but clicking it did
       // nothing — this switch had no case for it, so it fell to `default:
       // return`. A banner has one fixed size (2x2m), so unlike an arch it needs

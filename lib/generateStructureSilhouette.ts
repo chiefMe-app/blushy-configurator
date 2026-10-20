@@ -3693,21 +3693,40 @@ export function generateStructureSilhouette(
           `L ${px(0.08).toFixed(1)},${py(0.16).toFixed(1)}`,
           "Z",
         ].join(" ");
-        plinthLayer.push(
-          `<path d="${d1}" fill="#FFFFFF" stroke="rgba(45,45,45,0.92)" stroke-width="4" stroke-linejoin="round"/>`,
+        // 2026-10-20: on the lone round the marker is drawn soft. That
+        // scene renders on flux-2/edit, which — unlike flash on the arches —
+        // copied the bold black outline and flat bulb dots literally: the
+        // customer got a black-and-white line drawing of a 1 with black spots
+        // ("isik neden bu sekilde geldi?"). A pale body with a thin grey edge
+        // renders as a solid white numeral, and bulbs drawn as glowing points
+        // (white core, warm halo) come back lit instead of as brown dots.
+        plinthLayer.push(singleRound
+          ? `<path d="${d1}" fill="#F6F4F0" stroke="rgba(150,150,150,0.75)" stroke-width="2" stroke-linejoin="round"/>`
+          : `<path d="${d1}" fill="#FFFFFF" stroke="rgba(45,45,45,0.92)" stroke-width="4" stroke-linejoin="round"/>`,
         );
         // Warm bulbs set into the face: down the body, then along the base bar.
         const bulbR = digitW * 0.055;
+        if (singleRound) {
+          plinthLayer.push(
+            `<defs><radialGradient id="marqueeBulbGlow">` +
+            `<stop offset="0%" stop-color="#FFFFFF"/><stop offset="30%" stop-color="#FFF6D8"/>` +
+            `<stop offset="55%" stop-color="#FFD978" stop-opacity="0.85"/>` +
+            `<stop offset="100%" stop-color="#FFC24A" stop-opacity="0"/></radialGradient></defs>`,
+          );
+        }
+        const bulbAttrs = singleRound
+          ? `r="${(bulbR * 2).toFixed(1)}" fill="url(#marqueeBulbGlow)"`
+          : `r="${bulbR.toFixed(1)}" fill="#FFF3D6" stroke="rgba(120,110,90,0.55)" stroke-width="1"`;
         for (let b = 0; b < 7; b++) {
           plinthLayer.push(
             `<circle cx="${px(0.50).toFixed(1)}" cy="${py(0.09 + b * 0.115).toFixed(1)}" ` +
-            `r="${bulbR.toFixed(1)}" fill="#FFF3D6" stroke="rgba(120,110,90,0.55)" stroke-width="1"/>`,
+            `${bulbAttrs}/>`,
           );
         }
         for (const fr of [0.18, 0.50, 0.82]) {
           plinthLayer.push(
             `<circle cx="${px(fr).toFixed(1)}" cy="${py(0.93).toFixed(1)}" ` +
-            `r="${bulbR.toFixed(1)}" fill="#FFF3D6" stroke="rgba(120,110,90,0.55)" stroke-width="1"/>`,
+            `${bulbAttrs}/>`,
           );
         }
       } else {
@@ -3717,7 +3736,9 @@ export function generateStructureSilhouette(
         plinthLayer.push(
           `<text x="${(x + digitW / 2).toFixed(1)}" y="${(y + digitH).toFixed(1)}" text-anchor="middle" ` +
           `font-family="Arial Black, Arial, sans-serif" font-size="${fontPx.toFixed(0)}" ` +
-          `fill="#FFFFFF" stroke="rgba(45,45,45,0.92)" stroke-width="4" stroke-linejoin="round">${glyph}</text>`,
+          (singleRound
+            ? `fill="#F6F4F0" stroke="rgba(150,150,150,0.75)" stroke-width="2" stroke-linejoin="round">${glyph}</text>`
+            : `fill="#FFFFFF" stroke="rgba(45,45,45,0.92)" stroke-width="4" stroke-linejoin="round">${glyph}</text>`),
         );
       }
     }
