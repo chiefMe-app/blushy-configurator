@@ -160,7 +160,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "round-marquee-glow-defaults-v115";
+const RENDER_CACHE_VERSION = "mirror-silver-text-v116";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -2191,6 +2191,10 @@ forbiddenBalloonColorLabels: hasSempertexLock
           // Black lettering is what the model produces and what a customer who
           // picked black already wanted, so leave those alone.
           if (0.299 * tr + 0.587 * tg + 0.114 * tb < 60) continue;
+          // Silver is mirror acrylic: its look IS the light and dark bands of
+          // reflection, and recolouring every letter pixel to one grey flattens
+          // it back into paint. Leave the model's lettering as painted.
+          if (target.toLowerCase() === resolveTextColorHex("silver").toLowerCase()) continue;
 
           // Padded well beyond the guide's own lettering: the model paints the
           // words about twice as wide as the guide draws them, and slightly

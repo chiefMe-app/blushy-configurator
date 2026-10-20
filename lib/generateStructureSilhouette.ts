@@ -502,7 +502,9 @@ function customTextGuide(
   // band of board they leave clear.
   const cover = 0.30;
   const clearW =
-    roundClear ? pw * 0.50 :
+    // 2026-10-20: 0.50 -> 0.36, "yazi boyutu daha kuculsun". The font is
+    // sized from this width, so the lettering scales down with it.
+    roundClear ? pw * 0.36 :
     garlandSide === "both" ? pw * (1 - 2 * cover) :
     garlandSide === "none" ? pw * 0.85 :
     pw * (1 - cover) * 0.92;
@@ -538,6 +540,19 @@ function customTextGuide(
   const lineGap = fontSize * 1.18;
   const font = TEXT_GUIDE_FONT[fontStyle] ?? TEXT_GUIDE_FONT.script;
   const fill = resolveTextColorHex(color);
+  // 2026-10-20: silver lettering is MIRROR acrylic, like the customer's
+  // reference ("ICE ICE Baby" cut from polished silver acrylic). Drawn as
+  // flat #A7ABB1 it rendered as dull grey paint. It is drawn the way the
+  // chrome balloons are: hard bands of white and dark through the letters,
+  // which is what reads as a reflective surface.
+  const silver = color === "silver";
+  const silverDefs = silver
+    ? `<defs><linearGradient id="mirrorSilverText" x1="0" y1="0" x2="0.35" y2="1">` +
+      `<stop offset="0%" stop-color="#FFFFFF"/><stop offset="28%" stop-color="#D9DDE2"/>` +
+      `<stop offset="48%" stop-color="#6F757D"/><stop offset="62%" stop-color="#F4F6F8"/>` +
+      `<stop offset="82%" stop-color="#9AA0A8"/><stop offset="100%" stop-color="#E9ECEF"/>` +
+      `</linearGradient></defs>`
+    : "";
   // Any near-white lettering needs an outline to exist at all against a white
   // board — judged on the resolved colour, so a customer-picked pale hex gets
   // the same treatment the "white" preset always had.
@@ -561,10 +576,12 @@ function customTextGuide(
       `font-family="${font.family}" font-weight="${font.weight}" font-size="${fontSize}"`;
     // Halo first so the word stays legible wherever it meets a balloon edge.
     return `<text ${attrs} fill="none" stroke="${halo}" stroke-width="4" stroke-linejoin="round">${safe}</text>` +
-           `<text ${attrs} fill="${fill}"${outline}>${safe}</text>`;
+           (silver
+             ? `<text ${attrs} fill="url(#mirrorSilverText)" stroke="rgba(85,90,96,0.85)" stroke-width="1">${safe}</text>`
+             : `<text ${attrs} fill="${fill}"${outline}>${safe}</text>`);
   }).join("");
   return {
-    svg,
+    svg: silverDefs + svg,
     // Deliberately larger than the guide's own lettering: the render model
     // draws the words bigger and lower than the guide does, and a box sized to
     // the guide caught only part of them (measured 2026-09-04 — the guide box

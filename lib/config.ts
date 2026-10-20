@@ -571,7 +571,7 @@ const TEXT_COLOR_NAMES: { name: string; hex: string }[] = [
 export function describeTextColor(color: TextColor | undefined, accentHex?: string): string {
   // Silver is a finish, not just a grey: named as metal so it is not painted
   // as flat grey ink.
-  if (color === "silver") return "shiny metallic silver";
+  if (color === "silver") return "mirror-polished silver";
   const hex = resolveTextColorHex(color, accentHex);
   const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
   let best = TEXT_COLOR_NAMES[0], bestD = Infinity;

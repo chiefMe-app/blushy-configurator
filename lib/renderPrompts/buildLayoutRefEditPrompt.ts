@@ -1157,9 +1157,13 @@ export function buildLayoutRefEditPrompt(
     && sceneModel.panels[0]?.text?.enabled && (sceneModel.panels[0]?.text?.value ?? "").trim().length > 0
     ? sceneModel.panels[0] : null;
   const frontRoundTextLine = frontRoundTextPanel
-    ? `The words "${frontRoundTextPanel.text.value.trim()}" are printed on the round board in ` +
+    ? `The words "${frontRoundTextPanel.text.value.trim()}" are ${frontRoundTextPanel.text.color === "silver" ? "mounted" : "printed"} on the round board in ` +
       `${describeTextColor(frontRoundTextPanel.text.color)} ${({ script: "flowing script", block: "bold block", elegant: "elegant serif" } as Record<string, string>)[frontRoundTextPanel.text.fontStyle] ?? "flowing script"} ` +
-      `lettering, large and clearly readable, in the clear white area right of centre below the balloons. `
+      `lettering, clearly readable, in the clear white area right of centre below the balloons. ` +
+      (frontRoundTextPanel.text.color === "silver"
+        ? `The letters are cut from MIRROR-FINISH silver acrylic: shiny, reflective like polished chrome, ` +
+          `catching bright highlights — not flat grey paint, not printed ink. `
+        : ``)
     : "";
 
   const frontNumDigits = String(sceneModel.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
@@ -1633,7 +1637,9 @@ export function buildLayoutRefEditPrompt(
           // backdrop path (fal-ai/flux-2/edit) was quietly recolouring the
           // lettering to match the balloons: black was reported coming back
           // pale blue whatever the customer picked (2026-09-03).
-          `Those letters are ${colourName} — solid ${colourName} lettering, the exact colour shown in the reference image. ` +
+          (p.text.color === "silver"
+            ? `Those letters are cut from mirror-finish silver acrylic — shiny and reflective like polished chrome, never flat grey paint. `
+            : `Those letters are ${colourName} — solid ${colourName} lettering, the exact colour shown in the reference image. `) +
           `Do not recolour the lettering to match the balloons, the backdrop, or the room. ` +
           // 2026-09-04: a three-word message came back as "Happy Birthday /
           // Arya / Arya" — the model echoed the last line. It may wrap the
