@@ -1332,186 +1332,159 @@ export function generateStructureSilhouette(
         layout.panels.length === 1;
 
       if (isRoundScene) {
-        // Round panel: a dense organic garland hugging the outer perimeter.
+        // Round panel: the customer's blue installation photo, TRANSCRIBED.
         //
-        // 2026-10-15. This used to be 18 single circles of radius 12-22px
-        // stepped evenly round an arc — a bead necklace, not a garland. The
-        // render reproduced exactly that: a thin scatter of separate balloons
-        // that came back looking like foil teardrops rather than a latex
-        // garland. Every other layout in this file got a thick layered band
-        // years ago; the round panel was simply never brought across.
+        // 2026-10-20: "make the balloon amount and balloon locations exactly
+        // like the blue balloon reference". The procedural horseshoe (about
+        // 236 balloons walked evenly round the rim) could be tuned towards
+        // that photo but never become it: the photo is not a ring at all. It
+        // is about 90 balloons in two masses — a heavy one that starts as a
+        // crown just left of 12 o'clock, runs down the whole left side and
+        // spills well out past the rim onto the floor, and a separate cluster
+        // that starts just below 3 o'clock and comes down to the floor on the
+        // right. The top right quarter of the disc and the floor between the
+        // two masses are left bare.
         //
-        // It now walks the perimeter the way the lone arch walks its contour:
-        // each step advances by the size of the balloon just placed, so
-        // spacing tracks size and neighbours touch and nest; a companion sits
-        // outward of each one so the band is two deep; 5in balloons are tucked
-        // against larger parents at the end; and an overlap guard stops any of
-        // them burying a neighbour.
+        // So the table below IS the photo: every balloon's centre and radius
+        // read off a grid laid over it, in the photo's own pixels. The disc
+        // there is centred at (520, 584) with a radius of 280, and everything
+        // is scaled from that onto our disc. The slot letter is the balloon's
+        // colour in the photo — B chrome blue, P pastel blue, S chrome silver,
+        // W white — mapped onto the customer's palette below, so the photo's
+        // colour distribution carries across without its colours. The clear
+        // bubble balloons on poles in the photo are separate props and are
+        // not part of the garland.
         const rPanel   = layout.panels[0];
         const circR    = rPanel.pw / 2;
         const circleCx = rPanel.cx;
         // Anchor to floor so circle bottom == floorY (no floating gap → no invented base)
         const circleCy = rPanel.floorY - circR;
 
-        // Three size families, scaled to the disc rather than to pixels so a
-        // smaller round backdrop keeps the same proportions.
-        // On the shared standard. The statement size was already about
-        // right, but the standard and filler worked out at 7in and 3in on a
-        // 200cm disc against the arch's 9.5in and 4.3in — the same garland
-        // in two different grains.
-        const famR = balloonRadiiPx(rPanel.widthCm, rPanel.pw);
-        const rR36 = famR.X;
-        const rR12 = famR.M;
-        const rR5  = famR.S;
+        type RefBalloon = [number, number, number, "B" | "P" | "S" | "W"];
+        const REF_CX = 520, REF_CY = 584, REF_R = 280;
+        const ROUND_REF: RefBalloon[] = [
+          // crown, from just left of 12 o'clock to about 1 o'clock
+          [462, 265, 30, "B"], [512, 280, 25, "P"], [554, 267, 26, "B"], [550, 297, 17, "S"],
+          [574, 307, 17, "W"], [616, 312, 30, "S"], [527, 322, 19, "W"], [555, 332, 14, "P"],
+          [579, 337, 15, "S"], [505, 350, 17, "S"], [532, 360, 19, "B"], [490, 317, 17, "P"],
+          [432, 292, 24, "W"], [455, 332, 27, "P"], [392, 317, 34, "B"], [322, 305, 50, "P"],
+          [330, 355, 31, "W"], [375, 370, 14, "S"], [415, 380, 27, "B"], [447, 375, 16, "B"],
+          [217, 345, 22, "B"], [262, 357, 30, "S"], [222, 380, 17, "W"], [290, 392, 16, "P"],
+          [327, 412, 27, "S"], [370, 400, 20, "P"], [367, 430, 17, "P"],
+          // left side, widening as it comes down and out past the rim
+          [255, 432, 47, "S"], [197, 397, 17, "S"], [190, 460, 22, "S"], [335, 470, 32, "B"],
+          [190, 535, 60, "P"], [135, 495, 30, "B"], [275, 530, 25, "W"], [312, 557, 25, "S"],
+          [ 75, 572, 50, "S"], [150, 615, 28, "B"], [172, 647, 28, "W"], [260, 640, 55, "B"],
+          [325, 615, 20, "S"], [135, 662, 15, "S"], [155, 690, 15, "S"], [ 70, 705, 55, "P"],
+          [265, 715, 30, "B"], [350, 730, 52, "B"], [322, 662, 22, "W"], [200, 690, 25, "P"],
+          [395, 690, 18, "P"], [228, 585, 22, "B"], [292, 488, 18, "P"],
+          // lower left, the heaviest part of the garland
+          [165, 770, 60, "S"], [160, 842, 57, "B"], [290, 830, 55, "B"], [425, 840, 75, "S"],
+          [305, 885, 25, "B"], [240, 848, 20, "W"], [270, 765, 25, "W"],
+          // floor, left
+          [152, 955, 60, "S"], [240, 937, 40, "P"], [ 82, 935, 30, "W"], [ 37, 960, 25, "W"],
+          [412, 948, 55, "S"], [325, 965, 22, "S"], [290, 950, 20, "W"], [288,1002, 25, "W"],
+          [334,1025, 28, "P"],
+          // right cluster, from just below 3 o'clock down to the floor
+          [860, 612, 52, "P"], [785, 610, 25, "S"], [780, 652, 30, "B"], [830, 667, 27, "B"],
+          [720, 642, 32, "P"], [705, 692, 27, "W"], [747, 687, 20, "W"], [795, 710, 27, "P"],
+          [870, 710, 35, "P"], [750, 715, 15, "S"], [705, 755, 37, "B"], [765, 755, 30, "B"],
+          [840, 785, 65, "B"], [650, 780, 30, "P"], [740, 810, 30, "W"], [688, 830, 27, "S"],
+          [615, 848, 55, "P"], [832, 848, 50, "S"], [728, 860, 27, "B"], [767, 845, 12, "S"],
+          [680, 880, 30, "B"], [785, 880, 20, "P"],
+          // floor, right
+          [648, 920, 42, "B"], [667, 958, 57, "P"], [775, 945, 55, "B"], [890, 940, 45, "W"],
+          [855,1005, 70, "W"], [580, 968, 20, "S"],
+        ];
 
-        const rDrawn: { x: number; y: number; r: number }[] = [];
-        const rMaxNest = 0.86;
-        let rIdx = 0;
-        // 2026-10-16: colour runs in BUNCHES. The customer's installation
-        // photo is built the way a decorator actually builds one — from
-        // bunches of one colour tied together, so the garland reads as blocks
-        // of purple, of chrome, of white. balloonAttrs(rIdx) with a counter
-        // that moves every balloon gave strict alternation instead, which is
-        // a large part of why it looked manufactured rather than organic.
-        let rColorIdx = 0;
-        let rColorRun = 0;
-        const rNextColor = (): number => {
-          if (rColorRun <= 0) {
-            const n = Math.max(1, colors.length);
-            rColorIdx = (rColorIdx + 1 + Math.floor(rRnd() * (n - 1))) % n;
-            rColorRun = 2 + Math.floor(rRnd() * 3);
-          }
-          rColorRun--;
-          return rColorIdx;
+        // ---- photo slot -> customer colour --------------------------------
+        // Chrome silver goes to a chrome colour and white to a white when the
+        // palette has them; the two blues share out whatever else was picked,
+        // pastel blue taking the first (primary) colour.
+        const uniqIdx: number[] = [];
+        colors.forEach((c, i) => {
+          if (!uniqIdx.some((j) => colors[j].toLowerCase() === c.toLowerCase())) uniqIdx.push(i);
+        });
+        const isWhiteHex = (hex: string) => {
+          const h = hex.replace(/^#/, "");
+          if (h.length < 6) return false;
+          return [0, 2, 4].every((k) => parseInt(h.slice(k, k + 2), 16) >= 235);
         };
-        const rPut = (bx: number, by: number, br: number, guard = true) => {
-          // Never below the floor — the disc sits on it, so a balloon past it
-          // reads as buried in the ground.
-          if (by - br > rPanel.floorY) return;
-          if (guard) {
-            for (const q of rDrawn) {
-              const d  = Math.hypot(bx - q.x, by - q.y);
-              const ov = (br + q.r - d) / (2 * Math.min(br, q.r));
-              if (ov > rMaxNest) return;
-            }
-          }
-          rDrawn.push({ x: bx, y: by, r: br });
-          content.push(`<circle cx=\"${bx.toFixed(1)}\" cy=\"${by.toFixed(1)}\" r=\"${br.toFixed(1)}\" ${balloonAttrs(rNextColor())}/>`);
-          rIdx++;
+        const chromeIdx = uniqIdx.find((i) => chromeHexSet.has(colors[i].toLowerCase()));
+        const whiteIdx  = uniqIdx.find((i) => isWhiteHex(colors[i]));
+        const restIdx   = uniqIdx.filter((i) => i !== chromeIdx && i !== whiteIdx);
+        const pool      = restIdx.length > 0 ? restIdx : uniqIdx;
+        const slotCount = { B: 0, P: 0, S: 0, W: 0 };
+        const slotColor = (slot: "B" | "P" | "S" | "W"): number => {
+          const k = slotCount[slot]++;
+          if (slot === "S" && chromeIdx !== undefined) return chromeIdx;
+          if (slot === "W" && whiteIdx  !== undefined) return whiteIdx;
+          if (slot === "P") return pool[(2 * k) % pool.length];
+          if (slot === "B") return pool[(2 * k + 1) % pool.length];
+          return pool[k % pool.length];
         };
-        let rSeed = 20261015;
-        const rRnd = () => { rSeed = (rSeed * 1103515245 + 12345) & 0x7fffffff; return rSeed / 0x7fffffff; };
 
-        // 2026-10-16: wraps BOTH sides now. The customer's installation photo
-        // runs from the lower LEFT of the disc, up the left side, over the top
-        // and down the right to the lower right — a horseshoe, open only at
-        // the bottom where the floor and the standees are. The old arc covered
-        // the right side only, which is why one side of the disc sat bare.
-        // Still not a closed ring: about 60 degrees stay open at the bottom,
-        // which is what the old left-side guard was really protecting.
-        const rA0 = -225 * Math.PI / 180;   // ~7:30, lower left
-        const rA1 =   75 * Math.PI / 180;   // ~4:30, lower right
-        let rAng = rA0;
-        let rGuard = 0;
-        while (rAng < rA1 && rGuard++ < 240) {
-          const t    = (rAng - rA0) / (rA1 - rA0);
-          const roll = rRnd();
-          // A few statement balloons, mostly standard, some smaller — and the
-          // band thins a little as it comes down to the floor.
-          // 2026-10-16: the mix moves DOWN a size. Measured against the disc
-          // in the customer's installation photo, its balloons run 10-13% of
-          // the disc's width with the largest at 16% — i.e. a garland built
-          // from ordinary 11" latex. Ours ran 16% typical and 26% at the top,
-          // about 1.6x too big, so the same 213 balloons made a chunky ring
-          // where theirs makes a fine dense mass. The 24cm standard is the
-          // workhorse now and the 40cm statement is an occasional accent,
-          // which is how a real garland is actually built.
-          const base = roll < 0.06 ? rR36
-            : roll < 0.30 ? famR.L
-            : roll < 0.86 ? rR12
-            : rR12 * 0.80;
-          const rBall = base * (1 - 0.14 * t);
-          // Straddle the perimeter so the garland sits ON the disc edge.
-          // Biased further INBOARD again (2026-10-16): in the reference the
-          // garland laps well over the face of the disc, where ours was
-          // sitting as a ring just outside it with the two barely touching.
-          const off = (rRnd() * 1.6 - 1.15) * rBall;
-          const rad = circR + off;
-          const bx  = circleCx + rad * Math.cos(rAng);
-          const by  = circleCy + rad * Math.sin(rAng);
-          rPut(bx, by, rBall);
-
-          // Companion tucked OUTWARD, so the band reads two deep without
-          // creeping across the face of the disc.
-          if (rRnd() < 0.9) {
-            // 2026-10-16: companions are most of the band by count, so their
-            // size is what sets the median balloon — at 0.68-0.92 of their
-            // parent they held it at 8% of the disc against the reference's
-            // 10-13%. A real garland's backers are the same size as the
-            // balloons they sit behind, not noticeably smaller.
-            const cr  = rBall * (0.84 + rRnd() * 0.18);
-            // Either side of the main balloon rather than always outward, so
-            // the band thickens around the edge instead of marching away.
-            const cRad = circR + off + rBall * (rRnd() * 1.25 - 0.45);
-            const cA   = rAng + (rRnd() * 0.12 - 0.06);
-            rPut(circleCx + cRad * Math.cos(cA), circleCy + cRad * Math.sin(cA), cr);
-          }
-          // A second backer, so the band is three deep where the reference is
-          // three to four. Placed on the inboard side of the run as often as
-          // the outboard one, which is what gives the clustered bunched look
-          // rather than a widening ribbon.
-          if (rRnd() < 0.6) {
-            const c2 = rBall * (0.76 + rRnd() * 0.22);
-            const c2Rad = circR + off + rBall * (rRnd() * 1.6 - 0.8);
-            const c2A   = rAng + (rRnd() * 0.16 - 0.08);
-            rPut(circleCx + c2Rad * Math.cos(c2A), circleCy + c2Rad * Math.sin(c2A), c2);
-          }
-          rAng += (rBall * (0.46 + rRnd() * 0.22)) / circR;
+        // ---- photo coordinates -> our disc --------------------------------
+        // Two adaptations, both forced by our camera rather than chosen:
+        //  * The photo's disc fills about half its frame; ours fills more of
+        //    the canvas, so the mass that spills out past the rim on the left
+        //    would run off the edge. Only the part BEYOND the rim is drawn in,
+        //    by the least amount that keeps every balloon on the canvas.
+        //  * The photo looks down onto a raised platform, so its floor
+        //    balloons sit far below the disc. Ours is eye level, where the
+        //    floor in front of the disc is foreshortened — floor balloons are
+        //    lifted until none sits lower than the plinth's front edge.
+        // The whole scene is drawn at SCALE inside a margin, so the visible
+        // canvas in these coordinates runs from -marginX/SCALE to
+        // (W + marginX)/SCALE, not 0 to W.
+        const visLeft  = -marginX / SCALE;
+        const visRight = (W - marginX) / SCALE;
+        const limitU = (Math.min(circleCx - visLeft, visRight - circleCx) - (W * 0.015) / SCALE) / circR;
+        let squeeze = 1;
+        for (const [x, , r] of ROUND_REF) {
+          const u = Math.abs(x - REF_CX) / REF_R, rr = r / REF_R;
+          if (u > 1 && u + rr > limitU) squeeze = Math.min(squeeze, Math.max(0, (limitU - rr - 1) / (u - 1)));
         }
+        const maxBottomV = 1 + (plinthForwardPx / circR) + 0.03;
+        const plL = plinthDrawnLeftPx as number | null;
+        const plR = plinthDrawnRightPx as number | null;
+        const plPad = circR * 0.02;
 
-        // 5in fillers last, each tucked against a larger parent and pushed
-        // outward from the disc, so they never land on its face.
-        // CREVICE FILLERS.
-        //
-        // 2026-10-15: the customer's reference packs genuinely small
-        // balloons into the V between every pair of big ones, and that is
-        // what reads as organic ("organik durmuyor"). The previous pass hung
-        // one filler off every third balloon, pointing straight out from the
-        // disc — which is a decoration on a chain, not a stuffed garland.
-        //
-        // This walks PAIRS of neighbouring balloons instead and tucks a small
-        // one into the crevice between them, pushed outward just enough to
-        // sit in the notch. Not the same thing as the loose scattered minis
-        // removed on 2026-09-11: those floated free, these touch two parents
-        // each. The overlap guard still applies, so a crevice that is already
-        // full simply refuses the filler.
-        const rSpine = rDrawn.slice();
-        for (let i = 0; i < rSpine.length; i++) {
-          const a = rSpine[i];
-          if (a.r < rR12 * 0.65) continue;
-          for (let j = i + 1; j < rSpine.length; j++) {
-            const b = rSpine[j];
-            if (b.r < rR12 * 0.65) continue;
-            const d = Math.hypot(a.x - b.x, a.y - b.y);
-            // Neighbours, not distant pairs and not near-coincident ones.
-            // The lower bound was 0.5 and threw away almost every real pair:
-            // consecutive balloons in this run are stepped by about 0.6 of a
-            // radius, so they sit well inside that and were all skipped. A
-            // heavily overlapping pair still has an outer notch to fill.
-            if (d > (a.r + b.r) * 1.15 || d < (a.r + b.r) * 0.28) continue;
-            // 2026-10-16: fewer. At a 0.2 skip the fillers outnumbered the
-            // garland proper and pulled the median balloon down to 7% of the
-            // disc's width against the reference's 10-13%. They are an accent
-            // in the notches, not the body of the band.
-            if (rRnd() < 0.55) continue;
-            const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-            const out = Math.atan2(my - circleCy, mx - circleCx);
-            // Far enough out to sit in the outer notch rather than behind the
-            // two parents, where it would be invisible.
-            const push = Math.min(a.r, b.r) * (0.75 + rRnd() * 0.55);
-            const fr = rR5 * (0.65 + rRnd() * 0.75);
-            rPut(mx + Math.cos(out) * push, my + Math.sin(out) * push, fr);
+        const placed = ROUND_REF.map(([x, y, r, slot]) => {
+          let u = (x - REF_CX) / REF_R;
+          let v = (y - REF_CY) / REF_R;
+          // Read off the photo, each radius is what shows of that balloon;
+          // the photo's garland is solid because balloons further back fill
+          // every gap between those, and those were not transcribable. A
+          // slightly fuller radius stands in for them, so the band closes up
+          // instead of showing the disc between its balloons.
+          const rr = (r * (y >= 900 ? 1 : 1.08)) / REF_R;
+          if (Math.abs(u) > 1) u = Math.sign(u) * (1 + (Math.abs(u) - 1) * squeeze);
+          if (v > 0.9) v = 0.9 + (v - 0.9) * 0.5;
+          if (v + rr > maxBottomV) v = maxBottomV - rr;
+          let bx = circleCx + u * circR;
+          const by = circleCy + v * circR;
+          const br = rr * circR;
+          // Keep the plinth's face clear: anything in the lower half that
+          // would sit across it is slid sideways, away from the centre, just
+          // far enough to clear it.
+          if (plL !== null && plR !== null && by > circleCy) {
+            const mid = (plL + plR) / 2;
+            if (bx < mid && bx + br > plL - plPad) bx = plL - plPad - br;
+            if (bx >= mid && bx - br < plR + plPad) bx = plR + plPad + br;
           }
+          return { bx, by, br, slot, floor: y >= 900 };
+        });
+
+        // Colours are assigned in the photo's own order so the bunches stay
+        // where they are in the photo; drawing order is separate. Larger
+        // balloons go down first so the small ones read as tucked into them,
+        // and the floor balloons, which stand in front of everything, last.
+        const withColour = placed.map((p) => ({ ...p, ci: slotColor(p.slot) }));
+        const body  = withColour.filter((p) => !p.floor).sort((a, b) => b.br - a.br);
+        const floor = withColour.filter((p) => p.floor).sort((a, b) => a.by - b.by);
+        for (const p of [...body, ...floor]) {
+          content.push(`<circle cx="${p.bx.toFixed(1)}" cy="${p.by.toFixed(1)}" r="${p.br.toFixed(1)}" ${balloonAttrs(p.ci)}/>`);
         }
       } else {
         // Dense organic garland helper — thick layered band: floor/base cluster
