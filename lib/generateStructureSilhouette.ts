@@ -17,6 +17,7 @@
 
 import type { BackdropItem, PlinthSize, BackdropShapeId, BalloonStyleId } from "./config";
 import { resolveTextColorHex } from "./config";
+import { textPathD } from "./guideFonts";
 import { calculateExactLayout } from "./calculateExactLayout";
 import { calculateRenderAspectRatio } from "./calculateRenderAspectRatio";
 import type { FalImageSize } from "./calculateRenderAspectRatio";
@@ -670,18 +671,19 @@ function customTextGuide(
   const firstY = y - ((lines.length - 1) * lineGap) / 2;
   const svg = lines.map((line, i) => {
     const ly    = firstY + i * lineGap;
-    const safe  = escapeXml(line);
-    const attrs =
-      `x="${tx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" ` +
-      `font-family="${font.family}" font-weight="${font.weight}" font-size="${fontSize}"`;
+    // 2026-10-20: drawn as a path from an embedded font (lib/guideFonts),
+    // not as <text>. On Vercel the rasteriser has no fonts installed, so
+    // every word came out as a row of empty boxes and the render printed
+    // "□□□□□" on the backdrop. Locally it looked fine — Windows has fonts.
+    const d = textPathD(line, fontStyle, tx, ly, fontSize);
     // Halo first so the word stays legible wherever it meets a balloon edge.
-    return `<text ${attrs} fill="none" stroke="${halo}" stroke-width="4" stroke-linejoin="round">${safe}</text>` +
+    return `<path d="${d}" fill="none" stroke="${halo}" stroke-width="4" stroke-linejoin="round"/>` +
            (silver
              // Thickened with a stroke in the same gradient: a script hairline has
              // no surface for a reflection to show on.
-             ? `<text ${attrs} fill="url(#mirrorSilverText)" stroke="url(#mirrorSilverText)" stroke-width="${(fontSize * 0.07).toFixed(1)}" stroke-linejoin="round">${safe}</text>` +
-               `<text ${attrs} fill="none" stroke="rgba(60,64,70,0.55)" stroke-width="0.8">${safe}</text>`
-             : `<text ${attrs} fill="${fill}"${outline}>${safe}</text>`);
+             ? `<path d="${d}" fill="url(#mirrorSilverText)" stroke="url(#mirrorSilverText)" stroke-width="${(fontSize * 0.07).toFixed(1)}" stroke-linejoin="round"/>` +
+               `<path d="${d}" fill="none" stroke="rgba(60,64,70,0.55)" stroke-width="0.8"/>`
+             : `<path d="${d}" fill="${fill}"${outline}/>`);
   }).join("");
   return {
     svg: silverDefs + svg,
@@ -692,9 +694,8 @@ function customTextGuide(
     silverInk: silver
       ? lines.map((line, i) => {
           const ly = firstY + i * lineGap;
-          return `<text x="${tx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" ` +
-            `font-family="${font.family}" font-weight="${font.weight}" font-size="${fontSize}" ` +
-            `fill="#FFFFFF" stroke="#FFFFFF" stroke-width="${(fontSize * 0.16).toFixed(1)}" stroke-linejoin="round">${escapeXml(line)}</text>`;
+          return `<path d="${textPathD(line, fontStyle, tx, ly, fontSize)}" ` +
+            `fill="#FFFFFF" stroke="#FFFFFF" stroke-width="${(fontSize * 0.16).toFixed(1)}" stroke-linejoin="round"/>`;
         }).join("")
       : "",
     // Deliberately larger than the guide's own lettering: the render model
@@ -3713,15 +3714,15 @@ export function generateStructureSilhouette(
     const firstY = cyN - ((lines.length - 1) * lineGap) / 2;
     lines.forEach((ln, i) => {
       const y = firstY + i * lineGap;
-      const esc = ln.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      const attrs = `x="${cxN.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" ` +
-        `font-family="Brush Script MT, Segoe Script, cursive" font-size="${fontSize.toFixed(0)}" font-style="italic"`;
+      // A path from the embedded script font, not <text>: the rasteriser on
+      // Vercel has no fonts and drew empty boxes (2026-10-20).
+      const d = textPathD(ln, "script", cxN, y, fontSize);
       // Halo first, then the tube — reads as a glowing sign rather than as text.
-      content.push(`<text ${attrs} fill="none" stroke="#FFE9A8" stroke-width="${(fontSize * 0.34).toFixed(1)}" stroke-linejoin="round" opacity="0.75">${esc}</text>`);
+      content.push(`<path d="${d}" fill="none" stroke="#FFE9A8" stroke-width="${(fontSize * 0.34).toFixed(1)}" stroke-linejoin="round" opacity="0.75"/>`);
       // 2026-09-05: the tube used to be stroked in gold-brown, which is what the
       // guide showed and, on the shimmer setups, what the render picked up. The
       // sign is warm WHITE, so the marker is too — a pale warm outline, not gold.
-      content.push(`<text ${attrs} fill="#FFFFFF" stroke="#E8C98A" stroke-width="${Math.max(2, fontSize * 0.07).toFixed(1)}" stroke-linejoin="round">${esc}</text>`);
+      content.push(`<path d="${d}" fill="#FFFFFF" stroke="#E8C98A" stroke-width="${Math.max(2, fontSize * 0.07).toFixed(1)}" stroke-linejoin="round"/>`);
     });
   }
 
@@ -3883,12 +3884,13 @@ export function generateStructureSilhouette(
         // 0.72 em is the cap height of Arial Black; dividing by it makes the
         // painted numeral the height we actually mean.
         const fontPx = digitH / 0.72;
+        // A path from the embedded block font (Archivo Black, the same 0.72em
+        // cap height), not <text>: on Vercel there are no fonts to draw it.
         plinthLayer.push(
-          `<text x="${(x + digitW / 2).toFixed(1)}" y="${(y + digitH).toFixed(1)}" text-anchor="middle" ` +
-          `font-family="Arial Black, Arial, sans-serif" font-size="${fontPx.toFixed(0)}" ` +
+          `<path d="${textPathD(glyph, "block", x + digitW / 2, y + digitH, fontPx)}" ` +
           (singleRound
-            ? `fill="#F6F4F0" stroke="rgba(150,150,150,0.75)" stroke-width="2" stroke-linejoin="round">${glyph}</text>`
-            : `fill="#FFFFFF" stroke="rgba(45,45,45,0.92)" stroke-width="4" stroke-linejoin="round">${glyph}</text>`),
+            ? `fill="#F6F4F0" stroke="rgba(150,150,150,0.75)" stroke-width="2" stroke-linejoin="round"/>`
+            : `fill="#FFFFFF" stroke="rgba(45,45,45,0.92)" stroke-width="4" stroke-linejoin="round"/>`),
         );
       }
     }
