@@ -81,6 +81,9 @@ export interface SilhouetteResult {
    *  draws it but does not reliably light the bulbs, so the route lights them
    *  afterwards at these points. Empty when there is no such number. */
   marqueeBulbs: { xFrac: number; yFrac: number; rFrac: number }[];
+  /** Full-canvas SVG mask (white on black) of any silver lettering, for the
+   *  route's chrome pass. Empty string when there is none. */
+  silverTextMaskSvg: string;
 }
 
 /** One size tier of standee cutout to draw in the guide. */
@@ -568,7 +571,7 @@ function customTextGuide(
     fontStyle?: string;
     color?: string;
   } = {},
-): { svg: string; zone: { xMin: number; xMax: number; yMin: number; yMax: number }; fill: string } {
+): { svg: string; zone: { xMin: number; xMax: number; yMin: number; yMax: number }; fill: string; silverInk: string } {
   const { hasGraphicBelow = false, garlandSide = "none", fontStyle = "script", color = "white" } = opts;
   const panelH = floorY - apexY;
   // The illustration zone starts at 32% of the panel height, so a text
@@ -639,10 +642,15 @@ function customTextGuide(
   // which is what reads as a reflective surface.
   const silver = color === "silver";
   const silverDefs = silver
-    ? `<defs><linearGradient id="mirrorSilverText" x1="0" y1="0" x2="0.35" y2="1">` +
-      `<stop offset="0%" stop-color="#FFFFFF"/><stop offset="28%" stop-color="#D9DDE2"/>` +
-      `<stop offset="48%" stop-color="#6F757D"/><stop offset="62%" stop-color="#F4F6F8"/>` +
-      `<stop offset="82%" stop-color="#9AA0A8"/><stop offset="100%" stop-color="#E9ECEF"/>` +
+    // 2026-10-20: harder, as hard as the chrome balloons' own mirror-ball
+    // gradient ("balonlardaki gibi shiny olsun"). The softer version came
+    // back as embossed brushed grey — silver, but not shiny. Blown-white
+    // bands against near-black reflected ones is what the balloons have.
+    ? `<defs><linearGradient id="mirrorSilverText" x1="0" y1="0" x2="0.25" y2="1">` +
+      `<stop offset="0%" stop-color="#FFFFFF"/><stop offset="16%" stop-color="#FFFFFF"/>` +
+      `<stop offset="34%" stop-color="#4A5058"/><stop offset="48%" stop-color="#FFFFFF"/>` +
+      `<stop offset="62%" stop-color="#C3C8CE"/><stop offset="78%" stop-color="#3F454C"/>` +
+      `<stop offset="92%" stop-color="#EEF1F4"/><stop offset="100%" stop-color="#FFFFFF"/>` +
       `</linearGradient></defs>`
     : "";
   // Any near-white lettering needs an outline to exist at all against a white
@@ -669,11 +677,26 @@ function customTextGuide(
     // Halo first so the word stays legible wherever it meets a balloon edge.
     return `<text ${attrs} fill="none" stroke="${halo}" stroke-width="4" stroke-linejoin="round">${safe}</text>` +
            (silver
-             ? `<text ${attrs} fill="url(#mirrorSilverText)" stroke="rgba(85,90,96,0.85)" stroke-width="1">${safe}</text>`
+             // Thickened with a stroke in the same gradient: a script hairline has
+             // no surface for a reflection to show on.
+             ? `<text ${attrs} fill="url(#mirrorSilverText)" stroke="url(#mirrorSilverText)" stroke-width="${(fontSize * 0.07).toFixed(1)}" stroke-linejoin="round">${safe}</text>` +
+               `<text ${attrs} fill="none" stroke="rgba(60,64,70,0.55)" stroke-width="0.8">${safe}</text>`
              : `<text ${attrs} fill="${fill}"${outline}>${safe}</text>`);
   }).join("");
   return {
     svg: silverDefs + svg,
+    // Silver lettering only: the same words in solid white with a thick
+    // stroke, for the route's chrome pass to use as a mask. The render puts
+    // the words where the guide draws them, so a slightly fattened copy of
+    // the guide's letters covers the painted ones and nothing else.
+    silverInk: silver
+      ? lines.map((line, i) => {
+          const ly = firstY + i * lineGap;
+          return `<text x="${tx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" ` +
+            `font-family="${font.family}" font-weight="${font.weight}" font-size="${fontSize}" ` +
+            `fill="#FFFFFF" stroke="#FFFFFF" stroke-width="${(fontSize * 0.16).toFixed(1)}" stroke-linejoin="round">${escapeXml(line)}</text>`;
+        }).join("")
+      : "",
     // Deliberately larger than the guide's own lettering: the render model
     // draws the words bigger and lower than the guide does, and a box sized to
     // the guide caught only part of them (measured 2026-09-04 — the guide box
@@ -947,6 +970,7 @@ export function generateStructureSilhouette(
   const content: string[] = [];
   const textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[] = [];
   const marqueeBulbsLayout: [number, number, number][] = [];
+  const silverInkLayer: string[] = [];
   // The plinth marker is collected separately and appended after the balloons.
   // Drawn in place it went into the guide BEFORE the garland, so balloon
   // circles covered its base and sides and the model saw a stub of a cylinder
@@ -1149,6 +1173,7 @@ export function generateStructureSilhouette(
         },
       );
       content.push(textGuide.svg);
+      if (textGuide.silverInk) silverInkLayer.push(textGuide.silverInk);
       textZones.push({ panelIdx: panel.idx, colorHex: textGuide.fill, ...textGuide.zone });
     }
   });
@@ -3903,6 +3928,11 @@ export function generateStructureSilhouette(
     archShimmerCompositionBalloons,
     archShimmerAccentZone,
     textZones,
+    silverTextMaskSvg: silverInkLayer.length > 0
+      ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">` +
+        `<rect width="${W}" height="${H}" fill="#000000"/>` +
+        `<g transform="translate(${marginX},${marginY}) scale(${SCALE})">${silverInkLayer.join("")}</g></svg>`
+      : "",
     marqueeBulbs: marqueeBulbsLayout.map(([bx, by, br]) => ({
       xFrac: (marginX + bx * SCALE) / W,
       yFrac: (marginY + by * SCALE) / H,

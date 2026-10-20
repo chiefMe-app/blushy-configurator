@@ -160,7 +160,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "marquee-block-lit-v117";
+const RENDER_CACHE_VERSION = "chrome-silver-text-v118";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -713,6 +713,7 @@ interface LayoutRefPngResult {
   textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[];
   /** Marquee number bulb centres/radii as canvas fractions (lone round only). */
   marqueeBulbs?: { xFrac: number; yFrac: number; rFrac: number }[];
+  silverTextMaskSvg?: string;
 }
 
 /**
@@ -782,6 +783,7 @@ async function generateLayoutReferencePng(
       dataUri, error: null, stage: null, bytes: pngBuffer.length,
       textZones: silhouette.textZones,
       marqueeBulbs: silhouette.marqueeBulbs,
+      silverTextMaskSvg: silhouette.silverTextMaskSvg,
       doubleArchGarlandBalloonsLeft:  silhouette.doubleArchGarlandBalloonsLeft,
       doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight,
       archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons,
@@ -2286,6 +2288,53 @@ forbiddenBalloonColorLabels: hasSempertexLock
       console.warn("[generate-controlled-render] text recolour failed, keeping AI lettering:", String(recolourErr));
     }
   }
+
+  // ── Chrome finish on silver lettering ────────────────────────────────────
+  // 2026-10-20, "happy birthday yazisi balonlardaki gibi shiny olsun". The
+  // model paints silver words as embossed brushed grey whatever the guide
+  // and prompt say — a hard chrome gradient in the guide and "the same
+  // finish as the chrome balloons" in the prompt changed nothing. What makes
+  // a surface read as polished metal is contrast within it: dark reflected
+  // edges against bright highlights. So inside the letters only (the
+  // guide's own lettering, fattened and feathered, as the mask) each
+  // pixel's lightness is pushed away from mid-grey, and given a faint cool
+  // tint. The board around the letters is never touched: board-white and
+  // anything coloured is skipped, and the effect fades out with the mask.
+  let silverChromeApplied = false;
+  if (pngResult.silverTextMaskSvg) {
+    try {
+      const baseBuf = workingImageBuf ?? await fetchFinalImage();
+      if (baseBuf) {
+        const sharpPkgC = await import("sharp");
+        const sharpFnC  = ((sharpPkgC as any).default ?? sharpPkgC) as (b: Buffer, o?: Record<string, unknown>) => any;
+        const { data, info } = await (sharpFnC(baseBuf).removeAlpha().raw()
+          .toBuffer({ resolveWithObject: true })) as { data: Buffer; info: { width: number; height: number; channels: number } };
+        const mw = info.width, mh = info.height, mc = info.channels;
+        const mask = await (sharpFnC(Buffer.from(pngResult.silverTextMaskSvg, "utf8"))
+          .resize(mw, mh, { fit: "fill" }).greyscale().blur(2).raw().toBuffer()) as Buffer;
+        for (let p = 0; p < mw * mh; p++) {
+          const m = mask[p] / 255;
+          if (m < 0.02) continue;
+          const i = p * mc;
+          const r = data[i], g = data[i + 1], b = data[i + 2];
+          const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+          const l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+          if (mx - mn > 28 || l > 0.80) continue;
+          const a = m * Math.min(1, (0.80 - l) / 0.10);
+          const c = Math.min(1, Math.max(0, (l - 0.60) * 2.4 + 0.52)) * 255;
+          data[i]     = Math.round(r * (1 - a) + Math.min(255, c + 4)  * a);
+          data[i + 1] = Math.round(g * (1 - a) + Math.min(255, c + 6)  * a);
+          data[i + 2] = Math.round(b * (1 - a) + Math.min(255, c + 10) * a);
+        }
+        workingImageBuf = await (sharpFnC(data, { raw: { width: mw, height: mh, channels: mc } }).png().toBuffer()) as Buffer;
+        outputImageUrl = `data:image/jpeg;base64,${(await (sharpFnC(workingImageBuf).jpeg({ quality: 92 }).toBuffer()) as Buffer).toString("base64")}`;
+        silverChromeApplied = true;
+      }
+    } catch (chromeErr) {
+      console.warn("[generate-controlled-render] silver chrome pass failed (continuing without):", String(chromeErr));
+    }
+  }
+  void silverChromeApplied;
 
   // ── Light the marquee number's bulbs ─────────────────────────────────────
   // 2026-10-20. The lone round's number is drawn in the guide as a block
