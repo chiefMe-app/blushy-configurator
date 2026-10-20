@@ -472,7 +472,7 @@ function customTextGuide(
     hasGraphicBelow?: boolean;
     /** Which side(s) of this panel the garland covers, so the lettering can
      *  be placed where the balloons are not. */
-    garlandSide?: "left" | "right" | "both" | "none";
+    garlandSide?: "left" | "right" | "both" | "none" | "round";
     fontStyle?: string;
     color?: string;
   } = {},
@@ -483,7 +483,14 @@ function customTextGuide(
   // baseline at 30% sat right on top of it and the printed artwork swallowed
   // the lettering (2026-09-03). When both are on the same panel the text moves
   // up into the panel's own top band and the zone below starts lower.
-  const y = apexY + panelH * (hasGraphicBelow ? 0.17 : 0.30);
+  // 2026-10-20: the lone round's garland is the customer's photo — a crown
+  // across the top left and a mass down the left side, a cluster low on the
+  // right — and it covers exactly the band this used to write in: "Happy"
+  // went under the crown and the render dropped the words altogether. The
+  // clear part of that disc is right of centre, between the crown and the
+  // plinth, which is also where the photo itself has its lettering.
+  const roundClear = garlandSide === "round";
+  const y = apexY + panelH * (roundClear ? 0.36 : hasGraphicBelow ? 0.17 : 0.30);
 
   // The garland covers roughly the outer 30% of the board it hangs on. Text
   // drawn across the full width therefore had its first letters hidden behind
@@ -495,10 +502,12 @@ function customTextGuide(
   // band of board they leave clear.
   const cover = 0.30;
   const clearW =
+    roundClear ? pw * 0.50 :
     garlandSide === "both" ? pw * (1 - 2 * cover) :
     garlandSide === "none" ? pw * 0.85 :
     pw * (1 - cover) * 0.92;
   const shift =
+    roundClear ? pw * 0.11 :
     garlandSide === "left"  ?  pw * cover / 2 :
     garlandSide === "right" ? -pw * cover / 2 : 0;
   const tx = cx + shift;
@@ -1014,8 +1023,9 @@ export function generateStructureSilhouette(
       const bothArches = backdropItems.length === 2 && backdropItems.every((i) => i.type === "arch");
       const fullerTier = balloonStyle === "full" || balloonStyle === "premium";
       const meanCx     = layout.panels.reduce((sum, p) => sum + p.cx, 0) / layout.panels.length;
-      const garlandSide: "left" | "right" | "both" | "none" =
+      const garlandSide: "left" | "right" | "both" | "none" | "round" =
         balloonStyle === "none" ? "none"
+          : layout.panels.length === 1 && shape === "round" ? "round"
           : bothArches ? (panel.cx < meanCx ? "left" : "right")
           : layout.panels.length === 1 && shape === "arch" ? (fullerTier ? "both" : "right")
           : "none";
@@ -1117,6 +1127,32 @@ export function generateStructureSilhouette(
   // used to be positioned against an estimate rebuilt from decorCx and
   // plinthSpacing, which did not match what was drawn, so it landed on a
   // column anyway.
+  // 2026-10-20, lone round with a character: the marquee number stands on
+  // the side OPPOSITE the character — "elsanin tam ters tarafinda" — at the
+  // plinth's depth, level with the character's feet. Computed here because
+  // the garland needs it too (it keeps that floor clear).
+  //
+  // Not the exact mirror of the character, which would centre it about 1.2
+  // disc radii right of centre. Tried at 1.23, 1.1 and 1.0 radii: the render
+  // dropped the number every time and filled its place with balloons. At
+  // 0.62 and 0.85 it was drawn every time, standing in front of the right
+  // cluster — 0.85 is the furthest out that holds.
+  const loneRoundNumberRect = (() => {
+    const digits = String(extras?.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
+    if (!extras?.numberLight?.enabled || digits.length === 0) return null;
+    if (layout.panels.length !== 1 || (backdropItems[layout.panels[0].idx]?.type ?? "") !== "round") return null;
+    const standeeCm = Math.max(0, ...(cutoutGuideItems ?? []).map((c) => c.heightCm));
+    if (standeeCm <= 0) return null;
+    const pn = layout.panels[0];
+    const pxPerCm = (pn.floorY - pn.apexY) / Math.max(1, backdropItems[pn.idx]?.heightCm ?? 200);
+    const digitH = 90 * pxPerCm, digitW = digitH * 0.60, gap = digitW * 0.14;
+    const groupW = digitW * digits.length + gap * (digits.length - 1);
+    const cx = pn.cx + 0.85 * (pn.pw / 2);
+    const visRight = (W - marginX) / SCALE;
+    const x = Math.min(cx - groupW / 2, visRight - groupW - digitH * 0.10);
+    const baseY = pn.floorY + plinthForwardPx;
+    return { x, w: groupW, top: baseY - digitH, baseY };
+  })();
   let plinthDrawnLeftPx: number | null = null;
   let plinthDrawnRightPx: number | null = null;
   layout.plinths.forEach((p, plinthIdx) => {
@@ -1474,6 +1510,15 @@ export function generateStructureSilhouette(
             if (bx >= mid && bx - br < plR + plPad) bx = plR + plPad + br;
           }
           return { bx, by, br, slot, floor: y >= 900 };
+        }).filter((b) => {
+          // A marquee number stands in front of the lower right. Drawn over
+          // the balloons there it was dropped from the render both times —
+          // a white digit on a heap of white and pastel circles reads as more
+          // balloons. The balloons it would hide are left out, so it stands
+          // in clear floor with the cluster showing round its edges.
+          const nr = loneRoundNumberRect;
+          if (!nr) return true;
+          return !(b.bx > nr.x + nr.w * 0.08 && b.bx < nr.x + nr.w * 0.92 && b.by > nr.top + (nr.baseY - nr.top) * 0.05);
         });
 
         // Colours are assigned in the photo's own order so the bunches stay
@@ -3586,14 +3631,23 @@ export function generateStructureSilhouette(
       span = (spanLeft.to - spanLeft.from) >= (spanRight.to - spanRight.from) ? spanLeft : spanRight;
     }
     const spanCx = (span.from + span.to) / 2;
-    const startX = Math.max(
-      margin,
-      Math.min(spanCx - groupW / 2, W - groupW - margin),
-    );
+    // Lone round with a character: mirrored opposite it (loneRoundNumberRect).
+    // The centre of the free span used before put the digit across the middle
+    // of the right-hand balloon cluster, and the render dropped it.
+    const startX = loneRoundNumberRect
+      ? loneRoundNumberRect.x
+      : Math.max(
+          margin,
+          Math.min(spanCx - groupW / 2, W - groupW - margin),
+        );
     // Stepped FORWARD of the backdrop's own floor line, the way the plinth is —
     // otherwise the digit is drawn inside the garland's floor cluster and the
-    // render cannot tell the two apart.
-    const baseY = tallest.floorY + (tallest.floorY - tallest.apexY) * 0.05;
+    // render cannot tell the two apart. On the lone round it stands at the
+    // plinth's own depth, 50cm out, level with the character's feet: the
+    // round's floor balloons now reach forward almost that far.
+    const baseY = loneRoundNumberRect
+      ? loneRoundNumberRect.baseY
+      : tallest.floorY + (tallest.floorY - tallest.apexY) * 0.05;
     for (let d = 0; d < numDigits.length; d++) {
       const x = startX + d * (digitW + gap);
       const y = baseY - digitH;
@@ -3951,7 +4005,7 @@ export function computeDoubleArchPlinthOverlayGeometry(
 export function computeBackdropGroupGeometry(
   backdropItems: BackdropItem[],
   plinthSizes:   PlinthSize[],
-): { leftFrac: number; rightFrac: number; floorYFrac: number; apexYFrac: number; refHeightCm: number } | null {
+): { leftFrac: number; rightFrac: number; floorYFrac: number; frontFloorYFrac: number; apexYFrac: number; refHeightCm: number } | null {
   if (backdropItems.length === 0) return null;
 
   const { falImageSize } = calculateRenderAspectRatio(backdropItems);
@@ -3971,10 +4025,20 @@ export function computeBackdropGroupGeometry(
   const refPanel   = layout.panels[0];
   const refItem    = backdropItems[refPanel.idx] as { heightCm?: number } | undefined;
 
+  // Where the plinth's base is drawn — 50cm in front of the boards, with
+  // the same foreshortening the guide itself applies (see plinthForwardPx
+  // in generateStructureSilhouette; the two must stay identical).
+  const isRingScene    = backdropItems[0]?.type === "balloon_ring";
+  const pxPerCmForGap  = refPanel.heightCm > 0 ? (refPanel.floorY - refPanel.apexY) / refPanel.heightCm : 0;
+  const plinthForwardPx = isRingScene
+    ? (layout.floorY - groupApex) * 0.10
+    : 50 * pxPerCmForGap * 0.35;
+
   return {
     leftFrac:   (marginX + groupLeft  * SCALE) / W,
     rightFrac:  (marginX + groupRight * SCALE) / W,
     floorYFrac: (marginY + layout.floorY * SCALE) / H,
+    frontFloorYFrac: (marginY + (layout.floorY + plinthForwardPx) * SCALE) / H,
     apexYFrac:  (marginY + groupApex   * SCALE) / H,
     refHeightCm: refItem?.heightCm ?? 200,
   };

@@ -1122,7 +1122,22 @@ export function buildLayoutRefEditPrompt(
     ? `The balloons are plain — no writing on any balloon. `
     : "";
 
-  const frontNoCharactersLine = sceneModel.cutouts?.mode === "standees"
+  // 2026-10-20: the lone round's garland is the customer's photo, whose
+  // heaviest mass is down the LEFT side and onto the left floor. "No balloons
+  // on the left" and "garland on the right only" contradicted that guide;
+  // for the round only the character, the number and props are kept off
+  // the left.
+  const loneRoundForCutouts = hasRoundPanelInPrompt && panelCount === 1;
+  const frontNoCharactersLine = sceneModel.cutouts?.mode === "standees" && loneRoundForCutouts
+    // No "cutout" here, and the number is described BEFORE this line (see
+    // the assembly below): with "no ... cutout" ahead of it the render read
+    // the guide's white numeral silhouette as a cutout placeholder and left
+    // it out — the number appeared without a character in the scene and
+    // vanished with one (2026-10-20).
+    ? `Do NOT draw any person, character, figure or doll in this image — characters are added ` +
+      `afterwards. Nothing but balloons on the LEFT: no number, no letter, no sign and no lit object ` +
+      `on that side. `
+    : sceneModel.cutouts?.mode === "standees"
     ? `Do NOT draw any person, character, figure, doll or cutout in this image — characters are added ` +
       `afterwards. The far LEFT of the floor and the wall above it stay completely empty — no balloons, ` +
       `no garland, no cluster, no props, and NO NUMBER, no letter, no sign and no lit object of any kind ` +
@@ -1132,6 +1147,19 @@ export function buildLayoutRefEditPrompt(
       // the reserved standee footprint with a second balloon garland instead
       // — and the composited character then landed on top of it.
       `The balloon garland stays on the RIGHT side only. `
+    : "";
+
+  // 2026-10-20: lettering on the lone round. "Happy Birthday" was only in
+  // the mid-prompt text clause, and mid-prompt clauses do not bind on this
+  // model (flux-2/edit) — the render came back with no words at all. One
+  // short front line says what is written, where and in what colour.
+  const frontRoundTextPanel = hasRoundPanelInPrompt && panelCount === 1
+    && sceneModel.panels[0]?.text?.enabled && (sceneModel.panels[0]?.text?.value ?? "").trim().length > 0
+    ? sceneModel.panels[0] : null;
+  const frontRoundTextLine = frontRoundTextPanel
+    ? `The words "${frontRoundTextPanel.text.value.trim()}" are printed on the round board in ` +
+      `${describeTextColor(frontRoundTextPanel.text.color)} ${({ script: "flowing script", block: "bold block", elegant: "elegant serif" } as Record<string, string>)[frontRoundTextPanel.text.fontStyle] ?? "flowing script"} ` +
+      `lettering, large and clearly readable, in the clear white area right of centre below the balloons. `
     : "";
 
   const frontNumDigits = String(sceneModel.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
@@ -1210,10 +1238,13 @@ export function buildLayoutRefEditPrompt(
   const hasArchPanelInPrompt = sceneModel.panels.some((p) => p.type === "arch");
 
   const roundGarlandExtra = hasRoundPanelInPrompt
-    ? ` For a round backdrop, the balloon garland must attach only to the OUTER RIGHT PERIMETER of the circular panel. ` +
-      `It should follow the circle edge from about the 1 o'clock area down through the 3 o'clock area and down to about the 5 o'clock area, right outer arc only. ` +
-      `It must NOT wrap around the entire circle. It must NOT form a full circular balloon ring, wreath, tunnel, or 360-degree balloon frame. ` +
-      `The left side, lower-left side, and central face of the round backdrop must remain clean, visible, and unobstructed. ` +
+    // 2026-10-20: rewritten to the guide, which is now the customer's photo.
+    // This still described a right-perimeter-only garland, the exact
+    // opposite of the guide's heavy left side.
+    ? ` For the round backdrop the balloons are in TWO organic masses, exactly as in the reference image: ` +
+      `a crown starting just left of 12 o'clock that runs down the whole LEFT side of the disc and spills out onto the floor, ` +
+      `and a separate cluster on the lower RIGHT, from about 3 o'clock down to the floor. ` +
+      `The upper right of the disc and its centre stay clean, visible and unobstructed. It must NOT form a full ring or wreath. ` +
       `The bottom front area of the round panel must remain clean: no stage, no riser, no platform, no support block, no second plinth, no rectangular base, no oval base, no circular base. ` +
       `The round panel is a freestanding event backdrop with hidden rear support that is invisible from the front. ` +
       `The visible front bottom edge of the round panel touches the floor directly.`
@@ -1883,15 +1914,16 @@ const setupTemplateClause = setupTemplate
     frontMetallicLine +
     frontCameraLine +
     frontPlinthLine +
+    frontRoundTextLine +
     frontBannerAspectLine +
     frontTripleArchLine +
     frontRingHalfLine +
     frontOpenFrameLine +
     frontFloralsLine +
     frontShimmerLine +
-    frontNoCharactersLine +
-    frontNeonLine +
-    frontNumberLightLine +
+    (loneRoundForCutouts
+      ? frontNumberLightLine + frontNoCharactersLine + frontNeonLine
+      : frontNoCharactersLine + frontNeonLine + frontNumberLightLine) +
     frontStructureLine +
     frontNoBalloonTextLine +
     frontNoStandLine +

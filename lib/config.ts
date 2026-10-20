@@ -6,6 +6,10 @@
 
 // =====================  STEP - EVENT TYPE  =================================
 
+/** What a backdrop's lettering says and how it looks until the customer changes it. */
+export const DEFAULT_TEXT_VALUE = "Happy Birthday";
+export const DEFAULT_TEXT_COLOR: TextColor = "silver";
+
 export type EventTypeId =
   | "birthday"
   | "baby_shower"
@@ -245,7 +249,7 @@ export const PACKAGES: Package[] = [
     bestFor: "Intimate home setups",
     defaultDecor: {
       backdropItems: [
-        { id: "medium", type: "arch", sizeId: "medium", widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "medium", type: "arch", sizeId: "medium", widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: DEFAULT_TEXT_VALUE, fontStyle: "script" as const, color: DEFAULT_TEXT_COLOR }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
       balloonStyle: "full",
       plinths: 1,
@@ -267,8 +271,8 @@ export const PACKAGES: Package[] = [
     bestFor: "Villa gardens, restaurant corners",
     defaultDecor: {
       backdropItems: [
-        { id: "large", type: "arch", sizeId: "large", widthCm: 120, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
-        { id: "small", type: "arch", sizeId: "small", widthCm: 80,  heightCm: 180, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "large", type: "arch", sizeId: "large", widthCm: 120, heightCm: 220, color: "", text: { enabled: false, value: DEFAULT_TEXT_VALUE, fontStyle: "script" as const, color: DEFAULT_TEXT_COLOR }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "small", type: "arch", sizeId: "small", widthCm: 80,  heightCm: 180, color: "", text: { enabled: false, value: DEFAULT_TEXT_VALUE, fontStyle: "script" as const, color: DEFAULT_TEXT_COLOR }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
       balloonStyle: "full",
       plinths: 2,
@@ -292,9 +296,9 @@ export const PACKAGES: Package[] = [
     bestFor: "Full venue takeovers",
     defaultDecor: {
       backdropItems: [
-        { id: "large",  type: "arch", sizeId: "large",  widthCm: 120, heightCm: 220, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
-        { id: "medium", type: "arch", sizeId: "medium", widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
-        { id: "small",  type: "arch", sizeId: "small",  widthCm: 80,  heightCm: 180, color: "", text: { enabled: false, value: "", fontStyle: "script" as const, color: "white" }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "large",  type: "arch", sizeId: "large",  widthCm: 120, heightCm: 220, color: "", text: { enabled: false, value: DEFAULT_TEXT_VALUE, fontStyle: "script" as const, color: DEFAULT_TEXT_COLOR }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "medium", type: "arch", sizeId: "medium", widthCm: 100, heightCm: 200, color: "", text: { enabled: false, value: DEFAULT_TEXT_VALUE, fontStyle: "script" as const, color: DEFAULT_TEXT_COLOR }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
+        { id: "small",  type: "arch", sizeId: "small",  widthCm: 80,  heightCm: 180, color: "", text: { enabled: false, value: DEFAULT_TEXT_VALUE, fontStyle: "script" as const, color: DEFAULT_TEXT_COLOR }, graphic: { enabled: false, theme: "", style: "illustrated" as const } },
       ],
       balloonStyle: "full",
       plinths: 3,
@@ -399,7 +403,7 @@ export interface BackdropItem {
 }
 
 const DEFAULT_ITEM_TEXT: BackdropItemText = {
-  enabled: false, value: "", fontStyle: "script", color: "white",
+  enabled: false, value: DEFAULT_TEXT_VALUE, fontStyle: "script", color: DEFAULT_TEXT_COLOR,
 };
 const DEFAULT_ITEM_GRAPHIC: BackdropItemGraphic = {
   enabled: false, theme: "", style: "illustrated",
@@ -515,7 +519,11 @@ export type TextColor = string;
 
 export const TEXT_COLOR_PRESET_HEX: Record<string, string> = {
   white: "#FFFFFF", gold: "#D4AF37", black: "#1E1E1E",
+  // 2026-10-20: silver lettering, and the default — customer request
+  // ("Silver yazili olsun"). Mid-tone so it shows on a white board.
+  silver: "#A7ABB1",
 };
+
 
 /** Default stand-in for the "accent" preset when no theme accent is supplied. */
 export const DEFAULT_TEXT_ACCENT_HEX = "#E39BB4";
@@ -561,6 +569,9 @@ const TEXT_COLOR_NAMES: { name: string; hex: string }[] = [
 
 /** Plain-English name for a text colour, for use in a render prompt. */
 export function describeTextColor(color: TextColor | undefined, accentHex?: string): string {
+  // Silver is a finish, not just a grey: named as metal so it is not painted
+  // as flat grey ink.
+  if (color === "silver") return "shiny metallic silver";
   const hex = resolveTextColorHex(color, accentHex);
   const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
   let best = TEXT_COLOR_NAMES[0], bestD = Infinity;
@@ -973,6 +984,7 @@ export const FONT_STYLES: { id: FontStyle; label: string }[] = [
 
 export const TEXT_COLORS: { id: TextColor; label: string; swatch: string }[] = [
   { id: "white", label: "White", swatch: "#FFFFFF" },
+  { id: "silver", label: "Silver", swatch: "#A7ABB1" },
   { id: "gold", label: "Gold", swatch: "#D4AF37" },
   { id: "black", label: "Black", swatch: "#222222" },
   { id: "accent", label: "Theme accent", swatch: "" },

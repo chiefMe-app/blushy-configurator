@@ -90,7 +90,8 @@ function resolveTextColor(color: TextColor, accent: string): string {
   if (color === "white") return "#FFFFFF";
   if (color === "gold")  return "#C9A227";  // richer, warmer gold
   if (color === "black") return "#1A1A1A";
-  return accent;                             // "accent" → exact theme accent
+  if (color === "silver") return "#A7ABB1";
+  return accent;                            // "accent" → exact theme accent
 }
 
 /** Returns a text-shadow value that ensures legibility on any backdrop tone. */

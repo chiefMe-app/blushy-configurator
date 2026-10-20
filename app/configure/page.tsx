@@ -28,6 +28,8 @@ cutoutTotalCount,
   GRAPHIC_STYLES,
   FONT_STYLES,
   TEXT_COLORS,
+  DEFAULT_TEXT_VALUE,
+  DEFAULT_TEXT_COLOR,
   resolveTextColorHex,
   isCustomTextColor,
   ADDONS,
@@ -1532,7 +1534,7 @@ function clearAllStandees() {
               offers only the colour picker above. */}
           {item.type !== "shimmer_wall" && item.type !== "balloon_ring" && item.type !== "open_arch_frame" && (<>
           {/* Customized text */}
-          <div onClick={() => patchItemText(itemIdx, { enabled: !item.text.enabled })}
+          <div onClick={() => patchItemText(itemIdx, { enabled: !item.text.enabled, ...(!item.text.enabled && !item.text.value.trim() ? { value: DEFAULT_TEXT_VALUE, color: DEFAULT_TEXT_COLOR } : {}) })}
             style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
               border: item.text.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
               background: item.text.enabled ? accent + "0E" : "white", transition: "all 0.15s" }}>
@@ -2309,7 +2311,7 @@ function clearAllStandees() {
 
                     {/* Name Text card */}
                     <div
-                      onClick={() => patchItemText(idx, { enabled: !item.text.enabled })}
+                      onClick={() => patchItemText(idx, { enabled: !item.text.enabled, ...(!item.text.enabled && !item.text.value.trim() ? { value: DEFAULT_TEXT_VALUE, color: DEFAULT_TEXT_COLOR } : {}) })}
                       style={{
                         cursor: "pointer", borderRadius: 12, padding: "12px 14px",
                         border: item.text.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",

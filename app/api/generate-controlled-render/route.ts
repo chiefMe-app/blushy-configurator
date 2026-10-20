@@ -160,7 +160,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "round-photo-transcribed-v113";
+const RENDER_CACHE_VERSION = "round-text-number-standee-v114";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -2526,7 +2526,16 @@ forbiddenBalloonColorLabels: hasSempertexLock
                   // the bare floor in front of the balloons started around
                   // y=872 — which is this extra 3% of panel height.
                   const standeeForwardFrac = forwardFrac + 0.030;
-                  bottom = Math.round(groupGeom.floorYFrac * imgH + panelPxHeight * standeeForwardFrac);
+                  // 2026-10-20: measured from the PLINTH's line, not the boards'.
+                  // The calibration above dates from when the plinth stood on the
+                  // boards' floor line; since it was moved 50cm forward (and the
+                  // round's floor balloons with it) the figure stood BEHIND both,
+                  // its feet higher than the balloons it was drawn over, and
+                  // read as floating — "standee yer seviyesinde olmali". Same
+                  // offsets, from the line the plinth actually stands on.
+                  bottom = Math.round(groupGeom.frontFloorYFrac * imgH + panelPxHeight * standeeForwardFrac);
+                  // Never past the bottom of the frame.
+                  bottom = Math.min(bottom, imgH - 2);
                   // A left-hand standee used to be clamped flush to x=0, which
                   // pushed the whole figure back over the board and buried the
                   // lettering (customer report, 2026-09-03: "the cutout needs to

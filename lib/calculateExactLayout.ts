@@ -114,9 +114,17 @@ export function calculateExactLayout(
     // width scale correctly with the configured widthCm.
     const heightRatio   = hCm / maxHeightCm;
     const panelHeightPx = tallestPanelHeightPx * heightRatio;
-    const apexY         = floorY - panelHeightPx;
     const aspect        = wCm / hCm;
     const pw = Math.max(canvasW * 0.08, Math.min(maxPwByCount, panelHeightPx * aspect));
+    // 2026-10-20: a round disc is as tall as it is wide. When its width hit the
+    // cap above, the panel kept the uncapped height — 870px tall for a 717px
+    // disc — and every prop sized from panel height in cm (plinth, standee,
+    // marquee number) came out at that scale, so the 200cm disc read as about
+    // 165cm beside them: a 150cm standee at 91% of the disc's height instead of
+    // 75%. The top of the panel is now the top of the disc.
+    const apexY         = item?.type === "round"
+      ? floorY - pw / aspect
+      : floorY - panelHeightPx;
 
     // z-order: tallest = 0 (behind), shortest = count-1 (in front)
     const sorted = [...items.slice(0, count)]
