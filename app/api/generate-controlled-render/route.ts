@@ -160,7 +160,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "mirror-silver-text-v116";
+const RENDER_CACHE_VERSION = "marquee-block-lit-v117";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -711,6 +711,8 @@ interface LayoutRefPngResult {
   /** Where the guide drew each panel's lettering (inner viewBox px), so the
    *  render stage can recolour it — see the recolour block further down. */
   textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[];
+  /** Marquee number bulb centres/radii as canvas fractions (lone round only). */
+  marqueeBulbs?: { xFrac: number; yFrac: number; rFrac: number }[];
 }
 
 /**
@@ -779,6 +781,7 @@ async function generateLayoutReferencePng(
     return {
       dataUri, error: null, stage: null, bytes: pngBuffer.length,
       textZones: silhouette.textZones,
+      marqueeBulbs: silhouette.marqueeBulbs,
       doubleArchGarlandBalloonsLeft:  silhouette.doubleArchGarlandBalloonsLeft,
       doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight,
       archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons,
@@ -2283,6 +2286,47 @@ forbiddenBalloonColorLabels: hasSempertexLock
       console.warn("[generate-controlled-render] text recolour failed, keeping AI lettering:", String(recolourErr));
     }
   }
+
+  // ── Light the marquee number's bulbs ─────────────────────────────────────
+  // 2026-10-20. The lone round's number is drawn in the guide as a block
+  // marquee letter, and the render paints that letter exactly where it is
+  // drawn — but whether its bulbs come out lit is a coin toss: on the same
+  // seed a 1 came back lit, a 5 dim and a 50 as unlit white studs, and no
+  // prompt wording moved that. Since the bulb positions are known exactly, a
+  // warm glow is laid over each one here: white-hot centre, golden ring,
+  // soft falloff — the look of the customer's reference product.
+  let marqueeBulbsLit = 0;
+  const marqueeBulbs = pngResult.marqueeBulbs ?? [];
+  if (marqueeBulbs.length > 0) {
+    try {
+      const baseBuf = workingImageBuf ?? await fetchFinalImage();
+      if (baseBuf) {
+        const sharpPkgB = await import("sharp");
+        const sharpFnB  = ((sharpPkgB as any).default ?? sharpPkgB) as (b: Buffer) => any;
+        const metaB = await sharpFnB(baseBuf).metadata() as { width?: number; height?: number };
+        const bw = metaB.width ?? 1024, bh = metaB.height ?? 1024;
+        const glowSvg =
+          `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}"><defs>` +
+          `<radialGradient id="bulb"><stop offset="0%" stop-color="#FFFDF4" stop-opacity="1"/>` +
+          `<stop offset="28%" stop-color="#FFF0C2" stop-opacity="1"/>` +
+          `<stop offset="45%" stop-color="#FFD978" stop-opacity="0.85"/>` +
+          `<stop offset="70%" stop-color="#FFC45C" stop-opacity="0.28"/>` +
+          `<stop offset="100%" stop-color="#FFB040" stop-opacity="0"/></radialGradient></defs>` +
+          marqueeBulbs.map((b) =>
+            `<circle cx="${(b.xFrac * bw).toFixed(1)}" cy="${(b.yFrac * bh).toFixed(1)}" ` +
+            `r="${(b.rFrac * bw * 1.9).toFixed(1)}" fill="url(#bulb)"/>`).join("") +
+          `</svg>`;
+        workingImageBuf = await (sharpFnB(baseBuf)
+          .composite([{ input: Buffer.from(glowSvg, "utf8"), blend: "over" }])
+          .png().toBuffer()) as Buffer;
+        outputImageUrl = `data:image/jpeg;base64,${(await (sharpFnB(workingImageBuf).jpeg({ quality: 92 }).toBuffer()) as Buffer).toString("base64")}`;
+        marqueeBulbsLit = marqueeBulbs.length;
+      }
+    } catch (bulbErr) {
+      console.warn("[generate-controlled-render] marquee bulb glow failed (continuing without):", String(bulbErr));
+    }
+  }
+  void marqueeBulbsLit;
 
   // ── Deterministic cutout standee overlay ─────────────────────────────────
   // Character standees are suppressed in the AI prompt and composited here

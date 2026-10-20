@@ -76,6 +76,11 @@ export interface SilhouetteResult {
    *  recolour the rendered lettering, which the arch edit model paints black
    *  whatever colour it is asked for. */
   textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[];
+  /** Centre and radius of every bulb on a block marquee number, as fractions
+   *  of the canvas width/height. The render paints the number where the guide
+   *  draws it but does not reliably light the bulbs, so the route lights them
+   *  afterwards at these points. Empty when there is no such number. */
+  marqueeBulbs: { xFrac: number; yFrac: number; rFrac: number }[];
 }
 
 /** One size tier of standee cutout to draw in the guide. */
@@ -452,6 +457,93 @@ function escapeXml(s: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+
+// Block marquee numeral, drawn the way the customer's reference product is
+// built (2026-10-20, "isik bunun gibi olmali"): a deep white box letter with
+// a thick body — about 30% of the digit's width — chamfered outer corners,
+// and warm bulbs set at even spacing down the middle of every stroke. A
+// typeface digit, which is what this used to be for everything but the 1,
+// came back as a thin flat foam numeral with no bulbs at all.
+//
+// Built from seven-segment strokes: every block numeral is exactly that
+// shape, and it gives the bulbs a centreline to sit on. The strokes are
+// drawn twice — outline colour first, face on top — so the overlaps merge
+// into one letter with one outer edge instead of showing seams.
+function marqueeBlockDigit(glyph: string, x: number, y: number, w: number, h: number, withDefs: boolean, bulbsOut?: [number, number, number][]): string {
+  const t = w * 0.30;
+  const midT = h / 2 - t / 2;
+  type Pt = [number, number];
+  const rect = (rx: number, ry: number, rw: number, rh: number): Pt[] =>
+    [[rx, ry], [rx + rw, ry], [rx + rw, ry + rh], [rx, ry + rh]];
+  const SEG: Record<string, { poly: Pt[]; line: [Pt, Pt] }> = {
+    a: { poly: rect(0, 0, w, t),               line: [[t / 2, t / 2], [w - t / 2, t / 2]] },
+    b: { poly: rect(w - t, 0, t, h / 2 + t / 2), line: [[w - t / 2, t / 2], [w - t / 2, h / 2]] },
+    c: { poly: rect(w - t, midT, t, h - midT),  line: [[w - t / 2, h / 2], [w - t / 2, h - t / 2]] },
+    d: { poly: rect(0, h - t, w, t),            line: [[t / 2, h - t / 2], [w - t / 2, h - t / 2]] },
+    e: { poly: rect(0, midT, t, h - midT),      line: [[t / 2, h / 2], [t / 2, h - t / 2]] },
+    f: { poly: rect(0, 0, t, h / 2 + t / 2),    line: [[t / 2, t / 2], [t / 2, h / 2]] },
+    g: { poly: rect(0, midT, w, t),             line: [[t / 2, h / 2], [w - t / 2, h / 2]] },
+  };
+  const DIGIT: Record<string, string> = {
+    "0": "abcdef", "2": "abged", "3": "abgcd", "4": "fgbc", "5": "afgcd",
+    "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg",
+  };
+  let parts: { poly: Pt[]; line: [Pt, Pt] }[];
+  if (glyph === "1") {
+    // A body down the middle and an angled flag at the top left.
+    const bx = w * 0.42;
+    parts = [
+      { poly: rect(bx, 0, t, h), line: [[bx + t / 2, t / 2], [bx + t / 2, h - t / 2]] },
+      { poly: [[bx + t / 2, 0], [bx + t / 2, t * 1.15], [w * 0.06, h * 0.30], [w * 0.06, h * 0.30 - t * 1.05]],
+        line: [[bx, t * 0.55], [w * 0.06 + t * 0.45, h * 0.30 - t * 0.6]] },
+    ];
+  } else {
+    parts = (DIGIT[glyph] ?? DIGIT["8"]).split("").map((k) => SEG[k]);
+  }
+  const at = (q: Pt, ox = 0, oy = 0) => `${(x + q[0] + ox).toFixed(1)},${(y + q[1] + oy).toFixed(1)}`;
+  const polyStr = (poly: Pt[], ox = 0, oy = 0) => poly.map((q) => at(q, ox, oy)).join(" ");
+  // Chamfered outer corners, by clipping the whole letter to an octagon.
+  const c = w * 0.14;
+  const id = `mq${Math.round(x)}x${Math.round(y)}`;
+  const oct = (ox: number, oy: number) => [
+    [c, 0], [w - c, 0], [w, c], [w, h - c], [w - c, h], [c, h], [0, h - c], [0, c],
+  ].map((q) => at(q as Pt, ox, oy)).join(" ");
+  // The letter's depth: the same shape set slightly back and to the side,
+  // in the shade of the box's side wall.
+  const dx = w * 0.05, dy = -w * 0.03;
+  let out = withDefs
+    ? `<defs><radialGradient id="marqueeBulbGlow">` +
+      `<stop offset="0%" stop-color="#FFFFFF"/><stop offset="30%" stop-color="#FFF6D8"/>` +
+      `<stop offset="55%" stop-color="#FFD978" stop-opacity="0.85"/>` +
+      `<stop offset="100%" stop-color="#FFC24A" stop-opacity="0"/></radialGradient></defs>`
+    : "";
+  out += `<defs><clipPath id="${id}f"><polygon points="${oct(0, 0)}"/></clipPath>` +
+    `<clipPath id="${id}b"><polygon points="${oct(dx, dy)}"/></clipPath></defs>`;
+  out += `<g clip-path="url(#${id}b)">` +
+    parts.map((pt) => `<polygon points="${polyStr(pt.poly, dx, dy)}" fill="#D6D2CB" stroke="#D6D2CB" stroke-width="1"/>`).join("") +
+    `</g>`;
+  out += `<g clip-path="url(#${id}f)">` +
+    parts.map((pt) => `<polygon points="${polyStr(pt.poly)}" fill="#A9A6A0" stroke="#A9A6A0" stroke-width="4" stroke-linejoin="round"/>`).join("") +
+    parts.map((pt) => `<polygon points="${polyStr(pt.poly)}" fill="#F7F5F1"/>`).join("") +
+    `</g>`;
+  // Bulbs at even spacing along each stroke's centreline; where two strokes
+  // meet, the shared bulb is drawn once.
+  const bulbs: Pt[] = [];
+  const step = h * 0.19;
+  for (const pt of parts) {
+    const [[x0, y0], [x1, y1]] = pt.line;
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    const n = Math.max(1, Math.round(len / step));
+    for (let i = 0; i <= n; i++) {
+      const q: Pt = [x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n];
+      if (!bulbs.some((b) => Math.hypot(b[0] - q[0], b[1] - q[1]) < t * 0.6)) bulbs.push(q);
+    }
+  }
+  const br = w * 0.10;
+  if (bulbsOut) for (const q of bulbs) bulbsOut.push([x + q[0], y + q[1], br]);
+  out += bulbs.map((q) => `<circle cx="${(x + q[0]).toFixed(1)}" cy="${(y + q[1]).toFixed(1)}" r="${br.toFixed(1)}" fill="url(#marqueeBulbGlow)"/>`).join("");
+  return out;
 }
 
 // Customized text guide — the exact selected text drawn faintly on the target
@@ -854,6 +946,7 @@ export function generateStructureSilhouette(
   // content: everything else — scaled and centered
   const content: string[] = [];
   const textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[] = [];
+  const marqueeBulbsLayout: [number, number, number][] = [];
   // The plinth marker is collected separately and appended after the balloons.
   // Drawn in place it went into the guide BEFORE the garland, so balloon
   // circles covered its base and sides and the model saw a stub of a cylinder
@@ -1166,8 +1259,19 @@ export function generateStructureSilhouette(
     const groupW = digitW * digits.length + gap * (digits.length - 1);
     const cx = pn.cx + 0.85 * (pn.pw / 2);
     const visRight = (W - marginX) / SCALE;
-    const x = Math.min(cx - groupW / 2, visRight - groupW - digitH * 0.10);
-    const baseY = pn.floorY + plinthForwardPx;
+    // A two-digit number is twice as wide and, centred on the same point, ran
+    // into the plinth; it never starts closer to the plinth than this.
+    const plinthHalf = Math.max(0, ...layout.plinths.map((pl) => pl.diameterPx)) / 2;
+    const x = Math.min(
+      Math.max(cx - groupW / 2, pn.cx + plinthHalf + digitH * 0.12),
+      visRight - groupW - digitH * 0.10,
+    );
+    // The render paints the plinth's base about 4.5% of the disc's height
+    // lower than the guide draws it (measured, 889 -> 915 on a 1024 frame),
+    // while it puts the number exactly where it is drawn — so a number drawn
+    // level with the plinth came back standing above the floor. It is
+    // drawn that much lower so the two meet the floor together.
+    const baseY = pn.floorY + plinthForwardPx + (pn.floorY - pn.apexY) * 0.045;
     return { x, w: groupW, top: baseY - digitH, baseY };
   })();
   let plinthDrawnLeftPx: number | null = null;
@@ -3693,6 +3797,10 @@ export function generateStructureSilhouette(
       // it stands on, so that one is drawn as an explicit path with its bulbs
       // in it. Every other digit stays type, which renders correctly.
       const glyph = numDigits[d];
+      if (singleRound) {
+        plinthLayer.push(marqueeBlockDigit(glyph, x, y, digitW, digitH, d === 0, marqueeBulbsLayout));
+        continue;
+      }
       if (glyph === "1") {
         const bw = digitW;
         const px = (fr: number) => x + bw * fr;
@@ -3795,6 +3903,11 @@ export function generateStructureSilhouette(
     archShimmerCompositionBalloons,
     archShimmerAccentZone,
     textZones,
+    marqueeBulbs: marqueeBulbsLayout.map(([bx, by, br]) => ({
+      xFrac: (marginX + bx * SCALE) / W,
+      yFrac: (marginY + by * SCALE) / H,
+      rFrac: (br * SCALE) / W,
+    })),
   };
 }
 

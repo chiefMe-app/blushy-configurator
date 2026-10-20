@@ -1,6 +1,6 @@
 import { type SceneModel } from "@/lib/buildSceneModel";
 import type { SempertexSelectionItem } from "./types";
-import { getVisualLabel, renderSafeBalloonLabel, getPositiveLabel } from "./colorLabels";
+import { getVisualLabel, renderSafeBalloonLabel, getPositiveLabel } from "./colorLabels";
 import { hasLoneArchStyleReference } from "./loneArchStyleReference";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
@@ -937,12 +937,12 @@ export function buildLayoutRefEditPrompt(
   // board's height where 90/220 is 41%. An absolute size in centimetres gives
   // the model nothing to check itself against inside the frame, so the line now
   // also states the ratio against the object standing right next to it.
-  // 2026-09-11: when a lone arch carries a second input image (the customer's
-  // balloon style reference), the model has to be told what each image is FOR,
-  // and above all that the reference is not a colour source. The reference has
-  // its own board colour and its own palette, and without this line those bleed
-  // into every render and override the customer's selection. Front-loaded,
-  // because this pipeline only reliably obeys what comes first.
+  // 2026-09-11: when a lone arch carries a second input image (the customer's
+  // balloon style reference), the model has to be told what each image is FOR,
+  // and above all that the reference is not a colour source. The reference has
+  // its own board colour and its own palette, and without this line those bleed
+  // into every render and override the customer's selection. Front-loaded,
+  // because this pipeline only reliably obeys what comes first.
   // 2026-09-11 (later): the reference carries COLOUR again. It was stored
   // greyscale to stop its lilac bleeding onto the board, but that was fixed
   // properly further down — the guide now draws the board in the customer's
@@ -966,7 +966,7 @@ export function buildLayoutRefEditPrompt(
       `crop of a balloon garland, used ONLY for how balloons pack together and their finish: matte ` +
       `pastel skins, polished mirror chrome. Take nothing else from IMAGE 2. `
     : "";
-
+
   const frontArchAspectLine = (() => {
     if (panelCount !== 1 || sceneModel.panels[0]?.type !== "arch") return "";
     const p0 = sceneModel.panels[0];
@@ -1172,6 +1172,15 @@ export function buildLayoutRefEditPrompt(
       ? `A 90cm modern matte white marquee number ${frontNumDigits}, with warm round bulbs set into its ` +
         `flat face, stands on the floor in front of the backdrop, FACING THE CAMERA SQUARE-ON — its front ` +
         `face flat to the viewer, not turned, not angled, not in three-quarter view. ` +
+        // 2026-10-20: the lone round draws the number as a deep block marquee
+        // letter (marqueeBlockDigit) after the customer's product reference.
+        // Its bulbs came back as unlit grey studs on a "50" until they were
+        // said to be on.
+        (hasRoundPanelInPrompt && panelCount === 1
+          ? `It is a deep white box letter with thick strokes and chamfered corners. Its bulbs are real ` +
+            `incandescent light bulbs, EVERY one switched ON and glowing warm yellow light — not silver, not ` +
+            `chrome, not metal studs, not unlit white knobs. `
+          : ``) +
         // 2026-09-09: the height is stated against the object beside it. "90cm"
         // alone is a number the model cannot see; the plinth is 60-90cm and IS
         // in frame, so the comparison is what fixes the scale.
@@ -1904,7 +1913,7 @@ const setupTemplateClause = setupTemplate
     : "";
 
   return (
-    frontImageRolesLine +
+    frontImageRolesLine +
     frontArchAspectLine +
     frontShapeLine +
     // 2026-09-11: the ROOM is established before the palette. With
