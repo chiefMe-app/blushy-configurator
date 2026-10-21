@@ -882,7 +882,8 @@ export function buildLayoutRefEditPrompt(
   // wall came back as a plain white board (a paper roll, even). Only a
   // shimmer-free scene calls the backdrop white now.
   const backdropWordForRoom = sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "shimmer_wall"
-    ? "backdrop" : "white backdrop";
+    ? "backdrop"
+    : sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "balloon_ring" ? "balloon ring" : "white backdrop";
   const frontRoomLine = `The room is a bright, neutral studio: a MID-GREY concrete wall with soft, fine texture ` +
     `— clearly darker than the ${backdropWordForRoom} standing against it, never white, never flat ` +
     `— and a smooth light-grey concrete floor with a soft reflection. The light is SOFT, EVEN and ` +
@@ -1029,6 +1030,19 @@ export function buildLayoutRefEditPrompt(
     if (t === "round")  return `The backdrop is ONE round disc, a full circle 2 metres across, standing on the floor. `;
     if (t === "arch")   return `The backdrop is ONE arch board. `;
     if (t === "banner") return `The backdrop is ONE square board. `;
+    // 2026-10-21: the ring had no shape line, and the render stood it in
+    // front of a white photo-studio paper roll on a stand. One sentence,
+    // naming the plinth too — long front clauses have cost it before.
+    // FULL is a wreath with no metal showing; saying "gold metal hoop" there
+    // got a bare hoop drawn as well, with the balloons floating beside it.
+    if (t === "balloon_ring") return `There is NO backdrop board: ` +
+      (sceneModel.balloonRingStyle === "full"
+        ? `ONE 2-metre balloon ring, a circle completely covered in balloons all the way round, `
+        : `ONE slim gold metal hoop, 2 metres across, `) +
+      `stands on the floor in front of the bare grey wall` +
+      // Same name as the pedestal sentences further down: "plinth" here and
+      // "pedestal column" there were read as two objects, and two were drawn.
+      (sceneModel.plinths.length > 0 ? `, with the one white cylindrical pedestal column on the floor in front of it. ` : `. `);
     // 2026-10-21: said first, like the other shapes — the sequin wording sat
     // mid-prompt and the wall rendered as a plain white board.
     if (t === "shimmer_wall") return `The backdrop is ONE sparkling ${sceneModel.shimmerColor ?? "silver"} SEQUIN SHIMMER WALL: ` +

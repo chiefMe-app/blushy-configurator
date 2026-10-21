@@ -1293,7 +1293,13 @@ export function generateStructureSilhouette(
   // centre and under the garland — the customer's rule is that the plinth always
   // centres on the backdrop, or on the backdrop set. The number is kept clear of
   // it by SIDE instead: the character stands left, the number stands right.
-  const decorCx = decorCxBase;
+  // 2026-10-21: on a HALF-dressed ring the plinth stands in front of the
+  // bare right-hand side of the hoop. Centred, it stood on the garland's
+  // foot, which spreads along the floor from the left.
+  const ringHalfPlinthShift = backdropItems.length === 1 && backdropItems[0]?.type === "balloon_ring"
+    && extras?.ringStyle === "half" && layout.panels[0]
+    ? (layout.panels[0].pw / 2) * 0.55 : 0;
+  const decorCx = decorCxBase + ringHalfPlinthShift;
 
   // 2026-09-05: the plinth stands FORWARD of the decor, nearer the camera, not
   // level with the backdrop. On a balloon ring especially it was sitting on the
@@ -1416,8 +1422,10 @@ export function generateStructureSilhouette(
       const loneShimmerPlinth = backdropItems.length === 1 && backdropItems[0]?.type === "shimmer_wall";
       // Arch + Shimmer too: in front of the sequin wall the flat marker was
       // dropped from the render the same way (2026-10-21).
-      const archShimmerPlinth = backdropItems.length === 2 && backdropItems.some((it) => it?.type === "arch") && backdropItems.some((it) => it?.type === "shimmer_wall");
-      plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1 || wantsNumberSlot || loneArchPlinth || loneBannerPlinth
+      const archShimmerPlinth = (backdropItems.length === 2 && backdropItems.some((it) => it?.type === "arch") && backdropItems.some((it) => it?.type === "shimmer_wall"))
+        // the balloon ring as well: its plinth was dropped too (2026-10-21)
+        || (backdropItems.length === 1 && backdropItems[0]?.type === "balloon_ring");
+      plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1 || wantsNumberSlot || loneArchPlinth || loneBannerPlinth || archShimmerPlinth
         ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx, loneBannerPlinth || loneShimmerPlinth || archShimmerPlinth, loneBannerPlinth || loneShimmerPlinth || archShimmerPlinth)
         : plinthEdge(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
     }
@@ -3539,6 +3547,68 @@ export function generateStructureSilhouette(
             content.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" ${balloonAttrs(best)}/>`);
             rn++;
           };
+          // 2026-10-21: HALF replays the customer's reference — a bare gold
+          // hoop with the garland covering it from about 1 o'clock, over the
+          // top, down the whole left side and into a heavy foot that spreads
+          // along the floor to about 5 o'clock; the right of the hoop stays
+          // bare. Read off a grid over the photo: there the hoop is centred at
+          // (525, 670) with a radius of 387. Slots: S chrome, W white, P pale
+          // blue, L lilac, K pink — K shares lilac's colour on a short palette.
+          if (extras?.ringStyle === "half") {
+            type RingRefBalloon = [number, number, number, "S" | "W" | "P" | "L" | "K"];
+            const HALF_RING_REF: RingRefBalloon[] = [
+            // crown over the top, from about 1 o'clock across to 10 o'clock
+            [340, 203, 37, "S"], [537, 197, 30, "W"], [463, 227, 37, "L"], [447, 220, 22, "S"],
+            [600, 277, 50, "L"], [507, 267, 37, "L"], [440, 263, 22, "P"], [383, 260, 25, "P"],
+            [337, 247, 23, "P"], [407, 240, 20, "W"], [340, 290, 25, "S"], [307, 293, 20, "K"],
+            [260, 317, 25, "P"], [277, 270, 40, "P"], [217, 303, 23, "W"], [303, 347, 23, "P"],
+            [397, 363, 73, "L"], [253, 390, 50, "L"], [477, 330, 22, "K"], [547, 327, 22, "P"],
+            [543, 370, 23, "S"], [510, 363, 20, "P"], [580, 360, 20, "L"], [173, 327, 20, "S"],
+            [173, 367, 25, "S"], [130, 360, 23, "S"], [320, 407, 27, "P"],
+            // down the left side
+            [ 73, 440, 33, "L"], [150, 430, 42, "W"], [110, 480, 25, "W"], [180, 500, 43, "P"],
+            [210, 493, 23, "K"], [263, 480, 23, "S"], [227, 453, 23, "P"], [240, 523, 33, "L"],
+            [ 67, 547, 33, "L"], [110, 530, 23, "S"], [ 93, 570, 23, "K"], [143, 570, 25, "K"],
+            [197, 577, 30, "P"], [117, 667, 90, "P"], [ 20, 667, 20, "L"], [237, 663, 23, "S"],
+            [230, 710, 27, "W"], [273, 727, 27, "L"], [217, 773, 40, "P"], [150, 777, 25, "W"],
+            [177, 807, 25, "W"], [110, 827, 60, "S"], [280, 800, 22, "S"], [267, 847, 27, "L"],
+            [ 50, 747, 30, "L"],
+            // the heavy foot, spreading along the floor to about 5 o'clock
+            [203, 896, 50, "L"], [139, 896, 39, "L"], [146, 939, 35, "K"], [310, 921, 61, "S"],
+            [231, 967, 32, "P"], [317, 831, 28, "P"], [371, 835, 25, "K"], [417, 789, 21, "L"],
+            [431, 831, 28, "P"], [496, 860, 64, "S"], [574, 824, 36, "K"], [596, 939, 71, "L"],
+            [331, 1010, 43, "W"], [414, 1021, 46, "P"], [396, 928, 21, "P"], [439, 931, 21, "P"],
+            [410, 971, 21, "P"], [453, 960, 21, "P"], [492, 956, 21, "K"], [474, 999, 25, "P"],
+            [521, 974, 21, "P"], [531, 1014, 21, "P"], [496, 1042, 21, "K"],
+            ];
+            const hs = ringR / 387;
+            const hUniq: number[] = [];
+            colors.forEach((c, i) => { if (!hUniq.some((j) => colors[j].toLowerCase() === c.toLowerCase())) hUniq.push(i); });
+            const hWhiteHex = (hex: string) => { const h = hex.replace(/^#/, ""); return h.length >= 6 && [0, 2, 4].every((k) => parseInt(h.slice(k, k + 2), 16) >= 235); };
+            const hChrome = hUniq.find((i) => chromeHexSet.has(colors[i].toLowerCase()));
+            const hWhite  = hUniq.find((i) => hWhiteHex(colors[i]));
+            const hRest   = hUniq.filter((i) => i !== hChrome && i !== hWhite);
+            const hPool   = hRest.length > 0 ? hRest : hUniq;
+            const hColour = (slot: RingRefBalloon[3]): number => {
+              if (slot === "S" && hChrome !== undefined) return hChrome;
+              if (slot === "W" && hWhite !== undefined) return hWhite;
+              if (slot === "P") return hPool[0];
+              if (slot === "K") return hPool[2 % hPool.length] ?? hPool[0];
+              return hPool[1 % hPool.length];
+            };
+            const hMaxBottom = rp.floorY + plinthForwardPx;
+            const hPlaced = HALF_RING_REF.map(([x, y, r, slot]) => {
+              const br = r * hs * 1.1;
+              let by = ringCy + (y - 670) * hs;
+              if (by + br > hMaxBottom) by = hMaxBottom - br;
+              return { bx: ringCx + (x - 525) * hs, by, br, ci: hColour(slot), floor: y > 880 };
+            });
+            const hBody = hPlaced.filter((b) => !b.floor).sort((m, n) => n.br - m.br);
+            const hFloor = hPlaced.filter((b) => b.floor).sort((m, n) => n.br - m.br);
+            for (const b of [...hBody, ...hFloor]) {
+              content.push(`<circle cx="${b.bx.toFixed(1)}" cy="${b.by.toFixed(1)}" r="${b.br.toFixed(1)}" ${balloonAttrs(b.ci)}/>`);
+            }
+          }
           let ang = 0;
           let ringGuard = 0;
           // 2026-09-09: "half" dresses the ring the way the customer's own
@@ -3554,24 +3624,30 @@ export function generateStructureSilhouette(
           // The hoop itself is drawn earlier, outside this dispatch — see the
           // ringStyle block above layout-panel drawing.
           ang = angFrom;
-          while (!ringBare && ang < angTo && ringGuard++ < 260) {
+          while (!ringBare && !ringHalf && ang < angTo && ringGuard++ < 400) {
             const r1 = pickRing();
             // Offsets are >= 0 measured outward from the ring line, so the
             // opening stays clear.
-            for (const [mul, scale] of [[0.15, 1], [0.95, 0.85], [1.75, 0.62]] as [number, number][]) {
-              if (mul > 0.5 && rrnd() > 0.82) continue;
+            // 2026-10-21: FULL is fully dressed — "ringin tamami balonla
+            // dolmali". The walk used to put balloons only OUTSIDE the hoop
+            // line, one to three deep and often fewer, which rendered as a thin
+            // bead necklace round the frame. Lanes now straddle the hoop, one
+            // inside it as well as two outside, every one placed, so the hoop
+            // disappears under a thick wreath while the middle stays open.
+            for (const [mul, scale] of [[-0.85, 0.8], [0.1, 1], [0.95, 0.85], [1.7, 0.6]] as [number, number][]) {
+              if (mul > 1.5 && rrnd() > 0.7) continue;
               const rr = r1 * scale;
               const rad = ringR + rr * mul;
               const a2 = ang + (rrnd() * 0.10 - 0.05);
               ringPut(ringCx + rad * Math.cos(a2), ringCy + rad * Math.sin(a2), rr);
             }
-            ang += (r1 * (0.62 + rrnd() * 0.28)) / ringR;
+            ang += (r1 * (0.48 + rrnd() * 0.22)) / ringR;
           }
 
           // The half-wrapped ring ends in a pile on the floor at the bottom
           // right, as in the reference — the garland runs off the hoop and
           // spreads out on the ground rather than stopping in mid-air.
-          if (ringHalf && !ringBare) {
+          if (false && ringHalf && !ringBare) {
             for (let i = 0; i < 18; i++) {
               const t  = Math.pow(rrnd(), 1.3);
               const ox = ringR * (0.30 + t * 0.95);
