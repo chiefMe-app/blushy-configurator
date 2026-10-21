@@ -796,11 +796,13 @@ export function buildLayoutRefEditPrompt(
   // arch band with the wall seen through it, its garland down its outer
   // edge. One sentence, naming the plinth in the same words as the pedestal
   // lines below (a separate name has produced a second plinth).
-  const frontOpenFrameLine = hasOpenFramePair
+  const frontOpenFrameSentence = hasOpenFramePair
     ? `Two pieces side by side: a solid white arch board on the ${solidSide}, and on the ${openFrameSide} an OPEN ` +
-      `arch frame — a thick white arch-shaped band with an EMPTY hollow middle you see the wall through` +
+      `arch frame — a thick white arch-shaped band with an EMPTY hollow middle you see the grey wall through` +
       (sceneModel.plinths.length > 0 ? `, with the one white cylindrical pedestal column on the floor in front, between them. ` : `. `)
     : "";
+  // Said in frontShapeLine now, at the very start.
+  const frontOpenFrameLine = "";
   // Superseded 2026-10-21: no cluster on the frame's face any more.
   const openFrameDetailLine = hasOpenFramePair
     ? `The open frame's middle stays empty — no balloons inside it. ` +
@@ -1009,6 +1011,10 @@ export function buildLayoutRefEditPrompt(
     // stand beside the arch ("arch + shimmer cok kotu").
     if (panelCount === 2) {
       const types = sceneModel.panels.map((p) => p.type);
+      // 2026-10-21: the open-frame pair is stated FIRST too — where it sat,
+      // after the room, palette and camera lines, the frame kept rendering
+      // as a solid board.
+      if (types.includes("arch") && types.includes("open_arch_frame")) return frontOpenFrameSentence;
       if (types.includes("arch") && types.includes("shimmer_wall")) {
         const archLeft = types[0] === "arch";
         // One short sentence: the first, longer version pushed the plinth
@@ -1608,9 +1614,12 @@ export function buildLayoutRefEditPrompt(
   // was painted; the guide already fixes the panel count and widths.
   const multiPanelNegs = isMulti && !isDoubleArchScene
     ? `Do not merge panels into one. Do not omit any panel. No extra panels beyond ${panelCount}. ` +
+      // 2026-10-21: an open frame IS an outline arch you see through; these
+      // three sentences told the render to make it a solid board.
+      (sceneModel.panels.some((p) => p.type === "open_arch_frame") ? `` :
       `No outline-only arch. No wire-frame backdrop. No thin frame backdrop. ` +
       `No transparent backdrop board. No decorative line structure. ` +
-      `Every selected panel must appear as a full solid opaque backdrop board. ` +
+      `Every selected panel must appear as a full solid opaque backdrop board. `) +
       `No skinny panels. No narrow tower-like panels. No compressed backdrop boards. ` +
       `No thin vertical strips. No overly narrow arch. No overly narrow rectangular board. ` +
       `Do not shrink panel widths. Do not turn panels into slim columns. `
