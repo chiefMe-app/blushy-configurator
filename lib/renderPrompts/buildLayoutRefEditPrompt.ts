@@ -877,8 +877,14 @@ export function buildLayoutRefEditPrompt(
   // by its CONTRAST with the board rather than only by name, which is what
   // keeps the two apart: the Arch + Shimmer reference the customer likes sits
   // at wall L 166 against a board of 220.
+  // 2026-10-21: "the WHITE backdrop" was said here for every layout, and on
+  // a lone Shimmer Wall it overrode the sequin wording further down — the
+  // wall came back as a plain white board (a paper roll, even). Only a
+  // shimmer-free scene calls the backdrop white now.
+  const backdropWordForRoom = sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "shimmer_wall"
+    ? "backdrop" : "white backdrop";
   const frontRoomLine = `The room is a bright, neutral studio: a MID-GREY concrete wall with soft, fine texture ` +
-    `— clearly darker than the white backdrop standing against it, never white, never flat ` +
+    `— clearly darker than the ${backdropWordForRoom} standing against it, never white, never flat ` +
     `— and a smooth light-grey concrete floor with a soft reflection. The light is SOFT, EVEN and ` +
     `DIFFUSE across the whole picture, like a large north-facing window far away — bright, clean and ` +
     `consistent from side to side, with NO hard sunbeam, no bright pool or patch of light, no sharp-edged ` +
@@ -1006,6 +1012,10 @@ export function buildLayoutRefEditPrompt(
     if (t === "round")  return `The backdrop is ONE round disc, a full circle 2 metres across, standing on the floor. `;
     if (t === "arch")   return `The backdrop is ONE arch board. `;
     if (t === "banner") return `The backdrop is ONE square board. `;
+    // 2026-10-21: said first, like the other shapes — the sequin wording sat
+    // mid-prompt and the wall rendered as a plain white board.
+    if (t === "shimmer_wall") return `The backdrop is ONE sparkling ${sceneModel.shimmerColor ?? "silver"} SEQUIN SHIMMER WALL: ` +
+      `a dense grid of small reflective sequin discs, glittering, standing on the floor. `;
     return "";
   })();
 

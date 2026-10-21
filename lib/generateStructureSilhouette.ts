@@ -18,6 +18,7 @@
 import type { BackdropItem, PlinthSize, BackdropShapeId, BalloonStyleId } from "./config";
 import { resolveTextColorHex } from "./config";
 import { textPathD } from "./guideFonts";
+import { frozenBannerPrintSvg } from "./bannerPrint";
 import { calculateExactLayout } from "./calculateExactLayout";
 import { calculateRenderAspectRatio } from "./calculateRenderAspectRatio";
 import type { FalImageSize } from "./calculateRenderAspectRatio";
@@ -92,6 +93,9 @@ export interface SilhouetteResult {
    *  minus every balloon, the plinth and the number standing in front of
    *  it. Empty string when there is no banner print. */
   bannerPrintMaskSvg: string;
+  /** True when the banner print was drawn into the guide itself, so the
+   *  render paints it and no print needs laying on afterwards. */
+  bannerPrintInGuide: boolean;
 }
 
 /** One size tier of standee cutout to draw in the guide. */
@@ -989,6 +993,7 @@ export function generateStructureSilhouette(
   const silverInkLayer: string[] = [];
   let bannerPrintLayout: { x: number; y: number; w: number; h: number } | null = null;
   const bannerPrintHoles: string[] = [];
+  let bannerPrintInGuide = false;
   // The plinth marker is collected separately and appended after the balloons.
   // Drawn in place it went into the guide BEFORE the garland, so balloon
   // circles covered its base and sides and the model saw a stub of a cylinder
@@ -1157,6 +1162,20 @@ export function generateStructureSilhouette(
         panel.cx, panel.pw, panel.apexY, panel.floorY, shape,
         nearWhite ? "#F1EFEC" : ownFill, "left", true,
       ));
+      // 2026-10-21: a Frozen-printed banner carries its print IN the guide.
+      // Laid on after the render, the print had to have the plinth cut out
+      // of it at the plinth's GUIDE size; the render drew the plinth shorter
+      // and an angled white wedge of unprinted board showed above it. Drawn
+      // here, the render paints the board printed and stands the plinth and
+      // balloons in front of it itself.
+      if (shape === "banner" && item?.graphic?.enabled && String(item?.graphic?.assetId ?? "").startsWith("frozen-")) {
+        const side = Math.min(panel.pw, panel.floorY - panel.apexY);
+        const bl = panel.cx - side / 2, bt = panel.floorY - side;
+        const art = frozenBannerPrintSvg(Math.round(side), Math.round(side))
+          .replace(/^<svg /, `<svg x="${bl.toFixed(1)}" y="${bt.toFixed(1)}" `);
+        content.push(art);
+        bannerPrintInGuide = true;
+      }
     } else {
       content.push(panelEdgeOnly(panel.cx, panel.pw, panel.apexY, panel.floorY, shape));
     }
@@ -3353,6 +3372,79 @@ export function generateStructureSilhouette(
           archShimmerAccentZone = result.accentZone;
         } else if (
           layout.panels.length === 1 &&
+          (backdropItems[layout.panels[0].idx]?.type ?? "") === "shimmer_wall"
+        ) {
+          // 2026-10-21: a lone Shimmer Wall REPLAYS the customer's approved
+          // render ("son yolladigim render gibi yapalim"). It had no branch of
+          // its own and fell to the multi-panel fallback below — a 22-circle
+          // single-file column off the right edge — which the render turned
+          // into loose helium balloons on strings beside a paper roll.
+          //
+          // The approved render's garland, read off a grid in its pixels: a
+          // band along the top from about a third of the way across, over the
+          // right corner, down the right edge to a cluster on the floor. There
+          // the wall spans x 222..735 and y 165..835 (its foot on the floor), and
+          // the table scales from that rect onto ours. Slots: P pale blue, L pale
+          // lavender, S chrome, mapped onto the customer's palette.
+          type ShimBalloon = [number, number, number, "P" | "L" | "S"];
+          const SHIM_REF: ShimBalloon[] = [
+            // top band, from about a third of the way across to past the right corner
+            [430, 156, 28, "P"], [420, 180, 24, "P"], [485, 125, 22, "L"], [472, 154, 18, "L"],
+            [475, 193, 23, "P"], [493, 175, 17, "S"], [519, 146, 21, "S"], [548, 133, 26, "P"],
+            [551, 177, 20, "S"], [525, 198, 23, "P"], [585, 154, 27, "P"], [567, 201, 23, "L"],
+            [625, 130, 26, "P"], [617, 188, 25, "P"], [651, 159, 24, "S"], [690, 125, 26, "S"],
+            [664, 214, 28, "L"], [701, 175, 29, "L"], [762, 140, 40, "L"], [722, 217, 31, "L"],
+            [819, 159, 24, "P"], [843, 133, 21, "S"], [796, 212, 29, "S"], [853, 188, 26, "S"],
+            [827, 243, 25, "S"], [769, 262, 29, "L"], [796, 280, 24, "L"], [853, 264, 22, "P"],
+            // right column, lavender and chrome alternating down to the floor
+            [807, 320, 23, "S"], [853, 317, 22, "L"], [787, 360, 27, "L"], [833, 360, 27, "L"],
+            [803, 390, 20, "S"], [767, 397, 23, "L"], [840, 403, 19, "L"], [807, 433, 30, "L"],
+            [770, 447, 20, "S"], [847, 467, 23, "S"], [803, 480, 19, "S"], [770, 490, 27, "L"],
+            [823, 513, 20, "L"], [780, 540, 30, "L"], [833, 540, 17, "S"], [817, 580, 25, "S"],
+            [767, 587, 20, "S"], [843, 597, 20, "L"], [800, 623, 23, "L"], [767, 647, 27, "L"],
+            [827, 660, 23, "S"], [793, 687, 25, "L"], [747, 700, 20, "S"], [853, 703, 23, "S"],
+            [783, 730, 27, "P"],
+            // floor cluster, pale blue
+            [763, 770, 33, "P"], [850, 747, 33, "P"], [827, 780, 30, "P"], [783, 820, 37, "P"],
+            [877, 807, 33, "P"], [850, 837, 23, "S"], [737, 837, 20, "S"], [713, 767, 27, "L"],
+            [720, 807, 25, "L"], [668, 812, 30, "L"],
+          ];
+          const sp = layout.panels[0];
+          const sLeft = sp.cx - sp.pw / 2, sTop = sp.apexY;
+          const sx = sp.pw / 513, sy = (sp.floorY - sp.apexY) / 670, sr = (sx + sy) / 2;
+          const sUniq: number[] = [];
+          colors.forEach((c, i) => {
+            if (!sUniq.some((j) => colors[j].toLowerCase() === c.toLowerCase())) sUniq.push(i);
+          });
+          const sIsWhite = (hex: string) => {
+            const h = hex.replace(/^#/, "");
+            return h.length >= 6 && [0, 2, 4].every((k) => parseInt(h.slice(k, k + 2), 16) >= 235);
+          };
+          const sChrome = sUniq.find((i) => chromeHexSet.has(colors[i].toLowerCase()));
+          const sWhite  = sUniq.find((i) => sIsWhite(colors[i]));
+          const sRest   = sUniq.filter((i) => i !== sChrome && i !== sWhite);
+          const sPool   = sRest.length > 0 ? sRest : sUniq;
+          let sLav = 0;
+          const sColour = (slot: ShimBalloon[3]): number => {
+            if (slot === "S") return sChrome ?? sPool[0];
+            if (slot === "P") return sPool[0];
+            // The photo's pale lavender is half white, half lilac; with white in
+            // the palette the two take turns.
+            const k = sLav++;
+            if (sWhite !== undefined && k % 2 === 1) return sWhite;
+            return sPool[1 % sPool.length];
+          };
+          const sPlaced = SHIM_REF.map(([x, y, r, slot]) => ({
+            bx: sLeft + (x - 222) * sx,
+            by: Math.min(sTop + (y - 165) * sy, sp.floorY + plinthForwardPx - r * sr),
+            br: r * sr * 1.15,
+            ci: sColour(slot),
+          })).sort((m, n) => n.br - m.br);
+          for (const b of sPlaced) {
+            content.push(`<circle cx=\"${b.bx.toFixed(1)}\" cy=\"${b.by.toFixed(1)}\" r=\"${b.br.toFixed(1)}\" ${balloonAttrs(b.ci)}/>`);
+          }
+        } else if (
+          layout.panels.length === 1 &&
           (backdropItems[layout.panels[0].idx]?.type ?? "") === "balloon_ring"
         ) {
           // Hollow balloon ring: a dense hoop of balloons with a completely open
@@ -4083,6 +4175,7 @@ export function generateStructureSilhouette(
     archShimmerCompositionBalloons,
     archShimmerAccentZone,
     textZones,
+    bannerPrintInGuide: bannerPrintInGuide as boolean,
     bannerPrintMaskSvg: (bannerPrintLayout as { x: number; y: number; w: number; h: number } | null)
       ? (() => {
           const b = bannerPrintLayout as unknown as { x: number; y: number; w: number; h: number };

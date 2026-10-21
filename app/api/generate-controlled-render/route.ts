@@ -161,7 +161,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "banner-plinth-shaded-v123";
+const RENDER_CACHE_VERSION = "shimmer-garland-banner-guideprint-v124";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -716,6 +716,7 @@ interface LayoutRefPngResult {
   marqueeBulbs?: { xFrac: number; yFrac: number; rFrac: number }[];
   silverTextMaskSvg?: string;
   bannerPrintMaskSvg?: string;
+  bannerPrintInGuide?: boolean;
   bannerPrintRect?: { xFrac: number; yFrac: number; wFrac: number; hFrac: number } | null;
 }
 
@@ -789,6 +790,7 @@ async function generateLayoutReferencePng(
       silverTextMaskSvg: silhouette.silverTextMaskSvg,
       bannerPrintRect: silhouette.bannerPrintRect,
       bannerPrintMaskSvg: silhouette.bannerPrintMaskSvg,
+      bannerPrintInGuide: silhouette.bannerPrintInGuide,
       doubleArchGarlandBalloonsLeft:  silhouette.doubleArchGarlandBalloonsLeft,
       doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight,
       archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons,
@@ -2313,7 +2315,11 @@ forbiddenBalloonColorLabels: hasSempertexLock
   const bannerPrintMaskSvg = pngResult.bannerPrintMaskSvg ?? "";
   const bannerGraphicPanel = sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "banner" && sceneModel.panels[0]?.graphic?.enabled
     ? sceneModel.panels[0] : null;
-  if (bannerPrintRect && bannerPrintMaskSvg && bannerGraphicPanel && String(selectedThemeId ?? "").toLowerCase() === "frozen") {
+  // 2026-10-21: skipped when the guide already carries the print (Frozen
+  // pattern) — the render paints it, with the plinth and balloons truly in
+  // front, and laying a second copy over it would bring back the cut-out
+  // problem this stage had round a plinth the render drew shorter.
+  if (bannerPrintRect && bannerPrintMaskSvg && bannerGraphicPanel && !pngResult.bannerPrintInGuide && String(selectedThemeId ?? "").toLowerCase() === "frozen") {
     try {
       const baseBuf = workingImageBuf ?? await fetchFinalImage();
       if (baseBuf) {
