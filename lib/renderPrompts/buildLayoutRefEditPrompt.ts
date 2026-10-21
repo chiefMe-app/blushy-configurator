@@ -1167,6 +1167,21 @@ export function buildLayoutRefEditPrompt(
         : ``)
     : "";
 
+  // 2026-10-21: the lone banner comes printed with the theme. The graphic
+  // sentence sits mid-prompt and did not bind — the banner rendered as a
+  // blank white board. One short front line says what is printed and where.
+  const frontBannerGraphicPanel = hasBannerPanelInPrompt && panelCount === 1 && sceneModel.panels[0]?.graphic?.enabled
+    ? sceneModel.panels[0] : null;
+  const frontBannerGraphicDesc = frontBannerGraphicPanel
+    ? (THEME_CATALOG.find((t) => t.id === String(sceneModel.theme ?? "").toLowerCase())
+        ?.graphicPresets.find((g) => g.assetId === frontBannerGraphicPanel.graphic.assetId)?.desc ?? null)
+    : null;
+  // Superseded the same day: the model ignored this line too and copied
+  // the guide's zone literally. The route now prints the artwork after the
+  // render, so the prompt keeps the board plain for it.
+  void frontBannerGraphicDesc;
+  const frontBannerGraphicLine = "";
+
   const frontNumDigits = String(sceneModel.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
   const frontNumberLightLine =
     sceneModel.numberLight?.enabled && frontNumDigits.length > 0
@@ -1605,7 +1620,9 @@ export function buildLayoutRefEditPrompt(
   // The round backdrop description already says the panel is full size and has
   // nothing under it, but it is far earlier in the prompt and loses. Stated here,
   // next to the sentence that causes the damage.
-  const themeGraphicClause = graphicPanelIdx.length > 0
+  // The lone banner's print is added after the render (see the route); a
+  // sentence here would only invite the model to paint a second one.
+  const themeGraphicClause = graphicPanelIdx.length > 0 && !frontBannerGraphicPanel
     ? graphicSentences + plainPanelSentence
     : "";
 
@@ -1931,6 +1948,7 @@ const setupTemplateClause = setupTemplate
     frontCameraLine +
     frontPlinthLine +
     frontRoundTextLine +
+    frontBannerGraphicLine +
     frontBannerAspectLine +
     frontTripleArchLine +
     frontRingHalfLine +

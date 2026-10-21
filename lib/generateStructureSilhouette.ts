@@ -85,6 +85,9 @@ export interface SilhouetteResult {
   /** Full-canvas SVG mask (white on black) of any silver lettering, for the
    *  route's chrome pass. Empty string when there is none. */
   silverTextMaskSvg: string;
+  /** Where the lone banner's printed artwork goes, as canvas fractions, or
+   *  null when the banner carries no theme graphic. */
+  bannerPrintRect: { xFrac: number; yFrac: number; wFrac: number; hFrac: number } | null;
 }
 
 /** One size tier of standee cutout to draw in the guide. */
@@ -972,6 +975,7 @@ export function generateStructureSilhouette(
   const textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[] = [];
   const marqueeBulbsLayout: [number, number, number][] = [];
   const silverInkLayer: string[] = [];
+  let bannerPrintLayout: { x: number; y: number; w: number; h: number } | null = null;
   // The plinth marker is collected separately and appended after the balloons.
   // Drawn in place it went into the guide BEFORE the garland, so balloon
   // circles covered its base and sides and the model saw a stub of a cylinder
@@ -1144,7 +1148,18 @@ export function generateStructureSilhouette(
     // Theme graphic guide area — faint print zone on the panel surface so the
     // edit model bakes the illustration into the backdrop (not a sticker).
     const panelTextValue = item?.text?.enabled ? (item.text.value ?? "").trim() : "";
-    if (item?.graphic?.enabled && !isShimmer) {
+    if (item?.graphic?.enabled && !isShimmer && shape === "banner" && backdropItems.length === 1) {
+      // 2026-10-21: the lone banner's print is NOT left to the render. On
+      // turbo the model copied any zone drawn here literally (a pale blue
+      // rectangle) and painted no illustration whatever the prompt said. The
+      // board is left plain in the guide and the route prints the artwork
+      // onto it afterwards, in the part of the board the garland leaves
+      // clear: the upper left and centre (the crown takes the top right and
+      // the left cluster starts just under halfway down — see BANNER_REF).
+      const side = Math.min(panel.pw, panel.floorY - panel.apexY);
+      const bl = panel.cx - side / 2, bt = panel.floorY - side;
+      bannerPrintLayout = { x: bl + side * 0.05, y: bt + side * 0.07, w: side * 0.58, h: side * 0.37 };
+    } else if (item?.graphic?.enabled && !isShimmer) {
       content.push(themeGraphicGuideArea(
         panel.cx, panel.pw, panel.apexY, panel.floorY, panelTextValue.length > 0,
       ));
@@ -4045,6 +4060,15 @@ export function generateStructureSilhouette(
     archShimmerCompositionBalloons,
     archShimmerAccentZone,
     textZones,
+    // Assigned inside the panel loop, which TypeScript cannot see into.
+    bannerPrintRect: (bannerPrintLayout as { x: number; y: number; w: number; h: number } | null)
+      ? {
+          xFrac: (marginX + (bannerPrintLayout as { x: number; y: number; w: number; h: number } | null)!.x * SCALE) / W,
+          yFrac: (marginY + (bannerPrintLayout as { x: number; y: number; w: number; h: number } | null)!.y * SCALE) / H,
+          wFrac: ((bannerPrintLayout as { x: number; y: number; w: number; h: number } | null)!.w * SCALE) / W,
+          hFrac: ((bannerPrintLayout as { x: number; y: number; w: number; h: number } | null)!.h * SCALE) / H,
+        }
+      : null,
     silverTextMaskSvg: silverInkLayer.length > 0
       ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">` +
         `<rect width="${W}" height="${H}" fill="#000000"/>` +

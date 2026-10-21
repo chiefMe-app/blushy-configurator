@@ -1389,7 +1389,23 @@ function clearAllStandees() {
       // nothing — this switch had no case for it, so it fell to `default:
       // return`. A banner has one fixed size (2x2m), so unlike an arch it needs
       // no size step and is created ready to use.
-      case "single_banner":      panels = [makeBackdropItem("banner")]; break;
+      case "single_banner": {
+        // 2026-10-21, customer request: the banner comes already printed with
+        // the theme (its first theme graphic), and with NO standee — the
+        // Elsa that Single Round turns on is taken back off here if it is
+        // the only one selected. Either can be changed below.
+        const banner = makeBackdropItem("banner");
+        const presets = getThemeCatalogEntry(config.theme)?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
+        // A character print when the theme has one (Frozen: Elsa & Anna).
+        const first = (presets as { label: string }[]).find((pr) => /elsa|anna/i.test(pr.label)) as typeof presets[number] | undefined ?? presets[0];
+        panels = [first
+          ? { ...banner, graphic: { ...banner.graphic, enabled: true, theme: first.id, source: "preset", assetId: first.assetId } }
+          : banner];
+        if (selectedCutoutAssets.length === 1 && /elsa solo/i.test(selectedCutoutAssets[0].label ?? "")) {
+          clearAllStandees();
+        }
+        break;
+      }
       case "arch_open_frame":    panels = [makeArchUnsized("arch-1"), makeBackdropItem("open_arch_frame")]; break;
       case "single_shimmer":     panels = [makeBackdropItem("shimmer_wall")]; break;
       case "arch_shimmer":       panels = [makeArchUnsized("arch-1"), makeBackdropItem("shimmer_wall")]; break;
