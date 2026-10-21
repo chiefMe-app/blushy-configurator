@@ -195,13 +195,13 @@ export function buildLayoutRefEditPrompt(
       // style — a bare gold metal hoop with the garland on one side of it.
       backdropDesc = sceneModel.balloonRingStyle === "none"
         ? `one freestanding circular hoop about ${p.widthCm}cm across, standing upright on the floor: a slim ` +
-          `round GOLD METAL FRAME on a small flat base, bare polished tube all the way round with NO BALLOONS ` +
+          `round WHITE METAL FRAME on a small flat base, bare polished tube all the way round with NO BALLOONS ` +
           `on it anywhere. The CENTRE OF THE RING IS COMPLETELY OPEN and empty — the grey studio wall shows ` +
           `straight through it. No backdrop board, no panel, no disc and no balloons of any kind, on the hoop ` +
           `or anywhere else in the scene.`
         : sceneModel.balloonRingStyle === "half"
         ? `one freestanding circular hoop about ${p.widthCm}cm across, standing upright on the floor: a slim ` +
-          `round GOLD METAL FRAME, its bare polished tube clearly visible along the lower-left of the circle, ` +
+          `round WHITE METAL FRAME, its bare tube clearly visible down the left side of the circle, ` +
           `with a dense organic balloon garland wrapped around the rest of it — up the left shoulder, over ` +
           `the top, down the right side and spilling into a pile of balloons on the floor at the bottom ` +
           `right. Roughly half the hoop is bare metal and half is covered in balloons. ` +
@@ -776,14 +776,16 @@ export function buildLayoutRefEditPrompt(
   // 2026-09-09: Triple Arch. Short and front-loaded, because the side boards
   // kept rendering as full symmetrical arches.
   const halfArchCount = sceneModel.panels.filter((p) => p.type === "half_arch").length;
+  // 2026-10-21: the hoop is WHITE, as in the customer's newest ring reference
+  // (it was gold).
   // 2026-09-09: the bare gold hoop needs a front-loaded mention like every
   // other object on this pipeline — the mid-prompt description alone leaves
   // the render wrapping the whole circle in balloons.
   const frontRingHalfLine = !hasRingPanelInPrompt ? ""
     : sceneModel.balloonRingStyle === "none"
-      ? `The hoop is a bare slim GOLD METAL frame with NO balloons on it at all. `
+      ? `The hoop is a bare slim WHITE METAL frame with NO balloons on it at all. `
       : sceneModel.balloonRingStyle === "half"
-        ? `The hoop is a slim GOLD METAL frame, bare and clearly visible along its lower-left, with balloons ` +
+        ? `The hoop is a slim WHITE METAL frame, bare and clearly visible down its whole left side, with balloons ` +
           `wrapped around only the other half of it. `
         : "";
 
@@ -798,7 +800,7 @@ export function buildLayoutRefEditPrompt(
   // lines below (a separate name has produced a second plinth).
   const frontOpenFrameSentence = hasOpenFramePair
     ? `Two pieces side by side: a solid white arch board on the ${solidSide}, and on the ${openFrameSide} an OPEN ` +
-      `arch frame — a thick white arch-shaped band with an EMPTY hollow middle you see the grey wall through` +
+      `arch frame — a thick white arch-shaped band with an EMPTY hollow middle you see the grey wall through, its two legs standing apart on the floor with nothing joining them at the bottom` +
       (sceneModel.plinths.length > 0 ? `, with the one white cylindrical pedestal column on the floor in front, between them. ` : `. `)
     : "";
   // Said in frontShapeLine now, at the very start.
@@ -1052,7 +1054,7 @@ export function buildLayoutRefEditPrompt(
     if (t === "balloon_ring") return `There is NO backdrop board: ` +
       (sceneModel.balloonRingStyle === "full"
         ? `ONE 2-metre balloon ring, a circle completely covered in balloons all the way round, `
-        : `ONE slim gold metal hoop, 2 metres across, `) +
+        : `ONE slim white metal hoop, 2 metres across, `) +
       `stands on the floor in front of the bare grey wall` +
       // The bare hoop most of all invites something to fill the space behind
       // it; a grey paper roll was drawn there.
@@ -1160,8 +1162,25 @@ export function buildLayoutRefEditPrompt(
   // sitting deep in the prompt the chrome finish never bound — the customer
   // got flat grey balloons where they had selected Reflex silver. Stated up
   // front, where this pipeline actually listens.
+  // 2026-10-21: the reference replays. The guide draws the snowflakes and the
+  // clear bubbles; one short sentence says what they are, so the snowflakes
+  // come out as chunky glitter-foam ornaments rather than paper cut-outs and
+  // the bubbles as see-through rather than white.
+  const hasClearInPalette = selectedSempertexColors.some((c) => /clear/i.test(String((c as { colorName?: string }).colorName ?? "")));
+  const frontOrnamentLine = sceneModel.balloons.style === "none" ? ""
+    // Double Arch's reference has no snowflakes, so neither does its guide —
+    // and the sentence alone was enough to get some drawn.
+    : (theme === "frozen" && !(panelCount === 2 && sceneModel.panels.every((p) => p.type === "arch")) ? `Large chunky white glitter-foam 3D snowflake ornaments are tucked into the garland where the layout shows them. ` : ``) +
+      (hasClearInPalette ? `The clear balloons are crystal-clear transparent bubbles you can see through. ` : ``);
   const frontMetallicLine = hasChromeInPalette && sceneModel.balloons.style !== "none"
-    ? `The silver balloons in the garland are MIRROR-CHROME: polished, highly reflective metallic ` +
+    // 2026-10-21: "only a few" — with the reference replays the turbo and
+    // flash renders turned up to half the garland chrome, big blues and whites
+    // included; the references run about one balloon in seven.
+    // Not on the round: there the longer line pushed the plinth out of the
+    // render, on the same seed it was drawn without it.
+    ? `The silver balloons in the garland` +
+      (sceneModel.panels.some((p) => p.type === "round") ? `` : ` — only a few, about one balloon in seven —`) +
+      ` are MIRROR-CHROME: polished, highly reflective metallic ` +
       `balloons that mirror the room around them, with bright specular highlights. They are NOT matte, ` +
       `NOT flat grey, NOT painted grey — they read as chrome. `
     : "";
@@ -1916,11 +1935,11 @@ const hasGarland      = sceneModel.balloons.style !== "none";
 // wrapped one.
 const setupPanelInstruction = setupTemplate
   ? (hasRingPanelInPrompt && sceneModel.balloonRingStyle === "none"
-      ? `A single freestanding circular hoop standing on the floor — a slim bare gold metal frame with a ` +
+      ? `A single freestanding circular hoop standing on the floor — a slim bare white metal frame with a ` +
         `completely open empty centre and no balloons on it.`
       : hasRingPanelInPrompt && sceneModel.balloonRingStyle === "half"
-        ? `A single freestanding circular hoop standing on the floor — a slim gold metal frame, bare along ` +
-          `its lower-left, with a balloon garland wrapped around the rest of it and a completely open empty centre.`
+        ? `A single freestanding circular hoop standing on the floor — a slim white metal frame, bare down ` +
+          `its left side, with a balloon garland wrapped around the rest of it and a completely open empty centre.`
         : setupTemplate.panelInstruction)
   : "";
 
@@ -1963,7 +1982,7 @@ const setupTemplateClause = setupTemplate
       : lone.type === "round" ? `the round backdrop disc`
       : lone.type === "banner" ? `the square banner board`
       : lone.type === "shimmer_wall" ? `the sequin shimmer wall`
-      : lone.type === "balloon_ring" ? (loneRingStyle === "full" ? `the balloon ring` : `the gold metal hoop`)
+      : lone.type === "balloon_ring" ? (loneRingStyle === "full" ? `the balloon ring` : `the white metal hoop`)
       : `the arch backdrop board`,
   );
   if (sceneModel.balloons.style !== "none" && loneRingStyle !== "none") {
@@ -2021,6 +2040,8 @@ const setupTemplateClause = setupTemplate
     frontCameraLine +
     frontPlinthLine +
     frontRoundTextLine +
+    // After the plinth: ahead of it, on the round, the plinth was dropped.
+    frontOrnamentLine +
     frontBannerGraphicLine +
     frontBannerAspectLine +
     frontTripleArchLine +

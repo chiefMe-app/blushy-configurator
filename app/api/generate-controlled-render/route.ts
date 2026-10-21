@@ -161,7 +161,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "open-frame-hollow-v129";
+const RENDER_CACHE_VERSION = "reference-replays-v130";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -732,6 +732,8 @@ async function generateLayoutReferencePng(
   cutoutGuideItems:  CutoutGuideItem[] = [],
   /** Hexes whose Sempertex finish is Reflex/Chrome/Metallic — drawn as mirror balls. */
   chromeHexColors:   string[] = [],
+  /** Hexes of clear (transparent) balloons — drawn as see-through bubbles. */
+  clearHexColors:    string[] = [],
 ): Promise<LayoutRefPngResult> {
   // Stage 1: SVG generation — derive plinth sizes from sceneModel for type safety
   let silhouette: ReturnType<typeof generateStructureSilhouette>;
@@ -758,7 +760,9 @@ async function generateLayoutReferencePng(
         ringStyle: sceneModel.balloonRingStyle,
         // Which of the selected balloons are chrome, so the guide can draw
         // them as mirror balls rather than matte spheres.
-        chromeColors: chromeHexColors },
+        chromeColors: chromeHexColors,
+        // 2026-10-21: the reference replays' snowflake ornaments, on Frozen.
+        clearColors: clearHexColors, snowflakes: sceneModel.theme === "frozen" },
     );
   } catch (err) {
     const msg = String(err);
@@ -957,7 +961,23 @@ const strictColorModelApplied =
 let resolvedEditModelId = getEditModelId(modelMode);
 let actualModelReason: string = `mode_default_${modelMode}`;
 
-if (hasArchPanelInScene && !hasRoundPanelInScene) {
+// 2026-10-21: the Triple Arch goes to the full model. With its garland
+// replayed from the customer's reference — one mass wrapping right round
+// all three boards — flash rendered a white paper backdrop on a stand behind
+// them on every try (two seeds, white and tinted boards, with and without
+// the no-stand sentence); the full model drew the three boards on both seeds.
+const isTripleArchScene = hasArchPanelInScene
+  && sceneModel.panels.filter((p) => p.type === "half_arch").length === 2;
+if (isTripleArchScene) {
+  resolvedEditModelId = "fal-ai/flux-2/edit";
+  actualModelReason   = "triple_arch_edit";
+} else if (sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "shimmer_wall") {
+  // 2026-10-21: the lone Shimmer Wall's two replayed garland columns came
+  // back thin and small-balloon on turbo, boxy-plinthed on the full model,
+  // and full and correct on flash.
+  resolvedEditModelId = "fal-ai/flux-2/flash/edit";
+  actualModelReason   = "lone_shimmer_flash_edit";
+} else if (hasArchPanelInScene && !hasRoundPanelInScene) {
   // 2026-09-09: a SINGLE-panel arch scene moves off flash. The customer
   // reported "single archta renkler cok soluk", and it measures: on the same
   // scene, same guide, same prompt and the same fixed seed, flash renders at
@@ -1453,7 +1473,12 @@ forbiddenBalloonColorLabels: hasSempertexLock
       .filter((c) => /reflex|chrome|metallic/i.test(String((c as { finish?: string }).finish ?? "")))
       .map((c) => String((c as { hex?: string }).hex ?? ""))
       .filter(Boolean);
-    const pngResult       = await generateLayoutReferencePng(sceneModel, promptInputForAi, effectiveBalloonHexColors, cutoutGuideItems, chromeSelectionHexes);
+    // 2026-10-21: and the clear ones, drawn as see-through bubbles.
+    const clearSelectionHexes = (effectiveSempertexSelection ?? [])
+      .filter((c) => /clear/i.test(String((c as { colorName?: string }).colorName ?? "")))
+      .map((c) => String((c as { hex?: string }).hex ?? ""))
+      .filter(Boolean);
+    const pngResult       = await generateLayoutReferencePng(sceneModel, promptInputForAi, effectiveBalloonHexColors, cutoutGuideItems, chromeSelectionHexes, clearSelectionHexes);
     const layoutRefPrompt = buildLayoutRefEditPrompt(sceneModel, effectiveSempertexSelection);
 
     // Debug shortcut: return the layout reference PNG without calling fal.
@@ -2087,7 +2112,11 @@ forbiddenBalloonColorLabels: hasSempertexLock
                   const gch = g.info.channels;
                   for (let p = 0; p < W * H; p++) {
                     // The guide is drawn on white; anything darker is the setup.
-                    mask[p] = g.data[p * gch] < 246 ? 255 : 0;
+                    const gv = g.data[p * gch];
+                    // 2026-10-21: the ring and Triple Arch guides paint the room
+                    // (wall ~155, floor ~195 grey) instead of white; that is
+                    // background too.
+                    mask[p] = gv < 246 && Math.abs(gv - 155) > 3 && Math.abs(gv - 195) > 3 ? 255 : 0;
                   }
                   // Dilate generously: the rendered balloons are fuller than the
                   // guide circles that stand for them.

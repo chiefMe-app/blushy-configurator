@@ -43,6 +43,8 @@ export const HEX_POSITIVE_LABEL: Record<string, string> = {
   "#fef08a": "pale vanilla cream",
   "#bbf7d0": "pale mint green",
   "#ffffff": "pure white",
+  // 2026-10-21: Fashion 390 Clear — a see-through bubble, not a white balloon.
+  "#f0f4f8": "crystal-clear transparent bubble",
   "#fecdd3": "blush pearl pink",
   // 2026-09-09: Silk 850 Light Amethyst. Its catalogue renderLabel is "very
   // pale cool lavender, almost white", which is honest for the strict colour

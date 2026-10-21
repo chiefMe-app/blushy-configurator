@@ -594,7 +594,7 @@ function customTextGuide(
     hasGraphicBelow?: boolean;
     /** Which side(s) of this panel the garland covers, so the lettering can
      *  be placed where the balloons are not. */
-    garlandSide?: "left" | "right" | "both" | "none" | "round";
+    garlandSide?: "left" | "right" | "both" | "none" | "round" | "banner";
     fontStyle?: string;
     color?: string;
   } = {},
@@ -612,7 +612,12 @@ function customTextGuide(
   // clear part of that disc is right of centre, between the crown and the
   // plinth, which is also where the photo itself has its lettering.
   const roundClear = garlandSide === "round";
-  const y = apexY + panelH * (roundClear ? 0.36 : hasGraphicBelow ? 0.17 : 0.30);
+  // 2026-10-21: the lone banner's replayed garland runs along the top from a
+  // third of the way across and down the right; "Happy" went under the top
+  // band. Its reference has the lettering in the middle of the board, left of
+  // the garland, which is where it goes.
+  const bannerClear = garlandSide === "banner";
+  const y = apexY + panelH * (roundClear || bannerClear ? 0.36 : hasGraphicBelow ? 0.17 : 0.30);
 
   // The garland covers roughly the outer 30% of the board it hangs on. Text
   // drawn across the full width therefore had its first letters hidden behind
@@ -627,11 +632,13 @@ function customTextGuide(
     // 2026-10-20: 0.50 -> 0.36, "yazi boyutu daha kuculsun". The font is
     // sized from this width, so the lettering scales down with it.
     roundClear ? pw * 0.36 :
+    bannerClear ? pw * 0.46 :
     garlandSide === "both" ? pw * (1 - 2 * cover) :
     garlandSide === "none" ? pw * 0.85 :
     pw * (1 - cover) * 0.92;
   const shift =
     roundClear ? pw * 0.11 :
+    bannerClear ? -pw * 0.07 :
     garlandSide === "left"  ?  pw * cover / 2 :
     garlandSide === "right" ? -pw * cover / 2 : 0;
   const tx = cx + shift;
@@ -870,6 +877,10 @@ export function generateStructureSilhouette(
      * every other appearance problem on this pipeline, it had to be drawn.
      */
     chromeColors?: string[];
+    /** Hexes in the palette that are clear (transparent) balloons. */
+    clearColors?: string[];
+    /** Draw the white snowflake ornaments of the reference garlands (Frozen). */
+    snowflakes?: boolean;
   },
 ): SilhouetteResult {
   const shimmerTileFill = shimmerColorHex ?? "#D8D8E4";
@@ -1032,7 +1043,11 @@ export function generateStructureSilhouette(
   // guide showed round and through the hoop — and was painted as a white
   // paper backdrop behind it, most of all on the bare hoop. For the ring
   // the guide carries the room instead: a grey wall and a lighter floor.
-  const ringRoomGround = backdropItems.length === 1 && backdropItems[0]?.type === "balloon_ring";
+  // 2026-10-21: the Triple Arch too. Its replayed garland wraps right round
+  // the three boards, and the white guide ground inside that wrap rendered as
+  // one big white paper backdrop on a stand behind them.
+  const ringRoomGround = (backdropItems.length === 1 && backdropItems[0]?.type === "balloon_ring")
+    || (backdropItems.filter((i) => i?.type === "half_arch").length === 2 && backdropItems.some((i) => i?.type === "arch"));
   if (ringRoomGround) {
     const fy = marginY + (calculateExactLayout(backdropItems, plinthSizes, W, H).floorY) * SCALE;
     bgLines.push(`<rect width="${W}" height="${H}" fill="#9C9B98"/>`);
@@ -1073,6 +1088,10 @@ export function generateStructureSilhouette(
     const own = (backdropItems[panelIdx ?? sortedIdx] as { color?: string } | undefined)?.color;
     const nearWhite = !own || /^#(f{6}|F{6})$/.test(own) || own.toUpperCase() === "#FFFFFF";
     if (own && /^#[0-9a-fA-F]{6}$/.test(own) && !(isTripleArchGuide && nearWhite)) return own;
+    // 2026-10-21: on the room-coloured ground (see ringRoomGround) the
+    // Triple Arch boards read as boards in plain white, outlined; the tints
+    // came back as a lilac board.
+    if (isTripleArchGuide) return "#F4F2EF";
     const slot = isTripleArchGuide ? (panelIdx ?? sortedIdx) : (uniformPanelFill ? 0 : sortedIdx);
     return MULTI_PANEL_FILLS[slot % MULTI_PANEL_FILLS.length];
   };
@@ -1134,7 +1153,12 @@ export function generateStructureSilhouette(
         const ownFillM = fillForPanel(sortedIdx, panel.idx);
         const nearWhiteM = /^#(f[0-9a-f]){3}$/i.test(ownFillM) || ownFillM.toUpperCase() === "#FFFFFF";
         content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape,
-          besideOpenFrame && nearWhiteM ? "#F1EFEC" : ownFillM, panel.cx <= groupMidX ? "left" : "right", besideOpenFrame));
+          besideOpenFrame && nearWhiteM ? "#F1EFEC" : ownFillM, panel.cx <= groupMidX ? "left" : "right",
+          // 2026-10-21: the Triple Arch boards outlined too. With the replayed
+          // garland covering most of the side boards, the hairline edges left
+          // nothing to say three boards stand there, and the render made one
+          // big paper backdrop on a stand out of them.
+          besideOpenFrame || isTripleArchGuide));
       }
     } else if (isShimmer) {
       // Single shimmer wall: force a clean rectangle (never arch edges) with tile grid.
@@ -1240,9 +1264,10 @@ export function generateStructureSilhouette(
       const bothArches = backdropItems.length === 2 && backdropItems.every((i) => i.type === "arch");
       const fullerTier = balloonStyle === "full" || balloonStyle === "premium";
       const meanCx     = layout.panels.reduce((sum, p) => sum + p.cx, 0) / layout.panels.length;
-      const garlandSide: "left" | "right" | "both" | "none" | "round" =
+      const garlandSide: "left" | "right" | "both" | "none" | "round" | "banner" =
         balloonStyle === "none" ? "none"
           : layout.panels.length === 1 && shape === "round" ? "round"
+          : layout.panels.length === 1 && shape === "banner" ? "banner"
           : bothArches ? (panel.cx < meanCx ? "left" : "right")
           : layout.panels.length === 1 && shape === "arch" ? (fullerTier ? "both" : "right")
           : "none";
@@ -1391,6 +1416,7 @@ export function generateStructureSilhouette(
   })();
   let plinthDrawnLeftPx: number | null = null;
   let plinthDrawnRightPx: number | null = null;
+  let plinthDrawnTopPx: number | null = null;
   layout.plinths.forEach((p, plinthIdx) => {
     // One plinth lands on the midpoint; two straddle it; three sit centred.
     const plinthCx = Math.round(
@@ -1399,6 +1425,7 @@ export function generateStructureSilhouette(
     plinthDrawnLeftPx  = Math.min(plinthDrawnLeftPx  ?? Infinity,  plinthCx - p.diameterPx / 2);
     plinthDrawnRightPx = Math.max(plinthDrawnRightPx ?? -Infinity, plinthCx + p.diameterPx / 2);
     const plinthBottomY = p.bottomY + plinthForwardPx;
+    plinthDrawnTopPx = Math.min(plinthDrawnTopPx ?? Infinity, plinthBottomY - p.heightPx);
     // Round scenes: use filled cylinder so the plinth reads as a clear
     // solid object, not just outline edges that the model may skip or
     // merge with the background.
@@ -1493,7 +1520,8 @@ export function generateStructureSilhouette(
       const hw  = Math.max(3, hr * (extras.ringStyle === "none" ? 0.045 : 0.028));
       content.push(
         `<circle cx="${hp.cx.toFixed(1)}" cy="${(hp.floorY - hr).toFixed(1)}" r="${hr.toFixed(1)}" ` +
-        `fill="none" stroke="#C9A227" stroke-width="${hw.toFixed(1)}"/>`,
+        // 2026-10-21: white, as in the customer's newest ring reference.
+        `fill="none" stroke="#F3F2EF" stroke-width="${hw.toFixed(1)}"/>`,
       );
     }
   }
@@ -1591,6 +1619,215 @@ export function generateStructureSilhouette(
       return `fill="${fill}" stroke="${shade(hex, 0.6)}" stroke-width="1" stroke-opacity="0.45"`;
     };
 
+    // ── Reference replays ─────────────────────────────────────────────────
+    // 2026-10-21: "setuplari bunlarin aynisi olcak sekilde yapar misin?
+    // balonlarin lokasyonlari renkleri snowflakeler ayni olsun." One photo per
+    // setup, each transcribed into a table: every balloon's centre and radius
+    // read off a grid laid over the photo, in the photo's own pixels, plus the
+    // white snowflake ornaments tucked into the garland. Slots are the colour
+    // in the photo — W white, B pastel blue, L lavender, S chrome silver,
+    // C clear bubble — and F a snowflake. The tables are mapped onto OUR
+    // boards by the boards' own edges, so the board sizes stay ours ("size
+    // lari degistirme"); only where the balloons sit comes from the photo.
+    type RefSlot = "W" | "B" | "L" | "S" | "C" | "F";
+    type RefItem = [number, number, number, RefSlot];
+    const clearHexSet = new Set((extras?.clearColors ?? []).map((h) => String(h).toLowerCase()));
+    const refRoles = (() => {
+      const uniq: number[] = [];
+      colors.forEach((c, i) => {
+        if (!uniq.some((j) => colors[j].toLowerCase() === c.toLowerCase())) uniq.push(i);
+      });
+      const rgbOf = (hex: string) => {
+        const h = hex.replace(/^#/, "");
+        return [0, 2, 4].map((k) => parseInt(h.slice(k, k + 2), 16) || 0);
+      };
+      const hueOf = (hex: string): number => {
+        const [r, g, b] = rgbOf(hex).map((v) => v / 255);
+        const mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
+        if (d < 1e-6) return -1;
+        let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+        h *= 60; if (h < 0) h += 360;
+        return h;
+      };
+      const isWhite = (hex: string) => rgbOf(hex).every((v) => v >= 235);
+      const chrome = uniq.find((i) => chromeHexSet.has(colors[i].toLowerCase()));
+      const clear  = uniq.find((i) => clearHexSet.has(colors[i].toLowerCase()));
+      const white  = uniq.find((i) => i !== chrome && i !== clear && isWhite(colors[i]));
+      const rest   = uniq.filter((i) => i !== chrome && i !== clear && i !== white);
+      const blue   = rest.find((i) => { const h = hueOf(colors[i]); return h >= 170 && h < 238; });
+      const lav    = rest.find((i) => { const h = hueOf(colors[i]); return i !== blue && h >= 238 && h < 320; });
+      const others = rest.filter((i) => i !== blue && i !== lav);
+      const fallback = uniq.length > 0 ? uniq : [0];
+      return { chrome, clear, white, blue, lav, others, rest: rest.length > 0 ? rest : fallback };
+    })();
+    // Colour for a photo slot. Chrome, white and clear go to the customer's
+    // chrome, white and clear when they picked them; the photo's blue and
+    // lavender go to their blue and lavender, sharing out any other colours
+    // they picked, and simply share the palette when it has neither.
+    const refSlotCount: Record<string, number> = {};
+    const refColorFor = (slot: RefSlot): number => {
+      const k = (refSlotCount[slot] = (refSlotCount[slot] ?? 0) + 1) - 1;
+      const { chrome, clear, white, blue, lav, others, rest } = refRoles;
+      if (slot === "S" && chrome !== undefined) return chrome;
+      if (slot === "W" && white !== undefined) return white;
+      if (slot === "C" && clear !== undefined) return clear;
+      if (slot === "C" && white !== undefined) return white;
+      const own = slot === "B" ? blue : slot === "L" ? lav : undefined;
+      if (own !== undefined) return others.length > 0 && k % 3 === 2 ? others[Math.floor(k / 3) % others.length] : own;
+      return rest[(2 * k + (slot === "L" ? 1 : 0)) % rest.length];
+    };
+    // A clear bubble balloon: the wall shows through it, with a bright rim
+    // and a window highlight. Drawn as a tinted disc it rendered as a white
+    // balloon.
+    const clearBalloonSvg = (x: number, y: number, r: number): string => {
+      const sw = Math.max(1.2, r * 0.035).toFixed(1);
+      const rot = `rotate(-38 ${(x - r * 0.40).toFixed(1)} ${(y - r * 0.42).toFixed(1)})`;
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="rgba(226,233,239,0.30)" stroke="#8A96A2" stroke-width="${sw}" stroke-opacity="0.9"/>` +
+        `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(r * 0.90).toFixed(1)}" fill="none" stroke="#FFFFFF" stroke-width="${(r * 0.05).toFixed(1)}" stroke-opacity="0.55"/>` +
+        `<ellipse cx="${(x - r * 0.40).toFixed(1)}" cy="${(y - r * 0.42).toFixed(1)}" rx="${(r * 0.24).toFixed(1)}" ry="${(r * 0.11).toFixed(1)}" transform="${rot}" fill="#FFFFFF" fill-opacity="0.92"/>` +
+        `<ellipse cx="${(x + r * 0.42).toFixed(1)}" cy="${(y + r * 0.44).toFixed(1)}" rx="${(r * 0.14).toFixed(1)}" ry="${(r * 0.06).toFixed(1)}" transform="rotate(-38 ${(x + r * 0.42).toFixed(1)} ${(y + r * 0.44).toFixed(1)})" fill="#FFFFFF" fill-opacity="0.6"/>`;
+    };
+    // A white glitter-foam snowflake ornament, six feathered arms. Outlined
+    // in grey first so a white flake still reads against white balloons.
+    const snowflakeSvg = (x: number, y: number, R: number, rotDeg: number): string => {
+      const segs: string[] = [];
+      const P = (px: number, py: number) => `${px.toFixed(1)},${py.toFixed(1)}`;
+      for (let k = 0; k < 6; k++) {
+        const a = ((rotDeg + k * 60) * Math.PI) / 180;
+        segs.push(`M${P(x, y)}L${P(x + R * Math.cos(a), y + R * Math.sin(a))}`);
+        for (const [d, len] of [[0.36, 0.30], [0.60, 0.25], [0.82, 0.15]] as const) {
+          const bx = x + R * d * Math.cos(a), by = y + R * d * Math.sin(a);
+          for (const s of [-1, 1]) {
+            const b = a + s * (50 * Math.PI) / 180;
+            segs.push(`M${P(bx, by)}L${P(bx + R * len * Math.cos(b), by + R * len * Math.sin(b))}`);
+          }
+        }
+      }
+      const d = segs.join("");
+      const w = Math.max(1.6, R * 0.10);
+      return `<path d="${d}" fill="none" stroke="#7D8A97" stroke-width="${(w + 2.6).toFixed(1)}" stroke-linecap="round" stroke-opacity="0.85"/>` +
+        `<path d="${d}" fill="none" stroke="#FFFFFF" stroke-width="${w.toFixed(1)}" stroke-linecap="round"/>` +
+        `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(R * 0.14).toFixed(1)}" fill="#FFFFFF" stroke="#7D8A97" stroke-width="1.2"/>`;
+    };
+    // x mapping through anchor pairs [photo x, our x], linear between them and
+    // at `sOut` beyond the outermost two.
+    const refPieceX = (anchors: [number, number][], sOut: number) => (rx: number): number => {
+      const a = [...anchors].sort((p, q) => p[0] - q[0]);
+      if (rx <= a[0][0]) return a[0][1] + (rx - a[0][0]) * sOut;
+      const last = a[a.length - 1];
+      if (rx >= last[0]) return last[1] + (rx - last[0]) * sOut;
+      for (let i = 0; i < a.length - 1; i++) {
+        if (rx <= a[i + 1][0]) {
+          const t = (rx - a[i][0]) / (a[i + 1][0] - a[i][0]);
+          return a[i][1] + t * (a[i + 1][1] - a[i][1]);
+        }
+      }
+      return last[1];
+    };
+    type RefPlaced = { x: number; y: number; r: number; slot: RefSlot; ci: number };
+    // Map a table onto the guide and draw it. Bigger balloons go down first so
+    // the small ones read as tucked into them; snowflakes go on top. Colours
+    // are assigned in the table's own order so the photo's colour runs stay
+    // where they are.
+    const drawRefTable = (
+      table: RefItem[],
+      mapX: (rx: number) => number,
+      mapY: (ry: number) => number,
+      s: number,
+      opts: {
+        fill?: number;
+        maxBottom?: number;
+        keepClear?: { l: number; r: number; top: number }[];
+        keep?: (b: RefPlaced) => boolean;
+        /** Filler size as a fraction of the height scale; 0 turns fillers off. */
+        filler?: number;
+      } = {},
+    ): RefPlaced[] => {
+      const fill = opts.fill ?? 1.08;
+      const vl = -marginX / SCALE + (W * 0.012) / SCALE;
+      const vr = (W - marginX) / SCALE - (W * 0.012) / SCALE;
+      const out: RefPlaced[] = [];
+      for (const [x, y, r, slot] of table) {
+        const br = r * s * (slot === "F" ? 1 : fill);
+        let bx = mapX(x), by = mapY(y);
+        if (slot !== "F" && opts.maxBottom !== undefined && by + br > opts.maxBottom) by = opts.maxBottom - br;
+        // Stay on the canvas.
+        if (bx - br * 0.6 < vl) bx = vl + br * 0.6;
+        if (bx + br * 0.6 > vr) bx = vr - br * 0.6;
+        // Slide anything that would sit across a kept-clear box (the plinth's
+        // face) sideways, away from its middle, just far enough.
+        for (const kc of opts.keepClear ?? []) {
+          if (by + br * 0.3 < kc.top) continue;
+          const mid = (kc.l + kc.r) / 2;
+          if (bx < mid && bx + br > kc.l) bx = kc.l - br;
+          else if (bx >= mid && bx - br < kc.r) bx = kc.r + br;
+        }
+        out.push({ x: bx, y: by, r: br, slot, ci: slot === "F" ? -1 : refColorFor(slot) });
+      }
+      const kept = opts.keep ? out.filter(opts.keep) : out;
+      // Fillers. Read off a photo, only the balloons whose outline shows can
+      // be transcribed; the photo's garland is solid because a layer of small
+      // balloons further back fills every gap between those. Drawn without
+      // them the replay came back as the photo's balloons with daylight
+      // between them. So any gap that sits BETWEEN transcribed balloons —
+      // close to at least two of them — gets a small one, behind the rest.
+      const fillers: RefPlaced[] = [];
+      const fr = (opts.filler ?? 13) * s;
+      const body = kept.filter((b) => b.slot !== "F");
+      if (fr > 0 && body.length > 3) {
+        const minX = Math.min(...body.map((b) => b.x - b.r)), maxX = Math.max(...body.map((b) => b.x + b.r));
+        const minY = Math.min(...body.map((b) => b.y - b.r)), maxY = Math.max(...body.map((b) => b.y + b.r));
+        // Mostly the pastels: with a quarter of them chrome the render read the
+        // garland as mostly silver and turned big whites chrome to match.
+        const fillSlots: RefSlot[] = ["B", "W", "L", "B", "S", "L", "W", "B", "L", "W"];
+        let fk = 0;
+        const step = fr * 1.1;
+        for (let gy = minY; gy <= maxY; gy += step) {
+          for (let gx = minX + ((Math.round((gy - minY) / step) % 2) * step) / 2; gx <= maxX; gx += step) {
+            // Near counts transcribed balloons only — counting fillers too let
+            // them chain outward and fill the garland's whole bounding box.
+            let near = 0, inside = false;
+            for (const b of body) {
+              const e = Math.hypot(gx - b.x, gy - b.y) - b.r;
+              if (e < -fr * 0.15) { inside = true; break; }
+              if (e < fr * 0.9) near++;
+            }
+            if (!inside) {
+              for (const b of fillers) {
+                if (Math.hypot(gx - b.x, gy - b.y) < b.r + fr * 0.85) { inside = true; break; }
+              }
+            }
+            if (inside || near < 2) continue;
+            if (opts.maxBottom !== undefined && gy + fr > opts.maxBottom) continue;
+            if ((opts.keepClear ?? []).some((kc) => gy + fr * 0.3 >= kc.top && gx + fr > kc.l && gx - fr < kc.r)) continue;
+            const slot = fillSlots[fk++ % fillSlots.length];
+            fillers.push({ x: gx, y: gy, r: fr, slot, ci: refColorFor(slot) });
+          }
+        }
+      }
+      for (const b of fillers) {
+        content.push(`<circle cx="${b.x.toFixed(1)}" cy="${b.y.toFixed(1)}" r="${b.r.toFixed(1)}" ${balloonAttrs(b.ci)}/>`);
+      }
+      const balloons = kept.filter((b) => b.slot !== "F").sort((a, b) => b.r - a.r);
+      for (const b of balloons) {
+        const hex = (colors[b.ci % Math.max(1, colors.length)] ?? "").toLowerCase();
+        content.push(hasSelectedColors && clearHexSet.has(hex)
+          ? clearBalloonSvg(b.x, b.y, b.r)
+          : `<circle cx="${b.x.toFixed(1)}" cy="${b.y.toFixed(1)}" r="${b.r.toFixed(1)}" ${balloonAttrs(b.ci)}/>`);
+      }
+      if (extras?.snowflakes) {
+        kept.filter((b) => b.slot === "F").forEach((b, i) => {
+          content.push(snowflakeSvg(b.x, b.y, b.r, 8 + ((i * 23) % 30)));
+        });
+      }
+      return kept;
+    };
+    // The plinth's face, kept clear of balloons.
+    const plinthKeepClear = (): { l: number; r: number; top: number }[] =>
+      plinthDrawnLeftPx !== null && plinthDrawnRightPx !== null && plinthDrawnTopPx !== null
+        ? [{ l: (plinthDrawnLeftPx as number) - W * 0.006, r: (plinthDrawnRightPx as number) + W * 0.006, top: plinthDrawnTopPx as number }]
+        : [];
+
     // Every paid garland tier draws from the SAME organic-mass engine below.
     //
     // 2026-09-01: this dispatch used to be gated on `balloonStyle === "half"`,
@@ -1612,7 +1849,9 @@ export function generateStructureSilhouette(
         layout.panels.length === 1;
 
       if (isRoundScene) {
-        // Round panel: the customer's blue installation photo, TRANSCRIBED.
+        // Round panel: a customer photo, TRANSCRIBED. (2026-10-21: the table
+        // further down is now their lavender reference; the history of the
+        // method follows.)
         //
         // 2026-10-20: "make the balloon amount and balloon locations exactly
         // like the blue balloon reference". The procedural horseshoe (about
@@ -1640,141 +1879,75 @@ export function generateStructureSilhouette(
         // Anchor to floor so circle bottom == floorY (no floating gap → no invented base)
         const circleCy = rPanel.floorY - circR;
 
-        type RefBalloon = [number, number, number, "B" | "P" | "S" | "W"];
-        const REF_CX = 520, REF_CY = 584, REF_R = 280;
-        const ROUND_REF: RefBalloon[] = [
-          // crown, from just left of 12 o'clock to about 1 o'clock
-          [462, 265, 30, "B"], [512, 280, 25, "P"], [554, 267, 26, "B"], [550, 297, 17, "S"],
-          [574, 307, 17, "W"], [616, 312, 30, "S"], [527, 322, 19, "W"], [555, 332, 14, "P"],
-          [579, 337, 15, "S"], [505, 350, 17, "S"], [532, 360, 19, "B"], [490, 317, 17, "P"],
-          [432, 292, 24, "W"], [455, 332, 27, "P"], [392, 317, 34, "B"], [322, 305, 50, "P"],
-          [330, 355, 31, "W"], [375, 370, 14, "S"], [415, 380, 27, "B"], [447, 375, 16, "B"],
-          [217, 345, 22, "B"], [262, 357, 30, "S"], [222, 380, 17, "W"], [290, 392, 16, "P"],
-          [327, 412, 27, "S"], [370, 400, 20, "P"], [367, 430, 17, "P"],
-          // left side, widening as it comes down and out past the rim
-          [255, 432, 47, "S"], [197, 397, 17, "S"], [190, 460, 22, "S"], [335, 470, 32, "B"],
-          [190, 535, 60, "P"], [135, 495, 30, "B"], [275, 530, 25, "W"], [312, 557, 25, "S"],
-          [ 75, 572, 50, "S"], [150, 615, 28, "B"], [172, 647, 28, "W"], [260, 640, 55, "B"],
-          [325, 615, 20, "S"], [135, 662, 15, "S"], [155, 690, 15, "S"], [ 70, 705, 55, "P"],
-          [265, 715, 30, "B"], [350, 730, 52, "B"], [322, 662, 22, "W"], [200, 690, 25, "P"],
-          [395, 690, 18, "P"], [228, 585, 22, "B"], [292, 488, 18, "P"],
-          // lower left, the heaviest part of the garland
-          [165, 770, 60, "S"], [160, 842, 57, "B"], [290, 830, 55, "B"], [425, 840, 75, "S"],
-          [305, 885, 25, "B"], [240, 848, 20, "W"], [270, 765, 25, "W"],
-          // floor, left
-          [152, 955, 60, "S"], [240, 937, 40, "P"], [ 82, 935, 30, "W"], [ 37, 960, 25, "W"],
-          [412, 948, 55, "S"], [325, 965, 22, "S"], [290, 950, 20, "W"], [288,1002, 25, "W"],
-          [334,1025, 28, "P"],
-          // right cluster, from just below 3 o'clock down to the floor
-          [860, 612, 52, "P"], [785, 610, 25, "S"], [780, 652, 30, "B"], [830, 667, 27, "B"],
-          [720, 642, 32, "P"], [705, 692, 27, "W"], [747, 687, 20, "W"], [795, 710, 27, "P"],
-          [870, 710, 35, "P"], [750, 715, 15, "S"], [705, 755, 37, "B"], [765, 755, 30, "B"],
-          [840, 785, 65, "B"], [650, 780, 30, "P"], [740, 810, 30, "W"], [688, 830, 27, "S"],
-          [615, 848, 55, "P"], [832, 848, 50, "S"], [728, 860, 27, "B"], [767, 845, 12, "S"],
-          [680, 880, 30, "B"], [785, 880, 20, "P"],
-          // floor, right
-          [648, 920, 42, "B"], [667, 958, 57, "P"], [775, 945, 55, "B"], [890, 940, 45, "W"],
-          [855,1005, 70, "W"], [580, 968, 20, "S"],
+        // 2026-10-21: the table is now the customer's lavender and blue round
+        // (see "Reference replays" above), replacing the blue installation.
+        // In that photo the disc is centred at (545, 670) with a radius of
+        // 425 and stands on the floor at 1095: a long garland from the crown
+        // down the whole left side and out onto the floor, a short cluster on
+        // the lower right, snowflakes along both and inside the clear bubbles.
+        const REF_CX = 545, REF_CY = 670, REF_R = 425;
+        const ROUND_REF: RefItem[] = [
+          // crown, from 1 o'clock back over the top to 10 o'clock
+          [576, 195, 77, "L"], [549, 326, 42, "L"], [599, 303, 27, "W"], [649, 265, 38, "S"],
+          [661, 326, 27, "S"], [672, 203, 35, "W"], [742, 257, 58, "C"], [453, 205, 52, "B"],
+          [512, 220, 30, "S"], [435, 257, 14, "S"], [556, 262, 30, "W"], [475, 276, 50, "B"],
+          [469, 361, 50, "B"], [408, 415, 31, "W"], [319, 280, 96, "W"], [204, 392, 65, "C"],
+          [338, 353, 38, "L"], [292, 395, 17, "W"],
+          [734, 268, 35, "F"], [419, 315, 50, "F"], [208, 395, 42, "F"],
+          // down the left side
+          [135, 472, 31, "L"], [188, 468, 25, "S"], [231, 465, 17, "W"], [312, 457, 58, "S"],
+          [246, 530, 46, "W"], [296, 557, 27, "B"], [362, 518, 17, "B"], [346, 472, 15, "L"],
+          [ 95, 585, 70, "S"], [150, 530, 19, "W"], [208, 658, 23, "W"], [246, 705, 38, "B"],
+          [173, 705, 31, "W"], [112, 685, 31, "B"], [323, 712, 62, "C"], [ 92, 774, 65, "B"],
+          [227, 770, 31, "S"], [188, 816, 19, "W"], [312, 843, 73, "L"], [ 46, 925, 58, "W"],
+          [285, 958, 38, "B"], [419, 939, 54, "S"], [254, 916, 19, "B"],
+          [254, 612, 48, "F"], [315, 720, 30, "F"], [177, 878, 50, "F"],
+          // the foot, out on the floor
+          [162,1031,104, "W"], [ 46,1065, 58, "L"], [338,1058, 73, "C"], [450,1081, 50, "W"],
+          [250,1112, 29, "W"], [288,1081, 27, "L"], [485,1038, 15, "B"],
+          [338,1046, 42, "F"],
+          // the cluster on the lower right
+          [1015, 701, 29, "S"], [1011, 758, 36, "W"], [ 951, 794, 46, "B"], [1044, 840, 50, "C"],
+          [ 919, 879, 50, "L"], [1047, 926, 32, "W"], [ 869, 951, 29, "S"], [ 933, 954, 25, "W"],
+          [ 811, 979, 39, "B"], [1076, 976, 25, "L"], [ 911, 994, 21, "W"], [ 858,1033, 46, "W"],
+          [ 997,1040, 86, "B"], [ 783,1069, 39, "S"], [ 736,1051, 32, "W"], [ 883,1097, 36, "L"],
+          [1033, 854, 32, "F"], [ 990, 919, 43, "F"],
         ];
 
-        // ---- photo slot -> customer colour --------------------------------
-        // Chrome silver goes to a chrome colour and white to a white when the
-        // palette has them; the two blues share out whatever else was picked,
-        // pastel blue taking the first (primary) colour.
-        const uniqIdx: number[] = [];
-        colors.forEach((c, i) => {
-          if (!uniqIdx.some((j) => colors[j].toLowerCase() === c.toLowerCase())) uniqIdx.push(i);
-        });
-        const isWhiteHex = (hex: string) => {
-          const h = hex.replace(/^#/, "");
-          if (h.length < 6) return false;
-          return [0, 2, 4].every((k) => parseInt(h.slice(k, k + 2), 16) >= 235);
-        };
-        const chromeIdx = uniqIdx.find((i) => chromeHexSet.has(colors[i].toLowerCase()));
-        const whiteIdx  = uniqIdx.find((i) => isWhiteHex(colors[i]));
-        const restIdx   = uniqIdx.filter((i) => i !== chromeIdx && i !== whiteIdx);
-        const pool      = restIdx.length > 0 ? restIdx : uniqIdx;
-        const slotCount = { B: 0, P: 0, S: 0, W: 0 };
-        const slotColor = (slot: "B" | "P" | "S" | "W"): number => {
-          const k = slotCount[slot]++;
-          if (slot === "S" && chromeIdx !== undefined) return chromeIdx;
-          if (slot === "W" && whiteIdx  !== undefined) return whiteIdx;
-          if (slot === "P") return pool[(2 * k) % pool.length];
-          if (slot === "B") return pool[(2 * k + 1) % pool.length];
-          return pool[k % pool.length];
-        };
-
         // ---- photo coordinates -> our disc --------------------------------
-        // Two adaptations, both forced by our camera rather than chosen:
-        //  * The photo's disc fills about half its frame; ours fills more of
-        //    the canvas, so the mass that spills out past the rim on the left
-        //    would run off the edge. Only the part BEYOND the rim is drawn in,
-        //    by the least amount that keeps every balloon on the canvas.
-        //  * The photo looks down onto a raised platform, so its floor
-        //    balloons sit far below the disc. Ours is eye level, where the
-        //    floor in front of the disc is foreshortened — floor balloons are
-        //    lifted until none sits lower than the plinth's front edge.
         // The whole scene is drawn at SCALE inside a margin, so the visible
         // canvas in these coordinates runs from -marginX/SCALE to
-        // (W + marginX)/SCALE, not 0 to W.
+        // (W - marginX)/SCALE, not 0 to W. Whatever spills past the rim is
+        // drawn in, by the least amount that keeps every balloon on it.
         const visLeft  = -marginX / SCALE;
         const visRight = (W - marginX) / SCALE;
         const limitU = (Math.min(circleCx - visLeft, visRight - circleCx) - (W * 0.015) / SCALE) / circR;
         let squeeze = 1;
-        for (const [x, , r] of ROUND_REF) {
+        for (const [x, , r, slot] of ROUND_REF) {
+          if (slot === "F") continue;
           const u = Math.abs(x - REF_CX) / REF_R, rr = r / REF_R;
           if (u > 1 && u + rr > limitU) squeeze = Math.min(squeeze, Math.max(0, (limitU - rr - 1) / (u - 1)));
         }
         const maxBottomV = 1 + (plinthForwardPx / circR) + 0.03;
-        const plL = plinthDrawnLeftPx as number | null;
-        const plR = plinthDrawnRightPx as number | null;
-        const plPad = circR * 0.02;
-
-        const placed = ROUND_REF.map(([x, y, r, slot]) => {
+        const roundPre: RefItem[] = ROUND_REF.map(([x, y, r, slot]) => {
           let u = (x - REF_CX) / REF_R;
-          let v = (y - REF_CY) / REF_R;
-          // Read off the photo, each radius is what shows of that balloon;
-          // the photo's garland is solid because balloons further back fill
-          // every gap between those, and those were not transcribable. A
-          // slightly fuller radius stands in for them, so the band closes up
-          // instead of showing the disc between its balloons.
-          const rr = (r * (y >= 900 ? 1 : 1.08)) / REF_R;
           if (Math.abs(u) > 1) u = Math.sign(u) * (1 + (Math.abs(u) - 1) * squeeze);
-          if (v > 0.9) v = 0.9 + (v - 0.9) * 0.5;
-          if (v + rr > maxBottomV) v = maxBottomV - rr;
-          let bx = circleCx + u * circR;
-          const by = circleCy + v * circR;
-          const br = rr * circR;
-          // Keep the plinth's face clear: anything in the lower half that
-          // would sit across it is slid sideways, away from the centre, just
-          // far enough to clear it.
-          if (plL !== null && plR !== null && by > circleCy) {
-            const mid = (plL + plR) / 2;
-            if (bx < mid && bx + br > plL - plPad) bx = plL - plPad - br;
-            if (bx >= mid && bx - br < plR + plPad) bx = plR + plPad + br;
-          }
-          return { bx, by, br, slot, floor: y >= 900 };
-        }).filter((b) => {
-          // A marquee number stands in front of the lower right. Drawn over
-          // the balloons there it was dropped from the render both times —
-          // a white digit on a heap of white and pastel circles reads as more
-          // balloons. The balloons it would hide are left out, so it stands
-          // in clear floor with the cluster showing round its edges.
-          const nr = loneRoundNumberRect;
-          if (!nr) return true;
-          return !(b.bx > nr.x + nr.w * 0.08 && b.bx < nr.x + nr.w * 0.92 && b.by > nr.top + (nr.baseY - nr.top) * 0.05);
+          return [circleCx + u * circR, circleCy + ((y - REF_CY) / REF_R) * circR, r, slot];
         });
-
-        // Colours are assigned in the photo's own order so the bunches stay
-        // where they are in the photo; drawing order is separate. Larger
-        // balloons go down first so the small ones read as tucked into them,
-        // and the floor balloons, which stand in front of everything, last.
-        const withColour = placed.map((p) => ({ ...p, ci: slotColor(p.slot) }));
-        const body  = withColour.filter((p) => !p.floor).sort((a, b) => b.br - a.br);
-        const floor = withColour.filter((p) => p.floor).sort((a, b) => a.by - b.by);
-        for (const p of [...body, ...floor]) {
-          content.push(`<circle cx="${p.bx.toFixed(1)}" cy="${p.by.toFixed(1)}" r="${p.br.toFixed(1)}" ${balloonAttrs(p.ci)}/>`);
-        }
+        // A marquee number stands in front of the lower right. Drawn over the
+        // balloons there it was dropped from the render — a white digit on a
+        // heap of white and pastel circles reads as more balloons — so the
+        // balloons it would hide are left out.
+        const nr = loneRoundNumberRect;
+        drawRefTable(roundPre, (x) => x, (y) => y, circR / REF_R, {
+          maxBottom: circleCy + maxBottomV * circR,
+          keepClear: plinthKeepClear(),
+          keep: (b) => {
+            if (!nr) return true;
+            if (b.slot === "F") return !(b.x > nr.x && b.x < nr.x + nr.w && b.y > nr.top);
+            return !(b.x > nr.x + nr.w * 0.08 && b.x < nr.x + nr.w * 0.92 && b.y > nr.top + (nr.baseY - nr.top) * 0.05);
+          },
+        });
       } else {
         // Dense organic garland helper — thick layered band: floor/base cluster
         // → staggered climb band up the outer edge → crown cluster over the top
@@ -2519,6 +2692,260 @@ export function generateStructureSilhouette(
         // bold statement size, which is what these give (about 17in / 8in / 3in
         // on a 120cm board, a 5.2 : 2.4 : 1 ratio against the real 7.2 : 2.4 : 1).
         // ===================================================================
+        // 2026-10-21: Single Arch REPLAYS the customer's lavender and blue
+        // reference (see "Reference replays" above). In the photo the board
+        // runs x 173..650 and from its crown at y 333 to the floor at 1270;
+        // the garland starts on the crown's left shoulder with a big clear
+        // bubble and a big white, crosses the top, and comes down the whole
+        // right edge into a heavy foot, with five snowflakes along it.
+        const SINGLE_ARCH_REF: RefItem[] = [
+          // crown
+          [407, 160, 94, "W"], [247, 197, 75, "C"], [529, 144, 29, "L"], [570, 212, 68, "B"],
+          [679, 244, 43, "W"], [471, 234, 46, "S"], [264, 230, 21, "L"], [304, 219, 18, "B"],
+          [396, 226, 25, "B"], [268, 284, 43, "W"], [229, 330, 32, "B"], [361, 319, 32, "B"],
+          [407, 269, 32, "L"], [439, 316, 25, "S"], [471, 291, 18, "W"], [454, 351, 20, "W"],
+          [536, 260, 14, "B"], [575, 259, 20, "B"], [549, 345, 79, "B"], [732, 387, 61, "C"],
+          [643, 359, 20, "B"], [643, 409, 32, "L"], [586, 423, 21, "B"], [700, 441, 25, "W"],
+          [600, 466, 25, "L"],
+          [339, 257, 40, "F"], [661, 298, 60, "F"],
+          // down the right edge
+          [661, 493, 44, "S"], [586, 479, 29, "L"], [729, 486, 20, "B"], [800, 507, 54, "W"],
+          [711, 543, 26, "W"], [661, 571, 30, "B"], [614, 550, 29, "B"], [761, 589, 39, "L"],
+          [857, 600, 34, "L"], [694, 657, 69, "B"], [889, 693, 57, "C"], [718, 754, 39, "W"],
+          [836, 754, 46, "L"], [771, 739, 18, "S"], [775, 807, 44, "B"], [671, 782, 25, "W"],
+          [828, 852, 40, "S"], [895, 840, 27, "B"], [857, 811, 16, "S"], [685, 890, 58, "C"],
+          [770, 866, 16, "W"], [774, 944, 57, "W"],
+          [796, 675, 68, "F"], [891, 951, 64, "F"],
+          // the foot
+          [727,1005, 16, "B"], [691, 991, 16, "L"], [784,1034, 39, "L"], [845,1001, 32, "L"],
+          [859,1066, 39, "L"], [934,1044, 43, "C"], [679,1085, 73, "B"], [781,1123, 46, "S"],
+          [877,1119, 20, "S"], [920,1123, 25, "W"], [702,1162, 32, "S"], [759,1180, 18, "W"],
+          [634,1162, 16, "B"], [899,1239,100, "B"], [595,1244, 71, "L"], [724,1201, 25, "W"],
+          [681,1212, 21, "L"], [774,1223, 25, "B"], [699,1280, 61, "W"], [848,1335, 28, "L"],
+          [790,1345, 18, "B"],
+          [802,1269, 54, "F"],
+        ];
+        // 2026-10-21: Double Arch REPLAYS the customer's reference: a tall
+        // garland up the left arch's outer edge, from the floor to just over
+        // its crown, and a lower cluster on the right arch's outer edge from
+        // about halfway up. No snowflakes in this one. In the photo the left
+        // board runs x 433..758, y 150..800 and the right one x 765..1083,
+        // y 242..800.
+        const DOUBLE_ARCH_LEFT_REF: RefItem[] = [
+          [444, 147, 36, "C"], [487, 133, 29, "W"], [544, 136, 21, "L"], [516, 151, 18, "W"],
+          [484, 169, 16, "S"], [544, 197, 39, "L"], [594, 176, 18, "B"], [594, 154, 25, "C"],
+          [484, 190, 14, "W"], [405, 222, 32, "C"], [462, 229, 46, "S"], [534, 258, 27, "W"],
+          [416, 261, 16, "B"], [444, 261, 13, "B"], [348, 311, 43, "C"], [419, 319, 46, "B"],
+          [505, 279, 16, "S"], [480, 290, 16, "W"], [498, 311, 20, "W"], [512, 365, 50, "C"],
+          [423, 394, 36, "S"], [366, 429, 36, "L"], [473, 447, 29, "W"], [394, 451, 16, "S"],
+          [423, 465, 16, "B"], [444, 454, 16, "W"], [297, 495, 44, "C"], [385, 551, 77, "B"],
+          [512, 499, 46, "W"], [473, 542, 18, "B"], [444, 481, 14, "B"], [480, 585, 29, "S"],
+          [519, 574, 21, "W"], [441, 621, 32, "S"], [544, 667, 61, "S"], [244, 639, 57, "W"],
+          [341, 649, 39, "L"], [394, 637, 18, "W"], [416, 685, 37, "L"], [462, 710, 30, "W"],
+          [316, 761, 89, "B"], [184, 753, 43, "C"], [466, 792, 57, "W"], [423, 735, 14, "S"],
+          [544, 803, 25, "S"], [509, 735, 20, "S"], [566, 767, 21, "L"], [534, 764, 14, "B"],
+          [587, 799, 18, "L"], [537, 828, 14, "S"],
+        ];
+        const DOUBLE_ARCH_RIGHT_REF: RefItem[] = [
+          [1112, 370, 32, "C"], [1116, 445, 32, "C"], [1080, 474, 16, "S"], [1109, 466, 14, "W"],
+          [1126, 509, 36, "L"], [1066, 534, 14, "S"], [1084, 534, 14, "W"], [1205, 552, 50, "C"],
+          [1119, 584, 50, "S"], [1048, 599, 32, "B"], [1066, 634, 16, "W"], [1119, 666, 25, "S"],
+          [1059, 677, 29, "L"], [1212, 677, 64, "W"], [1312, 684, 36, "C"], [1134, 699, 16, "W"],
+          [1144, 724, 11, "B"], [1087, 764, 63, "B"], [ 984, 763, 50, "C"], [1166, 763, 39, "S"],
+          [1248, 777, 43, "L"], [1348, 770, 39, "W"], [1273, 731, 16, "S"], [1294, 749, 14, "S"],
+          [1169, 820, 14, "S"], [1305, 806, 18, "S"],
+        ];
+        // 2026-10-21: Shimmer Wall REPLAYS the customer's reference: a full
+        // height garland column up EACH side of the wall, from the floor to
+        // just over its top, with snowflakes along both. In the photo the wall
+        // runs x 510..1190, y 140..810.
+        const SHIMMER_LEFT_REF: RefItem[] = [
+          [500, 118, 40, "L"], [560, 118, 28, "S"], [408, 134, 24, "C"], [444, 130, 16, "S"],
+          [416, 222, 88, "B"], [520, 174, 24, "W"], [488, 282, 28, "W"], [324, 366, 48, "C"],
+          [444, 334, 40, "B"], [388, 326, 18, "W"], [412, 382, 20, "L"], [520, 354, 40, "S"],
+          [488, 334, 16, "B"], [484, 370, 16, "W"], [456, 374, 14, "B"], [392, 422, 32, "W"],
+          [460, 426, 28, "B"], [500, 442, 44, "S"], [340, 490, 66, "W"], [456, 486, 24, "B"],
+          [428, 462, 22, "L"], [492, 526, 44, "B"], [420, 546, 24, "W"], [252, 614, 60, "C"],
+          [384, 590, 44, "B"], [440, 586, 20, "W"], [500, 610, 36, "L"], [444, 642, 44, "W"],
+          [556, 662, 44, "W"], [504, 662, 16, "S"], [252, 734, 72, "B"], [456, 734, 48, "S"],
+          [560, 746, 56, "W"], [360, 790, 52, "L"], [500, 802, 32, "B"], [516, 766, 16, "L"],
+          [436, 822, 16, "S"], [484, 678, 16, "B"],
+          [568, 238, 64, "F"], [344, 670, 64, "F"],
+        ];
+        const SHIMMER_RIGHT_REF: RefItem[] = [
+          [1150,  97, 58, "C"], [1258, 142, 46, "L"], [1300, 226, 79, "W"], [1192, 284, 42, "B"],
+          [1258, 313, 21, "S"], [1262, 342, 16, "S"], [1325, 338, 54, "B"], [1408, 313, 58, "C"],
+          [1242, 388, 46, "S"], [1183, 372, 25, "L"], [1429, 438, 58, "L"], [1208, 463, 42, "W"],
+          [1258, 455, 16, "S"], [1375, 372, 25, "L"], [1271, 577, 88, "W"], [1492, 552, 46, "C"],
+          [1404, 568, 38, "S"], [1371, 518, 25, "L"], [1342, 622, 25, "W"], [1388, 618, 21, "L"],
+          [1479, 706,104, "B"], [1192, 693, 50, "C"], [1271, 681, 21, "S"], [1262, 731, 33, "W"],
+          [1312, 681, 29, "W"], [1204, 768, 46, "B"], [1275, 789, 38, "S"], [1412, 802, 42, "L"],
+          [1346, 789, 25, "B"], [1350, 822, 21, "B"], [1233, 814, 21, "L"],
+          [1183, 188, 66, "F"], [1346, 422, 71, "F"], [1346, 718, 62, "F"],
+        ];
+        const SHIMMER_REF_WALL = { l: 510, r: 1190, top: 140, floor: 810 };
+        // 2026-10-21: Arch + Shimmer REPLAYS the customer's reference: a
+        // full-height garland column up the arch's outer edge and another up
+        // the shimmer wall's outer edge, from the floor to over their tops,
+        // with snowflakes in both. In the photo the arch runs x 470..730,
+        // y 130..810, and the wall x 730..1370, y 170..810.
+        const ARCH_SHIMMER_ARCH_REF: RefItem[] = [
+          [336, 162, 40, "C"], [432, 134, 40, "B"], [324, 246, 36, "W"], [380, 266, 48, "B"],
+          [472, 270, 24, "S"], [476, 218, 20, "L"], [488, 186, 16, "B"], [424, 314, 32, "W"],
+          [280, 346, 44, "C"], [424, 358, 28, "S"], [384, 338, 20, "S"], [352, 346, 20, "L"],
+          [500, 346, 48, "B"], [356, 406, 56, "W"], [308, 494, 32, "L"], [352, 490, 18, "S"],
+          [388, 526, 44, "L"], [428, 482, 20, "S"], [464, 518, 24, "S"], [244, 570, 48, "C"],
+          [324, 526, 24, "S"], [452, 590, 52, "W"], [520, 630, 48, "C"], [500, 578, 20, "S"],
+          [228, 706, 84, "B"], [380, 674, 32, "S"], [416, 646, 20, "B"], [344, 718, 28, "L"],
+          [500, 726, 48, "L"], [320, 758, 20, "S"], [384, 770, 44, "W"], [320, 790, 20, "L"],
+          [436, 794, 20, "B"], [456, 754, 16, "S"], [272, 498, 20, "L"],
+          [412, 218, 60, "F"], [468, 410, 40, "F"], [344, 610, 64, "F"], [436, 714, 36, "F"],
+        ];
+        const ARCH_SHIMMER_WALL_REF: RefItem[] = [
+          [1350, 140, 48, "W"], [1274, 124, 24, "B"], [1206, 148, 32, "C"], [1254, 164, 20, "B"],
+          [1294, 176, 20, "L"], [1222, 224, 44, "W"], [1346, 252, 64, "B"], [1262, 264, 18, "S"],
+          [1278, 212, 16, "L"], [1462, 260, 40, "C"], [1298, 316, 32, "L"], [1330, 324, 24, "S"],
+          [1466, 348, 36, "L"], [1282, 380, 36, "C"], [1354, 384, 44, "W"], [1422, 416, 20, "S"],
+          [1306, 452, 40, "W"], [1362, 460, 24, "B"], [1366, 474, 40, "B"], [1502, 474, 28, "C"],
+          [1294, 554, 40, "L"], [1334, 578, 44, "S"], [1446, 562, 52, "W"], [1362, 530, 16, "B"],
+          [1322, 526, 16, "S"], [1290, 622, 24, "S"], [1394, 622, 32, "C"], [1282, 662, 16, "B"],
+          [1246, 726, 76, "L"], [1478, 702, 80, "B"], [1326, 770, 44, "W"], [1394, 758, 24, "S"],
+          [1342, 650, 24, "W"], [1378, 806, 20, "L"], [1426, 806, 20, "L"], [1426, 782, 14, "B"],
+          [1414, 324, 56, "F"], [1418, 460, 36, "F"], [1350, 690, 56, "F"],
+        ];
+        // 2026-10-21: Arch + Open Frame REPLAYS the customer's reference: on
+        // the solid arch a garland from over its crown down the whole outer
+        // side to the floor, and on the open frame one from over its crown —
+        // a few balloons showing behind it through the opening — down its
+        // outer side, both thick with snowflakes. The few balloons seen
+        // through the frame's opening are left out: our frame is taller for
+        // its width, and they landed in the middle of the opening. In the
+        // photo the arch runs
+        // x 392..736, y 245..955 and the frame x 709..1091, y 355..962.
+        const ARCH_FRAME_ARCH_REF: RefItem[] = [
+          [520,  87, 83, "B"], [411, 157, 65, "W"], [255, 170, 52, "C"], [320, 183, 30, "L"],
+          [355, 243, 48, "B"], [463, 243, 43, "B"], [503, 196, 26, "S"], [559, 209, 30, "S"],
+          [533, 174, 16, "S"], [524, 243, 22, "W"], [594, 165, 26, "W"], [377, 296, 22, "S"],
+          [333, 287, 17, "B"], [424, 291, 26, "W"], [207, 335, 48, "S"], [316, 357, 52, "B"],
+          [242, 365, 26, "S"], [259, 430, 48, "W"], [320, 448, 22, "S"], [290, 491, 35, "B"],
+          [342, 483, 26, "W"], [120, 525, 46, "C"], [197, 505, 62, "W"], [287, 543, 17, "B"],
+          [317, 547, 16, "S"], [352, 547, 22, "S"], [300, 595, 52, "B"], [100, 734, 78, "B"],
+          [261, 673, 43, "L"], [209, 673, 17, "B"], [309, 769, 35, "W"], [248, 743, 35, "S"],
+          [196, 721, 17, "B"], [183, 751, 17, "B"], [196, 830, 65, "W"], [383, 851, 74, "B"],
+          [ 65, 886, 43, "S"], [252, 873, 17, "B"], [104, 930, 48, "W"], [230, 934, 48, "L"],
+          [ 65, 960, 17, "S"],
+          [394,  78, 61, "F"], [350, 105, 45, "F"], [250, 257, 74, "F"], [146, 409, 57, "F"],
+          [342, 426, 43, "F"], [152, 630, 65, "F"], [348, 725, 52, "F"], [ 96, 825, 43, "F"],
+          [287, 851, 39, "F"], [322, 938, 43, "F"],
+        ];
+        const ARCH_FRAME_FRAME_REF: RefItem[] = [
+          [ 875, 267, 59, "B"], [ 788, 295, 45, "C"], [ 970, 322, 36, "S"], [1015, 304, 16, "S"],
+          [1015, 285, 45, "W"], [1093, 299, 50, "C"], [1061, 381, 59, "L"], [ 870, 358, 36, "B"],
+          [ 761, 385, 36, "W"], [1184, 476, 68, "B"], [1115, 440, 22, "W"], [1156, 576, 59, "W"],
+          [1111, 531, 20, "W"], [1148, 600, 56, "W"], [1144, 664, 32, "S"], [1212, 692, 48, "L"],
+          [1160, 708, 16, "B"], [1184, 732, 16, "B"], [1136, 772, 44, "B"], [1104, 820, 20, "S"],
+          [1176, 856, 52, "L"], [1232, 916, 60, "B"], [1096, 852, 16, "S"], [1140, 952, 20, "S"],
+          [1148, 920, 16, "W"],
+          [ 984, 217, 64, "F"], [ 793, 335, 50, "F"], [1147, 385, 41, "F"], [1129, 490, 50, "F"],
+          [1216, 764, 60, "F"], [1104, 912, 40, "F"],
+        ];
+        // See the Triple Arch branch for how this is mapped.
+        const TRIPLE_ARCH_REF: RefItem[] = [
+          // the left board, floor to crown
+          [302, 265, 35, "C"], [356, 277, 19, "L"], [402, 285, 38, "B"], [364, 315, 23, "L"],
+          [475, 254, 27, "C"], [552, 435, 14, "S"], [245, 404, 50, "W"], [279, 320, 22, "B"],
+          [356, 412, 27, "B"], [329, 465, 35, "W"], [375, 454, 17, "B"], [379, 488, 23, "S"],
+          [264, 473, 23, "B"], [198, 515, 35, "C"], [293, 527, 45, "B"], [352, 519, 15, "S"],
+          [379, 568, 46, "W"], [322, 622, 38, "L"], [275, 615, 14, "B"], [229, 672, 77, "B"],
+          [372, 642, 19, "S"], [348, 688, 46, "S"], [402, 672, 27, "C"], [475, 734, 42, "C"],
+          [391, 730, 15, "S"], [375, 761, 23, "L"], [437, 784, 54, "B"], [302, 780, 62, "W"],
+          [375, 818, 23, "L"], [218, 818, 31, "S"], [122, 799, 35, "C"], [229, 776, 17, "B"],
+          [156, 830, 17, "S"], [491, 811, 23, "C"], [118, 742, 23, "C"],
+          [348, 346, 54, "F"], [248, 560, 50, "F"], [175, 768, 46, "F"],
+          [410, 396, 22, "F"], [456, 626, 27, "F"],
+          // across the centre board
+          [764, 130, 84, "B"], [592, 124, 36, "C"], [660, 124, 20, "C"], [644, 176, 36, "S"],
+          [696, 200, 18, "S"], [736, 188, 28, "L"], [792, 216, 36, "W"], [748, 228, 14, "L"],
+          [664, 244, 36, "B"], [712, 232, 16, "S"], [568, 252, 60, "L"], [524, 192, 36, "C"],
+          [468, 284, 24, "S"], [484, 336, 36, "S"], [548, 376, 40, "C"], [560, 336, 16, "B"],
+          [588, 340, 14, "S"], [532, 328, 14, "S"], [872, 104, 28, "C"], [932, 120, 32, "S"],
+          [868, 160, 20, "B"], [968, 172, 28, "B"], [944, 208, 40, "B"], [900, 268, 28, "B"],
+          [840, 252, 24, "W"], [948, 260, 16, "B"], [984, 276, 16, "S"], [936, 320, 28, "W"],
+          [976, 316, 24, "S"], [984, 384, 28, "B"], [960, 356, 16, "S"],
+          [484, 268, 24, "F"], [868, 192, 56, "F"], [668, 324, 22, "F"], [930, 384, 24, "F"],
+          // the right board, crown to floor
+          [1032, 266, 32, "C"], [1064, 326, 36, "S"], [1040, 350, 20, "B"], [1028, 382, 20, "L"],
+          [ 992, 418, 20, "L"], [1008, 330, 14, "S"], [1152, 282, 56, "B"], [1236, 278, 28, "C"],
+          [1296, 326, 48, "W"], [1236, 390, 40, "L"], [1288, 434, 32, "B"], [1356, 410, 44, "C"],
+          [1180, 390, 20, "S"], [1188, 434, 20, "S"], [1224, 438, 14, "S"], [1200, 470, 16, "W"],
+          [1224, 522, 68, "B"], [1312, 470, 16, "S"], [1332, 506, 32, "C"], [1376, 538, 28, "C"],
+          [1316, 522, 16, "S"], [1160, 534, 20, "S"], [1156, 608, 48, "C"], [1312, 604, 60, "W"],
+          [1224, 588, 20, "B"], [1188, 668, 40, "S"], [1236, 632, 22, "B"], [1260, 676, 32, "L"],
+          [1384, 656, 32, "C"], [1328, 688, 32, "B"], [1172, 712, 16, "S"], [1092, 732, 40, "C"],
+          [1152, 744, 20, "B"], [1224, 764, 60, "W"], [1404, 776, 36, "B"], [1144, 808, 32, "L"],
+          [1092, 804, 28, "B"], [1368, 812, 36, "B"], [1312, 820, 20, "B"], [1436, 820, 16, "S"],
+          [1312, 792, 16, "S"], [1124, 772, 16, "S"],
+          [1012, 282, 20, "F"], [1196, 334, 64, "F"], [1336, 740, 52, "F"], [1112, 530, 28, "F"],
+        ];
+        // A photo board rect mapped onto one of ours: its two side edges onto
+        // our side edges, its floor onto our floor, and the height scale for
+        // everything outside the board and for the balloon sizes. `mirror`
+        // flips the photo about the board's centre, for a garland on the other
+        // side from the photo's.
+        const refBoardMap = (
+          p: typeof layout.panels[0], mirror: boolean,
+          ref: { l: number; r: number; top: number; floor: number },
+        ) => {
+          const s = (p.floorY - p.apexY) / (ref.floor - ref.top);
+          const l = p.cx - p.pw / 2, r = p.cx + p.pw / 2;
+          const x0 = refPieceX([[ref.l, l], [ref.r, r]], s);
+          return {
+            s,
+            x: mirror ? (rx: number) => 2 * p.cx - x0(rx) : x0,
+            y: (ry: number) => p.floorY - (ref.floor - ry) * s,
+          };
+        };
+        // refBoardMap, with whatever the table puts out past the board's two
+        // side edges drawn in by the least that keeps it on the canvas — the
+        // photos are wider frames than some of ours.
+        const refBoardMapFit = (
+          p: typeof layout.panels[0], mirror: boolean,
+          ref: { l: number; r: number; top: number; floor: number }, table: RefItem[],
+        ) => {
+          const m = refBoardMap(p, mirror, ref);
+          const visL = -marginX / SCALE + (W * 0.015) / SCALE;
+          const visR = (W - marginX) / SCALE - (W * 0.015) / SCALE;
+          const l = p.cx - p.pw / 2, r = p.cx + p.pw / 2;
+          // In photo terms: the side beyond ref.l lands on our left unless mirrored.
+          let sLo = m.s, sHi = m.s;
+          for (const [x, , rr, slot] of table) {
+            if (slot === "F") continue;
+            const room = (side: "L" | "R") => side === "L" ? l - visL : visR - r;
+            if (x < ref.l) sLo = Math.min(sLo, Math.max(0, (room(mirror ? "R" : "L") - rr * m.s * 1.08) / (ref.l - x)));
+            if (x > ref.r) sHi = Math.min(sHi, Math.max(0, (room(mirror ? "L" : "R") - rr * m.s * 1.08) / (x - ref.r)));
+          }
+          const x0 = (rx: number) => rx < ref.l ? l + (rx - ref.l) * sLo
+            : rx > ref.r ? r + (rx - ref.r) * sHi : m.x(rx);
+          const x0n = (rx: number) => rx < ref.l ? l + (rx - ref.l) * sLo
+            : rx > ref.r ? r + (rx - ref.r) * sHi : refPieceX([[ref.l, l], [ref.r, r]], m.s)(rx);
+          // And the same over the top: the photos carry more headroom over
+          // the garland's crown than some of our layouts do.
+          const visT = -marginY / SCALE + (H * 0.012) / SCALE;
+          let sUp = m.s;
+          for (const [, y, rr, slot] of table) {
+            if (slot !== "F" && y < ref.top) sUp = Math.min(sUp, Math.max(0, (p.apexY - visT - rr * m.s * 1.08) / (ref.top - y)));
+          }
+          const y0 = (ry: number) => ry < ref.top ? p.apexY - (ref.top - ry) * sUp : m.y(ry);
+          return { s: m.s, y: y0, x: mirror ? (rx: number) => 2 * p.cx - x0n(rx) : x0 };
+        };
+        const drawSingleArchRef = (p: typeof layout.panels[0], side: "left" | "right"): number => {
+          const m = refBoardMap(p, side === "left", { l: 173, r: 650, top: 333, floor: 1270 });
+          return drawRefTable(SINGLE_ARCH_REF, m.x, m.y, m.s, {
+            maxBottom: p.floorY + plinthForwardPx * 1.5,
+            keepClear: plinthKeepClear(),
+          }).length;
+        };
+
         const drawLoneArchStatementGarland = (
           p: typeof layout.panels[0], side: "left" | "right",
         ): number => {
@@ -3007,6 +3434,32 @@ export function generateStructureSilhouette(
         // five boards instead of three. The crown run follows the actual
         // silhouette of whichever board is highest at each x.
         if (halfArchPanels.length === 2 && archPanels.length === 1) {
+          // 2026-10-21: REPLAYS the customer's reference (TRIPLE_ARCH_REF):
+          // one garland from the floor at the left, up over the left board,
+          // across the top of the centre board and down the right board to
+          // the floor, with snowflakes along it and five small flat ones on
+          // the board faces. In the photo the boards run x 204..562 (top 346),
+          // 562..982 (top 255) and 982..1340 (top 350), all on the floor at
+          // 825. The photo's centre board stands taller over its sides than
+          // ours, so the height scale is the side boards' own out on the
+          // sides and the centre board's over it, blended across each join.
+          const ordT = [...layout.panels].sort((a, b) => a.cx - b.cx);
+          const [tL, tC, tR] = ordT;
+          const sSide = ((tL.floorY - tL.apexY) + (tR.floorY - tR.apexY)) / 2 / (825 - 348);
+          const sCen  = (tC.floorY - tC.apexY) / (825 - 255);
+          const tx = refPieceX([[204, tL.cx - tL.pw / 2], [562, tC.cx - tC.pw / 2], [982, tC.cx + tC.pw / 2], [1340, tR.cx + tR.pw / 2]], sSide);
+          const smooth = (a: number, b: number, v: number) => { const t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+          const tFloor = Math.max(...ordT.map((p) => p.floorY));
+          // The y of a photo point depends on which board it rides, so the
+          // map is built per balloon: pre-mapping y with its own x.
+          const tTable: RefItem[] = TRIPLE_ARCH_REF.map(([x, y, r, slot]) => {
+            const w = smooth(470, 600, x) * (1 - smooth(944, 1074, x));
+            const sy = sSide + (sCen - sSide) * w;
+            return [x, tFloor - (825 - y) * sy, r, slot];
+          });
+          drawRefTable(tTable, tx, (yy) => yy, sCen,
+            { maxBottom: tFloor + plinthForwardPx * 1.5, keepClear: plinthKeepClear() });
+        } else if (false as boolean) {
           const ordered = [...layout.panels].sort((a, b) => a.cx - b.cx);
           const leftP  = ordered[0];
           const rightP = ordered[ordered.length - 1];
@@ -3189,12 +3642,16 @@ export function generateStructureSilhouette(
           // existing balloon, so the reliable way to fill what is left is
           // another seed rather than looser packing (looser packing was tried
           // on Arch + Open Frame and thinned the garland into a single chain).
-          doubleArchGarlandBalloonsLeft  = drawThickOrganicMainGarland(pair[0], "left", 0, true, true, false).count
-            + drawThickOrganicMainGarland(pair[0], "left", 131, true, true, false).count
-            + drawThickOrganicMainGarland(pair[0], "left", 311, true, true, false).count;
-          doubleArchGarlandBalloonsRight = drawThickOrganicMainGarland(pair[1], "right", 62, true, true, false).count
-            + drawThickOrganicMainGarland(pair[1], "right", 197, true, true, false).count
-            + drawThickOrganicMainGarland(pair[1], "right", 421, true, true, false).count;
+          // 2026-10-21: both replaced by the customer's reference (see
+          // DOUBLE_ARCH_LEFT_REF), each table on its own board.
+          void drawThickOrganicMainGarland;
+          const mL = refBoardMap(pair[0], false, { l: 433, r: 758, top: 150, floor: 800 });
+          const mR = refBoardMap(pair[1], false, { l: 765, r: 1083, top: 242, floor: 800 });
+          const daBottom = layout.floorY + plinthForwardPx * 1.5;
+          doubleArchGarlandBalloonsLeft = drawRefTable(DOUBLE_ARCH_LEFT_REF, mL.x, mL.y, mL.s,
+            { maxBottom: daBottom, keepClear: plinthKeepClear() }).length;
+          doubleArchGarlandBalloonsRight = drawRefTable(DOUBLE_ARCH_RIGHT_REF, mR.x, mR.y, mR.s,
+            { maxBottom: daBottom, keepClear: plinthKeepClear() }).length;
         } else if (framePanel && archPanels.length === 1) {
           // 2026-10-21, customer reference: a solid arch with its garland down
           // its OUTER edge, and an OPEN arch frame — a thick white hollow arch
@@ -3203,10 +3660,16 @@ export function generateStructureSilhouette(
           // Single Arch statement garland. The old version packed the frame's
           // opening with a balloon cluster, which rendered as a wall of
           // balloons ("arch+open frame diyince bu cikti yanlis").
+          // 2026-10-21 (later): both replaced by the customer's newer
+          // reference (ARCH_FRAME_ARCH_REF), the arch on the left there;
+          // mirrored when ours stands on the right.
           const solidArch = archPanels[0];
           const archLeftOfFrame = solidArch.cx < framePanel.cx;
-          drawLoneArchStatementGarland(solidArch, archLeftOfFrame ? "left" : "right");
-          drawLoneArchStatementGarland(framePanel, archLeftOfFrame ? "right" : "left");
+          const mfa = refBoardMapFit(solidArch, !archLeftOfFrame, { l: 392, r: 736, top: 245, floor: 955 }, ARCH_FRAME_ARCH_REF);
+          const mff = refBoardMapFit(framePanel, !archLeftOfFrame, { l: 709, r: 1091, top: 355, floor: 962 }, ARCH_FRAME_FRAME_REF);
+          const afOpts = { maxBottom: layout.floorY + plinthForwardPx * 1.5, keepClear: plinthKeepClear() };
+          archOpenFrameMainGarlandBalloons = drawRefTable(ARCH_FRAME_ARCH_REF, mfa.x, mfa.y, mfa.s, afOpts).length;
+          archOpenFrameMiniClusterBalloons = drawRefTable(ARCH_FRAME_FRAME_REF, mff.x, mff.y, mff.s, afOpts).length;
         } else if (framePanel) {
           // Shimmer + Open Frame (no solid arch): compact accent cluster on the
           // frame's top-right shoulder only — hollow silhouette stays visible.
@@ -3235,9 +3698,18 @@ export function generateStructureSilhouette(
           // band-and-column. The bespoke composition this replaces came back as
           // a thin column on the arch and nothing on the shimmer.
           void drawArchShimmerComposition;
+          // 2026-10-21: both replaced by the customer's reference
+          // (ARCH_SHIMMER_ARCH_REF), the arch on the left there; mirrored when
+          // ours stands on the right.
           const archOnLeft = archPanels[0].cx < shimmerPanels[0].cx;
-          drawLoneArchStatementGarland(archPanels[0], archOnLeft ? "left" : "right");
-          drawShimmerRefGarland(shimmerPanels[0], archOnLeft ? "right" : "left");
+          const aRef = { l: 470, r: 730, top: 130, floor: 810 };
+          const wRef = { l: 730, r: 1370, top: 170, floor: 810 };
+          const ma = refBoardMapFit(archPanels[0], !archOnLeft, aRef, ARCH_SHIMMER_ARCH_REF);
+          const mw = refBoardMapFit(shimmerPanels[0], !archOnLeft, wRef, ARCH_SHIMMER_WALL_REF);
+          const asOpts = { maxBottom: layout.floorY + plinthForwardPx * 1.5, keepClear: plinthKeepClear() };
+          archShimmerCompositionBalloons =
+            drawRefTable(ARCH_SHIMMER_ARCH_REF, ma.x, ma.y, ma.s, asOpts).length +
+            drawRefTable(ARCH_SHIMMER_WALL_REF, mw.x, mw.y, mw.s, asOpts).length;
         } else if (
           layout.panels.length === 1 &&
           (backdropItems[layout.panels[0].idx]?.type ?? "") === "shimmer_wall"
@@ -3258,7 +3730,28 @@ export function generateStructureSilhouette(
           // its right column — so the column straddles our wall's right edge
           // instead of standing beside it with a strip of bare wall between
           // ("yesille isaretledigim yerdeki space olmamali").
-          drawShimmerRefGarland(layout.panels[0], "right");
+          // 2026-10-21: replaced by the customer's two-column reference (see
+          // SHIMMER_LEFT_REF). The photo is a wide frame with room either side
+          // of the columns; ours is square, so what stands out past each edge
+          // of the wall is drawn in, by the least that keeps it on the canvas.
+          void drawShimmerRefGarland;
+          const sp0 = layout.panels[0];
+          const ms = refBoardMap(sp0, false, SHIMMER_REF_WALL);
+          const visL = -marginX / SCALE + (W * 0.015) / SCALE;
+          const visR = (W - marginX) / SCALE - (W * 0.015) / SCALE;
+          const wl = sp0.cx - sp0.pw / 2, wr = sp0.cx + sp0.pw / 2;
+          let sL = ms.s, sR = ms.s;
+          for (const [x, , r, slot] of SHIMMER_LEFT_REF) {
+            if (slot !== "F" && x < SHIMMER_REF_WALL.l) sL = Math.min(sL, Math.max(0, (wl - visL - r * ms.s * 1.08) / (SHIMMER_REF_WALL.l - x)));
+          }
+          for (const [x, , r, slot] of SHIMMER_RIGHT_REF) {
+            if (slot !== "F" && x > SHIMMER_REF_WALL.r) sR = Math.min(sR, Math.max(0, (visR - wr - r * ms.s * 1.08) / (x - SHIMMER_REF_WALL.r)));
+          }
+          const msx = (rx: number) => rx < SHIMMER_REF_WALL.l ? wl + (rx - SHIMMER_REF_WALL.l) * sL
+            : rx > SHIMMER_REF_WALL.r ? wr + (rx - SHIMMER_REF_WALL.r) * sR : ms.x(rx);
+          const msOpts = { maxBottom: sp0.floorY + plinthForwardPx * 1.5, keepClear: plinthKeepClear() };
+          drawRefTable(SHIMMER_LEFT_REF, msx, ms.y, ms.s, msOpts);
+          drawRefTable(SHIMMER_RIGHT_REF, msx, ms.y, ms.s, msOpts);
         } else if (
           layout.panels.length === 1 &&
           (backdropItems[layout.panels[0].idx]?.type ?? "") === "balloon_ring"
@@ -3337,65 +3830,76 @@ export function generateStructureSilhouette(
           // bare. Read off a grid over the photo: there the hoop is centred at
           // (525, 670) with a radius of 387. Slots: S chrome, W white, P pale
           // blue, L lilac, K pink — K shares lilac's colour on a short palette.
-          if (extras?.ringStyle === "half") {
-            type RingRefBalloon = [number, number, number, "S" | "W" | "P" | "L" | "K"];
-            const HALF_RING_REF: RingRefBalloon[] = [
-            // crown over the top, from about 1 o'clock across to 10 o'clock
-            [340, 203, 37, "S"], [537, 197, 30, "W"], [463, 227, 37, "L"], [447, 220, 22, "S"],
-            [600, 277, 50, "L"], [507, 267, 37, "L"], [440, 263, 22, "P"], [383, 260, 25, "P"],
-            [337, 247, 23, "P"], [407, 240, 20, "W"], [340, 290, 25, "S"], [307, 293, 20, "K"],
-            [260, 317, 25, "P"], [277, 270, 40, "P"], [217, 303, 23, "W"], [303, 347, 23, "P"],
-            [397, 363, 73, "L"], [253, 390, 50, "L"], [477, 330, 22, "K"], [547, 327, 22, "P"],
-            [543, 370, 23, "S"], [510, 363, 20, "P"], [580, 360, 20, "L"], [173, 327, 20, "S"],
-            [173, 367, 25, "S"], [130, 360, 23, "S"], [320, 407, 27, "P"],
+          // 2026-10-21 (later): both dressings REPLAY the customer's newer
+          // reference (see "Reference replays"). HALF: a bare hoop on the
+          // left, the garland from about 10 o'clock over the top and down the
+          // whole right side to a foot on the floor. FULL: the garland right
+          // round the hoop from floor to floor, open only at the bottom where
+          // the plinth stands. Snowflakes along both. In the half photo the
+          // hoop is centred at (425, 396) with a radius of 223, in the full
+          // one at (1500, 365) with a radius of 260.
+          const HALF_RING_REF: RefItem[] = [
+            [257, 172, 38, "C"], [318, 138, 23, "B"], [399, 118, 65, "W"], [384, 199, 23, "L"],
+            [418, 192, 15, "S"], [457, 176, 27, "B"], [476, 111, 23, "W"], [495, 126, 15, "L"],
+            [476, 145, 15, "B"], [480, 207, 23, "W"], [511, 168, 31, "S"], [538, 138, 35, "L"],
+            [565, 161, 15, "W"], [565, 184, 23, "L"], [526, 222, 27, "W"], [630, 130, 42, "C"],
+            [588, 253, 38, "W"], [595, 199, 15, "L"], [672, 222, 54, "B"], [626, 276, 23, "W"],
+            [626, 330, 23, "B"], [649, 376, 27, "W"], [634, 318, 14, "L"], [770, 311, 35, "C"],
+            [724, 353, 27, "L"], [701, 388, 19, "S"], [739, 388, 15, "B"], [778, 399, 35, "C"],
+            [731, 422, 27, "W"], [651, 426, 19, "B"], [689, 453, 31, "L"], [612, 484, 46, "C"],
+            [782, 507, 73, "B"], [620, 534, 35, "W"], [628, 545, 23, "S"], [532, 576, 38, "C"],
+            [578, 576, 27, "L"], [608, 599, 23, "W"], [735, 607, 38, "W"], [658, 618, 31, "L"],
+            [578, 622, 23, "B"], [612, 630, 15, "S"], [785, 618, 15, "S"], [658, 568, 14, "W"],
+            [330, 184, 46, "F"], [676, 322, 35, "F"], [685, 538, 54, "F"],
+          ];
+          const FULL_RING_REF: RefItem[] = [
+            // over the top
+            [1406,  95, 52, "L"], [1506,  43, 38, "C"], [1492, 124, 38, "W"], [1659, 100, 57, "B"],
+            [1530, 157, 24, "S"], [1616, 186, 19, "S"], [1368, 167, 24, "W"], [1454, 152, 17, "B"],
+            [1325, 133, 29, "C"], [1601, 195, 22, "W"], [1749, 167, 38, "C"], [1687, 176, 24, "L"],
+            [1320, 157, 24, "L"], [1320, 243, 38, "W"], [1201, 205, 33, "C"], [1216, 276, 38, "L"],
+            [1263, 243, 17, "B"], [1287, 286, 14, "B"], [1682, 238, 33, "W"], [1725, 252, 19, "S"],
+            [1701, 300, 33, "W"], [1549, 186, 19, "S"],
+            [1568, 119, 38, "F"], [1273, 176, 38, "F"], [1716, 200, 43, "F"], [1778, 295, 38, "F"],
             // down the left side
-            [ 73, 440, 33, "L"], [150, 430, 42, "W"], [110, 480, 25, "W"], [180, 500, 43, "P"],
-            [210, 493, 23, "K"], [263, 480, 23, "S"], [227, 453, 23, "P"], [240, 523, 33, "L"],
-            [ 67, 547, 33, "L"], [110, 530, 23, "S"], [ 93, 570, 23, "K"], [143, 570, 25, "K"],
-            [197, 577, 30, "P"], [117, 667, 90, "P"], [ 20, 667, 20, "L"], [237, 663, 23, "S"],
-            [230, 710, 27, "W"], [273, 727, 27, "L"], [217, 773, 40, "P"], [150, 777, 25, "W"],
-            [177, 807, 25, "W"], [110, 827, 60, "S"], [280, 800, 22, "S"], [267, 847, 27, "L"],
-            [ 50, 747, 30, "L"],
-            // the heavy foot, spreading along the floor to about 5 o'clock
-            [203, 896, 50, "L"], [139, 896, 39, "L"], [146, 939, 35, "K"], [310, 921, 61, "S"],
-            [231, 967, 32, "P"], [317, 831, 28, "P"], [371, 835, 25, "K"], [417, 789, 21, "L"],
-            [431, 831, 28, "P"], [496, 860, 64, "S"], [574, 824, 36, "K"], [596, 939, 71, "L"],
-            [331, 1010, 43, "W"], [414, 1021, 46, "P"], [396, 928, 21, "P"], [439, 931, 21, "P"],
-            [410, 971, 21, "P"], [453, 960, 21, "P"], [492, 956, 21, "K"], [474, 999, 25, "P"],
-            [521, 974, 21, "P"], [531, 1014, 21, "P"], [496, 1042, 21, "K"],
-            ];
-            const hs = ringR / 387;
-            const hUniq: number[] = [];
-            colors.forEach((c, i) => { if (!hUniq.some((j) => colors[j].toLowerCase() === c.toLowerCase())) hUniq.push(i); });
-            const hWhiteHex = (hex: string) => { const h = hex.replace(/^#/, ""); return h.length >= 6 && [0, 2, 4].every((k) => parseInt(h.slice(k, k + 2), 16) >= 235); };
-            const hChrome = hUniq.find((i) => chromeHexSet.has(colors[i].toLowerCase()));
-            const hWhite  = hUniq.find((i) => hWhiteHex(colors[i]));
-            const hRest   = hUniq.filter((i) => i !== hChrome && i !== hWhite);
-            const hPool   = hRest.length > 0 ? hRest : hUniq;
-            const hColour = (slot: RingRefBalloon[3]): number => {
-              if (slot === "S" && hChrome !== undefined) return hChrome;
-              if (slot === "W" && hWhite !== undefined) return hWhite;
-              if (slot === "P") return hPool[0];
-              if (slot === "K") return hPool[2 % hPool.length] ?? hPool[0];
-              return hPool[1 % hPool.length];
-            };
-            const hMaxBottom = rp.floorY + plinthForwardPx;
-            // The photo's foot runs on along the floor to about 5 o'clock. Here
-            // the centred plinth stands there, and those balloons — the inner
-            // half of the foot — came back hanging in mid-air inside the hoop
-            // (customer, 2026-10-21). The foot stops left of centre.
-            const hPlaced = HALF_RING_REF.filter(([x, y]) => !(y >= 780 && x >= 340)).map(([x, y, r, slot]) => {
-              const br = r * hs * 1.1;
-              let by = ringCy + (y - 670) * hs;
-              if (by + br > hMaxBottom) by = hMaxBottom - br;
-              return { bx: ringCx + (x - 525) * hs, by, br, ci: hColour(slot), floor: y > 880 };
-            });
-            const hBody = hPlaced.filter((b) => !b.floor).sort((m, n) => n.br - m.br);
-            const hFloor = hPlaced.filter((b) => b.floor).sort((m, n) => n.br - m.br);
-            for (const b of [...hBody, ...hFloor]) {
-              content.push(`<circle cx="${b.bx.toFixed(1)}" cy="${b.by.toFixed(1)}" r="${b.br.toFixed(1)}" ${balloonAttrs(b.ci)}/>`);
+            [1261, 262, 17, "B"], [1276, 327, 35, "S"], [1157, 350, 38, "C"], [1261, 388, 27, "W"],
+            [1207, 419, 27, "B"], [1280, 423, 23, "W"], [1299, 465, 54, "L"], [1126, 465, 50, "C"],
+            [1222, 465, 23, "S"], [1184, 488, 31, "W"], [1230, 527, 38, "W"], [1130, 565, 73, "L"],
+            [1361, 519, 38, "C"], [1284, 512, 15, "B"], [1322, 538, 15, "B"], [1315, 581, 38, "S"],
+            [1368, 565, 27, "L"], [1380, 596, 23, "W"], [1203, 635, 23, "W"], [1253, 627, 23, "B"],
+            [1292, 635, 19, "B"], [1334, 635, 14, "S"],
+            [1215, 358, 46, "F"], [1234, 573, 42, "F"],
+            // down the right side
+            [1810, 258, 58, "B"], [1812, 340, 28, "L"], [1856, 352, 36, "C"], [1740, 396, 40, "W"],
+            [1792, 396, 20, "S"], [1848, 420, 36, "W"], [1896, 416, 32, "C"], [1800, 460, 40, "S"],
+            [1684, 456, 36, "C"], [1880, 480, 20, "W"], [1748, 532, 32, "L"], [1880, 556, 76, "B"],
+            [1664, 556, 48, "W"], [1788, 524, 17, "S"], [1776, 564, 20, "W"], [1736, 616, 24, "S"],
+            [1836, 628, 24, "L"], [1704, 616, 16, "B"],
+            [1700, 460, 48, "F"], [1800, 584, 44, "F"],
+          ];
+          if (extras?.ringStyle === "half" || extras?.ringStyle === "full" || !extras?.ringStyle) {
+            const half = extras?.ringStyle === "half";
+            const [rcx, rcy, rr0] = half ? [425, 396, 223] : [1500, 365, 260];
+            const hs = ringR / rr0;
+            const tbl = half ? HALF_RING_REF : FULL_RING_REF;
+            // What spills out past the hoop at the sides is drawn in, by the
+            // least amount that keeps it on the canvas (as on the round).
+            const vL = -marginX / SCALE + (W * 0.015) / SCALE, vR = (W - marginX) / SCALE - (W * 0.015) / SCALE;
+            const limU = Math.min(ringCx - vL, vR - ringCx) / ringR;
+            let sq = 1;
+            for (const [x, , r, slot] of tbl) {
+              if (slot === "F") continue;
+              const u = Math.abs(x - rcx) / rr0, rr = (r * 1.08) / rr0;
+              if (u > 1 && u + rr > limU) sq = Math.min(sq, Math.max(0, (limU - rr - 1) / (u - 1)));
             }
+            const ux = (x: number) => {
+              const u = (x - rcx) / rr0;
+              return ringCx + ringR * (Math.abs(u) > 1 ? Math.sign(u) * (1 + (Math.abs(u) - 1) * sq) : u);
+            };
+            drawRefTable(tbl, ux, (y) => ringCy + (y - rcy) * hs, hs,
+              { maxBottom: rp.floorY + plinthForwardPx, keepClear: plinthKeepClear() });
           }
+          void ringPut; void pickRing;
           let ang = 0;
           let ringGuard = 0;
           // 2026-09-09: "half" dresses the ring the way the customer's own
@@ -3411,7 +3915,8 @@ export function generateStructureSilhouette(
           // The hoop itself is drawn earlier, outside this dispatch — see the
           // ringStyle block above layout-panel drawing.
           ang = angFrom;
-          while (!ringBare && !ringHalf && ang < angTo && ringGuard++ < 400) {
+          // 2026-10-21 (later): FULL is the reference replay above now.
+          while (false && !ringBare && !ringHalf && ang < angTo && ringGuard++ < 400) {
             const r1 = pickRing();
             // Offsets are >= 0 measured outward from the ring line, so the
             // opening stays clear.
@@ -3480,109 +3985,45 @@ export function generateStructureSilhouette(
           // map onto the customer's palette below. The photo's four silver
           // star foils are not drawn.
           void drawBannerFrameGarland;
-          type BannerBalloon = [number, number, number, "W" | "S" | "B" | "T" | "L" | "D"];
-          const BANNER_REF: BannerBalloon[] = [
-          // crown, pink side (top left of the crown)
-          [415, 152, 40, "D"], [373, 177, 27, "D"], [369, 114, 23, "D"], [335, 139,  9, "D"],
-          [346, 156,  9, "D"], [350, 170,  9, "D"], [400, 193, 12, "D"], [385, 214, 11, "D"],
-          [406, 220, 12, "D"],
-          // crown, white
-          [490, 218, 40, "W"], [470, 175, 20, "W"], [506, 145, 12, "W"], [527, 158, 12, "W"],
-          [507, 170, 12, "W"], [437, 206, 12, "W"], [437, 225, 12, "W"],
-          // crown, dark accent and chrome over the top right corner
-          [562, 128, 37, "T"], [617, 191, 29, "T"],
-          [627, 128, 12, "S"], [640, 151, 11, "S"], [619, 155, 11, "S"], [562, 185, 12, "S"],
-          [583, 197, 12, "S"], [562, 207, 11, "S"],
-          // right column, lilac with its grape clusters
-          [537, 266, 35, "L"], [612, 228, 31, "L"], [615, 295, 29, "L"], [667, 266, 27, "L"],
-          [575, 241, 10, "L"], [592, 253, 10, "L"], [571, 264, 10, "L"], [587, 266, 10, "L"],
-          [646, 237, 10, "L"], [658, 253, 10, "L"], [640, 264, 10, "L"], [656, 266, 10, "L"],
-          // right column, light blue
-          [575, 314, 12, "B"], [577, 335, 12, "B"], [560, 326, 12, "B"], [542, 366, 40, "B"],
-          [609, 355, 29, "B"], [625, 393, 13, "B"], [594, 407, 23, "B"], [623, 432, 15, "B"],
-          // right column, white
-          [509, 474, 40, "W"], [584, 458, 29, "W"], [538, 418, 12, "W"], [548, 437, 12, "W"],
-          [530, 445, 12, "W"], [565, 487, 12, "W"], [552, 503, 12, "W"], [569, 510, 12, "W"],
-          // right column, pink, swelling out past the edge
-          [644, 503, 44, "D"], [686, 441, 27, "D"], [650, 441, 12, "D"], [636, 453, 12, "D"],
-          [700, 480, 12, "D"], [708, 503, 12, "D"], [696, 526, 12, "D"], [712, 512, 22, "D"],
-          [540, 532, 13, "L"], [565, 541, 13, "L"], [584, 532, 13, "L"], [587, 555, 12, "L"],
-          [557, 557, 17, "L"],
-          // right foot, on the floor
-          [474, 592, 40, "B"], [549, 601, 27, "B"], [520, 603, 13, "B"], [514, 624, 13, "B"],
-          [539, 628, 13, "B"], [516, 655, 27, "B"], [462, 647, 21, "B"],
-          [599, 601, 27, "D"], [576, 645, 23, "D"], [618, 645, 25, "D"], [603, 680, 25, "D"],
-          [662, 563, 27, "T"], [682, 622, 35, "T"],
-          [637, 582, 11, "S"], [660, 590, 11, "S"], [637, 605, 11, "S"], [655, 609, 11, "S"],
-          [707, 557, 11, "S"], [701, 572, 11, "S"], [716, 560, 11, "S"],
-          // left cluster, from just under halfway down the left edge to the floor
-          [123, 393, 23, "T"], [173, 412, 25, "T"], [133, 433, 25, "T"], [ 94, 450, 23, "T"],
-          [165, 452, 19, "T"],
-          [ 69, 510, 31, "W"], [125, 483, 29, "W"], [188, 504, 35, "W"], [131, 541, 29, "W"],
-          [169, 481, 12, "W"], [156, 500, 12, "W"], [179, 497, 12, "W"],
-          [ 65, 564, 17, "D"], [ 96, 564, 12, "D"], [ 85, 579, 12, "D"], [115, 595, 27, "D"],
-          [ 48, 631, 42, "D"], [ 94, 629, 12, "D"], [115, 639, 12, "D"], [ 94, 654, 12, "D"],
-          [179, 577, 40, "B"], [225, 620, 25, "B"], [223, 556, 11, "B"], [242, 564, 11, "B"],
-          [231, 585, 11, "B"], [152, 627, 13, "B"], [173, 631, 13, "B"], [162, 647, 13, "B"],
-          [188, 627, 13, "B"],
+          // 2026-10-21: now the customer's lavender and blue banner (see
+          // "Reference replays"): a band along the top from about a third of
+          // the way across, over the top right corner and down the whole right
+          // edge to the floor, with seven snowflakes along it; the left of the
+          // board stays clear for the print. In that photo the board runs
+          // x 76..1064, from y 136 to the floor at 1091.
+          const BANNER_REF: RefItem[] = [
+            // along the top
+            [380, 120, 35, "L"], [576,  66, 88, "B"], [568, 178, 46, "W"], [445, 185, 38, "W"],
+            [507, 166, 19, "S"], [503, 212, 31, "W"], [465, 208, 12, "B"], [684, 132, 42, "S"],
+            [722,  66, 42, "C"], [792, 120, 35, "W"], [868, 128, 35, "C"], [630, 158, 15, "B"],
+            [634, 185, 14, "B"], [749, 185, 27, "W"], [761, 147, 19, "B"], [799, 170, 23, "L"],
+            [622, 258, 35, "L"], [668, 212, 23, "B"], [576, 255, 19, "B"], [541, 228, 17, "L"],
+            [726, 285, 15, "B"], [676, 166, 15, "W"],
+            [449, 116, 58, "F"], [707, 232, 62, "F"],
+            // over the corner and down the right edge
+            [ 850, 280, 88, "B"], [1028, 217, 81, "W"], [ 920, 163, 46, "C"], [1143, 332, 58, "C"],
+            [1058, 355, 42, "S"], [ 997, 317, 27, "L"], [ 958, 325, 19, "L"], [ 958, 286, 15, "B"],
+            [1001, 352, 15, "W"], [ 943, 402, 65, "W"], [1039, 432, 27, "S"], [1182, 478, 54, "B"],
+            [ 982, 486, 46, "W"], [1028, 471, 15, "B"], [ 982, 536, 17, "S"], [1039, 548, 38, "L"],
+            [1105, 602, 58, "L"], [ 958, 609, 50, "B"], [1074, 394, 15, "B"], [1051, 670, 50, "S"],
+            [1178, 716, 62, "C"], [ 966, 720, 38, "L"], [ 920, 728, 19, "S"], [1035, 735, 17, "W"],
+            [ 997, 785, 54, "W"], [1120, 762, 50, "W"], [1078, 828, 31, "B"], [1128, 828, 19, "S"],
+            [1189, 820, 42, "L"], [1028, 866, 38, "L"],
+            [ 847, 436, 42, "F"], [1112, 494, 73, "F"], [ 920, 889, 62, "F"],
+            // the foot
+            [1135, 962,115, "B"], [ 970, 966, 35, "S"], [ 866,1024, 88, "L"], [1028,1028, 38, "W"],
+            [1081,1082, 42, "L"], [1020,1105, 23, "B"], [ 935,1005, 17, "S"],
+            [ 958,1062, 58, "F"],
           ];
-          const bLeft = bp.cx - bSide / 2, bTop = bp.floorY - bSide;
-          const bs = bSide / 445;
-          const bUniq: number[] = [];
-          colors.forEach((c, i) => {
-            if (!bUniq.some((j) => colors[j].toLowerCase() === c.toLowerCase())) bUniq.push(i);
+          const bLeft = bp.cx - bSide / 2;
+          const bs = bSide / (1091 - 136);
+          const bx0 = refPieceX([[76, bLeft], [1064, bLeft + bSide]], bs);
+          const bKept = drawRefTable(BANNER_REF, bx0, (ry) => bp.floorY - (1091 - ry) * bs, bs, {
+            maxBottom: bp.floorY + plinthForwardPx + bSide * 0.03,
+            keepClear: plinthKeepClear(),
           });
-          const bIsWhite = (hex: string) => {
-            const h = hex.replace(/^#/, "");
-            return h.length >= 6 && [0, 2, 4].every((k) => parseInt(h.slice(k, k + 2), 16) >= 235);
-          };
-          const bChrome = bUniq.find((i) => chromeHexSet.has(colors[i].toLowerCase()));
-          const bWhite  = bUniq.find((i) => bIsWhite(colors[i]));
-          const bRest   = bUniq.filter((i) => i !== bChrome && i !== bWhite);
-          const bPool   = bRest.length > 0 ? bRest : bUniq;
-          // Light blue and the dark accent share the first colour, lilac and
-          // pink the second; longer palettes give the accents their own.
-          const bSlotIdx = { B: 0, T: 2, L: 1, D: 3 } as const;
-          const bColour = (slot: BannerBalloon[3]): number => {
-            if (slot === "S" && bChrome !== undefined) return bChrome;
-            // The photo's dark teal accents are its big statement balloons; they
-            // become chrome when the palette has it. With chrome only in the small
-            // grape clusters, the render made up the difference itself and turned
-            // big white and blue balloons to chrome instead (2026-10-21).
-            if (slot === "T" && bChrome !== undefined) return bChrome;
-            if (slot === "W" && bWhite  !== undefined) return bWhite;
-            const k = slot === "S" || slot === "W" ? 0 : bSlotIdx[slot];
-            const k2 = bPool.length <= 2 ? (slot === "L" || slot === "D" ? 1 : 0) : k;
-            return bPool[k2 % bPool.length];
-          };
-          // Floor balloons sit lower in the photo, which looks down on them;
-          // at our eye level they are lifted to stand no further forward than
-          // the plinth. Anything across the plinth slides sideways off it.
-          const bMaxBottom = bp.floorY + plinthForwardPx + bSide * 0.03;
-          const bPlL = plinthDrawnLeftPx as number | null;
-          const bPlR = plinthDrawnRightPx as number | null;
-          const bPlaced = BANNER_REF.map(([x, y, r, slot]) => {
-            const yy = y > 600 ? 600 + (y - 600) * 0.5 : y;
-            let bx = bLeft + (x - 140) * bs;
-            let by = bTop + (yy - 195) * bs;
-            // Fuller than read off the photo: there, balloons further back fill
-            // every gap between the visible ones (same reason as the round).
-            const br = r * bs * 1.12;
-            if (by + br > bMaxBottom) by = bMaxBottom - br;
-            if (bPlL !== null && bPlR !== null && by > bp.floorY - bSide * 0.5) {
-              const mid = (bPlL + bPlR) / 2, pad = bSide * 0.02;
-              if (bx < mid && bx + br > bPlL - pad) bx = bPlL - pad - br;
-              if (bx >= mid && bx - br < bPlR + pad) bx = bPlR + pad + br;
-            }
-            return { bx, by, br, ci: bColour(slot), floor: y >= 600 };
-          });
-          const bBody  = bPlaced.filter((b) => !b.floor).sort((a, b) => b.br - a.br);
-          const bFloor = bPlaced.filter((b) => b.floor).sort((a, b) => b.br - a.br);
-          for (const b of bPlaced) {
-            bannerPrintHoles.push(`<circle cx="${b.bx.toFixed(1)}" cy="${b.by.toFixed(1)}" r="${(b.br * 1.03).toFixed(1)}" fill="#000000"/>`);
-          }
-          for (const b of [...bBody, ...bFloor]) {
-            content.push(`<circle cx="${b.bx.toFixed(1)}" cy="${b.by.toFixed(1)}" r="${b.br.toFixed(1)}" ${balloonAttrs(b.ci)}/>`);
+          for (const b of bKept) {
+            bannerPrintHoles.push(`<circle cx="${b.x.toFixed(1)}" cy="${b.y.toFixed(1)}" r="${(b.r * (b.slot === "F" ? 0.8 : 1.03)).toFixed(1)}" fill="#000000"/>`);
           }
         } else if (archPanels.length === 1 && layout.panels.length === 1) {
           // Single arch: use the same thick organic mass the Double Arch
@@ -3618,7 +4059,8 @@ export function generateStructureSilhouette(
           // different-but-plausible garland instead. The tier no longer adds a
           // second pass: the reference is one specific arrangement, and
           // doubling it would stop being that arrangement.
-          drawLoneArchStatementGarland(archPanels[0], "right");
+          void drawLoneArchStatementGarland;
+          drawSingleArchRef(archPanels[0], "right");
         } else {
           // Multi-panel fallback: right-side vertical garland from top-right corner to floor
           const outerOffset = Math.round(W * 0.055);

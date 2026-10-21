@@ -68,7 +68,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     // render cannot show them as two distinct colours, so the palette spent two
     // of its five slots on one visible colour. Four slots, four colours the eye
     // can actually separate: white, pastel blue, pastel purple, silver.
-    sempertexPaletteIds: ["fashion-005-white", "pastel-matte-640-blue", "silk-850-light-amethyst", "reflex-981-silver"],
+    // 2026-10-21: and clear, as in every one of the customer's Frozen
+    // setup references (clear bubble balloons all through the garland).
+    sempertexPaletteIds: ["fashion-005-white", "pastel-matte-640-blue", "silk-850-light-amethyst", "reflex-981-silver", "fashion-390-clear"],
     renderDescription: "Frozen winter wonderland theme with icy blues, white, and silver; snowflake and ice crystal motifs",
     graphicPresets: [
       { id: "frozen_castle",    assetId: "frozen-01", label: "Frozen Castle",    desc: "Arendelle castle with snowflakes" },
