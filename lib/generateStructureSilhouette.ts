@@ -437,6 +437,7 @@ function plinthFilledCylinder(cx: number, bottomY: number, heightPx: number, dia
 function openArchFramePath(
   cx: number, pw: number, apexY: number, floorY: number,
   fillColor: string,
+  openingFill?: string,
 ): { svg: string; frameThicknessPx: number } {
   const closedArch = (r: number, left: number, right: number, topY: number): string => {
     const springY = topY + r;
@@ -456,6 +457,9 @@ function openArchFramePath(
   const innerPath = closedArch(rInner, cx - rInner, cx + rInner, apexY + frameT);
 
   const svg = [
+    // 2026-10-21: the opening painted as the wall seen THROUGH it. Left the
+    // guide's white, it was read as more board and the frame rendered solid.
+    ...(openingFill ? [`<path d="${innerPath}" fill="${openingFill}"/>`] : []),
     // Solid filled band — outer arch silhouette with the inner arch punched
     // out (evenodd). This is the frame's real material, giving it visual weight.
     // 2026-09-08: NO stroke. White-on-white, the fill was invisible and the
@@ -1024,7 +1028,18 @@ export function generateStructureSilhouette(
   let archShimmerAccentZone: { xMin: number; xMax: number; yMin: number; yMax: number } | null = null;
 
   // v4: pure white background — no fills, no color signals, edge map only
+  // 2026-10-21: a lone balloon ring has no board, so the white ground of the
+  // guide showed round and through the hoop — and was painted as a white
+  // paper backdrop behind it, most of all on the bare hoop. For the ring
+  // the guide carries the room instead: a grey wall and a lighter floor.
+  const ringRoomGround = backdropItems.length === 1 && backdropItems[0]?.type === "balloon_ring";
+  if (ringRoomGround) {
+    const fy = marginY + (calculateExactLayout(backdropItems, plinthSizes, W, H).floorY) * SCALE;
+    bgLines.push(`<rect width="${W}" height="${H}" fill="#9C9B98"/>`);
+    bgLines.push(`<rect y="${fy.toFixed(1)}" width="${W}" height="${(H - fy).toFixed(1)}" fill="#C4C3C0"/>`);
+  } else {
   bgLines.push(`<rect width="${W}" height="${H}" fill="#FFFFFF"/>`);
+  }
 
   // Single panel: v4 edge-only (proven to work well for single-panel).
   // Multi-panel: filled with distinct per-panel hues so the edit model can distinguish
@@ -1081,8 +1096,14 @@ export function generateStructureSilhouette(
     // hole, it was a crisp concentric arch line, and a crisp concentric arch
     // line in perspective is exactly the cue for a moulded reveal.
     if (shape === "open_arch_frame") {
-      const frameFill = fillForPanel(sortedIdx, panel.idx);
-      content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, "arch", frameFill));
+      // 2026-10-21: HOLLOW again, as in the customer's reference — a thick
+      // white arch band with the wall showing through its middle. Drawn solid
+      // (the 2026-09-08 change above), with a balloon cluster on its face,
+      // it rendered as a solid wall of balloons. The band is light grey on
+      // the white guide ground so it reads as an object.
+      const hollow = openArchFramePath(panel.cx, panel.pw, panel.apexY, panel.floorY, "#E4E2DE", "#9C9B98");
+      content.push(hollow.svg);
+      void fillForPanel;
       // Still reported: route.ts and the prompt read this to describe the band.
       archOpenFrameFrameThicknessPx = Math.round(
         Math.max(14, Math.min((panel.pw / 2) * 0.42, panel.pw * 0.15)),
@@ -1107,8 +1128,13 @@ export function generateStructureSilhouette(
         // faces depends on where it stands.
         const groupMidX = (Math.min(...layout.panels.map((q) => q.cx - q.pw / 2))
           + Math.max(...layout.panels.map((q) => q.cx + q.pw / 2))) / 2;
+        // Beside an open frame the solid arch is drawn filled, like the lone
+        // arch: a hairline board next to the frame's band was the weaker shape.
+        const besideOpenFrame = shape === "arch" && backdropItems.some((it) => it?.type === "open_arch_frame");
+        const ownFillM = fillForPanel(sortedIdx, panel.idx);
+        const nearWhiteM = /^#(f[0-9a-f]){3}$/i.test(ownFillM) || ownFillM.toUpperCase() === "#FFFFFF";
         content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape,
-          fillForPanel(sortedIdx, panel.idx), panel.cx <= groupMidX ? "left" : "right"));
+          besideOpenFrame && nearWhiteM ? "#F1EFEC" : ownFillM, panel.cx <= groupMidX ? "left" : "right", besideOpenFrame));
       }
     } else if (isShimmer) {
       // Single shimmer wall: force a clean rectangle (never arch edges) with tile grid.
@@ -1296,10 +1322,11 @@ export function generateStructureSilhouette(
   // 2026-10-21: on a HALF-dressed ring the plinth stands in front of the
   // bare right-hand side of the hoop. Centred, it stood on the garland's
   // foot, which spreads along the floor from the left.
-  const ringHalfPlinthShift = backdropItems.length === 1 && backdropItems[0]?.type === "balloon_ring"
-    && extras?.ringStyle === "half" && layout.panels[0]
-    ? (layout.panels[0].pw / 2) * 0.55 : 0;
-  const decorCx = decorCxBase + ringHalfPlinthShift;
+  // (2026-10-21: briefly shifted right on a half-dressed ring; reverted the
+  // same day — the plinth is centred on the design on every setup, "plinth
+  // ortalamali dizayni her seferinde". The ring's foot is trimmed to make
+  // room for it instead — see HALF_RING_REF.)
+  const decorCx = decorCxBase;
 
   // 2026-09-05: the plinth stands FORWARD of the decor, nearer the camera, not
   // level with the backdrop. On a balloon ring especially it was sitting on the
@@ -1424,7 +1451,8 @@ export function generateStructureSilhouette(
       // dropped from the render the same way (2026-10-21).
       const archShimmerPlinth = (backdropItems.length === 2 && backdropItems.some((it) => it?.type === "arch") && backdropItems.some((it) => it?.type === "shimmer_wall"))
         // the balloon ring as well: its plinth was dropped too (2026-10-21)
-        || (backdropItems.length === 1 && backdropItems[0]?.type === "balloon_ring");
+        || (backdropItems.length === 1 && backdropItems[0]?.type === "balloon_ring")
+        || (backdropItems.length === 2 && backdropItems.some((it) => it?.type === "open_arch_frame"));
       plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1 || wantsNumberSlot || loneArchPlinth || loneBannerPlinth || archShimmerPlinth
         ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx, loneBannerPlinth || loneShimmerPlinth || archShimmerPlinth, loneBannerPlinth || loneShimmerPlinth || archShimmerPlinth)
         : plinthEdge(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
@@ -3168,262 +3196,17 @@ export function generateStructureSilhouette(
             + drawThickOrganicMainGarland(pair[1], "right", 197, true, true, false).count
             + drawThickOrganicMainGarland(pair[1], "right", 421, true, true, false).count;
         } else if (framePanel && archPanels.length === 1) {
-          // Arch + Open Frame: the SOLID ARCH carries a thick organic-mass
-          // garland (floor base → outer edge climb → over the crown, ~62
-          // heavily overlapping balloons in varied sizes — not a dotted
-          // outline). The open frame gets a dense organic cluster filling its
-          // OPENING, plus a spill over its outer shoulder and base.
+          // 2026-10-21, customer reference: a solid arch with its garland down
+          // its OUTER edge, and an OPEN arch frame — a thick white hollow arch
+          // you see the wall through — standing beside it with ITS garland down
+          // its outer edge, the plinth centred between. Both are the approved
+          // Single Arch statement garland. The old version packed the frame's
+          // opening with a balloon cluster, which rendered as a wall of
+          // balloons ("arch+open frame diyince bu cikti yanlis").
           const solidArch = archPanels[0];
-          const archOuterSide: "left" | "right" = solidArch.cx < framePanel.cx ? "left" : "right";
-          // 2026-09-08: switched to the tight + looseSpacing variant, i.e. the
-          // exact call Single Arch and Double Arch make. Arch + Open Frame was
-          // the last layout still on the thin default: no 36" statement
-          // anchors, a 1.0x floor mound instead of 1.3x, and an even climb
-          // rather than a bottom-heavy one — which is precisely the sparse
-          // climb and thin floor the customer circled.
-          // 2026-09-08: drawn TWICE at different seeds, the same trick
-          // drawArchShimmerComposition already uses. The customer circled three
-          // holes in the climb and a thin floor pile; a single pass leaves gaps
-          // wherever its overlap check rejects a candidate, and a second pass
-          // with a different seed lands in exactly those holes. Switching the
-          // single pass to the tight/loose variants was tried first and made it
-          // worse — both reject MORE candidates, not fewer.
-          const mainResult = drawThickOrganicMainGarland(solidArch, archOuterSide, 0);
-          drawThickOrganicMainGarland(solidArch, archOuterSide, 62);
-          archOpenFrameMainGarlandBalloons     = mainResult.count;
-          archOpenFrameMainGarlandMinRadiusPx  = mainResult.minR;
-          archOpenFrameMainGarlandMaxRadiusPx  = mainResult.maxR;
-          archOpenFrameMainGarlandLaneCount    = mainResult.lanes;
-
-          // 2026-09-08: the customer's Frozen/Elsa reference shows the open
-          // arch's opening PACKED with an organic balloon cluster — a couple of
-          // statement balloons, mediums and smalls filling every gap, and a few
-          // spilling over the frame band and down to the floor on the outer
-          // side. The old 15-balloon shoulder cluster left the opening empty,
-          // which is not what they asked for ("arch+open framedeki balonlar
-          // ornek ELSA koydum ordaki gibi olcak birebir").
-          const rF       = framePanel.pw / 2;
-          // Same formula as openArchFramePath, so the infill matches the band
-          // that is actually drawn.
-          const frameT   = Math.max(20, Math.min(rF * 0.46, framePanel.pw * 0.20));
-          const rI       = rF - frameT;
-          const springYi = framePanel.apexY + frameT + rI;
-          const floorYF  = framePanel.floorY;
-          const frameOuterRight = framePanel.cx > solidArch.cx;
-
-          const rXLf = Math.max(26, framePanel.pw * 0.200);
-          const rLf  = Math.max(18, framePanel.pw * 0.140);
-          const rMf  = Math.max(13, framePanel.pw * 0.098);
-          const rSf  = Math.max(9,  framePanel.pw * 0.068);
-
-          let seedI = 20260908;
-          const rndI = () => { seedI = (seedI * 1664525 + 1013904223) >>> 0; return seedI / 4294967296; };
-
-          const areaI = new Array(Math.max(1, colors.length)).fill(0) as number[];
-          const pickI = (): number => {
-            let b = 0;
-            for (let i = 1; i < areaI.length; i++) if (areaI[i] < areaI[b]) b = i;
-            return b;
-          };
-          const placedI: { x: number; y: number; r: number }[] = [];
-          let infillCount = 0;
-          const putI = (x: number, y: number, r: number, maxNest = 0.50): void => {
-            for (const q of placedI) {
-              const d = Math.hypot(x - q.x, y - q.y);
-              if ((r + q.r - d) / (2 * Math.min(r, q.r)) > maxNest) return;
-            }
-            placedI.push({ x, y, r });
-            const ci = pickI();
-            areaI[ci] += Math.PI * r * r;
-            content.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" ${balloonAttrs(ci)}/>`);
-            infillCount++;
-          };
-          // A balloon counts as inside when its CENTRE is inside the opening,
-          // so the cluster naturally laps over the frame band at the edges —
-          // which is how a real one is tied on.
-          const insideOpening = (x: number, y: number): boolean => {
-            if (Math.abs(x - framePanel.cx) > rI) return false;
-            if (y > floorYF) return false;
-            return y >= springYi ? true : Math.hypot(x - framePanel.cx, y - springYi) <= rI;
-          };
-
-          // 1) Statement balloons first — the biggest objects win their space.
-          putI(framePanel.cx - rI * 0.10, springYi + rI * 0.20, rXLf, 0.65);
-          putI(framePanel.cx + rI * 0.40, springYi + rI * 1.10, rXLf * 0.72, 0.65);
-          putI(framePanel.cx - rI * 0.42, floorYF - rXLf * 0.80, rXLf * 0.80, 0.65);
-
-          // 1a) BALLOON FLOWERS — five petals ringing a smaller centre. These
-          //     are the shapes that make the customer's Frozen reference read
-          //     the way it does; a purely random pack never produces one,
-          //     because a flower is a deliberate arrangement, not a collision.
-          //     2026-09-09, asked for "birebir" the reference.
-          {
-            const spots: [number, number][] = [
-              [-0.45, 0.35], [0.45, 0.30], [0.00, 0.85],
-              [-0.50, 1.35], [0.42, 1.62], [-0.05, 2.05],
-            ];
-            for (const [fx, fy] of spots) {
-              const cxF = framePanel.cx + fx * rI;
-              const cyF = springYi + fy * rI;
-              if (!insideOpening(cxF, cyF)) continue;
-              const petal = rMf * (0.85 + rndI() * 0.35);
-              const ring  = petal * 1.72;
-              const base  = pickI();
-              for (let k = 0; k < 5; k++) {
-                const a2 = (k / 5) * Math.PI * 2 + rndI() * 0.35;
-                const px = cxF + Math.cos(a2) * ring;
-                const py = cyF + Math.sin(a2) * ring;
-                if (!insideOpening(px, py)) continue;
-                placedI.push({ x: px, y: py, r: petal });
-                areaI[base] += Math.PI * petal * petal;
-                content.push(
-                  `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${petal.toFixed(1)}" ${balloonAttrs(base)}/>`,
-                );
-                infillCount++;
-              }
-              const heart = (base + 1 + Math.floor(rndI() * Math.max(1, colors.length - 1))) % Math.max(1, colors.length);
-              const hr = petal * 0.82;
-              placedI.push({ x: cxF, y: cyF, r: hr });
-              areaI[heart] += Math.PI * hr * hr;
-              content.push(
-                `<circle cx="${cxF.toFixed(1)}" cy="${cyF.toFixed(1)}" r="${hr.toFixed(1)}" ${balloonAttrs(heart)}/>`,
-              );
-              infillCount++;
-            }
-          }
-          //    biggest balloons sit low and everything tapers upward.
-          putI(framePanel.cx - rI * 0.42, floorYF - rXLf * 0.80, rXLf * 0.80, 0.65);
-          putI(framePanel.cx + rI * 0.40, floorYF - rXLf * 1.55, rXLf * 0.66, 0.65);
-          putI(framePanel.cx - rI * 0.05, springYi + rI * 0.55, rLf * 1.05, 0.65);
-
-          // 1b) A run of balloons sitting ON the opening's edge, all the way
-          //     round both jambs and over the arc. 2026-09-08: four prompt
-          //     rewrites failed to stop the render carving a moulding around
-          //     this edge, and the reason is in the guide — a clean, continuous,
-          //     unbroken arch line is exactly the cue for one. Straddled by
-          //     balloons it is no longer a line the model can trace.
-          {
-            const jambTop = springYi;
-            const jambLen = Math.max(1, floorYF - jambTop);
-            const perSide = 7;
-            for (let side = -1; side <= 1; side += 2) {
-              for (let i = 0; i < perSide; i++) {
-                const y = jambTop + (i + 0.5) / perSide * jambLen;
-                putI(
-                  framePanel.cx + side * rI * 0.94 + (rndI() * 2 - 1) * rMf * 0.30,
-                  y + (rndI() * 2 - 1) * rMf * 0.30,
-                  rMf * (0.80 + rndI() * 0.45),
-                  0.62,
-                );
-              }
-            }
-            const arcN = 11;
-            for (let i = 0; i < arcN; i++) {
-              const ang = Math.PI + (i + 0.5) / arcN * Math.PI;   // 180 -> 360 deg
-              putI(
-                framePanel.cx + rI * 0.94 * Math.cos(ang) + (rndI() * 2 - 1) * rMf * 0.25,
-                springYi + rI * 0.94 * Math.sin(ang) + (rndI() * 2 - 1) * rMf * 0.25,
-                rMf * (0.80 + rndI() * 0.45),
-                0.62,
-              );
-            }
-          }
-
-          // 2) Jittered rows from the crown down to the floor, largest radius
-          //    first so the mediums and smalls fill what is left.
-          for (const R of [rLf, rMf, rSf]) {
-            const step = R * 1.35;
-            for (let y = framePanel.apexY + frameT + R * 0.4; y < floorYF; y += step) {
-              for (let x = framePanel.cx - rI; x <= framePanel.cx + rI; x += step) {
-                const bx = x + (rndI() * 2 - 1) * R * 0.45;
-                const by = y + (rndI() * 2 - 1) * R * 0.40;
-                if (!insideOpening(bx, by)) continue;
-                // Taper upward: full size at the floor, two thirds at the
-                // crown. A real cluster is heaviest at the bottom, and the
-                // even-sized version put big balloons at the top where the
-                // customer said they looked far too large.
-                const up = Math.min(1, Math.max(0, (floorYF - by) / Math.max(1, floorYF - framePanel.apexY)));
-                putI(bx, by, R * (1 - 0.34 * up) * (0.85 + rndI() * 0.30));
-              }
-            }
-          }
-
-          // 3) Spill over the outer shoulder and a mound at the outer base, so
-          //    the cluster reads as tied to the frame rather than as a disc
-          //    floating inside a hole.
-          const springCyF = framePanel.apexY + rF;
-          const dirF = frameOuterRight ? 1 : -1;
-          // 2026-09-08: 9 -> 4, and pulled INSIDE the outer arc instead of
-          // sitting on top of it. Rising over the crown, this run buried the
-          // board's own arch top, and the customer could no longer read the
-          // piece as an arch backdrop at all — the circled area in their photo.
-          // The bare arch margin above the cluster is what makes it legible.
-          for (let i = 0; i < 4; i++) {
-            const t   = i / 3;
-            const ang = ((frameOuterRight ? -52 + t * 46 : 232 - t * 46) * Math.PI) / 180;
-            const rad = rF - frameT * 0.35 + (i % 2 === 0 ? 0 : rMf * 0.4);
-            putI(
-              framePanel.cx + rad * Math.cos(ang),
-              springCyF + rad * Math.sin(ang),
-              i % 3 === 0 ? rLf * 0.8 : rMf,
-              0.55,
-            );
-          }
-          // 2026-09-08: 10 -> 20 and spread wider and further forward. The
-          // customer circled this floor area as needing far more balloons.
-          for (let i = 0; i < 20; i++) {
-            const ox = dirF * (rI * 0.35 + rndI() * rF * 0.95);
-            const up = rndI() * rMf * 3.8;
-            putI(
-              framePanel.cx + ox,
-              floorYF - up - rMf * 0.4,
-              i % 3 === 0 ? rLf : rMf * (0.80 + rndI() * 0.45),
-              0.62,
-            );
-          }
-
-          // 2026-09-08: a floor cluster IN FRONT of the open arch, across its
-          // whole width and stepped forward of the panel's own floor line — the
-          // customer asked for far more balloons on the floor there, and the
-          // outer-side mound above only covers one corner. Drawn a little BELOW
-          // floorY, which is how anything nearer the camera is placed in this
-          // projection (see plinthForwardPx).
-          const frameForwardPx = (floorYF - framePanel.apexY) * 0.045;
-          for (let i = 0; i < 22; i++) {
-            const across = (rndI() * 2 - 1) * rF * 1.05;
-            const fwd    = rndI() * frameForwardPx;
-            const up     = rndI() * rMf * 2.2;
-            putI(
-              framePanel.cx + across,
-              floorYF + fwd - up - rMf * 0.35,
-              i % 4 === 0 ? rLf * 0.95 : rMf * (0.80 + rndI() * 0.50),
-              0.62,
-            );
-          }
-
-          // Floor spread at the SOLID arch's outer base — circled as too thin
-          // as well. Wider and further out than the garland's own base mound,
-          // and allowed to run a little back under the panel edge so it reads
-          // as a pile rather than a stack against the edge.
-          const dirA  = archOuterSide === "left" ? -1 : 1;
-          const edgeA = solidArch.cx + dirA * (solidArch.pw / 2);
-          const rMa   = Math.max(14, solidArch.pw * 0.115);
-          const rLa   = Math.max(20, solidArch.pw * 0.160);
-          for (let i = 0; i < 18; i++) {
-            // Biased toward the panel edge so the pile stays CONNECTED — a flat
-            // uniform draw left isolated balloons stranded out on the floor.
-            const t  = Math.pow(rndI(), 1.6) * 1.12 - 0.12;
-            const ox = dirA * t * solidArch.pw * 0.34;
-            const up = rndI() * rMa * 3.4;
-            putI(
-              edgeA + ox + (rndI() * 2 - 1) * rMa * 0.45,
-              solidArch.floorY - up - rMa * 0.4,
-              i % 4 === 0 ? rLa : rMa * (0.80 + rndI() * 0.45),
-              0.62,
-            );
-          }
-
-          archOpenFrameMiniClusterBalloons = infillCount;
+          const archLeftOfFrame = solidArch.cx < framePanel.cx;
+          drawLoneArchStatementGarland(solidArch, archLeftOfFrame ? "left" : "right");
+          drawLoneArchStatementGarland(framePanel, archLeftOfFrame ? "right" : "left");
         } else if (framePanel) {
           // Shimmer + Open Frame (no solid arch): compact accent cluster on the
           // frame's top-right shoulder only — hollow silhouette stays visible.
@@ -3597,7 +3380,11 @@ export function generateStructureSilhouette(
               return hPool[1 % hPool.length];
             };
             const hMaxBottom = rp.floorY + plinthForwardPx;
-            const hPlaced = HALF_RING_REF.map(([x, y, r, slot]) => {
+            // The photo's foot runs on along the floor to about 5 o'clock. Here
+            // the centred plinth stands there, and those balloons — the inner
+            // half of the foot — came back hanging in mid-air inside the hoop
+            // (customer, 2026-10-21). The foot stops left of centre.
+            const hPlaced = HALF_RING_REF.filter(([x, y]) => !(y >= 780 && x >= 340)).map(([x, y, r, slot]) => {
               const br = r * hs * 1.1;
               let by = ringCy + (y - 670) * hs;
               if (by + br > hMaxBottom) by = hMaxBottom - br;

@@ -306,11 +306,10 @@ export function buildLayoutRefEditPrompt(
           `NOT crumpled foil, NOT a matte board, NOT a cream panel. ` +
           shimmerColorLockClause(shimmerC)
         : isOpenFrame
-          ? `plain flat arch backdrop board, front-facing, with a COMPLETELY FLAT MATTE face — smooth, evenly ` +
-            `lit, non-reflective, the same finish and colour family as the solid arch beside it so the two ` +
-            `read as one coordinated set. ` +
-            `A dense organic balloon cluster is mounted on its face, covering the middle of the board from the ` +
-            `crown down to the floor and leaving a narrow margin of bare board round the edge. ` +
+          // 2026-10-21: HOLLOW again (customer reference). This described a flat
+          // board with a balloon cluster on its face, the 2026-09-08 design.
+          ? `OPEN arch frame: a thick flat matte white arch-shaped band, with the middle completely EMPTY ` +
+            `so the wall behind shows through it, the same finish as the solid arch beside it. ` +
             `NOT chrome, NOT mirrored, NOT polished metal, NOT stainless steel, NOT glossy, ` +
             `NOT moulded, NOT stepped, NOT ridged, NOT bevelled, NOT a picture-frame profile, ` +
             `NOT a doorway frame, NOT an architectural portal, NOT a wire or metal outline, ` +
@@ -334,7 +333,7 @@ export function buildLayoutRefEditPrompt(
     backdropDesc =
       `exactly ${panelCount} separate freestanding backdrop pieces arranged side by side, ` +
       (hasOpenFrame
-        ? `two flat arch backdrop boards, one bare and one carrying a dense balloon cluster on its face, each rendered at its correct width. `
+        ? `a solid arch board and an open hollow arch frame, each rendered at its correct width. `
         : `each fully solid, opaque, and rendered at its correct width. `) +
       `Both pieces are full-size physical event structures with correct width-to-height proportions. ` +
       `The total setup should feel wide and substantial, not skinny or compressed. ` +
@@ -793,15 +792,18 @@ export function buildLayoutRefEditPrompt(
       `curved top corner facing outward, the other edge straight and vertical against the middle board. `
     : "";
 
+  // 2026-10-21, customer reference: the open frame is HOLLOW — a thick white
+  // arch band with the wall seen through it, its garland down its outer
+  // edge. One sentence, naming the plinth in the same words as the pedestal
+  // lines below (a separate name has produced a second plinth).
   const frontOpenFrameLine = hasOpenFramePair
-    ? `The ${openFrameSide}-hand backdrop is a plain FLAT arch board, exactly like the ${solidSide}-hand one — ` +
-      `one smooth matte surface, no border, no rim, no moulding and no trim anywhere on it. `
+    ? `Two pieces side by side: a solid white arch board on the ${solidSide}, and on the ${openFrameSide} an OPEN ` +
+      `arch frame — a thick white arch-shaped band with an EMPTY hollow middle you see the wall through` +
+      (sceneModel.plinths.length > 0 ? `, with the one white cylindrical pedestal column on the floor in front, between them. ` : `. `)
     : "";
+  // Superseded 2026-10-21: no cluster on the frame's face any more.
   const openFrameDetailLine = hasOpenFramePair
-    ? `A dense arch-shaped balloon cluster is mounted on the face of the ${openFrameSide}-hand backdrop, ` +
-      `covering its middle from the crown right down to the floor and leaving only a narrow margin of bare ` +
-      `board showing round the edge. That margin is flat painted board — not a frame, not a moulding, not ` +
-      `metal, not chrome, not glossy, not wooden. ` +
+    ? `The open frame's middle stays empty — no balloons inside it. ` +
       (sceneModel.panels.some((p) => p.text.enabled || p.graphic.enabled)
         ? `No lettering and no artwork on the ${openFrameSide}-hand backdrop — any text or illustration ` +
           `belongs on the ${solidSide}-hand one only. `
@@ -912,20 +914,26 @@ export function buildLayoutRefEditPrompt(
   // line already said "flat frontal", and the render kept putting a receding
   // side wall and a corner in frame anyway, which reads as a three-quarter view
   // however square the backdrop itself is.
-  const frontCameraLine = `Camera at standing eye level, centred on the backdrop, looking STRAIGHT AT it: a flat ` +
-    `frontal product photo. The backdrop's vertical edges are perfectly vertical and the floor line is ` +
+  // 2026-10-21: a lone balloon ring has no backdrop, and these front lines
+  // talking about "the backdrop" and "the board" were enough on their own to
+  // get one drawn behind the hoop. For the ring they name the hoop.
+  const loneRingScene = panelCount === 1 && sceneModel.panels[0]?.type === "balloon_ring";
+  const frontBackdropNoun = loneRingScene ? "hoop" : "backdrop";
+  const frontBoardNoun = loneRingScene ? "hoop" : "board";
+  const frontCameraLine = `Camera at standing eye level, centred on the ${frontBackdropNoun}, looking STRAIGHT AT it: a flat ` +
+    `frontal product photo. ` + (loneRingScene ? `The floor line is ` : `The backdrop's vertical edges are perfectly vertical and the floor line is `) +
     `horizontal — no angle, no three-quarter view, no low or high viewpoint, no wide-angle distortion. ` +
     `One flat back wall parallel to the camera fills the frame behind the setup: no room corner, no side ` +
     `wall running away from the camera, no ceiling. `;
   const frontPlinthLine = sceneModel.plinths.length > 0
     ? `${sceneModel.plinths.length === 1 ? "A" : String(sceneModel.plinths.length)} white cylindrical ` +
       `pedestal column${sceneModel.plinths.length === 1 ? "" : "s"} stand${sceneModel.plinths.length === 1 ? "s" : ""} ` +
-      `on the floor in front of the backdrop and must appear in the photograph. ` +
+      `on the floor in front of the ${frontBackdropNoun} and must appear in the photograph. ` +
       // 2026-09-11: the plinth was rendering flush against the board. It
       // stands well forward of it, with floor visible in the gap.
       `${sceneModel.plinths.length === 1 ? "It stands" : "They stand"} about 50cm IN FRONT of the ` +
-      `backdrop, clearly separated from it, with a visible strip of bare floor between the ` +
-      `${sceneModel.plinths.length === 1 ? "column" : "columns"} and the board — not touching the board, ` +
+      `${frontBackdropNoun}, clearly separated from it, with a visible strip of bare floor between the ` +
+      `${sceneModel.plinths.length === 1 ? "column" : "columns"} and the ${frontBoardNoun} — not touching the ${frontBoardNoun}, ` +
       `not leaning on it, not flush against it. `
     : "";
 
@@ -1040,6 +1048,9 @@ export function buildLayoutRefEditPrompt(
         ? `ONE 2-metre balloon ring, a circle completely covered in balloons all the way round, `
         : `ONE slim gold metal hoop, 2 metres across, `) +
       `stands on the floor in front of the bare grey wall` +
+      // The bare hoop most of all invites something to fill the space behind
+      // it; a grey paper roll was drawn there.
+      (sceneModel.balloonRingStyle === "none" ? ` with nothing behind it — no backdrop sheet, no paper roll` : ``) +
       // Same name as the pedestal sentences further down: "plinth" here and
       // "pedestal column" there were read as two objects, and two were drawn.
       (sceneModel.plinths.length > 0 ? `, with the one white cylindrical pedestal column on the floor in front of it. ` : `. `);
@@ -1153,7 +1164,7 @@ export function buildLayoutRefEditPrompt(
   // its left edge standing on a small disc, which is what the render made of
   // the faint panel outline plus the standee footprint marker. A party
   // backdrop board hides its own support behind itself.
-  const frontNoStandLine = sceneModel.panels.some((p) => p.type === "arch" || p.type === "half_arch" || p.type === "round" || p.type === "banner" || p.type === "shimmer_wall")
+  const frontNoStandLine = sceneModel.panels.some((p) => p.type === "arch" || p.type === "half_arch" || p.type === "round" || p.type === "banner" || p.type === "shimmer_wall" || p.type === "open_arch_frame")
     ? `The backdrop board shows NO frame and NO stand: no pole, no post, no tube, no tripod, no legs, ` +
       `no feet and no round base disc anywhere around it. Its support is hidden behind it and the board ` +
       `meets the floor directly. `
@@ -1932,13 +1943,25 @@ const setupTemplateClause = setupTemplate
   // the lettering instead, which is what identified the mechanism. The list
   // therefore has to name every element that was asked for.
   const inventoryItems: string[] = [];
+  // 2026-10-21: named by what the lone piece actually is. "the arch
+  // backdrop board" was listed for every lone panel — on the bare balloon
+  // ring it asked for a board that is not there, and one was drawn behind
+  // the hoop.
+  const lone = panelCount === 1 ? sceneModel.panels[0] : null;
+  const loneRingStyle = lone?.type === "balloon_ring" ? sceneModel.balloonRingStyle : undefined;
   inventoryItems.push(
-    panelCount === 1
-      ? `the arch backdrop board`
-      : `the ${panelCount} backdrop boards`,
+    !lone ? `the ${panelCount} backdrop boards`
+      : lone.type === "round" ? `the round backdrop disc`
+      : lone.type === "banner" ? `the square banner board`
+      : lone.type === "shimmer_wall" ? `the sequin shimmer wall`
+      : lone.type === "balloon_ring" ? (loneRingStyle === "full" ? `the balloon ring` : `the gold metal hoop`)
+      : `the arch backdrop board`,
   );
-  if (sceneModel.balloons.style !== "none") {
-    inventoryItems.push(panelCount === 1 ? `the balloon garland` : `a balloon garland on each board`);
+  if (sceneModel.balloons.style !== "none" && loneRingStyle !== "none") {
+    inventoryItems.push(
+      lone?.type === "balloon_ring" ? `the balloons on the hoop`
+        : panelCount === 1 ? `the balloon garland` : `a balloon garland on each board`,
+    );
   }
   if (plinth) {
     // "pedestal column", not "plinth", here too — the inventory is the first
@@ -2010,7 +2033,9 @@ const setupTemplateClause = setupTemplate
     doubleArchSizeLockClause +
     doubleArchSeparationClause +
     doubleArchPlinthHardLockClause +
-    (sceneModel.panels.some((p) => p.type === "open_arch_frame")
+    // Superseded 2026-10-21 (the open frame is hollow again, with no cluster on
+    // it); kept switched off rather than deleted.
+    (false && sceneModel.panels.some((p) => p.type === "open_arch_frame")
       ? `A dense organic balloon cluster is mounted on the face of that arch board — big statement balloons ` +
         `with mediums and smalls filling every gap, packed from the crown down to the floor, exactly as drawn ` +
         `in the layout reference — leaving only a narrow margin of bare board showing round the edge. ` +
@@ -2093,8 +2118,10 @@ const setupTemplateClause = setupTemplate
             `No garland crossing inward over the panel face. No disconnected floor balloon pile. ` +
             `No balloons in front of plinth. `
           : "") +
+        // Not when the scene HAS an open frame: these forbade the very thing.
+        (sceneModel.panels.some((p) => p.type === "open_arch_frame") ? `` :
         `No hollow arch. No open doorway arch. No arch frame. No cut-out center. ` +
-        `No empty opening. No see-through arch. No doorway frame. `
+        `No empty opening. No see-through arch. No doorway frame. `)
       : "") +
     (hasRoundPanelInScene
       ? `No small round backdrop. No undersized circle. No decorative wall circle. ` +

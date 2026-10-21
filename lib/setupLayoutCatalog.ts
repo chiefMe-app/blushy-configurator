@@ -219,10 +219,11 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
       "Two freestanding backdrop pieces side by side: a solid arch backdrop panel, and beside it a hollow " +
       "open arch frame whose centre is completely open. Both stand directly on the floor.",
     garlandInstruction:
-      "Balloon design: the solid arch carries a full organic garland down its outer edge and over its top " +
-      "shoulder, ending in a cluster on the floor. The open frame carries a smaller cluster on its outer " +
-      "top shoulder only — balloons never fill or cross the hollow opening.",
-    plinthInstruction: "Place cylinder plinths in front of the solid arch, clear of the garland.",
+      // 2026-10-21, customer reference: a garland down EACH piece's outer edge.
+      "Balloon design: the solid arch carries a full organic garland over its top and down its OUTER edge to " +
+      "the floor; the open frame carries the same down ITS outer edge. Balloons never fill or cross the " +
+      "hollow opening.",
+    plinthInstruction: "Place the cylinder plinth centred between the two pieces, in front of them.",
     standeeZones: ZONES_STANDARD,
   },
   {
