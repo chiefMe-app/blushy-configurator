@@ -46,6 +46,7 @@ import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems, ty
 import { type BalloonStyleId, SHIMMER_COLOR_HEX, SHIMMER_COLORS, type ShimmerColorId, resolveTextColorHex, describeTextColor } from "@/lib/config";
 import { SEMPERTEX_CATALOG, type SempertexColor } from "@/lib/sempertexCatalog";
 import { THEME_CATALOG, getThemeCatalogEntry } from "@/lib/themeCatalog";
+import { frozenBannerPrintSvg } from "@/lib/bannerPrint";
 import { type SempertexSelectionItem } from "@/lib/renderPrompts/types";
 import { LONE_ARCH_STYLE_REFERENCE, hasLoneArchStyleReference } from "@/lib/renderPrompts/loneArchStyleReference";
 import { getVisualLabel, renderSafeBalloonLabel } from "@/lib/renderPrompts/colorLabels";
@@ -160,7 +161,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "banner-frozen-print-v121";
+const RENDER_CACHE_VERSION = "banner-snowflake-fullprint-v122";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -714,6 +715,7 @@ interface LayoutRefPngResult {
   /** Marquee number bulb centres/radii as canvas fractions (lone round only). */
   marqueeBulbs?: { xFrac: number; yFrac: number; rFrac: number }[];
   silverTextMaskSvg?: string;
+  bannerPrintMaskSvg?: string;
   bannerPrintRect?: { xFrac: number; yFrac: number; wFrac: number; hFrac: number } | null;
 }
 
@@ -786,6 +788,7 @@ async function generateLayoutReferencePng(
       marqueeBulbs: silhouette.marqueeBulbs,
       silverTextMaskSvg: silhouette.silverTextMaskSvg,
       bannerPrintRect: silhouette.bannerPrintRect,
+      bannerPrintMaskSvg: silhouette.bannerPrintMaskSvg,
       doubleArchGarlandBalloonsLeft:  silhouette.doubleArchGarlandBalloonsLeft,
       doubleArchGarlandBalloonsRight: silhouette.doubleArchGarlandBalloonsRight,
       archOpenFrameMainGarlandBalloons: silhouette.archOpenFrameMainGarlandBalloons,
@@ -2293,19 +2296,24 @@ forbiddenBalloonColorLabels: hasSempertexLock
 
   // ── Print the theme artwork onto the lone banner ─────────────────────────
   // 2026-10-21, "backdropun kendisi frozen themed gelsin". The edit model
-  // would not paint an illustration on the banner — it copied the guide's
-  // print zone as a plain pale rectangle and ignored every description of
-  // it — so the print is laid on here: an icy theme-tinted ground with
-  // snowflakes, and the theme's character artwork when the chosen graphic
-  // is a character one and the theme has that artwork. Multiplied onto
-  // the board, so the board's own light and shading carry through it and
-  // it reads as printed on, not pasted over. It sits in the part of the
-  // board the garland leaves clear (bannerPrintRect).
+  // would not paint a print on the banner — it copied the guide's print zone
+  // as a plain pale rectangle and ignored every description of it — so the
+  // print is laid on here, after the render.
+  //
+  // It covers the WHOLE board ("butun backdropu kaplasin, beyazlik
+  // kalmasin"), as the customer's reference: a lavender-to-blush watercolour
+  // wash with white snowflake crystals and fine sparkle (lib/bannerPrint), no
+  // characters. Everything standing in front of the board — each balloon,
+  // the plinth, the number — is cut out of it by the guide's own mask, so
+  // the print goes behind them. It is multiplied onto the board, so the
+  // board's own light and shading carry through and it reads as printed.
+  // Frozen only for now: the pattern is a winter one.
   let bannerPrintApplied = false;
   const bannerPrintRect = pngResult.bannerPrintRect ?? null;
+  const bannerPrintMaskSvg = pngResult.bannerPrintMaskSvg ?? "";
   const bannerGraphicPanel = sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "banner" && sceneModel.panels[0]?.graphic?.enabled
     ? sceneModel.panels[0] : null;
-  if (bannerPrintRect && bannerGraphicPanel) {
+  if (bannerPrintRect && bannerPrintMaskSvg && bannerGraphicPanel && String(selectedThemeId ?? "").toLowerCase() === "frozen") {
     try {
       const baseBuf = workingImageBuf ?? await fetchFinalImage();
       if (baseBuf) {
@@ -2313,61 +2321,26 @@ forbiddenBalloonColorLabels: hasSempertexLock
         const sharpFnP  = ((sharpPkgP as any).default ?? sharpPkgP) as (b: Buffer, o?: Record<string, unknown>) => any;
         const metaP = await sharpFnP(baseBuf).metadata() as { width?: number; height?: number };
         const iw = metaP.width ?? 1024, ih = metaP.height ?? 1024;
-        const px = Math.round(bannerPrintRect.xFrac * iw), py = Math.round(bannerPrintRect.yFrac * ih);
-        const pw = Math.round(bannerPrintRect.wFrac * iw), ph = Math.round(bannerPrintRect.hFrac * ih);
-        // Snowflakes: six arms with a pair of short branches each, scattered
-        // on a fixed seed so the same scene always prints the same banner.
-        let sd = 20261021;
-        const prnd = () => { sd = (sd * 1103515245 + 12345) & 0x7fffffff; return sd / 0x7fffffff; };
-        const flake = (cx: number, cy: number, r: number, op: number) => {
-          let d = "";
-          for (let k = 0; k < 6; k++) {
-            const a = (k * Math.PI) / 3;
-            const ex = cx + Math.cos(a) * r, ey = cy + Math.sin(a) * r;
-            d += `M${cx.toFixed(1)},${cy.toFixed(1)}L${ex.toFixed(1)},${ey.toFixed(1)}`;
-            const bx = cx + Math.cos(a) * r * 0.6, by = cy + Math.sin(a) * r * 0.6;
-            for (const s of [-1, 1]) {
-              const b2 = a + s * 0.7;
-              d += `M${bx.toFixed(1)},${by.toFixed(1)}L${(bx + Math.cos(b2) * r * 0.3).toFixed(1)},${(by + Math.sin(b2) * r * 0.3).toFixed(1)}`;
-            }
-          }
-          return `<path d="${d}" stroke="#FFFFFF" stroke-opacity="${op}" stroke-width="${Math.max(1, r * 0.12).toFixed(1)}" stroke-linecap="round" fill="none"/>`;
-        };
-        let flakes = "";
-        for (let k = 0; k < 16; k++) {
-          flakes += flake(prnd() * pw, prnd() * ph, ph * (0.04 + prnd() * 0.07), 0.55 + prnd() * 0.4);
+        const px = Math.max(0, Math.round(bannerPrintRect.xFrac * iw));
+        const py = Math.max(0, Math.round(bannerPrintRect.yFrac * ih));
+        const pw = Math.min(iw - px, Math.round(bannerPrintRect.wFrac * iw));
+        const ph = Math.min(ih - py, Math.round(bannerPrintRect.hFrac * ih));
+        const art = await (sharpFnP(Buffer.from(frozenBannerPrintSvg(pw, ph), "utf8")).removeAlpha().raw().toBuffer()) as Buffer;
+        // The mask, cut to the board and feathered a pixel or two so the
+        // print does not end in a hard line round each balloon.
+        const mask = await (sharpFnP(Buffer.from(bannerPrintMaskSvg, "utf8"))
+          .resize(iw, ih, { fit: "fill" }).greyscale().blur(1.2)
+          .extract({ left: px, top: py, width: pw, height: ph }).raw().toBuffer()) as Buffer;
+        // Where the mask is off, the layer is white, and white multiplies to
+        // no change at all.
+        const layer = Buffer.alloc(pw * ph * 3);
+        for (let i = 0; i < pw * ph; i++) {
+          const m = mask[i] / 255;
+          for (let c = 0; c < 3; c++) layer[i * 3 + c] = Math.round(art[i * 3 + c] * m + 255 * (1 - m));
         }
-        const ground =
-          `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${ph}"><defs>` +
-          `<linearGradient id="g" x1="0" y1="0" x2="0.3" y2="1">` +
-          `<stop offset="0%" stop-color="#CFE4F4"/><stop offset="55%" stop-color="#E4EFF9"/><stop offset="100%" stop-color="#F6FAFD"/>` +
-          `</linearGradient>` +
-          // Faded out towards the edges, so the print melts into the board
-          // instead of sitting on it as a hard-edged poster.
-          `<radialGradient id="f" cx="45%" cy="50%" r="62%"><stop offset="0%" stop-color="#fff" stop-opacity="1"/>` +
-          `<stop offset="62%" stop-color="#fff" stop-opacity="0.9"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>` +
-          `<mask id="m"><rect width="${pw}" height="${ph}" fill="url(#f)"/></mask></defs>` +
-          `<g mask="url(#m)"><rect width="${pw}" height="${ph}" fill="url(#g)"/>` + flakes + `</g></svg>`;
-        const layers: { input: Buffer; left: number; top: number }[] = [];
-        // Character artwork for a character graphic, from the same files the
-        // standees use: the theme's first character cutout that exists.
-        const themeIdP = String(selectedThemeId ?? "").toLowerCase();
-        const presetP = getThemeCatalogEntry(themeIdP)?.graphicPresets.find((g) => g.assetId === bannerGraphicPanel.graphic.assetId);
-        const wantsCharacter = /elsa|anna|character|princess|hero/i.test(`${presetP?.label ?? ""} ${presetP?.desc ?? ""}`);
-        const artPath = path.join(process.cwd(), "public", "cutouts", themeIdP, `${bannerGraphicPanel.graphic.assetId ?? ""}.png`);
-        if (wantsCharacter && themeIdP && bannerGraphicPanel.graphic.assetId && fs.existsSync(artPath)) {
-          const art = await (sharpFnP(fs.readFileSync(artPath)).trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
-            .resize({ height: Math.round(ph * 0.94), width: Math.round(pw * 0.6), fit: "inside" }).png().toBuffer()) as Buffer;
-          const am = await sharpFnP(art).metadata() as { width?: number; height?: number };
-          layers.push({ input: art, left: Math.round(pw * 0.06), top: Math.max(0, ph - (am.height ?? ph) - Math.round(ph * 0.02)) });
-        }
-        // Flattened onto white before it is multiplied: white multiplies to no
-        // change, while semi-transparent edges multiplied directly came out as a
-        // grey ring round the print.
-        const print = await (sharpFnP(Buffer.from(ground, "utf8")).composite(layers)
-          .flatten({ background: "#FFFFFF" }).png().toBuffer()) as Buffer;
+        const layerPng = await (sharpFnP(layer, { raw: { width: pw, height: ph, channels: 3 } }).png().toBuffer()) as Buffer;
         workingImageBuf = await (sharpFnP(baseBuf)
-          .composite([{ input: print, left: px, top: py, blend: "multiply" }])
+          .composite([{ input: layerPng, left: px, top: py, blend: "multiply" }])
           .png().toBuffer()) as Buffer;
         outputImageUrl = `data:image/jpeg;base64,${(await (sharpFnP(workingImageBuf).jpeg({ quality: 92 }).toBuffer()) as Buffer).toString("base64")}`;
         bannerPrintApplied = true;

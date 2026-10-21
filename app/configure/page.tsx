@@ -1396,8 +1396,9 @@ function clearAllStandees() {
         // the only one selected. Either can be changed below.
         const banner = makeBackdropItem("banner");
         const presets = getThemeCatalogEntry(config.theme)?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
-        // A character print when the theme has one (Frozen: Elsa & Anna).
-        const first = (presets as { label: string }[]).find((pr) => /elsa|anna/i.test(pr.label)) as typeof presets[number] | undefined ?? presets[0];
+        // The pattern print when the theme has one (Frozen: Snowflake Pattern),
+        // the customer's chosen look — not the Elsa & Anna characters.
+        const first = (presets as { label: string }[]).find((pr) => /snowflake|pattern/i.test(pr.label)) as typeof presets[number] | undefined ?? presets[0];
         panels = [first
           ? { ...banner, graphic: { ...banner.graphic, enabled: true, theme: first.id, source: "preset", assetId: first.assetId } }
           : banner];

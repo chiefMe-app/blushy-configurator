@@ -88,6 +88,10 @@ export interface SilhouetteResult {
   /** Where the lone banner's printed artwork goes, as canvas fractions, or
    *  null when the banner carries no theme graphic. */
   bannerPrintRect: { xFrac: number; yFrac: number; wFrac: number; hFrac: number } | null;
+  /** Full-canvas mask (white = print here) for the banner print: the board,
+   *  minus every balloon, the plinth and the number standing in front of
+   *  it. Empty string when there is no banner print. */
+  bannerPrintMaskSvg: string;
 }
 
 /** One size tier of standee cutout to draw in the guide. */
@@ -976,6 +980,7 @@ export function generateStructureSilhouette(
   const marqueeBulbsLayout: [number, number, number][] = [];
   const silverInkLayer: string[] = [];
   let bannerPrintLayout: { x: number; y: number; w: number; h: number } | null = null;
+  const bannerPrintHoles: string[] = [];
   // The plinth marker is collected separately and appended after the balloons.
   // Drawn in place it went into the guide BEFORE the garland, so balloon
   // circles covered its base and sides and the model saw a stub of a cylinder
@@ -1158,7 +1163,10 @@ export function generateStructureSilhouette(
       // the left cluster starts just under halfway down — see BANNER_REF).
       const side = Math.min(panel.pw, panel.floorY - panel.apexY);
       const bl = panel.cx - side / 2, bt = panel.floorY - side;
-      bannerPrintLayout = { x: bl + side * 0.05, y: bt + side * 0.07, w: side * 0.58, h: side * 0.37 };
+      // 2026-10-21 (later): the WHOLE board — "butun backdropu kaplasin,
+      // beyazlik kalmasin". What sits in front of it (balloons, plinth,
+      // number) is cut out of the print by bannerPrintMaskSvg.
+      bannerPrintLayout = { x: bl, y: bt, w: side, h: side };
     } else if (item?.graphic?.enabled && !isShimmer) {
       content.push(themeGraphicGuideArea(
         panel.cx, panel.pw, panel.apexY, panel.floorY, panelTextValue.length > 0,
@@ -3578,6 +3586,9 @@ export function generateStructureSilhouette(
           });
           const bBody  = bPlaced.filter((b) => !b.floor).sort((a, b) => b.br - a.br);
           const bFloor = bPlaced.filter((b) => b.floor).sort((a, b) => b.br - a.br);
+          for (const b of bPlaced) {
+            bannerPrintHoles.push(`<circle cx="${b.bx.toFixed(1)}" cy="${b.by.toFixed(1)}" r="${(b.br * 1.03).toFixed(1)}" fill="#000000"/>`);
+          }
           for (const b of [...bBody, ...bFloor]) {
             content.push(`<circle cx="${b.bx.toFixed(1)}" cy="${b.by.toFixed(1)}" r="${b.br.toFixed(1)}" ${balloonAttrs(b.ci)}/>`);
           }
@@ -4060,6 +4071,21 @@ export function generateStructureSilhouette(
     archShimmerCompositionBalloons,
     archShimmerAccentZone,
     textZones,
+    bannerPrintMaskSvg: (bannerPrintLayout as { x: number; y: number; w: number; h: number } | null)
+      ? (() => {
+          const b = bannerPrintLayout as unknown as { x: number; y: number; w: number; h: number };
+          // Everything in the plinth layer (plinth, number, bulbs) is turned
+          // solid black whatever its own colours, by keeping only its alpha.
+          return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">` +
+            `<defs><filter id="blk"><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"/></filter></defs>` +
+            `<rect width="${W}" height="${H}" fill="#000000"/>` +
+            `<g transform="translate(${marginX},${marginY}) scale(${SCALE})">` +
+            `<rect x="${b.x.toFixed(1)}" y="${b.y.toFixed(1)}" width="${b.w.toFixed(1)}" height="${b.h.toFixed(1)}" fill="#FFFFFF"/>` +
+            bannerPrintHoles.join("") +
+            `<g filter="url(#blk)">${plinthLayer.join("")}</g>` +
+            `</g></svg>`;
+        })()
+      : "",
     // Assigned inside the panel loop, which TypeScript cannot see into.
     bannerPrintRect: (bannerPrintLayout as { x: number; y: number; w: number; h: number } | null)
       ? {
