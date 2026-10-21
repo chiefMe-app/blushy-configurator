@@ -3450,7 +3450,122 @@ export function generateStructureSilhouette(
           // the banner and the sides stopped short of the floor.
           const bp = layout.panels[0];
           const bSide = Math.min(bp.pw, bp.floorY - bp.apexY);
-          drawBannerFrameGarland(bp, bSide, 0);
+          // 2026-10-21: the banner REPLAYS the customer's reference photo
+          // ("make the balloon amount and locations exactly like the other
+          // balloon reference") instead of walking a frame round the board:
+          // a crown over the top right corner that runs down the whole right
+          // edge to the floor, and a separate cluster from just under halfway
+          // down the left edge to the floor. Big balloons with small grape
+          // clusters tucked against them; the rest of the board stays clear.
+          // Same method as the round (see ROUND_REF): balloons read off a grid
+          // over the photo, in its pixels. There the board's top left corner is
+          // at (140, 195) and the floor 445px below it; everything scales from
+          // that square onto ours. Slots are the photo's colours — W white,
+          // S chrome, B light blue, T dark teal, L lilac, D dusty pink — and
+          // map onto the customer's palette below. The photo's four silver
+          // star foils are not drawn.
+          void drawBannerFrameGarland;
+          type BannerBalloon = [number, number, number, "W" | "S" | "B" | "T" | "L" | "D"];
+          const BANNER_REF: BannerBalloon[] = [
+          // crown, pink side (top left of the crown)
+          [415, 152, 40, "D"], [373, 177, 27, "D"], [369, 114, 23, "D"], [335, 139,  9, "D"],
+          [346, 156,  9, "D"], [350, 170,  9, "D"], [400, 193, 12, "D"], [385, 214, 11, "D"],
+          [406, 220, 12, "D"],
+          // crown, white
+          [490, 218, 40, "W"], [470, 175, 20, "W"], [506, 145, 12, "W"], [527, 158, 12, "W"],
+          [507, 170, 12, "W"], [437, 206, 12, "W"], [437, 225, 12, "W"],
+          // crown, dark accent and chrome over the top right corner
+          [562, 128, 37, "T"], [617, 191, 29, "T"],
+          [627, 128, 12, "S"], [640, 151, 11, "S"], [619, 155, 11, "S"], [562, 185, 12, "S"],
+          [583, 197, 12, "S"], [562, 207, 11, "S"],
+          // right column, lilac with its grape clusters
+          [537, 266, 35, "L"], [612, 228, 31, "L"], [615, 295, 29, "L"], [667, 266, 27, "L"],
+          [575, 241, 10, "L"], [592, 253, 10, "L"], [571, 264, 10, "L"], [587, 266, 10, "L"],
+          [646, 237, 10, "L"], [658, 253, 10, "L"], [640, 264, 10, "L"], [656, 266, 10, "L"],
+          // right column, light blue
+          [575, 314, 12, "B"], [577, 335, 12, "B"], [560, 326, 12, "B"], [542, 366, 40, "B"],
+          [609, 355, 29, "B"], [625, 393, 13, "B"], [594, 407, 23, "B"], [623, 432, 15, "B"],
+          // right column, white
+          [509, 474, 40, "W"], [584, 458, 29, "W"], [538, 418, 12, "W"], [548, 437, 12, "W"],
+          [530, 445, 12, "W"], [565, 487, 12, "W"], [552, 503, 12, "W"], [569, 510, 12, "W"],
+          // right column, pink, swelling out past the edge
+          [644, 503, 44, "D"], [686, 441, 27, "D"], [650, 441, 12, "D"], [636, 453, 12, "D"],
+          [700, 480, 12, "D"], [708, 503, 12, "D"], [696, 526, 12, "D"], [712, 512, 22, "D"],
+          [540, 532, 13, "L"], [565, 541, 13, "L"], [584, 532, 13, "L"], [587, 555, 12, "L"],
+          [557, 557, 17, "L"],
+          // right foot, on the floor
+          [474, 592, 40, "B"], [549, 601, 27, "B"], [520, 603, 13, "B"], [514, 624, 13, "B"],
+          [539, 628, 13, "B"], [516, 655, 27, "B"], [462, 647, 21, "B"],
+          [599, 601, 27, "D"], [576, 645, 23, "D"], [618, 645, 25, "D"], [603, 680, 25, "D"],
+          [662, 563, 27, "T"], [682, 622, 35, "T"],
+          [637, 582, 11, "S"], [660, 590, 11, "S"], [637, 605, 11, "S"], [655, 609, 11, "S"],
+          [707, 557, 11, "S"], [701, 572, 11, "S"], [716, 560, 11, "S"],
+          // left cluster, from just under halfway down the left edge to the floor
+          [123, 393, 23, "T"], [173, 412, 25, "T"], [133, 433, 25, "T"], [ 94, 450, 23, "T"],
+          [165, 452, 19, "T"],
+          [ 69, 510, 31, "W"], [125, 483, 29, "W"], [188, 504, 35, "W"], [131, 541, 29, "W"],
+          [169, 481, 12, "W"], [156, 500, 12, "W"], [179, 497, 12, "W"],
+          [ 65, 564, 17, "D"], [ 96, 564, 12, "D"], [ 85, 579, 12, "D"], [115, 595, 27, "D"],
+          [ 48, 631, 42, "D"], [ 94, 629, 12, "D"], [115, 639, 12, "D"], [ 94, 654, 12, "D"],
+          [179, 577, 40, "B"], [225, 620, 25, "B"], [223, 556, 11, "B"], [242, 564, 11, "B"],
+          [231, 585, 11, "B"], [152, 627, 13, "B"], [173, 631, 13, "B"], [162, 647, 13, "B"],
+          [188, 627, 13, "B"],
+          ];
+          const bLeft = bp.cx - bSide / 2, bTop = bp.floorY - bSide;
+          const bs = bSide / 445;
+          const bUniq: number[] = [];
+          colors.forEach((c, i) => {
+            if (!bUniq.some((j) => colors[j].toLowerCase() === c.toLowerCase())) bUniq.push(i);
+          });
+          const bIsWhite = (hex: string) => {
+            const h = hex.replace(/^#/, "");
+            return h.length >= 6 && [0, 2, 4].every((k) => parseInt(h.slice(k, k + 2), 16) >= 235);
+          };
+          const bChrome = bUniq.find((i) => chromeHexSet.has(colors[i].toLowerCase()));
+          const bWhite  = bUniq.find((i) => bIsWhite(colors[i]));
+          const bRest   = bUniq.filter((i) => i !== bChrome && i !== bWhite);
+          const bPool   = bRest.length > 0 ? bRest : bUniq;
+          // Light blue and the dark accent share the first colour, lilac and
+          // pink the second; longer palettes give the accents their own.
+          const bSlotIdx = { B: 0, T: 2, L: 1, D: 3 } as const;
+          const bColour = (slot: BannerBalloon[3]): number => {
+            if (slot === "S" && bChrome !== undefined) return bChrome;
+            // The photo's dark teal accents are its big statement balloons; they
+            // become chrome when the palette has it. With chrome only in the small
+            // grape clusters, the render made up the difference itself and turned
+            // big white and blue balloons to chrome instead (2026-10-21).
+            if (slot === "T" && bChrome !== undefined) return bChrome;
+            if (slot === "W" && bWhite  !== undefined) return bWhite;
+            const k = slot === "S" || slot === "W" ? 0 : bSlotIdx[slot];
+            const k2 = bPool.length <= 2 ? (slot === "L" || slot === "D" ? 1 : 0) : k;
+            return bPool[k2 % bPool.length];
+          };
+          // Floor balloons sit lower in the photo, which looks down on them;
+          // at our eye level they are lifted to stand no further forward than
+          // the plinth. Anything across the plinth slides sideways off it.
+          const bMaxBottom = bp.floorY + plinthForwardPx + bSide * 0.03;
+          const bPlL = plinthDrawnLeftPx as number | null;
+          const bPlR = plinthDrawnRightPx as number | null;
+          const bPlaced = BANNER_REF.map(([x, y, r, slot]) => {
+            const yy = y > 600 ? 600 + (y - 600) * 0.5 : y;
+            let bx = bLeft + (x - 140) * bs;
+            let by = bTop + (yy - 195) * bs;
+            // Fuller than read off the photo: there, balloons further back fill
+            // every gap between the visible ones (same reason as the round).
+            const br = r * bs * 1.12;
+            if (by + br > bMaxBottom) by = bMaxBottom - br;
+            if (bPlL !== null && bPlR !== null && by > bp.floorY - bSide * 0.5) {
+              const mid = (bPlL + bPlR) / 2, pad = bSide * 0.02;
+              if (bx < mid && bx + br > bPlL - pad) bx = bPlL - pad - br;
+              if (bx >= mid && bx - br < bPlR + pad) bx = bPlR + pad + br;
+            }
+            return { bx, by, br, ci: bColour(slot), floor: y >= 600 };
+          });
+          const bBody  = bPlaced.filter((b) => !b.floor).sort((a, b) => b.br - a.br);
+          const bFloor = bPlaced.filter((b) => b.floor).sort((a, b) => b.br - a.br);
+          for (const b of [...bBody, ...bFloor]) {
+            content.push(`<circle cx="${b.bx.toFixed(1)}" cy="${b.by.toFixed(1)}" r="${b.br.toFixed(1)}" ${balloonAttrs(b.ci)}/>`);
+          }
         } else if (archPanels.length === 1 && layout.panels.length === 1) {
           // Single arch: use the same thick organic mass the Double Arch
           // garlands use. The previous guide here was a single-file sine-wave

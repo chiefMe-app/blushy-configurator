@@ -122,7 +122,9 @@ export function calculateExactLayout(
     // marquee number) came out at that scale, so the 200cm disc read as about
     // 165cm beside them: a 150cm standee at 91% of the disc's height instead of
     // 75%. The top of the panel is now the top of the disc.
-    const apexY         = item?.type === "round"
+    // The same holds for the 2x2m banner, which is drawn as a square of the
+    // capped width: a 150cm standee stood at 91% of its height.
+    const apexY         = item?.type === "round" || item?.type === "banner"
       ? floorY - pw / aspect
       : floorY - panelHeightPx;
 
