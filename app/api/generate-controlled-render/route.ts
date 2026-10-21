@@ -161,7 +161,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "banner-snowflake-fullprint-v122";
+const RENDER_CACHE_VERSION = "banner-plinth-shaded-v123";
 
 interface RenderCacheEntry {
   imageUrl: string;

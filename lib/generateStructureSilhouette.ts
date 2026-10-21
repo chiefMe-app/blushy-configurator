@@ -389,7 +389,7 @@ function plinthEdge(cx: number, bottomY: number, heightPx: number, diameterPx: n
 // same treatment: a solid light-gray filled body with visible side edges and
 // cap ellipses, giving the model an unmissable object to paint as the white
 // cylinder.
-function plinthFilledCylinder(cx: number, bottomY: number, heightPx: number, diameterPx: number): string {
+function plinthFilledCylinder(cx: number, bottomY: number, heightPx: number, diameterPx: number, shaded = false): string {
   // True diameter — see the note on plinthEdge above.
   const visualWidth = diameterPx;
   const rx    = visualWidth / 2;
@@ -400,7 +400,15 @@ function plinthFilledCylinder(cx: number, bottomY: number, heightPx: number, dia
     // it contrasts against BOTH the white gap and the tinted arch panel it
     // partially overlaps (a light-gray fill blended into the beige panel and
     // the model dropped it)
-    `<rect x="${cx - rx}" y="${topY}" width="${visualWidth}" height="${heightPx}" fill="#FFFFFF" stroke="rgba(85,85,85,0.72)" stroke-width="2"/>`,
+    // `shaded`: lit from the left and falling off at both sides, so it reads
+    // as a round object. Flat white in front of the banner's large flat board
+    // was dropped by the render every time (2026-10-21, "plinthe noldu?").
+    shaded
+      ? `<defs><linearGradient id="plShade${Math.round(cx)}" x1="0" y1="0" x2="1" y2="0">` +
+        `<stop offset="0%" stop-color="#C9C7C3"/><stop offset="35%" stop-color="#FFFFFF"/>` +
+        `<stop offset="70%" stop-color="#EDEBE7"/><stop offset="100%" stop-color="#B9B7B2"/></linearGradient></defs>` +
+        `<rect x="${cx - rx}" y="${topY}" width="${visualWidth}" height="${heightPx}" fill="url(#plShade${Math.round(cx)})" stroke="rgba(85,85,85,0.72)" stroke-width="2"/>`
+      : `<rect x="${cx - rx}" y="${topY}" width="${visualWidth}" height="${heightPx}" fill="#FFFFFF" stroke="rgba(85,85,85,0.72)" stroke-width="2"/>`,
     // Bottom cap — front arc only, for the reason given in plinthEdge: a
     // full ellipse here reads as a separate disc lying on the floor.
     `<path d="M ${cx - rx},${bottomY} A ${rx},${ry} 0 0 0 ${cx + rx},${bottomY}" fill="none" stroke="rgba(85,85,85,0.60)" stroke-width="1.6"/>`,
@@ -1109,7 +1117,10 @@ export function generateStructureSilhouette(
         // Explicit rectangle — no arch path, no rounded top, clean square silhouette
         `<rect x="${left.toFixed(1)}" y="${panel.apexY.toFixed(1)}" width="${panel.pw.toFixed(1)}" height="${panelH.toFixed(1)}" fill="url(#${patId})" stroke="rgba(100,100,130,0.35)" stroke-width="1"/>`,
       ].join("\n    "));
-    } else if (layout.panels.length === 1 && shape === "arch") {
+    // 2026-10-21: the lone banner too. Drawn as a hairline, its white face
+    // left the white plinth marker in front of it with nothing to stand out
+    // against, and the render dropped the plinth ("plinthe noldu?").
+    } else if (layout.panels.length === 1 && (shape === "arch" || shape === "banner")) {
       // 2026-09-09: a lone arch draws its board FILLED, with a firm edge.
       //
       // panelEdgeOnly gives the board a 2px, 45%-opacity outline. On the
@@ -1379,8 +1390,9 @@ export function generateStructureSilhouette(
       // still a hairline, the model had one object to scale and one to guess
       // at. Both solid gives it the RATIO, which is the thing being got wrong.
       const loneArchPlinth = backdropItems.length === 1 && backdropItems[0]?.type === "arch";
-      plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1 || wantsNumberSlot || loneArchPlinth
-        ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx)
+      const loneBannerPlinth = backdropItems.length === 1 && backdropItems[0]?.type === "banner";
+      plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1 || wantsNumberSlot || loneArchPlinth || loneBannerPlinth
+        ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx, loneBannerPlinth)
         : plinthEdge(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
     }
   });
