@@ -393,11 +393,14 @@ function plinthEdge(cx: number, bottomY: number, heightPx: number, diameterPx: n
 // same treatment: a solid light-gray filled body with visible side edges and
 // cap ellipses, giving the model an unmissable object to paint as the white
 // cylinder.
-function plinthFilledCylinder(cx: number, bottomY: number, heightPx: number, diameterPx: number, shaded = false): string {
+function plinthFilledCylinder(cx: number, bottomY: number, heightPx: number, diameterPx: number, shaded = false, flatTop = false): string {
   // True diameter — see the note on plinthEdge above.
   const visualWidth = diameterPx;
   const rx    = visualWidth / 2;
-  const ry    = Math.max(3, Math.round(rx * 0.45));
+  // flatTop: the top seen almost edge-on, as it is from standing eye level.
+  // At 0.45 the render drew the top surface wide open, as if looked down
+  // on (2026-10-21, "karsidan bakan kisi oyle gormez").
+  const ry    = Math.max(3, Math.round(rx * (flatTop ? 0.14 : 0.45)));
   const topY  = bottomY - heightPx;
   return [
     // Solid body — pure white like the real product, with a strong outline so
@@ -1410,8 +1413,9 @@ export function generateStructureSilhouette(
       // at. Both solid gives it the RATIO, which is the thing being got wrong.
       const loneArchPlinth = backdropItems.length === 1 && backdropItems[0]?.type === "arch";
       const loneBannerPlinth = backdropItems.length === 1 && backdropItems[0]?.type === "banner";
+      const loneShimmerPlinth = backdropItems.length === 1 && backdropItems[0]?.type === "shimmer_wall";
       plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1 || wantsNumberSlot || loneArchPlinth || loneBannerPlinth
-        ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx, loneBannerPlinth)
+        ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx, loneBannerPlinth || loneShimmerPlinth, loneBannerPlinth || loneShimmerPlinth)
         : plinthEdge(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
     }
   });
@@ -3386,6 +3390,10 @@ export function generateStructureSilhouette(
           // the wall spans x 222..735 and y 165..835 (its foot on the floor), and
           // the table scales from that rect onto ours. Slots: P pale blue, L pale
           // lavender, S chrome, mapped onto the customer's palette.
+          // 2026-10-21: scaled as if that wall ran to x 800 — the centre line of
+          // its right column — so the column straddles our wall's right edge
+          // instead of standing beside it with a strip of bare wall between
+          // ("yesille isaretledigim yerdeki space olmamali").
           type ShimBalloon = [number, number, number, "P" | "L" | "S"];
           const SHIM_REF: ShimBalloon[] = [
             // top band, from about a third of the way across to past the right corner
@@ -3411,7 +3419,7 @@ export function generateStructureSilhouette(
           ];
           const sp = layout.panels[0];
           const sLeft = sp.cx - sp.pw / 2, sTop = sp.apexY;
-          const sx = sp.pw / 513, sy = (sp.floorY - sp.apexY) / 670, sr = (sx + sy) / 2;
+          const sx = sp.pw / 578, sy = (sp.floorY - sp.apexY) / 670, sr = (sx + sy) / 2;
           const sUniq: number[] = [];
           colors.forEach((c, i) => {
             if (!sUniq.some((j) => colors[j].toLowerCase() === c.toLowerCase())) sUniq.push(i);

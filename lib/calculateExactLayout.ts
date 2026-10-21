@@ -124,7 +124,11 @@ export function calculateExactLayout(
     // 75%. The top of the panel is now the top of the disc.
     // The same holds for the 2x2m banner, which is drawn as a square of the
     // capped width: a 150cm standee stood at 91% of its height.
+    // And the lone 2x2m Shimmer Wall (2026-10-21): drawn 717 x 870 it came
+    // back as a tall rectangle with its garland standing off the right edge
+    // ("backdrop 2m x 2m olmali"). Lone only: Arch + Shimmer is approved as is.
     const apexY         = item?.type === "round" || item?.type === "banner"
+        || (item?.type === "shimmer_wall" && count === 1)
       ? floorY - pw / aspect
       : floorY - panelHeightPx;
 
