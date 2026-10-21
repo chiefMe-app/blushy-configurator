@@ -1414,8 +1414,11 @@ export function generateStructureSilhouette(
       const loneArchPlinth = backdropItems.length === 1 && backdropItems[0]?.type === "arch";
       const loneBannerPlinth = backdropItems.length === 1 && backdropItems[0]?.type === "banner";
       const loneShimmerPlinth = backdropItems.length === 1 && backdropItems[0]?.type === "shimmer_wall";
+      // Arch + Shimmer too: in front of the sequin wall the flat marker was
+      // dropped from the render the same way (2026-10-21).
+      const archShimmerPlinth = backdropItems.length === 2 && backdropItems.some((it) => it?.type === "arch") && backdropItems.some((it) => it?.type === "shimmer_wall");
       plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1 || wantsNumberSlot || loneArchPlinth || loneBannerPlinth
-        ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx, loneBannerPlinth || loneShimmerPlinth, loneBannerPlinth || loneShimmerPlinth)
+        ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx, loneBannerPlinth || loneShimmerPlinth || archShimmerPlinth, loneBannerPlinth || loneShimmerPlinth || archShimmerPlinth)
         : plinthEdge(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
     }
   });
@@ -2813,6 +2816,69 @@ export function generateStructureSilhouette(
         // the arch or the shimmer wall ends up on the left (panel order
         // normally has arch first/left per applySetupTemplate, but this
         // doesn't assume that).
+        // The approved Shimmer Wall garland (see the lone shimmer branch for
+        // its source), as a function so Arch + Shimmer can use it too. `side`
+        // is the edge its column runs down; "left" mirrors the photo.
+        const drawShimmerRefGarland = (sp: typeof layout.panels[0], side: "left" | "right"): void => {
+        type ShimBalloon = [number, number, number, "P" | "L" | "S"];
+        const SHIM_REF: ShimBalloon[] = [
+          // top band, from about a third of the way across to past the right corner
+          [430, 156, 28, "P"], [420, 180, 24, "P"], [485, 125, 22, "L"], [472, 154, 18, "L"],
+          [475, 193, 23, "P"], [493, 175, 17, "S"], [519, 146, 21, "S"], [548, 133, 26, "P"],
+          [551, 177, 20, "S"], [525, 198, 23, "P"], [585, 154, 27, "P"], [567, 201, 23, "L"],
+          [625, 130, 26, "P"], [617, 188, 25, "P"], [651, 159, 24, "S"], [690, 125, 26, "S"],
+          [664, 214, 28, "L"], [701, 175, 29, "L"], [762, 140, 40, "L"], [722, 217, 31, "L"],
+          [819, 159, 24, "P"], [843, 133, 21, "S"], [796, 212, 29, "S"], [853, 188, 26, "S"],
+          [827, 243, 25, "S"], [769, 262, 29, "L"], [796, 280, 24, "L"], [853, 264, 22, "P"],
+          // right column, lavender and chrome alternating down to the floor
+          [807, 320, 23, "S"], [853, 317, 22, "L"], [787, 360, 27, "L"], [833, 360, 27, "L"],
+          [803, 390, 20, "S"], [767, 397, 23, "L"], [840, 403, 19, "L"], [807, 433, 30, "L"],
+          [770, 447, 20, "S"], [847, 467, 23, "S"], [803, 480, 19, "S"], [770, 490, 27, "L"],
+          [823, 513, 20, "L"], [780, 540, 30, "L"], [833, 540, 17, "S"], [817, 580, 25, "S"],
+          [767, 587, 20, "S"], [843, 597, 20, "L"], [800, 623, 23, "L"], [767, 647, 27, "L"],
+          [827, 660, 23, "S"], [793, 687, 25, "L"], [747, 700, 20, "S"], [853, 703, 23, "S"],
+          [783, 730, 27, "P"],
+          // floor cluster, pale blue
+          [763, 770, 33, "P"], [850, 747, 33, "P"], [827, 780, 30, "P"], [783, 820, 37, "P"],
+          [877, 807, 33, "P"], [850, 837, 23, "S"], [737, 837, 20, "S"], [713, 767, 27, "L"],
+          [720, 807, 25, "L"], [668, 812, 30, "L"],
+        ];
+        // (the panel is the parameter now)
+        const sLeft = sp.cx - sp.pw / 2, sTop = sp.apexY;
+        const sx = sp.pw / 578, sy = (sp.floorY - sp.apexY) / 670, sr = (sx + sy) / 2;
+        const sUniq: number[] = [];
+        colors.forEach((c, i) => {
+          if (!sUniq.some((j) => colors[j].toLowerCase() === c.toLowerCase())) sUniq.push(i);
+        });
+        const sIsWhite = (hex: string) => {
+          const h = hex.replace(/^#/, "");
+          return h.length >= 6 && [0, 2, 4].every((k) => parseInt(h.slice(k, k + 2), 16) >= 235);
+        };
+        const sChrome = sUniq.find((i) => chromeHexSet.has(colors[i].toLowerCase()));
+        const sWhite  = sUniq.find((i) => sIsWhite(colors[i]));
+        const sRest   = sUniq.filter((i) => i !== sChrome && i !== sWhite);
+        const sPool   = sRest.length > 0 ? sRest : sUniq;
+        let sLav = 0;
+        const sColour = (slot: ShimBalloon[3]): number => {
+          if (slot === "S") return sChrome ?? sPool[0];
+          if (slot === "P") return sPool[0];
+          // The photo's pale lavender is half white, half lilac; with white in
+          // the palette the two take turns.
+          const k = sLav++;
+          if (sWhite !== undefined && k % 2 === 1) return sWhite;
+          return sPool[1 % sPool.length];
+        };
+        const sPlaced = SHIM_REF.map(([x, y, r, slot]) => ({
+          bx: side === "right" ? sLeft + (x - 222) * sx : sLeft + sp.pw - (x - 222) * sx,
+          by: Math.min(sTop + (y - 165) * sy, sp.floorY + plinthForwardPx - r * sr),
+          br: r * sr * 1.15,
+          ci: sColour(slot),
+        })).sort((m, n) => n.br - m.br);
+        for (const b of sPlaced) {
+          content.push(`<circle cx=\"${b.bx.toFixed(1)}\" cy=\"${b.by.toFixed(1)}\" r=\"${b.br.toFixed(1)}\" ${balloonAttrs(b.ci)}/>`);
+        }
+        };
+
         const drawArchShimmerComposition = (
           archP: typeof layout.panels[0], shimmerP: typeof layout.panels[0], colorOffset: number,
         ): { total: number; accentZone: { xMin: number; xMax: number; yMin: number; yMax: number } } => {
@@ -3371,9 +3437,16 @@ export function generateStructureSilhouette(
           // the two-treatment composition instead of falling through to the
           // generic single-side vertical garland below (which would leave the
           // arch with no garland at all).
-          const result = drawArchShimmerComposition(archPanels[0], shimmerPanels[0], 0);
-          archShimmerCompositionBalloons = result.total;
-          archShimmerAccentZone = result.accentZone;
+          // 2026-10-21: "arch + shimmer cok kotu — son yaptigin shimmer wall
+          // gibi olsun ve son yaptigin single arch ile birlestir". The two
+          // approved garlands, each on its panel's OUTER edge so they frame the
+          // pair: the Single Arch statement garland, and the Shimmer Wall's
+          // band-and-column. The bespoke composition this replaces came back as
+          // a thin column on the arch and nothing on the shimmer.
+          void drawArchShimmerComposition;
+          const archOnLeft = archPanels[0].cx < shimmerPanels[0].cx;
+          drawLoneArchStatementGarland(archPanels[0], archOnLeft ? "left" : "right");
+          drawShimmerRefGarland(shimmerPanels[0], archOnLeft ? "right" : "left");
         } else if (
           layout.panels.length === 1 &&
           (backdropItems[layout.panels[0].idx]?.type ?? "") === "shimmer_wall"
@@ -3394,63 +3467,7 @@ export function generateStructureSilhouette(
           // its right column — so the column straddles our wall's right edge
           // instead of standing beside it with a strip of bare wall between
           // ("yesille isaretledigim yerdeki space olmamali").
-          type ShimBalloon = [number, number, number, "P" | "L" | "S"];
-          const SHIM_REF: ShimBalloon[] = [
-            // top band, from about a third of the way across to past the right corner
-            [430, 156, 28, "P"], [420, 180, 24, "P"], [485, 125, 22, "L"], [472, 154, 18, "L"],
-            [475, 193, 23, "P"], [493, 175, 17, "S"], [519, 146, 21, "S"], [548, 133, 26, "P"],
-            [551, 177, 20, "S"], [525, 198, 23, "P"], [585, 154, 27, "P"], [567, 201, 23, "L"],
-            [625, 130, 26, "P"], [617, 188, 25, "P"], [651, 159, 24, "S"], [690, 125, 26, "S"],
-            [664, 214, 28, "L"], [701, 175, 29, "L"], [762, 140, 40, "L"], [722, 217, 31, "L"],
-            [819, 159, 24, "P"], [843, 133, 21, "S"], [796, 212, 29, "S"], [853, 188, 26, "S"],
-            [827, 243, 25, "S"], [769, 262, 29, "L"], [796, 280, 24, "L"], [853, 264, 22, "P"],
-            // right column, lavender and chrome alternating down to the floor
-            [807, 320, 23, "S"], [853, 317, 22, "L"], [787, 360, 27, "L"], [833, 360, 27, "L"],
-            [803, 390, 20, "S"], [767, 397, 23, "L"], [840, 403, 19, "L"], [807, 433, 30, "L"],
-            [770, 447, 20, "S"], [847, 467, 23, "S"], [803, 480, 19, "S"], [770, 490, 27, "L"],
-            [823, 513, 20, "L"], [780, 540, 30, "L"], [833, 540, 17, "S"], [817, 580, 25, "S"],
-            [767, 587, 20, "S"], [843, 597, 20, "L"], [800, 623, 23, "L"], [767, 647, 27, "L"],
-            [827, 660, 23, "S"], [793, 687, 25, "L"], [747, 700, 20, "S"], [853, 703, 23, "S"],
-            [783, 730, 27, "P"],
-            // floor cluster, pale blue
-            [763, 770, 33, "P"], [850, 747, 33, "P"], [827, 780, 30, "P"], [783, 820, 37, "P"],
-            [877, 807, 33, "P"], [850, 837, 23, "S"], [737, 837, 20, "S"], [713, 767, 27, "L"],
-            [720, 807, 25, "L"], [668, 812, 30, "L"],
-          ];
-          const sp = layout.panels[0];
-          const sLeft = sp.cx - sp.pw / 2, sTop = sp.apexY;
-          const sx = sp.pw / 578, sy = (sp.floorY - sp.apexY) / 670, sr = (sx + sy) / 2;
-          const sUniq: number[] = [];
-          colors.forEach((c, i) => {
-            if (!sUniq.some((j) => colors[j].toLowerCase() === c.toLowerCase())) sUniq.push(i);
-          });
-          const sIsWhite = (hex: string) => {
-            const h = hex.replace(/^#/, "");
-            return h.length >= 6 && [0, 2, 4].every((k) => parseInt(h.slice(k, k + 2), 16) >= 235);
-          };
-          const sChrome = sUniq.find((i) => chromeHexSet.has(colors[i].toLowerCase()));
-          const sWhite  = sUniq.find((i) => sIsWhite(colors[i]));
-          const sRest   = sUniq.filter((i) => i !== sChrome && i !== sWhite);
-          const sPool   = sRest.length > 0 ? sRest : sUniq;
-          let sLav = 0;
-          const sColour = (slot: ShimBalloon[3]): number => {
-            if (slot === "S") return sChrome ?? sPool[0];
-            if (slot === "P") return sPool[0];
-            // The photo's pale lavender is half white, half lilac; with white in
-            // the palette the two take turns.
-            const k = sLav++;
-            if (sWhite !== undefined && k % 2 === 1) return sWhite;
-            return sPool[1 % sPool.length];
-          };
-          const sPlaced = SHIM_REF.map(([x, y, r, slot]) => ({
-            bx: sLeft + (x - 222) * sx,
-            by: Math.min(sTop + (y - 165) * sy, sp.floorY + plinthForwardPx - r * sr),
-            br: r * sr * 1.15,
-            ci: sColour(slot),
-          })).sort((m, n) => n.br - m.br);
-          for (const b of sPlaced) {
-            content.push(`<circle cx=\"${b.bx.toFixed(1)}\" cy=\"${b.by.toFixed(1)}\" r=\"${b.br.toFixed(1)}\" ${balloonAttrs(b.ci)}/>`);
-          }
+          drawShimmerRefGarland(layout.panels[0], "right");
         } else if (
           layout.panels.length === 1 &&
           (backdropItems[layout.panels[0].idx]?.type ?? "") === "balloon_ring"

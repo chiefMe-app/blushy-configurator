@@ -995,6 +995,23 @@ export function buildLayoutRefEditPrompt(
   })();
 
   const frontShapeLine = (() => {
+    // 2026-10-21: Arch + Shimmer states its two boards first too. Without it
+    // the shimmer wall came back as a white photo-studio paper roll on a
+    // stand beside the arch ("arch + shimmer cok kotu").
+    if (panelCount === 2) {
+      const types = sceneModel.panels.map((p) => p.type);
+      if (types.includes("arch") && types.includes("shimmer_wall")) {
+        const archLeft = types[0] === "arch";
+        // One short sentence: the first, longer version pushed the plinth
+        // out of the render, as long front clauses have before.
+        return `Two backdrops side by side: a white arch board on the ${archLeft ? "left" : "right"} and a ` +
+          `${sceneModel.shimmerColor ?? "silver"} SEQUIN shimmer wall (a flat square panel of sequin tiles) on the ${archLeft ? "right" : "left"}` +
+          // Named here or it goes: with the sequin wall stated up front, the
+          // white column in front of it was painted over by sequins.
+          (sceneModel.plinths.length > 0 ? `, with a plain white cylinder plinth on the floor in front of them. ` : `. `);
+      }
+      return "";
+    }
     if (panelCount !== 1) return "";
     const t = sceneModel.panels[0]?.type;
     // 2026-09-28: this used to fire ONLY when the scene also carried a number,
@@ -1122,7 +1139,7 @@ export function buildLayoutRefEditPrompt(
   // its left edge standing on a small disc, which is what the render made of
   // the faint panel outline plus the standee footprint marker. A party
   // backdrop board hides its own support behind itself.
-  const frontNoStandLine = sceneModel.panels.some((p) => p.type === "arch" || p.type === "half_arch" || p.type === "round" || p.type === "banner")
+  const frontNoStandLine = sceneModel.panels.some((p) => p.type === "arch" || p.type === "half_arch" || p.type === "round" || p.type === "banner" || p.type === "shimmer_wall")
     ? `The backdrop board shows NO frame and NO stand: no pole, no post, no tube, no tripod, no legs, ` +
       `no feet and no round base disc anywhere around it. Its support is hidden behind it and the board ` +
       `meets the floor directly. `
