@@ -162,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "shimmer-neon-ref-v136";
+const RENDER_CACHE_VERSION = "frame-text-overlay-v139";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -715,6 +715,7 @@ interface LayoutRefPngResult {
   textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[];
   /** Marquee number bulb centres/radii as canvas fractions (lone round only). */
   marqueeBulbs?: { xFrac: number; yFrac: number; rFrac: number }[];
+  neonOverlaySvg?: string;
   silverTextMaskSvg?: string;
   textMetalTint?: [number, number, number] | null;
   bannerPrintMaskSvg?: string;
@@ -793,6 +794,7 @@ async function generateLayoutReferencePng(
       dataUri, error: null, stage: null, bytes: pngBuffer.length,
       textZones: silhouette.textZones,
       marqueeBulbs: silhouette.marqueeBulbs,
+      neonOverlaySvg: silhouette.neonOverlaySvg,
       silverTextMaskSvg: silhouette.silverTextMaskSvg,
       textMetalTint: silhouette.textMetalTint,
       bannerPrintRect: silhouette.bannerPrintRect,
@@ -2495,6 +2497,30 @@ forbiddenBalloonColorLabels: hasSempertexLock
     }
   }
   void marqueeBulbsLit;
+
+  // ── Lit neon sign on the lone balloon ring ───────────────────────────────
+  // 2026-10-22: the guide leaves the sign out of the ring scene and draws it
+  // here, lit, where it hangs in the ring's open middle (see neonOverlaySvg).
+  // The model drew it as a flat cut-out on the pedestal, or dropped it.
+  if (pngResult.neonOverlaySvg) {
+    try {
+      const baseBuf = workingImageBuf ?? await fetchFinalImage();
+      if (baseBuf) {
+        const sharpPkgN = await import("sharp");
+        const sharpFnN  = ((sharpPkgN as any).default ?? sharpPkgN) as (b: Buffer) => any;
+        const metaN = await sharpFnN(baseBuf).metadata() as { width?: number; height?: number };
+        const nw = metaN.width ?? 1024, nh = metaN.height ?? 1024;
+        const sign = await (sharpFnN(Buffer.from(pngResult.neonOverlaySvg, "utf8"))
+          .resize(nw, nh, { fit: "fill" }).png().toBuffer()) as Buffer;
+        workingImageBuf = await (sharpFnN(baseBuf)
+          .composite([{ input: sign, blend: "screen" }, { input: sign, blend: "over" }])
+          .png().toBuffer()) as Buffer;
+        outputImageUrl = `data:image/jpeg;base64,${(await (sharpFnN(workingImageBuf).jpeg({ quality: 92 }).toBuffer()) as Buffer).toString("base64")}`;
+      }
+    } catch (neonErr) {
+      console.warn("[generate-controlled-render] neon overlay failed (continuing without):", String(neonErr));
+    }
+  }
 
   // ── Deterministic cutout standee overlay ─────────────────────────────────
   // Character standees are suppressed in the AI prompt and composited here

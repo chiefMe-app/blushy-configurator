@@ -87,6 +87,8 @@ export interface SilhouetteResult {
   /** Full-canvas SVG mask (white on black) of any silver lettering, for the
    *  route's chrome pass. Empty string when there is none. */
   silverTextMaskSvg: string;
+  /** Lone balloon ring: the lit neon sign, drawn whole-canvas, for the route to lay over the render. */
+  neonOverlaySvg: string;
   /** Tint of the metallic lettering the mask above is for (silver, gold, rose gold). */
   textMetalTint: [number, number, number] | null;
   /** Where the lone banner's printed artwork goes, as canvas fractions, or
@@ -663,7 +665,9 @@ function customTextGuide(
     // 2026-10-22: beside the castle, as in the banner reference — right of
     // centre, about 0.38 of the board across.
     bannerClear ? pw * 0.38 :
-    loneArchClear ? pw * 0.64 :
+    // Beside an open frame, a little smaller: it is laid over the render
+    // there and must sit inside the board's clear face.
+    loneArchClear ? pw * (garlandSide === "lonearchleft" ? 0.54 : 0.64) :
     garlandSide === "shimmer" ? pw * 0.44 :
     garlandSide === "both" ? pw * (1 - 2 * cover) :
     garlandSide === "none" ? pw * 0.85 :
@@ -671,7 +675,7 @@ function customTextGuide(
   const shift =
     roundClear ? pw * 0.11 :
     bannerClear ? pw * 0.05 :
-    loneArchClear ? (garlandSide === "lonearchleft" ? pw * 0.09 : -pw * 0.09) :
+    loneArchClear ? (garlandSide === "lonearchleft" ? pw * 0.06 : -pw * 0.09) :
     garlandSide === "left"  ?  pw * cover / 2 :
     garlandSide === "right" ? -pw * cover / 2 : 0;
   const tx = cx + shift;
@@ -1074,6 +1078,7 @@ export function generateStructureSilhouette(
   const textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[] = [];
   const marqueeBulbsLayout: [number, number, number][] = [];
   const silverInkLayer: string[] = [];
+  const neonOverlayLayer: string[] = [];
   let textMetalTint: [number, number, number] | null = null;
   let bannerPrintLayout: { x: number; y: number; w: number; h: number } | null = null;
   const bannerPrintHoles: string[] = [];
@@ -1356,8 +1361,27 @@ export function generateStructureSilhouette(
           color:     item?.text?.color,
         },
       );
-      content.push(textGuide.svg);
-      if (textGuide.silverInk) {
+      // 2026-10-22: beside an open frame the lettering is laid over the
+      // finished render (into the same overlay as the ring's neon) rather
+      // than drawn in the guide. The flash model dropped it on two seeds of
+      // three whatever the prompt said ("happy birthday yazisi yok"). A soft
+      // shadow under it seats the letters on the board as cut acrylic.
+      const overlayText = shape === "arch" && backdropItems.some((it) => it?.type === "open_arch_frame");
+      if (overlayText) {
+        if (neonOverlayLayer.length === 0) neonOverlayLayer.push(`<defs><filter id="txtShadow" x="-10%" y="-10%" width="120%" height="130%"><feGaussianBlur stdDeviation="1.6"/></filter></defs>`);
+        const shadow = textGuide.svg.replace(/<defs>[\s\S]*?<\/defs>/, "")
+          .replace(/(stroke|fill)="(?!none)[^"]*"/g, '$1="rgba(70,72,80,0.30)"')
+          .replace(/^<g/, '<g filter="url(#txtShadow)"');
+        neonOverlayLayer.push(`<g transform="translate(2.2,3.2)">${shadow}</g>`);
+        // Without the guide's halo and hairline outline: laid on a photo those
+        // made the letters read hollow.
+        neonOverlayLayer.push(textGuide.svg
+          .replace(/<path d="([^"]+)" fill="none" stroke="rgba\([^"]*\)" stroke-width="[^"]*" stroke-linejoin="round"\/>/g, "")
+          .replace(/<path d="([^"]+)" fill="none" stroke="rgba\(60,64,70,0\.70\)" stroke-width="0\.9"\/>/g, ""));
+      } else {
+        content.push(textGuide.svg);
+      }
+      if (textGuide.silverInk && !overlayText) {
         silverInkLayer.push(textGuide.silverInk);
         textMetalTint = textMetalTint ?? metalTextTint(item?.text?.color);
       }
@@ -2930,6 +2954,22 @@ export function generateStructureSilhouette(
           [1148, 920, 16, "W"],
           [ 984, 217, 64, "F"], [ 793, 335, 50, "F"], [1147, 385, 41, "F"], [1129, 490, 50, "F"],
           [1216, 764, 60, "F"], [1104, 912, 40, "F"],
+          // 2026-10-22, the customer's newer reference: the garland also comes
+          // THROUGH the opening — down its inner right side from under the
+          // crown, then out over the floor and forward, past the front of the
+          // frame ("open arch frame in icinden gecerek one dogru gelmeli").
+          // The upper part of that stream was dropped after the first render:
+          // drawn from the crown down, it stood in the opening like a pillar.
+          // What remains is the part the customer marked — a pile in the
+          // lower opening that runs out over the floor and forward.
+          [ 990, 760, 24, "S"], [ 955, 805, 36, "B"], [ 995, 840, 22, "W"], [ 905, 845, 30, "L"],
+          [ 960, 870, 44, "W"], [ 870, 905, 28, "S"], [ 925, 925, 38, "B"], [ 990, 915, 26, "L"],
+          [ 845, 960, 42, "L"], [ 905, 985, 50, "B"], [ 975, 975, 32, "W"], [ 820,1025, 32, "W"],
+          [ 880,1045, 40, "L"], [ 945,1035, 28, "S"], [ 850, 995, 18, "S"], [ 905,1070, 26, "W"],
+          // ...joined to the outer garland over the frame's leg.
+          [1030, 845, 30, "W"], [1052, 905, 36, "B"], [1022, 955, 28, "L"], [1062, 970, 24, "S"],
+          [1035,1005, 30, "W"],
+          [ 875, 935, 44, "F"],
         ];
         // See the Triple Arch branch for how this is mapped.
         const TRIPLE_ARCH_REF: RefItem[] = [
@@ -3091,6 +3131,29 @@ export function generateStructureSilhouette(
             };
             mapped = mapped.map(([X, Y, rr, slot]) =>
               Y <= sp && Math.abs(X - p.cx) < R ? [X, Y + shiftAt(X), rr, slot] : [X, Y, rr, slot]);
+          }
+          // And the sides likewise (2026-10-22, the customer circled wall
+          // showing between the arch's outer edge and its garland): down each
+          // straight side, in bands, the balloons outside the board move in
+          // until the band's innermost one laps over the edge by a fifth of
+          // itself.
+          {
+            const bandH = (p.floorY - sp) / 10;
+            const need = new Map<string, number>();
+            const key = (X: number, Y: number) => `${X < l ? "l" : "r"}${Math.floor((Y - sp) / bandH)}`;
+            for (const [X, Y, rr, slot] of mapped) {
+              if (slot === "F" || Y <= sp || Y > p.floorY || (X >= l && X <= r)) continue;
+              const br = rr * s * 1.08;
+              const gap = (X < l ? l - X : X - r) - br;
+              const k = key(X, Y);
+              need.set(k, Math.min(need.get(k) ?? Infinity, gap + 0.2 * br));
+            }
+            mapped = mapped.map(([X, Y, rr, slot]) => {
+              if (Y <= sp || (X >= l && X <= r)) return [X, Y, rr, slot];
+              const sh = need.get(key(X, Y));
+              if (sh === undefined || !isFinite(sh) || sh <= 0) return [X, Y, rr, slot];
+              return [X < l ? X + sh : X - sh, Y, rr, slot];
+            });
           }
           const visL = -marginX / SCALE + (W * 0.015) / SCALE;
           const visR = (W - marginX) / SCALE - (W * 0.015) / SCALE;
@@ -4445,7 +4508,9 @@ export function generateStructureSilhouette(
     // now, so the middle of the opening is free.
     const ringR2 = (Math.max(1, backdropItems[np.idx]?.widthCm ?? 200) / 2)
       * (ringScenePxPerCm ?? (panelH / Math.max(1, backdropItems[np.idx]?.heightCm ?? 200)));
-    const cyN = isRing ? np.floorY - ringR2 : np.apexY + panelH * 0.34;
+    // 2026-10-22: on the ring, above the middle — at the centre it sat right
+    // on top of the 90cm plinth and rendered as a cake topper standing on it.
+    const cyN = isRing ? np.floorY - ringR2 * 1.30 : np.apexY + panelH * 0.34;
     const words = neonWords.split(" ").filter(Boolean);
     // 2026-10-22: two words go on two lines, as in the customer's shimmer
     // references. Drawn on one line, the render broke it in two itself and
@@ -4463,21 +4528,42 @@ export function generateStructureSilhouette(
     // 2026-10-22: on a shimmer wall the sign is the size the customer's
     // shimmer references show — about 40% of the wall across.
     const onShimmer = (backdropItems[np.idx]?.type ?? "") === "shimmer_wall";
-    const signW = onShimmer ? np.pw * 0.40 : Math.min(np.pw * 0.62, SIGN_W_CM * pxPerCm);
+    const signW = onShimmer ? np.pw * 0.40 : isRing ? ringR2 * 0.72 : Math.min(np.pw * 0.62, SIGN_W_CM * pxPerCm);
     const fontSize = Math.max(9, Math.min(signW / Math.max(1, widest) / 0.46, signW * 0.42));
     const lineGap = fontSize * 1.22;
     const firstY = cyN - ((lines.length - 1) * lineGap) / 2;
+    // 2026-10-22: on the lone ring the sign is NOT drawn into the guide; it
+    // is laid over the finished render instead (neonOverlaySvg). Left to the
+    // model it came back as a flat yellow or white cut-out standing on the
+    // pedestal, or not at all ("bu isik gibi durmuyor"); drawn here it is a
+    // lit sign with its glow, spelled exactly, every time.
+    const target = isRing ? neonOverlayLayer : content;
+    if (isRing) {
+      neonOverlayLayer.push(`<defs><filter id="nGlowWide" x="-50%" y="-80%" width="200%" height="260%"><feGaussianBlur stdDeviation="${(fontSize * 0.42).toFixed(1)}"/></filter>` +
+        `<filter id="nGlow" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="${(fontSize * 0.10).toFixed(1)}"/></filter></defs>`);
+    }
     lines.forEach((ln, i) => {
       const y = firstY + i * lineGap;
       // A path from the embedded script font, not <text>: the rasteriser on
       // Vercel has no fonts and drew empty boxes (2026-10-20).
       const d = textPathD(ln, "script", cxN, y, fontSize);
       // Halo first, then the tube — reads as a glowing sign rather than as text.
-      content.push(`<path d="${d}" fill="none" stroke="#FFE9A8" stroke-width="${(fontSize * 0.34).toFixed(1)}" stroke-linejoin="round" opacity="0.75"/>`);
+      // 2026-10-22: a soft blurred warm-white glow, not a solid yellow band —
+      // the solid band rendered as a yellow cardboard sign ("bu isik gibi
+      // durmuyor").
+      if (isRing) {
+        // Light spill on the wall, the tube's own halo, then the white-hot tube.
+        target.push(`<path d="${d}" fill="none" stroke="#FFD9A0" stroke-width="${(fontSize * 0.55).toFixed(1)}" stroke-linejoin="round" opacity="0.55" filter="url(#nGlowWide)"/>`);
+        target.push(`<path d="${d}" fill="#FFE7BD" stroke="#FFE7BD" stroke-width="${(fontSize * 0.16).toFixed(1)}" stroke-linejoin="round" opacity="0.95" filter="url(#nGlow)"/>`);
+        target.push(`<path d="${d}" fill="#FFFDF7" stroke="#FFFDF7" stroke-width="${(fontSize * 0.035).toFixed(1)}" stroke-linejoin="round"/>`);
+        return;
+      }
+      if (i === 0) content.push(`<defs><filter id="neonGlow" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="${(fontSize * 0.12).toFixed(1)}"/></filter></defs>`);
+      content.push(`<path d="${d}" fill="none" stroke="#FFF1D2" stroke-width="${(fontSize * 0.30).toFixed(1)}" stroke-linejoin="round" opacity="0.95" filter="url(#neonGlow)"/>`);
       // 2026-09-05: the tube used to be stroked in gold-brown, which is what the
       // guide showed and, on the shimmer setups, what the render picked up. The
       // sign is warm WHITE, so the marker is too — a pale warm outline, not gold.
-      content.push(`<path d="${d}" fill="#FFFFFF" stroke="#E8C98A" stroke-width="${Math.max(2, fontSize * 0.07).toFixed(1)}" stroke-linejoin="round"/>`);
+      content.push(`<path d="${d}" fill="#FFFFFF" stroke="#FFFDF6" stroke-width="${Math.max(2, fontSize * 0.06).toFixed(1)}" stroke-linejoin="round"/>`);
     });
   }
 
@@ -4711,6 +4797,10 @@ export function generateStructureSilhouette(
         }
       : null,
     textMetalTint,
+    neonOverlaySvg: neonOverlayLayer.length > 0
+      ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">` +
+        `<g transform="translate(${marginX},${marginY}) scale(${SCALE})">${neonOverlayLayer.join("")}</g></svg>`
+      : "",
     silverTextMaskSvg: silverInkLayer.length > 0
       ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">` +
         `<rect width="${W}" height="${H}" fill="#000000"/>` +

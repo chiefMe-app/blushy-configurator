@@ -312,7 +312,7 @@ export function buildLayoutRefEditPrompt(
         : isOpenFrame
           // 2026-10-21: HOLLOW again (customer reference). This described a flat
           // board with a balloon cluster on its face, the 2026-09-08 design.
-          ? `OPEN arch frame: a thick flat matte white arch-shaped band, with the middle completely EMPTY ` +
+          ? `OPEN arch frame: a thick flat matte white arch-shaped band, with a hollow middle ` +
             `so the wall behind shows through it, the same finish as the solid arch beside it. ` +
             `NOT chrome, NOT mirrored, NOT polished metal, NOT stainless steel, NOT glossy, ` +
             `NOT moulded, NOT stepped, NOT ridged, NOT bevelled, NOT a picture-frame profile, ` +
@@ -804,14 +804,15 @@ export function buildLayoutRefEditPrompt(
   // lines below (a separate name has produced a second plinth).
   const frontOpenFrameSentence = hasOpenFramePair
     ? `Two pieces side by side: a solid white arch board on the ${solidSide}, and on the ${openFrameSide} an OPEN ` +
-      `arch frame — a thick white arch-shaped band with an EMPTY hollow middle you see the grey wall through, its two legs standing apart on the floor with nothing joining them at the bottom` +
+      `arch frame — a thick white arch-shaped band with a hollow middle you see the grey wall through, its two legs standing apart on the floor with nothing joining them at the bottom, and its garland coming over its top and down THROUGH the opening onto the floor in front` +
       (sceneModel.plinths.length > 0 ? `, with the one white cylindrical pedestal column on the floor in front, between them. ` : `. `)
     : "";
   // Said in frontShapeLine now, at the very start.
   const frontOpenFrameLine = "";
   // Superseded 2026-10-21: no cluster on the frame's face any more.
   const openFrameDetailLine = hasOpenFramePair
-    ? `The open frame's middle stays empty — no balloons inside it. ` +
+    // 2026-10-22: the garland now passes through the opening (customer reference).
+    ? `The frame's garland comes over its crown and down through the opening, spilling forward onto the floor; the top of the opening stays clear. ` +
       (sceneModel.panels.some((p) => p.text.enabled || p.graphic.enabled)
         ? `No lettering and no artwork on the ${openFrameSide}-hand backdrop — any text or illustration ` +
           `belongs on the ${solidSide}-hand one only. `
@@ -1178,7 +1179,9 @@ export function buildLayoutRefEditPrompt(
     ? (hasRingPanelInPrompt
         // The customer asked for it in the middle of the ring; left to the body
         // clause alone the render hung it above the hoop instead.
-        ? `A warm white glowing neon sign reading "${frontNeonText}" hangs in the DEAD CENTRE of the balloon ring's open middle, centred both horizontally and vertically in the opening. `
+        // 2026-10-22: the sign itself is laid over the render afterwards
+        // (route.ts); the model only keeps the space for it.
+        ? `The open middle of the balloon ring stays EMPTY and clear above the pedestal column. `
         : panelCount > 1
           // Named at the front for the same reason the shimmer colour is: left to
           // the body clause the sign appeared on BOTH boards.
@@ -1277,6 +1280,15 @@ export function buildLayoutRefEditPrompt(
   const frontRoundTextPanel = hasRoundPanelInPrompt && panelCount === 1
     && sceneModel.panels[0]?.text?.enabled && (sceneModel.panels[0]?.text?.value ?? "").trim().length > 0
     ? sceneModel.panels[0] : null;
+  // 2026-10-22: Arch + Open Frame — its lettering is laid over the render
+  // afterwards (the flash model dropped it on two seeds of three, whatever
+  // this said), so the model keeps the board blank for it.
+  const frameTextPanel = hasOpenFramePair
+    ? sceneModel.panels.find((p) => p.type === "arch" && p.text?.enabled && (p.text?.value ?? "").trim().length > 0) ?? null
+    : null;
+  const frontFrameTextLine = frameTextPanel
+    ? `The solid arch board's face is plain and blank: nothing is written, printed or painted on it. `
+    : "";
   const frontRoundTextLine = frontRoundTextPanel
     ? `The words "${frontRoundTextPanel.text.value.trim()}" are ${isMetalText(frontRoundTextPanel.text.color) ? "mounted" : "printed"} on the round board in ` +
       `${describeTextColor(frontRoundTextPanel.text.color)} ${({ script: "thin slanted handwritten signature script", block: "bold block", elegant: "elegant serif" } as Record<string, string>)[frontRoundTextPanel.text.fontStyle] ?? "flowing script"} ` +
@@ -1542,7 +1554,9 @@ export function buildLayoutRefEditPrompt(
     const side = panelCount > 1 ? (neonPanelIdx === 0 ? "left " : "right ") : "";
     return `${side}${what}`;
   })();
-  const hasNeon = sceneModel.neonSign?.enabled === true && neonText.length > 0;
+  // 2026-10-22: not on the lone ring — its sign is laid over the render
+  // afterwards (route.ts), so the model is told nothing about it.
+  const hasNeon = sceneModel.neonSign?.enabled === true && neonText.length > 0 && !(panelCount === 1 && hasRingPanelInPrompt);
   const neonClause = hasNeon
     ? `A neon LED sign reads exactly "${neonText}" — those words, spelled exactly as "${neonText}", ` +
       `and no other words anywhere. ` +
@@ -1769,7 +1783,7 @@ export function buildLayoutRefEditPrompt(
   // the prompt at all and never appeared in the render. Every panel's text is
   // described now, each naming its own panel.
   const textPanelIdx = sceneModel.panels
-    .map((p, i) => (p.text.enabled && p.text.value.trim().length > 0 ? i : -1))
+    .map((p, i) => (p.text.enabled && !(hasOpenFramePair && p.type === "arch") && p.text.value.trim().length > 0 ? i : -1))
     .filter((i) => i >= 0);
   // One short line per board, with the shared "how it is printed" wording
   // stated once. The first per-panel version repeated a six-sentence block for
@@ -2091,6 +2105,7 @@ const setupTemplateClause = setupTemplate
     frontCameraLine +
     frontPlinthLine +
     frontRoundTextLine +
+    frontFrameTextLine +
     // After the plinth: ahead of it, on the round, the plinth was dropped.
     frontOrnamentLine +
     frontBannerGraphicLine +
