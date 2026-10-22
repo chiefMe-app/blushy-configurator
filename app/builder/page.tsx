@@ -267,7 +267,7 @@ const STEP_COPY: { heading: [string, string]; description: string; eyebrow: stri
 // The Decor step's four tabs (the reference's compact decor builder).
 const DECOR_TABS: { num: string; name: string; kicker: string; title: string; sub: string }[] = [
   { num: "01", name: "Backdrop", kicker: "START HERE", title: "Pick your backdrop ✦", sub: "Choose the shape. We’ll take care of the pretty bits." },
-  { num: "02", name: "Style", kicker: "MAKE IT YOURS", title: "Little details, big wow!", sub: "Size, colour, a sweet message and theme graphics." },
+  { num: "02", name: "Style", kicker: "MAKE IT YOURS", title: "Little details, big wow!", sub: "Let’s make your backdrop feel personal in just a few taps." },
   { num: "03", name: "Balloons", kicker: "COLOUR MAGIC", title: "Let’s add balloons!", sub: "Choose the garland and its Sempertex colours." },
   { num: "04", name: "Extras", kicker: "LAST LITTLE TOUCHES", title: "Extra party magic", sub: "Characters, florals, signs and plinths — only the pieces you love." },
 ];
@@ -628,6 +628,8 @@ export default function ConfigurePage() {
                 showControls={step > 2 || onLastDecorTab || finalRenderState.hasRender}
                 onFinalRenderStateChange={setFinalRenderState}
                 onGenerateReady={(fn) => setGenerateFinalRender(() => fn)}
+                // 2026-10-23: the Style tab shows its inspiration sketch until a render exists.
+                emptyArt={isDecorStep && decorTab === 1 ? "/design/style-preview-illustration.png" : undefined}
               />
               {isDecorStep && !finalRenderState.hasRender && (
                 <div className="bz-little-note">
@@ -1003,6 +1005,8 @@ function DecorStep({
   const [openCustomizeIds, setOpenCustomizeIds] = useState<Set<string>>(new Set());
   // Manual shape cards are secondary — hidden behind "Change pieces manually"
   const [showManualPieces, setShowManualPieces] = useState(false);
+  // 2026-10-23 Style redesign: which backdrop piece the Style tab is styling.
+  const [stylePieceId, setStylePieceId] = useState<string | null>(null);
   // Sempertex picker -UI only, does not affect pricing/render
   const [sempertexIds, setSempertexIds] = useState<string[]>(() => getThemeDefault(config.theme));
   const [sempertexManual, setSempertexManual] = useState(false); // true once user manually changes
@@ -1864,201 +1868,376 @@ function clearAllStandees() {
       </div>
       )}{/* == end 1 · Backdrop == */}
 
-      {/* == 2 · STYLE (tab 02): sizes, colour, text, graphics == */}
-      {decorTab === 1 && (
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-          <div>
-            <div style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 21, color: DC.plum, lineHeight: 1.15 }}>Size &amp; style your pieces</div>
-            <div style={{ fontSize: 11.5, color: DC.muted }}>Choose a size for each piece — text and graphics unlock once it&apos;s sized.</div>
-            {d.backdropItems.length === 0 && nextCue("Pick a backdrop in the Backdrop tab first")}
-            {/* Round and Banner are sold in one fixed size, so they never have a
-                sizeId and must not raise a "pick a size" cue that can never be
-                satisfied — which is what left the Banner setup looking broken. */}
-            {d.backdropItems.length > 0
-              && d.backdropItems.some((i) => !i.sizeId && !["round", "banner", "open_arch_frame", "shimmer_wall", "balloon_ring", "half_arch"].includes(i.type))
-              && nextCue("Pick a size next")}
-          </div>
-        </div>
+      {/* == 2 · STYLE (tab 02) — 2026-10-23 redesign: five numbered steps for
+           one piece at a time (size, message, lettering, colours, graphic).
+           Every control writes through the same patchItem / patchItemText /
+           patchItemGraphic handlers and keeps the same sales rules as before;
+           only the presentation changed. == */}
+      {decorTab === 1 && (() => {
+        const items = d.backdropItems;
+        if (items.length === 0) {
+          return (
+            <div className="bz-st-empty">
+              <p>Pick a backdrop first — then we&apos;ll style it together.</p>
+              <button type="button" className="bz-decor-hint" onClick={() => setDecorTab(0)}>← Go to Backdrop</button>
+            </div>
+          );
+        }
 
-        {/* Arch size selector -shown when arch is selected */}
-        {d.backdropItems.some(i => i.type === "arch") && (
-          <div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {d.backdropItems.map((item, itemIdx) => {
-                if (item.type !== "arch") return null;
-                const archNumber = d.backdropItems.filter((i, k) => i.type === "arch" && k <= itemIdx).length;
-                const archCount  = d.backdropItems.filter(i => i.type === "arch").length;
-                const sized = !!item.sizeId;
-                const friendlyName = archCount > 1 ? (archNumber === 1 ? "Main arch" : "Second arch") : "Arch backdrop";
-                const sizedLabel = ARCH_SIZES.find(s => s.id === item.sizeId)?.label;
-                return (
-                  <div key={item.id} style={{ background: DC.innerBg, borderRadius: 18, padding: 16,
-                    border: `1.5px solid ${sized ? DC.cardBd : DC.dashedBd}` }}>
-                    <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-                      {/* Piece thumb — Claude Design */}
-                      <svg width="56" height="64" viewBox="0 0 56 64" style={{ flex: "none" }} aria-hidden="true">
-                        <defs><linearGradient id={`pieceArch-${item.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#F3A9C6"/><stop offset="100%" stopColor="#E27BA4"/></linearGradient></defs>
-                        <path d="M 10,60 L 10,26 A 18,18 0 0 1 46,26 L 46,60 Z" fill={`url(#pieceArch-${item.id})`} />
-                      </svg>
-                      <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: 14, color: DC.plum }}>{friendlyName}</div>
-                          <div style={{ fontSize: 11.5, color: DC.muted }}>
-                            {sized ? sizedLabel : "Choose a size"}
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          {/* A lone arch is only sold in the Large board
-                              (customer decision 2026-09-04). Double Arch still
-                              offers all three, because its second board is
-                              deliberately a smaller size. */}
-                          {(d.backdropItems.some((i) => i.type === "half_arch")
-                            // Triple Arch: the centre board is the 200cm Medium.
-                            ? ARCH_SIZES.filter((s) => s.id === "medium")
-                            // 2026-10-22: Double Arch is fixed too — Large, then
-                            // Medium ("large ve medium backdroplar default
-                            // gelsin, user secmesin").
-                            : archCount > 1 ? ARCH_SIZES.filter((s) => s.id === (archNumber === 1 ? "large" : "medium"))
-                            : ARCH_SIZES.filter((s) => s.id === "large")).map((size) => {
-                            const isSel = item.sizeId === size.id;
-                            return (
-                              <button key={size.id} type="button"
-                                onClick={() => {
-                                  patchItem(itemIdx, { sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm });
-                                  // Sizing a piece is what unlocks its add-ons, so open the
-                                  // panel straight away instead of making the customer find
-                                  // the Customize button.
-                                  setOpenCustomizeIds(prev => { const n = new Set(prev); n.add(item.id); return n; });
-                                }}
-                                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, padding: "6px 13px", borderRadius: 13, cursor: "pointer", transition: "all 0.15s",
-                                  background: isSel ? DC.chipBg : "white",
-                                  border: `1.5px solid ${isSel ? DC.dashedBd : DC.cardBd}` }}>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: isSel ? DC.roseDeep : DC.plum }}>{size.label.replace(" / Standard", "")}{size.id === "medium" ? " ★" : ""}</span>
-                                <span style={{ fontSize: 9.5, color: isSel ? DC.roseDeep : DC.faint }}>{size.widthCm} × {size.heightCm} cm</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                    {sized
-                      ? BackdropCustomizeRow({ item, itemIdx })
-                      : <div style={{ marginTop: 8, fontSize: 11, color: DC.faint, fontStyle: "italic" }}>Choose a size to unlock text and graphic add-ons</div>}
-                  </div>
-                );
-              })}
+        const archCount = items.filter((i) => i.type === "arch").length;
+        const hasHalf = items.some((i) => i.type === "half_arch");
+        const isPrintable = (it: BackdropItem) => !["shimmer_wall", "balloon_ring", "open_arch_frame"].includes(it.type);
+        const pieceName = (it: BackdropItem, idx: number) => {
+          if (it.type === "arch") {
+            const n = items.filter((i, k) => i.type === "arch" && k <= idx).length;
+            return archCount > 1 ? (n === 1 ? "Main arch" : "Second arch") : hasHalf ? "Centre arch" : "Arch backdrop";
+          }
+          if (it.type === "half_arch") {
+            return items.filter((i, k) => i.type === "half_arch" && k < idx).length === 0 ? "Left half arch" : "Right half arch";
+          }
+          return TYPE_LABEL[it.type] ?? it.type;
+        };
+
+        // The piece being styled: the one picked above, else the one carrying
+        // the lettering (where the setup puts "Happy Birthday"), else the first.
+        const picked = items.findIndex((i) => i.id === stylePieceId);
+        const itemIdx = picked >= 0 ? picked : Math.max(0, items.findIndex((i) => isPrintable(i) && i.text.enabled));
+        const item = items[itemIdx];
+        const printable = isPrintable(item);
+
+        // Sizes come from ARCH_SIZES / RECT_SIZES; which of them this setup
+        // sells is the same rule as before — Triple Arch's centre is Medium,
+        // Double Arch is Large then Medium, a lone arch is Large.
+        type SizeOpt = { id: string; name: string; w: number; h: number; available: boolean };
+        let sizeOpts: SizeOpt[];
+        if (item.type === "arch") {
+          const n = items.filter((i, k) => i.type === "arch" && k <= itemIdx).length;
+          const allowed = hasHalf ? ["medium"] : archCount > 1 ? [n === 1 ? "large" : "medium"] : ["large"];
+          sizeOpts = ARCH_SIZES.map((s) => ({ id: s.id, name: s.label.replace(" / Standard", ""), w: s.widthCm, h: s.heightCm, available: allowed.includes(s.id) }));
+        } else if (item.type === "rect") {
+          sizeOpts = RECT_SIZES.map((s) => ({ id: s.id, name: "Rectangle", w: s.widthCm, h: s.heightCm, available: true }));
+        } else {
+          sizeOpts = [{ id: "__fixed", name: "One size", w: item.widthCm, h: item.heightCm, available: true }];
+        }
+        const isSizeOn = (o: SizeOpt) => o.id === "__fixed" || item.sizeId === o.id;
+        const pickSize = (o: SizeOpt) => {
+          if (!o.available || o.id === "__fixed") return;
+          patchItem(itemIdx, { sizeId: o.id as BackdropItem["sizeId"], widthCm: o.w, heightCm: o.h });
+          setOpenCustomizeIds((prev) => { const s = new Set(prev); s.add(item.id); return s; });
+        };
+        const needsSize = item.type === "arch" && !item.sizeId;
+        const maxH = Math.max(...sizeOpts.map((o) => o.h));
+        const maxW = Math.max(...sizeOpts.map((o) => o.w));
+        const sizeIcon = (o: SizeOpt) => {
+          const on = isSizeOn(o);
+          const fill = !o.available ? "#EFE5EA" : on ? "#FF5C93" : "#F8B6CD";
+          const w = 30 * (o.w / maxW), h = 44 * (o.h / maxH), x = 22 - w / 2, top = 50 - h;
+          switch (item.type) {
+            case "round": case "balloon_ring": return <circle cx="22" cy="28" r="19" fill={item.type === "round" ? fill : "none"} stroke={fill} strokeWidth={item.type === "round" ? 0 : 5} />;
+            case "rect": case "banner": case "shimmer_wall": return <rect x={x} y={top} width={w} height={h} rx="3" fill={fill} />;
+            case "half_arch": return <path d={`M ${x},50 L ${x},${top + w} A ${w},${w} 0 0 1 ${x + w},${top} L ${x + w},50 Z`} fill={fill} />;
+            case "open_arch_frame": return <path d={`M ${x},50 L ${x},${top + w / 2} A ${w / 2},${w / 2} 0 0 1 ${x + w},${top + w / 2} L ${x + w},50`} fill="none" stroke={fill} strokeWidth="5" />;
+            default: return <path d={`M ${x},50 L ${x},${top + w / 2} A ${w / 2},${w / 2} 0 0 1 ${x + w},${top + w / 2} L ${x + w},50 Z`} fill={fill} />;
+          }
+        };
+
+        // Prices are read from the product data, never typed in here.
+        const textPrice = BACKDROP_PRINTS.find((p) => p.id === "name_only")?.price;
+        const graphicPrice = BACKDROP_PRINTS.find((p) => p.id === "theme_print")?.price;
+        const presets = getThemeCatalogEntry(config.theme)?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
+        const textHex = resolveTextColorHex(item.text.color, theme.accent);
+        const boardHex = item.color || d.backdropColor || "#FFFFFF";
+        const boardSwatches = backdropSwatchesForTheme(theme);
+        const sameHex = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+        const boardInList = boardSwatches.some((hex) => sameHex(hex, boardHex));
+        const sampleText = item.text.value.trim() || DEFAULT_TEXT_VALUE;
+        const FONT_FACE: Record<string, { family: string; weight: number; size: number; short: string }> = {
+          script:  { family: "var(--bz-logo), 'Segoe Script', cursive", weight: 600, size: 27, short: "Script" },
+          block:   { family: "var(--bz-sans), 'Arial Black', sans-serif", weight: 800, size: 20, short: "Bold" },
+          elegant: { family: "Georgia, 'Times New Roman', serif", weight: 400, size: 21, short: "Serif" },
+        };
+        const textColorName = isCustomTextColor(item.text.color)
+          ? "Custom"
+          : TEXT_COLORS.find((c) => c.id === item.text.color)?.label ?? "";
+
+        const showMsg = printable && !needsSize;
+        const showFont = showMsg && item.text.enabled;
+        const showColors = !needsSize;
+        const showGraphic = printable && !needsSize;
+        let k = 1;
+        const nMsg = showMsg ? ++k : 0;
+        const nFont = showFont ? ++k : 0;
+        const nColors = showColors ? ++k : 0;
+        const nGraphic = showGraphic ? ++k : 0;
+
+        const sizeChip = (() => {
+          const o = sizeOpts.find(isSizeOn);
+          if (!o) return "Pick a size";
+          return o.id === "__fixed" ? `${o.w} × ${o.h} cm` : o.name === "Rectangle" ? `${o.w} × ${o.h} cm` : o.name;
+        })();
+
+        const Head = ({ n, title, sub, optional }: { n: number; title: string; sub: string; optional?: boolean }) => (
+          <div className="bz-st-head">
+            <span className="num">{n}</span>
+            <div>
+              <h3>{title}{optional && <span className="opt"> (optional)</span>}</h3>
+              <p>{sub}</p>
             </div>
           </div>
-        )}
+        );
+        const Tick = () => <span className="bz-st-tick" aria-hidden="true">✓</span>;
 
-        {/* Rect size selector */}
-        {d.backdropItems.some(i => i.type === "rect") && (() => {
-          const rectItems = d.backdropItems.filter(i => i.type === "rect");
-          const rectItem = rectItems[0];
-          const itemIdx = rectItem ? d.backdropItems.findIndex(i => i.id === rectItem.id) : -1;
-          return rectItem ? (
-            <div style={{ marginTop: 16, padding: "14px 16px", background: "#FFF7FB", borderRadius: 12, border: "1px solid #F1D8E2" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#73778A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>Choose size</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
-                {RECT_SIZES.map(size => {
-                  const isSel = rectItem.sizeId === size.id;
+        return (
+          <div className="bz-st">
+            {items.length > 1 && (
+              <div className="bz-st-pieces" role="group" aria-label="Which piece are you styling?">
+                <span className="lbl">Styling</span>
+                {items.map((it, i) => (
+                  <button key={it.id} type="button" aria-pressed={i === itemIdx}
+                    className={`bz-st-piece ${i === itemIdx ? "on" : ""}`} onClick={() => setStylePieceId(it.id)}>
+                    {pieceName(it, i)}
+                    {isPrintable(it) && it.text.enabled && <span className="dot" title="Has lettering">Aa</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* 1 — Size */}
+            <section className={`bz-st-sec ${needsSize ? "attn" : ""}`}>
+              <Head n={1} title="Pick your size"
+                sub={sizeOpts.length === 1 ? "This piece comes in one size — nothing to choose here." : "Choose the size that fits your space."} />
+              <div className="bz-st-opts sizes">
+                {sizeOpts.map((o) => {
+                  const on = isSizeOn(o);
                   return (
-                    <button key={size.id} type="button"
-                      onClick={() => {
-                        patchDecor({ backdropItems: d.backdropItems.map(i => i.id === rectItem.id ? { ...i, sizeId: size.id, widthCm: size.widthCm, heightCm: size.heightCm } : i) });
-                        setOpenCustomizeIds(prev => { const n = new Set(prev); n.add(rectItem.id); return n; });
-                      }}
-                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 14px", borderRadius: 10, cursor: "pointer",
-                        border: isSel ? "2px solid #EC4D8D" : "1.5px solid #ECEAF1",
-                        background: "white", boxShadow: isSel ? "0 2px 10px rgba(236,77,141,0.12)" : "none", transition: "all 0.15s" }}>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: isSel ? "#EC4D8D" : "#15182E" }}>{size.label}</div>
-                        <div style={{ fontSize: 11, color: "#73778A", marginTop: 1 }}>{size.widthCm} x{size.heightCm} cm</div>
-                      </div>
-                      <div style={{ width: 20, height: 20, borderRadius: "50%", border: isSel ? "none" : "1.5px solid #ECEAF1", background: isSel ? "#EC4D8D" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {isSel && <span style={{ color: "white", fontSize: 12, fontWeight: 900 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
-                      </div>
+                    <button key={o.id} type="button" disabled={!o.available} aria-pressed={on}
+                      className={`bz-st-card size ${on ? "on" : ""}`} onClick={() => pickSize(o)}
+                      title={o.available ? undefined : "Not part of this setup"}>
+                      {on && <Tick />}
+                      <svg viewBox="0 0 44 52" aria-hidden="true">{sizeIcon(o)}</svg>
+                      <strong>{o.name}</strong>
+                      <span>{o.w} × {o.h} cm</span>
+                      {!o.available && <em>Not in this setup</em>}
                     </button>
                   );
                 })}
               </div>
-              {BackdropCustomizeRow({ item: rectItem, itemIdx })}
-            </div>
-          ) : null;
-        })()}
+              {needsSize && <div className="bz-st-cue">Choose a size to unlock text, colours and graphics ✦</div>}
+            </section>
 
-        {/* Round customization */}
-        {d.backdropItems.some(i => i.type === "round") && (() => {
-          const roundItem = d.backdropItems.find(i => i.type === "round");
-          const itemIdx = roundItem ? d.backdropItems.findIndex(i => i.id === roundItem.id) : -1;
-          return roundItem && itemIdx >= 0 ? BackdropCustomizeRow({ item: roundItem, itemIdx }) : null;
-        })()}
-
-        {/* 2026-09-05: a Banner is a single fixed 2x2m size, so like the round
-            panel it has nothing to choose here — its customize row (and with it
-            its Theme Graphic picker) goes straight in. Without this the setup
-            could be picked but never configured. */}
-        {d.backdropItems.some(i => i.type === "banner") && (() => {
-          const bannerItem = d.backdropItems.find(i => i.type === "banner");
-          const itemIdx = bannerItem ? d.backdropItems.findIndex(i => i.id === bannerItem.id) : -1;
-          return bannerItem && itemIdx >= 0 ? BackdropCustomizeRow({ item: bannerItem, itemIdx }) : null;
-        })()}
-
-        {/* Every fixed-size piece renders its customize row directly — there is
-            no size step for them to unlock it. */}
-        {(["open_arch_frame", "shimmer_wall", "balloon_ring"] as const).map((ty) => {
-          const it = d.backdropItems.find(i => i.type === ty);
-          const itemIdx = it ? d.backdropItems.findIndex(i => i.id === it.id) : -1;
-          return it && itemIdx >= 0
-            ? <div key={ty}>{BackdropCustomizeRow({ item: it, itemIdx })}</div>
-            : null;
-        })}
-
-        {/* 2026-09-09: the half arches were missing from this step entirely —
-            the customer saw only the centre board here. They are sold in one
-            fixed size so there is nothing to choose, but they still need their
-            own card with the dimension on it and their colour picker. Unlike
-            the other fixed-size pieces there are TWO of them, so this maps over
-            every one rather than taking the first. */}
-        {d.backdropItems.map((item, itemIdx) => {
-          if (item.type !== "half_arch") return null;
-          const before = d.backdropItems.filter((i, k) => i.type === "half_arch" && k < itemIdx).length;
-          return (
-            <div key={item.id} style={{ background: DC.innerBg, borderRadius: 18, padding: 16, marginTop: 10,
-              border: `1.5px solid ${DC.cardBd}` }}>
-              <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-                <svg width="56" height="64" viewBox="0 0 56 64" style={{ flex: "none" }} aria-hidden="true">
-                  <defs><linearGradient id={`pieceHalf-${item.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#F3A9C6"/><stop offset="100%" stopColor="#E27BA4"/></linearGradient></defs>
-                  {before === 0
-                    ? <path d="M 12,60 L 12,34 A 22,22 0 0 1 34,12 L 34,60 Z" fill={`url(#pieceHalf-${item.id})`} />
-                    : <path d="M 44,60 L 44,34 A 22,22 0 0 0 22,12 L 22,60 Z" fill={`url(#pieceHalf-${item.id})`} />}
-                </svg>
-                <div style={{ flex: 1, minWidth: 220 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: DC.plum }}>
-                    {before === 0 ? "Left half arch" : "Right half arch"}
+            {/* 2 — Message */}
+            {showMsg && (
+              <section className="bz-st-sec">
+                <Head n={nMsg} title="Add your message" sub="Make it yours with a name or sweet message." />
+                <div className="bz-st-body">
+                  <div className="bz-st-opts yn">
+                    <button type="button" aria-pressed={item.text.enabled}
+                      className={`bz-st-yn ${item.text.enabled ? "on" : ""}`}
+                      onClick={() => { if (!item.text.enabled) patchItemText(itemIdx, { enabled: true, ...(!item.text.value.trim() ? { value: DEFAULT_TEXT_VALUE, color: themeTextColor(config.theme) } : {}) }); }}>
+                      <span className="radio" aria-hidden="true">{item.text.enabled ? "✓" : ""}</span>
+                      Yes, add text
+                      {textPrice != null && <span className="price">+AED {textPrice}</span>}
+                    </button>
+                    <button type="button" aria-pressed={!item.text.enabled}
+                      className={`bz-st-yn ${!item.text.enabled ? "on" : ""}`}
+                      onClick={() => { if (item.text.enabled) patchItemText(itemIdx, { enabled: false }); }}>
+                      <span className="radio" aria-hidden="true">{!item.text.enabled ? "✓" : ""}</span>
+                      No, keep it clean
+                    </button>
                   </div>
-                  <div style={{ fontSize: 11.5, color: DC.muted }}>
-                    One fixed size · {item.widthCm} × {item.heightCm} cm
-                  </div>
+                  {item.text.enabled && (
+                    <div className="bz-st-input">
+                      <textarea rows={2} value={item.text.value} aria-label="Your message"
+                        onChange={(e) => patchItemText(itemIdx, { value: e.target.value })}
+                        placeholder="Type the name or message..." />
+                      <span className="count">{item.text.value.length}</span>
+                    </div>
+                  )}
                 </div>
-              </div>
-              {BackdropCustomizeRow({ item, itemIdx })}
+              </section>
+            )}
+
+            {/* 3 — Lettering style: each card shows the real message, in its
+                 colour, on the chosen backdrop colour. */}
+            {showFont && (
+              <section className="bz-st-sec">
+                <Head n={nFont} title="Pick your text style" sub="Choose a style for your message." />
+                <div className="bz-st-opts fonts">
+                  {FONT_STYLES.map((f) => {
+                    const on = item.text.fontStyle === f.id;
+                    const face = FONT_FACE[f.id] ?? FONT_FACE.block;
+                    return (
+                      <button key={f.id} type="button" aria-pressed={on}
+                        className={`bz-st-card font ${on ? "on" : ""}`}
+                        onClick={() => patchItemText(itemIdx, { fontStyle: f.id as FontStyle })}>
+                        {on && <Tick />}
+                        <span className="sample" style={{ background: boardHex, color: textHex, fontFamily: face.family, fontWeight: face.weight, fontSize: face.size }}>
+                          {sampleText}
+                        </span>
+                        <strong>{face.short}</strong>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* 4 — Colours */}
+            {showColors && (
+              <section className="bz-st-sec">
+                <Head n={nColors} title={item.type === "balloon_ring" ? "Pick your ring style" : "Pick your colors"}
+                  sub={item.type === "shimmer_wall" ? "Choose the sequin finish."
+                    : item.type === "balloon_ring" ? "Choose how the hoop is dressed."
+                    : showFont ? "Choose a backdrop color and text color." : "Choose a backdrop color."} />
+                <div className="bz-st-colors">
+                  {item.type === "balloon_ring" ? (
+                    <div className="bz-st-opts rings">
+                      {BALLOON_RING_STYLES.map((rs) => {
+                        const on = (d.balloonRingStyle ?? "full") === rs.id;
+                        return (
+                          <button key={rs.id} type="button" aria-pressed={on} className={`bz-st-card ring ${on ? "on" : ""}`}
+                            // Same coupling as before: the bare hoop drops the balloon tier, a wrapped hoop puts a garland back.
+                            onClick={() => patchDecor(rs.id === "none"
+                              ? { balloonRingStyle: rs.id, balloonStyle: "none" }
+                              : { balloonRingStyle: rs.id, balloonStyle: d.balloonStyle === "none" ? "full" : d.balloonStyle })}>
+                            {on && <Tick />}
+                            <strong>{rs.label}</strong>
+                            <span>{rs.desc}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : item.type === "shimmer_wall" ? (
+                    <div className="bz-st-group">
+                      <span className="lbl">Shimmer color · <b>{SHIMMER_COLORS.find((sc) => sc.id === (d.shimmerColor ?? "silver"))?.label}</b></span>
+                      <div className="bz-st-swatches">
+                        {SHIMMER_COLORS.map((sc) => {
+                          const on = (d.shimmerColor ?? "silver") === sc.id;
+                          return (
+                            <button key={sc.id} type="button" aria-pressed={on} aria-label={sc.label} title={sc.label}
+                              className={`bz-st-sw ${on ? "on" : ""}`} style={{ background: SHIMMER_COLOR_HEX[sc.id] }}
+                              onClick={() => patchDecor({ shimmerColor: sc.id })} />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bz-st-group">
+                      <span className="lbl">Backdrop color</span>
+                      <div className="bz-st-swatches">
+                        {boardSwatches.map((hex) => (
+                          <button key={hex} type="button" aria-pressed={sameHex(hex, boardHex)} aria-label={`Backdrop ${hex}`} title={hex}
+                            className={`bz-st-sw ${sameHex(hex, boardHex) ? "on" : ""}`} style={{ background: hex }}
+                            onClick={() => patchItem(itemIdx, { color: hex })} />
+                        ))}
+                        {/* The current colour, when it is not one of the theme swatches, shows here. */}
+                        <label className={`bz-st-sw custom ${!boardInList ? "on" : ""}`} title={boardInList ? "Custom colour" : `Current colour ${boardHex}`}
+                          style={!boardInList ? { background: boardHex } : undefined}>
+                          <span aria-hidden="true">+</span>
+                          <input type="color" aria-label="Custom backdrop colour" value={item.color || d.backdropColor || "#FFFFFF"}
+                            onChange={(e) => patchItem(itemIdx, { color: e.target.value })} />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                  {showFont && (
+                    <div className="bz-st-group text">
+                      <span className="lbl">Text color · <b>{textColorName}</b></span>
+                      <div className="bz-st-swatches">
+                        {TEXT_COLORS.map((c) => {
+                          const on = item.text.color === c.id;
+                          return (
+                            <button key={c.id} type="button" aria-pressed={on} aria-label={c.label} title={c.label}
+                              className={`bz-st-sw ${on ? "on" : ""}`}
+                              style={{ background: c.id === "accent" ? theme.accent : c.swatch }}
+                              onClick={() => patchItemText(itemIdx, { color: c.id as TextColor })} />
+                          );
+                        })}
+                        <label className={`bz-st-sw custom ${isCustomTextColor(item.text.color) ? "on" : ""}`} title="Custom colour"
+                          style={isCustomTextColor(item.text.color) ? { background: textHex } : undefined}>
+                          <span aria-hidden="true">+</span>
+                          <input type="color" aria-label="Custom text colour" value={textHex}
+                            onChange={(e) => patchItemText(itemIdx, { color: e.target.value.toUpperCase() })} />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* 5 — Theme graphic */}
+            {showGraphic && (
+              <section className="bz-st-sec">
+                <Head n={nGraphic} title="Add a theme graphic" optional sub="Include a printed illustration to make it extra special." />
+                <div className="bz-st-body">
+                  <div className="bz-st-opts yn">
+                    <button type="button" aria-pressed={!item.graphic.enabled}
+                      className={`bz-st-card graphic ${!item.graphic.enabled ? "on" : ""}`}
+                      onClick={() => { if (item.graphic.enabled) patchItemGraphic(itemIdx, { enabled: false }); }}>
+                      {!item.graphic.enabled && <Tick />}
+                      <span className="ico" aria-hidden="true">⊘</span>
+                      <strong>No graphic</strong>
+                    </button>
+                    <button type="button" aria-pressed={item.graphic.enabled}
+                      className={`bz-st-card graphic ${item.graphic.enabled ? "on" : ""}`}
+                      onClick={() => {
+                        if (item.graphic.enabled) return;
+                        if (!item.graphic.assetId) {
+                          const first = presets[0];
+                          patchItemGraphic(itemIdx, { enabled: true, theme: first.id, source: "preset", assetId: first.assetId });
+                        } else {
+                          patchItemGraphic(itemIdx, { enabled: true });
+                        }
+                      }}>
+                      {item.graphic.enabled && <Tick />}
+                      <span className="ico" aria-hidden="true">🎉</span>
+                      <span>
+                        <strong>Add graphic</strong>
+                        {graphicPrice != null && <span className="price">+AED {graphicPrice}</span>}
+                      </span>
+                    </button>
+                  </div>
+                  {item.graphic.enabled && (
+                    <div className="bz-st-presets" role="group" aria-label="Choose the print">
+                      {presets.map((p) => (
+                        <button key={p.id} type="button" title={p.desc} aria-pressed={item.graphic.assetId === p.assetId}
+                          className={`bz-st-chip ${item.graphic.assetId === p.assetId ? "on" : ""}`}
+                          onClick={() => patchItemGraphic(itemIdx, { theme: p.id, source: "preset", assetId: p.assetId })}>
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Live summary of the real selections */}
+            <div className="bz-st-summary" aria-live="polite">
+              <span className="lead"><span aria-hidden="true">♥</span> Your style{items.length > 1 ? ` · ${pieceName(item, itemIdx)}` : ""}:</span>
+              <span className="bz-st-pill">{sizeChip}</span>
+              {printable && (
+                <span className="bz-st-pill">{item.text.enabled ? <>Tт {sampleText.length > 22 ? `${sampleText.slice(0, 21)}…` : sampleText}</> : "No text"}</span>
+              )}
+              {printable && item.text.enabled && <span className="bz-st-pill">✎ {FONT_FACE[item.text.fontStyle]?.short ?? item.text.fontStyle}</span>}
+              {printable && item.text.enabled && (
+                <span className="bz-st-pill"><i style={{ background: textHex }} />{textColorName}</span>
+              )}
+              {item.type === "shimmer_wall" && (
+                <span className="bz-st-pill"><i style={{ background: SHIMMER_COLOR_HEX[d.shimmerColor ?? "silver"] }} />{SHIMMER_COLORS.find((sc) => sc.id === (d.shimmerColor ?? "silver"))?.label}</span>
+              )}
+              {item.type === "balloon_ring" && (
+                <span className="bz-st-pill">{BALLOON_RING_STYLES.find((rs) => rs.id === (d.balloonRingStyle ?? "full"))?.label}</span>
+              )}
+              {printable && item.graphic.enabled && (
+                <span className="bz-st-pill">🎉 {presets.find((p) => p.assetId === item.graphic.assetId)?.label ?? "Theme graphic"}</span>
+              )}
+              <button type="button" className="go" onClick={() => setDecorTab(2)}>Looks great! ›</button>
             </div>
-          );
-        })}
-
-        {/* Shimmer color picker intentionally removed (2026-07-12) — shimmer
-            wall is no longer a selectable product path. Left unconditional
-            (not gated on a shimmer_wall item existing) so it stays hidden
-            even if a stale/legacy backdropItems array somehow still has one;
-            buildSceneModel also sanitizes shimmer_wall items server-side. */}
-
-        {d.backdropItems.length === 0 && (
-          <div style={{ textAlign: "center", padding: "8px 0 4px", fontSize: 13, color: "#AAA", fontStyle: "italic" }}>Choose a backdrop above to get started</div>
-        )}
-      </div>
-      )}{/* -"--"- end Style tab -"--"- */}
+          </div>
+        );
+      })()}{/* -"--"- end Style tab -"--"- */}
 
       {/* Old expandable cards removed -unified above. Dead placeholder: */}
       {false && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

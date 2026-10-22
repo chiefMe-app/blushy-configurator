@@ -1172,10 +1172,13 @@ export type FinalRenderState = { hasRender: boolean; isStale: boolean; generatin
 
 export default function SetupPreview({
   config, status, imageUrl, isIncremental = false, onRegenerate, showControls = true,
-  onPatchDecor, onFinalRenderStateChange, onGenerateReady,
+  onPatchDecor, onFinalRenderStateChange, onGenerateReady, emptyArt,
 }: {
   config: BuilderConfig; status: PreviewStatus; imageUrl: string | null;
   isIncremental?: boolean; onRegenerate: () => void; showControls?: boolean;
+  /** Optional — an illustrated sketch shown, clearly labelled, in place of the
+   *  empty state until a render exists. Never shown over or instead of a render. */
+  emptyArt?: string;
   /** Optional — enables the Ask for a change prompt when provided. */
   onPatchDecor?: (patch: Partial<import("@/lib/config").DecorConfig>) => void;
   /** Optional — reports the Final Design Render's live state up to the parent
@@ -1299,7 +1302,15 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
               <p className="msg">Hang tight — your party is coming to life.</p>
             </div>
           ) : (
-            /* Empty state: no render yet — never a fake or placeholder party image. */
+            /* Empty state: no render yet — never a fake render. The Style tab may
+               show a hand-drawn inspiration sketch here, labelled as such. */
+            emptyArt ? (
+              <div className="bz-placeholder art" role="status" aria-live="polite">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={emptyArt} alt="Hand-drawn inspiration sketch of a balloon arch backdrop" />
+                <div className="tag"><span aria-hidden="true">⭐</span><span><b>Inspiration sketch.</b> Your own render, with your exact choices, appears here after you generate it.</span></div>
+              </div>
+            ) :
             <div className="bz-placeholder" role="status" aria-live="polite">
               <div className="sparkle" aria-hidden="true">✦</div>
               <div className="kicker">RENDER PREVIEW</div>
