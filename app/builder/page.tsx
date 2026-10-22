@@ -295,8 +295,8 @@ const SETUP_ICON: Partial<Record<string, string>> = {
 
 // 2026-10-23: each theme's own example photo of a setup, shown (labelled as an
 // example) in the empty preview until the customer generates a real render.
-// Frozen only for now — the customer's reference photos. Setups without one
-// (Frozen Double Arch, Balloon Ring, Arch + Open Frame) keep the plain empty state.
+// Frozen only for now — the customer's photos, one per setup. Themes without
+// photos keep the plain empty state.
 const THEME_SETUP_PREVIEW: Partial<Record<string, Partial<Record<string, string>>>> = {
   frozen: {
     single_arch: "/design/theme-previews/frozen/single-arch.webp",
@@ -305,6 +305,9 @@ const THEME_SETUP_PREVIEW: Partial<Record<string, Partial<Record<string, string>
     single_shimmer: "/design/theme-previews/frozen/shimmer-wall.webp",
     arch_shimmer: "/design/theme-previews/frozen/arch-shimmer.webp",
     triple_arch: "/design/theme-previews/frozen/triple-arch.webp",
+    double_arch: "/design/theme-previews/frozen/double-arch.webp",
+    balloon_ring: "/design/theme-previews/frozen/balloon-ring.webp",
+    arch_open_frame: "/design/theme-previews/frozen/arch-open-frame.webp",
   },
 };
 
