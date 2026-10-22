@@ -49,7 +49,7 @@ import { THEME_CATALOG, getThemeCatalogEntry } from "@/lib/themeCatalog";
 import { frozenBannerPrintSvg } from "@/lib/bannerPrint";
 import { type SempertexSelectionItem } from "@/lib/renderPrompts/types";
 import { LONE_ARCH_STYLE_REFERENCE, hasLoneArchStyleReference } from "@/lib/renderPrompts/loneArchStyleReference";
-import { ROUND_STYLE_REFERENCE, usesRoundStyleReference } from "@/lib/renderPrompts/roundStyleReference";
+import { sceneStyleReference } from "@/lib/renderPrompts/frozenStyleReferences";
 import { getVisualLabel, renderSafeBalloonLabel } from "@/lib/renderPrompts/colorLabels";
 import { buildNegativePrompt } from "@/lib/renderPrompts/buildNegativePrompt";
 import { buildStrictCorrectionPrompt } from "@/lib/renderPrompts/buildStrictCorrectionPrompt";
@@ -162,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "round-style-ref-flat-letters-v133";
+const RENDER_CACHE_VERSION = "arch-style-ref-square-v134";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1525,11 +1525,13 @@ forbiddenBalloonColorLabels: hasSempertexLock
             // stays authoritative for geometry; the reference is there so the
             // model can SEE the arrangement rather than read a description of
             // it. Order matters: the prompt refers to them as image 1 and 2.
-            // 2026-10-22: and the Frozen round its reference photo (roundStyleReference).
-            image_urls:      loneArchScene && hasLoneArchStyleReference()
-              ? [pngResult.dataUri, LONE_ARCH_STYLE_REFERENCE as string]
-              : usesRoundStyleReference(sceneModel)
-                ? [pngResult.dataUri, ROUND_STYLE_REFERENCE]
+            // 2026-10-22: the Frozen lone round and lone arch are shot against
+            // their reference photos (frozenStyleReferences), which replace the
+            // older lone-arch balloon crop.
+            image_urls:      sceneStyleReference(sceneModel)
+              ? [pngResult.dataUri, sceneStyleReference(sceneModel)!.image]
+              : loneArchScene && hasLoneArchStyleReference()
+                ? [pngResult.dataUri, LONE_ARCH_STYLE_REFERENCE as string]
                 : [pngResult.dataUri],
             image_size:      renderAspectRatio,
             seed:            FINAL_RENDER_SEED,
@@ -1993,7 +1995,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
   // renders it in palette; this pass then repainted the room (darker, textured
   // concrete where the reference is a plain light studio) and pushed the
   // contrast — "renkler cok parlak".
-  const skipLockForReplay = sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "round";
+  // (and not on any scene shot against a style reference photo)
+  const skipLockForReplay = (sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "round")
+    || sceneStyleReference(sceneModel) !== null;
   if (effectiveBalloonHexColors.length > 0 && sceneModel.balloons.style !== "none" && !skipLockForReplay) {
     try {
       const baseBuf = workingImageBuf ?? await fetchFinalImage();
@@ -2432,7 +2436,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
           if (mx - mn > 28 || l > 0.80) continue;
           const a = m * Math.min(1, (0.80 - l) / 0.10);
           // 2026-10-22: gentler — the hard curve made the letters look puffy.
-          const c = Math.min(1, Math.max(0, (l - 0.58) * 1.5 + 0.50)) * 255;
+          const c = Math.min(1, Math.max(0, (l - 0.45) * 1.3 + 0.60)) * 255; // and lighter, as the reference's letters are
           // 2026-10-22: in the lettering's own metal — silver, gold or rose
           // gold. Dark reflected bands stay nearly neutral, as on real metal.
           const tint = pngResult.textMetalTint ?? [1.0, 1.01, 1.04];

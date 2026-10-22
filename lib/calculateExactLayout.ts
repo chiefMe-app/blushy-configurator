@@ -200,8 +200,12 @@ export function calculateExactLayout(
   // reference is framed — and, with the wider cap above, this is also what
   // keeps the right-side cascade from running off the canvas. Every other
   // single panel (round, banner) stays centred.
+  // 2026-10-22: in the square frame the lone arch now gets, the board and
+  // its garland (which reaches about 0.73 board-widths past the right edge
+  // in the reference) are centred together, as the reference frames them;
+  // flush left, they left the right half of the picture empty.
   let xCursor = singleArch
-    ? canvasW * 0.026
+    ? (canvasW / canvasH >= 0.9 ? Math.max(canvasW * 0.026, (canvasW - totalGroupW * 1.73) / 2) : canvasW * 0.026)
     : (canvasW - totalGroupW) / 2;
 
   for (const raw of rawPanels) {

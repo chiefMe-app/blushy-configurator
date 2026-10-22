@@ -100,7 +100,12 @@ export function calculateRenderAspectRatio(
   const setupRatio = totalWidthCm / maxHeightCm;
 
   let falImageSize: FalImageSize;
-  if      (setupRatio < 0.65) falImageSize = "portrait_16_9";
+  // 2026-10-22: the lone arch is shot SQUARE, like the lone round — "render
+  // sayfasini daha square yapalim single rounddaki gibi". Its garland and
+  // the room round it need the width; the narrow portrait frame cut them off.
+  const loneArch = backdropItems.length === 1 && backdropItems[0]?.type === "arch";
+  if      (loneArch) falImageSize = "square_hd";
+  else if (setupRatio < 0.65) falImageSize = "portrait_16_9";
   else if (setupRatio < 0.90) falImageSize = "portrait_4_3";
   else if (setupRatio < 1.15) falImageSize = "square_hd";
   else if (setupRatio < 1.55) falImageSize = "landscape_4_3";

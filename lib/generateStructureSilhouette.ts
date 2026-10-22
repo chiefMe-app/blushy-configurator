@@ -706,7 +706,11 @@ function customTextGuide(
     const fitK = (clearW * 0.96) / Math.max(1, widest);
     fontSize = Math.max(12, Math.round(Math.min(fontSize * fitK, pw * 0.24)));
   }
-  const lineGap = fontSize * (fontStyle === "script" ? 1.08 : 1.18);
+  // 2026-10-22: 1.08 -> 1.34 for the script. Brittany Signature's loops
+  // reach far above and below its line, and "Happy" and "Birthday" ran into
+  // each other ("birthday birazdan daha asagi insin, kelimeler birbirine
+  // girmis").
+  const lineGap = fontSize * (fontStyle === "script" ? 1.34 : 1.18);
   const font = TEXT_GUIDE_FONT[fontStyle] ?? TEXT_GUIDE_FONT.script;
   const fill = resolveTextColorHex(color);
   // 2026-10-20: silver lettering is MIRROR acrylic, like the customer's
@@ -728,7 +732,9 @@ function customTextGuide(
       // blown-white and near-black bands read as an inflated foil-balloon
       // letter ("happy birthday yazisi flat degil, kabarik duruyor"); the
       // reference is thin flat acrylic, mid-dark with one soft sheen.
-      [["0%", 0.58], ["40%", 0.42], ["55%", 0.74], ["70%", 0.48], ["100%", 0.40]]
+      // 2026-10-22: lighter — "font rengi biraz koyu, referanstaki daha
+      // ferah": the reference's letters are a soft light silver-grey.
+      [["0%", 0.74], ["40%", 0.62], ["55%", 0.86], ["70%", 0.66], ["100%", 0.60]]
         .map(([o, l]) => `<stop offset="${o}" stop-color="${tintHex(metal, l as number)}"/>`).join("") +
       `</linearGradient></defs>`
     : "";

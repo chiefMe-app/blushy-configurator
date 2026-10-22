@@ -2,7 +2,7 @@ import { type SceneModel } from "@/lib/buildSceneModel";
 import type { SempertexSelectionItem } from "./types";
 import { getVisualLabel, renderSafeBalloonLabel, getPositiveLabel } from "./colorLabels";
 import { hasLoneArchStyleReference } from "./loneArchStyleReference";
-import { usesRoundStyleReference } from "./roundStyleReference";
+import { sceneStyleReference } from "./frozenStyleReferences";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 import { describeTextColor } from "@/lib/config";
@@ -910,6 +910,16 @@ export function buildLayoutRefEditPrompt(
     `or diagonal shadow cast across the backdrop, the wall or the floor, and no blown-out highlights. ` +
     `Neutral white balance: the balloons and the board read as clean neutral white where they are white, ` +
     `with no blue, golden or warm cast. No window, doorway, radiator or furniture is visible. `;
+  // 2026-10-22: the Frozen lone arch, shot against its reference photo, gets
+  // that photo's room: a warm light-greige wall in warm daylight from the
+  // left, airy — "gun isigi biraz daha sicaklik var ... ferahligi yakalayalim".
+  // Same shape as the usual line, words changed only where the rooms differ.
+  const archRefRoomLine = `The room is a bright, airy studio: a smooth, UNTEXTURED warm light-greige wall ` +
+    `— a little darker than the white backdrop standing against it — and a smooth pale-grey floor with a ` +
+    `soft reflection. The light is WARM, SOFT DAYLIGHT coming from a tall window off to the left, out of ` +
+    `the frame, falling gently across the wall — bright, clean and airy, with no hard sunbeam on the setup, ` +
+    `no harsh shadow and no blown-out highlights. The balloons and the board read as clean white where ` +
+    `they are white. No window, doorway, radiator or furniture is visible. `;
   const loneRoundRoom = panelCount === 1 && sceneModel.panels[0]?.type === "round";
   const frontRoomLine = `The room is a bright, neutral studio: a MID-GREY concrete wall with soft, fine texture ` +
     `— clearly darker than the ${backdropWordForRoom} standing against it, never white, never flat ` +
@@ -1000,15 +1010,19 @@ export function buildLayoutRefEditPrompt(
   // here is said elsewhere in the prompt; what remains is only what the
   // second image is for.
   // 2026-10-22: the Frozen round is shot against its reference photo, given
-  // as IMAGE 2 (see roundStyleReference). One short sentence, the very first:
+  // as IMAGE 2 (see frozenStyleReferences). One short sentence, the very first:
   // a longer one, without the pedestal named, lost the plinth on one seed of
   // three; this one held it on all three.
-  const frontRoundStyleLine = usesRoundStyleReference(sceneModel)
-    ? `IMAGE 1 is the layout: it fixes where the round board, every balloon and the one white cylindrical ` +
-      `pedestal column stand. IMAGE 2 is a photo of the finished look: copy its room, its soft daylight, its ` +
+  // 2026-10-22 (later): and the Frozen lone arch, against its own photo, whose
+  // daylight is warm — said here because the customer asked for it by name.
+  const styleRef = sceneStyleReference(sceneModel);
+  const frontRoundStyleLine = styleRef
+    ? `IMAGE 1 is the layout: it fixes where the ${styleRef.board}, every balloon and the one white cylindrical ` +
+      `pedestal column stand. IMAGE 2 is a photo of the finished look: copy its room, its ` +
+      `${styleRef.board === "arch board" ? "warm, airy soft daylight" : "soft daylight"}, its ` +
       `floor and exactly how its balloons and thin flat lettering look. `
     : "";
-  const frontImageRolesLine = panelCount === 1 && sceneModel.panels[0]?.type === "arch"
+  const frontImageRolesLine = !styleRef && panelCount === 1 && sceneModel.panels[0]?.type === "arch"
     && hasLoneArchStyleReference()
     ? `TWO images are given. IMAGE 1 is the layout guide and decides the whole scene: the backdrop, ` +
       `the plinth, the room, the camera and where the garland sits. IMAGE 2 is not a scene — it is a ` +
@@ -1781,7 +1795,7 @@ export function buildLayoutRefEditPrompt(
           // 2026-10-22: every metal (silver, gold, rose gold) as flat, thin,
           // mirror-polished acrylic, as in the customer's reference.
           (isMetalText(p.text.color)
-            ? `Those letters are cut from flat, thin, ${colourName} acrylic and mounted flat on the board — gleaming and reflective like the chrome balloons, never brushed, never flat paint. They are FLAT and thin — not puffy, not inflated, not rounded, not foil-balloon letters. `
+            ? `Those letters are cut from flat, thin, ${p.text.color === "silver" ? "light soft silver-grey" : colourName} acrylic and mounted flat on the board — gleaming and reflective like the chrome balloons, never brushed, never flat paint. They are FLAT and thin — not puffy, not inflated, not rounded, not foil-balloon letters. `
             : `Those letters are ${colourName} — solid ${colourName} lettering, the exact colour shown in the reference image. `) +
           `Do not recolour the lettering to match the balloons, the backdrop, or the room. ` +
           // 2026-09-04: a three-word message came back as "Happy Birthday /
@@ -2070,7 +2084,7 @@ const setupTemplateClause = setupTemplate
     // L 195 where the Arch + Shimmer reference sits at 166 against a board of
     // 220. Naming the grey concrete room first, then the balloon palette,
     // keeps the two apart.
-    (loneRoundRoom ? roundRoomLine : frontRoomLine) +
+    (loneRoundRoom ? roundRoomLine : styleRef?.board === "arch board" ? archRefRoomLine : frontRoomLine) +
     frontColourLine +
     frontPaletteLine +
     frontMetallicLine +
