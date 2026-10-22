@@ -162,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "triple-sails-double-light-v143";
+const RENDER_CACHE_VERSION = "triple-closeup-v144";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -766,7 +766,8 @@ async function generateLayoutReferencePng(
         chromeColors: chromeHexColors,
         // 2026-10-21: the reference replays' snowflake ornaments, on Frozen.
         clearColors: clearHexColors, snowflakes: sceneModel.theme === "frozen",
-        styleReference: sceneStyleReference(sceneModel) !== null },
+        // (a close-up does not show lettering, so it does not count here)
+        styleReference: !!sceneStyleReference(sceneModel) && !sceneStyleReference(sceneModel)?.closeUp },
     );
   } catch (err) {
     const msg = String(err);

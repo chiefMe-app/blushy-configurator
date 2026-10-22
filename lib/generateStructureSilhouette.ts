@@ -678,7 +678,7 @@ function customTextGuide(
     loneArchClear ? pw * (garlandSide === "lonearchleft" ? 0.54 : 0.64) :
     garlandSide === "shimmer" ? pw * 0.44 :
     garlandSide === "doublearch" ? pw * 0.66 :
-    garlandSide === "triple" ? pw * 0.62 :
+    garlandSide === "triple" ? pw * 0.76 :
     garlandSide === "both" ? pw * (1 - 2 * cover) :
     garlandSide === "none" ? pw * 0.85 :
     pw * (1 - cover) * 0.92;

@@ -61,7 +61,10 @@ export function sceneStyleReference(scene: { theme?: string; panels: { type: str
     return { image: ARCH_SHIMMER_STYLE_REFERENCE, board: "arch board, the shimmer wall", light: "soft daylight" };
   }
   if (types.length === 3 && types.filter((t) => t === "half_arch").length === 2 && types.includes("arch")) {
-    return { image: TRIPLE_STYLE_REFERENCE, board: "three boards", light: "soft daylight" };
+    // 2026-10-22 (later): the close-up, not the whole photo — the whole photo
+    // brought its own rounded side boards and fluted plinth into the render.
+    void TRIPLE_STYLE_REFERENCE;
+    return { image: TRIPLE_GARLAND_CLOSEUP, board: "three boards", light: "soft warm daylight", closeUp: true };
   }
   if (types.length === 2 && types.every((t) => t === "arch")) {
     return { image: TRIPLE_GARLAND_CLOSEUP, board: "two arch boards", light: "soft warm daylight", closeUp: true };

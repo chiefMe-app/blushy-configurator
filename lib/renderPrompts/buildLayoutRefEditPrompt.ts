@@ -1306,7 +1306,7 @@ export function buildLayoutRefEditPrompt(
     : "";
   // Triple Arch the same: its lettering is laid on afterwards (the full model
   // painted it black), so the middle board stays blank in the render.
-  const tripleTextOverlay = !styleRef && sceneModel.panels.filter((p) => p.type === "half_arch").length === 2
+  const tripleTextOverlay = (!styleRef || !!styleRef.closeUp) && sceneModel.panels.filter((p) => p.type === "half_arch").length === 2
     && sceneModel.panels.some((p) => p.type === "arch" && p.text?.enabled && (p.text?.value ?? "").trim().length > 0);
   const frontTripleTextLine = tripleTextOverlay
     ? `The middle board's face is plain and blank: nothing is written, printed or painted on it. `
@@ -1805,7 +1805,15 @@ export function buildLayoutRefEditPrompt(
   // the prompt at all and never appeared in the render. Every panel's text is
   // described now, each naming its own panel.
   const textPanelIdx = sceneModel.panels
-    .map((p, i) => (p.text.enabled && !((hasOpenFramePair || (!sceneStyleReference(sceneModel) && sceneModel.panels.filter((q) => q.type === "half_arch").length === 2)) && p.type === "arch") && p.text.value.trim().length > 0 ? i : -1))
+    // Not the boards whose lettering is laid over the render afterwards: the
+    // arch beside an open frame, and the Triple Arch's centre board unless the
+    // whole reference photo (with its own lettering) is in play.
+    .map((p, i) => {
+      const ref = sceneStyleReference(sceneModel);
+      const tripleOverlay = (!ref || !!ref.closeUp) && sceneModel.panels.filter((q) => q.type === "half_arch").length === 2;
+      const overlaid = (hasOpenFramePair || tripleOverlay) && p.type === "arch";
+      return p.text.enabled && !overlaid && p.text.value.trim().length > 0 ? i : -1;
+    })
     .filter((i) => i >= 0);
   // One short line per board, with the shared "how it is printed" wording
   // stated once. The first per-panel version repeated a six-sentence block for
