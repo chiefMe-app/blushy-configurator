@@ -1924,7 +1924,11 @@ function clearAllStandees() {
                           {(d.backdropItems.some((i) => i.type === "half_arch")
                             // Triple Arch: the centre board is the 200cm Medium.
                             ? ARCH_SIZES.filter((s) => s.id === "medium")
-                            : archCount > 1 ? ARCH_SIZES : ARCH_SIZES.filter((s) => s.id === "large")).map((size) => {
+                            // 2026-10-22: Double Arch is fixed too — Large, then
+                            // Medium ("large ve medium backdroplar default
+                            // gelsin, user secmesin").
+                            : archCount > 1 ? ARCH_SIZES.filter((s) => s.id === (archNumber === 1 ? "large" : "medium"))
+                            : ARCH_SIZES.filter((s) => s.id === "large")).map((size) => {
                             const isSel = item.sizeId === size.id;
                             return (
                               <button key={size.id} type="button"
