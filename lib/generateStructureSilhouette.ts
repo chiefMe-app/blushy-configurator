@@ -1385,8 +1385,9 @@ export function generateStructureSilhouette(
       // words black.)
       // Not when the render is shot against a reference photo: it copies the
       // photo's own lettering, and the overlay came out doubled on top.
-      const overlayText = shape === "arch" && (backdropItems.some((it) => it?.type === "open_arch_frame")
-        || (isTripleArchGuide && !extras?.styleReference));
+      // (2026-10-23: the open frame has a reference photo too now.)
+      const overlayText = shape === "arch" && !extras?.styleReference
+        && (backdropItems.some((it) => it?.type === "open_arch_frame") || isTripleArchGuide);
       if (overlayText) {
         if (neonOverlayLayer.length === 0) neonOverlayLayer.push(`<defs><filter id="txtShadow" x="-10%" y="-10%" width="120%" height="130%"><feGaussianBlur stdDeviation="1.6"/></filter></defs>`);
         const shadow = textGuide.svg.replace(/<defs>[\s\S]*?<\/defs>/, "")
@@ -3002,22 +3003,9 @@ export function generateStructureSilhouette(
           [1148, 920, 16, "W"],
           [ 984, 217, 64, "F"], [ 793, 335, 50, "F"], [1147, 385, 41, "F"], [1129, 490, 50, "F"],
           [1216, 764, 60, "F"], [1104, 912, 40, "F"],
-          // 2026-10-22, the customer's newer reference: the garland also comes
-          // THROUGH the opening — down its inner right side from under the
-          // crown, then out over the floor and forward, past the front of the
-          // frame ("open arch frame in icinden gecerek one dogru gelmeli").
-          // The upper part of that stream was dropped after the first render:
-          // drawn from the crown down, it stood in the opening like a pillar.
-          // What remains is the part the customer marked — a pile in the
-          // lower opening that runs out over the floor and forward.
-          [ 990, 760, 24, "S"], [ 955, 805, 36, "B"], [ 995, 840, 22, "W"], [ 905, 845, 30, "L"],
-          [ 960, 870, 44, "W"], [ 870, 905, 28, "S"], [ 925, 925, 38, "B"], [ 990, 915, 26, "L"],
-          [ 845, 960, 42, "L"], [ 905, 985, 50, "B"], [ 975, 975, 32, "W"], [ 820,1025, 32, "W"],
-          [ 880,1045, 40, "L"], [ 945,1035, 28, "S"], [ 850, 995, 18, "S"], [ 905,1070, 26, "W"],
-          // ...joined to the outer garland over the frame's leg.
-          [1030, 845, 30, "W"], [1052, 905, 36, "B"], [1022, 955, 28, "L"], [1062, 970, 24, "S"],
-          [1035,1005, 30, "W"],
-          [ 875, 935, 44, "F"],
+          // (2026-10-22 to 10-23 a pile also came through the lower opening and
+          // out over the floor. Removed 2026-10-23: the customer circled it and
+          // asked for their photo, where the opening is clear.)
         ];
         // See the Triple Arch branch for how this is mapped.
         const TRIPLE_ARCH_REF: RefItem[] = [
