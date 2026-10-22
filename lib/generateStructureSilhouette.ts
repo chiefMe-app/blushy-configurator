@@ -950,6 +950,8 @@ export function generateStructureSilhouette(
     clearColors?: string[];
     /** Draw the white snowflake ornaments of the reference garlands (Frozen). */
     snowflakes?: boolean;
+    /** The render is also given a reference photo (frozenStyleReferences). */
+    styleReference?: boolean;
   },
 ): SilhouetteResult {
   const shimmerTileFill = shimmerColorHex ?? "#D8D8E4";
@@ -1117,7 +1119,10 @@ export function generateStructureSilhouette(
   // 2026-10-21: the Triple Arch too. Its replayed garland wraps right round
   // the three boards, and the white guide ground inside that wrap rendered as
   // one big white paper backdrop on a stand behind them.
+  // 2026-10-22: and the Double Arch, for the same reason — a white paper
+  // backdrop on a stand appeared behind its two boards.
   const ringRoomGround = (backdropItems.length === 1 && backdropItems[0]?.type === "balloon_ring")
+    || (backdropItems.length === 2 && backdropItems.every((i) => i?.type === "arch"))
     || (backdropItems.filter((i) => i?.type === "half_arch").length === 2 && backdropItems.some((i) => i?.type === "arch"));
   if (ringRoomGround) {
     const fy = marginY + (calculateExactLayout(backdropItems, plinthSizes, W, H).floorY) * SCALE;
@@ -1366,7 +1371,12 @@ export function generateStructureSilhouette(
       // than drawn in the guide. The flash model dropped it on two seeds of
       // three whatever the prompt said ("happy birthday yazisi yok"). A soft
       // shadow under it seats the letters on the board as cut acrylic.
-      const overlayText = shape === "arch" && backdropItems.some((it) => it?.type === "open_arch_frame");
+      // (2026-10-22: and on the Triple Arch, where the full model painted the
+      // words black.)
+      // Not when the render is shot against a reference photo: it copies the
+      // photo's own lettering, and the overlay came out doubled on top.
+      const overlayText = shape === "arch" && (backdropItems.some((it) => it?.type === "open_arch_frame")
+        || (isTripleArchGuide && !extras?.styleReference));
       if (overlayText) {
         if (neonOverlayLayer.length === 0) neonOverlayLayer.push(`<defs><filter id="txtShadow" x="-10%" y="-10%" width="120%" height="130%"><feGaussianBlur stdDeviation="1.6"/></filter></defs>`);
         const shadow = textGuide.svg.replace(/<defs>[\s\S]*?<\/defs>/, "")
@@ -3681,7 +3691,18 @@ export function generateStructureSilhouette(
           const [tL, tC, tR] = ordT;
           const sSide = ((tL.floorY - tL.apexY) + (tR.floorY - tR.apexY)) / 2 / (825 - 348);
           const sCen  = (tC.floorY - tC.apexY) / (825 - 255);
-          const tx = refPieceX([[204, tL.cx - tL.pw / 2], [562, tC.cx - tC.pw / 2], [982, tC.cx + tC.pw / 2], [1340, tR.cx + tR.pw / 2]], sSide);
+          // 2026-10-22: the side garlands keep their distance from each side
+          // board's OUTER edge at the height scale, as the balloons do. The
+          // photo's side boards are nearly square (0.75 wide for their
+          // height) and ours are half as wide as tall, so squeezing the photo
+          // x into our boards buried them under the garland ("balonlar
+          // backdropu sarmis"); this way the inner half of each stays clear.
+          const lOut = tL.cx - tL.pw / 2, rOut = tR.cx + tR.pw / 2;
+          const tx = refPieceX([
+            [204, lOut], [350, Math.min(lOut + 146 * sSide, tC.cx - tC.pw / 2 - 8)],
+            [562, tC.cx - tC.pw / 2], [982, tC.cx + tC.pw / 2],
+            [1194, Math.max(rOut - 146 * sSide, tC.cx + tC.pw / 2 + 8)], [1340, rOut],
+          ], sSide);
           const smooth = (a: number, b: number, v: number) => { const t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
           const tFloor = Math.max(...ordT.map((p) => p.floorY));
           // The y of a photo point depends on which board it rides, so the

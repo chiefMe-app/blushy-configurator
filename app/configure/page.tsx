@@ -1426,7 +1426,12 @@ function clearAllStandees() {
         // previous setup would leave the scene empty.
         if (d.balloonStyle === "none") patchDecor({ balloonStyle: "full" });
         break;
-      case "double_arch":        panels = [makeArchUnsized("arch-1"), makeArchUnsized("arch-2")]; break;
+      // 2026-10-22: created sized, Large then Medium — "large ve medium
+      // backdroplar default gelsin, user secmesin". It used to stall on "pick
+      // a size" for both boards.
+      case "double_arch":
+        panels = [{ ...makeBackdropItem("arch", "large"), id: "arch-1" }, { ...makeBackdropItem("arch", "medium"), id: "arch-2" }];
+        break;
       // 2026-09-09: the first three-piece layout. Selection order is
       // left-to-right, so the two half arches bracket the centre board.
       case "triple_arch":

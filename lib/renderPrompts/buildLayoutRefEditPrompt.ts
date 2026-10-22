@@ -1017,11 +1017,20 @@ export function buildLayoutRefEditPrompt(
   // 2026-10-22 (later): and the Frozen lone arch, against its own photo, whose
   // daylight is warm — said here because the customer asked for it by name.
   const styleRef = sceneStyleReference(sceneModel);
+  // 2026-10-22: a Large beside a Medium came back with a white paper backdrop
+  // on a stand behind the pair. Said first, in one sentence that names the
+  // pedestal in the usual words: without them it pushed the plinth out.
+  // Tested on three seeds: no backdrop, plinth and lettering on all three.
+  const frontDoubleNoBackLine = panelCount === 2 && sceneModel.panels.every((p) => p.type === "arch")
+    ? `There is NO backdrop sheet, no paper roll and no stand behind the two arch boards` +
+      (sceneModel.plinths.length > 0 ? `, with the one white cylindrical pedestal column on the floor in front of them. ` : `. `)
+    : "";
   const frontRoundStyleLine = styleRef
-    ? `IMAGE 1 is the layout: it fixes where the ${styleRef.board}, every balloon and the one white cylindrical ` +
+    ? `IMAGE 1 is the layout: it fixes where the ${styleRef.board}, every balloon and the one ${styleRef.board === "three boards" ? "smooth " : ""}white cylindrical ` +
       `pedestal column stand. IMAGE 2 is a photo of the finished look: copy its room, its ` +
       `${styleRef.light}, its ` +
-      `floor and exactly how its balloons and ${styleRef.board.includes("shimmer") ? "crisp sequins and glowing neon sign" : "thin flat lettering"} look. `
+      `floor and exactly how its balloons and ${styleRef.board.includes("shimmer") ? "crisp sequins and glowing neon sign" : "thin flat lettering"} look` +
+      (styleRef.board === "three boards" ? `, with all three boards clearly visible. ` : `. `)
     : "";
   const frontImageRolesLine = !styleRef && panelCount === 1 && sceneModel.panels[0]?.type === "arch"
     && hasLoneArchStyleReference()
@@ -1288,6 +1297,13 @@ export function buildLayoutRefEditPrompt(
     : null;
   const frontFrameTextLine = frameTextPanel
     ? `The solid arch board's face is plain and blank: nothing is written, printed or painted on it. `
+    : "";
+  // Triple Arch the same: its lettering is laid on afterwards (the full model
+  // painted it black), so the middle board stays blank in the render.
+  const tripleTextOverlay = !styleRef && sceneModel.panels.filter((p) => p.type === "half_arch").length === 2
+    && sceneModel.panels.some((p) => p.type === "arch" && p.text?.enabled && (p.text?.value ?? "").trim().length > 0);
+  const frontTripleTextLine = tripleTextOverlay
+    ? `The middle board's face is plain and blank: nothing is written, printed or painted on it. `
     : "";
   const frontRoundTextLine = frontRoundTextPanel
     ? `The words "${frontRoundTextPanel.text.value.trim()}" are ${isMetalText(frontRoundTextPanel.text.color) ? "mounted" : "printed"} on the round board in ` +
@@ -1783,7 +1799,7 @@ export function buildLayoutRefEditPrompt(
   // the prompt at all and never appeared in the render. Every panel's text is
   // described now, each naming its own panel.
   const textPanelIdx = sceneModel.panels
-    .map((p, i) => (p.text.enabled && !(hasOpenFramePair && p.type === "arch") && p.text.value.trim().length > 0 ? i : -1))
+    .map((p, i) => (p.text.enabled && !((hasOpenFramePair || (!sceneStyleReference(sceneModel) && sceneModel.panels.filter((q) => q.type === "half_arch").length === 2)) && p.type === "arch") && p.text.value.trim().length > 0 ? i : -1))
     .filter((i) => i >= 0);
   // One short line per board, with the shared "how it is printed" wording
   // stated once. The first per-panel version repeated a six-sentence block for
@@ -2087,6 +2103,7 @@ const setupTemplateClause = setupTemplate
     : "";
 
   return (
+    frontDoubleNoBackLine +
     frontRoundStyleLine +
     frontImageRolesLine +
     frontArchAspectLine +
@@ -2106,6 +2123,7 @@ const setupTemplateClause = setupTemplate
     frontPlinthLine +
     frontRoundTextLine +
     frontFrameTextLine +
+    frontTripleTextLine +
     // After the plinth: ahead of it, on the round, the plinth was dropped.
     frontOrnamentLine +
     frontBannerGraphicLine +

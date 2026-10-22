@@ -162,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "frame-text-overlay-v139";
+const RENDER_CACHE_VERSION = "double-triple-fix-v142";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -765,7 +765,8 @@ async function generateLayoutReferencePng(
         // them as mirror balls rather than matte spheres.
         chromeColors: chromeHexColors,
         // 2026-10-21: the reference replays' snowflake ornaments, on Frozen.
-        clearColors: clearHexColors, snowflakes: sceneModel.theme === "frozen" },
+        clearColors: clearHexColors, snowflakes: sceneModel.theme === "frozen",
+        styleReference: sceneStyleReference(sceneModel) !== null },
     );
   } catch (err) {
     const msg = String(err);
@@ -1999,7 +2000,10 @@ forbiddenBalloonColorLabels: hasSempertexLock
   // contrast — "renkler cok parlak".
   // (and not on any scene shot against a style reference photo)
   const skipLockForReplay = (sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "round")
-    || sceneStyleReference(sceneModel) !== null;
+    || sceneStyleReference(sceneModel) !== null
+    // 2026-10-22: and the Triple Arch, on the full model, where the pass
+    // left the picture soft and streaked ("goruntu kalitesi cok kotu").
+    || isTripleArchScene;
   if (effectiveBalloonHexColors.length > 0 && sceneModel.balloons.style !== "none" && !skipLockForReplay) {
     try {
       const baseBuf = workingImageBuf ?? await fetchFinalImage();
