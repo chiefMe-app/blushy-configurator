@@ -95,6 +95,11 @@ const MAX_BACKDROP_ITEMS = 3;
  * the live pipeline at the production seed.
  */
 function OptionSample({ src, alt }: { src: string; alt: string }) {
+  // 2026-10-22: example renders removed at the customer's request — "example
+  // renderlari kaldir, sadece ikonlar kalsin".  Kept as a no-op so the call
+  // sites stay put if they come back.
+  void src; void alt;
+  if (true as boolean) return null;
   return (
     <figure style={{ margin: "0 0 10px", width: "100%" }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1580,14 +1585,7 @@ function clearAllStandees() {
                     style={{ textAlign: "left", padding: 8, borderRadius: 14, cursor: "pointer",
                       border: active ? `1.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
                       background: active ? accent + "12" : "white" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`/option-samples/ring_${rs.id}.jpg`}
-                      alt={`${rs.label} balloon ring`}
-                      loading="lazy"
-                      style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", display: "block",
-                        borderRadius: 10, border: "1px solid #F3D7E1", background: "white", marginBottom: 6 }}
-                    />
+                    {/* 2026-10-22: example render removed. */}
                     <div style={{ fontSize: 11.5, fontWeight: 700, color: active ? accent : "#1A1A2E" }}>{rs.label}</div>
                     <div style={{ fontSize: 10, color: "#9A8E96" }}>{rs.desc}</div>
                   </button>
@@ -1793,24 +1791,7 @@ function clearAllStandees() {
                   <SetupMiniPreview shapes={tpl.miniPreview} />
                   <div style={{ fontSize: 12.5, fontWeight: 700, color: DC.plum, lineHeight: 1.25 }}>{tpl.name}</div>
                   <div style={{ fontSize: 10.5, color: "#A78E99", lineHeight: 1.35 }}>{tpl.description}</div>
-                  {/* 2026-09-09: a real render of this setup, under the card.
-                      The line drawing above says what the pieces ARE; this says
-                      what the customer actually gets. Generated with the live
-                      pipeline at the production seed (see the samples driver in
-                      the scratchpad) and committed under public/setup-samples. */}
-                  <figure style={{ margin: "2px 0 0", width: "100%" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`/setup-samples/${tpl.id}.jpg`}
-                      alt={`${tpl.name} — example render`}
-                      loading="lazy"
-                      style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", display: "block",
-                        borderRadius: 12, border: `1px solid ${DC.cardBd}`, background: "white" }}
-                    />
-                    <figcaption style={{ fontSize: 9, color: "#BFA7B3", marginTop: 3, letterSpacing: 0.2 }}>
-                      Example render
-                    </figcaption>
-                  </figure>
+                  {/* 2026-10-22: the example render under each card was removed; the line drawing stays. */}
                   {active && (
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 9px", borderRadius: 999, background: DC.rose, color: "white", fontSize: 9.5, fontWeight: 700 }}>✓ Your setup</span>
                   )}

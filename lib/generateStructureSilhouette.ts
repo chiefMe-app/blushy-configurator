@@ -1876,6 +1876,7 @@ export function generateStructureSilhouette(
       const vl = -marginX / SCALE + (W * 0.012) / SCALE;
       const vr = (W - marginX) / SCALE - (W * 0.012) / SCALE;
       const out: RefPlaced[] = [];
+      const flakeSpots: RefPlaced[] = [];
       for (const [x, y, r, slot] of table) {
         const br = r * s * (slot === "F" ? 1 : fill);
         let bx = mapX(x), by = mapY(y);
@@ -1891,7 +1892,21 @@ export function generateStructureSilhouette(
           if (bx < mid && bx + br > kc.l) bx = kc.l - br;
           else if (bx >= mid && bx - br < kc.r) bx = kc.r + br;
         }
+        // 2026-10-22: without snowflakes (every theme but Frozen) a snowflake's
+        // place is a balloon instead — left empty, each one was a hole in the
+        // garland with the board showing through ("bosluklar olmasin").
+        if (slot === "F" && !extras?.snowflakes) {
+          const fs: RefSlot = (["W", "B", "L"] as RefSlot[])[out.length % 3];
+          flakeSpots.push({ x: bx, y: by, r: r * s * 0.8, slot: fs, ci: -1 });
+          continue;
+        }
         out.push({ x: bx, y: by, r: br, slot, ci: slot === "F" ? -1 : refColorFor(slot) });
+      }
+      // A snowflake spot gets its balloon only where it is not already
+      // covered — a small balloon in the middle of a big one read as stacked.
+      for (const f of flakeSpots) {
+        if (out.some((b) => Math.hypot(f.x - b.x, f.y - b.y) < b.r - f.r * 0.3)) continue;
+        out.push({ ...f, ci: refColorFor(f.slot) });
       }
       const kept = opts.keep ? out.filter(opts.keep) : out;
       // Fillers. Read off a photo, only the balloons whose outline shows can
@@ -1901,8 +1916,11 @@ export function generateStructureSilhouette(
       // between them. So any gap that sits BETWEEN transcribed balloons —
       // close to at least two of them — gets a small one, behind the rest.
       const fillers: RefPlaced[] = [];
-      const fr = (opts.filler ?? 13) * s;
       const body = kept.filter((b) => b.slot !== "F");
+      // 2026-10-22: two passes — a mid-size balloon into the larger holes
+      // first, then the small fillers — so no gap inside the garland shows
+      // the board ("bosluklar olmasin", for every setup and theme).
+      for (const fr of [(opts.filler ?? 13) * s * 1.9, (opts.filler ?? 13) * s])
       if (fr > 0 && body.length > 3) {
         const minX = Math.min(...body.map((b) => b.x - b.r)), maxX = Math.max(...body.map((b) => b.x + b.r));
         const minY = Math.min(...body.map((b) => b.y - b.r)), maxY = Math.max(...body.map((b) => b.y + b.r));
@@ -1926,7 +1944,8 @@ export function generateStructureSilhouette(
                 if (Math.hypot(gx - b.x, gy - b.y) < b.r + fr * 0.85) { inside = true; break; }
               }
             }
-            if (inside || near < 2) continue;
+            const needNear = fr > (opts.filler ?? 13) * s * 1.5 ? 3 : 2;
+            if (inside || near < needNear) continue;
             if (opts.maxBottom !== undefined && gy + fr > opts.maxBottom) continue;
             if ((opts.keepClear ?? []).some((kc) => gy + fr * 0.3 >= kc.top && gx + fr > kc.l && gx - fr < kc.r)) continue;
             const slot = fillSlots[fk++ % fillSlots.length];
