@@ -204,20 +204,18 @@ function panelPathOrShape(
     // OUTWARD, away from the centre board, and the straight edge butts against
     // it — exactly the side pieces in the customer's Triple Arch reference.
     // Which way it faces is decided by the caller and passed in `facing`.
-    // 2026-10-22, drawn by the customer: the curve runs the board's whole
-    // height — from the top of the straight inner edge down to the floor at
-    // the outer side, a quarter of an ellipse with only a short straight foot
-    // ("yandaki backdroplar boyle olsun"). The quarter-circle corner it had
-    // rendered as a full rounded arch.
+    // (2026-10-22: a full-height sail curve was tried here at the customer's
+    // request and reverted the same day — with it the garland floated off the
+    // boards and the render was worse: "bir onceki hali daha iyiydi".)
     const h = floorY - apexY;
-    const ry = h * 0.92;
+    const rr = Math.min(pw, h);
     const outerX = facing === "left" ? left : right;
     const innerX = facing === "left" ? right : left;
     const sweep  = facing === "left" ? 1 : 0;
     const d2 = [
       `M ${outerX},${floorY}`,
-      `L ${outerX},${(apexY + ry).toFixed(1)}`,
-      `A ${pw.toFixed(1)},${ry.toFixed(1)} 0 0 ${sweep} ${innerX},${apexY.toFixed(1)}`,
+      `L ${outerX},${(apexY + rr).toFixed(1)}`,
+      `A ${rr.toFixed(1)},${rr.toFixed(1)} 0 0 ${sweep} ${innerX},${apexY.toFixed(1)}`,
       `L ${innerX},${floorY}`,
       "Z",
     ].join(" ");
@@ -1367,7 +1365,6 @@ export function generateStructureSilhouette(
           // 2026-10-22: centred on its board ("happy birthday yazisi backdropu
           // ortalasin") — the second board's garland only starts halfway down.
           : bothArches ? "doublearch"
-          : isTripleArchGuide && shape === "arch" ? "triple"
           : layout.panels.length === 1 && shape === "arch" ? (fullerTier ? "lonearch" : "right")
           : "none";
       const textGuide = customTextGuide(
@@ -1606,10 +1603,9 @@ export function generateStructureSilhouette(
         // the balloon ring as well: its plinth was dropped too (2026-10-21)
         || (backdropItems.length === 1 && backdropItems[0]?.type === "balloon_ring")
         || (backdropItems.length === 2 && backdropItems.some((it) => it?.type === "open_arch_frame"))
-        // 2026-10-22: Double and Triple Arch — their plinth's top rendered as a
-        // tilted tray ("plinth tepsisi bozuk, duz olsun karsidan bakinca").
-        || (backdropItems.length === 2 && backdropItems.every((it) => it?.type === "arch"))
-        || (backdropItems.filter((it) => it?.type === "half_arch").length === 2);
+        // 2026-10-22: Double Arch — its plinth's top rendered as a tilted tray
+        // ("plinth tepsisi bozuk, duz olsun karsidan bakinca").
+        || (backdropItems.length === 2 && backdropItems.every((it) => it?.type === "arch"));
       plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1 || wantsNumberSlot || loneArchPlinth || loneBannerPlinth || archShimmerPlinth
         ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx, loneBannerPlinth || loneShimmerPlinth || archShimmerPlinth, loneBannerPlinth || loneShimmerPlinth || archShimmerPlinth)
         : plinthEdge(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
@@ -3733,49 +3729,7 @@ export function generateStructureSilhouette(
             const sy = sSide + (sCen - sSide) * w;
             return [x, tFloor - (825 - y) * sy, r, slot];
           });
-          // 2026-10-22: the side boards' faces stay clear — the customer drew
-          // them as sails, curve on the outside, garland beyond the curve. Any
-          // balloon whose middle would sit on a side board's face moves out
-          // across its curve until it only laps the edge by a third of itself.
-          const sideCurveX = (bp: typeof tL, Y: number, outerLeft: boolean): number | null => {
-            const ry = (bp.floorY - bp.apexY) * 0.92;
-            if (Y < bp.apexY || Y > bp.floorY) return null;
-            const outerX = outerLeft ? bp.cx - bp.pw / 2 : bp.cx + bp.pw / 2;
-            const innerX = outerLeft ? bp.cx + bp.pw / 2 : bp.cx - bp.pw / 2;
-            const t = (bp.apexY + ry - Y) / ry;
-            if (t <= 0) return outerX;
-            return innerX + (outerLeft ? -1 : 1) * bp.pw * Math.sqrt(Math.max(0, 1 - t * t));
-          };
-          // Moved as whole height bands, so the garland keeps its depth: each
-          // band shifts out by what its deepest balloon on the face needs.
-          const bandOf = (bp: typeof tL, y: number) => Math.floor(((y - bp.apexY) / Math.max(1, bp.floorY - bp.apexY)) * 8);
-          const need = new Map<string, number>();
-          const sideOf = (X: number, y: number): [typeof tL, boolean] | null => {
-            if (X < tC.cx && y >= tL.apexY - 1) return [tL, true];
-            if (X > tC.cx && y >= tR.apexY - 1) return [tR, false];
-            return null;
-          };
-          for (const [x, y, r, slot] of tTable) {
-            if (slot === "F") continue;
-            const X = tx(x), br = r * sCen * 1.08;
-            const sd = sideOf(X, y);
-            if (!sd) continue;
-            const [bp, outerLeft] = sd;
-            const c = sideCurveX(bp, y, outerLeft);
-            if (c === null) continue;
-            const over = outerLeft ? X - (c + br / 3) : (c - br / 3) - X;
-            const k = `${outerLeft ? "l" : "r"}${bandOf(bp, y)}`;
-            if (over > 0) need.set(k, Math.max(need.get(k) ?? 0, over));
-          }
-          const tCleared: RefItem[] = tTable.map(([x, y, r, slot]) => {
-            const X = tx(x);
-            const sd = sideOf(X, y);
-            if (!sd) return [X, y, r, slot];
-            const [bp, outerLeft] = sd;
-            const sh = need.get(`${outerLeft ? "l" : "r"}${bandOf(bp, y)}`) ?? 0;
-            return [outerLeft ? X - sh : X + sh, y, r, slot];
-          });
-          drawRefTable(tCleared, (xx) => xx, (yy) => yy, sCen,
+          drawRefTable(tTable, tx, (yy) => yy, sCen,
             { maxBottom: tFloor + plinthForwardPx * 1.5, keepClear: plinthKeepClear() });
         } else if (false as boolean) {
           const ordered = [...layout.panels].sort((a, b) => a.cx - b.cx);
