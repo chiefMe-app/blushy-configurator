@@ -204,15 +204,20 @@ function panelPathOrShape(
     // OUTWARD, away from the centre board, and the straight edge butts against
     // it — exactly the side pieces in the customer's Triple Arch reference.
     // Which way it faces is decided by the caller and passed in `facing`.
+    // 2026-10-22, drawn by the customer: the curve runs the board's whole
+    // height — from the top of the straight inner edge down to the floor at
+    // the outer side, a quarter of an ellipse with only a short straight foot
+    // ("yandaki backdroplar boyle olsun"). The quarter-circle corner it had
+    // rendered as a full rounded arch.
     const h = floorY - apexY;
-    const rr = Math.min(pw, h);
+    const ry = h * 0.92;
     const outerX = facing === "left" ? left : right;
     const innerX = facing === "left" ? right : left;
     const sweep  = facing === "left" ? 1 : 0;
     const d2 = [
       `M ${outerX},${floorY}`,
-      `L ${outerX},${(apexY + rr).toFixed(1)}`,
-      `A ${rr.toFixed(1)},${rr.toFixed(1)} 0 0 ${sweep} ${innerX},${apexY.toFixed(1)}`,
+      `L ${outerX},${(apexY + ry).toFixed(1)}`,
+      `A ${pw.toFixed(1)},${ry.toFixed(1)} 0 0 ${sweep} ${innerX},${apexY.toFixed(1)}`,
       `L ${innerX},${floorY}`,
       "Z",
     ].join(" ");
@@ -618,7 +623,7 @@ function customTextGuide(
     hasGraphicBelow?: boolean;
     /** Which side(s) of this panel the garland covers, so the lettering can
      *  be placed where the balloons are not. */
-    garlandSide?: "left" | "right" | "both" | "none" | "round" | "banner" | "lonearch" | "lonearchleft" | "shimmer";
+    garlandSide?: "left" | "right" | "both" | "none" | "round" | "banner" | "lonearch" | "lonearchleft" | "shimmer" | "doublearch" | "triple";
     fontStyle?: string;
     color?: string;
   } = {},
@@ -647,7 +652,10 @@ function customTextGuide(
   // "lonearchleft": the same with the garland on the left (the solid arch
   // beside an open frame, garland on its outer side).
   const loneArchClear = garlandSide === "lonearch" || garlandSide === "lonearchleft";
-  const y = apexY + panelH * (bannerClear ? 0.40 : roundClear ? 0.36 : hasGraphicBelow ? 0.17 : 0.30);
+  // 2026-10-22: the Triple Arch's centre board has its top under the crown,
+  // so its lettering sits lower.
+  const tripleClear = garlandSide === "triple";
+  const y = apexY + panelH * (bannerClear ? 0.40 : roundClear ? 0.36 : tripleClear ? 0.46 : hasGraphicBelow ? 0.17 : 0.30);
 
   // The garland covers roughly the outer 30% of the board it hangs on. Text
   // drawn across the full width therefore had its first letters hidden behind
@@ -669,6 +677,8 @@ function customTextGuide(
     // there and must sit inside the board's clear face.
     loneArchClear ? pw * (garlandSide === "lonearchleft" ? 0.54 : 0.64) :
     garlandSide === "shimmer" ? pw * 0.44 :
+    garlandSide === "doublearch" ? pw * 0.66 :
+    garlandSide === "triple" ? pw * 0.62 :
     garlandSide === "both" ? pw * (1 - 2 * cover) :
     garlandSide === "none" ? pw * 0.85 :
     pw * (1 - cover) * 0.92;
@@ -1347,14 +1357,17 @@ export function generateStructureSilhouette(
       const bothArches = backdropItems.length === 2 && backdropItems.every((i) => i.type === "arch");
       const fullerTier = balloonStyle === "full" || balloonStyle === "premium";
       const meanCx     = layout.panels.reduce((sum, p) => sum + p.cx, 0) / layout.panels.length;
-      const garlandSide: "left" | "right" | "both" | "none" | "round" | "banner" | "lonearch" | "lonearchleft" | "shimmer" =
+      const garlandSide: "left" | "right" | "both" | "none" | "round" | "banner" | "lonearch" | "lonearchleft" | "shimmer" | "doublearch" | "triple" =
         balloonStyle === "none" ? "none"
           : layout.panels.length === 1 && shape === "round" ? "round"
           : layout.panels.length === 1 && shape === "banner" ? "banner"
           : isShimmer ? "shimmer"
           : shape === "arch" && backdropItems.some((it) => it?.type === "open_arch_frame")
             ? (panel.cx < meanCx ? "lonearchleft" : "lonearch")
-          : bothArches ? (panel.cx < meanCx ? "left" : "right")
+          // 2026-10-22: centred on its board ("happy birthday yazisi backdropu
+          // ortalasin") — the second board's garland only starts halfway down.
+          : bothArches ? "doublearch"
+          : isTripleArchGuide && shape === "arch" ? "triple"
           : layout.panels.length === 1 && shape === "arch" ? (fullerTier ? "lonearch" : "right")
           : "none";
       const textGuide = customTextGuide(
@@ -1592,7 +1605,11 @@ export function generateStructureSilhouette(
       const archShimmerPlinth = (backdropItems.length === 2 && backdropItems.some((it) => it?.type === "arch") && backdropItems.some((it) => it?.type === "shimmer_wall"))
         // the balloon ring as well: its plinth was dropped too (2026-10-21)
         || (backdropItems.length === 1 && backdropItems[0]?.type === "balloon_ring")
-        || (backdropItems.length === 2 && backdropItems.some((it) => it?.type === "open_arch_frame"));
+        || (backdropItems.length === 2 && backdropItems.some((it) => it?.type === "open_arch_frame"))
+        // 2026-10-22: Double and Triple Arch — their plinth's top rendered as a
+        // tilted tray ("plinth tepsisi bozuk, duz olsun karsidan bakinca").
+        || (backdropItems.length === 2 && backdropItems.every((it) => it?.type === "arch"))
+        || (backdropItems.filter((it) => it?.type === "half_arch").length === 2);
       plinthLayer.push(panelsCarrySurfaceContent || plinthCount > 1 || wantsNumberSlot || loneArchPlinth || loneBannerPlinth || archShimmerPlinth
         ? plinthFilledCylinder(plinthCx, plinthBottomY, p.heightPx, p.diameterPx, loneBannerPlinth || loneShimmerPlinth || archShimmerPlinth, loneBannerPlinth || loneShimmerPlinth || archShimmerPlinth)
         : plinthEdge(plinthCx, plinthBottomY, p.heightPx, p.diameterPx));
@@ -2861,6 +2878,9 @@ export function generateStructureSilhouette(
           [316, 761, 89, "B"], [184, 753, 43, "C"], [466, 792, 57, "W"], [423, 735, 14, "S"],
           [544, 803, 25, "S"], [509, 735, 20, "S"], [566, 767, 21, "L"], [534, 764, 14, "B"],
           [587, 799, 18, "L"], [537, 828, 14, "S"],
+          // 2026-10-22: snowflakes, as on the other Frozen setups (the photo has
+          // none; the customer asked for them).
+          [440, 190, 44, "F"], [372, 420, 40, "F"], [262, 700, 46, "F"], [506, 640, 34, "F"],
         ];
         const DOUBLE_ARCH_RIGHT_REF: RefItem[] = [
           [1112, 370, 32, "C"], [1116, 445, 32, "C"], [1080, 474, 16, "S"], [1109, 466, 14, "W"],
@@ -2870,6 +2890,7 @@ export function generateStructureSilhouette(
           [1144, 724, 11, "B"], [1087, 764, 63, "B"], [ 984, 763, 50, "C"], [1166, 763, 39, "S"],
           [1248, 777, 43, "L"], [1348, 770, 39, "W"], [1273, 731, 16, "S"], [1294, 749, 14, "S"],
           [1169, 820, 14, "S"], [1305, 806, 18, "S"],
+          [1096, 520, 34, "F"], [1250, 715, 42, "F"],
         ];
         // 2026-10-21: Shimmer Wall REPLAYS the customer's reference: a full
         // height garland column up EACH side of the wall, from the floor to
@@ -3712,7 +3733,49 @@ export function generateStructureSilhouette(
             const sy = sSide + (sCen - sSide) * w;
             return [x, tFloor - (825 - y) * sy, r, slot];
           });
-          drawRefTable(tTable, tx, (yy) => yy, sCen,
+          // 2026-10-22: the side boards' faces stay clear — the customer drew
+          // them as sails, curve on the outside, garland beyond the curve. Any
+          // balloon whose middle would sit on a side board's face moves out
+          // across its curve until it only laps the edge by a third of itself.
+          const sideCurveX = (bp: typeof tL, Y: number, outerLeft: boolean): number | null => {
+            const ry = (bp.floorY - bp.apexY) * 0.92;
+            if (Y < bp.apexY || Y > bp.floorY) return null;
+            const outerX = outerLeft ? bp.cx - bp.pw / 2 : bp.cx + bp.pw / 2;
+            const innerX = outerLeft ? bp.cx + bp.pw / 2 : bp.cx - bp.pw / 2;
+            const t = (bp.apexY + ry - Y) / ry;
+            if (t <= 0) return outerX;
+            return innerX + (outerLeft ? -1 : 1) * bp.pw * Math.sqrt(Math.max(0, 1 - t * t));
+          };
+          // Moved as whole height bands, so the garland keeps its depth: each
+          // band shifts out by what its deepest balloon on the face needs.
+          const bandOf = (bp: typeof tL, y: number) => Math.floor(((y - bp.apexY) / Math.max(1, bp.floorY - bp.apexY)) * 8);
+          const need = new Map<string, number>();
+          const sideOf = (X: number, y: number): [typeof tL, boolean] | null => {
+            if (X < tC.cx && y >= tL.apexY - 1) return [tL, true];
+            if (X > tC.cx && y >= tR.apexY - 1) return [tR, false];
+            return null;
+          };
+          for (const [x, y, r, slot] of tTable) {
+            if (slot === "F") continue;
+            const X = tx(x), br = r * sCen * 1.08;
+            const sd = sideOf(X, y);
+            if (!sd) continue;
+            const [bp, outerLeft] = sd;
+            const c = sideCurveX(bp, y, outerLeft);
+            if (c === null) continue;
+            const over = outerLeft ? X - (c + br / 3) : (c - br / 3) - X;
+            const k = `${outerLeft ? "l" : "r"}${bandOf(bp, y)}`;
+            if (over > 0) need.set(k, Math.max(need.get(k) ?? 0, over));
+          }
+          const tCleared: RefItem[] = tTable.map(([x, y, r, slot]) => {
+            const X = tx(x);
+            const sd = sideOf(X, y);
+            if (!sd) return [X, y, r, slot];
+            const [bp, outerLeft] = sd;
+            const sh = need.get(`${outerLeft ? "l" : "r"}${bandOf(bp, y)}`) ?? 0;
+            return [outerLeft ? X - sh : X + sh, y, r, slot];
+          });
+          drawRefTable(tCleared, (xx) => xx, (yy) => yy, sCen,
             { maxBottom: tFloor + plinthForwardPx * 1.5, keepClear: plinthKeepClear() });
         } else if (false as boolean) {
           const ordered = [...layout.panels].sort((a, b) => a.cx - b.cx);

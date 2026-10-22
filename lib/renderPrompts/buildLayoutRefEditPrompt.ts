@@ -319,9 +319,10 @@ export function buildLayoutRefEditPrompt(
             `NOT a doorway frame, NOT an architectural portal, NOT a wire or metal outline, ` +
             `NOT tubular or pipe-like, NOT inflatable, NOT a niche, alcove, tunnel or hallway`
           : isHalfArch
-            ? `solid flat matte ${pColor} HALF arch board — a full arch sliced straight down its middle, so ` +
-              `ONE top corner is a quarter-circle curve and the other side is a plain vertical edge running ` +
-              `full height. The curved corner faces OUTWARD, away from the centre board; the straight edge ` +
+            // 2026-10-22: the customer's drawn shape — one long curve, not a corner.
+            ? `solid flat matte ${pColor} HALF arch board: its inner side is a straight vertical edge running ` +
+              `full height, and its whole outer side is ONE long smooth curve from the top of that edge down to ` +
+              `the floor, like a quarter of an oval. The curve faces OUTWARD, away from the centre board; the straight edge ` +
               `is butted flat against the centre board with no gap. It is NOT a full arch, NOT symmetrical, ` +
               `NOT rounded on both top corners`
           : isArch
@@ -794,8 +795,8 @@ export function buildLayoutRefEditPrompt(
         : "";
 
   const frontTripleArchLine = halfArchCount === 2
-    ? `Exactly THREE boards, touching: a tall arch in the middle, and either side a HALF arch — one ` +
-      `curved top corner facing outward, the other edge straight and vertical against the middle board. `
+    ? `Exactly THREE boards, touching: a tall arch in the middle, and either side a HALF arch — a straight ` +
+      `inner edge against the middle board and ONE long curve sweeping from its top down to the floor on the outer side. `
     : "";
 
   // 2026-10-21, customer reference: the open frame is HOLLOW — a thick white
@@ -1025,8 +1026,13 @@ export function buildLayoutRefEditPrompt(
     ? `There is NO backdrop sheet, no paper roll and no stand behind the two arch boards` +
       (sceneModel.plinths.length > 0 ? `, with the one white cylindrical pedestal column on the floor in front of them. ` : `. `)
     : "";
-  const frontRoundStyleLine = styleRef
-    ? `IMAGE 1 is the layout: it fixes where the ${styleRef.board}, every balloon and the one ${styleRef.board === "three boards" ? "smooth " : ""}white cylindrical ` +
+  const frontRoundStyleLine = styleRef?.closeUp
+    // A close-up of a garland (the Double Arch): only its light and balloons.
+    ? `IMAGE 1 is the layout: it fixes the shape and place of the ${styleRef.board}, every balloon and the one ` +
+      `smooth plain white cylindrical pedestal column. IMAGE 2 is a close-up of part of a finished garland: copy its ` +
+      `${styleRef.light} and exactly how its balloons look — nothing else from it. `
+    : styleRef
+    ? `IMAGE 1 is the layout: it fixes where the ${styleRef.board}, every balloon and the one ${styleRef.board === "three boards" ? "smooth, plain — not fluted, not ribbed — " : ""}white cylindrical ` +
       `pedestal column stand. IMAGE 2 is a photo of the finished look: copy its room, its ` +
       `${styleRef.light}, its ` +
       `floor and exactly how its balloons and ${styleRef.board.includes("shimmer") ? "crisp sequins and glowing neon sign" : "thin flat lettering"} look` +
@@ -1224,9 +1230,9 @@ export function buildLayoutRefEditPrompt(
   // the bubbles as see-through rather than white.
   const hasClearInPalette = selectedSempertexColors.some((c) => /\bclear\b/i.test(String((c as { colorName?: string }).colorName ?? "")));
   const frontOrnamentLine = sceneModel.balloons.style === "none" ? ""
-    // Double Arch's reference has no snowflakes, so neither does its guide —
-    // and the sentence alone was enough to get some drawn.
-    : (theme === "frozen" && !(panelCount === 2 && sceneModel.panels.every((p) => p.type === "arch")) ? `Large chunky white glitter-foam 3D snowflake ornaments are tucked into the garland where the layout shows them. ` : ``) +
+    // (The Double Arch was left out — its photo has none — until the customer
+    // asked for them there too, 2026-10-22.)
+    : (theme === "frozen" ? `Large chunky white glitter-foam 3D snowflake ornaments are tucked into the garland where the layout shows them. ` : ``) +
       (hasClearInPalette ? `The clear balloons are crystal-clear transparent bubbles you can see through. ` : ``);
   const frontMetallicLine = hasChromeInPalette && sceneModel.balloons.style !== "none"
     // 2026-10-21: "only a few" — with the reference replays the turbo and
@@ -2103,8 +2109,9 @@ const setupTemplateClause = setupTemplate
     : "";
 
   return (
-    frontDoubleNoBackLine +
+    // (style line first: the close-up was tested ahead of the no-backdrop line)
     frontRoundStyleLine +
+    frontDoubleNoBackLine +
     frontImageRolesLine +
     frontArchAspectLine +
     frontShapeLine +
