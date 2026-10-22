@@ -1042,7 +1042,7 @@ export function buildLayoutRefEditPrompt(
     ? `TWO images are given. IMAGE 1 is the layout guide and decides the whole scene: the backdrop, ` +
       `the plinth, the room, the camera and where the garland sits. IMAGE 2 is not a scene — it is a ` +
       `crop of a balloon garland, used ONLY for how balloons pack together and their finish: matte ` +
-      `pastel skins, polished mirror chrome. Take nothing else from IMAGE 2. `
+      `pastel skins${hasChromeInPalette ? ", polished mirror chrome" : ""}. Take nothing else from IMAGE 2 — not its colours. `
     : "";
 
   const frontArchAspectLine = (() => {
@@ -1233,17 +1233,24 @@ export function buildLayoutRefEditPrompt(
     // asked for them there too, 2026-10-22.)
     : (theme === "frozen" ? `Large chunky white glitter-foam 3D snowflake ornaments are tucked into the garland where the layout shows them. ` : ``) +
       (hasClearInPalette ? `The clear balloons are crystal-clear transparent bubbles you can see through. ` : ``);
+  // 2026-10-22: name the palette's own metals. This said "the silver
+  // balloons" whatever was picked, so Unicorn's rose gold came back as
+  // silver chrome, a colour the theme does not have.
+  const metalNames = Array.from(new Set(selectedSempertexColors
+    .filter((c) => /reflex|chrome|metallic/i.test(String((c as { finish?: string }).finish ?? "")))
+    .map((c) => String(c.colorName ?? "").toLowerCase()).filter(Boolean)));
+  const metalPhrase = metalNames.length > 0 ? metalNames.join(" and ") : "silver";
   const frontMetallicLine = hasChromeInPalette && sceneModel.balloons.style !== "none"
     // 2026-10-21: "only a few" — with the reference replays the turbo and
     // flash renders turned up to half the garland chrome, big blues and whites
     // included; the references run about one balloon in seven.
     // Not on the round: there the longer line pushed the plinth out of the
     // render, on the same seed it was drawn without it.
-    ? `The silver balloons in the garland` +
+    ? `The ${metalPhrase} balloons in the garland` +
       (sceneModel.panels.some((p) => p.type === "round") ? `` : ` — only a few, about one balloon in seven —`) +
       ` are MIRROR-CHROME: polished, highly reflective metallic ` +
       `balloons that mirror the room around them, with bright specular highlights. They are NOT matte, ` +
-      `NOT flat grey, NOT painted grey — they read as chrome. `
+      (metalPhrase === "silver" ? `NOT flat grey, NOT painted grey — they read as chrome. ` : `they keep their own ${metalPhrase} colour and are NOT silver. `)
     : "";
 
   // 2026-09-09: the backdrop kept growing hardware — a slim white pole down
@@ -1838,7 +1845,7 @@ export function buildLayoutRefEditPrompt(
           // 2026-10-22: every metal (silver, gold, rose gold) as flat, thin,
           // mirror-polished acrylic, as in the customer's reference.
           (isMetalText(p.text.color)
-            ? `Those letters are cut from flat, thin, ${p.text.color === "silver" ? "soft silver-grey" : colourName} acrylic, every stroke crisp, sharp and clearly legible, mounted flat on the board — gleaming and reflective like the chrome balloons, never brushed, never flat paint. They are FLAT and thin — not puffy, not inflated, not rounded, not foil-balloon letters. `
+            ? `Those letters are cut from flat, thin, ${p.text.color === "silver" ? "soft silver-grey" : colourName} acrylic, every stroke crisp, sharp and clearly legible, mounted flat on the board — gleaming and reflective like polished metal, never brushed, never flat paint. They are FLAT and thin — not puffy, not inflated, not rounded, not foil-balloon letters. `
             : `Those letters are ${colourName} — solid ${colourName} lettering, the exact colour shown in the reference image. `) +
           `Do not recolour the lettering to match the balloons, the backdrop, or the room. ` +
           // 2026-09-04: a three-word message came back as "Happy Birthday /

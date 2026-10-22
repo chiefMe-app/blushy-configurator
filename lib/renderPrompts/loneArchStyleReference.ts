@@ -32,6 +32,12 @@ export const LONE_ARCH_STYLE_REFERENCE: string | null =
 
 /** True when a usable reference is configured. */
 export function hasLoneArchStyleReference(): boolean {
+  // 2026-10-22: switched off. With every theme on its own Sempertex palette
+  // this crop's blue and chrome came through on themes that have neither —
+  // Unicorn rendered with blue and silver balloons (a greyscale copy brought
+  // grey/silver instead). Without it the garland keeps its theme's colours
+  // exactly; the Frozen lone arch has its own reference (frozenStyleReferences).
+  if (true as boolean) return false;
   const v = LONE_ARCH_STYLE_REFERENCE;
   return typeof v === "string" && v.trim().length > 0;
 }
