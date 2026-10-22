@@ -1172,13 +1172,15 @@ export type FinalRenderState = { hasRender: boolean; isStale: boolean; generatin
 
 export default function SetupPreview({
   config, status, imageUrl, isIncremental = false, onRegenerate, showControls = true,
-  onPatchDecor, onFinalRenderStateChange, onGenerateReady, emptyArt,
+  onPatchDecor, onFinalRenderStateChange, onGenerateReady, emptyArt, emptyArtLabel = "Example.",
 }: {
   config: BuilderConfig; status: PreviewStatus; imageUrl: string | null;
   isIncremental?: boolean; onRegenerate: () => void; showControls?: boolean;
-  /** Optional — an illustrated sketch shown, clearly labelled, in place of the
+  /** Optional — an example image shown, clearly labelled, in place of the
    *  empty state until a render exists. Never shown over or instead of a render. */
   emptyArt?: string;
+  /** Lead-in of that label, e.g. "Frozen example." */
+  emptyArtLabel?: string;
   /** Optional — enables the Ask for a change prompt when provided. */
   onPatchDecor?: (patch: Partial<import("@/lib/config").DecorConfig>) => void;
   /** Optional — reports the Final Design Render's live state up to the parent
@@ -1302,13 +1304,13 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
               <p className="msg">Hang tight — your party is coming to life.</p>
             </div>
           ) : (
-            /* Empty state: no render yet — never a fake render. The Style tab may
-               show a hand-drawn inspiration sketch here, labelled as such. */
+            /* Empty state: no render yet — never a fake render. The Decor step may
+               show the theme's example photo here, labelled as an example. */
             emptyArt ? (
               <div className="bz-placeholder art" role="status" aria-live="polite">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={emptyArt} alt="Hand-drawn inspiration sketch of a balloon arch backdrop" />
-                <div className="tag"><span aria-hidden="true">⭐</span><span><b>Inspiration sketch.</b> Your own render, with your exact choices, appears here after you generate it.</span></div>
+                <img src={emptyArt} alt={`${emptyArtLabel} A finished setup in this theme`} />
+                <div className="tag"><span aria-hidden="true">⭐</span><span><b>{emptyArtLabel}</b> Your own render, with your exact choices, appears here after you generate it.</span></div>
               </div>
             ) :
             <div className="bz-placeholder" role="status" aria-live="polite">

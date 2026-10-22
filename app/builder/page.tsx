@@ -293,14 +293,19 @@ const SETUP_ICON: Partial<Record<string, string>> = {
   triple_arch: "/design/backdrops/triple-arch.png",
 };
 
-// 2026-10-23: hand-drawn sketch of each setup, shown (labelled as a sketch) in
-// the empty preview until the customer generates a real render. The banner has
-// no sketch yet, so it keeps the plain empty state.
-const SETUP_SKETCH: Partial<Record<string, string>> = {
-  single_arch: "/design/setup-previews/single-arch.webp", single_round: "/design/setup-previews/single-round.webp",
-  single_shimmer: "/design/setup-previews/shimmer-wall.webp", arch_shimmer: "/design/setup-previews/arch-shimmer.webp",
-  balloon_ring: "/design/setup-previews/balloon-ring.webp", arch_open_frame: "/design/setup-previews/arch-open-frame.webp",
-  double_arch: "/design/setup-previews/double-arch.webp", triple_arch: "/design/setup-previews/triple-arch.webp",
+// 2026-10-23: each theme's own example photo of a setup, shown (labelled as an
+// example) in the empty preview until the customer generates a real render.
+// Frozen only for now — the customer's reference photos. Setups without one
+// (Frozen Double Arch, Balloon Ring, Arch + Open Frame) keep the plain empty state.
+const THEME_SETUP_PREVIEW: Partial<Record<string, Partial<Record<string, string>>>> = {
+  frozen: {
+    single_arch: "/design/theme-previews/frozen/single-arch.webp",
+    single_round: "/design/theme-previews/frozen/single-round.webp",
+    single_banner: "/design/theme-previews/frozen/banner.webp",
+    single_shimmer: "/design/theme-previews/frozen/shimmer-wall.webp",
+    arch_shimmer: "/design/theme-previews/frozen/arch-shimmer.webp",
+    triple_arch: "/design/theme-previews/frozen/triple-arch.webp",
+  },
 };
 
 type View = "configure" | "success";
@@ -638,8 +643,9 @@ export default function ConfigurePage() {
                 showControls={step > 2 || onLastDecorTab || finalRenderState.hasRender}
                 onFinalRenderStateChange={setFinalRenderState}
                 onGenerateReady={(fn) => setGenerateFinalRender(() => fn)}
-                // 2026-10-23: the selected setup's sketch shows until a render exists.
-                emptyArt={isDecorStep ? SETUP_SKETCH[inferSetupLayoutTemplateIdFromBackdropItems(config.decor.backdropItems) ?? ""] : undefined}
+                // 2026-10-23: the theme's example photo of the selected setup shows until a render exists.
+                emptyArt={isDecorStep ? THEME_SETUP_PREVIEW[config.theme]?.[inferSetupLayoutTemplateIdFromBackdropItems(config.decor.backdropItems) ?? ""] : undefined}
+                emptyArtLabel={`${themeById(config.theme)?.name ?? "Theme"} example.`}
               />
               {isDecorStep && !finalRenderState.hasRender && (
                 <div className="bz-little-note">
