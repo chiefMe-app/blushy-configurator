@@ -2153,6 +2153,8 @@ const setupTemplateClause = setupTemplate
     frontTripleTextLine +
     // After the plinth: ahead of it, on the round, the plinth was dropped.
     frontOrnamentLine +
+    // 2026-10-22: "bosluklar olmasin" — after the plinth lines, so it cannot push the plinth out.
+    (sceneModel.balloons.style !== "none" ? `The balloons are packed tightly against each other, with NO gaps: nowhere in the garland does the board or the wall show between balloons. ` : ``) +
     frontBannerGraphicLine +
     frontBannerAspectLine +
     frontTripleArchLine +

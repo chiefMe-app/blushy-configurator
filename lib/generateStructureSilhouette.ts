@@ -1920,7 +1920,9 @@ export function generateStructureSilhouette(
       // 2026-10-22: two passes — a mid-size balloon into the larger holes
       // first, then the small fillers — so no gap inside the garland shows
       // the board ("bosluklar olmasin", for every setup and theme).
-      for (const fr of [(opts.filler ?? 13) * s * 1.9, (opts.filler ?? 13) * s])
+      // (2026-10-22, later: a third, in-between pass, and every filler a
+      // little looser in what counts as "near" — small gaps still showed.)
+      for (const fr of [(opts.filler ?? 13) * s * 1.9, (opts.filler ?? 13) * s * 1.35, (opts.filler ?? 13) * s])
       if (fr > 0 && body.length > 3) {
         const minX = Math.min(...body.map((b) => b.x - b.r)), maxX = Math.max(...body.map((b) => b.x + b.r));
         const minY = Math.min(...body.map((b) => b.y - b.r)), maxY = Math.max(...body.map((b) => b.y + b.r));
@@ -1937,11 +1939,11 @@ export function generateStructureSilhouette(
             for (const b of body) {
               const e = Math.hypot(gx - b.x, gy - b.y) - b.r;
               if (e < -fr * 0.15) { inside = true; break; }
-              if (e < fr * 0.9) near++;
+              if (e < fr * 1.15) near++;
             }
             if (!inside) {
               for (const b of fillers) {
-                if (Math.hypot(gx - b.x, gy - b.y) < b.r + fr * 0.85) { inside = true; break; }
+                if (Math.hypot(gx - b.x, gy - b.y) < b.r + fr * 0.7) { inside = true; break; }
               }
             }
             const needNear = fr > (opts.filler ?? 13) * s * 1.5 ? 3 : 2;
