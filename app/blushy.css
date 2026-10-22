@@ -113,14 +113,14 @@
 .bz-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 
 /* Birthday card */
-.bz-birthday { grid-column: 1 / -1; display: flex; align-items: center; gap: 19px; min-height: 145px; padding: 12px 42px 12px 13px; overflow: hidden; }
-.bz-birthday .art { width: 118px; height: 118px; flex: 0 0 118px; border-radius: 16px; overflow: hidden; }
+.bz-birthday { grid-column: 1 / -1; display: flex; align-items: center; gap: 28px; min-height: 280px; padding: 18px 46px 18px 18px; overflow: hidden; }
+.bz-birthday .art { width: 240px; height: 240px; flex: 0 0 240px; border-radius: 18px; overflow: hidden; }
 .bz-birthday .art { background: #fff; }
 .bz-birthday .art img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.bz-birthday h3 { font-size: clamp(23px, 2.1vw, 29px); margin: 0 0 9px; }
+.bz-birthday h3 { font-size: clamp(30px, 2.8vw, 42px); margin: 0 0 12px; }
 .bz-birthday h3 .pink { color: var(--bz-pink); }
 .bz-birthday h3 .lilac { color: #8354bd; }
-.bz-birthday p { font-size: 12.5px; color: var(--bz-ink); line-height: 1.6; }
+.bz-birthday p { font-size: 15px; color: var(--bz-ink); line-height: 1.6; }
 .bz-birthday p .mint { color: #219f61; font-weight: 800; }
 .bz-birthday p .blue { color: #338fc3; font-weight: 800; }
 
@@ -369,10 +369,10 @@
   .bz-ticker .accent { font-size: 14px; }
   .bz-choice-grid { gap: 9px; }
   .bz-choice { padding: 13px; }
-  .bz-birthday { gap: 9px; min-height: 127px; padding: 10px 34px 10px 8px; }
-  .bz-birthday .art { width: 88px; height: 100px; flex-basis: 88px; }
-  .bz-birthday h3 { font-size: 20px; margin-bottom: 5px; }
-  .bz-birthday p { font-size: 10.5px; }
+  .bz-birthday { gap: 12px; min-height: 170px; padding: 12px 34px 12px 10px; }
+  .bz-birthday .art { width: 130px; height: 146px; flex-basis: 130px; }
+  .bz-birthday h3 { font-size: 25px; margin-bottom: 6px; }
+  .bz-birthday p { font-size: 12px; }
   .bz-layout-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bz-content { padding: 14px; }
   .bz-footer-inner { padding: 9px 12px; }

@@ -612,7 +612,7 @@ export default function ConfigurePage() {
           {step < 2 ? (
             <div className="bz-cake">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/design/balloon-dog.webp" alt="Illustrated dalmatian holding a bunch of balloons" />
+              <img src="/design/balloon-dog-outline.webp" alt="Illustrated dalmatian holding a bunch of balloons" />
             </div>
           ) : (
             <>
