@@ -29,7 +29,8 @@ function SectionGroup({
       <ul className="space-y-1.5">
         {lines.map((line, i) => (
           <li key={i} className="flex justify-between gap-3 text-sm">
-            <span className="text-black/60">{line.label}</span>
+            {/* 2026-10-22 redesign: the garland tier is presented as "Organic Garland" (display only). */}
+            <span className="text-black/60">{line.label.replace("Balloon Garland", "Organic Garland")}</span>
             <span className="font-medium tabular-nums">
               {line.amount === 0
                 ? <span className="text-black/40">Included</span>
@@ -57,10 +58,10 @@ export default function PriceSummary({
   const addonLines   = lines.filter((l) => l.section === "addons");
 
   return (
-    <div className={`rounded-2xl bg-white p-4 ${className}`} style={{ border: "1.5px solid #F1D8E2", boxShadow: "0 4px 16px rgba(39,40,68,0.05)" }}>
+    <div className={`rounded-2xl bg-white p-4 ${className}`} style={{ border: "1.5px solid #F5E4E9", boxShadow: "0 8px 25px rgba(103,44,71,.035)" }}>
       <div className="mb-4 flex items-center gap-2">
-        <span className="text-sm" style={{ color: "#EC4D8D" }}>▣</span>
-        <h3 className="text-[13px] font-extrabold" style={{ color: "#15182E", letterSpacing: "-0.2px" }}>Estimated total</h3>
+        <span className="text-sm" style={{ color: "#FF0D66" }}>✦</span>
+        <h3 className="font-hand text-[20px]" style={{ color: "#271617" }}>Estimated total</h3>
       </div>
 
       <div className="space-y-4">

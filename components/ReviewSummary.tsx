@@ -28,8 +28,8 @@ function Row({ k, v }: { k: string; v: string }) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-black/10 bg-white p-4">
-      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-black/40">
+    <div className="rounded-2xl border-[1.5px] border-[#F5E4E9] bg-white p-4" style={{ boxShadow: "0 8px 25px rgba(103,44,71,.035)" }}>
+      <h4 className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#ff0d66]">
         {title}
       </h4>
       <dl>{children}</dl>
@@ -51,7 +51,8 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
       <Section title="Decor">
         <Row k="Backdrop panels" v={String(decor.backdropItems.length)} />
         <Row k="Shapes" v={decor.backdropItems.map((i) => shapeById(i.type)?.label ?? i.type).join(", ")} />
-        <Row k="Balloons" v={balloonStyleById(decor.balloonStyle)?.label ?? "—"} />
+        {/* 2026-10-22 redesign: the garland tier is presented as "Organic Garland" (display only). */}
+        <Row k="Balloons" v={decor.balloonStyle === "none" ? "No balloons" : balloonStyleById(decor.balloonStyle) ? "Organic Garland" : "—"} />
         <div className="flex items-center justify-between gap-4 py-1 text-sm">
           <dt className="text-black/50">Balloon colors</dt>
           <dd className="flex gap-1">

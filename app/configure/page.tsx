@@ -1,9 +1,6 @@
 ﻿"use client";
 
-import { Plus_Jakarta_Sans, Cormorant_Garamond } from "next/font/google";
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["500", "600", "700", "800"] });
-// Claude Design handoff: elegant serif display headings (self-hosted at build via next/font)
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["600", "700"] });
+// Fonts (Kalam, Caveat, DM Sans) are loaded once in app/layout.tsx.
 
 import { useEffect, useMemo, useState } from "react";
 import { getThemeGraphicPresets } from "@/lib/themeCatalog";
@@ -119,27 +116,30 @@ function OptionSample({ src, alt }: { src: string; alt: string }) {
 
 // Elegant serif for display headings — Cormorant Garamond per the Claude Design
 // handoff, with system serif fallbacks.
-const SERIF = `${cormorant.style.fontFamily}, Georgia, 'Times New Roman', serif`;
+// 2026-10-22 redesign: headings use the handwritten Kalam face (app/layout.tsx).
+const SERIF = `var(--bz-hand), 'Kalam', 'Segoe Print', cursive`;
 
 // ── Claude Design handoff tokens ─────────────────────────────────────────
+// 2026-10-22: re-pointed at the "Sparkly party" palette (app/blushy.css),
+// so every existing inline-styled control picks up the new look unchanged.
 const DC = {
-  pageBg:    "#FDF6F8",
-  cardBd:    "#F3D7E1",
-  innerBg:   "#FDF9FA",
-  rose:      "#D8548A",
-  roseDeep:  "#C24373",
-  plum:      "#46313B",
-  muted:     "#97808A",
-  faint:     "#B79AA6",
-  chipBg:    "#FBE9EF",
-  dashedBd:  "#E5BECF",
-  ctaGrad:   "linear-gradient(135deg,#E36A97,#D8548A)",
-  ctaShadow: "0 8px 22px rgba(216,84,138,.4)",
-  cardShadow: "0 8px 24px rgba(216,84,138,.08)",
-  selBorder: "2px solid #D8548A",
-  selShadow: "0 0 0 5px #FBE9EF, 0 10px 26px rgba(216,84,138,.16)",
-  amberBg:   "#FFF3D6",
-  amberFg:   "#A0761E",
+  pageBg:    "#FFFFFF",
+  cardBd:    "#F5E4E9",
+  innerBg:   "#FFFFFF",
+  rose:      "#FF0D66",
+  roseDeep:  "#A72F62",
+  plum:      "#271617",
+  muted:     "#7F717C",
+  faint:     "#9C8D96",
+  chipBg:    "#FFEAF3",
+  dashedBd:  "#FF9BC1",
+  ctaGrad:   "#FF0D66",
+  ctaShadow: "0 5px 0 rgba(255,13,102,.13), 0 11px 25px rgba(255,13,102,.15)",
+  cardShadow: "0 8px 25px rgba(103,44,71,.035)",
+  selBorder: "2px solid #FF0D66",
+  selShadow: "0 4px 0 #FFE1EC",
+  amberBg:   "#FFF7DF",
+  amberFg:   "#8A6A12",
 } as const;
 
 // Playful mini illustration for setup layout cards — Claude Design proportions:
@@ -238,10 +238,9 @@ import StepNavigation from "@/components/StepNavigation";
 import OptionCard from "@/components/OptionCard";
 import PackageCard from "@/components/PackageCard";
 import AddOnCard from "@/components/AddOnCard";
-import PriceSummary, { TotalBadge } from "@/components/PriceSummary";
+import Sprinkles from "@/components/design/Sprinkles";
 import VenueDetailsForm from "@/components/VenueDetailsForm";
 import ReviewSummary from "@/components/ReviewSummary";
-import StickyBottomCTA from "@/components/StickyBottomCTA";
 
 const STEPS = [
   "Event",
@@ -253,6 +252,47 @@ const STEPS = [
   "Review",
 ];
 
+// 2026-10-22 redesign: the heading, eyebrow and progress line of each step,
+// from the design reference.
+const STEP_COPY: { heading: [string, string]; description: string; eyebrow: string; progress: string }[] = [
+  { heading: ["What are we", "celebrating?"], description: "Start with the occasion — then we will guide the sparkle from there.", eyebrow: "LET’S CELEBRATE", progress: "Let’s get this party started!" },
+  { heading: ["Pick your party", "magic!"], description: "Tap a theme to set the mood for the whole celebration.", eyebrow: "CHOOSE YOUR VIBE", progress: "Finding your party personality" },
+  { heading: ["Build your", "sparkly backdrop."], description: "Shape it, style it and add the pretty bits — no overwhelm required.", eyebrow: "LET’S DECORATE", progress: "Time for balloon magic!" },
+  { heading: ["How hands-on", "shall we be?"], description: "Choose the kind of support that fits your party plans.", eyebrow: "YOUR WAY, ALWAYS", progress: "Good choices, good vibes" },
+  { heading: ["Sprinkle in", "some extras!"], description: "Optional experiences to make the day even sweeter.", eyebrow: "THE LITTLE DETAILS", progress: "Just a little more sparkle" },
+  { heading: ["Where’s the", "party?"], description: "A few simple details and you are almost ready.", eyebrow: "ALMOST THERE", progress: "Nearly done!" },
+  { heading: ["Your party looks", "so good!"], description: "Review your picks and send your sparkly plan for a final quote.", eyebrow: "THE BIG REVEAL", progress: "Ready to celebrate!" },
+];
+
+// The Decor step's four tabs (the reference's compact decor builder).
+const DECOR_TABS: { num: string; name: string; kicker: string; title: string; sub: string }[] = [
+  { num: "01", name: "Backdrop", kicker: "START HERE", title: "Pick your backdrop ✦", sub: "Choose the shape. We’ll take care of the pretty bits." },
+  { num: "02", name: "Style", kicker: "MAKE IT YOURS", title: "Little details, big wow!", sub: "Size, colour, a sweet message and theme graphics." },
+  { num: "03", name: "Balloons", kicker: "COLOUR MAGIC", title: "Let’s add balloons!", sub: "Choose the garland and its Sempertex colours." },
+  { num: "04", name: "Extras", kicker: "LAST LITTLE TOUCHES", title: "Extra party magic", sub: "Characters, florals, signs and plinths — only the pieces you love." },
+];
+
+// Hand-painted theme icons from the design reference (public/design/themes).
+const THEME_ICON: Partial<Record<string, string>> = {
+  frozen: "/design/themes/frozen.png", unicorn: "/design/themes/unicorn.png", dinosaur: "/design/themes/dinosaur.png",
+  safari: "/design/themes/safari.png", princess: "/design/themes/princess.png", superhero: "/design/themes/superhero.png",
+  barbie: "/design/themes/barbie.png", bluey: "/design/themes/bluey.png", pokemon: "/design/themes/pokemon.png",
+  stitch: "/design/themes/stitch.png", mermaid: "/design/themes/mermaid.png", space: "/design/themes/space.png",
+  football: "/design/themes/football.png", lego: "/design/themes/lego.png", kpop: "/design/themes/k-pop.png",
+  encanto: "/design/themes/encanto.png", cocomelon: "/design/themes/cocomelon.png", teddy_bear: "/design/themes/teddy-bear.png",
+  pineapple_tropical: "/design/themes/tropical.png", blush_garden: "/design/themes/blush-garden.png", luxury_neutral: "/design/themes/luxury-neutral.png",
+};
+
+// Illustrated backdrop icons from the design reference (public/design/backdrops),
+// by setup template id.
+const SETUP_ICON: Partial<Record<string, string>> = {
+  single_arch: "/design/backdrops/single-arch.png", single_round: "/design/backdrops/single-round.png",
+  single_banner: "/design/backdrops/banner-backdrop.png", single_shimmer: "/design/backdrops/shimmer-wall.png",
+  arch_shimmer: "/design/backdrops/arch-shimmer.png", balloon_ring: "/design/backdrops/balloon-ring.png",
+  arch_open_frame: "/design/backdrops/arch-open-frame.png", double_arch: "/design/backdrops/double-arch.png",
+  triple_arch: "/design/backdrops/triple-arch.png",
+};
+
 type View = "configure" | "success";
 
 interface SubmitResult {
@@ -263,6 +303,13 @@ interface SubmitResult {
 export default function ConfigurePage() {
   const [config, setConfig] = useState<BuilderConfig>(defaultConfig());
   const [step, setStep] = useState(0);
+  // Which of the Decor step's four tabs is open.
+  const [decorTab, setDecorTab] = useState(0);
+  // The landing page links straight to the Theme step (/configure?step=theme).
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("step");
+    if (p === "theme") setStep(1);
+  }, []);
   const [view, setView] = useState<View>("configure");
 
   // Auto-generating photorealistic preview (debounced, server-side fal.ai).
@@ -283,14 +330,11 @@ export default function ConfigurePage() {
   const [generateFinalRender, setGenerateFinalRender] = useState<(() => void) | null>(null);
 
   const theme = themeById(config.theme) ?? THEMES[0];
-  const accentStyle = useMemo(
-    () =>
-      ({
-        ["--accent" as any]: hexToRgbTriplet(theme.accent),
-        ["--accent-soft" as any]: softTriplet(theme.accent),
-      }) as React.CSSProperties,
-    [theme]
-  );
+  // 2026-10-22 redesign: the interface stays in Blushy brand pink whatever the
+  // theme (app/globals.css sets --accent); the theme's own accent is product
+  // data and is still used for "Theme accent" lettering.
+  const accentStyle = useMemo(() => ({}) as React.CSSProperties, []);
+  void hexToRgbTriplet; void softTriplet;
 
   // ---- mutation helpers ----------------------------------------------------
   function patchDecor(patch: Partial<DecorConfig>) {
@@ -468,7 +512,10 @@ export default function ConfigurePage() {
   }
 
   // =========================================================================
-  // CONFIGURE
+  // CONFIGURE — 2026-10-22 "Sparkly party in minutes" redesign
+  // (design-reference/Blushy_Sparkly_Party_All_Steps_Matching_Landing.html).
+  // Layout and presentation only: every handler, state value, validation
+  // rule and the render/price logic below is the one that was here before.
   // =========================================================================
   const isReview = step === STEPS.length - 1;
   const canSubmit =
@@ -484,272 +531,235 @@ export default function ConfigurePage() {
     document.getElementById("party-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
     generateFinalRender?.();
   };
+  // The Decor step is split into four tabs (Backdrop, Style, Balloons,
+  // Extras); Generate Render is offered once the customer reaches Extras.
+  const onLastDecorTab = decorTab === DECOR_TABS.length - 1;
+  const archUnsized = config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId);
 
-  const Preview = (
-    <div className="space-y-3">
-      <SetupPreview
-        config={config}
-        status={preview.status}
-        imageUrl={preview.imageUrl}
-        isIncremental={preview.isIncremental}
-        onRegenerate={preview.regenerate}
-        onPatchDecor={patchDecor}
-        showControls={step >= 2}
-      />
-      <PriceSummary config={config} className="hidden lg:block" />
-    </div>
-  );
+  const goToStep = (n: number) => {
+    setStep(Math.max(0, Math.min(STEPS.length - 1, n)));
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const copy = STEP_COPY[step];
+  const total = priceBreakdown(config).total;
+
+  let nextLabel: React.ReactNode = "Keep going →";
+  let onNext: () => void = () => goToStep(step + 1);
+  let nextDisabled = false;
+  if (step === 0) nextLabel = "Let’s go! →";
+  if (step === 1) { nextDisabled = !config.themeSelected; }
+  if (isDecorStep) {
+    if (!onLastDecorTab) {
+      nextLabel = `Next: ${DECOR_TABS[decorTab + 1].name} →`;
+      onNext = () => setDecorTab(decorTab + 1);
+    } else if (!decorRenderReady) {
+      nextLabel = finalRenderState.hasRender ? "Regenerate render ✨" : "Generate render ✨";
+      onNext = triggerDecorGenerateRender;
+      nextDisabled = archUnsized;
+    } else {
+      nextLabel = "Continue to Package →";
+    }
+  }
+  if (step === 5) nextLabel = "See my party →";
+  if (isReview) { nextLabel = "Request Final Quote ✦"; onNext = submit; nextDisabled = !canSubmit; }
+  const busy = submitting || (isDecorStep && finalRenderState.generating);
 
   return (
-    <main style={{ ...accentStyle, background: DC.pageBg }} className={`min-h-screen ${jakarta.className}`}>
-      {/* Header — Claude Design: white translucent bar, serif wordmark, step pills */}
-      <header className="sticky top-0 z-30 backdrop-blur" style={{ background: "rgba(255,255,255,.92)", borderBottom: `1px solid ${DC.cardBd}` }}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-7 py-3.5">
-          {/* Logo */}
-          <div className="flex items-baseline gap-2">
-            <span style={{ color: DC.rose, fontSize: 18, lineHeight: 1 }}>✦</span>
-            <span style={{ fontSize: 26, fontWeight: 700, color: DC.plum, fontFamily: SERIF, lineHeight: 1 }}>Blushy</span>
-            <span style={{ fontSize: 9, fontWeight: 700, color: DC.rose, letterSpacing: "0.18em", textTransform: "uppercase" }}>Birthday Builder</span>
-          </div>
+    <div className="bz-body" style={{ minHeight: "100vh", background: "#fff" }}>
+      <Sprinkles count={110} seed={7} />
 
-          {/* Step navigation -centered pills */}
-          <nav className="hidden lg:flex items-center gap-1.5">
+      {/* Top bar: wordmark, step navigation, running total */}
+      <header className="bz-topbar">
+        <div className="bz-topbar-inner">
+          <a href="/" className="bz-brand" aria-label="Blushy home">
+            <span className="burst">✳</span>
+            <span className="word">blushy</span>
+            <span className="small">BIRTHDAY BUILDER</span>
+          </a>
+          <nav className="bz-stepnav" aria-label="Builder steps">
             {STEPS.map((s, i) => {
               const done = i < step;
               const active = i === step;
               return (
-                <button
-                  key={i}
-                  onClick={() => i <= step && setStep(i)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 6, padding: "6px 13px",
-                    borderRadius: 999, fontSize: 12, fontWeight: 600,
-                    background: active ? DC.rose : done ? DC.chipBg : "#FFFFFF",
-                    color: active ? "#FFFFFF" : done ? DC.roseDeep : DC.faint,
-                    border: `1.5px solid ${active ? DC.rose : DC.cardBd}`,
-                    cursor: i <= step ? "pointer" : "default",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  <span style={{ fontSize: 10 }}>{done ? "✓" : i + 1}</span>
-                  {s}
+                <button key={s} type="button"
+                  className={`bz-navstep ${active ? "active" : ""} ${done ? "done" : ""}`}
+                  onClick={() => i <= step && goToStep(i)}
+                  disabled={i > step}
+                  aria-current={active ? "step" : undefined}
+                  aria-label={`Go to ${s}`}>
+                  <span className="n">{done ? "✓" : i + 1}</span>
+                  <span className="label">{s}</span>
                 </button>
               );
             })}
           </nav>
-
-          {/* Total */}
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 9, color: DC.faint, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>Your party so far</div>
-            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 22, color: DC.rose, lineHeight: 1.1 }}>AED {formatAED(priceBreakdown(config).total)}</div>
+          <div className="bz-total">
+            <div>
+              <div className="word">Your party so far</div>
+              <strong>AED {formatAED(total)}</strong>
+            </div>
+            <span className="bz-mini-pill">✦ party in progress</span>
           </div>
         </div>
       </header>
 
-      <div style={{ maxWidth: 1360, margin: "0 auto", padding: "24px 28px 0", display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
-        {/* Left: preview rail. 2026-09-05: widened from a 480px cap to ~800px.
-            The render is the thing the customer is judging and it was getting a
-            third of a 1360px page while the form took the rest ("preview cok
-            kucuk, cok daha buyusun ekran"). */}
-        <div style={{ flex: "1 1 700px", minWidth: 340, maxWidth: 820 }}>
-          <div className="lg:sticky" style={{ top: 76 }}>
-            <div className="space-y-3.5">
-              {/* Preview card — SetupPreview draws its own image + footer card */}
-              <div>
-                <SetupPreview
-                  config={config}
-                  status={preview.status}
-                  imageUrl={preview.imageUrl}
-                  isIncremental={preview.isIncremental}
-                  onRegenerate={preview.regenerate}
-                  onPatchDecor={patchDecor}
-                  // 2026-10-22: no Generate render before the decor is chosen —
-                  // "theme secerken generate render gozukmesin".
-                  showControls={step >= 2}
-                  onFinalRenderStateChange={setFinalRenderState}
-                  onGenerateReady={(fn) => setGenerateFinalRender(() => fn)}
-                />
-              </div>
-              <PriceSummary config={config} className="hidden lg:block" />
+      <div className="bz-ticker"><span className="sprinkle">✳</span> sprinkle a little happy <span className="accent">on your big day!</span><span className="sprinkle">✳</span></div>
+
+      <main className="bz-main">
+        {/* Left: the opening cake during Event and Theme, then the real AI render card */}
+        <section className="bz-left" aria-label="Party concept preview">
+          {step < 2 ? (
+            <div className="bz-cake">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/design/confetti-cake.gif" alt="Animated confetti birthday cake" />
             </div>
+          ) : (
+            <>
+              <SetupPreview
+                config={config}
+                status={preview.status}
+                imageUrl={preview.imageUrl}
+                isIncremental={preview.isIncremental}
+                onRegenerate={preview.regenerate}
+                onPatchDecor={patchDecor}
+                // Generate is offered from the Extras tab on, and wherever a
+                // render already exists (so it can be regenerated).
+                showControls={step > 2 || onLastDecorTab || finalRenderState.hasRender}
+                onFinalRenderStateChange={setFinalRenderState}
+                onGenerateReady={(fn) => setGenerateFinalRender(() => fn)}
+              />
+              {isDecorStep && !finalRenderState.hasRender && (
+                <div className="bz-little-note">
+                  <svg viewBox="0 0 35 28" aria-hidden="true"><path d="M3 4Q6 23 29 16M21 11L30 16L23 23" /></svg>
+                  <span>Finish the Extras tab, then tap <b>Generate render</b> to see your design.</span>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+
+        {/* Right: the step itself */}
+        <section className="bz-right" aria-label="Party configuration">
+          <div className="bz-headbox">
+            <div className="bz-step-tag">{copy.eyebrow}</div>
+            <h1>{copy.heading[0]} <span>{copy.heading[1]}</span></h1>
+            <p>{copy.description}</p>
+            <svg className="bz-wiggle" viewBox="0 0 155 24" aria-hidden="true"><path d="M3 14Q15 3 27 14T51 14T75 14T99 14T123 14T147 14" /></svg>
           </div>
-        </div>
+          <div className="bz-step-progress"><span>STEP {step + 1} OF {STEPS.length}</span><span>{copy.progress}</span></div>
+          <div className="bz-progress"><span style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} /></div>
 
-        {/* Right: steps -flex 1, min 720px */}
-        <div style={{ flex: "999 1 480px", minWidth: 0, paddingBottom: 120 }}>
-
-          <div>
+          <div className="bz-content">
             {step === 0 && (
               <div>
-                {/* Intro band */}
-                {/* Typographic intro — no decorative icons (2026-07-20 product
-                    direction: the pastel icon set read as unprofessional). */}
-                <div style={{ marginBottom: 22 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.6px", textTransform: "uppercase", color: DC.faint }}>Step 1 — Occasion</div>
-                  <div style={{ fontFamily: SERIF, fontSize: 27, fontWeight: 600, color: DC.plum, letterSpacing: "-0.3px", marginTop: 6, lineHeight: 1.15 }}>What are we celebrating?</div>
-                  <div style={{ fontSize: 13, color: DC.muted, marginTop: 7, fontWeight: 500, maxWidth: 520, lineHeight: 1.55 }}>
-                    We tailor every balloon, backdrop and styling suggestion to your occasion.
-                  </div>
-                </div>
-
-                {/* Occasion cards — Birthday live, the rest on the roadmap */}
-                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="bz-tip"><span className="icon">✳</span><span>Psst... tap Birthday to start the fun!</span><span className="arrow">↙</span></div>
+                <div className="bz-choice-grid">
                   {EVENT_TYPES.map((e) => {
                     const sel = config.eventType === e.id;
+                    // Only Birthday is live; the others stay on the roadmap,
+                    // exactly as before.
                     const available = e.id === "birthday";
+                    if (available) {
+                      return (
+                        <button key={e.id} type="button" onClick={() => setEventType(e.id)} aria-pressed={sel}
+                          className={`bz-choice bz-birthday ${sel ? "selected" : ""}`}>
+                          <span className="art">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src="/design/birthday-card.jpg" alt="" />
+                          </span>
+                          <span>
+                            <h3><span className="pink">Birthday,</span> <span className="lilac">please!</span></h3>
+                            <p><span className="mint">Confetti</span>, <span className="blue">candles</span> &amp; all the good stuff.</p>
+                          </span>
+                          {sel && <span className="tick">✓</span>}
+                        </button>
+                      );
+                    }
                     return (
-                      <button key={e.id} type="button"
-                        onClick={() => available && setEventType(e.id)}
-                        disabled={!available}
-                        aria-pressed={available ? sel : undefined}
-                        className={available ? "transition hover:-translate-y-0.5" : ""}
-                        style={{
-                          position: "relative", textAlign: "left",
-                          cursor: available ? "pointer" : "default",
-                          borderRadius: 14, padding: "15px 16px", minHeight: 78,
-                          border: sel && available ? "1.5px solid #D8548A" : "1px solid #ECE7E4",
-                          background: available ? "white" : "#FBFAF9",
-                          boxShadow: sel && available ? "0 0 0 3px #FBE9EF" : "0 2px 8px rgba(70,49,59,.05)",
-                          opacity: available ? 1 : 0.62,
-                        }}>
-                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-                          <span style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 600, color: available ? DC.plum : "#9B8F94", lineHeight: 1.25 }}>{e.label}</span>
-                          {available
-                            ? sel && (
-                                <span aria-hidden style={{ flexShrink: 0, marginTop: 3, width: 16, height: 16, borderRadius: "50%", background: DC.rose, color: "white", fontSize: 9, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>✓</span>
-                              )
-                            : (
-                              <span style={{ flexShrink: 0, marginTop: 2, fontSize: 9, fontWeight: 600, letterSpacing: ".6px", textTransform: "uppercase", color: "#A99DA3", background: "#F2EEEC", border: "1px solid rgba(40,28,34,.05)", padding: "2px 7px", borderRadius: 20, whiteSpace: "nowrap" }}>Soon</span>
-                            )}
-                        </div>
-                        <div style={{ fontSize: 11.5, color: available ? DC.muted : "#AFA4A9", marginTop: 3, lineHeight: 1.45 }}>{e.description}</div>
+                      <button key={e.id} type="button" className="bz-choice" disabled aria-disabled="true">
+                        <span className="bz-coming">SOON</span>
+                        <h3 style={{ fontSize: 19, marginTop: 14 }}>{e.label}</h3>
+                        <p>{e.description}</p>
                       </button>
                     );
                   })}
                 </div>
-
-                {/* Bottom hint */}
-                <div style={{ marginTop: 18, fontSize: 11.5, color: DC.faint, lineHeight: 1.55 }}>
-                  More occasions are on the way — birthdays are where Blushy shines today.
-                </div>
+                <div className="bz-help">✦ <strong>Birthday parties are live!</strong> Other celebrations will join the fun later.</div>
               </div>
             )}
 
             {step === 1 && (
-              <StepShell title="Pick your party world">
-                <p className="-mt-2 mb-3 text-[12.5px] font-medium" style={{ color: DC.muted, maxWidth: 520, lineHeight: 1.55 }}>
-                  Pick one and we&apos;ll match the balloons, graphics and styling to it. You can change it anytime.
-                </p>
-                {!config.themeSelected && (
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5"
-                    style={{ background: DC.chipBg, color: DC.roseDeep, fontSize: 11.5, fontWeight: 600 }}>
-                    <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: DC.rose, display: "inline-block" }}/>
-                    Choose a theme to continue
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+              <div>
+                <div className="bz-tip"><span className="icon">✳</span><span>Pick a party world — it sets the balloons, graphics and styling.</span><span className="arrow">↙</span></div>
+                <div className="bz-sectionline"><h2>Choose your party world</h2><span className="bz-pill-mini">{config.themeSelected ? "SELECTED" : "PICK ONE"}</span></div>
+                <div className="bz-theme-grid">
                   {THEMES.map((t) => {
                     const sel = config.themeSelected && config.theme === t.id;
-                    // Theme cards are a compact name-first list (2026-07-20
-                    // product direction: illustrated covers read as childish and
-                    // made this step far too tall) — no icon or cover art per card.
                     return (
                       <button key={t.id} type="button" onClick={() => setTheme(t.id)} aria-pressed={sel}
-                        className="relative flex w-full flex-col gap-2 px-3.5 py-3 text-left transition hover:-translate-y-0.5"
-                        style={{
-                          background: "white", borderRadius: 14,
-                          border: sel ? "1.5px solid #D8548A" : "1px solid #ECE7E4",
-                          boxShadow: sel ? "0 0 0 3px #FBE9EF" : "0 2px 8px rgba(70,49,59,.05)",
-                        }}>
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="truncate" style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 15.5, color: DC.plum, lineHeight: 1.25 }}>{t.name}</span>
-                          {sel && (
-                            <span aria-hidden className="mt-[3px] inline-flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ background: DC.rose }}>✓</span>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          {t.balloonColors.length > 0 && (
-                            <div className="flex gap-[4px]">
-                              {t.balloonColors.slice(0, 5).map((c, i) => <span key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: c, border: "1px solid rgba(40,28,34,.1)" }}/>)}
-                            </div>
-                          )}
-                          <span className="shrink-0 text-[9.5px] font-medium tracking-wide" style={{ color: t.priceModifier > 0 ? DC.faint : "#5C9179" }}>
-                            {t.priceModifier > 0 ? `+AED ${t.priceModifier}` : "Included"}
+                        className={`bz-choice bz-theme ${sel ? "selected" : ""}`}>
+                        {sel && <span className="tick">✓</span>}
+                        <span className="art">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={THEME_ICON[t.id] ?? "/design/themes/blush-garden.png"} alt="" loading="lazy" />
+                        </span>
+                        <h3>{t.name}</h3>
+                        {/* The theme's real Sempertex balloon colours — product data. */}
+                        {t.balloonColors.length > 0 && (
+                          <span className="palette" aria-hidden="true">
+                            {t.balloonColors.slice(0, 5).map((c, i) => <i key={i} style={{ background: c }} />)}
                           </span>
-                        </div>
+                        )}
+                        <small className={`cost ${t.priceModifier > 0 ? "" : "included"}`}>
+                          {t.priceModifier > 0 ? `+AED ${t.priceModifier}` : "Included"}
+                        </small>
                       </button>
                     );
                   })}
-
-                  {/* Custom Theme placeholder */}
-                  <button type="button"
-                    onClick={() => setShowCustomThemeInput(v => !v)}
-                    className="relative flex w-full flex-col gap-2 rounded-2xl border border-dashed border-black/20 bg-white p-4 text-left transition hover:border-accent/40">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="#C084FC" strokeWidth="1.5" strokeDasharray="3 2"/><path d="M11 7v4M11 13v2" stroke="#C084FC" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                        <span className="text-sm font-semibold text-black/70">Custom Theme</span>
-                      </div>
-                      <span className="shrink-0 rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-medium text-black/40">Coming soon</span>
-                    </div>
-                    <span className="text-xs leading-snug text-black/40">Describe your own theme for a fully personalized setup</span>
-                    {showCustomThemeInput && (
-                      <textarea
-                        value={customThemeText}
-                        onChange={e => setCustomThemeText(e.target.value)}
-                        placeholder="e.g. Under the sea with teal and coral colors, starfish, seashells..."
-                        onClick={e => e.stopPropagation()}
-                        rows={2}
-                        className="mt-1 w-full rounded-lg border border-black/10 p-2 text-xs outline-none focus:border-accent/50"
-                      />
-                    )}
-                  </button>
                 </div>
-              </StepShell>
+                <div className="bz-help">
+                  {config.themeSelected
+                    ? <>✨ <strong>{theme.name} selected!</strong> Tap any icon to switch themes.</>
+                    : <>✦ <strong>Choose a theme to continue.</strong> You can change it anytime.</>}
+                </div>
+              </div>
             )}
 
             {step === 2 && (
-              <div style={{ background: "white", borderRadius: 20, boxShadow: "0 4px 24px rgba(0,0,0,0.08)", padding: 24 }}>
-                <DecorStep config={config} patchDecor={patchDecor} />
-              </div>
+              <DecorStep config={config} patchDecor={patchDecor} decorTab={decorTab} setDecorTab={setDecorTab}
+                onGenerate={triggerDecorGenerateRender} renderReady={decorRenderReady}
+                hasRender={finalRenderState.hasRender} generating={finalRenderState.generating}
+                onContinue={() => goToStep(3)} />
             )}
 
             {step === 3 && (
               <StepShell
                 title="Choose your service package"
-                subtitle="Your design is ready -now choose how you want to use it."
+                subtitle="Your design is ready — now choose how you want to use it."
               >
-                <p className="mb-5 rounded-xl bg-black/4 px-4 py-3 text-xs text-black/55">
-                  Packages do not change your design. They define what you receive and how the setup is handled.
-                </p>
+                <div className="bz-tip"><span className="icon">✳</span><span>Packages don’t change your design — they define what you receive and how the setup is handled.</span><span className="arrow">↙</span></div>
 
                 {/* Design Packages */}
                 <div className="mb-6">
-                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-black/35">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#7f717c" }}>
                     Design Packages
                   </p>
                   <div className="grid grid-cols-1 gap-3">
                     {SERVICE_PACKAGES.filter((p) => p.group === "design").map((p) => {
                       const selected = config.servicePackageId === p.id;
                       return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => setServicePackage(p.id)}
-                          className={`flex w-full flex-col gap-3 rounded-2xl border p-5 text-left transition ${
-                            selected
-                              ? "border-accent bg-accent-soft/60 shadow-sm"
-                              : "border-black/10 bg-white hover:border-accent/40"
-                          }`}
-                        >
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-sm font-semibold">{p.name}</span>
-                            <span className="text-sm font-bold text-accent">AED {formatAED(p.price)}</span>
+                        <button key={p.id} type="button" onClick={() => setServicePackage(p.id)} aria-pressed={selected}
+                          className={`bz-choice ${selected ? "selected" : ""}`} style={{ width: "100%" }}>
+                          {selected && <span className="tick">✓</span>}
+                          <div className="flex items-baseline justify-between gap-2 pr-6">
+                            <h3 style={{ fontSize: 21, margin: 0 }}>{p.name}</h3>
+                            <span className="bz-hand" style={{ fontSize: 20, color: "#ff0d66", whiteSpace: "nowrap" }}>AED {formatAED(p.price)}</span>
                           </div>
-                          <ul className="space-y-1.5">
+                          <ul className="mt-2 space-y-1.5">
                             {p.includes.map((line) => (
-                              <li key={line} className="flex items-start gap-2 text-xs text-black/65">
-                                <span className="mt-[3px] text-accent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                              <li key={line} className="flex items-start gap-2 text-xs" style={{ color: "#4e4147" }}>
+                                <span className="mt-[3px]" style={{ color: "#ff0d66" }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
                                 <span>{line}</span>
                               </li>
                             ))}
@@ -762,31 +772,24 @@ export default function ConfigurePage() {
 
                 {/* Execution Packages */}
                 <div>
-                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-black/35">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#7f717c" }}>
                     Execution Packages
                   </p>
                   <div className="grid grid-cols-1 gap-3">
                     {SERVICE_PACKAGES.filter((p) => p.group === "execution").map((p) => {
                       const selected = config.servicePackageId === p.id;
                       return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => setServicePackage(p.id)}
-                          className={`flex w-full flex-col gap-3 rounded-2xl border p-5 text-left transition ${
-                            selected
-                              ? "border-accent bg-accent-soft/60 shadow-sm"
-                              : "border-black/10 bg-white hover:border-accent/40"
-                          }`}
-                        >
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-sm font-semibold">{p.name}</span>
-                            <span className="text-sm font-bold text-accent">AED {formatAED(p.price)}</span>
+                        <button key={p.id} type="button" onClick={() => setServicePackage(p.id)} aria-pressed={selected}
+                          className={`bz-choice ${selected ? "selected" : ""}`} style={{ width: "100%" }}>
+                          {selected && <span className="tick">✓</span>}
+                          <div className="flex items-baseline justify-between gap-2 pr-6">
+                            <h3 style={{ fontSize: 21, margin: 0 }}>{p.name}</h3>
+                            <span className="bz-hand" style={{ fontSize: 20, color: "#ff0d66", whiteSpace: "nowrap" }}>AED {formatAED(p.price)}</span>
                           </div>
-                          <ul className="space-y-1.5">
+                          <ul className="mt-2 space-y-1.5">
                             {p.includes.map((line) => (
-                              <li key={line} className="flex items-start gap-2 text-xs text-black/65">
-                                <span className="mt-[3px] text-accent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                              <li key={line} className="flex items-start gap-2 text-xs" style={{ color: "#4e4147" }}>
+                                <span className="mt-[3px]" style={{ color: "#ff0d66" }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
                                 <span>{line}</span>
                               </li>
                             ))}
@@ -801,6 +804,7 @@ export default function ConfigurePage() {
 
             {step === 4 && (
               <StepShell title="Add experiences" subtitle="Optional extras for the day.">
+                <div className="bz-tip"><span className="icon">✳</span><span>A little extra sparkle? Totally optional!</span><span className="arrow">↙</span></div>
                 <div className="space-y-3">
                   {ADDONS.map((addon) => (
                     <AddOnCard
@@ -818,6 +822,7 @@ export default function ConfigurePage() {
 
             {step === 5 && (
               <StepShell title="Venue details">
+                <div className="bz-tip"><span className="icon">✳</span><span>Almost ready! Tell us where the celebration happens.</span><span className="arrow">↙</span></div>
                 <VenueDetailsForm
                   venue={config.venue}
                   customer={config.customer}
@@ -829,11 +834,13 @@ export default function ConfigurePage() {
 
             {step === 6 && (
               <StepShell title="Review & submit">
+                <div className="bz-tip"><span className="icon">✳</span><span>Ta-da! Here’s what you’ve created 🎉</span><span className="arrow">↙</span></div>
                 <div className="space-y-4">
+                  {/* Includes the detailed price breakdown (PriceSummary, the existing pricing engine). */}
                   <ReviewSummary config={config} />
 
                   {!canSubmit && (
-                    <p className="text-center text-xs text-black/50">
+                    <p className="text-center text-xs" style={{ color: "#7f717c" }}>
                       Add your name &amp; WhatsApp number in the Venue step to submit.
                     </p>
                   )}
@@ -844,44 +851,23 @@ export default function ConfigurePage() {
               </StepShell>
             )}
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
 
-      <StickyBottomCTA
-        config={config}
-        stepName={STEPS[step]}
-        ctaLabel={
-          isReview
-            ? "Request Final Quote"
-            : isDecorStep && !decorRenderReady
-            ? "Generate Render"
-            : "Continue"
-        }
-        showBack={step > 0}
-        onBack={() => setStep((s) => Math.max(0, s - 1))}
-        onNext={
-          isReview
-            ? submit
-            : isDecorStep && !decorRenderReady
-            ? triggerDecorGenerateRender
-            : () => setStep((s) => Math.min(STEPS.length - 1, s + 1))
-        }
-        // Theme step is a required choice — everything downstream (palette,
-        // graphics, standee suggestions) is themed, so continuing without one
-        // silently applied the default theme. On Decor, the CTA is disabled
-        // while an arch panel is missing a size — generating would be a no-op.
-        disabled={
-          (isReview && !canSubmit) ||
-          (step === 1 && !config.themeSelected) ||
-          (isDecorStep && !decorRenderReady &&
-            config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId))
-        }
-        busy={submitting || (isDecorStep && finalRenderState.generating)}
-      />
-    </main>
+      {/* Footer bar: Back · note · next action */}
+      <footer className="bz-footer">
+        <div className="bz-footer-inner">
+          <button type="button" className="bz-back" onClick={() => goToStep(step - 1)} disabled={step === 0}>← Back</button>
+          <div className="bz-footer-note">Small steps, big party energy <b>✳</b></div>
+          <button type="button" className="bz-next" onClick={onNext} disabled={nextDisabled || busy}>
+            {busy && <span className="bz-spinner" aria-hidden="true" />}
+            {busy ? (submitting ? "Sending…" : "Generating…") : nextLabel}
+          </button>
+        </div>
+      </footer>
+    </div>
   );
 }
-
 // ---------------------------------------------------------------------------
 // Step shells + decor controls
 // ---------------------------------------------------------------------------
@@ -897,9 +883,9 @@ function StepShell({
 }) {
   return (
     <section>
-      <h2 className="text-[30px] font-semibold text-[#46313B]" style={{ fontFamily: SERIF, lineHeight: 1.08 }}>{title}</h2>
-      {subtitle && <p className="mb-4 mt-1.5 text-[13.5px] font-medium text-[#97808A]">{subtitle}</p>}
-      <div className={subtitle ? "" : "mt-4"}>{children}</div>
+      <h2 className="bz-step-title" style={{ font: "400 25px/1.25 var(--bz-hand)", color: "#271617", margin: "0 0 6px" }}>{title}</h2>
+      {subtitle && <p className="bz-step-sub" style={{ color: "#7f717c", fontSize: 13, margin: "0 0 14px" }}>{subtitle}</p>}
+      <div className={subtitle ? "" : "mt-3"}>{children}</div>
     </section>
   );
 }
@@ -992,9 +978,25 @@ const getThemeDefault = (themeId: string): string[] => {
 function DecorStep({
   config,
   patchDecor,
+  decorTab,
+  setDecorTab,
+  onGenerate,
+  renderReady,
+  hasRender,
+  generating,
+  onContinue,
 }: {
   config: BuilderConfig;
   patchDecor: (p: Partial<DecorConfig>) => void;
+  /** 2026-10-22 redesign: which of the four tabs is open. */
+  decorTab: number;
+  setDecorTab: (n: number) => void;
+  /** The page's existing Generate Render trigger (SetupPreview's own). */
+  onGenerate: () => void;
+  renderReady: boolean;
+  hasRender: boolean;
+  generating: boolean;
+  onContinue: () => void;
 }) {
   const [printFile, setPrintFile] = useState<File | null>(null);
   const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
@@ -1231,7 +1233,8 @@ function clearAllStandees() {
       active ? "ring-2 ring-accent ring-offset-2" : "border-black/15"
     }`;
 
-  const accent = theme.accent;
+  // UI chrome is Blushy pink whatever the theme (the theme accent is product data).
+  const accent = "#FF0D66";
   // Claude Design inner sub-card: #FDF9FA on white section cards
   const card: React.CSSProperties = {
     background: DC.innerBg,
@@ -1751,50 +1754,56 @@ function clearAllStandees() {
   }
 
   return (
-    <div className={jakarta.className}>
-      {/* == PAGE HEADING — Claude Design ====================== */}
-      <div style={{ margin: "4px 2px 20px" }}>
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", color: DC.rose, textTransform: "uppercase", marginBottom: 6 }}>Decor</div>
-        <h1 style={{ margin: 0, fontFamily: SERIF, fontWeight: 600, fontSize: 25, color: DC.plum, lineHeight: 1.1 }}>Build your dream backdrop</h1>
-        <p style={{ margin: "7px 0 0", fontSize: 12.5, color: DC.muted, maxWidth: 540, lineHeight: 1.55 }}>
-          Four quick steps. Everything is pre-styled to your {theme.name} theme — adjust only what you want.
-        </p>
+    <div>
+      {/* == Compact decor head + the four tabs (2026-10-22 redesign) == */}
+      <div className="bz-decor-head">
+        <span>YOUR DECOR</span>
+        <strong>{SETUP_LAYOUT_TEMPLATES.find((t) => t.id === activeSetupTemplateId)?.name ?? "Pick a backdrop"}</strong>
+        <span style={{ marginLeft: "auto", color: "#7f717c", fontWeight: 650 }}>{theme.name} theme</span>
+      </div>
+      <div className="bz-decor-tabbar" role="tablist" aria-label="Decor customization">
+        {DECOR_TABS.map((t, i) => (
+          <button key={t.name} type="button" role="tab" aria-selected={decorTab === i}
+            className={`bz-decor-tab ${decorTab === i ? "on" : ""}`} onClick={() => setDecorTab(i)}>
+            <span className="num">{t.num}</span><span>{t.name}</span>
+          </button>
+        ))}
+      </div>
+      <div className="bz-decor-panel-head">
+        <div>
+          <span className="bz-decor-kicker">{DECOR_TABS[decorTab].kicker}</span>
+          <h2>{DECOR_TABS[decorTab].title}</h2>
+          <p>{DECOR_TABS[decorTab].sub}</p>
+        </div>
+        <span className="bz-decor-count">{DECOR_TABS[decorTab].num} / 04</span>
       </div>
 
-      {/* == 1 · PICK YOUR SETUP =============================== */}
-      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 18, padding: 18, marginBottom: 14, boxShadow: DC.cardShadow }}>
+      {/* == 1 · BACKDROP (tab 01) ============================= */}
+      {decorTab === 0 && (
       <div>
-        {/* Curated setup layouts — playful visual cards */}
+      <div>
+        {/* Curated setup layouts — illustrated icon cards */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-            {numBadge(1)}
-            <div>
-              <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 18, color: DC.plum, lineHeight: 1.15 }}>Pick your setup</div>
-              <div style={{ fontSize: 11.5, color: DC.muted }}>Start with a layout — we&apos;ll arrange the pieces for you.</div>
-              {d.backdropItems.length === 0 && nextCue("Start here — tap a layout")}
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(128px, 1fr))", gap: 10 }}>
+          {d.backdropItems.length === 0 && <div style={{ marginBottom: 10 }}>{nextCue("Start here — tap a layout")}</div>}
+          <div className="bz-layout-grid">
             {SETUP_LAYOUT_TEMPLATES.map((tpl) => {
               const active = activeSetupTemplateId === tpl.id;
+              const icon = SETUP_ICON[tpl.id];
               return (
-                <button key={tpl.id} type="button" onClick={() => applySetupTemplate(tpl.id)}
-                  style={{ position: "relative", padding: "14px 8px 10px", borderRadius: 18, cursor: "pointer", textAlign: "center", transition: "all 0.18s",
-                    border: active ? DC.selBorder : `1.5px solid ${DC.cardBd}`,
-                    background: DC.innerBg,
-                    boxShadow: active ? DC.selShadow : "none",
-                    display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                <button key={tpl.id} type="button" onClick={() => applySetupTemplate(tpl.id)} aria-pressed={active}
+                  className={`bz-choice bz-layout ${active ? "selected" : ""}`} title={tpl.description}>
+                  {active && <span className="tick">✓</span>}
                   {tpl.badge && !active && (
-                    <span style={{ position: "absolute", top: 7, right: 7, background: DC.amberBg, color: DC.amberFg,
-                      fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>{tpl.badge}</span>
+                    <span className="bz-coming" style={{ top: 5, right: 5, padding: "3px 7px" }}>{tpl.badge}</span>
                   )}
-                  <SetupMiniPreview shapes={tpl.miniPreview} />
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: DC.plum, lineHeight: 1.25 }}>{tpl.name}</div>
-                  <div style={{ fontSize: 10.5, color: "#A78E99", lineHeight: 1.35 }}>{tpl.description}</div>
-                  {/* 2026-10-22: the example render under each card was removed; the line drawing stays. */}
-                  {active && (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 9px", borderRadius: 999, background: DC.rose, color: "white", fontSize: 9.5, fontWeight: 700 }}>✓ Your setup</span>
-                  )}
+                  {/* 2026-10-22 redesign: the reference's illustrated backdrop icon. */}
+                  <span className="art">
+                    {icon
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={icon} alt="" loading="lazy" />
+                      : <SetupMiniPreview shapes={tpl.miniPreview} />}
+                  </span>
+                  <h3>{tpl.name}</h3>
                 </button>
               );
             })}
@@ -1852,15 +1861,17 @@ function clearAllStandees() {
         )}
 
       </div>
-      </div>{/* == end 1 · Pick your setup == */}
+      </div>
+      )}{/* == end 1 · Backdrop == */}
 
-      {/* == 2 · SIZE YOUR PIECES ============================== */}
-      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 18, padding: 18, marginBottom: 14, boxShadow: DC.cardShadow }}>
+      {/* == 2 · STYLE (tab 02): sizes, colour, text, graphics == */}
+      {decorTab === 1 && (
+      <div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-          {numBadge(2)}
           <div>
-            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 18, color: DC.plum, lineHeight: 1.15 }}>Size your pieces</div>
-            <div style={{ fontSize: 11.5, color: DC.muted }}>Choose a size for each piece — add-ons unlock once it&apos;s sized.</div>
+            <div style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 21, color: DC.plum, lineHeight: 1.15 }}>Size &amp; style your pieces</div>
+            <div style={{ fontSize: 11.5, color: DC.muted }}>Choose a size for each piece — text and graphics unlock once it&apos;s sized.</div>
+            {d.backdropItems.length === 0 && nextCue("Pick a backdrop in the Backdrop tab first")}
             {/* Round and Banner are sold in one fixed size, so they never have a
                 sizeId and must not raise a "pick a size" cue that can never be
                 satisfied — which is what left the Banner setup looking broken. */}
@@ -2046,7 +2057,8 @@ function clearAllStandees() {
         {d.backdropItems.length === 0 && (
           <div style={{ textAlign: "center", padding: "8px 0 4px", fontSize: 13, color: "#AAA", fontStyle: "italic" }}>Choose a backdrop above to get started</div>
         )}
-      </div>{/* -"--"- end unified backdrop card -"--"- */}
+      </div>
+      )}{/* -"--"- end Style tab -"--"- */}
 
       {/* Old expandable cards removed -unified above. Dead placeholder: */}
       {false && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -2561,16 +2573,10 @@ function clearAllStandees() {
         </>
       )}
 
-      {/* == 3 · STYLE YOUR SETUP ============================== */}
-      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 18, padding: 18, marginBottom: 14, boxShadow: DC.cardShadow }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-          {numBadge(3)}
-          <div>
-            <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 18, color: DC.plum, lineHeight: 1.15 }}>Add your balloons</div>
-            <div style={{ fontSize: 11.5, color: DC.muted }}>Choose a garland — or skip it — then fine-tune the colors.</div>
-            {d.backdropItems.length > 0 && d.balloonStyle === "none" && nextCue("Optional — add a garland")}
-          </div>
-        </div>
+      {/* == 3 · BALLOONS (tab 03) ============================= */}
+      {decorTab === 2 && (
+      <div>
+        {d.backdropItems.length > 0 && d.balloonStyle === "none" && <div style={{ marginBottom: 10 }}>{nextCue("Optional — add a garland")}</div>}
 
       {/* Garland choice — balloons are opt-in (2026-07-20). They used to be
           pre-added by the package's defaultDecor with no way to decline. */}
@@ -2604,7 +2610,7 @@ function clearAllStandees() {
                   boxShadow: active ? "0 0 0 3px #FBE9EF" : "none",
                 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 600, color: active ? DC.roseDeep : DC.plum, lineHeight: 1.2 }}>
-                  {b.id === "none" ? "No balloons" : b.label}
+                  {b.id === "none" ? "No balloons" : "Organic Garland"}
                 </div>
                 <div style={{ fontSize: 10.5, color: DC.faint, marginTop: 2 }}>
                   {b.price > 0 ? `+AED ${b.price}` : "Skip"}
@@ -2837,17 +2843,12 @@ function clearAllStandees() {
         )}
       </div>}
 
-      </div>{/* -"--"- end BALLOONS section -"--"- */}
+      </div>
+      )}{/* -"--"- end Balloons tab -"--"- */}
 
-      {/* == 4 · ADD EXTRA MAGIC =============================== */}
-      <div style={{ background: "white", border: `1px solid ${DC.cardBd}`, borderRadius: 18, padding: 18, marginBottom: 14, boxShadow: DC.cardShadow }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-          {numBadge(4)}
-          <div>
-            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 18, color: DC.plum, lineHeight: 1.15 }}>Add extra magic</div>
-            <div style={{ fontSize: 11.5, color: DC.muted }}>Optional extras — standees and cake plinths.</div>
-          </div>
-        </div>
+      {/* == 4 · EXTRAS (tab 04) =============================== */}
+      {decorTab === 3 && (
+      <div>
 
       {/* CHARACTER STANDEES */}
 <div style={card}>
@@ -3215,7 +3216,26 @@ function clearAllStandees() {
         )}
       </div>
 
-      </div>{/* -"--"- end EXTRAS section -"--"- */}
+      </div>
+      )}{/* -"--"- end Extras tab -"--"- */}
+
+      {/* == Tab footer: next tab, or Generate Render after Extras == */}
+      <div className="bz-decor-footer">
+        <span>✓ Saved as you go</span>
+        {decorTab < DECOR_TABS.length - 1 ? (
+          <button type="button" className="bz-decor-hint" onClick={() => setDecorTab(decorTab + 1)}>
+            Next up: {DECOR_TABS[decorTab + 1].name} →
+          </button>
+        ) : renderReady ? (
+          <button type="button" className="bz-decor-cta" onClick={onContinue}>Continue to Package →</button>
+        ) : (
+          <button type="button" className="bz-decor-cta" onClick={onGenerate}
+            disabled={generating || d.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}>
+            {generating ? "Generating…" : hasRender ? "Regenerate render ✨" : "Generate render ✨"}
+          </button>
+        )}
+      </div>
+      <div className="bz-decor-note">✳ No need to scroll through every option — just switch tabs.</div>
     </div>
   );
 }

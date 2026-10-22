@@ -1252,42 +1252,31 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
 
   return (
     <div id="party-preview-card" className="space-y-4">
-      {/* ─── 1. Final Design Render (top) — Claude Design: image first, footer row below ── */}
-      <div>
+      {/* ─── 1. Final Design Render — 2026-10-22 redesign: the reference's
+           preview card. Presentation only; the render itself, its loading,
+           error, stale and regenerate behaviour are unchanged. ── */}
+      <div className="bz-preview-wrap">
+        <div className="bz-preview-caption">
+          <div className="head">✦ Your party preview</div>
+          <span className={`bz-preview-note ${finalUrl && !finalIsLoading ? (isStale ? "stale" : "ok") : ""}`}>
+            {finalIsLoading ? "GENERATING…" : finalUrl ? (isStale ? "DESIGN CHANGED" : "RENDER READY") : "RENDER PENDING"}
+          </span>
+        </div>
         <div
-          className="relative w-full overflow-hidden"
+          className="bz-preview-frame"
           style={{
-            borderRadius: "24px 24px 0 0",
-            border: "1px solid #F3D7E1",
-            borderBottom: "none",
-            boxShadow: "0 8px 24px rgba(216,84,138,.08)",
             // Follow the render's own shape instead of forcing 4:3. A single
             // arch is generated portrait (9:16); shown in a 4:3 box with
-            // object-contain it was letterboxed down to a sliver with candy
-            // stripes either side — the customer's words were that it comes out
-            // "tiny on screen" and should dominate. The card now takes the
-            // aspect the render was generated at, so the image fills it, and it
-            // is allowed to be considerably taller.
+            // object-contain it was letterboxed down to a sliver — the
+            // customer's words were that it comes out "tiny on screen" and
+            // should dominate. The card takes the aspect the render was
+            // generated at, so the image fills it.
             aspectRatio: (finalUrl || finalIsLoading) ? renderCssAspect : undefined,
             minHeight: 360,
             maxHeight: "min(86vh, 1040px)",
-            background: (finalUrl || finalIsLoading)
-              ? "repeating-linear-gradient(45deg,#FBE9EF 0 12px,#FDF3F6 12px 24px)"
-              : "white",
             transition: "aspect-ratio 0.35s ease",
           }}
         >
-          {/* Render freshness pill — Claude Design */}
-          {finalUrl && !finalIsLoading && (
-            <div
-              className="absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-bold"
-              style={isStale
-                ? { background: "#FFF3D6", color: "#A0761E" }
-                : { background: "rgba(255,255,255,.92)", color: "#3E9B6E" }}
-            >
-              <span>●</span> {isStale ? "Design changed" : "Render up to date"}
-            </div>
-          )}
           {finalUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -1304,30 +1293,17 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
               className="h-full w-full object-contain object-center"
             />
           ) : finalIsLoading ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-black/10 border-t-black/35"/>
-              <span className="text-[11px] text-black/40">Generating final render…</span>
+            <div className="bz-placeholder" role="status" aria-live="polite">
+              <div className="sparkle"><span className="bz-spinner" style={{ borderColor: "rgba(255,13,102,.2)", borderTopColor: "#ff0d66", width: 24, height: 24 }} /></div>
+              <div className="kicker">GENERATING YOUR RENDER</div>
+              <p className="msg">Hang tight — your party is coming to life.</p>
             </div>
           ) : (
-            /* Empty state — Claude Design: diagonal candy stripes, white sparkle tile, mono caption */
-            <div style={{
-              position: "relative", overflow: "hidden",
-              minHeight: 300, height: "100%",
-              display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center", gap: 8,
-              background: "repeating-linear-gradient(45deg,#FBE9EF 0 12px,#FDF3F6 12px 24px)",
-              padding: "32px 28px", textAlign: "center",
-            }}>
-              <div style={{
-                width: 52, height: 52, borderRadius: 18, background: "white",
-                boxShadow: "0 6px 18px rgba(216,84,138,.18)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "#D8548A", fontSize: 20,
-              }}>✦</div>
-              <span style={{ fontFamily: "ui-monospace, Menlo, monospace", fontSize: 10.5, color: "#B78A9B" }}>your AI event render</span>
-              <div style={{ fontSize: 11.5, color: "#97808A", lineHeight: 1.5, maxWidth: 220 }}>
-                Your live preview appears here after you choose your event and decor.
-              </div>
+            /* Empty state: no render yet — never a fake or placeholder party image. */
+            <div className="bz-placeholder" role="status" aria-live="polite">
+              <div className="sparkle" aria-hidden="true">✦</div>
+              <div className="kicker">RENDER PREVIEW</div>
+              <p className="msg">Your party will come to life here<br />after you generate your render.</p>
             </div>
           )}
 
@@ -1341,14 +1317,12 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             <MeasurementOverlay config={config}/>
           )}
 
-          {/* Stale state is signalled by the amber "Design changed" pill above */}
-
           {finalStatus === "error" && (
-            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/45 px-3 py-1.5 backdrop-blur">
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 px-3 py-2" style={{ background: "rgba(39,22,23,.72)" }}>
               <span className="text-[11px] text-white">Render unavailable</span>
               {showControls && (
                 <button type="button" onClick={generateFinalRender}
-                        className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-medium text-white">
+                        className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-medium text-white">
                   Retry
                 </button>
               )}
@@ -1356,53 +1330,41 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
           )}
         </div>
 
-        {/* Footer row — Claude Design: title left, Regenerate pill right */}
-        <div style={{ background: "white", border: "1px solid #F3D7E1", borderTop: "none", borderRadius: "0 0 24px 24px", padding: "13px 15px 15px", boxShadow: "0 8px 24px rgba(216,84,138,.08)" }}>
-          <div className="flex items-center justify-between gap-2.5">
-            <div style={{ fontWeight: 700, fontSize: 14, color: "#46313B" }}>Your party preview</div>
-            <div className="flex items-center gap-2">
-              {finalUrl && (
-                <button
-                  type="button"
-                  onClick={() => setShowMeasurements((v) => !v)}
-                  className="rounded-full px-2.5 py-1 text-[10px] font-semibold transition"
-                  style={showMeasurements
-                    ? { border: "1.5px solid #E5BECF", background: "#FBE9EF", color: "#C24373" }
-                    : { border: "1.5px solid #F3D7E1", background: "white", color: "#B79AA6" }}
-                >
-                  {showMeasurements ? "Hide sizes" : "Show sizes"}
-                </button>
-              )}
-              {showControls && (
-                <button
-                  type="button"
-                  onClick={generateFinalRender}
-                  disabled={finalIsLoading || config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}
-                  className="flex shrink-0 items-center gap-1 rounded-full px-3.5 py-2 text-[12px] font-bold text-white transition hover:opacity-90 disabled:opacity-60"
-                  style={{ background: "linear-gradient(135deg,#E36A97,#D8548A)", boxShadow: "0 6px 16px rgba(216,84,138,.35)" }}
-                >
-                  {finalIsLoading ? (
-                    <>
-                      <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"/>
-                      <span>Generating…</span>
-                    </>
-                  ) : (
-                    <>✨ <span>{isStale ? "Regenerate preview" : finalUrl ? "Regenerate" : "Generate render"}</span></>
-                  )}
-                </button>
-              )}
-            </div>
+        <div className="bz-preview-bottom">
+          <p>
+            <strong>Your party preview</strong><br />
+            {finalUrl
+              ? (isStale ? "Your design changed — regenerate to see the update." : "Your render is ready. Keep customizing or continue to Package.")
+              : "Finish your decor, then generate a render to see your design. Text and graphics update after regeneration."}
+          </p>
+          <div className="flex items-center gap-2">
+            {finalUrl && (
+              <button type="button" className="bz-view-btn" onClick={() => setShowMeasurements((v) => !v)}>
+                {showMeasurements ? "Hide sizes" : "Show sizes"}
+              </button>
+            )}
+            {showControls && (
+              <button
+                type="button"
+                className="bz-gen-btn"
+                onClick={generateFinalRender}
+                disabled={finalIsLoading || config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}
+              >
+                {finalIsLoading ? (
+                  <><span className="bz-spinner" aria-hidden="true" /><span>Generating…</span></>
+                ) : (
+                  <><span>{isStale ? "Regenerate preview" : finalUrl ? "Regenerate" : "Generate render"}</span> ✨</>
+                )}
+              </button>
+            )}
           </div>
-          <div className="mt-1.5 text-[11.5px]" style={{ color: "#97808A", lineHeight: 1.5 }}>
-            Text and graphics update after regeneration.
-          </div>
-          {/* Validation: block rendering until every arch piece has a size */}
-          {showControls && config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId) && (
-            <div className="mt-2 rounded-xl px-3 py-2 text-[11px] font-semibold" style={{ background: "#FFF3D6", color: "#A0761E" }}>
-              Choose a size for every backdrop piece before generating the render.
-            </div>
-          )}
         </div>
+        {/* Validation: block rendering until every arch piece has a size */}
+        {showControls && config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId) && (
+          <div className="mx-2 mt-2 rounded-xl px-3 py-2 text-[11px] font-semibold" style={{ background: "#FFF7DF", color: "#8A6A12" }}>
+            Choose a size for every backdrop piece before generating the render.
+          </div>
+        )}
       </div>
 
       {/* ─── Ask for a change prompt ─────────────────────────────────── */}
@@ -1429,7 +1391,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
        * Not shown by default — too technical for customer-facing flow.
        */}
       <details className="group">
-        <summary className="cursor-pointer list-none text-[11px] text-black/40 hover:text-black/60">
+        <summary className="cursor-pointer list-none px-1 pt-1 text-[11px] text-[#9c8d96] hover:text-[#271617]">
           <span className="group-open:hidden">▶ Show technical production layout</span>
           <span className="hidden group-open:inline">▼ Hide technical production layout</span>
         </summary>

@@ -3,16 +3,17 @@
 @tailwind utilities;
 
 :root {
-  /* Defaults to the Blush Pink theme; overridden at runtime per selection. */
-  --accent: 236 72 153;
-  --accent-soft: 252 231 243;
-  --font-inter: "Inter", system-ui, sans-serif;
+  /* UI accent. 2026-10-22 redesign: the interface uses the Blushy brand pink
+     everywhere — the customer's theme and balloon colours are product data
+     and never repaint the UI. */
+  --accent: 255 13 102;
+  --accent-soft: 255 241 247;
 }
 
 html,
 body {
-  background-color: #fbf8f6;
-  color: #2b2530;
+  background-color: #ffffff;
+  color: #271617;
   -webkit-font-smoothing: antialiased;
 }
 
