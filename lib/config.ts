@@ -522,7 +522,25 @@ export const TEXT_COLOR_PRESET_HEX: Record<string, string> = {
   // 2026-10-20: silver lettering, and the default — customer request
   // ("Silver yazili olsun"). Mid-tone so it shows on a white board.
   silver: "#A7ABB1",
+  // 2026-10-22: mirror rose-gold acrylic, for the themes whose lettering is
+  // rose gold (see THEME_TEXT_COLOR).
+  rose_gold: "#C9907E",
 };
+
+/**
+ * 2026-10-22: the lettering colour follows the theme ("yazinin rengi theme e
+ * gore degismeli"). Every one is a mirror-polished metal, like the customer's
+ * reference lettering; Frozen's is silver.
+ */
+export const THEME_TEXT_COLOR: Record<string, TextColor> = {
+  frozen: "silver", unicorn: "rose_gold", dinosaur: "gold", safari: "gold",
+  princess: "rose_gold", superhero: "silver", barbie: "rose_gold", bluey: "silver",
+  pokemon: "gold", stitch: "silver", mermaid: "rose_gold", space: "silver",
+  football: "gold", lego: "gold", kpop: "silver", encanto: "gold", cocomelon: "gold",
+};
+export function themeTextColor(themeId: string | undefined): TextColor {
+  return (themeId && THEME_TEXT_COLOR[themeId]) || DEFAULT_TEXT_COLOR;
+}
 
 
 /** Default stand-in for the "accent" preset when no theme accent is supplied. */
@@ -572,6 +590,8 @@ export function describeTextColor(color: TextColor | undefined, accentHex?: stri
   // Silver is a finish, not just a grey: named as metal so it is not painted
   // as flat grey ink.
   if (color === "silver") return "mirror-polished silver";
+  if (color === "gold") return "mirror-polished gold";
+  if (color === "rose_gold") return "mirror-polished rose gold";
   const hex = resolveTextColorHex(color, accentHex);
   const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
   let best = TEXT_COLOR_NAMES[0], bestD = Infinity;
@@ -986,6 +1006,7 @@ export const TEXT_COLORS: { id: TextColor; label: string; swatch: string }[] = [
   { id: "white", label: "White", swatch: "#FFFFFF" },
   { id: "silver", label: "Silver", swatch: "#A7ABB1" },
   { id: "gold", label: "Gold", swatch: "#D4AF37" },
+  { id: "rose_gold", label: "Rose Gold", swatch: "#C9907E" },
   { id: "black", label: "Black", swatch: "#222222" },
   { id: "accent", label: "Theme accent", swatch: "" },
 ];

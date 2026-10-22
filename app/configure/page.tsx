@@ -29,7 +29,7 @@ cutoutTotalCount,
   FONT_STYLES,
   TEXT_COLORS,
   DEFAULT_TEXT_VALUE,
-  DEFAULT_TEXT_COLOR,
+  themeTextColor,
   resolveTextColorHex,
   isCustomTextColor,
   ADDONS,
@@ -317,6 +317,12 @@ export default function ConfigurePage() {
             // has already chosen a colour for, so an existing choice is kept.
             backdropColor: c.decor.backdropColor || DEFAULT_BACKDROP_COLOR,
             balloonColors: t.balloonColors.slice(0, 5),
+            // 2026-10-22: lettering still in the old theme's colour follows
+            // the new theme; a colour the customer picked themselves stays.
+            backdropItems: c.decor.backdropItems.map((it) =>
+              it.text?.color === themeTextColor(c.theme)
+                ? { ...it, text: { ...it.text, color: themeTextColor(id) } }
+                : it),
           }
         : c.decor,
     }));
@@ -1363,7 +1369,7 @@ function clearAllStandees() {
         // printed in silver and the Elsa Solo standee already on — the
         // customer removes either below if they do not want it.
         const round = makeBackdropItem("round");
-        panels = [{ ...round, text: { ...round.text, enabled: true, value: DEFAULT_TEXT_VALUE, color: DEFAULT_TEXT_COLOR } }];
+        panels = [{ ...round, text: { ...round.text, enabled: true, value: DEFAULT_TEXT_VALUE, color: themeTextColor(config.theme) } }];
         const elsa = (themeCutoutPresets ?? []).find((pr) => /elsa solo/i.test(pr.label));
         if (elsa && selectedCutoutAssets.length === 0) {
           patchDecor({
@@ -1435,6 +1441,30 @@ function clearAllStandees() {
       // legacy ids resolve via getSetupLayoutTemplate()'s
       // LEGACY_TEMPLATE_ID_REMAP if ever passed in.
       default: return;
+    }
+    // 2026-10-22: every setup with a board comes with "Happy Birthday" on it,
+    // on the board its reference puts it on, in the theme's lettering colour
+    // ("default olarak gelsin backdrop olan setuplarda ... yazinin rengi theme
+    // e gore degismeli"). The customer can switch it off below. The ring has
+    // no board, so no lettering.
+    const textOn = (() => {
+      const idx = (t: string) => panels.findIndex((p) => p.type === t);
+      switch (templateId) {
+        case "single_arch": case "single_round": case "single_banner": case "single_shimmer": return 0;
+        case "double_arch": return 1;
+        case "triple_arch": return 1;
+        case "arch_shimmer": return idx("shimmer_wall");
+        case "arch_open_frame": return idx("arch");
+        default: return -1;
+      }
+    })();
+    if (textOn >= 0 && panels[textOn]) {
+      panels = panels.map((p, i) => i === textOn && !p.text.enabled
+        // Silver letters vanish into a silver sequin wall, so a shimmer wall
+        // gets white lettering where the theme's would be silver.
+        ? { ...p, text: { ...p.text, enabled: true, value: p.text.value.trim() || DEFAULT_TEXT_VALUE,
+            color: p.type === "shimmer_wall" && themeTextColor(config.theme) === "silver" ? "white" : themeTextColor(config.theme) } }
+        : p);
     }
     patchDecor({ backdropItems: panels });
     setOpenCustomizeIds(new Set(panels.map(p => p.id)));
@@ -1577,7 +1607,7 @@ function clearAllStandees() {
               offers only the colour picker above. */}
           {item.type !== "shimmer_wall" && item.type !== "balloon_ring" && item.type !== "open_arch_frame" && (<>
           {/* Customized text */}
-          <div onClick={() => patchItemText(itemIdx, { enabled: !item.text.enabled, ...(!item.text.enabled && !item.text.value.trim() ? { value: DEFAULT_TEXT_VALUE, color: DEFAULT_TEXT_COLOR } : {}) })}
+          <div onClick={() => patchItemText(itemIdx, { enabled: !item.text.enabled, ...(!item.text.enabled && !item.text.value.trim() ? { value: DEFAULT_TEXT_VALUE, color: themeTextColor(config.theme) } : {}) })}
             style={{ cursor: "pointer", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
               border: item.text.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.08)",
               background: item.text.enabled ? accent + "0E" : "white", transition: "all 0.15s" }}>
@@ -2354,7 +2384,7 @@ function clearAllStandees() {
 
                     {/* Name Text card */}
                     <div
-                      onClick={() => patchItemText(idx, { enabled: !item.text.enabled, ...(!item.text.enabled && !item.text.value.trim() ? { value: DEFAULT_TEXT_VALUE, color: DEFAULT_TEXT_COLOR } : {}) })}
+                      onClick={() => patchItemText(idx, { enabled: !item.text.enabled, ...(!item.text.enabled && !item.text.value.trim() ? { value: DEFAULT_TEXT_VALUE, color: themeTextColor(config.theme) } : {}) })}
                       style={{
                         cursor: "pointer", borderRadius: 12, padding: "12px 14px",
                         border: item.text.enabled ? `2px solid ${accent}` : "1.5px solid rgba(0,0,0,0.10)",

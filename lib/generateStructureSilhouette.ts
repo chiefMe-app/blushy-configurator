@@ -17,7 +17,7 @@
 
 import type { BackdropItem, PlinthSize, BackdropShapeId, BalloonStyleId } from "./config";
 import { resolveTextColorHex } from "./config";
-import { textPathD } from "./guideFonts";
+import { textAdvance, textPathD } from "./guideFonts";
 import { frozenBannerPrintSvg } from "./bannerPrint";
 import { calculateExactLayout } from "./calculateExactLayout";
 import { calculateRenderAspectRatio } from "./calculateRenderAspectRatio";
@@ -86,6 +86,8 @@ export interface SilhouetteResult {
   /** Full-canvas SVG mask (white on black) of any silver lettering, for the
    *  route's chrome pass. Empty string when there is none. */
   silverTextMaskSvg: string;
+  /** Tint of the metallic lettering the mask above is for (silver, gold, rose gold). */
+  textMetalTint: [number, number, number] | null;
   /** Where the lone banner's printed artwork goes, as canvas fractions, or
    *  null when the banner carries no theme graphic. */
   bannerPrintRect: { xFrac: number; yFrac: number; wFrac: number; hFrac: number } | null;
@@ -588,13 +590,32 @@ const TEXT_GUIDE_FONT: Record<string, { family: string; weight: string }> = {
 // Colour comes from resolveTextColorHex so a customer-picked hex is drawn as
 // itself. The four presets still resolve to their own fixed values.
 
+// 2026-10-22: the metallic lettering colours and their tint. Each is drawn
+// as a mirror (see customTextGuide) and given a chrome pass after the render.
+export function metalTextTint(color: string | undefined): [number, number, number] | null {
+  if (color === "silver") return [1.0, 1.01, 1.04];
+  if (color === "gold") return [1.0, 0.84, 0.50];
+  if (color === "rose_gold") return [1.0, 0.80, 0.74];
+  return null;
+}
+// A lightness 0..1 in a metal's tint, as a hex. Low lightness is kept neutral
+// so the dark reflected bands read as reflections, not as brown paint.
+function tintHex(t: [number, number, number], l: number): string {
+  const ch = (k: number) => {
+    const base = l * 255;
+    const v = l > 0.5 ? base * t[k] : base * (1 + (t[k] - 1) * 0.5);
+    return Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+  };
+  return `#${ch(0)}${ch(1)}${ch(2)}`;
+}
+
 function customTextGuide(
   cx: number, pw: number, apexY: number, floorY: number, text: string,
   opts: {
     hasGraphicBelow?: boolean;
     /** Which side(s) of this panel the garland covers, so the lettering can
      *  be placed where the balloons are not. */
-    garlandSide?: "left" | "right" | "both" | "none" | "round" | "banner";
+    garlandSide?: "left" | "right" | "both" | "none" | "round" | "banner" | "lonearch" | "lonearchleft" | "shimmer";
     fontStyle?: string;
     color?: string;
   } = {},
@@ -617,6 +638,12 @@ function customTextGuide(
   // band. Its reference has the lettering in the middle of the board, left of
   // the garland, which is where it goes.
   const bannerClear = garlandSide === "banner";
+  // 2026-10-22: the lone arch's replayed garland is on the right only, and its
+  // reference sets the lettering large across the board — about three
+  // quarters of its width, a little left of centre.
+  // "lonearchleft": the same with the garland on the left (the solid arch
+  // beside an open frame, garland on its outer side).
+  const loneArchClear = garlandSide === "lonearch" || garlandSide === "lonearchleft";
   const y = apexY + panelH * (roundClear || bannerClear ? 0.36 : hasGraphicBelow ? 0.17 : 0.30);
 
   // The garland covers roughly the outer 30% of the board it hangs on. Text
@@ -633,12 +660,15 @@ function customTextGuide(
     // sized from this width, so the lettering scales down with it.
     roundClear ? pw * 0.36 :
     bannerClear ? pw * 0.46 :
+    loneArchClear ? pw * 0.64 :
+    garlandSide === "shimmer" ? pw * 0.44 :
     garlandSide === "both" ? pw * (1 - 2 * cover) :
     garlandSide === "none" ? pw * 0.85 :
     pw * (1 - cover) * 0.92;
   const shift =
     roundClear ? pw * 0.11 :
     bannerClear ? -pw * 0.07 :
+    loneArchClear ? (garlandSide === "lonearchleft" ? pw * 0.09 : -pw * 0.09) :
     garlandSide === "left"  ?  pw * cover / 2 :
     garlandSide === "right" ? -pw * cover / 2 : 0;
   const tx = cx + shift;
@@ -666,7 +696,17 @@ function customTextGuide(
     else lines.push(w);
   }
   if (lines.length === 0) lines.push(text.trim());
-  const lineGap = fontSize * 1.18;
+  // 2026-10-22, customer reference: the lettering is a thin, slanted,
+  // handwritten signature script cut from flat mirror-polished acrylic —
+  // "flat + handwrite + angled + shiny". The script face is now Sacramento,
+  // which is narrower than the old face, so the size comes from the font's
+  // real advance widths rather than an average per character.
+  {
+    const widest = Math.max(...lines.map((ln) => textAdvance(ln, fontStyle, fontSize)));
+    const fitK = (clearW * 0.96) / Math.max(1, widest);
+    fontSize = Math.max(12, Math.round(Math.min(fontSize * fitK, pw * 0.24)));
+  }
+  const lineGap = fontSize * (fontStyle === "script" ? 1.08 : 1.18);
   const font = TEXT_GUIDE_FONT[fontStyle] ?? TEXT_GUIDE_FONT.script;
   const fill = resolveTextColorHex(color);
   // 2026-10-20: silver lettering is MIRROR acrylic, like the customer's
@@ -674,17 +714,18 @@ function customTextGuide(
   // flat #A7ABB1 it rendered as dull grey paint. It is drawn the way the
   // chrome balloons are: hard bands of white and dark through the letters,
   // which is what reads as a reflective surface.
-  const silver = color === "silver";
-  const silverDefs = silver
+  // 2026-10-22: gold and rose gold the same way, in their own tints — the
+  // lettering colour now follows the theme, and every one of them is shiny.
+  const metal = metalTextTint(color);
+  const silver = metal !== null;
+  const silverDefs = metal
     // 2026-10-20: harder, as hard as the chrome balloons' own mirror-ball
     // gradient ("balonlardaki gibi shiny olsun"). The softer version came
     // back as embossed brushed grey — silver, but not shiny. Blown-white
     // bands against near-black reflected ones is what the balloons have.
     ? `<defs><linearGradient id="mirrorSilverText" x1="0" y1="0" x2="0.25" y2="1">` +
-      `<stop offset="0%" stop-color="#FFFFFF"/><stop offset="16%" stop-color="#FFFFFF"/>` +
-      `<stop offset="34%" stop-color="#4A5058"/><stop offset="48%" stop-color="#FFFFFF"/>` +
-      `<stop offset="62%" stop-color="#C3C8CE"/><stop offset="78%" stop-color="#3F454C"/>` +
-      `<stop offset="92%" stop-color="#EEF1F4"/><stop offset="100%" stop-color="#FFFFFF"/>` +
+      [["0%", 1.0], ["16%", 1.0], ["34%", 0.29], ["48%", 1.0], ["62%", 0.78], ["78%", 0.25], ["92%", 0.94], ["100%", 1.0]]
+        .map(([o, l]) => `<stop offset="${o}" stop-color="${tintHex(metal, l as number)}"/>`).join("") +
       `</linearGradient></defs>`
     : "";
   // Any near-white lettering needs an outline to exist at all against a white
@@ -702,34 +743,43 @@ function customTextGuide(
   const halo = lum > 0.82 ? "rgba(140,140,140,0.55)" : "rgba(255,255,255,0.9)";
   // Centre the block on the intended baseline rather than hanging it below.
   const firstY = y - ((lines.length - 1) * lineGap) / 2;
-  const svg = lines.map((line, i) => {
+  // As in the reference: the lines step across — the first set to the left,
+  // the next to the right — and the whole block rises slightly to the right.
+  const stagger = (i: number) => lines.length < 2 ? 0
+    : (i === 0 ? -1 : i === lines.length - 1 ? 1 : 0) * Math.min(fontSize * 0.45, clearW * 0.10);
+  const tilt = fontStyle === "script" ? -4 : 0;
+  const rot = tilt ? ` transform="rotate(${tilt} ${tx.toFixed(1)} ${y.toFixed(1)})"` : "";
+  // The script face is a hairline; on its own it gives a reflection nothing
+  // to show on and the render can lose it, so every stroke is thickened.
+  const thick = fontStyle === "script" ? fontSize * 0.045 : 0;
+  const svg = `<g${rot}>` + lines.map((line, i) => {
     const ly    = firstY + i * lineGap;
     // 2026-10-20: drawn as a path from an embedded font (lib/guideFonts),
     // not as <text>. On Vercel the rasteriser has no fonts installed, so
     // every word came out as a row of empty boxes and the render printed
     // "□□□□□" on the backdrop. Locally it looked fine — Windows has fonts.
-    const d = textPathD(line, fontStyle, tx, ly, fontSize);
+    const d = textPathD(line, fontStyle, tx + stagger(i), ly, fontSize);
     // Halo first so the word stays legible wherever it meets a balloon edge.
-    return `<path d="${d}" fill="none" stroke="${halo}" stroke-width="4" stroke-linejoin="round"/>` +
+    return `<path d="${d}" fill="none" stroke="${halo}" stroke-width="${(4 + thick).toFixed(1)}" stroke-linejoin="round"/>` +
            (silver
              // Thickened with a stroke in the same gradient: a script hairline has
              // no surface for a reflection to show on.
              ? `<path d="${d}" fill="url(#mirrorSilverText)" stroke="url(#mirrorSilverText)" stroke-width="${(fontSize * 0.07).toFixed(1)}" stroke-linejoin="round"/>` +
                `<path d="${d}" fill="none" stroke="rgba(60,64,70,0.55)" stroke-width="0.8"/>`
-             : `<path d="${d}" fill="${fill}"${outline}/>`);
-  }).join("");
+             : `<path d="${d}" fill="${fill}" stroke="${fill}" stroke-width="${thick.toFixed(1)}" stroke-linejoin="round"${thick ? "" : outline}/>`);
+  }).join("") + `</g>`;
   return {
     svg: silverDefs + svg,
-    // Silver lettering only: the same words in solid white with a thick
+    // Metallic lettering only: the same words in solid white with a thick
     // stroke, for the route's chrome pass to use as a mask. The render puts
     // the words where the guide draws them, so a slightly fattened copy of
     // the guide's letters covers the painted ones and nothing else.
     silverInk: silver
-      ? lines.map((line, i) => {
+      ? `<g${rot}>` + lines.map((line, i) => {
           const ly = firstY + i * lineGap;
-          return `<path d="${textPathD(line, fontStyle, tx, ly, fontSize)}" ` +
+          return `<path d="${textPathD(line, fontStyle, tx + stagger(i), ly, fontSize)}" ` +
             `fill="#FFFFFF" stroke="#FFFFFF" stroke-width="${(fontSize * 0.16).toFixed(1)}" stroke-linejoin="round"/>`;
-        }).join("")
+        }).join("") + `</g>`
       : "",
     // Deliberately larger than the guide's own lettering: the render model
     // draws the words bigger and lower than the guide does, and a box sized to
@@ -1009,6 +1059,7 @@ export function generateStructureSilhouette(
   const textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[] = [];
   const marqueeBulbsLayout: [number, number, number][] = [];
   const silverInkLayer: string[] = [];
+  let textMetalTint: [number, number, number] | null = null;
   let bannerPrintLayout: { x: number; y: number; w: number; h: number } | null = null;
   const bannerPrintHoles: string[] = [];
   let bannerPrintInGuide = false;
@@ -1149,7 +1200,11 @@ export function generateStructureSilhouette(
           + Math.max(...layout.panels.map((q) => q.cx + q.pw / 2))) / 2;
         // Beside an open frame the solid arch is drawn filled, like the lone
         // arch: a hairline board next to the frame's band was the weaker shape.
-        const besideOpenFrame = shape === "arch" && backdropItems.some((it) => it?.type === "open_arch_frame");
+        // 2026-10-22: every arch board in a multi-board setup, not just the one
+        // beside an open frame — "backdropla balonlar arasinda bosluklar
+        // gozukmemesi lazim". On a hairline board the render could not see
+        // where the board ended, and the garland stood off it.
+        const besideOpenFrame = shape === "arch";
         const ownFillM = fillForPanel(sortedIdx, panel.idx);
         const nearWhiteM = /^#(f[0-9a-f]){3}$/i.test(ownFillM) || ownFillM.toUpperCase() === "#FFFFFF";
         content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape,
@@ -1257,19 +1312,23 @@ export function generateStructureSilhouette(
     }
 
     // Customized text guide — exact text, upper-middle of solid panels only.
-    // (Open arch frames return early above; shimmer walls are excluded here.)
-    if (panelTextValue && !isShimmer) {
+    // (Open arch frames return early above.) 2026-10-22: shimmer walls too —
+    // their references carry the lettering across the middle of the wall.
+    if (panelTextValue) {
       // Which side the garland will hang on, mirroring the dispatch further
       // down so the lettering can sit in the clear part of the board.
       const bothArches = backdropItems.length === 2 && backdropItems.every((i) => i.type === "arch");
       const fullerTier = balloonStyle === "full" || balloonStyle === "premium";
       const meanCx     = layout.panels.reduce((sum, p) => sum + p.cx, 0) / layout.panels.length;
-      const garlandSide: "left" | "right" | "both" | "none" | "round" | "banner" =
+      const garlandSide: "left" | "right" | "both" | "none" | "round" | "banner" | "lonearch" | "lonearchleft" | "shimmer" =
         balloonStyle === "none" ? "none"
           : layout.panels.length === 1 && shape === "round" ? "round"
           : layout.panels.length === 1 && shape === "banner" ? "banner"
+          : isShimmer ? "shimmer"
+          : shape === "arch" && backdropItems.some((it) => it?.type === "open_arch_frame")
+            ? (panel.cx < meanCx ? "lonearchleft" : "lonearch")
           : bothArches ? (panel.cx < meanCx ? "left" : "right")
-          : layout.panels.length === 1 && shape === "arch" ? (fullerTier ? "both" : "right")
+          : layout.panels.length === 1 && shape === "arch" ? (fullerTier ? "lonearch" : "right")
           : "none";
       const textGuide = customTextGuide(
         panel.cx, panel.pw, panel.apexY, panel.floorY, panelTextValue,
@@ -1281,7 +1340,10 @@ export function generateStructureSilhouette(
         },
       );
       content.push(textGuide.svg);
-      if (textGuide.silverInk) silverInkLayer.push(textGuide.silverInk);
+      if (textGuide.silverInk) {
+        silverInkLayer.push(textGuide.silverInk);
+        textMetalTint = textMetalTint ?? metalTextTint(item?.text?.color);
+      }
       textZones.push({ panelIdx: panel.idx, colorHex: textGuide.fill, ...textGuide.zone });
     }
   });
@@ -2938,9 +3000,98 @@ export function generateStructureSilhouette(
           const y0 = (ry: number) => ry < ref.top ? p.apexY - (ref.top - ry) * sUp : m.y(ry);
           return { s: m.s, y: y0, x: mirror ? (rx: number) => 2 * p.cx - x0n(rx) : x0 };
         };
+        // 2026-10-22: arch boards are mapped by their OUTLINE, not by x and y
+        // separately. "balonlari backdropa gore ayarlaman lazim ... backdropla
+        // balonlar arasinda bosluklar gozukmemesi lazim": the photos' boards
+        // are narrower for their height than ours, so a straight x/y scale put
+        // the crown at the right height but beside a dome that, being wider,
+        // falls away sooner — the wall showed between them. Each balloon now
+        // keeps its place relative to the board's edge: round the dome by its
+        // angle from the dome's centre, down the sides by how far down the
+        // straight edge it sits, and at the same distance in or out from the
+        // edge (in height-scaled units). What then stands out past the canvas
+        // at the sides or the top is drawn in, by the least that fits.
+        const archContourMap = (
+          p: typeof layout.panels[0], mirror: boolean,
+          // `spring`: where the photo's dome meets its straight sides. The
+          // photos' boards are not half-circles — some are flatter, some
+          // taller — so their dome is taken as a half-ellipse to that height.
+          ref: { l: number; r: number; top: number; floor: number; spring?: number }, table: RefItem[],
+        ): { table: RefItem[]; s: number } => {
+          const s = (p.floorY - p.apexY) / (ref.floor - ref.top);
+          const Rr = (ref.r - ref.l) / 2, cxr = (ref.l + ref.r) / 2;
+          const spr = ref.spring ?? ref.top + Rr, Hr = spr - ref.top;
+          const R = p.pw / 2, sp = p.apexY + R;
+          const l = p.cx - R, r = p.cx + R;
+          let mapped: RefItem[] = table.map(([x0, y, rr, slot]) => {
+            const x = mirror ? 2 * cxr - x0 : x0;
+            if (y <= spr) {
+              // Nearest point on the photo's dome along the line from its
+              // centre, the distance out from it, and the same direction on
+              // ours (a half-circle).
+              const dx = x - cxr, dy = y - spr;
+              const rho = Math.hypot(dx / Rr, dy / Hr) || 1;
+              const ex = dx / rho, ey = dy / rho;
+              const d = Math.hypot(dx - ex, dy - ey) * (rho >= 1 ? 1 : -1);
+              const ux = ex / Rr, uy = ey / Hr, un = Math.hypot(ux, uy) || 1;
+              const rad = R + d * s;
+              return [p.cx + (ux / un) * rad, sp + (uy / un) * rad, rr, slot];
+            }
+            const left = x < cxr;
+            const d = left ? ref.l - x : x - ref.r;
+            const f = (y - spr) / (ref.floor - spr);
+            const Y = f <= 1 ? sp + f * (p.floorY - sp) : p.floorY + (y - ref.floor) * s;
+            return [left ? l - d * s : r + d * s, Y, rr, slot];
+          });
+          // Then the crown is settled onto the dome. No model of the photo's
+          // board fits it exactly (their tops are squarer than an ellipse), and
+          // our dome falls away sooner, so the crown could still stand off it
+          // with wall showing under it — the gap the customer circled. Across
+          // the dome, each vertical strip of the crown moves down until its
+          // lowest balloon laps over the dome by a fifth of itself, as the
+          // photos' do; the shift is blended from strip to strip, so the crown
+          // keeps its shape.
+          {
+            const NB = 14, binW = (2 * R) / NB;
+            const surf = (X: number) => sp - Math.sqrt(Math.max(0, R * R - (X - p.cx) * (X - p.cx)));
+            const need: number[] = new Array(NB).fill(Infinity);
+            for (const [X, Y, rr, slot] of mapped) {
+              if (slot === "F" || Y > sp || Math.abs(X - p.cx) >= R) continue;
+              const br = rr * s * 1.08;
+              const b = Math.min(NB - 1, Math.max(0, Math.floor((X - l) / binW)));
+              need[b] = Math.min(need[b], surf(X) - (Y + br) + 0.2 * br);
+            }
+            const shift = need.map((v) => (isFinite(v) && v > 0 ? v : 0));
+            const shiftAt = (X: number): number => {
+              const t = (X - l) / binW - 0.5;
+              if (t <= 0) return shift[0];
+              if (t >= NB - 1) return shift[NB - 1];
+              const i = Math.floor(t);
+              return shift[i] + (shift[i + 1] - shift[i]) * (t - i);
+            };
+            mapped = mapped.map(([X, Y, rr, slot]) =>
+              Y <= sp && Math.abs(X - p.cx) < R ? [X, Y + shiftAt(X), rr, slot] : [X, Y, rr, slot]);
+          }
+          const visL = -marginX / SCALE + (W * 0.015) / SCALE;
+          const visR = (W - marginX) / SCALE - (W * 0.015) / SCALE;
+          const visT = -marginY / SCALE + (H * 0.012) / SCALE;
+          let kL = 1, kR = 1, kT = 1;
+          for (const [X, Y, rr, slot] of mapped) {
+            if (slot === "F") continue;
+            const br = rr * s * 1.08;
+            if (X < l && X - br < visL) kL = Math.min(kL, Math.max(0, (l - visL - br) / (l - X)));
+            if (X > r && X + br > visR) kR = Math.min(kR, Math.max(0, (visR - r - br) / (X - r)));
+            if (Y < p.apexY && Y - br < visT) kT = Math.min(kT, Math.max(0, (p.apexY - visT - br) / (p.apexY - Y)));
+          }
+          mapped = mapped.map(([X, Y, rr, slot]) => [
+            X < l ? l - (l - X) * kL : X > r ? r + (X - r) * kR : X,
+            Y < p.apexY ? p.apexY - (p.apexY - Y) * kT : Y, rr, slot]);
+          return { table: mapped, s };
+        };
+        const idMap = (v: number) => v;
         const drawSingleArchRef = (p: typeof layout.panels[0], side: "left" | "right"): number => {
-          const m = refBoardMap(p, side === "left", { l: 173, r: 650, top: 333, floor: 1270 });
-          return drawRefTable(SINGLE_ARCH_REF, m.x, m.y, m.s, {
+          const m = archContourMap(p, side === "left", { l: 173, r: 650, top: 333, floor: 1270, spring: 470 }, SINGLE_ARCH_REF);
+          return drawRefTable(m.table, idMap, idMap, m.s, {
             maxBottom: p.floorY + plinthForwardPx * 1.5,
             keepClear: plinthKeepClear(),
           }).length;
@@ -3645,12 +3796,12 @@ export function generateStructureSilhouette(
           // 2026-10-21: both replaced by the customer's reference (see
           // DOUBLE_ARCH_LEFT_REF), each table on its own board.
           void drawThickOrganicMainGarland;
-          const mL = refBoardMap(pair[0], false, { l: 433, r: 758, top: 150, floor: 800 });
-          const mR = refBoardMap(pair[1], false, { l: 765, r: 1083, top: 242, floor: 800 });
+          const mL = archContourMap(pair[0], false, { l: 433, r: 760, top: 145, floor: 800, spring: 300 }, DOUBLE_ARCH_LEFT_REF);
+          const mR = archContourMap(pair[1], false, { l: 769, r: 1080, top: 239, floor: 800, spring: 311 }, DOUBLE_ARCH_RIGHT_REF);
           const daBottom = layout.floorY + plinthForwardPx * 1.5;
-          doubleArchGarlandBalloonsLeft = drawRefTable(DOUBLE_ARCH_LEFT_REF, mL.x, mL.y, mL.s,
+          doubleArchGarlandBalloonsLeft = drawRefTable(mL.table, idMap, idMap, mL.s,
             { maxBottom: daBottom, keepClear: plinthKeepClear() }).length;
-          doubleArchGarlandBalloonsRight = drawRefTable(DOUBLE_ARCH_RIGHT_REF, mR.x, mR.y, mR.s,
+          doubleArchGarlandBalloonsRight = drawRefTable(mR.table, idMap, idMap, mR.s,
             { maxBottom: daBottom, keepClear: plinthKeepClear() }).length;
         } else if (framePanel && archPanels.length === 1) {
           // 2026-10-21, customer reference: a solid arch with its garland down
@@ -3665,11 +3816,11 @@ export function generateStructureSilhouette(
           // mirrored when ours stands on the right.
           const solidArch = archPanels[0];
           const archLeftOfFrame = solidArch.cx < framePanel.cx;
-          const mfa = refBoardMapFit(solidArch, !archLeftOfFrame, { l: 392, r: 736, top: 245, floor: 955 }, ARCH_FRAME_ARCH_REF);
-          const mff = refBoardMapFit(framePanel, !archLeftOfFrame, { l: 709, r: 1091, top: 355, floor: 962 }, ARCH_FRAME_FRAME_REF);
+          const mfa = archContourMap(solidArch, !archLeftOfFrame, { l: 392, r: 736, top: 245, floor: 955, spring: 480 }, ARCH_FRAME_ARCH_REF);
+          const mff = archContourMap(framePanel, !archLeftOfFrame, { l: 709, r: 1091, top: 355, floor: 962, spring: 510 }, ARCH_FRAME_FRAME_REF);
           const afOpts = { maxBottom: layout.floorY + plinthForwardPx * 1.5, keepClear: plinthKeepClear() };
-          archOpenFrameMainGarlandBalloons = drawRefTable(ARCH_FRAME_ARCH_REF, mfa.x, mfa.y, mfa.s, afOpts).length;
-          archOpenFrameMiniClusterBalloons = drawRefTable(ARCH_FRAME_FRAME_REF, mff.x, mff.y, mff.s, afOpts).length;
+          archOpenFrameMainGarlandBalloons = drawRefTable(mfa.table, idMap, idMap, mfa.s, afOpts).length;
+          archOpenFrameMiniClusterBalloons = drawRefTable(mff.table, idMap, idMap, mff.s, afOpts).length;
         } else if (framePanel) {
           // Shimmer + Open Frame (no solid arch): compact accent cluster on the
           // frame's top-right shoulder only — hollow silhouette stays visible.
@@ -3702,13 +3853,13 @@ export function generateStructureSilhouette(
           // (ARCH_SHIMMER_ARCH_REF), the arch on the left there; mirrored when
           // ours stands on the right.
           const archOnLeft = archPanels[0].cx < shimmerPanels[0].cx;
-          const aRef = { l: 470, r: 730, top: 130, floor: 810 };
+          const aRef = { l: 470, r: 732, top: 133, floor: 810, spring: 300 };
           const wRef = { l: 730, r: 1370, top: 170, floor: 810 };
-          const ma = refBoardMapFit(archPanels[0], !archOnLeft, aRef, ARCH_SHIMMER_ARCH_REF);
+          const ma = archContourMap(archPanels[0], !archOnLeft, aRef, ARCH_SHIMMER_ARCH_REF);
           const mw = refBoardMapFit(shimmerPanels[0], !archOnLeft, wRef, ARCH_SHIMMER_WALL_REF);
           const asOpts = { maxBottom: layout.floorY + plinthForwardPx * 1.5, keepClear: plinthKeepClear() };
           archShimmerCompositionBalloons =
-            drawRefTable(ARCH_SHIMMER_ARCH_REF, ma.x, ma.y, ma.s, asOpts).length +
+            drawRefTable(ma.table, idMap, idMap, ma.s, asOpts).length +
             drawRefTable(ARCH_SHIMMER_WALL_REF, mw.x, mw.y, mw.s, asOpts).length;
         } else if (
           layout.panels.length === 1 &&
@@ -4530,6 +4681,7 @@ export function generateStructureSilhouette(
           hFrac: ((bannerPrintLayout as { x: number; y: number; w: number; h: number } | null)!.h * SCALE) / H,
         }
       : null,
+    textMetalTint,
     silverTextMaskSvg: silverInkLayer.length > 0
       ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">` +
         `<rect width="${W}" height="${H}" fill="#000000"/>` +

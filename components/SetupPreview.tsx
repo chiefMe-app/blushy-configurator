@@ -91,6 +91,7 @@ function resolveTextColor(color: TextColor, accent: string): string {
   if (color === "gold")  return "#C9A227";  // richer, warmer gold
   if (color === "black") return "#1A1A1A";
   if (color === "silver") return "#A7ABB1";
+  if (color === "rose_gold") return "#C9907E";
   return accent;                            // "accent" → exact theme accent
 }
 

@@ -31,3 +31,8 @@ export function textPathD(
   const left = anchor === "middle" ? x - f.getAdvanceWidth(text, size) / 2 : x;
   return f.getPath(text, left, y, size).toPathData(2);
 }
+
+/** Advance width of one line of text at the given size. */
+export function textAdvance(text: string, style: string, size: number): number {
+  return fontFor(style).getAdvanceWidth(text, size);
+}

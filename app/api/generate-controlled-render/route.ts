@@ -161,7 +161,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "reference-replays-v130";
+const RENDER_CACHE_VERSION = "hug-board-script-text-v131";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -715,6 +715,7 @@ interface LayoutRefPngResult {
   /** Marquee number bulb centres/radii as canvas fractions (lone round only). */
   marqueeBulbs?: { xFrac: number; yFrac: number; rFrac: number }[];
   silverTextMaskSvg?: string;
+  textMetalTint?: [number, number, number] | null;
   bannerPrintMaskSvg?: string;
   bannerPrintInGuide?: boolean;
   bannerPrintRect?: { xFrac: number; yFrac: number; wFrac: number; hFrac: number } | null;
@@ -792,6 +793,7 @@ async function generateLayoutReferencePng(
       textZones: silhouette.textZones,
       marqueeBulbs: silhouette.marqueeBulbs,
       silverTextMaskSvg: silhouette.silverTextMaskSvg,
+      textMetalTint: silhouette.textMetalTint,
       bannerPrintRect: silhouette.bannerPrintRect,
       bannerPrintMaskSvg: silhouette.bannerPrintMaskSvg,
       bannerPrintInGuide: silhouette.bannerPrintInGuide,
@@ -2235,7 +2237,8 @@ forbiddenBalloonColorLabels: hasSempertexLock
           // Silver is mirror acrylic: its look IS the light and dark bands of
           // reflection, and recolouring every letter pixel to one grey flattens
           // it back into paint. Leave the model's lettering as painted.
-          if (target.toLowerCase() === resolveTextColorHex("silver").toLowerCase()) continue;
+          // 2026-10-22: gold and rose gold are mirror metal too now.
+          if (["silver", "gold", "rose_gold"].some((m) => target.toLowerCase() === resolveTextColorHex(m).toLowerCase())) continue;
 
           // Padded well beyond the guide's own lettering: the model paints the
           // words about twice as wide as the guide draws them, and slightly
@@ -2419,9 +2422,13 @@ forbiddenBalloonColorLabels: hasSempertexLock
           if (mx - mn > 28 || l > 0.80) continue;
           const a = m * Math.min(1, (0.80 - l) / 0.10);
           const c = Math.min(1, Math.max(0, (l - 0.60) * 2.4 + 0.52)) * 255;
-          data[i]     = Math.round(r * (1 - a) + Math.min(255, c + 4)  * a);
-          data[i + 1] = Math.round(g * (1 - a) + Math.min(255, c + 6)  * a);
-          data[i + 2] = Math.round(b * (1 - a) + Math.min(255, c + 10) * a);
+          // 2026-10-22: in the lettering's own metal — silver, gold or rose
+          // gold. Dark reflected bands stay nearly neutral, as on real metal.
+          const tint = pngResult.textMetalTint ?? [1.0, 1.01, 1.04];
+          const tc = (k: number, add: number) => Math.min(255, (c > 128 ? c * tint[k] : c * (1 + (tint[k] - 1) * 0.5)) + add);
+          data[i]     = Math.round(r * (1 - a) + tc(0, 4)  * a);
+          data[i + 1] = Math.round(g * (1 - a) + tc(1, 6)  * a);
+          data[i + 2] = Math.round(b * (1 - a) + tc(2, 10) * a);
         }
         workingImageBuf = await (sharpFnC(data, { raw: { width: mw, height: mh, channels: mc } }).png().toBuffer()) as Buffer;
         outputImageUrl = `data:image/jpeg;base64,${(await (sharpFnC(workingImageBuf).jpeg({ quality: 92 }).toBuffer()) as Buffer).toString("base64")}`;

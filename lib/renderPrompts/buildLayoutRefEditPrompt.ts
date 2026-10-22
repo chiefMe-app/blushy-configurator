@@ -71,6 +71,9 @@ function panelTypeLabel(type: string): string {
   }
 }
 
+// 2026-10-22: the lettering colours that are mirror-polished metal.
+const isMetalText = (c: string | undefined): boolean => c === "silver" || c === "gold" || c === "rose_gold";
+
 export function buildLayoutRefEditPrompt(
   sceneModel: SceneModel,
   effectiveSempertexSelection?: SempertexSelectionItem[]
@@ -1234,11 +1237,11 @@ export function buildLayoutRefEditPrompt(
     && sceneModel.panels[0]?.text?.enabled && (sceneModel.panels[0]?.text?.value ?? "").trim().length > 0
     ? sceneModel.panels[0] : null;
   const frontRoundTextLine = frontRoundTextPanel
-    ? `The words "${frontRoundTextPanel.text.value.trim()}" are ${frontRoundTextPanel.text.color === "silver" ? "mounted" : "printed"} on the round board in ` +
-      `${describeTextColor(frontRoundTextPanel.text.color)} ${({ script: "flowing script", block: "bold block", elegant: "elegant serif" } as Record<string, string>)[frontRoundTextPanel.text.fontStyle] ?? "flowing script"} ` +
+    ? `The words "${frontRoundTextPanel.text.value.trim()}" are ${isMetalText(frontRoundTextPanel.text.color) ? "mounted" : "printed"} on the round board in ` +
+      `${describeTextColor(frontRoundTextPanel.text.color)} ${({ script: "thin slanted handwritten signature script", block: "bold block", elegant: "elegant serif" } as Record<string, string>)[frontRoundTextPanel.text.fontStyle] ?? "flowing script"} ` +
       `lettering, clearly readable, in the clear white area right of centre below the balloons. ` +
-      (frontRoundTextPanel.text.color === "silver"
-        ? `The letters are MIRROR-CHROME, exactly the same polished finish as the chrome balloons: ` +
+      (isMetalText(frontRoundTextPanel.text.color)
+        ? `The letters are flat, thin and MIRROR-POLISHED, exactly as shiny as the chrome balloons: ` +
           `gleaming, with blown-white highlights and dark reflected bands — not brushed, not satin, ` +
           `not flat grey paint, not printed ink. `
         : ``)
@@ -1714,7 +1717,9 @@ export function buildLayoutRefEditPrompt(
   // plain-English name, so a customer-picked hex reaches the model as words it
   // can act on. The four presets keep the names they always had.
   const TEXT_FONT_LABEL: Record<string, string> = {
-    script: "flowing script", block: "bold block", elegant: "elegant serif",
+    // 2026-10-22: the script is the customer's reference lettering — thin,
+    // slanted, handwritten.
+    script: "thin slanted handwritten signature script", block: "bold block", elegant: "elegant serif",
   };
   // 2026-09-03: this described panelsWithText[0] only, so on a Double Arch
   // with a different word typed on each board the second word was never in
@@ -1744,8 +1749,10 @@ export function buildLayoutRefEditPrompt(
           // backdrop path (fal-ai/flux-2/edit) was quietly recolouring the
           // lettering to match the balloons: black was reported coming back
           // pale blue whatever the customer picked (2026-09-03).
-          (p.text.color === "silver"
-            ? `Those letters are mirror-chrome, the same polished finish as the chrome balloons — gleaming and reflective, never brushed, never flat grey paint. `
+          // 2026-10-22: every metal (silver, gold, rose gold) as flat, thin,
+          // mirror-polished acrylic, as in the customer's reference.
+          (isMetalText(p.text.color)
+            ? `Those letters are cut from flat, thin, ${colourName} acrylic and mounted flat on the board — gleaming and reflective like the chrome balloons, never brushed, never flat paint, never raised or 3D. `
             : `Those letters are ${colourName} — solid ${colourName} lettering, the exact colour shown in the reference image. `) +
           `Do not recolour the lettering to match the balloons, the backdrop, or the room. ` +
           // 2026-09-04: a three-word message came back as "Happy Birthday /
