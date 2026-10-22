@@ -49,6 +49,7 @@ import { THEME_CATALOG, getThemeCatalogEntry } from "@/lib/themeCatalog";
 import { frozenBannerPrintSvg } from "@/lib/bannerPrint";
 import { type SempertexSelectionItem } from "@/lib/renderPrompts/types";
 import { LONE_ARCH_STYLE_REFERENCE, hasLoneArchStyleReference } from "@/lib/renderPrompts/loneArchStyleReference";
+import { ROUND_STYLE_REFERENCE, usesRoundStyleReference } from "@/lib/renderPrompts/roundStyleReference";
 import { getVisualLabel, renderSafeBalloonLabel } from "@/lib/renderPrompts/colorLabels";
 import { buildNegativePrompt } from "@/lib/renderPrompts/buildNegativePrompt";
 import { buildStrictCorrectionPrompt } from "@/lib/renderPrompts/buildStrictCorrectionPrompt";
@@ -161,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "round-studio-clear-fix-v132";
+const RENDER_CACHE_VERSION = "round-style-ref-flat-letters-v133";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1524,9 +1525,12 @@ forbiddenBalloonColorLabels: hasSempertexLock
             // stays authoritative for geometry; the reference is there so the
             // model can SEE the arrangement rather than read a description of
             // it. Order matters: the prompt refers to them as image 1 and 2.
+            // 2026-10-22: and the Frozen round its reference photo (roundStyleReference).
             image_urls:      loneArchScene && hasLoneArchStyleReference()
               ? [pngResult.dataUri, LONE_ARCH_STYLE_REFERENCE as string]
-              : [pngResult.dataUri],
+              : usesRoundStyleReference(sceneModel)
+                ? [pngResult.dataUri, ROUND_STYLE_REFERENCE]
+                : [pngResult.dataUri],
             image_size:      renderAspectRatio,
             seed:            FINAL_RENDER_SEED,
             output_format:   "jpeg",
@@ -2427,7 +2431,8 @@ forbiddenBalloonColorLabels: hasSempertexLock
           const l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
           if (mx - mn > 28 || l > 0.80) continue;
           const a = m * Math.min(1, (0.80 - l) / 0.10);
-          const c = Math.min(1, Math.max(0, (l - 0.60) * 2.4 + 0.52)) * 255;
+          // 2026-10-22: gentler — the hard curve made the letters look puffy.
+          const c = Math.min(1, Math.max(0, (l - 0.58) * 1.5 + 0.50)) * 255;
           // 2026-10-22: in the lettering's own metal — silver, gold or rose
           // gold. Dark reflected bands stay nearly neutral, as on real metal.
           const tint = pngResult.textMetalTint ?? [1.0, 1.01, 1.04];

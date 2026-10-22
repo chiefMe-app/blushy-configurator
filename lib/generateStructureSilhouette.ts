@@ -724,7 +724,11 @@ function customTextGuide(
     // back as embossed brushed grey — silver, but not shiny. Blown-white
     // bands against near-black reflected ones is what the balloons have.
     ? `<defs><linearGradient id="mirrorSilverText" x1="0" y1="0" x2="0.25" y2="1">` +
-      [["0%", 1.0], ["16%", 1.0], ["34%", 0.29], ["48%", 1.0], ["62%", 0.78], ["78%", 0.25], ["92%", 0.94], ["100%", 1.0]]
+      // 2026-10-22: a FLAT cut-metal sheen now, not a mirror ball. The hard
+      // blown-white and near-black bands read as an inflated foil-balloon
+      // letter ("happy birthday yazisi flat degil, kabarik duruyor"); the
+      // reference is thin flat acrylic, mid-dark with one soft sheen.
+      [["0%", 0.58], ["40%", 0.42], ["55%", 0.74], ["70%", 0.48], ["100%", 0.40]]
         .map(([o, l]) => `<stop offset="${o}" stop-color="${tintHex(metal, l as number)}"/>`).join("") +
       `</linearGradient></defs>`
     : "";
@@ -764,7 +768,7 @@ function customTextGuide(
            (silver
              // Thickened with a stroke in the same gradient: a script hairline has
              // no surface for a reflection to show on.
-             ? `<path d="${d}" fill="url(#mirrorSilverText)" stroke="url(#mirrorSilverText)" stroke-width="${(fontSize * 0.07).toFixed(1)}" stroke-linejoin="round"/>` +
+             ? `<path d="${d}" fill="url(#mirrorSilverText)" stroke="url(#mirrorSilverText)" stroke-width="${(fontSize * 0.028).toFixed(1)}" stroke-linejoin="round"/>` +
                `<path d="${d}" fill="none" stroke="rgba(60,64,70,0.55)" stroke-width="0.8"/>`
              : `<path d="${d}" fill="${fill}" stroke="${fill}" stroke-width="${thick.toFixed(1)}" stroke-linejoin="round"${thick ? "" : outline}/>`);
   }).join("") + `</g>`;

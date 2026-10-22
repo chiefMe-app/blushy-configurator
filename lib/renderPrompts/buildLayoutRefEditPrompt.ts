@@ -2,6 +2,7 @@ import { type SceneModel } from "@/lib/buildSceneModel";
 import type { SempertexSelectionItem } from "./types";
 import { getVisualLabel, renderSafeBalloonLabel, getPositiveLabel } from "./colorLabels";
 import { hasLoneArchStyleReference } from "./loneArchStyleReference";
+import { usesRoundStyleReference } from "./roundStyleReference";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 import { describeTextColor } from "@/lib/config";
@@ -998,6 +999,15 @@ export function buildLayoutRefEditPrompt(
   // in one render, a garland with no blue in the next). Everything dropped
   // here is said elsewhere in the prompt; what remains is only what the
   // second image is for.
+  // 2026-10-22: the Frozen round is shot against its reference photo, given
+  // as IMAGE 2 (see roundStyleReference). One short sentence, the very first:
+  // a longer one, without the pedestal named, lost the plinth on one seed of
+  // three; this one held it on all three.
+  const frontRoundStyleLine = usesRoundStyleReference(sceneModel)
+    ? `IMAGE 1 is the layout: it fixes where the round board, every balloon and the one white cylindrical ` +
+      `pedestal column stand. IMAGE 2 is a photo of the finished look: copy its room, its soft daylight, its ` +
+      `floor and exactly how its balloons and thin flat lettering look. `
+    : "";
   const frontImageRolesLine = panelCount === 1 && sceneModel.panels[0]?.type === "arch"
     && hasLoneArchStyleReference()
     ? `TWO images are given. IMAGE 1 is the layout guide and decides the whole scene: the backdrop, ` +
@@ -1258,9 +1268,11 @@ export function buildLayoutRefEditPrompt(
       `${describeTextColor(frontRoundTextPanel.text.color)} ${({ script: "thin slanted handwritten signature script", block: "bold block", elegant: "elegant serif" } as Record<string, string>)[frontRoundTextPanel.text.fontStyle] ?? "flowing script"} ` +
       `lettering, clearly readable, in the clear white area right of centre below the balloons. ` +
       (isMetalText(frontRoundTextPanel.text.color)
-        ? `The letters are flat, thin and MIRROR-POLISHED, exactly as shiny as the chrome balloons: ` +
-          `gleaming, with blown-white highlights and dark reflected bands — not brushed, not satin, ` +
-          `not flat grey paint, not printed ink. `
+        // 2026-10-22: FLAT. "Blown-white highlights and dark reflected bands"
+        // drew puffy foil-balloon letters ("kabarik duruyor").
+        ? `The letters are FLAT: thin handwritten letters cut from 3mm polished metal acrylic, lying flat ` +
+          `against the board with a soft metallic sheen — not puffy, not inflated, not rounded, not foil-balloon ` +
+          `letters, not printed ink. `
         : ``)
     : "";
 
@@ -1769,7 +1781,7 @@ export function buildLayoutRefEditPrompt(
           // 2026-10-22: every metal (silver, gold, rose gold) as flat, thin,
           // mirror-polished acrylic, as in the customer's reference.
           (isMetalText(p.text.color)
-            ? `Those letters are cut from flat, thin, ${colourName} acrylic and mounted flat on the board — gleaming and reflective like the chrome balloons, never brushed, never flat paint, never raised or 3D. `
+            ? `Those letters are cut from flat, thin, ${colourName} acrylic and mounted flat on the board — gleaming and reflective like the chrome balloons, never brushed, never flat paint. They are FLAT and thin — not puffy, not inflated, not rounded, not foil-balloon letters. `
             : `Those letters are ${colourName} — solid ${colourName} lettering, the exact colour shown in the reference image. `) +
           `Do not recolour the lettering to match the balloons, the backdrop, or the room. ` +
           // 2026-09-04: a three-word message came back as "Happy Birthday /
@@ -2047,6 +2059,7 @@ const setupTemplateClause = setupTemplate
     : "";
 
   return (
+    frontRoundStyleLine +
     frontImageRolesLine +
     frontArchAspectLine +
     frontShapeLine +
