@@ -607,12 +607,12 @@ export default function ConfigurePage() {
       <div className="bz-ticker"><span className="sprinkle">✳</span> sprinkle a little happy <span className="accent">on your big day!</span><span className="sprinkle">✳</span></div>
 
       <main className="bz-main">
-        {/* Left: the opening cake during Event and Theme, then the real AI render card */}
+        {/* Left: the balloon dog during Event and Theme, then the real AI render card */}
         <section className="bz-left" aria-label="Party concept preview">
           {step < 2 ? (
             <div className="bz-cake">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/design/confetti-cake.gif" alt="Animated confetti birthday cake" />
+              <img src="/design/balloon-dog.webp" alt="Illustrated dalmatian holding a bunch of balloons" />
             </div>
           ) : (
             <>
@@ -666,7 +666,7 @@ export default function ConfigurePage() {
                           className={`bz-choice bz-birthday ${sel ? "selected" : ""}`}>
                           <span className="art">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src="/design/birthday-card.jpg" alt="" />
+                            <img src="/design/confetti-cake.gif" alt="" />
                           </span>
                           <span>
                             <h3><span className="pink">Birthday,</span> <span className="lilac">please!</span></h3>

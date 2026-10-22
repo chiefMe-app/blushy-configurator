@@ -72,7 +72,7 @@
 
 /* Opening look: the animated cake, large, frameless, on plain white. */
 .bz-cake { display: flex; align-items: center; justify-content: center; min-height: 520px; background: transparent; }
-.bz-cake img { width: 92%; max-width: 620px; height: auto; display: block; object-fit: contain; }
+.bz-cake img { width: auto; max-width: 92%; max-height: min(calc(100vh - 270px), 660px); min-height: 300px; height: auto; display: block; object-fit: contain; }
 
 /* ---------- Heading box ---------------------------------------------------- */
 .bz-headbox { position: relative; padding: 0 3px 14px; }
@@ -115,7 +115,8 @@
 /* Birthday card */
 .bz-birthday { grid-column: 1 / -1; display: flex; align-items: center; gap: 19px; min-height: 145px; padding: 12px 42px 12px 13px; overflow: hidden; }
 .bz-birthday .art { width: 118px; height: 118px; flex: 0 0 118px; border-radius: 16px; overflow: hidden; }
-.bz-birthday .art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bz-birthday .art { background: #fff; }
+.bz-birthday .art img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .bz-birthday h3 { font-size: clamp(23px, 2.1vw, 29px); margin: 0 0 9px; }
 .bz-birthday h3 .pink { color: var(--bz-pink); }
 .bz-birthday h3 .lilac { color: #8354bd; }
@@ -313,7 +314,7 @@
   .bz-right { order: 0; padding: 0; width: 100%; }
   .bz-left { order: 1; position: static; width: 100%; }
   .bz-cake { min-height: 0; }
-  .bz-cake img { width: 78%; max-width: 420px; }
+  .bz-cake img { max-width: 78%; max-height: 380px; }
   .bz-headbox h1 { font-size: clamp(32px, 8vw, 43px); }
   .bz-footer-inner { padding: 10px 14px; }
   .bz-footer-note { display: none; }
