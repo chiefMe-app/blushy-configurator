@@ -1019,7 +1019,7 @@ export function buildLayoutRefEditPrompt(
   const frontRoundStyleLine = styleRef
     ? `IMAGE 1 is the layout: it fixes where the ${styleRef.board}, every balloon and the one white cylindrical ` +
       `pedestal column stand. IMAGE 2 is a photo of the finished look: copy its room, its ` +
-      `${styleRef.board === "arch board" ? "warm, airy soft daylight" : "soft daylight"}, its ` +
+      `${styleRef.board === "round board" ? "soft daylight" : "warm, airy soft daylight"}, its ` +
       `floor and exactly how its balloons and thin flat lettering look. `
     : "";
   const frontImageRolesLine = !styleRef && panelCount === 1 && sceneModel.panels[0]?.type === "arch"
@@ -1795,7 +1795,7 @@ export function buildLayoutRefEditPrompt(
           // 2026-10-22: every metal (silver, gold, rose gold) as flat, thin,
           // mirror-polished acrylic, as in the customer's reference.
           (isMetalText(p.text.color)
-            ? `Those letters are cut from flat, thin, ${p.text.color === "silver" ? "light soft silver-grey" : colourName} acrylic and mounted flat on the board — gleaming and reflective like the chrome balloons, never brushed, never flat paint. They are FLAT and thin — not puffy, not inflated, not rounded, not foil-balloon letters. `
+            ? `Those letters are cut from flat, thin, ${p.text.color === "silver" ? "soft silver-grey" : colourName} acrylic, every stroke crisp, sharp and clearly legible, mounted flat on the board — gleaming and reflective like the chrome balloons, never brushed, never flat paint. They are FLAT and thin — not puffy, not inflated, not rounded, not foil-balloon letters. `
             : `Those letters are ${colourName} — solid ${colourName} lettering, the exact colour shown in the reference image. `) +
           `Do not recolour the lettering to match the balloons, the backdrop, or the room. ` +
           // 2026-09-04: a three-word message came back as "Happy Birthday /
@@ -2084,7 +2084,7 @@ const setupTemplateClause = setupTemplate
     // L 195 where the Arch + Shimmer reference sits at 166 against a board of
     // 220. Naming the grey concrete room first, then the balloon palette,
     // keeps the two apart.
-    (loneRoundRoom ? roundRoomLine : styleRef?.board === "arch board" ? archRefRoomLine : frontRoomLine) +
+    (loneRoundRoom ? roundRoomLine : (styleRef?.board === "arch board" || styleRef?.board === "square banner board") ? archRefRoomLine : frontRoomLine) +
     frontColourLine +
     frontPaletteLine +
     frontMetallicLine +

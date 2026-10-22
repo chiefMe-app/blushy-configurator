@@ -19,6 +19,7 @@ import type { BackdropItem, PlinthSize, BackdropShapeId, BalloonStyleId } from "
 import { resolveTextColorHex } from "./config";
 import { textAdvance, textPathD } from "./guideFonts";
 import { frozenBannerPrintSvg } from "./bannerPrint";
+import { FROZEN_CASTLE_PRINT } from "./bannerCastlePrint";
 import { calculateExactLayout } from "./calculateExactLayout";
 import { calculateRenderAspectRatio } from "./calculateRenderAspectRatio";
 import type { FalImageSize } from "./calculateRenderAspectRatio";
@@ -644,7 +645,7 @@ function customTextGuide(
   // "lonearchleft": the same with the garland on the left (the solid arch
   // beside an open frame, garland on its outer side).
   const loneArchClear = garlandSide === "lonearch" || garlandSide === "lonearchleft";
-  const y = apexY + panelH * (roundClear || bannerClear ? 0.36 : hasGraphicBelow ? 0.17 : 0.30);
+  const y = apexY + panelH * (bannerClear ? 0.40 : roundClear ? 0.36 : hasGraphicBelow ? 0.17 : 0.30);
 
   // The garland covers roughly the outer 30% of the board it hangs on. Text
   // drawn across the full width therefore had its first letters hidden behind
@@ -659,7 +660,9 @@ function customTextGuide(
     // 2026-10-20: 0.50 -> 0.36, "yazi boyutu daha kuculsun". The font is
     // sized from this width, so the lettering scales down with it.
     roundClear ? pw * 0.36 :
-    bannerClear ? pw * 0.46 :
+    // 2026-10-22: beside the castle, as in the banner reference — right of
+    // centre, about 0.38 of the board across.
+    bannerClear ? pw * 0.38 :
     loneArchClear ? pw * 0.64 :
     garlandSide === "shimmer" ? pw * 0.44 :
     garlandSide === "both" ? pw * (1 - 2 * cover) :
@@ -667,7 +670,7 @@ function customTextGuide(
     pw * (1 - cover) * 0.92;
   const shift =
     roundClear ? pw * 0.11 :
-    bannerClear ? -pw * 0.07 :
+    bannerClear ? pw * 0.05 :
     loneArchClear ? (garlandSide === "lonearchleft" ? pw * 0.09 : -pw * 0.09) :
     garlandSide === "left"  ?  pw * cover / 2 :
     garlandSide === "right" ? -pw * cover / 2 : 0;
@@ -734,7 +737,9 @@ function customTextGuide(
       // reference is thin flat acrylic, mid-dark with one soft sheen.
       // 2026-10-22: lighter — "font rengi biraz koyu, referanstaki daha
       // ferah": the reference's letters are a soft light silver-grey.
-      [["0%", 0.74], ["40%", 0.62], ["55%", 0.86], ["70%", 0.66], ["100%", 0.60]]
+      // 2026-10-22 (later): a touch darker again, "yazinin bir kismi
+      // okunmuyor" — at 0.6..0.86 the thin strokes faded into the board.
+      [["0%", 0.62], ["40%", 0.50], ["55%", 0.76], ["70%", 0.54], ["100%", 0.48]]
         .map(([o, l]) => `<stop offset="${o}" stop-color="${tintHex(metal, l as number)}"/>`).join("") +
       `</linearGradient></defs>`
     : "";
@@ -774,8 +779,8 @@ function customTextGuide(
            (silver
              // Thickened with a stroke in the same gradient: a script hairline has
              // no surface for a reflection to show on.
-             ? `<path d="${d}" fill="url(#mirrorSilverText)" stroke="url(#mirrorSilverText)" stroke-width="${(fontSize * 0.028).toFixed(1)}" stroke-linejoin="round"/>` +
-               `<path d="${d}" fill="none" stroke="rgba(60,64,70,0.55)" stroke-width="0.8"/>`
+             ? `<path d="${d}" fill="url(#mirrorSilverText)" stroke="url(#mirrorSilverText)" stroke-width="${(fontSize * 0.038).toFixed(1)}" stroke-linejoin="round"/>` +
+               `<path d="${d}" fill="none" stroke="rgba(60,64,70,0.70)" stroke-width="0.9"/>`
              : `<path d="${d}" fill="${fill}" stroke="${fill}" stroke-width="${thick.toFixed(1)}" stroke-linejoin="round"${thick ? "" : outline}/>`);
   }).join("") + `</g>`;
   return {
@@ -1289,9 +1294,11 @@ export function generateStructureSilhouette(
       if (shape === "banner" && item?.graphic?.enabled && String(item?.graphic?.assetId ?? "").startsWith("frozen-")) {
         const side = Math.min(panel.pw, panel.floorY - panel.apexY);
         const bl = panel.cx - side / 2, bt = panel.floorY - side;
-        const art = frozenBannerPrintSvg(Math.round(side), Math.round(side))
-          .replace(/^<svg /, `<svg x="${bl.toFixed(1)}" y="${bt.toFixed(1)}" `);
-        content.push(art);
+        // 2026-10-22: the customer's castle artwork (bannerCastlePrint), in
+        // place of the drawn snowflake wash.
+        void frozenBannerPrintSvg;
+        content.push(`<image x="${bl.toFixed(1)}" y="${bt.toFixed(1)}" width="${side.toFixed(1)}" height="${side.toFixed(1)}" ` +
+          `preserveAspectRatio="xMidYMid slice" href="${FROZEN_CASTLE_PRINT}"/>`);
         bannerPrintInGuide = true;
       }
     } else {

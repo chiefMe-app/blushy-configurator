@@ -162,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "arch-style-ref-square-v134";
+const RENDER_CACHE_VERSION = "banner-castle-crisp-text-v135";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -2436,7 +2436,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
           if (mx - mn > 28 || l > 0.80) continue;
           const a = m * Math.min(1, (0.80 - l) / 0.10);
           // 2026-10-22: gentler — the hard curve made the letters look puffy.
-          const c = Math.min(1, Math.max(0, (l - 0.45) * 1.3 + 0.60)) * 255; // and lighter, as the reference's letters are
+          const c = Math.min(1, Math.max(0, (l - 0.45) * 1.3 + 0.50)) * 255; // light, but every stroke still reads
           // 2026-10-22: in the lettering's own metal — silver, gold or rose
           // gold. Dark reflected bands stay nearly neutral, as on real metal.
           const tint = pngResult.textMetalTint ?? [1.0, 1.01, 1.04];
