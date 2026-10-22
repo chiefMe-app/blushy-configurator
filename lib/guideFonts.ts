@@ -29,7 +29,7 @@ function face(key: FaceKey): Font {
 function fontFor(style: string, text: string): Font {
   if (style === "block" || style === "elegant") return face(style);
   const sig = face("signature");
-  const covered = [...text].every((ch) => ch === " " || sig.charToGlyph(ch).index !== 0);
+  const covered = Array.from(text).every((ch) => ch === " " || sig.charToGlyph(ch).index !== 0);
   return covered ? sig : face("script");
 }
 
