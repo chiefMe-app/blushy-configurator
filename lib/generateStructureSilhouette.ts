@@ -930,7 +930,7 @@ export function generateStructureSilhouette(
   extras?: {
     florals?: boolean;
     numberLight?: { enabled: boolean; value: string };
-    neonSign?: { enabled: boolean; text: string };
+    neonSign?: { enabled: boolean; text: string; panelIndex?: number };
     /** Balloon Ring dressing — "half" leaves the gold hoop bare on one side. */
     ringStyle?: "full" | "half" | "none";
     /**
@@ -4433,7 +4433,10 @@ export function generateStructureSilhouette(
   // white ground gets dropped from the render.
   const neonWords = String(extras?.neonSign?.text ?? "").replace(/[<>&]/g, "").trim().slice(0, 40);
   if (extras?.neonSign?.enabled && neonWords.length > 0 && layout.panels.length > 0) {
-    const np = layout.panels[0];
+    // 2026-10-22: on the panel the customer chose — it was always the first
+    // panel, which on Arch + Shimmer put the sign on the arch.
+    const wantIdx = Number.isInteger(extras?.neonSign?.panelIndex) ? Number(extras?.neonSign?.panelIndex) : 0;
+    const np = layout.panels.find((p) => p.idx === wantIdx) ?? layout.panels[0];
     const isRing = (backdropItems[np.idx]?.type ?? "") === "balloon_ring";
     const panelH = np.floorY - np.apexY;
     const cxN = np.cx;
@@ -4444,7 +4447,10 @@ export function generateStructureSilhouette(
       * (ringScenePxPerCm ?? (panelH / Math.max(1, backdropItems[np.idx]?.heightCm ?? 200)));
     const cyN = isRing ? np.floorY - ringR2 : np.apexY + panelH * 0.34;
     const words = neonWords.split(" ").filter(Boolean);
-    const lines = words.length > 2 ? [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")] : [neonWords];
+    // 2026-10-22: two words go on two lines, as in the customer's shimmer
+    // references. Drawn on one line, the render broke it in two itself and
+    // spelled "Happy Happthday".
+    const lines = words.length >= 2 ? [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")] : [neonWords];
     const widest = Math.max(...lines.map((l) => l.length));
     // 2026-09-05: sized from the REAL product, not from a fraction of the panel.
     // The sign is 16.5 x 12 inches — about 42cm wide — and the guide was drawing
@@ -4454,7 +4460,10 @@ export function generateStructureSilhouette(
     // line. Capped so a long phrase on one line still fits the board.
     const SIGN_W_CM = 42;
     const pxPerCm = np.pw / Math.max(1, backdropItems[np.idx]?.widthCm ?? 200);
-    const signW = Math.min(np.pw * 0.62, SIGN_W_CM * pxPerCm);
+    // 2026-10-22: on a shimmer wall the sign is the size the customer's
+    // shimmer references show — about 40% of the wall across.
+    const onShimmer = (backdropItems[np.idx]?.type ?? "") === "shimmer_wall";
+    const signW = onShimmer ? np.pw * 0.40 : Math.min(np.pw * 0.62, SIGN_W_CM * pxPerCm);
     const fontSize = Math.max(9, Math.min(signW / Math.max(1, widest) / 0.46, signW * 0.42));
     const lineGap = fontSize * 1.22;
     const firstY = cyN - ((lines.length - 1) * lineGap) / 2;

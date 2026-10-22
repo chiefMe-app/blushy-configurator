@@ -1019,8 +1019,8 @@ export function buildLayoutRefEditPrompt(
   const frontRoundStyleLine = styleRef
     ? `IMAGE 1 is the layout: it fixes where the ${styleRef.board}, every balloon and the one white cylindrical ` +
       `pedestal column stand. IMAGE 2 is a photo of the finished look: copy its room, its ` +
-      `${styleRef.board === "round board" ? "soft daylight" : "warm, airy soft daylight"}, its ` +
-      `floor and exactly how its balloons and thin flat lettering look. `
+      `${styleRef.light}, its ` +
+      `floor and exactly how its balloons and ${styleRef.board.includes("shimmer") ? "crisp sequins and glowing neon sign" : "thin flat lettering"} look. `
     : "";
   const frontImageRolesLine = !styleRef && panelCount === 1 && sceneModel.panels[0]?.type === "arch"
     && hasLoneArchStyleReference()

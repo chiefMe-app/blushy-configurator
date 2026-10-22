@@ -489,6 +489,7 @@ export default function ConfigurePage() {
         isIncremental={preview.isIncremental}
         onRegenerate={preview.regenerate}
         onPatchDecor={patchDecor}
+        showControls={step >= 2}
       />
       <PriceSummary config={config} className="hidden lg:block" />
     </div>
@@ -557,6 +558,9 @@ export default function ConfigurePage() {
                   isIncremental={preview.isIncremental}
                   onRegenerate={preview.regenerate}
                   onPatchDecor={patchDecor}
+                  // 2026-10-22: no Generate render before the decor is chosen —
+                  // "theme secerken generate render gozukmesin".
+                  showControls={step >= 2}
                   onFinalRenderStateChange={setFinalRenderState}
                   onGenerateReady={(fn) => setGenerateFinalRender(() => fn)}
                 />
@@ -1458,15 +1462,23 @@ function clearAllStandees() {
         default: return -1;
       }
     })();
-    if (textOn >= 0 && panels[textOn]) {
+    // 2026-10-22: on a shimmer wall the words are a lit LED neon sign, as in
+    // the customer's shimmer references ("shimmer wall oldugu zaman hep led
+    // yazsin happy birthday"): the Neon LED option is ticked, on the shimmer
+    // wall, and the wall carries no printed lettering. Unticking the option
+    // removes it.
+    const neonOnShimmer = textOn >= 0 && panels[textOn]?.type === "shimmer_wall";
+    if (textOn >= 0 && panels[textOn] && !neonOnShimmer) {
       panels = panels.map((p, i) => i === textOn && !p.text.enabled
-        // Silver letters vanish into a silver sequin wall, so a shimmer wall
-        // gets white lettering where the theme's would be silver.
-        ? { ...p, text: { ...p.text, enabled: true, value: p.text.value.trim() || DEFAULT_TEXT_VALUE,
-            color: p.type === "shimmer_wall" && themeTextColor(config.theme) === "silver" ? "white" : themeTextColor(config.theme) } }
+        ? { ...p, text: { ...p.text, enabled: true, value: p.text.value.trim() || DEFAULT_TEXT_VALUE, color: themeTextColor(config.theme) } }
         : p);
     }
-    patchDecor({ backdropItems: panels });
+    if (neonOnShimmer) {
+      panels = panels.map((p) => p.type === "shimmer_wall" ? { ...p, text: { ...p.text, enabled: false } } : p);
+      patchDecor({ backdropItems: panels, neonSign: { enabled: true, text: DEFAULT_TEXT_VALUE, panelIndex: textOn } });
+    } else {
+      patchDecor({ backdropItems: panels });
+    }
     setOpenCustomizeIds(new Set(panels.map(p => p.id)));
   }
 
