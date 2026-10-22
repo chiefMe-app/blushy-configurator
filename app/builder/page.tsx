@@ -566,7 +566,7 @@ export default function ConfigurePage() {
   const busy = submitting || (isDecorStep && finalRenderState.generating);
 
   return (
-    <div className="bz-body" style={{ minHeight: "100vh", background: "#fff" }}>
+    <div className="bz-body" style={{ minHeight: "calc(100vh / var(--bz-zoom, 1))", background: "#fff" }}>
       <Sprinkles count={110} seed={7} />
 
       {/* Top bar: wordmark, step navigation, running total */}

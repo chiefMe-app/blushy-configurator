@@ -29,6 +29,16 @@
   --bz-sans: var(--bz-font-dmsans), "DM Sans", "Segoe UI", sans-serif;
 }
 
+/* 2026-10-23: at 100% browser zoom the app should look as it does at 75%
+   (customer request). Desktop-width screens only — phones and tablets stay
+   1:1 so text remains readable. Viewport-height sizes divide by --bz-zoom,
+   because zoom scales vh too. */
+:root { --bz-zoom: 1; }
+@media (min-width: 1024px) {
+  :root { --bz-zoom: .75; }
+  html { zoom: .75; }
+}
+
 .bz-body { font-family: var(--bz-sans); background: #fff; color: var(--bz-ink); }
 .bz-hand { font-family: var(--bz-hand); font-weight: 400; }
 
@@ -72,7 +82,7 @@
 
 /* Opening look: the animated cake, large, frameless, on plain white. */
 .bz-cake { display: flex; align-items: center; justify-content: center; min-height: 520px; background: transparent; }
-.bz-cake img { width: auto; max-width: 92%; max-height: min(calc(100vh - 270px), 660px); min-height: 300px; height: auto; display: block; object-fit: contain; }
+.bz-cake img { width: auto; max-width: 92%; max-height: min(calc(100vh / var(--bz-zoom) - 270px), 660px); min-height: 300px; height: auto; display: block; object-fit: contain; }
 
 /* ---------- Heading box ---------------------------------------------------- */
 .bz-headbox { position: relative; padding: 0 3px 14px; }
@@ -213,7 +223,7 @@
 .bz-summary-box { background: var(--bz-blue-fog); border: 1px solid var(--bz-blue-line); border-radius: 17px; padding: 11px 20px; }
 
 /* ---------- Landing --------------------------------------------------------- */
-.bz-landing { position: relative; min-height: calc(100vh - 83px); background: #fff; overflow: hidden; }
+.bz-landing { position: relative; min-height: calc(100vh / var(--bz-zoom) - 83px); background: #fff; overflow: hidden; }
 .bz-landing-top { height: 83px; background: #fff; position: sticky; top: 0; z-index: 30; }
 .bz-landing-top .bz-topbar-inner { max-width: 1580px; height: 82px; padding: 0 36px; justify-content: space-between; gap: 20px; }
 .bz-landing-top .bz-brand { gap: 14px; min-width: 0; }

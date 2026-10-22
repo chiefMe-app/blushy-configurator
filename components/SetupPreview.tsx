@@ -1276,7 +1276,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             // generated at, so the image fills it.
             aspectRatio: (finalUrl || finalIsLoading) ? renderCssAspect : undefined,
             minHeight: 360,
-            maxHeight: "min(86vh, 1040px)",
+            maxHeight: "min(calc(86vh / var(--bz-zoom, 1)), 1040px)",
             transition: "aspect-ratio 0.35s ease",
           }}
         >
