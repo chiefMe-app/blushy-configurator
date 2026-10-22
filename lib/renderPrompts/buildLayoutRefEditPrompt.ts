@@ -893,6 +893,23 @@ export function buildLayoutRefEditPrompt(
   const backdropWordForRoom = sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "shimmer_wall"
     ? "backdrop"
     : sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "balloon_ring" ? "balloon ring" : "white backdrop";
+  // 2026-10-22: the lone round is shot in its reference's room, one to one
+  // ("ortam isik ... birebir"): a plain seamless studio, no window, a smooth
+  // light-grey wall a little brighter in the middle, a pale polished floor,
+  // soft frontal light. Kept to the length of the line it replaces — longer
+  // front lines have pushed the round's plinth out before.
+  // The usual room line with two changes only — a smooth studio wall for
+  // the concrete, and no window. Rewritten whole ("catalogue product shot",
+  // then a plainer version) it turned half the garland chrome on both seeds.
+  const roundRoomLine = `The room is a bright, neutral studio: a smooth, UNTEXTURED MID-GREY studio wall, a little ` +
+    `brighter in the middle — clearly darker than the ${backdropWordForRoom} standing against it, never white ` +
+    `— and a smooth pale-grey floor, LIGHTER than the wall, with a soft reflection. The light is SOFT, EVEN and ` +
+    `DIFFUSE across the whole picture — bright, clean and ` +
+    `consistent from side to side, with NO hard sunbeam, no bright pool or patch of light, no sharp-edged ` +
+    `or diagonal shadow cast across the backdrop, the wall or the floor, and no blown-out highlights. ` +
+    `Neutral white balance: the balloons and the board read as clean neutral white where they are white, ` +
+    `with no blue, golden or warm cast. No window, doorway, radiator or furniture is visible. `;
+  const loneRoundRoom = panelCount === 1 && sceneModel.panels[0]?.type === "round";
   const frontRoomLine = `The room is a bright, neutral studio: a MID-GREY concrete wall with soft, fine texture ` +
     `— clearly darker than the ${backdropWordForRoom} standing against it, never white, never flat ` +
     `— and a smooth light-grey concrete floor with a soft reflection. The light is SOFT, EVEN and ` +
@@ -1169,7 +1186,7 @@ export function buildLayoutRefEditPrompt(
   // clear bubbles; one short sentence says what they are, so the snowflakes
   // come out as chunky glitter-foam ornaments rather than paper cut-outs and
   // the bubbles as see-through rather than white.
-  const hasClearInPalette = selectedSempertexColors.some((c) => /clear/i.test(String((c as { colorName?: string }).colorName ?? "")));
+  const hasClearInPalette = selectedSempertexColors.some((c) => /\bclear\b/i.test(String((c as { colorName?: string }).colorName ?? "")));
   const frontOrnamentLine = sceneModel.balloons.style === "none" ? ""
     // Double Arch's reference has no snowflakes, so neither does its guide —
     // and the sentence alone was enough to get some drawn.
@@ -2040,7 +2057,7 @@ const setupTemplateClause = setupTemplate
     // L 195 where the Arch + Shimmer reference sits at 166 against a board of
     // 220. Naming the grey concrete room first, then the balloon palette,
     // keeps the two apart.
-    frontRoomLine +
+    (loneRoundRoom ? roundRoomLine : frontRoomLine) +
     frontColourLine +
     frontPaletteLine +
     frontMetallicLine +

@@ -161,7 +161,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "hug-board-script-text-v131";
+const RENDER_CACHE_VERSION = "round-studio-clear-fix-v132";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1477,7 +1477,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
       .filter(Boolean);
     // 2026-10-21: and the clear ones, drawn as see-through bubbles.
     const clearSelectionHexes = (effectiveSempertexSelection ?? [])
-      .filter((c) => /clear/i.test(String((c as { colorName?: string }).colorName ?? "")))
+      .filter((c) => /\bclear\b/i.test(String((c as { colorName?: string }).colorName ?? "")))
       .map((c) => String((c as { hex?: string }).hex ?? ""))
       .filter(Boolean);
     const pngResult       = await generateLayoutReferencePng(sceneModel, promptInputForAi, effectiveBalloonHexColors, cutoutGuideItems, chromeSelectionHexes, clearSelectionHexes);
@@ -1984,7 +1984,13 @@ forbiddenBalloonColorLabels: hasSempertexLock
   // zero pink. It costs one extra model call per render, which is the price of
   // the palette actually being the palette.
   let balloonColorLockPassApplied = false;
-  if (effectiveBalloonHexColors.length > 0 && sceneModel.balloons.style !== "none") {
+  // 2026-10-22: not on the lone round. Its garland is the customer's photo
+  // replayed balloon for balloon, colours included, and the primary already
+  // renders it in palette; this pass then repainted the room (darker, textured
+  // concrete where the reference is a plain light studio) and pushed the
+  // contrast — "renkler cok parlak".
+  const skipLockForReplay = sceneModel.panels.length === 1 && sceneModel.panels[0]?.type === "round";
+  if (effectiveBalloonHexColors.length > 0 && sceneModel.balloons.style !== "none" && !skipLockForReplay) {
     try {
       const baseBuf = workingImageBuf ?? await fetchFinalImage();
       if (baseBuf) {

@@ -1715,7 +1715,10 @@ export function generateStructureSilhouette(
       const chrome = uniq.find((i) => chromeHexSet.has(colors[i].toLowerCase()));
       const clear  = uniq.find((i) => clearHexSet.has(colors[i].toLowerCase()));
       const white  = uniq.find((i) => i !== chrome && i !== clear && isWhite(colors[i]));
-      const rest   = uniq.filter((i) => i !== chrome && i !== clear && i !== white);
+      // Every other near-white is left out of the pool as well: an unflagged
+      // clear (#F0F4F8) was handed out to the photo's blue and lilac balloons
+      // as grey-white, and the render turned them all clear (2026-10-22).
+      const rest   = uniq.filter((i) => i !== chrome && i !== clear && i !== white && !isWhite(colors[i]));
       const blue   = rest.find((i) => { const h = hueOf(colors[i]); return h >= 170 && h < 238; });
       const lav    = rest.find((i) => { const h = hueOf(colors[i]); return i !== blue && h >= 238 && h < 320; });
       const others = rest.filter((i) => i !== blue && i !== lav);
