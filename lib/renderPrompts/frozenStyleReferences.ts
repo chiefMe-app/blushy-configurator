@@ -54,7 +54,10 @@ export const TRIPLE_GARLAND_CLOSEUP: string =
  */
 export function sceneStyleReference(scene: { theme?: string; panels: { type: string }[]; balloons?: { style?: string } }):
   { image: string; board: string; light: string; closeUp?: boolean } | null {
-  if (String(scene.theme ?? "").toLowerCase() !== "frozen") return null;
+  // 2026-10-22: every theme, not only Frozen — "frozenda yaptigimiz butun
+  // setuplari exactly apply to other all themes except balloon colors". On
+  // the other themes the prompt rules out the photo's colours and snowflakes
+  // (see frontRoundStyleLine); the balloons take the theme palette from IMAGE 1.
   if ((scene.balloons?.style ?? "none") === "none") return null;
   const types = scene.panels.map((p) => p.type);
   if (types.length === 2 && types.includes("arch") && types.includes("shimmer_wall")) {

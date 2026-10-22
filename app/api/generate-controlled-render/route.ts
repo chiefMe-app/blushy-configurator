@@ -162,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "theme-palettes-v146";
+const RENDER_CACHE_VERSION = "refs-all-themes-v147";
 
 interface RenderCacheEntry {
   imageUrl: string;

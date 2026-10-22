@@ -1025,17 +1025,23 @@ export function buildLayoutRefEditPrompt(
     ? `There is NO backdrop sheet, no paper roll and no stand behind the two arch boards` +
       (sceneModel.plinths.length > 0 ? `, with the one white cylindrical pedestal column on the floor in front of them. ` : `. `)
     : "";
+  // Off Frozen the reference photo is still Frozen's: its blue, lilac and
+  // silver balloons, its clear bubbles and its snowflakes must not come
+  // across. The balloons take their colours from IMAGE 1 only.
+  const styleRefNotColours = styleRef && theme !== "frozen"
+    ? `Take NOT its balloon colours, its snowflakes${selectedSempertexColors.some((c) => /clear/i.test(String(c.colorName ?? ""))) ? "" : " or its clear balloons"}${styleRef.board === "square banner board" ? " or its printed artwork" : ""}: every balloon is coloured exactly as in IMAGE 1. `
+    : "";
   const frontRoundStyleLine = styleRef?.closeUp
     // A close-up of a garland (the Double Arch): only its light and balloons.
     ? `IMAGE 1 is the layout: it fixes the shape and place of the ${styleRef.board}, every balloon and the one ` +
       `smooth plain white cylindrical pedestal column. IMAGE 2 is a close-up of part of a finished garland: copy its ` +
-      `${styleRef.light} and exactly how its balloons look — nothing else from it. `
+      `${styleRef.light} and exactly how its balloons look — nothing else from it. ` + styleRefNotColours
     : styleRef
     ? `IMAGE 1 is the layout: it fixes where the ${styleRef.board}, every balloon and the one ${styleRef.board === "three boards" ? "smooth " : ""}white cylindrical ` +
       `pedestal column stand. IMAGE 2 is a photo of the finished look: copy its room, its ` +
       `${styleRef.light}, its ` +
       `floor and exactly how its balloons and ${styleRef.board.includes("shimmer") ? "crisp sequins and glowing neon sign" : "thin flat lettering"} look` +
-      (styleRef.board === "three boards" ? `, with all three boards clearly visible. ` : `. `)
+      (styleRef.board === "three boards" ? `, with all three boards clearly visible. ` : `. `) + styleRefNotColours
     : "";
   const frontImageRolesLine = !styleRef && panelCount === 1 && sceneModel.panels[0]?.type === "arch"
     && hasLoneArchStyleReference()
