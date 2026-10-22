@@ -16,8 +16,8 @@ render with fal.ai, and submit an order saved to Supabase.
 
 ```
 app/
-  page.tsx                  → redirects to /configure
-  configure/page.tsx        → main configurator UI (6-step flow + summary)
+  page.tsx                  → landing page (also served at /configure)
+  builder/page.tsx          → main configurator UI (7-step flow + summary)
   api/generate/route.ts     → fal.ai image generation (server-side, uses FAL_KEY)
   api/orders/route.ts       → Supabase order save (recomputes price server-side)
 components/
@@ -58,7 +58,7 @@ supabase/schema.sql         → orders table + RLS policies
    npm run dev
    ```
 
-   Open http://localhost:3000 (redirects to `/configure`).
+   Open http://localhost:3000 (landing page; the builder is at `/builder`).
 
 ## How pricing works
 
