@@ -495,9 +495,10 @@
 .bz-st-summary .go:hover { text-decoration: underline; }
 
 /* Style-tab inspiration sketch in the empty preview (not a render). */
-.bz-placeholder.art { padding: 0; background: #fbf8f6; }
-.bz-placeholder.art img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.bz-placeholder.art .tag { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; gap: 8px; align-items: center;
+.bz-placeholder.art { padding: 0; min-height: 0; justify-content: flex-start; background: #fbf8f6; }
+.bz-placeholder.art img { width: 100%; height: auto; flex: 0 1 auto; min-height: 0; object-fit: contain; display: block; }
+/* Below the sketch, never over it: wide sketches (Triple Arch, Arch + Shimmer) were losing their floor. */
+.bz-placeholder.art .tag { position: static; margin: 10px 12px 12px; align-self: stretch; display: flex; gap: 8px; align-items: center;
   padding: 9px 13px; border-radius: 14px; background: rgba(255,255,255,.94); box-shadow: 0 4px 14px rgba(103,44,71,.08);
   font: 500 12px/1.4 var(--bz-sans); color: var(--bz-body); text-align: left; }
 .bz-placeholder.art .tag b { color: var(--bz-ink); }

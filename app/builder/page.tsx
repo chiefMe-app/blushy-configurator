@@ -293,6 +293,16 @@ const SETUP_ICON: Partial<Record<string, string>> = {
   triple_arch: "/design/backdrops/triple-arch.png",
 };
 
+// 2026-10-23: hand-drawn sketch of each setup, shown (labelled as a sketch) in
+// the empty preview until the customer generates a real render. The banner has
+// no sketch yet, so it keeps the plain empty state.
+const SETUP_SKETCH: Partial<Record<string, string>> = {
+  single_arch: "/design/setup-previews/single-arch.webp", single_round: "/design/setup-previews/single-round.webp",
+  single_shimmer: "/design/setup-previews/shimmer-wall.webp", arch_shimmer: "/design/setup-previews/arch-shimmer.webp",
+  balloon_ring: "/design/setup-previews/balloon-ring.webp", arch_open_frame: "/design/setup-previews/arch-open-frame.webp",
+  double_arch: "/design/setup-previews/double-arch.webp", triple_arch: "/design/setup-previews/triple-arch.webp",
+};
+
 type View = "configure" | "success";
 
 interface SubmitResult {
@@ -628,8 +638,8 @@ export default function ConfigurePage() {
                 showControls={step > 2 || onLastDecorTab || finalRenderState.hasRender}
                 onFinalRenderStateChange={setFinalRenderState}
                 onGenerateReady={(fn) => setGenerateFinalRender(() => fn)}
-                // 2026-10-23: the Style tab shows its inspiration sketch until a render exists.
-                emptyArt={isDecorStep && decorTab === 1 ? "/design/style-preview-illustration.png" : undefined}
+                // 2026-10-23: the selected setup's sketch shows until a render exists.
+                emptyArt={isDecorStep ? SETUP_SKETCH[inferSetupLayoutTemplateIdFromBackdropItems(config.decor.backdropItems) ?? ""] : undefined}
               />
               {isDecorStep && !finalRenderState.hasRender && (
                 <div className="bz-little-note">
