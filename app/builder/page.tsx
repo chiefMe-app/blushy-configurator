@@ -1873,7 +1873,15 @@ function clearAllStandees() {
               const active = activeSetupTemplateId === tpl.id;
               const icon = SETUP_ICON[tpl.id];
               return (
-                <button key={tpl.id} type="button" onClick={() => applySetupTemplate(tpl.id)} aria-pressed={active}
+                <button key={tpl.id} type="button" aria-pressed={active}
+                  onClick={() => {
+                    applySetupTemplate(tpl.id);
+                    // 2026-10-23: on phones and tablets the preview sits below the
+                    // options, so each pick scrolls down to show it.
+                    if (window.innerWidth < 1024) {
+                      setTimeout(() => document.getElementById("party-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+                    }
+                  }}
                   className={`bz-choice bz-layout ${active ? "selected" : ""}`} title={tpl.description}>
                   {active && <span className="tick">✓</span>}
                   {tpl.badge && !active && (
