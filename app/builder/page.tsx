@@ -590,10 +590,10 @@ export default function ConfigurePage() {
       {/* Top bar: wordmark, step navigation, running total */}
       <header className="bz-topbar">
         <div className="bz-topbar-inner">
-          <a href="/" className="bz-brand" aria-label="Blushy home">
-            <span className="burst">✳</span>
-            <span className="word">blushy</span>
-            <span className="small">BIRTHDAY BUILDER</span>
+          <a href="/" className="bz-brand" aria-label="PartyMuse by Blushy — home">
+            {/* 2026-10-23: the PartyMuse by Blushy logo replaces the "blushy BIRTHDAY BUILDER" wordmark. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="logo" src="/design/partymuse-logo.webp" alt="PartyMuse by Blushy" />
           </a>
           <nav className="bz-stepnav" aria-label="Builder steps">
             {STEPS.map((s, i) => {

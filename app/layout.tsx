@@ -12,7 +12,7 @@ const caveat = Caveat({ subsets: ["latin"], weight: ["500", "600", "700"], varia
 const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--bz-font-dmsans", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Blushy — Sparkly Party in Minutes",
+  title: "PartyMuse by Blushy — Sparkly Party in Minutes",
   description: "Design your dream party backdrop and see it come to life.",
   icons: {
     icon: "/favicon.svg",

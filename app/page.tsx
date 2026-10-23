@@ -13,10 +13,9 @@ export default function Home() {
     <div className="bz-body">
       <header className="bz-landing-top">
         <div className="bz-topbar-inner">
-          <Link href="/" className="bz-brand" aria-label="Blushy home">
-            <span className="burst">✳</span>
-            <span className="word">blushy</span>
-            <span className="small">BIRTHDAY BUILDER</span>
+          <Link href="/" className="bz-brand" aria-label="PartyMuse by Blushy — home">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="logo" src="/design/partymuse-logo.webp" alt="PartyMuse by Blushy" />
           </Link>
           <nav className="bz-land-links" aria-label="Welcome page links">
             <a href="#how-it-works">How it works</a>

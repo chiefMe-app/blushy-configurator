@@ -55,6 +55,8 @@
 .bz-brand .burst { color: var(--bz-yellow); font-size: 23px; transform: rotate(-15deg); display: inline-block; margin-right: -3px; }
 .bz-brand .word { font-family: var(--bz-logo); font-weight: 700; font-size: 45px; letter-spacing: -1.4px; line-height: 1; color: var(--bz-pink); transform: rotate(-2deg); display: inline-block; }
 .bz-brand .small { color: var(--bz-ink); font-size: 9px; font-weight: 650; letter-spacing: .18em; padding-top: 10px; padding-left: 4px; }
+/* 2026-10-23: the PartyMuse by Blushy logo. Its white ground melts into the bar. */
+.bz-brand .logo { display: block; height: 66px; width: auto; mix-blend-mode: multiply; }
 .bz-stepnav { display: flex; gap: 5px; justify-content: center; flex: 1; min-width: 0; }
 .bz-navstep { background: none; border: 0; padding: 10px 11px; border-radius: 22px; display: flex; align-items: center; gap: 6px;
   color: #66585f; font-size: 12px; font-weight: 650; white-space: nowrap; cursor: pointer; font-family: var(--bz-sans); }
@@ -229,6 +231,7 @@
 .bz-landing-top .bz-brand { gap: 14px; min-width: 0; }
 .bz-landing-top .bz-brand .word { font-size: 57px; letter-spacing: -1px; transform: rotate(-3deg); }
 .bz-landing-top .bz-brand .small { font-size: 12px; letter-spacing: .23em; }
+.bz-landing-top .bz-brand .logo { height: 96px; }
 .bz-land-links { display: flex; align-items: center; gap: 22px; margin: auto; }
 .bz-land-links a, .bz-land-links button { border: 0; background: transparent; color: #291a1b; font-weight: 550; padding: 12px 9px; font-size: 15px; text-decoration: none; cursor: pointer; font-family: var(--bz-sans); }
 .bz-land-links a:hover, .bz-land-links button:hover { color: var(--bz-pink); }
@@ -291,6 +294,7 @@
   .bz-brand { min-width: 170px; }
   .bz-brand .word { font-size: 39px; }
   .bz-brand .small { display: none; }
+  .bz-brand .logo { height: 48px; }
   .bz-navstep { padding: 8px; }
   .bz-navstep .label { display: none; }
   .bz-navstep.active .label { display: inline; }
@@ -350,6 +354,7 @@
 @media (max-width: 600px) {
   .bz-landing-top .bz-brand .word { font-size: 43px; }
   .bz-landing-top .bz-brand .small { display: none; }
+  .bz-landing-top .bz-brand .logo { height: 56px; }
   .bz-land-content { padding: 0 15px 32px; }
   .bz-land-copy { padding-top: 28px; }
   .bz-land-eyebrow { font-size: 10px; letter-spacing: .18em; }
@@ -374,6 +379,7 @@
 @media (max-width: 480px) {
   .bz-topbar-inner { padding: 0 12px; }
   .bz-brand .word { font-size: 32px; }
+  .bz-brand .logo { height: 40px; }
   .bz-total strong { font-size: 19px; }
   .bz-ticker { font-size: 10px; padding: 9px; gap: 7px; }
   .bz-ticker .accent { font-size: 14px; }
