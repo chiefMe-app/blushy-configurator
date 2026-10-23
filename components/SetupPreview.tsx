@@ -1410,69 +1410,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
         />
       )}
 
-      {/* ─── 2. Production Layout Preview (collapsed — technical reference) ── */}
-      {/*
-       * Technical production layout is used for export/spec calculations and
-       * optional admin view, not primary customer preview.
-       * Not shown by default — too technical for customer-facing flow.
-       */}
-      <details className="group">
-        <summary className="cursor-pointer list-none px-1 pt-1 text-[11px] text-[#9c8d96] hover:text-[#271617]">
-          <span className="group-open:hidden">▶ Show technical production layout</span>
-          <span className="hidden group-open:inline">▼ Hide technical production layout</span>
-        </summary>
-        <div className="mt-2">
-        <div className="mb-1.5">
-          <span className="text-[11px] font-semibold text-black/60">Production Layout Preview</span>
-          <p className="text-[10px] text-black/35">Exact panel sizes, item placement, and production reference.</p>
-        </div>
-
-        <LiveSetupPreview config={config}>
-          {/* Plinth overlay — SVG mode only */}
-          {PLINTH_MODE === "svg" && (
-            <PlinthOverlay sizes={config.decor.plinthSizes}/>
-          )}
-
-          {/* Cutout overlay — AI transparent assets when ready, SVG fallback */}
-          {previewCutoutSize !== "none" && (
-            <CutoutOverlay
-              size={previewCutoutSize}
-              position={config.decor.cutouts.position}
-              themeAccent={themeAccent}
-              themeId={config.theme}
-              assets={cutoutAssets}
-            />
-          )}
-
-          {/* Per-panel text overlays — instant update, no AI regeneration */}
-          {config.decor.backdropItems.map((item, idx) => {
-            if (!item.text.enabled || !item.text.value.trim()) return null;
-            return (
-              <TextOverlay
-                key={item.id}
-                text={item.text.value}
-                fontStyle={item.text.fontStyle}
-                color={item.text.color}
-                themeAccent={themeAccent}
-                fontSize={config.decor.backdropText.fontSize}
-                lineHeight={config.decor.backdropText.lineHeight}
-                verticalOffset={config.decor.backdropText.verticalOffset}
-                horizontalOffset={config.decor.backdropText.horizontalOffset}
-                align={config.decor.backdropText.align}
-                shape={item.type}
-                panelIndex={idx}
-                totalPanels={config.decor.backdropItems.length}
-              />
-            );
-          })}
-
-          {/* Production label badge */}
-          <div className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur">
-            Production Layout
-          </div>
-        </LiveSetupPreview>
-        </div>
-      </details>
+      {/* 2026-10-23: the technical production layout was removed from the customer page. */}
     </div>
   );
 }

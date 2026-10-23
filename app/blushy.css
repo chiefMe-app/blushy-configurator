@@ -844,6 +844,9 @@
 .bz-ex-char .name { position: relative; z-index: 1; display: block; width: 100%; padding-top: 2px; background: #fff; }
 
 /* 2026-10-23: the dog's own sprinkle field — denser and brighter than the page's. */
-.bz-sprinkles.dog { position: absolute; inset: 0; opacity: .8; z-index: 0; }
+.bz-sprinkles.dog { position: absolute; inset: 0; opacity: .6; z-index: 0; }
+@media (max-width: 860px) { .bz-sprinkles.dog { opacity: .5; } .bz-sprinkles.dog i:nth-child(2n) { display: none; } }
+/* Header sits over the page: leave room when scrolling to the preview or the tabs. */
+#party-preview-card, .bz-decor-tabbar { scroll-margin-top: 96px; }
 .bz-cake > img { position: relative; z-index: 1; }
 .bz-cake .bz-doodle { z-index: 2; }
