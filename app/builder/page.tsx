@@ -3115,6 +3115,32 @@ function clearAllStandees() {
             className={`bz-switch ${on ? "on" : ""}`} onClick={onClick}><span /></button>
         );
         const priceLine = (p: number) => (p > 0 ? <em>+ AED {p}</em> : null);
+        // 5 — PLINTHS: 0–3, sized by the ladder (XXL, then XL, then L). Beside the
+        // light-up number while the neon card is short; under it once neon is on.
+        const plinthsCard = (
+          <section className="bz-ex-card c-green">
+            <div className="bz-ex-row">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="bz-ex-art" src="/design/ui/extra-plinths.webp" alt="" />
+              <div className="bz-ex-body">
+                <h3 className="bz-ex-title"><span>5.</span> Cake plinths</h3>
+                <p>Stylish plinths to beautifully display the cake and treats.</p>
+              </div>
+              <div className="bz-ex-side">
+                <div className="bz-stepper" role="group" aria-label="Number of plinths">
+                  <button type="button" aria-label="One fewer plinth" disabled={plinthCount <= 0} onClick={() => setPlinthCount(Math.max(0, plinthCount - 1))}>−</button>
+                  <span>{plinthCount}</span>
+                  <button type="button" aria-label="One more plinth" className="plus" disabled={plinthCount >= 3} onClick={() => setPlinthCount(Math.min(3, plinthCount + 1))}>+</button>
+                </div>
+                <span className="lbl small">
+                  {plinthCount > 0
+                    ? <>{d.plinthSizes.map((sz) => PLINTH_SHORT[sz] ?? sz).join(" · ")}<br />AED {plinthSum} total</>
+                    : "Up to 3"}
+                </span>
+              </div>
+            </div>
+          </section>
+        );
         return (
       <div className="bz-ex">
 
@@ -3219,29 +3245,7 @@ function clearAllStandees() {
             )}
           </section>
 
-          {/* 5 — PLINTHS: 0–3, sized by the ladder (XXL, then XL, then L). */}
-          <section className="bz-ex-card c-green">
-            <div className="bz-ex-row">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="bz-ex-art" src="/design/ui/extra-plinths.webp" alt="" />
-              <div className="bz-ex-body">
-                <h3 className="bz-ex-title"><span>5.</span> Cake plinths</h3>
-                <p>Stylish plinths to beautifully display the cake and treats.</p>
-              </div>
-              <div className="bz-ex-side">
-                <div className="bz-stepper" role="group" aria-label="Number of plinths">
-                  <button type="button" aria-label="One fewer plinth" disabled={plinthCount <= 0} onClick={() => setPlinthCount(Math.max(0, plinthCount - 1))}>−</button>
-                  <span>{plinthCount}</span>
-                  <button type="button" aria-label="One more plinth" className="plus" disabled={plinthCount >= 3} onClick={() => setPlinthCount(Math.min(3, plinthCount + 1))}>+</button>
-                </div>
-                <span className="lbl small">
-                  {plinthCount > 0
-                    ? <>{d.plinthSizes.map((sz) => PLINTH_SHORT[sz] ?? sz).join(" · ")}<br />AED {plinthSum} total</>
-                    : "Up to 3"}
-                </span>
-              </div>
-            </div>
-          </section>
+          {!d.neonSign?.enabled ? null : plinthsCard}
           </div>
           <div className="bz-ex-col">
           {/* 3 — NEON SIGN: in a balloon ring's open centre, or on the backdrop face. */}
@@ -3295,6 +3299,7 @@ function clearAllStandees() {
               </div>
             )}
           </section>
+          {d.neonSign?.enabled ? null : plinthsCard}
           </div>
         </div>
       </div>
