@@ -724,3 +724,87 @@
   .bz-placeholder.art img { flex: 1 1 0; height: 0; min-height: 0; width: 100%; object-fit: contain; }
   .bz-cake img { max-height: calc(var(--bz-avail) - 40px); }
 }
+
+/* 2026-10-23: compact desktop layout — every step as close to no scrolling as
+   possible at 100% browser zoom (customer request). The preview fills its
+   card; headings, tabs and cards are tightened; repeated cues are dropped
+   (the footer button already says what comes next). */
+@media (min-width: 1024px) {
+  /* Page heading: one tight block, subtitle tucked under the title. */
+  .bz-headbox { padding-bottom: 0; }
+  .bz-headbox h1 { font-size: 46px; line-height: 1.12; margin: 0 0 2px; max-width: none; }
+  .bz-headbox p { font-size: 14px; line-height: 1.45; }
+  .bz-wiggle { display: none; }
+  .bz-step-progress { margin: 8px 0 5px; }
+  .bz-progress { height: 6px; margin-bottom: 10px; }
+
+  .bz-content { padding: 14px 18px 16px; container-type: inline-size; }
+
+  /* Decor: tabs only — the tab names already say what each panel is. */
+  .bz-decor-head { padding: 0 0 8px; }
+  .bz-decor-tabbar { margin-bottom: 10px; }
+  .bz-decor-tab { padding: 8px 5px; }
+  .bz-decor-panel-head, .bz-decor-footer, .bz-decor-note { display: none; }
+  .bz-layout-grid { gap: 8px; }
+  .bz-layout { min-height: 0; padding: 6px 6px 7px; }
+  .bz-layout .art { height: 74px; }
+  .bz-layout h3 { font-size: 16px; margin-top: 3px; }
+
+  /* Theme: each list on one row of eight. */
+  .bz-world-title { font-size: 24px; margin: 0 2px 6px; }
+  .bz-theme-group + .bz-theme-group { margin-top: 10px; }
+  .bz-theme-group-head { font-size: 19px; margin-bottom: 6px; }
+  .bz-theme { min-height: 0; padding: 8px 5px 7px; }
+  .bz-theme .art { height: 68px; flex-basis: 68px; }
+  .bz-theme h3 { font-size: 16px; }
+
+  /* Style */
+  .bz-st { gap: 8px; }
+  .bz-st-grid { gap: 10px; }
+  .bz-st-grid .bz-st-sec { padding: 12px 14px; gap: 8px; }
+  .bz-st-head h3 { font-size: 15px; margin: 2px 0 2px; }
+  .bz-st-head p { font-size: 11.5px; }
+  .bz-st-card { padding: 9px 8px; }
+  .bz-st-card.size svg { width: 30px; height: 34px; margin-bottom: 2px; }
+  .bz-st-card.font { padding: 7px 7px 8px; gap: 5px; }
+  .bz-st-card.font .sample { min-height: 52px; }
+  .bz-st-yn { padding: 8px 10px; }
+  .bz-st-input textarea { padding: 9px 44px 9px 12px; }
+  .bz-st-input .lbl { margin-bottom: 4px; }
+  .bz-st-sw { width: 26px; height: 26px; }
+  .bz-st-group { gap: 6px; }
+  .bz-st-card.graphic { padding: 9px 36px 9px 12px; }
+  .bz-st-summary { padding: 8px 12px; }
+
+  /* Balloons and Extras */
+  .bz-ex-card { padding: 12px 14px; margin-bottom: 10px; }
+  .bz-ex-title { font-size: 20px; margin-bottom: 6px; }
+  .bz-bl-style { padding: 10px 14px; }
+  .bz-bl-style img { width: 74px; height: 74px; }
+  .bz-bl-chip { padding: 8px 9px; }
+  .bz-bl-tip { padding: 8px 12px; }
+  .bz-ex-char .pic { height: 74px; }
+  .bz-ex-art { height: 72px; }
+  .bz-ex-grid { gap: 10px; }
+
+  /* Left: the preview fills its card. */
+  .bz-preview-frame { width: 100% !important; aspect-ratio: auto !important; height: calc(var(--bz-avail) - 150px) !important; background: #f7f4f2; }
+  .bz-preview-bottom { padding: 10px 4px 0; justify-content: flex-end; }
+  .bz-preview-bottom p, .bz-little-note, .bz-left details.group { display: none; }
+}
+@container (min-width: 640px) {
+  .bz-theme-grid.four { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
+}
+/* Short laptop screens: a little tighter still. */
+@media (min-width: 1024px) and (max-height: 820px) {
+  .bz-headbox h1 { font-size: 38px; }
+  .bz-headbox p { font-size: 13px; }
+  .bz-decor-tab { padding: 6px 5px; }
+  .bz-st-grid .bz-st-sec { padding: 10px 12px; gap: 6px; }
+  .bz-st-card.font .sample { min-height: 44px; font-size: 17px !important; }
+  .bz-st-card.size svg { height: 28px; }
+  .bz-ex-card { padding: 10px 12px; }
+  .bz-ex-char .pic { height: 60px; }
+  .bz-ex-art { height: 60px; }
+  .bz-layout .art { height: 62px; }
+}
