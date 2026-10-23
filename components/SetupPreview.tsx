@@ -1297,6 +1297,14 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
                   setLoadedAspect(`${el.naturalWidth} / ${el.naturalHeight}`);
                 }
               }}
+              // 2026-10-23: a render fetched the moment it lands on the CDN can
+              // fail once and leave an empty frame; retry it once.
+              onError={(e) => {
+                const el = e.currentTarget;
+                if (el.dataset.retried || !/^https?:/.test(finalUrl)) return;
+                el.dataset.retried = "1";
+                setTimeout(() => { el.src = `${finalUrl}${finalUrl.includes("?") ? "&" : "?"}r=${Date.now()}`; }, 1200);
+              }}
               style={{ opacity: finalOpacity, transition: "opacity 0.4s ease" }}
               className="h-full w-full object-contain object-center"
             />

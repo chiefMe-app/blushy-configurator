@@ -705,3 +705,22 @@
   .bz-neon { order: 3; }
   .bz-doodle { display: none; }
 }
+
+/* 2026-10-23: at 100% browser zoom the builder fits the screen (customer
+   request): on desktop both columns take the height between the top bar and
+   the footer, the preview is a square that fits it, and a long step scrolls
+   inside its own panel rather than the page. */
+@media (min-width: 1024px) {
+  :root { --bz-avail: calc(100vh / var(--bz-zoom) - 160px - 73px - 22px); }
+  .bz-main { margin-bottom: 0; align-items: stretch; }
+  .bz-left { top: 150px; height: var(--bz-avail); overflow-y: auto; scrollbar-width: thin; }
+  .bz-right { height: var(--bz-avail); display: flex; flex-direction: column; }
+  .bz-right > * { flex: none; }
+  .bz-right > .bz-content { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+  .bz-preview-frame { aspect-ratio: 1 / 1 !important; width: min(100%, calc(var(--bz-avail) - 205px)) !important;
+    min-height: 0 !important; max-height: none !important; margin-left: auto; margin-right: auto; }
+  .bz-preview-frame > img { object-fit: contain !important; }
+  .bz-placeholder.art { height: 100%; }
+  .bz-placeholder.art img { flex: 1 1 0; height: 0; min-height: 0; width: 100%; object-fit: contain; }
+  .bz-cake img { max-height: calc(var(--bz-avail) - 40px); }
+}
