@@ -1085,6 +1085,7 @@ function DecorStep({
   const [stylePieceId, setStylePieceId] = useState<string | null>(null);
   // 2026-10-23: the Extras tab shows three characters until "More characters".
   const [showAllChars, setShowAllChars] = useState(false);
+
   // Sempertex picker -UI only, does not affect pricing/render
   const [sempertexIds, setSempertexIds] = useState<string[]>(() => getThemeDefault(config.theme));
   const [sempertexManual, setSempertexManual] = useState(false); // true once user manually changes
@@ -1176,6 +1177,22 @@ function DecorStep({
     setOpenCustomizeIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const d = config.decor;
+
+  // 2026-10-23: a board with printed lettering does not also carry the neon
+  // sign (the two came out on top of each other). If lettering is added to
+  // the board the sign is on, the sign moves to a free board, or is switched
+  // off when there is none.
+  const boardHasLettering = (it: BackdropItem | undefined) => !!(it?.text?.enabled && (it.text.value ?? "").trim());
+  const neonFreeBoards = d.backdropItems
+    .map((it, i) => ({ it, i }))
+    .filter(({ it }) => it.type !== "open_arch_frame" && !boardHasLettering(it));
+  useEffect(() => {
+    const n = d.neonSign;
+    if (!n?.enabled || !boardHasLettering(d.backdropItems[n.panelIndex ?? 0])) return;
+    const free = d.backdropItems.findIndex((it) => it.type !== "open_arch_frame" && !boardHasLettering(it));
+    patchDecor({ neonSign: free >= 0 ? { ...n, panelIndex: free } : { ...n, enabled: false } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.backdropItems, d.neonSign]);
   const theme = themeById(config.theme)!;
   const t = d.backdropText;
   const cut = d.cutouts;
@@ -2081,7 +2098,7 @@ function clearAllStandees() {
           <div className="bz-st">
             {items.length > 1 && (
               <div className="bz-st-pieces" role="group" aria-label="Which piece are you styling?">
-                <span className="lbl">Styling</span>
+                <span className="lbl">Now designing:</span>
                 {items.map((it, i) => (
                   <button key={it.id} type="button" aria-pressed={i === itemIdx}
                     className={`bz-st-piece ${i === itemIdx ? "on" : ""}`} onClick={() => setStylePieceId(it.id)}>
@@ -2089,6 +2106,7 @@ function clearAllStandees() {
                     {isPrintable(it) && it.text.enabled && <span className="dot" title="Has lettering">Aa</span>}
                   </button>
                 ))}
+                <p className="hint">Your setup has {items.length} pieces — tap one to style it. The steps below change only the piece you pick.</p>
               </div>
             )}
 
@@ -3281,10 +3299,18 @@ function clearAllStandees() {
               <span className={`bz-neon ${d.neonSign?.enabled ? "on" : ""}`} aria-hidden="true">{(d.neonSign?.text || "Happy Birthday").trim() || "Happy Birthday"}</span>
               <div className="bz-ex-side">
                 {switchBtn({ on: !!d.neonSign?.enabled, label: "Add a neon sign",
-                  onClick: () => patchDecor({ neonSign: { text: d.neonSign?.text ?? "Happy Birthday", panelIndex: d.neonSign?.panelIndex ?? 0, enabled: !(d.neonSign?.enabled) } }) })}
+                  disabled: !d.neonSign?.enabled && neonFreeBoards.length === 0,
+                  onClick: () => {
+                    const want = d.neonSign?.panelIndex ?? 0;
+                    const panelIndex = neonFreeBoards.some(({ i }) => i === want) ? want : (neonFreeBoards[0]?.i ?? 0);
+                    patchDecor({ neonSign: { text: d.neonSign?.text ?? "Happy Birthday", panelIndex, enabled: !(d.neonSign?.enabled) } });
+                  } })}
                 <span className="lbl">Add neon sign{priceLine(NEON_SIGN_PRICE)}</span>
               </div>
             </div>
+            {!d.neonSign?.enabled && neonFreeBoards.length === 0 && (
+              <p className="bz-ex-note">Your backdrop already has printed text, so a neon sign can’t go on it too. Switch the text off in Style to add one.</p>
+            )}
             {d.neonSign?.enabled && (
               <div className="bz-ex-more">
                 <div className="bz-st-presets">
@@ -3298,9 +3324,8 @@ function clearAllStandees() {
                 {/* On a two-piece setup the customer picks which board carries the
                     sign; an open arch frame has no face for one, so it is not offered. */}
                 {(() => {
-                  const neonEligible = d.backdropItems
-                    .map((it, i) => ({ it, i }))
-                    .filter(({ it }) => it.type !== "open_arch_frame");
+                  // Only boards without printed lettering (see neonFreeBoards).
+                  const neonEligible = neonFreeBoards;
                   if (neonEligible.length < 2) return null;
                   return (
                     <div className="bz-st-presets">

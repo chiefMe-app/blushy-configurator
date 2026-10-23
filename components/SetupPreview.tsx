@@ -1339,6 +1339,16 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
 
           {/* Measurement overlay — exact dimensions from scene state, never from AI.
                Rendered above text overlay so measurement labels remain visible. */}
+          {/* 2026-10-23: a stale render says so on the picture itself. */}
+          {finalUrl && isStale && !finalIsLoading && (
+            showControls
+              ? <button type="button" className="bz-stale-banner" onClick={generateFinalRender}
+                  disabled={config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}>
+                  <span aria-hidden="true">✦</span> Your design changed — tap to regenerate the preview
+                </button>
+              : <div className="bz-stale-banner" role="status"><span aria-hidden="true">✦</span> Your design changed — regenerate to see it</div>
+          )}
+
           {showMeasurements && finalUrl && !finalIsLoading && (
             <MeasurementOverlay config={config}/>
           )}

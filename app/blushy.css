@@ -850,3 +850,22 @@
 #party-preview-card, .bz-decor-tabbar { scroll-margin-top: 96px; }
 .bz-cake > img { position: relative; z-index: 1; }
 .bz-cake .bz-doodle { z-index: 2; }
+
+/* 2026-10-23: the piece picker says plainly which piece is being designed. */
+.bz-st-pieces { gap: 8px 10px; padding: 10px 12px 12px; border-radius: 16px; background: #fff1f6; border: 1.5px solid #ffc6da; }
+.bz-st-pieces .lbl { font: 400 20px/1.1 var(--bz-hand); letter-spacing: 0; text-transform: none; color: var(--bz-pink); margin-right: 2px; }
+.bz-st-piece { padding: 9px 18px; font-size: 15px; border-width: 2px; border-color: #ffc6da; }
+.bz-st-piece.on { background: var(--bz-pink); border-color: var(--bz-pink); color: #fff; box-shadow: 0 4px 0 #ffd0e0; }
+.bz-st-piece.on .dot { background: rgba(255,255,255,.25); color: #fff; }
+.bz-st-pieces .hint { flex-basis: 100%; margin: 0; font-size: 12.5px; color: #8a5a70; }
+
+/* A stale render says so across the top of the picture. */
+.bz-stale-banner { position: absolute; left: 12px; right: 12px; top: 12px; z-index: 3; display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 14px; border-radius: 14px; border: 0; background: #ff0d66; color: #fff; font: 800 14px/1.3 var(--bz-sans); text-align: center;
+  box-shadow: 0 6px 18px rgba(255,13,102,.35); cursor: pointer; animation: bz-stale-pulse 2.2s ease-in-out infinite; }
+div.bz-stale-banner { cursor: default; }
+.bz-stale-banner:disabled { opacity: .7; cursor: not-allowed; }
+@keyframes bz-stale-pulse { 0%, 100% { box-shadow: 0 6px 18px rgba(255,13,102,.35); } 50% { box-shadow: 0 6px 26px rgba(255,13,102,.6); } }
+@media (prefers-reduced-motion: reduce) { .bz-stale-banner { animation: none; } }
+
+.bz-ex-note { margin: 8px 0 0; padding: 8px 10px; border-radius: 10px; background: #fff7df; color: #8a6a12; font-size: 12px; line-height: 1.4; }
