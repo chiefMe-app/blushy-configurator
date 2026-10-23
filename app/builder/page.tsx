@@ -34,6 +34,10 @@ cutoutTotalCount,
   PER_BACKDROP,
   defaultConfig,
   themeById,
+  NEON_SIGN_PRICE,
+  GARLAND_FLORALS_PRICE,
+  NUMBER_LIGHT_PRICE,
+  plinthsTotal,
   packageById,
   priceBreakdown,
   formatAED,
@@ -263,6 +267,24 @@ const STEP_COPY: { heading: [string, string]; description: string; eyebrow: stri
   { heading: ["Where’s the", "party?"], description: "A few simple details and you are almost ready.", eyebrow: "ALMOST THERE", progress: "Nearly done!" },
   { heading: ["Your party looks", "so good!"], description: "Review your picks and send your sparkly plan for a final quote.", eyebrow: "THE BIG REVEAL", progress: "Ready to celebrate!" },
 ];
+
+// 2026-10-23: the little hand-drawn dashes after a section title.
+function Dash() {
+  return <svg className="bz-dash" viewBox="0 0 30 28" aria-hidden="true"><path d="M5 9L16 3M4 17H22M6 26L16 21" /></svg>;
+}
+
+// 2026-10-23: the occasions shown as coming soon on the Event step.
+const COMING_SOON_EVENTS: { title: string; sub: string; art: string }[] = [
+  { title: "Bridal Corner", sub: "For the bride and her crew", art: "/design/ui/event-bridal.webp" },
+  { title: "Graduation", sub: "Hats off to big dreams", art: "/design/ui/event-graduation.webp" },
+  { title: "Corporate Setups", sub: "For team wins & milestones", art: "/design/ui/event-corporate.webp" },
+];
+
+// 2026-10-23: the Balloons and Extras tabs carry their own page heading.
+const DECOR_STEP_COPY: Partial<Record<number, (typeof STEP_COPY)[number]>> = {
+  2: { heading: ["Add some", "balloon magic!"], description: "Choose your balloon style and colours to bring your backdrop to life.", eyebrow: "LET’S DECORATE", progress: "Time for balloon magic!" },
+  3: { heading: ["Add those", "extra special touches!"], description: "Make it even more magical with a few extra details.", eyebrow: "LET’S PERSONALISE", progress: "The finishing touches!" },
+};
 
 // The Decor step's four tabs (the reference's compact decor builder).
 const DECOR_TABS: { num: string; name: string; kicker: string; title: string; sub: string }[] = [
@@ -569,7 +591,7 @@ export default function ConfigurePage() {
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const copy = STEP_COPY[step];
+  const copy = (step === 2 && DECOR_STEP_COPY[decorTab]) || STEP_COPY[step];
   const total = priceBreakdown(config).total;
 
   let nextLabel: React.ReactNode = "Keep going →";
@@ -641,6 +663,9 @@ export default function ConfigurePage() {
             <div className="bz-cake">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/design/balloon-dog-outline.webp" alt="Illustrated dalmatian holding a bunch of balloons" />
+              <svg className="bz-doodle heart" viewBox="0 0 40 36" aria-hidden="true"><path d="M20 33C8 24 3 17 4 11C5 5 12 3 16 7L20 11L24 7C28 3 35 5 36 11C37 17 32 24 20 33Z" /></svg>
+              <svg className="bz-doodle burst" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3V37M3 20H37M8 8L32 32M32 8L8 32" /></svg>
+              <svg className="bz-doodle dash" viewBox="0 0 40 40" aria-hidden="true"><path d="M6 10L20 4M4 22L26 14M10 34L24 28" /></svg>
             </div>
           ) : (
             <>
@@ -659,6 +684,7 @@ export default function ConfigurePage() {
                 // 2026-10-23: the theme's example photo of the selected setup shows until a render exists.
                 emptyArt={isDecorStep ? THEME_SETUP_PREVIEW[config.theme]?.[inferSetupLayoutTemplateIdFromBackdropItems(config.decor.backdropItems) ?? ""] : undefined}
                 emptyArtLabel={`${themeById(config.theme)?.name ?? "Theme"} example.`}
+                emptyArtNote={isDecorStep && decorTab === 3 ? "Your render will update after generation to show your selected extras." : undefined}
               />
               {isDecorStep && !finalRenderState.hasRender && (
                 <div className="bz-little-note">
@@ -674,7 +700,9 @@ export default function ConfigurePage() {
         <section className="bz-right" aria-label="Party configuration">
           <div className="bz-headbox">
             <div className="bz-step-tag">{copy.eyebrow}</div>
-            <h1>{copy.heading[0]} <span>{copy.heading[1]}</span></h1>
+            <h1>{copy.heading[0]} <span>{copy.heading[1]}</span>
+              <svg className="bz-h1-dash" viewBox="0 0 34 40" aria-hidden="true"><path d="M6 8L18 3M4 21H24M6 34L18 39" /></svg>
+            </h1>
             <p>{copy.description}</p>
             <svg className="bz-wiggle" viewBox="0 0 155 24" aria-hidden="true"><path d="M3 14Q15 3 27 14T51 14T75 14T99 14T123 14T147 14" /></svg>
           </div>
@@ -686,44 +714,42 @@ export default function ConfigurePage() {
               <div>
                 <div className="bz-tip"><span className="icon">✳</span><span>Psst... tap Birthday to start the fun!</span><span className="arrow">↙</span></div>
                 <div className="bz-choice-grid">
-                  {EVENT_TYPES.map((e) => {
+                  {EVENT_TYPES.filter((e) => e.id === "birthday").map((e) => {
                     const sel = config.eventType === e.id;
-                    // Only Birthday is live; the others stay on the roadmap,
-                    // exactly as before.
-                    const available = e.id === "birthday";
-                    if (available) {
-                      return (
-                        <button key={e.id} type="button" onClick={() => setEventType(e.id)} aria-pressed={sel}
-                          className={`bz-choice bz-birthday ${sel ? "selected" : ""}`}>
-                          <span className="art">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src="/design/confetti-cake.gif" alt="" />
-                          </span>
-                          <span>
-                            <h3><span className="pink">Birthday,</span> <span className="lilac">please!</span></h3>
-                            <p><span className="mint">Confetti</span>, <span className="blue">candles</span> &amp; all the good stuff.</p>
-                          </span>
-                          {sel && <span className="tick">✓</span>}
-                        </button>
-                      );
-                    }
                     return (
-                      <button key={e.id} type="button" className="bz-choice" disabled aria-disabled="true">
-                        <span className="bz-coming">SOON</span>
-                        <h3 style={{ fontSize: 19, marginTop: 14 }}>{e.label}</h3>
-                        <p>{e.description}</p>
+                      <button key={e.id} type="button" onClick={() => setEventType(e.id)} aria-pressed={sel}
+                        className={`bz-choice bz-birthday ${sel ? "selected" : ""}`}>
+                        <span className="art">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src="/design/confetti-cake.gif" alt="" />
+                        </span>
+                        <span>
+                          <h3><span className="pink">Kids Birthday,</span> <span className="lilac">please!</span></h3>
+                          <p><span className="mint">Confetti</span>, <span className="pink2">cake</span>, <span className="blue">candles</span> &amp; all the fun stuff!</p>
+                        </span>
+                        {sel && <span className="tick">✓</span>}
                       </button>
                     );
                   })}
                 </div>
-                <div className="bz-help">✦ <strong>Birthday parties are live!</strong> Other celebrations will join the fun later.</div>
+                {/* 2026-10-23: only Birthday is live; the roadmap cards are display only. */}
+                <div className="bz-soon-row">
+                  {COMING_SOON_EVENTS.map((e) => (
+                    <div key={e.title} className="bz-choice bz-soon" aria-disabled="true">
+                      <span className="bz-coming">SOON</span>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={e.art} alt="" loading="lazy" />
+                      <h3>{e.title}</h3>
+                      <p>{e.sub}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
             {step === 1 && (
               <div>
-                <div className="bz-tip"><span className="icon">✳</span><span>Pick a party world — it sets the balloons, graphics and styling.</span><span className="arrow">↙</span></div>
-                <div className="bz-sectionline"><h2>Choose your party world</h2><span className="bz-pill-mini">{config.themeSelected ? "SELECTED" : "PICK ONE"}</span></div>
+                <h2 className="bz-world-title">Choose your party world</h2>
                 {THEME_GROUPS.map((g) => (
                 <div key={g.key} className={`bz-theme-group ${g.key}`}>
                 <h3 className="bz-theme-group-head">{g.title}</h3>
@@ -1044,6 +1070,8 @@ function DecorStep({
   const [showManualPieces, setShowManualPieces] = useState(false);
   // 2026-10-23 Style redesign: which backdrop piece the Style tab is styling.
   const [stylePieceId, setStylePieceId] = useState<string | null>(null);
+  // 2026-10-23: the Extras tab shows three characters until "More characters".
+  const [showAllChars, setShowAllChars] = useState(false);
   // Sempertex picker -UI only, does not affect pricing/render
   const [sempertexIds, setSempertexIds] = useState<string[]>(() => getThemeDefault(config.theme));
   const [sempertexManual, setSempertexManual] = useState(false); // true once user manually changes
@@ -1810,14 +1838,15 @@ function clearAllStandees() {
           </button>
         ))}
       </div>
-      <div className="bz-decor-panel-head">
+      {/* 2026-10-23: only the Backdrop tab keeps its own panel head. */}
+      {decorTab === 0 && <div className="bz-decor-panel-head">
         <div>
           <span className="bz-decor-kicker">{DECOR_TABS[decorTab].kicker}</span>
           <h2>{DECOR_TABS[decorTab].title}</h2>
           <p>{DECOR_TABS[decorTab].sub}</p>
         </div>
         <span className="bz-decor-count">{DECOR_TABS[decorTab].num} / 04</span>
-      </div>
+      </div>}
 
       {/* == 1 · BACKDROP (tab 01) ============================= */}
       {decorTab === 0 && (
@@ -2039,11 +2068,12 @@ function clearAllStandees() {
               </div>
             )}
 
+            <div className="bz-st-grid">
             {/* 1 — Size */}
-            <section className={`bz-st-sec ${needsSize ? "attn" : ""}`}>
+            <section className={`bz-st-sec c-pink ${needsSize ? "attn" : ""}`}>
               <Head n={1} title="Pick your size"
-                sub={sizeOpts.length === 1 ? "This piece comes in one size — nothing to choose here." : "Choose the size that fits your space."} />
-              <div className="bz-st-opts sizes">
+                sub={sizeOpts.length === 1 ? "Our standard size looks perfect for most celebrations." : "Choose the size that fits your space."} />
+              <div className={`bz-st-opts sizes ${sizeOpts.length === 1 ? "single" : ""}`}>
                 {sizeOpts.map((o) => {
                   const on = isSizeOn(o);
                   return (
@@ -2064,8 +2094,8 @@ function clearAllStandees() {
 
             {/* 2 — Message */}
             {showMsg && (
-              <section className="bz-st-sec">
-                <Head n={nMsg} title="Add your message" sub="Make it yours with a name or sweet message." />
+              <section className="bz-st-sec c-yellow">
+                <Head n={nMsg} title="Add your message" sub="Make it personal with a special message." />
                 <div className="bz-st-body">
                   <div className="bz-st-opts yn">
                     <button type="button" aria-pressed={item.text.enabled}
@@ -2084,7 +2114,8 @@ function clearAllStandees() {
                   </div>
                   {item.text.enabled && (
                     <div className="bz-st-input">
-                      <textarea rows={2} value={item.text.value} aria-label="Your message"
+                      <span className="lbl">Your message</span>
+                      <textarea rows={1} value={item.text.value} aria-label="Your message"
                         onChange={(e) => patchItemText(itemIdx, { value: e.target.value })}
                         placeholder="Type the name or message..." />
                       <span className="count">{item.text.value.length}</span>
@@ -2097,7 +2128,7 @@ function clearAllStandees() {
             {/* 3 — Lettering style: each card shows the real message, in its
                  colour, on the chosen backdrop colour. */}
             {showFont && (
-              <section className="bz-st-sec">
+              <section className="bz-st-sec c-green">
                 <Head n={nFont} title="Pick your text style" sub="Choose a style for your message." />
                 <div className="bz-st-opts fonts">
                   {FONT_STYLES.map((f) => {
@@ -2121,7 +2152,7 @@ function clearAllStandees() {
 
             {/* 4 — Colours */}
             {showColors && (
-              <section className="bz-st-sec">
+              <section className="bz-st-sec c-lilac">
                 <Head n={nColors} title={item.type === "balloon_ring" ? "Pick your ring style" : "Pick your colors"}
                   sub={item.type === "shimmer_wall" ? "Choose the sequin finish."
                     : item.type === "balloon_ring" ? "Choose how the hoop is dressed."
@@ -2205,8 +2236,8 @@ function clearAllStandees() {
 
             {/* 5 — Theme graphic */}
             {showGraphic && (
-              <section className="bz-st-sec">
-                <Head n={nGraphic} title="Add a theme graphic" optional sub="Include a printed illustration to make it extra special." />
+              <section className="bz-st-sec c-blue wide">
+                <Head n={nGraphic} title="Add a theme graphic" optional sub="Includes a printed illustration to make it extra special." />
                 <div className="bz-st-body">
                   <div className="bz-st-opts yn">
                     <button type="button" aria-pressed={!item.graphic.enabled}
@@ -2249,6 +2280,8 @@ function clearAllStandees() {
                 </div>
               </section>
             )}
+
+            </div>{/* end bz-st-grid */}
 
             {/* Live summary of the real selections */}
             <div className="bz-st-summary" aria-live="polite">
@@ -2795,12 +2828,11 @@ function clearAllStandees() {
         {d.backdropItems.length > 0 && d.balloonStyle === "none" && <div style={{ marginBottom: 10 }}>{nextCue("Optional — add a garland")}</div>}
 
       {/* Garland choice — balloons are opt-in (2026-07-20). They used to be
-          pre-added by the package's defaultDecor with no way to decline. */}
-      <div style={{ ...card, marginBottom: 12 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: DC.faint, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 9 }}>
-          Balloon garland
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          pre-added by the package's defaultDecor with no way to decline.
+          2026-10-23: presented as the two large illustrated cards. */}
+      <section className="bz-ex-card c-pink">
+        <h3 className="bz-ex-title"><span>1.</span> Choose your balloon style <Dash /></h3>
+        <div className="bz-bl-styles">
           {/* 2026-09-09: "No balloons" is offered on a Balloon Ring again. It
               used to be hidden because a ring WAS the balloons — but the ring
               now has a bare gold hoop dressing, and with that chosen the tier
@@ -2819,64 +2851,51 @@ function clearAllStandees() {
                     : { balloonStyle: b.id },
                 )}
                 aria-pressed={active}
-                style={{
-                  textAlign: "left", cursor: "pointer", borderRadius: 12, padding: "9px 11px",
-                  border: active ? "1.5px solid #D8548A" : "1px solid #ECE7E4",
-                  background: "white",
-                  boxShadow: active ? "0 0 0 3px #FBE9EF" : "none",
-                }}>
-                <div style={{ fontSize: 12.5, fontWeight: 600, color: active ? DC.roseDeep : DC.plum, lineHeight: 1.2 }}>
-                  {b.id === "none" ? "No balloons" : "Organic Garland"}
-                </div>
-                <div style={{ fontSize: 10.5, color: DC.faint, marginTop: 2 }}>
-                  {b.price > 0 ? `+AED ${b.price}` : "Skip"}
-                </div>
+                className={`bz-bl-style ${b.id === "none" ? "none" : "garland"} ${active ? "on" : ""}`}>
+                {active ? <span className="bz-st-tick" aria-hidden="true">✓</span> : <span className="radio" aria-hidden="true" />}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={b.id === "none" ? "/design/ui/balloons-none.webp" : "/design/ui/balloons-garland.webp"} alt="" />
+                <span className="txt">
+                  <strong>{b.id === "none" ? "No balloons" : "Organic Garland"}</strong>
+                  {b.price > 0 && <em>+AED {b.price}</em>}
+                  <small>{b.id === "none" ? "Keep it simple – backdrop only." : "A beautiful, modern garland to complete your backdrop."}</small>
+                </span>
               </button>
             );
           })}
         </div>
-      </div>
+      </section>
 
-      {/* SEMPERTEX PICKER -default: chips only; expanded: full browser */}
-      <div style={{ ...card, opacity: d.balloonStyle === "none" ? 0.5 : 1 }}>
-        {/* Garland note */}
-        <div style={{ marginBottom: 14, padding: "8px 14px", background: DC.chipBg, borderRadius: 12, fontSize: 11, color: DC.roseDeep, fontWeight: 600 }}>
-          {d.balloonStyle === "none"
-            ? "Pick a garland above to choose balloon colors."
-            : "These are the exact Sempertex shades our team will inflate on the day."}
+      {/* SEMPERTEX PICKER — the palette as balloon chips; expanded: full browser */}
+      <section className="bz-ex-card c-yellow" style={{ opacity: d.balloonStyle === "none" ? 0.55 : 1 }}>
+        <div className="bz-bl-head">
+          <h3 className="bz-ex-title"><span>2.</span> Pick your balloon colours <Dash /></h3>
+          <span className="bz-bl-pill">Sempertex palette ({effectiveSempertexSelection.length} colours)</span>
         </div>
+        {d.balloonStyle === "none" && <p className="bz-bl-muted">Pick a garland above to choose balloon colours.</p>}
 
-        {/* Selected chips row -always visible */}
         <div style={{ marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: DC.faint, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-              Balloon colors · Sempertex ({effectiveSempertexSelection.length}/5)
-            </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              <button type="button" onClick={resetToThemePalette}
-                style={{ fontSize: 11, fontWeight: 600, color: "#73778A", background: "transparent", border: "1px solid #ECEAF1", borderRadius: 999, padding: "3px 10px", cursor: "pointer", opacity: sempertexManual ? 1 : 0.45 }}>
-                Reset to theme
-              </button>
-              <button type="button" onClick={() => setShowSempertexBrowser(v => !v)}
-                style={{ fontSize: 11, fontWeight: 700, color: showSempertexBrowser ? "#EC4D8D" : "#15182E", background: "transparent", border: showSempertexBrowser ? "1px solid #EC4D8D" : "1px solid #D1D5DB", borderRadius: 999, padding: "3px 12px", cursor: "pointer" }}>
-                {showSempertexBrowser ? "Done" : "Change colors"}
-              </button>
-            </div>
-          </div>
-
-          {/* Chips — rendered directly from effectiveSempertexSelection (single source of truth) */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, minHeight: 34 }}>
+          {/* Chips — rendered directly from effectiveSempertexSelection (single source of truth).
+              Tapping one removes it, as before. */}
+          <div className="bz-bl-chips">
             {effectiveSempertexSelection.length === 0 && (
-              <span style={{ fontSize: 12, color: "#A1A3B4", fontStyle: "italic" }}>No colors selected -click "Change colors" to pick.</span>
+              <span className="bz-bl-muted">No colours selected — tap “Change colours” to pick.</span>
             )}
             {effectiveSempertexSelection.map(c => (
-              <button key={c.id} type="button" onClick={() => toggleSempertex(c.id)}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px 4px 6px", borderRadius: 999, border: "1.5px solid #F7A7C8", background: "#FFF7FB", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#15182E" }}>
-                <span style={{ width: 14, height: 14, borderRadius: "50%", background: c.hex, border: "1px solid rgba(0,0,0,0.12)", flexShrink: 0, display: "inline-block" }} />
-                {c.code} -{c.colorName}
-                <span style={{ marginLeft: 2, color: "#EC4D8D", fontWeight: 900 }}>-</span>
+              <button key={c.id} type="button" onClick={() => toggleSempertex(c.id)} className="bz-bl-chip" title={`Remove ${c.code} ${c.colorName}`}>
+                <span className={`ball ${/reflex|chrome|metallic/i.test(c.finish) ? "chrome" : ""} ${/clear/i.test(c.colorName) ? "clear" : ""}`} style={{ ["--c" as string]: c.hex } as React.CSSProperties} aria-hidden="true" />
+                <span className="txt"><strong>{c.code}</strong><small>{c.colorName}</small></span>
+                <span className="x" aria-hidden="true">×</span>
               </button>
             ))}
+          </div>
+          <div className="bz-bl-actions">
+            <button type="button" onClick={() => setShowSempertexBrowser(v => !v)} className={`bz-st-chip ${showSempertexBrowser ? "on" : ""}`}>
+              {showSempertexBrowser ? "Done" : "Change colours"}
+            </button>
+            <button type="button" onClick={resetToThemePalette} className="bz-st-chip" style={{ opacity: sempertexManual ? 1 : 0.5 }}>
+              Reset to theme
+            </button>
           </div>
           {sempertexExceeded && (
             <div style={{ marginTop: 6, fontSize: 11, color: "#EC4D8D", fontWeight: 600 }}>Maximum 5 colors selected. Remove one to add another.</div>
@@ -2887,6 +2906,8 @@ function clearAllStandees() {
             </div>
           )}
         </div>
+
+        <div className="bz-bl-tip"><span aria-hidden="true">💡</span> These are the exact Sempertex shades our team will inflate on the day.</div>
 
         {/* Expandable catalogue browser */}
         {showSempertexBrowser && (
@@ -2945,7 +2966,7 @@ function clearAllStandees() {
             })()}
           </div>
         )}
-      </div>
+      </section>
 
       {/* BACKDROP PRINT -moved to Customize each backdrop */}
       {false && <div style={card}>
@@ -3063,377 +3084,209 @@ function clearAllStandees() {
       )}{/* -"--"- end Balloons tab -"--"- */}
 
       {/* == 4 · EXTRAS (tab 04) =============================== */}
-      {decorTab === 3 && (
-      <div>
+      {/* == 4 · EXTRAS (tab 04) — 2026-10-23 redesign: five colour cards.
+           Every control is the one that was here before (toggleCutoutAsset,
+           patchDecor for florals / neon / number, setPlinthCount); prices come
+           from the product data. == */}
+      {decorTab === 3 && (() => {
+        const single = CUTOUT_STANDEE_OPTIONS.find((o) => o.size === "large")!;
+        const standeeCount = cutoutTotalCount(normalizedCut);
+        const shownChars = showAllChars ? cutoutPresetOptions : cutoutPresetOptions.slice(0, 3);
+        const firstSel = selectedCutoutAssets[0];
+        const firstSelPreview = firstSel
+          ? (firstSel.previewUrl || (cutoutPresetOptions.find((p) => p.assetId === firstSel.assetId) as { previewUrl?: string } | undefined)?.previewUrl)
+          : undefined;
+        const plinthCount = d.plinths ?? 0;
+        const plinthSum = plinthsTotal(d.plinthSizes);
+        // A plain function, not a component: defined in render, a component would
+        // remount the button (and drop keyboard focus) on every change.
+        const switchBtn = ({ on, onClick, disabled, label }: { on: boolean; onClick: () => void; disabled?: boolean; label: string }) => (
+          <button type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled}
+            className={`bz-switch ${on ? "on" : ""}`} onClick={onClick}><span /></button>
+        );
+        const priceLine = (p: number) => (p > 0 ? <em>+ AED {p}</em> : null);
+        return (
+      <div className="bz-ex">
 
-      {/* CHARACTER STANDEES */}
-<div style={card}>
-  {secLabel("Character standees")}
-  {secSub("Pick who joins the party — each standee is a 150 cm feature piece.")}
-
-  <div className="space-y-3">
-    {/* 1 — Choose characters (multi-select, NOTHING preselected) */}
-    <div className="rounded-[16px] border border-black/10 bg-white p-3">
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>1 · Choose characters</div>
-          <div className="text-[11px]" style={{ color: DC.muted }}>Tap a character to add it — each standee is 150 cm, +AED 180.</div>
-        </div>
-        {selectedCutoutAssets.length > 0 && (
-          <button
-            type="button"
-            onClick={clearAllStandees}
-            className="shrink-0 rounded-full border border-black/15 bg-white px-2.5 py-1 text-[10px] font-bold text-black/50 transition hover:border-accent/50 hover:text-accent"
-          >
-            No standees — clear all
-          </button>
-        )}
-      </div>
-
-      <div className={`grid grid-cols-2 gap-2 ${cutoutPresetOptions.length === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
-        {cutoutPresetOptions.map((preset) => {
-          const selected = selectedCutoutAssets.some((a) => a.assetId === preset.assetId);
-
-          return (
-            <button
-              key={preset.assetId}
-              type="button"
-              onClick={() => toggleCutoutAsset({ assetId: preset.assetId, label: preset.label, previewUrl: (preset as any).previewUrl || undefined })}
-              className={`relative rounded-[16px] border p-2.5 text-left transition ${
-                selected
-                  ? "border-accent bg-accent/10 shadow-sm"
-                  : "border-black/10 bg-white hover:border-accent/40"
-              }`}
-            >
-              {selected && (
-                <span className="absolute -right-1.5 -top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-white shadow-md">
-                  <svg width="11" height="11" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </span>
-              )}
-              {(preset as any).previewUrl ? (
-                <div className={`mb-2 flex h-28 items-center justify-center overflow-hidden rounded-[12px] ${selected ? "bg-accent/10" : "bg-[#FDF3F8]"}`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={(preset as any).previewUrl}
-                    alt={preset.label}
-                    className="h-full w-full object-contain"
-                  />
-                </div>
-              ) : null}
-              <div className="text-[12px] font-extrabold text-[#12162F]">{preset.label}</div>
-              <div className="mt-1 line-clamp-2 text-[11px] leading-snug text-black/50">
-                {(preset as any).description ?? (preset as any).promptDescription ?? (preset as any).desc ?? preset.label}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {selectedCutoutAssets.length === 0 && (
-        <div className="mt-2 rounded-[12px] bg-black/[0.03] px-3 py-2 text-[11px] font-medium text-black/40">
-          No characters selected yet. Choose one or more designs above.
-        </div>
-      )}
-    </div>
-
-    {/* 2 — Your standee squad. Sizes were removed (2026-07-20): standees now
-        ship in one standard 150cm height, so choosing the character is the
-        entire decision and there is nothing left to configure per asset. */}
-    {cutoutTotalCount(normalizedCut) > 0 && (() => {
-      const single = CUTOUT_STANDEE_OPTIONS.find((o) => o.size === "large")!;
-      const lines = selectedCutoutAssets.map((asset) => ({
-        text:  `${asset.label} · ${single.heightCm} cm`,
-        price: `AED ${single.unitPrice * (asset.quantities.large ?? 0)}`,
-      }));
-      return (
-        <div style={{ background: "white", border: `1.5px dashed ${DC.dashedBd}`, borderRadius: 16, padding: "13px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: DC.roseDeep }}>2 · Your standee squad</div>
-          {lines.map((line) => (
-            <div key={line.text} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontSize: 12.5, color: DC.plum }}><span aria-hidden style={{ color: DC.rose }}>·</span> {line.text}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: DC.plum }}>{line.price}</span>
-            </div>
-          ))}
-          <div style={{ fontSize: 10.5, color: DC.faint }}>They&apos;ll appear in your render after you regenerate · Total +AED {cutoutPrice(normalizedCut)}</div>
-        </div>
-      );
-    })()}
-  </div>
-</div>
-
-      {/* FLORALS — 2026-09-05. Applies to every setup; only does anything when
-          a garland is selected, so it says so rather than hiding itself. */}
-      <div style={card}>
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontWeight: 600, fontSize: 13.5, color: DC.plum }}>Florals in the garland</div>
-          <div style={{ fontSize: 11.5, color: DC.muted }}>
-            Eucalyptus, dried grasses and soft blooms tucked between the balloons.
+        {/* 1 — CHARACTER STANDEES */}
+        <section className="bz-ex-card c-pink bz-ex-standees">
+          <div className="bz-ex-intro">
+            <h3 className="bz-ex-title"><span>1.</span> Character standees <Dash /></h3>
+            <p>Bring their favourite characters to life at the party!</p>
+            <small>Each standee is {single.heightCm} cm · +AED {single.unitPrice}</small>
           </div>
-        </div>
-        <OptionSample src="/option-samples/florals.jpg" alt="Balloon garland with florals" />
-        <button
-          type="button"
-          onClick={() => patchDecor({ garlandFlorals: !d.garlandFlorals })}
-          disabled={d.balloonStyle === "none"}
-          style={{
-            display: "flex", alignItems: "center", gap: 10, width: "100%",
-            padding: "11px 13px", borderRadius: 12, cursor: d.balloonStyle === "none" ? "not-allowed" : "pointer",
-            opacity: d.balloonStyle === "none" ? 0.5 : 1,
-            border: `1.5px solid ${d.garlandFlorals ? DC.rose : DC.cardBd}`,
-            background: d.garlandFlorals ? DC.rose + "12" : "white", transition: "all 0.15s",
-          }}
-        >
-          <span style={{
-            width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-            border: `1.5px solid ${d.garlandFlorals ? DC.rose : DC.cardBd}`,
-            background: d.garlandFlorals ? DC.rose : "white",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            {d.garlandFlorals && (
-              <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
-                <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-          </span>
-          <span style={{ flex: 1, textAlign: "left", fontSize: 12.5, fontWeight: 600, color: DC.plum }}>
-            Add florals &amp; greenery
-          </span>
-        </button>
-        {d.balloonStyle === "none" && (
-          <div style={{ fontSize: 10.5, color: DC.faint, marginTop: 6 }}>Pick a balloon garland first.</div>
-        )}
-      </div>
-
-      {/* NEON SIGN — 2026-09-05. Goes in the open centre of a balloon ring, or
-          on the backdrop face for every other setup. */}
-      <div style={card}>
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontWeight: 600, fontSize: 13.5, color: DC.plum }}>Neon LED sign</div>
-          <div style={{ fontSize: 11.5, color: DC.muted }}>
-            {d.backdropItems.some((i) => i.type === "balloon_ring")
-              ? "Glowing script hung in the middle of the balloon ring."
-              : "Glowing script mounted on the backdrop."}
-          </div>
-        </div>
-        <OptionSample src="/option-samples/neon.jpg" alt="Backdrop with a neon LED sign" />
-        <button
-          type="button"
-          onClick={() => patchDecor({ neonSign: { text: d.neonSign?.text ?? "Happy Birthday", panelIndex: d.neonSign?.panelIndex ?? 0, enabled: !(d.neonSign?.enabled) } })}
-          style={{
-            display: "flex", alignItems: "center", gap: 10, width: "100%",
-            padding: "11px 13px", borderRadius: 12, cursor: "pointer",
-            border: `1.5px solid ${d.neonSign?.enabled ? DC.rose : DC.cardBd}`,
-            background: d.neonSign?.enabled ? DC.rose + "12" : "white", transition: "all 0.15s",
-          }}
-        >
-          <span style={{
-            width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-            border: `1.5px solid ${d.neonSign?.enabled ? DC.rose : DC.cardBd}`,
-            background: d.neonSign?.enabled ? DC.rose : "white",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            {d.neonSign?.enabled && (
-              <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
-                <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-          </span>
-          <span style={{ flex: 1, textAlign: "left", fontSize: 12.5, fontWeight: 600, color: DC.plum }}>
-            Add a neon sign
-          </span>
-        </button>
-        {d.neonSign?.enabled && (
-          <div style={{ marginTop: 10 }}>
-            <div className="flex flex-wrap gap-1.5" style={{ marginBottom: 8 }}>
-              {NEON_SIGN_PRESETS.map((phrase) => (
-                <button
-                  key={phrase}
-                  type="button"
-                  onClick={() => patchDecor({ neonSign: { enabled: true, text: phrase, panelIndex: d.neonSign?.panelIndex ?? 0 } })}
-                  style={{
-                    padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                    border: `1.5px solid ${d.neonSign?.text === phrase ? DC.rose : "rgba(0,0,0,0.12)"}`,
-                    background: d.neonSign?.text === phrase ? DC.rose + "12" : "white",
-                    color: d.neonSign?.text === phrase ? DC.rose : "#555",
-                  }}
-                >
-                  {phrase}
-                </button>
-              ))}
-            </div>
-            {/* 2026-09-05: on a two-piece setup the customer picks which board
-                carries the sign.
-                2026-09-08: an open arch frame is not offered — it is a narrow
-                band around a balloon-filled hole, with no board face for a sign
-                to hang on. If it is the only other piece, the chooser is hidden
-                and the sign stays on the solid board. */}
-            {(() => {
-              const neonEligible = d.backdropItems
-                .map((it, i) => ({ it, i }))
-                .filter(({ it }) => it.type !== "open_arch_frame");
-              if (neonEligible.length < 2) return null;
+          <div className="bz-ex-chars" id="bz-ex-chars">
+            {shownChars.map((preset) => {
+              const selected = selectedCutoutAssets.some((a) => a.assetId === preset.assetId);
+              const preview = (preset as { previewUrl?: string }).previewUrl;
               return (
-                <div style={{ marginBottom: 8 }}>
-                  <span style={{ fontSize: 10.5, fontWeight: 700, color: "#666", display: "block", marginBottom: 5 }}>
-                    Which backdrop?
+                <button key={preset.assetId} type="button" aria-pressed={selected}
+                  onClick={() => toggleCutoutAsset({ assetId: preset.assetId, label: preset.label, previewUrl: preview || undefined })}
+                  className={`bz-ex-char ${selected ? "on" : ""}`}>
+                  {selected && <span className="bz-st-tick" aria-hidden="true">✓</span>}
+                  <span className="pic">
+                    {preview
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={preview} alt="" />
+                      : <span className="ph" aria-hidden="true">✦</span>}
                   </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {neonEligible.map(({ it, i }) => {
-                      const active = (d.neonSign?.panelIndex ?? 0) === i;
-                      const label = `${i === 0 ? "Left" : "Right"} · ${TYPE_LABEL[it.type] ?? it.type}`;
-                      return (
-                        <button key={it.id} type="button"
-                          onClick={() => patchDecor({ neonSign: { enabled: true, text: d.neonSign?.text ?? "Happy Birthday", panelIndex: i } })}
-                          style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                            border: `1.5px solid ${active ? DC.rose : "rgba(0,0,0,0.12)"}`,
-                            background: active ? DC.rose + "12" : "white", color: active ? DC.rose : "#555" }}>
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                  <span className="name">{preset.label}</span>
+                </button>
               );
-            })()}
-            <input
-              type="text"
-              value={d.neonSign?.text ?? ""}
-              maxLength={40}
-              onChange={(e) => patchDecor({ neonSign: { enabled: true, text: e.target.value.slice(0, 40), panelIndex: d.neonSign?.panelIndex ?? 0 } })}
-              placeholder="Or type your own"
-              style={{
-                width: "100%", fontSize: 12.5, color: DC.plum, padding: "9px 11px",
-                borderRadius: 12, border: `1.5px solid ${DC.cardBd}`, outline: "none",
-              }}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* NUMBER LIGHT — 2026-09-05 */}
-      <div style={card}>
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontWeight: 600, fontSize: 13.5, color: DC.plum }}>Light-up number</div>
-          <div style={{ fontSize: 11.5, color: DC.muted }}>
-            A 90 cm illuminated marquee number standing beside the backdrop.
-          </div>
-        </div>
-        <OptionSample src="/option-samples/number_light.jpg" alt="Backdrop with a light-up marquee number" />
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => patchDecor({ numberLight: { value: d.numberLight?.value ?? "1", enabled: !(d.numberLight?.enabled) } })}
-            style={{
-              display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200,
-              padding: "11px 13px", borderRadius: 12, cursor: "pointer",
-              border: `1.5px solid ${d.numberLight?.enabled ? DC.rose : DC.cardBd}`,
-              background: d.numberLight?.enabled ? DC.rose + "12" : "white", transition: "all 0.15s",
-            }}
-          >
-            <span style={{
-              width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-              border: `1.5px solid ${d.numberLight?.enabled ? DC.rose : DC.cardBd}`,
-              background: d.numberLight?.enabled ? DC.rose : "white",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              {d.numberLight?.enabled && (
-                <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
-                  <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              )}
-            </span>
-            <span style={{ flex: 1, textAlign: "left", fontSize: 12.5, fontWeight: 600, color: DC.plum }}>
-              Add a light-up number
-            </span>
-          </button>
-          {d.numberLight?.enabled && (
-            <input
-              type="text"
-              inputMode="numeric"
-              value={d.numberLight?.value ?? ""}
-              onChange={(e) => patchDecor({
-                numberLight: { enabled: true, value: e.target.value.replace(/[^0-9]/g, "").slice(0, 2) },
-              })}
-              placeholder="1"
-              style={{
-                width: 68, textAlign: "center", fontSize: 16, fontWeight: 700, color: DC.plum,
-                padding: "10px 8px", borderRadius: 12, border: `1.5px solid ${DC.cardBd}`, outline: "none",
-              }}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* PLINTHS */}
-      <div style={card}>
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontWeight: 600, fontSize: 13.5, color: DC.plum }}>Cake plinths</div>
-          <div style={{ fontSize: 11.5, color: DC.muted }}>Elegant columns that put your cake center-stage beside the backdrop.</div>
-        </div>
-        <OptionSample
-          src={`/option-samples/plinth_${Math.min(3, Math.max(1, d.plinths || 1))}.jpg`}
-          alt={`${Math.min(3, Math.max(1, d.plinths || 1))} cake plinth example`}
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: DC.faint, textTransform: "uppercase", marginRight: 2 }}>How many?</span>
-          {[0, 1, 2, 3].map((n) => {
-            const active = d.plinths === n;
-            return (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setPlinthCount(n)}
-                style={{
-                  width: 36, height: 36, borderRadius: "50%", fontSize: 13, fontWeight: 700,
-                  display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.15s",
-                  background: active ? DC.rose : "white",
-                  border: `1.5px solid ${active ? DC.rose : DC.cardBd}`,
-                  color: active ? "white" : DC.faint,
-                  boxShadow: active ? "0 6px 14px rgba(216,84,138,.3)" : "none",
-                }}
-              >
-                {n === 0 ? "0" : n}
+            })}
+            {cutoutPresetOptions.length > 3 && (
+              <button type="button" className="bz-ex-char more" onClick={() => setShowAllChars((v) => !v)}>
+                <span className="plus" aria-hidden="true">{showAllChars ? "–" : "+"}</span>
+                <span className="name">{showAllChars ? "Fewer characters" : "More characters"}</span>
               </button>
-            );
-          })}
-        </div>
-        {d.plinths > 0 && (
-          <div className="mt-3 space-y-2">
-            {Array.from({ length: d.plinths }).map((_, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: "white", border: `1.5px solid ${DC.cardBd}`, borderRadius: 14, padding: "9px 13px" }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: DC.plum, minWidth: 56 }}>Plinth {i + 1}</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {/* 2026-09-09: one size per row, not three. The ladder decides
-                      which — plinth 1 is the XXL, 2 the XL, 3 the L — so the
-                      other two chips were dead choices that only made the set
-                      look changeable when it is not. */}
-                  {PLINTH_SIZES.filter((s) => s.id === (d.plinthSizes[i] ?? PLINTH_LADDER[i])).map((s) => {
-                    const sel = true;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => setPlinthSize(i, s.id)}
-                        style={{
-                          padding: "5px 13px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, cursor: "pointer", transition: "all 0.15s",
-                          background: sel ? DC.chipBg : "white",
-                          border: `1.5px solid ${sel ? DC.dashedBd : DC.cardBd}`,
-                          color: sel ? DC.roseDeep : DC.muted,
-                        }}
-                      >
-                        {PLINTH_SHORT[s.id] ?? s.label} <span style={{ opacity: 0.7 }}>+{s.price}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+            )}
           </div>
-        )}
-      </div>
+          <div className="bz-ex-squad">
+            <h4>Your standee squad</h4>
+            {standeeCount > 0 ? (
+              <>
+                <div className="row">
+                  {firstSelPreview
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={firstSelPreview} alt="" />
+                    : <span className="ph" aria-hidden="true">✦</span>}
+                  <span className="count">{standeeCount} standee{standeeCount === 1 ? "" : "s"} selected<br /><b>+AED {cutoutPrice(normalizedCut)}</b></span>
+                </div>
+                <div className="acts">
+                  <button type="button" className="bz-ex-change"
+                    onClick={() => { setShowAllChars(true); document.getElementById("bz-ex-chars")?.scrollIntoView({ behavior: "smooth", block: "center" }); }}>
+                    Change
+                  </button>
+                  <button type="button" className="bz-ex-clear" onClick={clearAllStandees}>Clear all</button>
+                </div>
+              </>
+            ) : (
+              <p>No characters yet — tap one to add it.</p>
+            )}
+          </div>
+        </section>
 
+        <div className="bz-ex-grid">
+          {/* 2 — FLORALS. Only does anything with a garland, so it says so. */}
+          <section className="bz-ex-card c-yellow">
+            <div className="bz-ex-row">
+              <div className="bz-ex-body">
+                <h3 className="bz-ex-title"><span>2.</span> Florals &amp; greenery</h3>
+                <p>Add a fresh, elegant touch with florals and greenery.</p>
+              </div>
+              <div className="bz-ex-side">
+                {switchBtn({ on: !!d.garlandFlorals, disabled: d.balloonStyle === "none", label: "Add florals and greenery",
+                  onClick: () => patchDecor({ garlandFlorals: !d.garlandFlorals }) })}
+                <span className="lbl">Add florals &amp; greenery{priceLine(GARLAND_FLORALS_PRICE)}</span>
+              </div>
+            </div>
+            {d.balloonStyle === "none" && <p className="bz-bl-muted">Pick a balloon garland first.</p>}
+          </section>
+
+          {/* 3 — NEON SIGN: in a balloon ring's open centre, or on the backdrop face. */}
+          <section className="bz-ex-card c-lilac">
+            <div className="bz-ex-row">
+              <div className="bz-ex-body">
+                <h3 className="bz-ex-title"><span>3.</span> Neon LED sign</h3>
+                <p>{d.backdropItems.some((i) => i.type === "balloon_ring")
+                  ? "Light up the celebration — hung in the middle of the ring."
+                  : "Light up the celebration with a custom sign."}</p>
+              </div>
+              <span className={`bz-neon ${d.neonSign?.enabled ? "on" : ""}`} aria-hidden="true">{(d.neonSign?.text || "Happy Birthday").trim() || "Happy Birthday"}</span>
+              <div className="bz-ex-side">
+                {switchBtn({ on: !!d.neonSign?.enabled, label: "Add a neon sign",
+                  onClick: () => patchDecor({ neonSign: { text: d.neonSign?.text ?? "Happy Birthday", panelIndex: d.neonSign?.panelIndex ?? 0, enabled: !(d.neonSign?.enabled) } }) })}
+                <span className="lbl">Add neon sign{priceLine(NEON_SIGN_PRICE)}</span>
+              </div>
+            </div>
+            {d.neonSign?.enabled && (
+              <div className="bz-ex-more">
+                <div className="bz-st-presets">
+                  {NEON_SIGN_PRESETS.map((phrase) => (
+                    <button key={phrase} type="button" className={`bz-st-chip ${d.neonSign?.text === phrase ? "on" : ""}`}
+                      onClick={() => patchDecor({ neonSign: { enabled: true, text: phrase, panelIndex: d.neonSign?.panelIndex ?? 0 } })}>
+                      {phrase}
+                    </button>
+                  ))}
+                </div>
+                {/* On a two-piece setup the customer picks which board carries the
+                    sign; an open arch frame has no face for one, so it is not offered. */}
+                {(() => {
+                  const neonEligible = d.backdropItems
+                    .map((it, i) => ({ it, i }))
+                    .filter(({ it }) => it.type !== "open_arch_frame");
+                  if (neonEligible.length < 2) return null;
+                  return (
+                    <div className="bz-st-presets">
+                      <span className="bz-ex-mini">Which backdrop?</span>
+                      {neonEligible.map(({ it, i }) => (
+                        <button key={it.id} type="button" className={`bz-st-chip ${(d.neonSign?.panelIndex ?? 0) === i ? "on" : ""}`}
+                          onClick={() => patchDecor({ neonSign: { enabled: true, text: d.neonSign?.text ?? "Happy Birthday", panelIndex: i } })}>
+                          {`${i === 0 ? "Left" : "Right"} · ${TYPE_LABEL[it.type] ?? it.type}`}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+                <input type="text" className="bz-ex-input" value={d.neonSign?.text ?? ""} maxLength={40} placeholder="Or type your own"
+                  aria-label="Neon sign text"
+                  onChange={(e) => patchDecor({ neonSign: { enabled: true, text: e.target.value.slice(0, 40), panelIndex: d.neonSign?.panelIndex ?? 0 } })} />
+              </div>
+            )}
+          </section>
+
+          {/* 4 — NUMBER LIGHT */}
+          <section className="bz-ex-card c-lilac2">
+            <div className="bz-ex-row">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="bz-ex-art num" src="/design/ui/extra-number.webp" alt="" />
+              <div className="bz-ex-body">
+                <h3 className="bz-ex-title"><span>4.</span> Light-up number</h3>
+                <p>Make their age shine with a light-up number.</p>
+              </div>
+              <div className="bz-ex-side">
+                {switchBtn({ on: !!d.numberLight?.enabled, label: "Add a light-up number",
+                  onClick: () => patchDecor({ numberLight: { value: d.numberLight?.value ?? "1", enabled: !(d.numberLight?.enabled) } }) })}
+                <span className="lbl">Add light-up number{priceLine(NUMBER_LIGHT_PRICE)}</span>
+              </div>
+            </div>
+            {d.numberLight?.enabled && (
+              <div className="bz-ex-more inline">
+                <span className="bz-ex-mini">Which number?</span>
+                <input type="text" inputMode="numeric" className="bz-ex-input num" value={d.numberLight?.value ?? ""} placeholder="1"
+                  aria-label="Light-up number"
+                  onChange={(e) => patchDecor({ numberLight: { enabled: true, value: e.target.value.replace(/[^0-9]/g, "").slice(0, 2) } })} />
+              </div>
+            )}
+          </section>
+
+          {/* 5 — PLINTHS: 0–3, sized by the ladder (XXL, then XL, then L). */}
+          <section className="bz-ex-card c-green">
+            <div className="bz-ex-row">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="bz-ex-art" src="/design/ui/extra-plinths.webp" alt="" />
+              <div className="bz-ex-body">
+                <h3 className="bz-ex-title"><span>5.</span> Cake plinths</h3>
+                <p>Stylish plinths to beautifully display the cake and treats.</p>
+              </div>
+              <div className="bz-ex-side">
+                <div className="bz-stepper" role="group" aria-label="Number of plinths">
+                  <button type="button" aria-label="One fewer plinth" disabled={plinthCount <= 0} onClick={() => setPlinthCount(Math.max(0, plinthCount - 1))}>−</button>
+                  <span>{plinthCount}</span>
+                  <button type="button" aria-label="One more plinth" className="plus" disabled={plinthCount >= 3} onClick={() => setPlinthCount(Math.min(3, plinthCount + 1))}>+</button>
+                </div>
+                <span className="lbl small">
+                  {plinthCount > 0
+                    ? <>{d.plinthSizes.map((sz) => PLINTH_SHORT[sz] ?? sz).join(" · ")}<br />AED {plinthSum} total</>
+                    : "Up to 3"}
+                </span>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
-      )}{/* -"--"- end Extras tab -"--"- */}
+        );
+      })()}{/* -"--"- end Extras tab -"--"- */}
 
       {/* == Tab footer: next tab, or Generate Render after Extras == */}
       <div className="bz-decor-footer">

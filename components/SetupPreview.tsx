@@ -1173,6 +1173,7 @@ export type FinalRenderState = { hasRender: boolean; isStale: boolean; generatin
 export default function SetupPreview({
   config, status, imageUrl, isIncremental = false, onRegenerate, showControls = true,
   onPatchDecor, onFinalRenderStateChange, onGenerateReady, emptyArt, emptyArtLabel = "Example.",
+  emptyArtNote = "Your own render, with your exact choices, appears here after you generate it.",
 }: {
   config: BuilderConfig; status: PreviewStatus; imageUrl: string | null;
   isIncremental?: boolean; onRegenerate: () => void; showControls?: boolean;
@@ -1181,6 +1182,8 @@ export default function SetupPreview({
   emptyArt?: string;
   /** Lead-in of that label, e.g. "Frozen example." */
   emptyArtLabel?: string;
+  /** The rest of that label. */
+  emptyArtNote?: string;
   /** Optional — enables the Ask for a change prompt when provided. */
   onPatchDecor?: (patch: Partial<import("@/lib/config").DecorConfig>) => void;
   /** Optional — reports the Final Design Render's live state up to the parent
@@ -1310,7 +1313,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
               <div className="bz-placeholder art" role="status" aria-live="polite">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={emptyArt} alt={`${emptyArtLabel} A finished setup in this theme`} />
-                <div className="tag"><span aria-hidden="true">⭐</span><span><b>{emptyArtLabel}</b> Your own render, with your exact choices, appears here after you generate it.</span></div>
+                <div className="tag"><span aria-hidden="true">⭐</span><span><b>{emptyArtLabel}</b> {emptyArtNote}</span></div>
               </div>
             ) :
             <div className="bz-placeholder" role="status" aria-live="polite">
