@@ -2035,6 +2035,9 @@ function clearAllStandees() {
         const nFont = showFont ? ++k : 0;
         const nColors = showColors ? ++k : 0;
         const nGraphic = showGraphic ? ++k : 0;
+        // In the two-column grid only an odd last card spans both columns, so
+        // a hidden step never leaves a hole beside the colours.
+        const lastWide = k % 2 === 1;
 
         const sizeChip = (() => {
           const o = sizeOpts.find(isSizeOn);
@@ -2152,7 +2155,7 @@ function clearAllStandees() {
 
             {/* 4 — Colours */}
             {showColors && (
-              <section className="bz-st-sec c-lilac">
+              <section className={`bz-st-sec c-lilac ${lastWide && !showGraphic ? "wide" : ""}`}>
                 <Head n={nColors} title={item.type === "balloon_ring" ? "Pick your ring style" : "Pick your colors"}
                   sub={item.type === "shimmer_wall" ? "Choose the sequin finish."
                     : item.type === "balloon_ring" ? "Choose how the hoop is dressed."
@@ -2236,7 +2239,7 @@ function clearAllStandees() {
 
             {/* 5 — Theme graphic */}
             {showGraphic && (
-              <section className="bz-st-sec c-blue wide">
+              <section className={`bz-st-sec c-blue ${lastWide ? "wide" : ""}`}>
                 <Head n={nGraphic} title="Add a theme graphic" optional sub="Includes a printed illustration to make it extra special." />
                 <div className="bz-st-body">
                   <div className="bz-st-opts yn">
@@ -2869,9 +2872,16 @@ function clearAllStandees() {
       {/* SEMPERTEX PICKER — the palette as balloon chips; expanded: full browser */}
       <section className="bz-ex-card c-yellow" style={{ opacity: d.balloonStyle === "none" ? 0.55 : 1 }}>
         <div className="bz-bl-head">
-          <h3 className="bz-ex-title"><span>2.</span> Pick your balloon colours <Dash /></h3>
-          <span className="bz-bl-pill">Sempertex palette ({effectiveSempertexSelection.length} colours)</span>
+          <h3 className="bz-ex-title"><span>2.</span> Your balloon colours <Dash /></h3>
+          <span className="bz-bl-pill">{sempertexManual ? "Your Sempertex mix" : `Matched to ${theme.name}`} · {effectiveSempertexSelection.length} colours</span>
         </div>
+        {d.balloonStyle !== "none" && (
+          <p className="bz-bl-lead">
+            {sempertexManual
+              ? "Your own pick of real Sempertex shades. Reset to go back to the theme’s colours."
+              : <>Already chosen for your <b>{theme.name}</b> theme from the real Sempertex range — nothing to pick. Want something different? Change colours.</>}
+          </p>
+        )}
         {d.balloonStyle === "none" && <p className="bz-bl-muted">Pick a garland above to choose balloon colours.</p>}
 
         <div style={{ marginBottom: 12 }}>
@@ -3167,6 +3177,7 @@ function clearAllStandees() {
         </section>
 
         <div className="bz-ex-grid">
+          <div className="bz-ex-col">
           {/* 2 — FLORALS. Only does anything with a garland, so it says so. */}
           <section className="bz-ex-card c-yellow">
             <div className="bz-ex-row">
@@ -3183,6 +3194,56 @@ function clearAllStandees() {
             {d.balloonStyle === "none" && <p className="bz-bl-muted">Pick a balloon garland first.</p>}
           </section>
 
+          {/* 4 — NUMBER LIGHT */}
+          <section className="bz-ex-card c-lilac2">
+            <div className="bz-ex-row">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="bz-ex-art num" src="/design/ui/extra-number.webp" alt="" />
+              <div className="bz-ex-body">
+                <h3 className="bz-ex-title"><span>4.</span> Light-up number</h3>
+                <p>Make their age shine with a light-up number.</p>
+              </div>
+              <div className="bz-ex-side">
+                {switchBtn({ on: !!d.numberLight?.enabled, label: "Add a light-up number",
+                  onClick: () => patchDecor({ numberLight: { value: d.numberLight?.value ?? "1", enabled: !(d.numberLight?.enabled) } }) })}
+                <span className="lbl">Add light-up number{priceLine(NUMBER_LIGHT_PRICE)}</span>
+              </div>
+            </div>
+            {d.numberLight?.enabled && (
+              <div className="bz-ex-more inline">
+                <span className="bz-ex-mini">Which number?</span>
+                <input type="text" inputMode="numeric" className="bz-ex-input num" value={d.numberLight?.value ?? ""} placeholder="1"
+                  aria-label="Light-up number"
+                  onChange={(e) => patchDecor({ numberLight: { enabled: true, value: e.target.value.replace(/[^0-9]/g, "").slice(0, 2) } })} />
+              </div>
+            )}
+          </section>
+
+          {/* 5 — PLINTHS: 0–3, sized by the ladder (XXL, then XL, then L). */}
+          <section className="bz-ex-card c-green">
+            <div className="bz-ex-row">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="bz-ex-art" src="/design/ui/extra-plinths.webp" alt="" />
+              <div className="bz-ex-body">
+                <h3 className="bz-ex-title"><span>5.</span> Cake plinths</h3>
+                <p>Stylish plinths to beautifully display the cake and treats.</p>
+              </div>
+              <div className="bz-ex-side">
+                <div className="bz-stepper" role="group" aria-label="Number of plinths">
+                  <button type="button" aria-label="One fewer plinth" disabled={plinthCount <= 0} onClick={() => setPlinthCount(Math.max(0, plinthCount - 1))}>−</button>
+                  <span>{plinthCount}</span>
+                  <button type="button" aria-label="One more plinth" className="plus" disabled={plinthCount >= 3} onClick={() => setPlinthCount(Math.min(3, plinthCount + 1))}>+</button>
+                </div>
+                <span className="lbl small">
+                  {plinthCount > 0
+                    ? <>{d.plinthSizes.map((sz) => PLINTH_SHORT[sz] ?? sz).join(" · ")}<br />AED {plinthSum} total</>
+                    : "Up to 3"}
+                </span>
+              </div>
+            </div>
+          </section>
+          </div>
+          <div className="bz-ex-col">
           {/* 3 — NEON SIGN: in a balloon ring's open centre, or on the backdrop face. */}
           <section className="bz-ex-card c-lilac">
             <div className="bz-ex-row">
@@ -3234,55 +3295,7 @@ function clearAllStandees() {
               </div>
             )}
           </section>
-
-          {/* 4 — NUMBER LIGHT */}
-          <section className="bz-ex-card c-lilac2">
-            <div className="bz-ex-row">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="bz-ex-art num" src="/design/ui/extra-number.webp" alt="" />
-              <div className="bz-ex-body">
-                <h3 className="bz-ex-title"><span>4.</span> Light-up number</h3>
-                <p>Make their age shine with a light-up number.</p>
-              </div>
-              <div className="bz-ex-side">
-                {switchBtn({ on: !!d.numberLight?.enabled, label: "Add a light-up number",
-                  onClick: () => patchDecor({ numberLight: { value: d.numberLight?.value ?? "1", enabled: !(d.numberLight?.enabled) } }) })}
-                <span className="lbl">Add light-up number{priceLine(NUMBER_LIGHT_PRICE)}</span>
-              </div>
-            </div>
-            {d.numberLight?.enabled && (
-              <div className="bz-ex-more inline">
-                <span className="bz-ex-mini">Which number?</span>
-                <input type="text" inputMode="numeric" className="bz-ex-input num" value={d.numberLight?.value ?? ""} placeholder="1"
-                  aria-label="Light-up number"
-                  onChange={(e) => patchDecor({ numberLight: { enabled: true, value: e.target.value.replace(/[^0-9]/g, "").slice(0, 2) } })} />
-              </div>
-            )}
-          </section>
-
-          {/* 5 — PLINTHS: 0–3, sized by the ladder (XXL, then XL, then L). */}
-          <section className="bz-ex-card c-green">
-            <div className="bz-ex-row">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="bz-ex-art" src="/design/ui/extra-plinths.webp" alt="" />
-              <div className="bz-ex-body">
-                <h3 className="bz-ex-title"><span>5.</span> Cake plinths</h3>
-                <p>Stylish plinths to beautifully display the cake and treats.</p>
-              </div>
-              <div className="bz-ex-side">
-                <div className="bz-stepper" role="group" aria-label="Number of plinths">
-                  <button type="button" aria-label="One fewer plinth" disabled={plinthCount <= 0} onClick={() => setPlinthCount(Math.max(0, plinthCount - 1))}>−</button>
-                  <span>{plinthCount}</span>
-                  <button type="button" aria-label="One more plinth" className="plus" disabled={plinthCount >= 3} onClick={() => setPlinthCount(Math.min(3, plinthCount + 1))}>+</button>
-                </div>
-                <span className="lbl small">
-                  {plinthCount > 0
-                    ? <>{d.plinthSizes.map((sz) => PLINTH_SHORT[sz] ?? sz).join(" · ")}<br />AED {plinthSum} total</>
-                    : "Up to 3"}
-                </span>
-              </div>
-            </div>
-          </section>
+          </div>
         </div>
       </div>
         );
