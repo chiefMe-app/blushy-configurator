@@ -62,6 +62,8 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
 };
 
 const THEME_MOOD: Record<string, string> = {
+  minecraft: "grass green, forest green, lime and earthy brown color palette, playful blocky pixel atmosphere",
+  star_wars: "black, chrome silver and white color palette with red and blue lightsaber accents, cinematic galactic atmosphere",
   frozen:    "icy pale blue, silver and white color palette, cool crisp atmosphere",
   unicorn:   "soft pink, pastel mint, pastel yellow, pastel blue and white color palette, delicate pastel tones, light airy atmosphere",
   dinosaur:  "sage green, terracotta and dusty rose color palette, earthy natural atmosphere",
@@ -86,6 +88,8 @@ const THEME_MOOD: Record<string, string> = {
 };
 
 const THEME_PRINT: Record<string, string> = {
+  minecraft: "pixel grass blocks and blocky landscape printed on backdrop",
+  star_wars: "starfield with crossed lightsabers printed on backdrop",
   frozen:    "snowflake and ice crystal pattern printed on backdrop",
   unicorn:   "unicorn face with gold horn flower crown and lashes printed on backdrop surface",
   dinosaur:  "palm tree volcano and jungle scene printed on backdrop",
@@ -112,6 +116,8 @@ const THEME_PRINT: Record<string, string> = {
 const SHAPE_LOCKED_THEMES = new Set<ThemeId>();
 
 const THEME_PRINT_DESC: Record<string, string> = {
+  minecraft: "Pixel grass blocks, creeper face, blocky trees",
+  star_wars: "Starfield, lightsabers and starships",
   frozen: "Frozen castle, snowflakes, icy character silhouettes",
   unicorn: "Unicorn face with gold horn, flower crown and lashes",
   dinosaur: "Jungle palm trees, volcano, dinosaur footprints",

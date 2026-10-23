@@ -406,6 +406,43 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   },
 ];
 
+// 2026-10-23: the two Boys-list themes that did not exist yet. Palettes are
+// picked from the Sempertex card to match each theme.
+THEME_CATALOG.push(
+  {
+    id: "minecraft",
+    coverImageUrl: "/design/themes-v2/minecraft.webp",
+    name: "Minecraft",
+    icon: "🟩",
+    price: 40,
+    description: "Pixel greens, grass and earth blocks",
+    swatchHexes: ["#22C55E", "#15803D", "#6F4E37"],
+    sempertexPaletteIds: ["fashion-030-green", "fashion-032-forest-green", "fashion-031-lime-green", "fashion-074-coffee", "fashion-080-black"],
+    renderDescription: "Minecraft-inspired pixel adventure theme with grass-green and earth-brown block colours and playful blocky charm",
+    graphicPresets: [
+      { id: "minecraft_blocks",    assetId: "minecraft-01", label: "Pixel Blocks",    desc: "Grass and dirt pixel blocks" },
+      { id: "minecraft_creeper",   assetId: "minecraft-02", label: "Creeper",         desc: "Friendly pixel creeper face" },
+      { id: "minecraft_landscape", assetId: "minecraft-03", label: "Pixel Landscape", desc: "Blocky hills, trees and sky" },
+    ],
+  },
+  {
+    id: "star_wars",
+    coverImageUrl: "/design/themes-v2/star-wars.webp",
+    name: "Star Wars",
+    icon: "⚔️",
+    price: 40,
+    description: "Galactic black, chrome and lightsaber glow",
+    swatchHexes: ["#1F2937", "#C7C9C7", "#EF4444"],
+    sempertexPaletteIds: ["fashion-080-black", "reflex-981-silver", "fashion-005-white", "fashion-015-red", "fashion-040-blue"],
+    renderDescription: "Star Wars-inspired galactic theme with black, chrome silver and white, and red and blue lightsaber accents",
+    graphicPresets: [
+      { id: "starwars_sabers", assetId: "star-wars-01", label: "Lightsabers", desc: "Crossed red and blue lightsabers" },
+      { id: "starwars_stars",  assetId: "star-wars-02", label: "Starfield",   desc: "Starry galaxy with planets" },
+      { id: "starwars_ships",  assetId: "star-wars-03", label: "Starships",   desc: "Starships flying through space" },
+    ],
+  },
+);
+
 export function getThemeCatalogEntry(id: string): ThemeCatalogEntry | undefined {
   return THEME_CATALOG.find((t) => t.id === id);
 }

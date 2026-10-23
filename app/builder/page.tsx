@@ -273,15 +273,22 @@ const DECOR_TABS: { num: string; name: string; kicker: string; title: string; su
 ];
 
 // Hand-painted theme icons from the design reference (public/design/themes).
-const THEME_ICON: Partial<Record<string, string>> = {
-  frozen: "/design/themes/frozen.png", unicorn: "/design/themes/unicorn.png", dinosaur: "/design/themes/dinosaur.png",
-  safari: "/design/themes/safari.png", princess: "/design/themes/princess.png", superhero: "/design/themes/superhero.png",
-  barbie: "/design/themes/barbie.png", bluey: "/design/themes/bluey.png", pokemon: "/design/themes/pokemon.png",
-  stitch: "/design/themes/stitch.png", mermaid: "/design/themes/mermaid.png", space: "/design/themes/space.png",
-  football: "/design/themes/football.png", lego: "/design/themes/lego.png", kpop: "/design/themes/k-pop.png",
-  encanto: "/design/themes/encanto.png", cocomelon: "/design/themes/cocomelon.png", teddy_bear: "/design/themes/teddy-bear.png",
-  pineapple_tropical: "/design/themes/tropical.png", blush_garden: "/design/themes/blush-garden.png", luxury_neutral: "/design/themes/luxury-neutral.png",
-};
+// 2026-10-23: the theme list is two lists, Girls and Boys, with the customer's
+// crayon icons (public/design/themes-v2). Space is in both — a planet for
+// girls, a rocket for boys. Themes in neither list are no longer offered (their
+// data stays, so saved designs and renders that use them still work).
+const THEME_GROUPS: { key: "girl" | "boy"; title: string; items: { id: string; icon: string }[] }[] = [
+  { key: "girl", title: "For girls", items: [
+    { id: "unicorn", icon: "unicorn" }, { id: "frozen", icon: "frozen" }, { id: "barbie", icon: "barbie" },
+    { id: "princess", icon: "princess" }, { id: "bluey", icon: "bluey" }, { id: "mermaid", icon: "mermaid" },
+    { id: "space", icon: "space-girl" }, { id: "kpop", icon: "kpop" },
+  ] },
+  { key: "boy", title: "For boys", items: [
+    { id: "dinosaur", icon: "dinosaur" }, { id: "safari", icon: "safari" }, { id: "space", icon: "space-boy" },
+    { id: "superhero", icon: "superhero" }, { id: "pokemon", icon: "pokemon" }, { id: "lego", icon: "lego" },
+    { id: "minecraft", icon: "minecraft" }, { id: "star_wars", icon: "star-wars" },
+  ] },
+];
 
 // Illustrated backdrop icons from the design reference (public/design/backdrops),
 // by setup template id.
@@ -323,6 +330,8 @@ export default function ConfigurePage() {
   const [step, setStep] = useState(0);
   // Which of the Decor step's four tabs is open.
   const [decorTab, setDecorTab] = useState(0);
+  // Which list the theme was picked from, so Space (in both) ticks only there.
+  const [themeGroup, setThemeGroup] = useState<"girl" | "boy" | null>(null);
   // The landing page links straight to the Theme step (/builder?step=theme).
   useEffect(() => {
     const p = new URLSearchParams(window.location.search).get("step");
@@ -714,16 +723,22 @@ export default function ConfigurePage() {
               <div>
                 <div className="bz-tip"><span className="icon">✳</span><span>Pick a party world — it sets the balloons, graphics and styling.</span><span className="arrow">↙</span></div>
                 <div className="bz-sectionline"><h2>Choose your party world</h2><span className="bz-pill-mini">{config.themeSelected ? "SELECTED" : "PICK ONE"}</span></div>
-                <div className="bz-theme-grid">
-                  {THEMES.map((t) => {
-                    const sel = config.themeSelected && config.theme === t.id;
+                {THEME_GROUPS.map((g) => (
+                <div key={g.key} className={`bz-theme-group ${g.key}`}>
+                <h3 className="bz-theme-group-head">{g.title}</h3>
+                <div className="bz-theme-grid four">
+                  {g.items.map(({ id, icon }) => {
+                    const t = themeById(id);
+                    if (!t) return null;
+                    const inBoth = THEME_GROUPS.every((gg) => gg.items.some((it) => it.id === id));
+                    const sel = config.themeSelected && config.theme === t.id && (!inBoth || themeGroup === null || themeGroup === g.key);
                     return (
-                      <button key={t.id} type="button" onClick={() => setTheme(t.id)} aria-pressed={sel}
+                      <button key={t.id} type="button" onClick={() => { setTheme(t.id); setThemeGroup(g.key); }} aria-pressed={sel}
                         className={`bz-choice bz-theme ${sel ? "selected" : ""}`}>
                         {sel && <span className="tick">✓</span>}
                         <span className="art">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={THEME_ICON[t.id] ?? "/design/themes/blush-garden.png"} alt="" loading="lazy" />
+                          <img src={`/design/themes-v2/${icon}.webp`} alt="" loading="lazy" />
                         </span>
                         <h3>{t.name}</h3>
                         {/* The theme's real Sempertex balloon colours — product data. */}
@@ -739,6 +754,8 @@ export default function ConfigurePage() {
                     );
                   })}
                 </div>
+                </div>
+                ))}
                 <div className="bz-help">
                   {config.themeSelected
                     ? <>✨ <strong>{theme.name} selected!</strong> Tap any icon to switch themes.</>

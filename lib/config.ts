@@ -55,7 +55,9 @@ export type ThemeId =
   | "teddy_bear"
   | "pineapple_tropical"
   | "blush_garden"
-  | "luxury_neutral";
+  | "luxury_neutral"
+  | "minecraft"
+  | "star_wars";
 
 export interface Theme {
   id: ThemeId;
@@ -137,6 +139,10 @@ export const THEMES: Theme[] = [
   { id: "teddy_bear", name: "Teddy Bear", emoji: "-", desc: "Cream boucle, cocoa warmth", backdropColors: ["#F5EDE0", "#F2C4CE", "#EDE0D4"], balloonColors: ["#C9A96E", "#6F4E37", "#F5EDD6", "#FFF8E7", "#FFD1A4"], priceModifier: 30, accent: "#C08552" },
   { id: "pineapple_tropical", name: "Tropical", emoji: "-", desc: "Golden light, palm greens", backdropColors: ["#FFF9C4", "#FCE4EC", "#FFFFFF"], balloonColors: ["#FFC200", "#22C55E", "#FF6B6B", "#00CED1", "#FFFFFF"], priceModifier: 40, accent: "#E0561E" },
   { id: "blush_garden", name: "Blush Garden", emoji: "-", desc: "Blush florals, romantic softness", backdropColors: ["#FCE4EC", "#F8BBD0", "#FFFFFF"], balloonColors: ["#F8BBD0", "#FDA4AF", "#FBCFE8", "#FFFFFF", "#F5E6C8"], priceModifier: 0, accent: "#E5739A" },
+  // 2026-10-23: added for the Boys list. Balloon colours are the Sempertex
+  // shades named in themeCatalog (sempertexPaletteIds), in the same order.
+  { id: "minecraft", name: "Minecraft", emoji: "-", desc: "Pixel greens, earthy blocks", backdropColors: ["#FFFFFF", "#E8F5E9", "#DCE5D8"], balloonColors: ["#22C55E", "#15803D", "#84CC16", "#6F4E37", "#1F2937"], priceModifier: 40, accent: "#2E9E4F" },
+  { id: "star_wars", name: "Star Wars", emoji: "-", desc: "Galactic black, chrome, saber glow", backdropColors: ["#FFFFFF", "#1F2937", "#D1D5DB"], balloonColors: ["#1F2937", "#C7C9C7", "#FFFFFF", "#EF4444", "#3B82F6"], priceModifier: 40, accent: "#2563EB" },
   { id: "luxury_neutral", name: "Luxury Neutral", emoji: "-", desc: "Champagne satin, gold foil", backdropColors: ["#F5F0E8", "#EDE0D0", "#FFFFFF"], balloonColors: ["#F5E6C8", "#FEF3C7", "#F5EDD6", "#FDE68A", "#C9A96E"], priceModifier: 80, accent: "#B08D57" },
 ];
 
@@ -537,6 +543,7 @@ export const THEME_TEXT_COLOR: Record<string, TextColor> = {
   princess: "rose_gold", superhero: "silver", barbie: "rose_gold", bluey: "silver",
   pokemon: "gold", stitch: "silver", mermaid: "rose_gold", space: "silver",
   football: "gold", lego: "gold", kpop: "silver", encanto: "gold", cocomelon: "gold",
+  minecraft: "gold", star_wars: "silver",
 };
 export function themeTextColor(themeId: string | undefined): TextColor {
   return (themeId && THEME_TEXT_COLOR[themeId]) || DEFAULT_TEXT_COLOR;
