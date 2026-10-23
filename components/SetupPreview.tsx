@@ -1298,12 +1298,14 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
                 }
               }}
               // 2026-10-23: a render fetched the moment it lands on the CDN can
-              // fail once and leave an empty frame; retry it once.
+              // fail for a few seconds and leave an empty frame; retry with a
+              // growing wait, up to five times.
               onError={(e) => {
                 const el = e.currentTarget;
-                if (el.dataset.retried || !/^https?:/.test(finalUrl)) return;
-                el.dataset.retried = "1";
-                setTimeout(() => { el.src = `${finalUrl}${finalUrl.includes("?") ? "&" : "?"}r=${Date.now()}`; }, 1200);
+                const tries = Number(el.dataset.retried ?? 0);
+                if (tries >= 5 || !/^https?:/.test(finalUrl)) return;
+                el.dataset.retried = String(tries + 1);
+                setTimeout(() => { el.src = `${finalUrl}${finalUrl.includes("?") ? "&" : "?"}r=${Date.now()}`; }, 1500 * (tries + 1));
               }}
               style={{ opacity: finalOpacity, transition: "opacity 0.4s ease" }}
               className="h-full w-full object-contain object-center"

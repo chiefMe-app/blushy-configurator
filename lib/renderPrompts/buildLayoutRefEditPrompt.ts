@@ -1032,6 +1032,19 @@ export function buildLayoutRefEditPrompt(
   const styleRefNotColours = styleRef && theme !== "frozen"
     ? `Take NOT its balloon colours, its snowflakes${selectedSempertexColors.some((c) => /clear/i.test(String(c.colorName ?? ""))) ? "" : " or its clear balloons"}${styleRef.board === "square banner board" ? " or its printed artwork" : ""}: every balloon is coloured exactly as in IMAGE 1. `
     : "";
+  // 2026-10-23: every reference photo carries "Happy Birthday", and "copy how
+  // its lettering looks" brought the words back when the customer had chosen
+  // "No, keep it clean". With no lettering and no neon in the scene the line
+  // copies only the balloons and says the boards stay blank.
+  const sceneHasLettering = sceneModel.panels.some((p) => p.text?.enabled && (p.text.value ?? "").trim().length > 0)
+    || !!sceneModel.neonSign?.enabled;
+  const styleRefLook = !styleRef ? ""
+    : styleRef.board.includes("shimmer")
+      ? (sceneHasLettering ? "crisp sequins and glowing neon sign" : "crisp sequins")
+      : (sceneHasLettering ? "thin flat lettering" : "");
+  const styleRefNoWords = styleRef && !sceneHasLettering
+    ? `The photo's lettering is NOT copied: every board is left completely plain — no words, no lettering, no sign anywhere. `
+    : "";
   const frontRoundStyleLine = styleRef?.closeUp
     // A close-up of a garland (the Double Arch): only its light and balloons.
     ? `IMAGE 1 is the layout: it fixes the shape and place of the ${styleRef.board}, every balloon and the one ` +
@@ -1041,8 +1054,8 @@ export function buildLayoutRefEditPrompt(
     ? `IMAGE 1 is the layout: it fixes where the ${styleRef.board}, every balloon and the one ${styleRef.board === "three boards" ? "smooth " : ""}white cylindrical ` +
       `pedestal column stand. IMAGE 2 is a photo of the finished look: copy its room, its ` +
       `${styleRef.light}, its ` +
-      `floor and exactly how its balloons and ${styleRef.board.includes("shimmer") ? "crisp sequins and glowing neon sign" : "thin flat lettering"} look` +
-      (styleRef.board === "three boards" ? `, with all three boards clearly visible. ` : `. `) + styleRefNotColours
+      `floor and exactly how its balloons${styleRefLook ? ` and ${styleRefLook}` : ""} look` +
+      (styleRef.board === "three boards" ? `, with all three boards clearly visible. ` : `. `) + styleRefNoWords + styleRefNotColours
     : "";
   const frontImageRolesLine = !styleRef && panelCount === 1 && sceneModel.panels[0]?.type === "arch"
     && hasLoneArchStyleReference()

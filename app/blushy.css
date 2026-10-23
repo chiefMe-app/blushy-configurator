@@ -842,3 +842,8 @@
 .bz-ex-char .pic { overflow: hidden; border-radius: 10px; }
 .bz-ex-char .pic img { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; }
 .bz-ex-char .name { position: relative; z-index: 1; display: block; width: 100%; padding-top: 2px; background: #fff; }
+
+/* 2026-10-23: the dog's own sprinkle field — denser and brighter than the page's. */
+.bz-sprinkles.dog { position: absolute; inset: 0; opacity: .8; z-index: 0; }
+.bz-cake > img { position: relative; z-index: 1; }
+.bz-cake .bz-doodle { z-index: 2; }

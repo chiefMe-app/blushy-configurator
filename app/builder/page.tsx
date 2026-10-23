@@ -662,6 +662,8 @@ export default function ConfigurePage() {
           {step < 2 ? (
             <div className="bz-cake">
               {/* eslint-disable-next-line @next/next/no-img-element */}
+              {/* 2026-10-23: a denser, brighter sprinkle field round the dog, as in the reference. */}
+              <Sprinkles count={150} seed={3} className="dog" />
               <img src="/design/balloon-dog-outline.webp" alt="Illustrated dalmatian holding a bunch of balloons" />
               <svg className="bz-doodle heart" viewBox="0 0 40 36" aria-hidden="true"><path d="M20 33C8 24 3 17 4 11C5 5 12 3 16 7L20 11L24 7C28 3 35 5 36 11C37 17 32 24 20 33Z" /></svg>
               <svg className="bz-doodle burst" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3V37M3 20H37M8 8L32 32M32 8L8 32" /></svg>
