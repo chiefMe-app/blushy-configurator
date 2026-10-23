@@ -292,12 +292,13 @@ const THEME_GROUPS: { key: "girl" | "boy"; title: string; items: { id: string; i
 
 // Illustrated backdrop icons from the design reference (public/design/backdrops),
 // by setup template id.
+// 2026-10-23: the customer's bright crayon set replaces the pale pink one.
 const SETUP_ICON: Partial<Record<string, string>> = {
-  single_arch: "/design/backdrops/single-arch.png", single_round: "/design/backdrops/single-round.png",
-  single_banner: "/design/backdrops/banner-backdrop.png", single_shimmer: "/design/backdrops/shimmer-wall.png",
-  arch_shimmer: "/design/backdrops/arch-shimmer.png", balloon_ring: "/design/backdrops/balloon-ring.png",
-  arch_open_frame: "/design/backdrops/arch-open-frame.png", double_arch: "/design/backdrops/double-arch.png",
-  triple_arch: "/design/backdrops/triple-arch.png",
+  single_arch: "/design/backdrops-v2/single-arch.webp", single_round: "/design/backdrops-v2/single-round.webp",
+  single_banner: "/design/backdrops-v2/banner.webp", single_shimmer: "/design/backdrops-v2/shimmer-wall.webp",
+  arch_shimmer: "/design/backdrops-v2/arch-shimmer.webp", balloon_ring: "/design/backdrops-v2/balloon-ring.webp",
+  arch_open_frame: "/design/backdrops-v2/arch-open-frame.webp", double_arch: "/design/backdrops-v2/double-arch.webp",
+  triple_arch: "/design/backdrops-v2/triple-arch.webp",
 };
 
 // 2026-10-23: each theme's own example photo of a setup, shown (labelled as an

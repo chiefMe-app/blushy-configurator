@@ -180,8 +180,8 @@
 /* Backdrop icon cards */
 .bz-layout-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .bz-layout { min-height: 135px; padding: 8px 8px 9px; border-radius: 14px; border-width: 1.5px; display: flex; flex-direction: column; align-items: center; text-align: center; }
-.bz-layout .art { height: 79px; width: 100%; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: #fff; padding: 1px; }
-.bz-layout .art img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+.bz-layout .art { height: 90px; width: 100%; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: transparent; padding: 1px; }
+.bz-layout .art img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; mix-blend-mode: multiply; }
 .bz-layout h3 { font-size: 17px; line-height: 1.2; margin: 6px 0 0; }
 .bz-layout p { font-size: 10px; margin-top: 2px; }
 .bz-layout .tick { top: 5px; right: 5px; width: 18px; height: 18px; font-size: 10px; }
