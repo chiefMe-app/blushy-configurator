@@ -869,3 +869,20 @@ div.bz-stale-banner { cursor: default; }
 @media (prefers-reduced-motion: reduce) { .bz-stale-banner { animation: none; } }
 
 .bz-ex-note { margin: 8px 0 0; padding: 8px 10px; border-radius: 10px; background: #fff7df; color: #8a6a12; font-size: 12px; line-height: 1.4; }
+
+/* 2026-10-23: the example's note sits across the top of the picture in
+   Blushy pink, like the "design changed" banner. */
+.bz-placeholder.art { position: relative; }
+.bz-placeholder.art .tag { position: absolute; top: 12px; left: 12px; right: 12px; margin: 0; z-index: 2;
+  justify-content: center; text-align: center; padding: 10px 14px; border-radius: 14px;
+  background: #ff0d66; color: #fff; font: 600 13px/1.35 var(--bz-sans); box-shadow: 0 6px 18px rgba(255,13,102,.32); }
+.bz-placeholder.art .tag b { color: #fff; font-weight: 800; }
+@media (min-width: 1024px) { .bz-placeholder.art img { flex: 1 1 0; height: 100%; } }
+
+/* 2026-10-23: the card already has its title — no second one under the picture;
+   on phones the title stays on one line beside its status pill. */
+.bz-preview-bottom p strong, .bz-preview-bottom p br { display: none; }
+@media (max-width: 480px) {
+  .bz-preview-caption .head { font-size: 18px; white-space: nowrap; }
+  .bz-preview-note { font-size: 10px; padding: 6px 9px; }
+}

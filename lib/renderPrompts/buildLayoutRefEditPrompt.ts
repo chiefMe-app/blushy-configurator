@@ -1224,6 +1224,23 @@ export function buildLayoutRefEditPrompt(
           : `A warm white glowing neon sign reading "${frontNeonText}" is part of this setup. `)
     : "";
 
+  // 2026-10-23: a neon sign on a plain board (not the shimmer wall, not the
+  // ring) was dropped from the render — on a Double Arch the left board came
+  // back empty every time. Said right after the style line, where this
+  // pipeline listens, and it names the board by side.
+  const neonPanelType = sceneModel.panels[frontNeonPanelIdx]?.type ?? "";
+  const frontNeonBoardLine = sceneModel.neonSign?.enabled && frontNeonText.length > 0
+    && !hasRingPanelInPrompt && neonPanelType !== "shimmer_wall"
+    ? `The ${panelCount > 1 ? `${frontNeonPanelIdx === 0 ? "LEFT" : "RIGHT"} ` : ""}board carries a LIT warm-white NEON SIGN reading "${frontNeonText}" — ` +
+      `a glowing script tube sign mounted on the face of the board exactly where IMAGE 1 shows it, switched on and clearly visible. ` +
+      // Said straight after, or the printed words on the other board came back
+      // as a second neon sign.
+      (sceneModel.panels.some((p, i) => i !== frontNeonPanelIdx && p.text?.enabled && (p.text.value ?? "").trim())
+        ? `The lettering on the ${panelCount === 2 ? (frontNeonPanelIdx === 0 ? "RIGHT board" : "LEFT board") : "other boards"} is NOT neon: it is thin, flat, ` +
+          `unlit printed lettering on the board surface — only the one neon sign glows. `
+        : "")
+    : "";
+
   // 2026-09-05: the "do not generate character cutouts" clause has been in this
   // prompt all along, mid-document, and does nothing — the render painted its
   // own character in the standee's reserved footprint and the real cutout was
@@ -1848,7 +1865,8 @@ export function buildLayoutRefEditPrompt(
   // says is both shorter and closer to how the guide shows it.
   const customTextClause = textPanelIdx.length > 0
     ? `Lettering is printed into the board finish itself, following each panel's surface angle and ` +
-      `scene lighting — part of the board, not a sign standing in front of it. ` +
+      `scene lighting — part of the board, not a sign standing in front of it` +
+      (sceneModel.neonSign?.enabled ? ` (the glowing neon sign is the one exception — a lit tube sign on its own board)` : ``) + `. ` +
       textPanelIdx.map((i) => {
         const p = sceneModel.panels[i];
         const v = p.text.value.trim();
@@ -1876,8 +1894,13 @@ export function buildLayoutRefEditPrompt(
       (textPanelIdx.length > 1
         ? `Each board shows only its own words: "${textPanelIdx.map((i) => sceneModel.panels[i].text.value.trim()).join('" and "')}" are different words on different boards. `
         : "") +
+      // 2026-10-23: "stays blank" overrode the neon sign on the other board of
+      // a Double Arch — the render left that board empty. With a neon sign on
+      // one of them, the other boards carry only that sign.
       (textPanelIdx.length < panelCount
-        ? `The other ${panelCount - textPanelIdx.length > 1 ? "boards stay" : "board stays"} blank. `
+        ? (sceneModel.neonSign?.enabled && !textPanelIdx.includes(Number(sceneModel.neonSign?.panelIndex ?? 0))
+          ? `The other ${panelCount - textPanelIdx.length > 1 ? "boards have" : "board has"} no printed lettering — only the glowing neon sign described below. `
+          : `The other ${panelCount - textPanelIdx.length > 1 ? "boards stay" : "board stays"} blank. `)
         : "")
     : "";
 
@@ -2145,6 +2168,7 @@ const setupTemplateClause = setupTemplate
   return (
     // (style line first: the close-up was tested ahead of the no-backdrop line)
     frontRoundStyleLine +
+    frontNeonBoardLine +
     frontDoubleNoBackLine +
     frontImageRolesLine +
     frontArchAspectLine +

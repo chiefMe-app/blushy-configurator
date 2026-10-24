@@ -162,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "no-text-v152";
+const RENDER_CACHE_VERSION = "neon-v153";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -1498,6 +1498,8 @@ forbiddenBalloonColorLabels: hasSempertexLock
         layoutReferencePngBytes: pngResult.bytes,
         layoutReferencePngError: pngResult.error,
         layoutReferencePngStage: pngResult.stage,
+        // Local development only: the exact prompt, for debugging renders.
+        ...(process.env.NODE_ENV !== "production" ? { debugPrompt: layoutRefPrompt } : {}),
         ...diagInfo,
       });
     }

@@ -4549,7 +4549,7 @@ export function generateStructureSilhouette(
     const np = layout.panels.find((p) => p.idx === wantIdx) ?? layout.panels[0];
     const isRing = (backdropItems[np.idx]?.type ?? "") === "balloon_ring";
     const panelH = np.floorY - np.apexY;
-    const cxN = np.cx;
+    let cxN = np.cx;
     // 2026-09-05: back to dead centre of the ring. It was raised because the
     // plinth stood in the middle of the hoop; the plinth is forward of the decor
     // now, so the middle of the opening is free.
@@ -4575,6 +4575,18 @@ export function generateStructureSilhouette(
     // 2026-10-22: on a shimmer wall the sign is the size the customer's
     // shimmer references show — about 40% of the wall across.
     const onShimmer = (backdropItems[np.idx]?.type ?? "") === "shimmer_wall";
+    // 2026-10-23: on a plain board the sign moves off the garland's side. At
+    // dead centre the Double Arch's outer garland covered half of it, and the
+    // render dropped the sign altogether. Multi-board: toward the middle of the
+    // group; the lone arch: left, its garland being on the right.
+    const onBoard = !isRing && !onShimmer;
+    if (onBoard) {
+      const groupMid = layout.panels.reduce((sum, p) => sum + p.cx, 0) / layout.panels.length;
+      const lim = np.pw * 0.16;
+      cxN = layout.panels.length > 1
+        ? np.cx + Math.max(-lim, Math.min(lim, (groupMid - np.cx) * 0.4))
+        : (backdropItems[np.idx]?.type === "arch" ? np.cx - np.pw * 0.10 : np.cx);
+    }
     const signW = onShimmer ? np.pw * 0.40 : isRing ? ringR2 * 0.72 : Math.min(np.pw * 0.62, SIGN_W_CM * pxPerCm);
     const fontSize = Math.max(9, Math.min(signW / Math.max(1, widest) / 0.46, signW * 0.42));
     const lineGap = fontSize * 1.22;
@@ -4606,7 +4618,15 @@ export function generateStructureSilhouette(
         return;
       }
       if (i === 0) content.push(`<defs><filter id="neonGlow" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="${(fontSize * 0.12).toFixed(1)}"/></filter></defs>`);
-      content.push(`<path d="${d}" fill="none" stroke="#FFF1D2" stroke-width="${(fontSize * 0.30).toFixed(1)}" stroke-linejoin="round" opacity="0.95" filter="url(#neonGlow)"/>`);
+      if (onBoard) {
+        // 2026-10-23: on a white board a cream glow is all but invisible and the
+        // render left the sign out. A warm amber spill, as a lit sign throws on
+        // a pale wall, and a fine warm edge keep the white tube readable.
+        content.push(`<path d="${d}" fill="none" stroke="#FFC27A" stroke-width="${(fontSize * 0.34).toFixed(1)}" stroke-linejoin="round" opacity="0.85" filter="url(#neonGlow)"/>`);
+        content.push(`<path d="${d}" fill="none" stroke="#D99A52" stroke-width="${Math.max(2.4, fontSize * 0.11).toFixed(1)}" stroke-linejoin="round"/>`);
+      } else {
+        content.push(`<path d="${d}" fill="none" stroke="#FFF1D2" stroke-width="${(fontSize * 0.30).toFixed(1)}" stroke-linejoin="round" opacity="0.95" filter="url(#neonGlow)"/>`);
+      }
       // 2026-09-05: the tube used to be stroked in gold-brown, which is what the
       // guide showed and, on the shimmer setups, what the render picked up. The
       // sign is warm WHITE, so the marker is too — a pale warm outline, not gold.
