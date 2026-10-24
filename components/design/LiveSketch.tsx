@@ -6,7 +6,7 @@
 // a choice does, so each step can be seen as it is made. The same layout also
 // draws the small clickable piece picker on the Style tab.
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   themeById,
   resolveTextColorHex,
@@ -18,6 +18,126 @@ import {
 
 const VB = 1000;
 const FLOOR = 870;
+
+/**
+ * 2026-10-24: a photographed base for the Single Round (the customer's own
+ * picture): its garland, cut away from the board so the board, lettering and
+ * neon can be drawn beneath and above it. The board circle's centre and
+ * radius are fractions of the (square) image's width.
+ */
+const ROUND_BASE = {
+  src: "/design/sketch/round-base-balloons.webp",
+  // Which balloon family each pixel belongs to (0 white/silver, 100 blue,
+  // 200 lilac), worked out ahead of time and smoothed, so a balloon's
+  // highlight is repainted with the balloon.
+  families: "/design/sketch/round-base-families.png",
+  cx: 0.5147, cy: 0.5627, r: 0.3863,
+};
+
+type Rgb = [number, number, number];
+const hexRgb = (h: string): Rgb => {
+  const m = h.replace("#", "");
+  const v = m.length === 3 ? m.split("").map((c) => c + c).join("") : m.padEnd(6, "0").slice(0, 6);
+  return [parseInt(v.slice(0, 2), 16), parseInt(v.slice(2, 4), 16), parseInt(v.slice(4, 6), 16)];
+};
+const lum = (r: number, g: number, b: number) => 0.299 * r + 0.587 * g + 0.114 * b;
+
+type BaseData = { img: ImageData; fam: Uint8Array; means: { rgb: Rgb; l: number }[] };
+const baseCache = new Map<string, Promise<BaseData>>();
+const pixelsOf = (src: string, w?: number, h?: number) => new Promise<ImageData>((resolve, reject) => {
+  const im = new Image();
+  im.onload = () => {
+    const c = document.createElement("canvas");
+    c.width = w ?? im.naturalWidth; c.height = h ?? im.naturalHeight;
+    const ctx = c.getContext("2d")!;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(im, 0, 0, c.width, c.height);
+    resolve(ctx.getImageData(0, 0, c.width, c.height));
+  };
+  im.onerror = reject;
+  im.src = src;
+});
+function loadBase(src: string, familiesSrc: string): Promise<BaseData> {
+  let p = baseCache.get(src);
+  if (!p) {
+    p = pixelsOf(src).then(async (img) => {
+      const map = await pixelsOf(familiesSrc, img.width, img.height);
+      const px = img.data;
+      const fam = new Uint8Array(img.width * img.height);
+      const sum = [0, 1, 2].map(() => [0, 0, 0, 0]);
+      for (let k = 0, i = 0; i < px.length; k++, i += 4) {
+        const f = Math.min(2, Math.round(map.data[i] / 100));
+        fam[k] = f;
+        if (px[i + 3] < 128) continue;
+        sum[f][0] += px[i]; sum[f][1] += px[i + 1]; sum[f][2] += px[i + 2]; sum[f][3]++;
+      }
+      const means = sum.map(([r, g, b, n]) => {
+        const rgb: Rgb = n ? [r / n, g / n, b / n] : [235, 235, 235];
+        return { rgb, l: lum(...rgb) };
+      });
+      return { img, fam, means };
+    });
+    baseCache.set(src, p);
+  }
+  return p;
+}
+
+/**
+ * The base's balloons repainted in the chosen colours, keeping their shading:
+ * each family takes the closest chosen colour (a family already close to it is
+ * left as photographed). Starts as the photo itself.
+ */
+function useRecoloredBase(src: string | null, familiesSrc: string, palette: string[]): string | null {
+  const [url, setUrl] = useState<string | null>(src);
+  const key = palette.join(",");
+  useEffect(() => {
+    if (!src) { setUrl(null); return; }
+    let alive = true;
+    let made: string | null = null;
+    loadBase(src, familiesSrc).then(({ img, fam, means }) => {
+      if (!alive) return;
+      const cols = palette.map(hexRgb);
+      const dist = (a: Rgb, b: Rgb) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+      // Greedy nearest match, each chosen colour used once while any are left.
+      const target: (Rgb | null)[] = [null, null, null];
+      const used = new Set<number>();
+      // White and silver stay white and silver when a white, silver or grey
+      // is chosen (matched by distance, the chrome would pull them to a pastel).
+      const sat = (c: Rgb) => { const mx = Math.max(...c), mn = Math.min(...c); return mx ? (mx - mn) / mx : 0; };
+      const neutralK = cols.map((c, k) => ({ c, k })).filter(({ c }) => sat(c) < 0.12).sort((a, b) => lum(...b.c) - lum(...a.c))[0];
+      if (neutralK) { target[0] = neutralK.c; used.add(neutralK.k); }
+      const pairs = means.flatMap((m, f) => cols.map((c, k) => ({ f, k, dd: dist(m.rgb, c) }))).sort((a, b) => a.dd - b.dd);
+      for (const pr of pairs) {
+        if (target[pr.f] || (used.has(pr.k) && used.size < cols.length)) continue;
+        target[pr.f] = cols[pr.k]; used.add(pr.k);
+      }
+      const out = new ImageData(new Uint8ClampedArray(img.data), img.width, img.height);
+      const px = out.data;
+      // A family already on its colour stays as photographed.
+      const keep = target.map((t, f) => !t || dist(t, means[f].rgb) < 24 || (f === 0 && sat(t) < 0.12 && lum(...t) > 170));
+      for (let k = 0, i = 0; i < px.length; k++, i += 4) {
+        if (px[i + 3] === 0) continue;
+        const f = fam[k];
+        if (keep[f]) continue;
+        const t = target[f]!, lb = means[f].l, l = lum(px[i], px[i + 1], px[i + 2]);
+        for (let c = 0; c < 3; c++) {
+          px[i + c] = l <= lb ? t[c] * (l / lb) : t[c] + (255 - t[c]) * ((l - lb) / (255 - lb));
+        }
+      }
+      const cv = document.createElement("canvas");
+      cv.width = out.width; cv.height = out.height;
+      cv.getContext("2d")!.putImageData(out, 0, 0);
+      cv.toBlob((b) => {
+        if (!alive || !b) return;
+        made = URL.createObjectURL(b);
+        setUrl(made);
+      }, "image/png");
+    }).catch(() => { if (alive) setUrl(src); });
+    return () => { alive = false; if (made) URL.revokeObjectURL(made); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src, familiesSrc, key]);
+  return url;
+}
 
 type Piece = {
   item: BackdropItem;
@@ -141,21 +261,29 @@ export default function LiveSketch({
   const theme = themeById(config.theme);
   const accent = theme?.accent ?? "#ff0d66";
   const items = d.backdropItems;
-  const plinthCount = Math.min(3, d.plinthSizes.length);
   const hasNumber = !!d.numberLight?.enabled && !!(d.numberLight.value ?? "").trim();
-  const { pieces, scale } = useMemo(
-    () => layoutPieces(items, { maxW: hasNumber || cutoutPreviews.length ? 640 : 760, maxH: 640 }),
-    [items, hasNumber, cutoutPreviews.length],
-  );
+  // A lone round board is drawn on the photographed base.
+  const roundBase = items.length === 1 && items[0].type === "round";
+  const baseS = hasNumber || cutoutPreviews.length ? 740 : 820;
+  const { pieces, scale } = useMemo(() => {
+    if (!roundBase) return layoutPieces(items, { maxW: hasNumber || cutoutPreviews.length ? 640 : 760, maxH: 640 });
+    const R = ROUND_BASE.r * baseS;
+    const piece: Piece = { item: items[0], idx: 0, x: VB / 2 - R, w: 2 * R, h: 2 * R, top: FLOOR - 2 * R, curveLeft: false };
+    return { pieces: [piece], scale: (2 * R) / Math.max(60, items[0].widthCm || 200) };
+  }, [items, hasNumber, cutoutPreviews.length, roundBase, baseS]);
   const palette = d.balloonColors.length ? d.balloonColors : (theme?.balloonColors ?? ["#f7c5d8"]);
   const balloonsOn = normalizeBalloonStyle(d.balloonStyle) !== "none";
+  const baseUrl = useRecoloredBase(roundBase && balloonsOn ? ROUND_BASE.src : null, ROUND_BASE.families, palette);
+  const baseBox = { x: VB / 2 - ROUND_BASE.cx * baseS, y: FLOOR - (ROUND_BASE.cy + ROUND_BASE.r) * baseS, s: baseS };
   const garlandSize = 18 + scale * 8;
   // How far the garland reaches past the boards' outer edges.
-  const garlandReach = balloonsOn ? garlandSize * 2.6 : 12;
+  const garlandReach = !balloonsOn ? 12 : roundBase ? (1 - ROUND_BASE.cx - ROUND_BASE.r) * baseS : garlandSize * 2.6;
+  // On the base the garland covers the board's left side: words sit right of centre.
+  const textShift = roundBase && balloonsOn ? pieces[0].w * 0.06 : 0;
 
   // Garland balloons: on the outer sides of the group, as the renders have them.
   const balloons = useMemo(() => {
-    if (!balloonsOn || pieces.length === 0) return [] as { x: number; y: number; r: number; c: string }[];
+    if (!balloonsOn || pieces.length === 0 || roundBase) return [] as { x: number; y: number; r: number; c: string }[];
     const rnd = seeded(items.length * 131 + palette.length * 17 + 7);
     const out: { x: number; y: number; r: number; c: string }[] = [];
     const add = (track: { x: number; y: number }[], size: number) => {
@@ -183,12 +311,16 @@ export default function LiveSketch({
       add(garlandTrack(pieces[pieces.length - 1], "right"), size);
     }
     return out.sort((a, b) => a.y - b.y);
-  }, [balloonsOn, pieces, palette, garlandSize, items.length, d.balloonRingStyle]);
+  }, [balloonsOn, pieces, palette, garlandSize, items.length, d.balloonRingStyle, roundBase]);
+  // Plinths are left out of the sketch: they stood in front of the lettering.
 
-  // Plinths: XXL 90, XL 75, L 60 cm tall, in front of the boards.
-  const plinthH: Record<string, number> = { large: 90, medium: 75, small: 60 };
-  const plinthD: Record<string, number> = { large: 40, medium: 36, small: 33 };
-  const groupMid = pieces.length ? (pieces[0].x + pieces[pieces.length - 1].x + pieces[pieces.length - 1].w) / 2 : VB / 2;
+  // Florals on the base: tucked in along its garland (angles in degrees).
+  const baseFlorals = roundBase && balloonsOn && d.garlandFlorals
+    ? [218, 198, 178, 160, 143, 126, 108, 92, 76, -52, -68].map((a, i) => {
+        const R = pieces[0].w / 2, t = (a * Math.PI) / 180, rr = R * (i % 2 ? 1.08 : 1.0);
+        return { x: VB / 2 + Math.cos(t) * rr, y: FLOOR - R - Math.sin(t) * rr, r: R * 0.11, a: -a + 90 };
+      })
+    : [];
 
   const neon = d.neonSign?.enabled && (d.neonSign.text ?? "").trim() ? d.neonSign : null;
   const neonPiece = neon ? (pieces.find((p) => p.idx === (neon.panelIndex ?? 0)) ?? pieces[0]) : undefined;
@@ -256,16 +388,27 @@ export default function LiveSketch({
       {pieces.filter((p) => p.item.text?.enabled && (p.item.text.value ?? "").trim() && piecePath(p) && p.item.type !== "open_arch_frame").map((p) => {
         const f = fontFor(p.item.text.fontStyle);
         const ls = lines(p.item.text.value);
-        const size = Math.min(p.w * f.k, (p.w * 0.85) / Math.max(4, Math.max(...ls.map((l) => l.length)) * 0.5));
+        const size = Math.min(p.w * f.k * (textShift ? 0.9 : 1), (p.w * (textShift ? 0.7 : 0.85)) / Math.max(4, Math.max(...ls.map((l) => l.length)) * 0.5));
         const cy = p.item.type === "round" ? FLOOR - p.w / 2 : p.top + p.h * 0.36;
+        const tx = p.x + p.w / 2 + textShift;
         return (
-          <text key={`t${p.item.id}`} x={p.x + p.w / 2} y={cy - ((ls.length - 1) * size * 0.55)} textAnchor="middle"
+          <text key={`t${p.item.id}`} x={tx} y={cy - ((ls.length - 1) * size * 0.55)} textAnchor="middle"
             fontFamily={f.family} fontWeight={f.weight} fontSize={size} fill={resolveTextColorHex(p.item.text.color, accent)}
             style={{ paintOrder: "stroke" }} stroke="rgba(39,22,23,.12)" strokeWidth={1}>
-            {ls.map((l, i) => <tspan key={i} x={p.x + p.w / 2} dy={i === 0 ? 0 : size * 1.1}>{l}</tspan>)}
+            {ls.map((l, i) => <tspan key={i} x={tx} dy={i === 0 ? 0 : size * 1.1}>{l}</tspan>)}
           </text>
         );
       })}
+
+      {/* The photographed garland on the round base, in the chosen colours */}
+      {roundBase && baseUrl && <image href={baseUrl} x={baseBox.x} y={baseBox.y} width={baseBox.s} height={baseBox.s} />}
+      {baseFlorals.map((f, i) => (
+        <g key={`bf${i}`} transform={`rotate(${f.a} ${f.x} ${f.y})`}>
+          <ellipse cx={f.x - f.r * 0.7} cy={f.y} rx={f.r} ry={f.r * 0.36} fill="#7fa77a" />
+          <ellipse cx={f.x + f.r * 0.7} cy={f.y} rx={f.r * 0.9} ry={f.r * 0.32} fill="#93b98c" />
+          {i % 3 === 0 && <circle cx={f.x} cy={f.y} r={f.r * 0.42} fill="#fff4f7" stroke="#f3b8cc" strokeWidth={2} />}
+        </g>
+      ))}
 
       {/* Balloon garland (and florals tucked in) */}
       {balloons.map((b, i) => (
@@ -286,7 +429,7 @@ export default function LiveSketch({
         const ls = lines(neon.text);
         const isRing = neonPiece.item.type === "balloon_ring";
         const size = Math.min(neonPiece.w * 0.16, 64);
-        const cx = neonPiece.x + neonPiece.w / 2;
+        const cx = neonPiece.x + neonPiece.w / 2 + textShift;
         const cy = isRing ? FLOOR - neonPiece.w * 0.62 : neonPiece.top + neonPiece.h * 0.34;
         const txt = (glow: boolean) => (
           <text x={cx} y={cy - (ls.length - 1) * size * 0.5} textAnchor="middle" fontFamily="var(--bz-logo), cursive" fontWeight={700}
@@ -297,19 +440,6 @@ export default function LiveSketch({
         );
         return <g>{txt(true)}{txt(false)}</g>;
       })()}
-
-      {/* Plinths in front */}
-      {d.plinthSizes.slice(0, plinthCount).map((sz, i) => {
-        const h = (plinthH[sz] ?? 75) * scale, w = (plinthD[sz] ?? 36) * scale;
-        const offsets = plinthCount === 1 ? [0] : plinthCount === 2 ? [-0.6, 0.6] : [-1.15, 0, 1.15];
-        const cx = groupMid + offsets[i] * w;
-        return (
-          <g key={`p${i}`}>
-            <rect x={cx - w / 2} y={FLOOR - h + 8} width={w} height={h} rx={4} fill="#fbfaf8" stroke="rgba(39,22,23,.18)" strokeWidth={2} />
-            <ellipse cx={cx} cy={FLOOR - h + 8} rx={w / 2} ry={w * 0.12} fill="#ffffff" stroke="rgba(39,22,23,.18)" strokeWidth={2} />
-          </g>
-        );
-      })}
 
       {/* Light-up number on the floor, beside the decor */}
       {hasNumber && pieces.length > 0 && (() => {

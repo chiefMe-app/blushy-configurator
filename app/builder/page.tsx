@@ -19,6 +19,7 @@ import {
 emptyCutoutStandees,
 emptyCutoutQuantities,
 normalizeCutouts,
+type CutoutSelection,
 cutoutPrice,
 cutoutTotalCount,
   BACKDROP_PRINTS,
@@ -407,6 +408,17 @@ export default function ConfigurePage() {
   /** Selecting a theme pre-fills backdrop + balloon colors (overridable). */
   function setTheme(id: ThemeId) {
     const t = themeById(id);
+    // 2026-10-24: standees belong to a theme — Elsa stayed on a Barbie party.
+    // Characters the new theme does not offer are dropped.
+    const themeAssetIds = new Set([
+      ...(getThemeCutoutPresets(id) ?? []).map((p) => p.assetId),
+      ...getThemeGraphicPresets(id).map((p) => p.assetId ?? p.id),
+    ]);
+    const keepCutouts = (cut: CutoutSelection): CutoutSelection => {
+      const sel = cut.selectedAssets ?? [];
+      const next = sel.filter((a) => themeAssetIds.has(a.assetId));
+      return next.length === sel.length ? cut : normalizeCutouts({ ...cut, selectedAssets: next });
+    };
     setConfig((c) => ({
       ...c,
       theme: id,
@@ -420,6 +432,7 @@ export default function ConfigurePage() {
             // has already chosen a colour for, so an existing choice is kept.
             backdropColor: c.decor.backdropColor || DEFAULT_BACKDROP_COLOR,
             balloonColors: t.balloonColors.slice(0, 5),
+            cutouts: c.theme === id ? c.decor.cutouts : keepCutouts(c.decor.cutouts),
             // 2026-10-22: lettering still in the old theme's colour follows
             // the new theme; a colour the customer picked themselves stays.
             backdropItems: c.decor.backdropItems.map((it) =>
