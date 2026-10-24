@@ -162,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "plinths-v155";
+const RENDER_CACHE_VERSION = "words-v157";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -715,6 +715,7 @@ interface LayoutRefPngResult {
   textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[];
   /** Marquee number bulb centres/radii as canvas fractions (lone round only). */
   marqueeBulbs?: { xFrac: number; yFrac: number; rFrac: number }[];
+  marqueeFaces?: [number, number][][];
   neonOverlaySvg?: string;
   silverTextMaskSvg?: string;
   textMetalTint?: [number, number, number] | null;
@@ -798,6 +799,7 @@ async function generateLayoutReferencePng(
       dataUri, error: null, stage: null, bytes: pngBuffer.length,
       textZones: silhouette.textZones,
       marqueeBulbs: silhouette.marqueeBulbs,
+      marqueeFaces: silhouette.marqueeFaces,
       neonOverlaySvg: silhouette.neonOverlaySvg,
       silverTextMaskSvg: silhouette.silverTextMaskSvg,
       textMetalTint: silhouette.textMetalTint,
@@ -2484,6 +2486,64 @@ forbiddenBalloonColorLabels: hasSempertexLock
         const sharpFnB  = ((sharpPkgB as any).default ?? sharpPkgB) as (b: Buffer) => any;
         const metaB = await sharpFnB(baseBuf).metadata() as { width?: number; height?: number };
         const bw = metaB.width ?? 1024, bh = metaB.height ?? 1024;
+        // 2026-10-24: the render does not always paint the letter exactly
+        // where the guide drew it — a little to the side, a little narrower —
+        // and the glows laid at the guide's points ran down beside the 1
+        // ("isiklar kaymis"). Find the letter first: slide and scale the
+        // guide's face over the render and keep the fit where the face is
+        // brightest against a ring just outside it; the bulbs follow.
+        let fit = { dx: 0, dy: 0, k: 1, cx: 0, cy: 0 };
+        const faces = pngResult.marqueeFaces ?? [];
+        if (faces.length > 0) {
+          try {
+            const gray = await sharpFnB(baseBuf).greyscale().raw().toBuffer({ resolveWithObject: true }) as { data: Buffer; info: { width: number; height: number; channels: number } };
+            const ch = gray.info.channels;
+            const L = (x: number, y: number) => gray.data[(Math.min(bh - 1, Math.max(0, y)) * bw + Math.min(bw - 1, Math.max(0, x))) * ch];
+            const facePx = faces.map((poly) => poly.map(([fx, fy]) => [fx * bw, fy * bh] as [number, number]));
+            const svgMask = (strokeW: number) => Buffer.from(
+              `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}"><rect width="${bw}" height="${bh}" fill="#000"/>` +
+              facePx.map((poly) => `<polygon points="${poly.map(([a, b]) => `${a.toFixed(1)},${b.toFixed(1)}`).join(" ")}" fill="#fff" stroke="#fff" stroke-width="${strokeW}"/>`).join("") + `</svg>`, "utf8");
+            const rasterMask = async (strokeW: number) => {
+              const r = await sharpFnB(svgMask(strokeW)).greyscale().raw().toBuffer({ resolveWithObject: true }) as { data: Buffer; info: { channels: number } };
+              return { data: r.data, c: r.info.channels };
+            };
+            const inner = await rasterMask(0), outer = await rasterMask(Math.max(8, bw * 0.02));
+            const inPts: [number, number][] = [], ringPts: [number, number][] = [];
+            for (let y = 0; y < bh; y += 2) for (let x = 0; x < bw; x += 2) {
+              const k = y * bw + x;
+              if (inner.data[k * inner.c] > 128) inPts.push([x, y]);
+              else if (outer.data[k * outer.c] > 128) ringPts.push([x, y]);
+            }
+            const cx = inPts.reduce((s, p) => s + p[0], 0) / Math.max(1, inPts.length);
+            const cy = inPts.reduce((s, p) => s + p[1], 0) / Math.max(1, inPts.length);
+            const score = (dx: number, dy: number, k: number) => {
+              const tx = (p: [number, number]) => [Math.round(cx + (p[0] - cx) * k + dx), Math.round(cy + (p[1] - cy) * k + dy)];
+              let a = 0, b = 0;
+              for (const p of inPts) { const [x, y] = tx(p); a += L(x, y); }
+              for (const p of ringPts) { const [x, y] = tx(p); b += L(x, y); }
+              // A small pull towards the guide's own place, so a white plinth
+              // standing beside the letter does not win over the letter itself.
+              return a / Math.max(1, inPts.length) - b / Math.max(1, ringPts.length) - 0.06 * Math.hypot(dx, dy) - 12 * Math.abs(1 - k);
+            };
+            const R = Math.round(bw * 0.06);
+            let best = { s: score(0, 0, 1), dx: 0, dy: 0, k: 1 };
+            for (const k of [0.82, 0.88, 0.94, 1, 1.06]) {
+              for (let dy = -R; dy <= R; dy += 6) for (let dx = -R; dx <= R; dx += 4) {
+                const s = score(dx, dy, k); if (s > best.s) best = { s, dx, dy, k };
+              }
+            }
+            // Refine around the best.
+            for (let dy = best.dy - 5; dy <= best.dy + 5; dy++) for (let dx = best.dx - 3; dx <= best.dx + 3; dx++) {
+              const s = score(dx, dy, best.k); if (s > best.s) best = { s, dx, dy, k: best.k };
+            }
+            fit = { dx: best.dx, dy: best.dy, k: best.k, cx, cy };
+            console.log("[generate-controlled-render] marquee letter found at", JSON.stringify({ dx: best.dx, dy: best.dy, k: best.k, contrast: Math.round(best.s) }));
+          } catch (fitErr) {
+            console.warn("[generate-controlled-render] marquee letter search failed (bulbs at guide points):", String(fitErr));
+          }
+        }
+        const bx = (b: { xFrac: number }) => fit.cx + (b.xFrac * bw - fit.cx) * fit.k + fit.dx;
+        const by = (b: { yFrac: number }) => fit.cy + (b.yFrac * bh - fit.cy) * fit.k + fit.dy;
         const glowSvg =
           `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}"><defs>` +
           `<radialGradient id="bulb"><stop offset="0%" stop-color="#FFFDF4" stop-opacity="1"/>` +
@@ -2492,8 +2552,8 @@ forbiddenBalloonColorLabels: hasSempertexLock
           `<stop offset="70%" stop-color="#FFC45C" stop-opacity="0.28"/>` +
           `<stop offset="100%" stop-color="#FFB040" stop-opacity="0"/></radialGradient></defs>` +
           marqueeBulbs.map((b) =>
-            `<circle cx="${(b.xFrac * bw).toFixed(1)}" cy="${(b.yFrac * bh).toFixed(1)}" ` +
-            `r="${(b.rFrac * bw * 1.9).toFixed(1)}" fill="url(#bulb)"/>`).join("") +
+            `<circle cx="${(fit.k === 1 && fit.dx === 0 && fit.dy === 0 ? b.xFrac * bw : bx(b)).toFixed(1)}" cy="${(fit.k === 1 && fit.dx === 0 && fit.dy === 0 ? b.yFrac * bh : by(b)).toFixed(1)}" ` +
+            `r="${(b.rFrac * bw * 1.9 * fit.k).toFixed(1)}" fill="url(#bulb)"/>`).join("") +
           `</svg>`;
         workingImageBuf = await (sharpFnB(baseBuf)
           .composite([{ input: Buffer.from(glowSvg, "utf8"), blend: "over" }])
@@ -2806,6 +2866,16 @@ forbiddenBalloonColorLabels: hasSempertexLock
                 if (zoneOverflow > 0) {
                   const step = zoneOverflow * (rw + Math.round(imgW * 0.02));
                   left += onLeft ? -step : step;
+                }
+                // 2026-10-24: a standee on the right stood in front of the
+                // light-up number and hid it. It steps right until it clears
+                // the number (bleeding off the edge if it must).
+                const faces = pngResult.marqueeFaces ?? [];
+                if (!onLeft && faces.length > 0) {
+                  const numRight = Math.max(...faces.flat().map(([fx]) => fx)) * imgW;
+                  const numLeft = Math.min(...faces.flat().map(([fx]) => fx)) * imgW;
+                  const standeeCentre = left + rw / 2;
+                  if (standeeCentre > numLeft - rw * 0.3 && left < numRight + imgW * 0.01) left = Math.round(numRight + imgW * 0.01);
                 }
                 standeeOverlayZonesUsed.push(`${sizeKey(cm)}[${zoneIdx}]:${zone.preferredSide ?? "right"}${groupGeom ? ":truescale" : ""}`);
               } else {

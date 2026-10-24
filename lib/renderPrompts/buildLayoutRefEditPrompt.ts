@@ -5,7 +5,7 @@ import { hasLoneArchStyleReference } from "./loneArchStyleReference";
 import { sceneStyleReference } from "./frozenStyleReferences";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
-import { describeTextColor } from "@/lib/config";
+import { describeTextColor, messageLines } from "@/lib/config";
 
 // A raw hex means nothing to the edit model, and "#FFFFFF" used to collapse into
 // the same "cream-white" as an unset panel — so choosing white for one arch read
@@ -520,7 +520,8 @@ export function buildLayoutRefEditPrompt(
       (sceneModel.plinths.length > 1
         ? `There are EXACTLY ${sceneModel.plinths.length === 3 ? "THREE" : "TWO"} pedestal columns in the whole ` +
           `image — no fourth column, no extra column, no duplicate. They stand in one row of ` +
-          `${sceneModel.plinths.length}, the tallest in the middle. `
+          `${sceneModel.plinths.length}, the tallest in the middle, CLOSE TOGETHER — a hand's width apart, ` +
+          `not touching and not spread out across the floor. `
         : `There is EXACTLY ONE pedestal column in the whole image — no second column, no duplicate. `) +
       `No balloon rests on, leans against or is stuck to any column, and no single balloon floats on the ` +
       `backdrop board on its own. ` +
@@ -1077,6 +1078,21 @@ export function buildLayoutRefEditPrompt(
     ? `Everything IMAGE 1 shows is in the photo even where IMAGE 2 has none: ` +
       [nPlinths > 1 ? `all ${nPlinths} pedestal columns` : "", numberOn ? `the light-up number ${sceneModel.numberLight.value.trim()}` : ""].filter(Boolean).join(" and ") + `. `
     : "";
+  // 2026-10-24: "Happy Birthday Arya" came back as the photo's own two-line
+  // "Happy / Birthday" — the name dropped — because "copy how its lettering
+  // looks" was read as "copy its lettering". The exact words and their line
+  // layout are said here, in the front block.
+  const letteredPanels = sceneModel.panels
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => p.text?.enabled && (p.text.value ?? "").trim().length > 0);
+  const styleRefWords = styleRef && letteredPanels.length > 0
+    ? letteredPanels.map(({ p }) => {
+        const ls = messageLines(p.text.value) ?? [p.text.value.trim()];
+        return ls.length > 1
+          ? `The lettering reads exactly "${p.text.value.trim()}", in ${ls.length} lines as IMAGE 1 sets it: "${ls[0]}" on one line and "${ls.slice(1).join(" ")}" centred on the line below. `
+          : `The lettering reads exactly "${ls[0]}", on ONE line as IMAGE 1 sets it. `;
+      }).join("") + `IMAGE 2's words are NOT copied — only their finish. `
+    : "";
   const frontRoundStyleLine = styleRef?.closeUp
     // A close-up of a garland (the Double Arch): only its light and balloons.
     ? `IMAGE 1 is the layout: it fixes the shape and place of the ${styleRef.board}${numberPhrase}, every balloon${pedestalPhrase(true)}. ` +
@@ -1087,7 +1103,7 @@ export function buildLayoutRefEditPrompt(
       `IMAGE 2 is a photo of the finished look: copy its room, its ` +
       `${styleRef.light}, its ` +
       `floor and exactly how its balloons${styleRefLook ? ` and ${styleRefLook}` : ""} look` +
-      (styleRef.board === "three boards" ? `, with all three boards clearly visible. ` : `. `) + styleRefKeepExtras + styleRefBoardColour + styleRefNoWords + styleRefNotColours + styleRefNoFlakes
+      (styleRef.board === "three boards" ? `, with all three boards clearly visible. ` : `. `) + styleRefWords + styleRefKeepExtras + styleRefBoardColour + styleRefNoWords + styleRefNotColours + styleRefNoFlakes
     : "";
   const frontImageRolesLine = !styleRef && panelCount === 1 && sceneModel.panels[0]?.type === "arch"
     && hasLoneArchStyleReference()

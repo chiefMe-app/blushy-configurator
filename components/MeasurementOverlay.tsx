@@ -1,272 +1,70 @@
 /**
- * Measurement overlay for the Final Design Render.
+ * Measurement overlay for the preview ("Show sizes").
  *
  * All labels are app-generated from scene state — never from AI output.
- * Positions are approximate, anchored to the calculateExactLayout engine.
  *
- * TODO: Improve alignment by storing final render layout anchors from
- *       the controlled render / control map.
+ * 2026-10-24: the overlay used to draw dimension lines on an 800x600 layout
+ * that no longer matches the square render, so the board's own size was
+ * nowhere to be read ("show sizes diyince backdropun size ini gostermiyor").
+ * It now states each backdrop piece's size in a label above the backdrop,
+ * and the plinths' heights along the floor.
  */
 "use client";
 
-import type { BuilderConfig } from "@/lib/config";
-import { ARCH_SIZES, RECT_SIZES } from "@/lib/config";
-import { buildSceneModel } from "@/lib/buildSceneModel";
-import { calculateExactLayout, type PanelLayout } from "@/lib/calculateExactLayout";
-import { calculateRenderAspectRatio } from "@/lib/calculateRenderAspectRatio";
+import type { BuilderConfig, BackdropItem } from "@/lib/config";
 
-const REF_W = 800;
-const REF_H = 600;
+const PLINTH_NAME: Record<string, string> = { large: "XXL", medium: "XL", small: "L" };
+const PLINTH_CM: Record<string, number> = { large: 90, medium: 75, small: 60 };
 
-// ---------------------------------------------------------------------------
-// Pill label — background rect + bold white text
-// ---------------------------------------------------------------------------
-
-interface PillProps {
-  x: number;
-  y: number;
-  text: string;
-  anchor?: "start" | "middle" | "end";
-  size?: number;
+/** 200 -> "2 m", 120 -> "1.2 m", 95 -> "95 cm". */
+function metres(cm: number): string {
+  if (cm < 100) return `${cm} cm`;
+  return `${Math.round(cm) / 100} m`;
 }
 
-function Pill({ x, y, text, anchor = "middle", size = 13 }: PillProps) {
-  // Approximate text width (tuned for Inter at ~0.58 × font-size)
-  const approxW = text.length * size * 0.58 + 16;
-  const pillH   = size + 10;
-  const rx      = anchor === "middle" ? x - approxW / 2
-                : anchor === "start"  ? x
-                : x - approxW;
-
-  return (
-    <g>
-      <rect
-        x={rx} y={y - pillH / 2}
-        width={approxW} height={pillH} rx={5} ry={5}
-        fill="rgba(10,10,20,0.78)"
-        stroke="rgba(255,255,255,0.30)"
-        strokeWidth="0.9"
-      />
-      <text
-        x={x} y={y}
-        textAnchor={anchor}
-        dominantBaseline="middle"
-        fontSize={size}
-        fontFamily='"Inter", ui-sans-serif, system-ui, sans-serif'
-        fontWeight="700"
-        letterSpacing="-0.2"
-        fill="rgba(255,255,255,0.97)"
-      >
-        {text}
-      </text>
-    </g>
-  );
+function pieceName(it: BackdropItem, i: number, items: BackdropItem[]): string {
+  const arches = items.filter((x) => x.type === "arch").length;
+  const hasHalf = items.some((x) => x.type === "half_arch");
+  switch (it.type) {
+    case "arch": {
+      const n = items.filter((x, k) => x.type === "arch" && k <= i).length;
+      return arches > 1 ? (n === 1 ? "Main arch" : "Second arch") : hasHalf ? "Centre arch" : "Arch backdrop";
+    }
+    case "half_arch":
+      return items.filter((x, k) => x.type === "half_arch" && k < i).length === 0 ? "Left half arch" : "Right half arch";
+    case "round": return "Round backdrop";
+    case "rect": return "Rectangle backdrop";
+    case "banner": return "Banner backdrop";
+    case "shimmer_wall": return "Shimmer wall";
+    case "balloon_ring": return "Balloon ring";
+    case "open_arch_frame": return "Open arch frame";
+    default: return "Backdrop";
+  }
 }
-
-// ---------------------------------------------------------------------------
-// Dimension line + ticks
-// ---------------------------------------------------------------------------
-
-function DimLine({ x1, y1, x2, y2 }: { x1: number; y1: number; x2: number; y2: number }) {
-  return (
-    <line
-      x1={x1} y1={y1} x2={x2} y2={y2}
-      stroke="rgba(255,255,255,0.70)"
-      strokeWidth="1.5"
-      strokeDasharray="5 4"
-      vectorEffect="non-scaling-stroke"
-    />
-  );
-}
-
-function TickH({ x, y }: { x: number; y: number }) {
-  return <line x1={x} y1={y - 5} x2={x} y2={y + 5} stroke="rgba(255,255,255,0.80)" strokeWidth="1.5" vectorEffect="non-scaling-stroke"/>;
-}
-function TickV({ x, y }: { x: number; y: number }) {
-  return <line x1={x - 5} y1={y} x2={x + 5} y2={y} stroke="rgba(255,255,255,0.80)" strokeWidth="1.5" vectorEffect="non-scaling-stroke"/>;
-}
-
-// ---------------------------------------------------------------------------
-// Single-panel measurements
-// ---------------------------------------------------------------------------
-
-function SinglePanelMeasurements({ panel, widthCm, heightCm, typeLabel }: {
-  panel: PanelLayout; widthCm: number; heightCm: number; typeLabel: string;
-}) {
-  const left  = panel.cx - panel.pw / 2;
-  const right = panel.cx + panel.pw / 2;
-  const top   = panel.apexY;
-  const bot   = panel.floorY;
-
-  // Width line: sits below the floor, clearly tied to the backdrop base
-  const wY  = Math.min(bot + 24, REF_H - 30);
-  // Height line: outside the right panel edge
-  const hX  = Math.min(right + 24, REF_W - 62);
-
-  return (
-    <g>
-      {/* Type label: upper-left OUTSIDE the panel (above top-left corner) */}
-      <Pill
-        x={Math.max(left, 6)}
-        y={Math.max(top - 15, 16)}
-        text={typeLabel}
-        anchor="start"
-        size={11}
-      />
-
-      {/* Width dimension — clearly spans the full backdrop base */}
-      <DimLine x1={left} y1={wY} x2={right} y2={wY}/>
-      <TickH x={left}  y={wY}/>
-      <TickH x={right} y={wY}/>
-      <Pill x={panel.cx} y={wY + 16} text={`${widthCm} cm`} size={13}/>
-
-      {/* Height dimension — right side, outside the panel */}
-      <DimLine x1={hX} y1={top} x2={hX} y2={bot}/>
-      <TickV x={hX} y={top}/>
-      <TickV x={hX} y={bot}/>
-      <Pill x={hX + 6} y={(top + bot) / 2} text={`${heightCm} cm`} anchor="start" size={13}/>
-    </g>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Multi-panel: total width + max height only (avoids crowding)
-// ---------------------------------------------------------------------------
-
-function MultiPanelMeasurements({ panels, sceneW, maxH }: {
-  panels: PanelLayout[]; sceneW: { left: number; right: number }; maxH: number;
-}) {
-  const leftmost  = sceneW.left;
-  const rightmost = sceneW.right;
-  const tallest   = panels.reduce((t, p) => p.apexY < t.apexY ? p : t, panels[0]);
-
-  const wY = Math.min(tallest.floorY + 22, REF_H - 28);
-  const hX = Math.min(rightmost + 22, REF_W - 60);
-
-  return (
-    <g>
-      {/* Total width */}
-      <DimLine x1={leftmost} y1={wY} x2={rightmost} y2={wY}/>
-      <TickH x={leftmost}  y={wY}/>
-      <TickH x={rightmost} y={wY}/>
-      <Pill x={(leftmost + rightmost) / 2} y={wY + 16} text={`Total width — see specs`} size={11}/>
-
-      {/* Max height on the tallest panel */}
-      <DimLine x1={hX} y1={tallest.apexY} x2={hX} y2={tallest.floorY}/>
-      <TickV x={hX} y={tallest.apexY}/>
-      <TickV x={hX} y={tallest.floorY}/>
-      <Pill x={hX + 6} y={(tallest.apexY + tallest.floorY) / 2} text={`${maxH} cm`} anchor="start" size={13}/>
-
-      {/* Per-panel width labels along the floor */}
-      {panels.map((p) => {
-        const sm = p; // widthCm not on PanelLayout — accessed via sceneModel below
-        return null; // widths handled by caller that has widthCm
-      })}
-    </g>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Plinth label
-// ---------------------------------------------------------------------------
-
-function PlinthLabel({ cx, topY, diameterCm }: { cx: number; topY: number; diameterCm: number }) {
-  const y = Math.max(topY - 14, 16);
-  return <Pill x={cx} y={y} text={`Ø ${diameterCm} cm`} size={11}/>;
-}
-
-// ---------------------------------------------------------------------------
-// Main overlay
-// ---------------------------------------------------------------------------
 
 export default function MeasurementOverlay({ config }: { config: BuilderConfig }) {
-  const sceneModel = buildSceneModel(config);
-  const layout     = calculateExactLayout(
-    config.decor.backdropItems,
-    config.decor.plinthSizes,
-    REF_W,
-    REF_H,
-  );
-
-  const panelCount = layout.panels.length;
-  const maxHeightCm = Math.max(...sceneModel.panels.map((p) => p.heightCm), 0);
-
-  // Compute overall group bounding box for multi-panel mode
-  const groupLeft  = Math.min(...layout.panels.map((p) => p.cx - p.pw / 2));
-  const groupRight = Math.max(...layout.panels.map((p) => p.cx + p.pw / 2));
-
-  function panelTypeLabel(idx: number): string {
-    const sm = sceneModel.panels[idx];
-    if (!sm) return "";
-    const LABELS: Record<string, string> = {
-      arch: "Arch", rect: "Rect", round: "Round",
-      shimmer_wall: "Shimmer", wavy: "Wavy",
-    };
-    const sizeLabel = sm.type === "arch"
-      ? ARCH_SIZES.find((a) => a.id === sm.sizeId)?.label ?? ""
-      : sm.type === "rect"
-        ? RECT_SIZES.find((r) => r.id === sm.sizeId)?.label ?? ""
-        : "";
-    const typeStr = LABELS[sm.type] ?? sm.type;
-    return sizeLabel ? `${typeStr} ${sizeLabel}` : typeStr;
-  }
-
+  const items = config.decor.backdropItems;
+  const plinths = config.decor.plinthSizes.slice(0, 3);
+  if (items.length === 0) return null;
   return (
-    <svg
-      viewBox={`0 0 ${REF_W} ${REF_H}`}
-      preserveAspectRatio="xMidYMid meet"
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      aria-hidden="true"
-      style={{ zIndex: 20 }}
-    >
-      {panelCount === 1 ? (
-        // Single panel — show all labels
-        layout.panels.map((panel) => {
-          const sm = sceneModel.panels[panel.idx];
-          if (!sm) return null;
-          return (
-            <SinglePanelMeasurements
-              key={`p-${panel.idx}`}
-              panel={panel}
-              widthCm={sm.widthCm}
-              heightCm={sm.heightCm}
-              typeLabel={panelTypeLabel(panel.idx)}
-            />
-          );
-        })
-      ) : (
-        // Multi-panel summary mode — no per-panel labels, only total width + max height
-        <g>
-          {(() => {
-            // Use overlap-aware total width from calculateRenderAspectRatio
-            const { totalWidthCm } = calculateRenderAspectRatio(config.decor.backdropItems);
-
-            const tallest = layout.panels.reduce((t, p) => p.apexY < t.apexY ? p : t, layout.panels[0]);
-            const hX = Math.min(groupRight + 22, REF_W - 62);
-            const wY = Math.min(tallest.floorY + 22, REF_H - 28);
-
-            return (
-              <>
-                {/* Total width: span across full group, label centred */}
-                <DimLine x1={groupLeft} y1={wY} x2={groupRight} y2={wY}/>
-                <TickH x={groupLeft}  y={wY}/>
-                <TickH x={groupRight} y={wY}/>
-                <Pill x={(groupLeft + groupRight) / 2} y={wY + 16} text={`Total width: ${totalWidthCm} cm`} size={12}/>
-
-                {/* Max height: right of the tallest panel */}
-                <DimLine x1={hX} y1={tallest.apexY} x2={hX} y2={tallest.floorY}/>
-                <TickV x={hX} y={tallest.apexY}/>
-                <TickV x={hX} y={tallest.floorY}/>
-                <Pill x={hX + 6} y={(tallest.apexY + tallest.floorY) / 2} text={`Max height: ${maxHeightCm} cm`} anchor="start" size={12}/>
-              </>
-            );
-          })()}
-        </g>
+    <div className="bz-sizes" aria-label="Sizes">
+      <div className="bz-sizes-top">
+        {items.map((it, i) => (
+          <span key={it.id} className="bz-size-pill">
+            <b>{pieceName(it, i, items)}</b>
+            {` · ${metres(it.widthCm)} × ${metres(it.heightCm)}`}
+          </span>
+        ))}
+        <span className="bz-size-arrow" aria-hidden="true">↓</span>
+      </div>
+      {plinths.length > 0 && (
+        <div className="bz-sizes-bottom">
+          <span className="bz-size-pill">
+            <b>{plinths.length === 1 ? "Plinth" : "Plinths"}</b>
+            {" · "}{plinths.map((s) => `${PLINTH_NAME[s] ?? s} ${PLINTH_CM[s] ?? ""} cm`).join(" · ")}
+          </span>
+        </div>
       )}
-
-      {/* Plinth labels omitted from Final Design Render overlay —
-          they create clutter and can be confused with backdrop width labels.
-          Plinth specs are available in the technical production layout. */}
-    </svg>
+    </div>
   );
 }

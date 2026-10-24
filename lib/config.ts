@@ -386,12 +386,29 @@ export interface BackdropItemText {
 }
 
 export type TextSize = "small" | "medium" | "large";
+// 2026-10-24 (later): "suan ki small large olmali, medium ve small daha da
+// kucuk olmali" — the first Small is now Large, and the other two step down.
+// A scale of the size the lettering is fitted to across its board's clear
+// width. With "Happy Birthday" kept on one line (messageLines) the fitted size
+// is already about the first Small, so Large is the fit itself.
 export const TEXT_SIZES: { id: TextSize; label: string; scale: number }[] = [
-  { id: "small",  label: "Small",  scale: 0.74 },
-  { id: "medium", label: "Medium", scale: 1 },
-  { id: "large",  label: "Large",  scale: 1.22 },
+  { id: "small",  label: "Small",  scale: 0.64 },
+  { id: "medium", label: "Medium", scale: 0.8 },
+  { id: "large",  label: "Large",  scale: 1 },
 ];
-export const textSizeScale = (s?: TextSize) => TEXT_SIZES.find((t) => t.id === s)?.scale ?? 1;
+
+/**
+ * How a message breaks into lines: "Happy Birthday" always stays together on
+ * the first line, with the rest (the name) on the line below — "herzaman
+ * happy birthday yanyana isim altta olmali". Other messages: null (callers
+ * wrap them their own way).
+ */
+export function messageLines(text: string): string[] | null {
+  const m = text.trim().match(/^(happy\s+birthday)[\s,!.]*(.*)$/i);
+  if (!m) return null;
+  return m[2].trim() ? [m[1].replace(/\s+/g, " "), m[2].trim()] : [m[1].replace(/\s+/g, " ")];
+}
+export const textSizeScale = (s?: TextSize) => TEXT_SIZES.find((t) => t.id === (s ?? "medium"))?.scale ?? 0.8;
 
 export interface BackdropItemGraphic {
   enabled: boolean;

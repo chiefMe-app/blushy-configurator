@@ -920,3 +920,14 @@ div.bz-stale-banner { cursor: default; }
   background: #fff; font-size: 12.5px; font-weight: 700; color: #4b5b4b; }
 .bz-st-size button .aa { font-weight: 800; line-height: 1; }
 .bz-st-size button.on { border-color: var(--bz-pink); background: var(--bz-pink); color: #fff; }
+
+/* 2026-10-24: "Show sizes" — each piece's size above the backdrop, plinths on the floor. */
+.bz-sizes { position: absolute; inset: 0; z-index: 4; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 58px 12px 64px; }
+.bz-sizes-top { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; }
+.bz-sizes-bottom { display: flex; justify-content: center; }
+.bz-size-pill { display: inline-block; padding: 6px 12px; border-radius: 999px; background: rgba(28,22,30,.78); color: #fff; font-size: 12.5px; line-height: 1.2; box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+.bz-size-pill b { font-weight: 800; }
+.bz-size-arrow { flex-basis: 100%; text-align: center; color: #fff; font-weight: 900; font-size: 18px; text-shadow: 0 1px 4px rgba(0,0,0,.5); line-height: 1; }
+.bz-ex-note p { margin: 0; }
+.bz-ex-notext { margin-top: 7px; padding: 6px 12px; border-radius: 999px; background: var(--bz-pink); color: #fff; font-size: 12px; font-weight: 800; }
+.bz-ex-notext:hover { filter: brightness(1.05); }

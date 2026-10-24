@@ -12,6 +12,7 @@ import {
   resolveTextColorHex,
   normalizeBalloonStyle,
   textSizeScale,
+  messageLines,
   SHIMMER_COLOR_HEX,
   type BuilderConfig,
   type BackdropItem,
@@ -52,6 +53,13 @@ const hexRgb = (h: string): Rgb => {
   return [parseInt(v.slice(0, 2), 16), parseInt(v.slice(2, 4), 16), parseInt(v.slice(4, 6), 16)];
 };
 const lum = (r: number, g: number, b: number) => 0.299 * r + 0.587 * g + 0.114 * b;
+/** Mirror-metal lettering (silver, gold, rose gold): its tint, else null. */
+const METAL_TINT: Record<string, [number, number, number]> = {
+  silver: [1.0, 1.01, 1.04], gold: [1.0, 0.84, 0.5], rose_gold: [1.0, 0.8, 0.74],
+};
+const tintHex = (t: [number, number, number], l: number) => "#" + t.map((k) =>
+  Math.max(0, Math.min(255, Math.round(l * 255 * (l > 0.5 ? k : 1 + (k - 1) * 0.5))))
+    .toString(16).padStart(2, "0")).join("");
 const isWhite = (h: string) => { const [r, g, b] = hexRgb(h || "#ffffff"); return r > 246 && g > 246 && b > 246; };
 
 type BaseData = { img: ImageData; fam: Uint8Array; means: { rgb: Rgb; l: number }[] };
@@ -363,6 +371,9 @@ export default function LiveSketch({
   const neonPiece = neon ? (pieces.find((p) => p.idx === (neon.panelIndex ?? 0)) ?? pieces[0]) : undefined;
 
   const lines = (s: string) => {
+    // "Happy Birthday" stays on one line with the name centred below it.
+    const fixed = messageLines(s);
+    if (fixed) return fixed;
     const words = s.trim().split(/\s+/);
     if (s.includes("\n")) return s.split("\n").map((l) => l.trim()).filter(Boolean);
     return words.length >= 2 ? [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")] : [s.trim()];
@@ -387,11 +398,17 @@ export default function LiveSketch({
   };
 
   // Standees: the first stands left of the backdrop, the second right.
+  // The light-up number: beside the plinths (or the middle of the decor without them).
+  const numberH = 100 * scale * 0.9;
+  const numberX = Math.min(VB - numberH * 0.4, plinths.length ? plinthRight + numberH * 0.42 : roundBase ? 0.66 * VB : groupMid + numberH * 0.5);
   const standeeBoxes = standees.map((src, i) => {
-    const h = 150 * scale, w = h * 0.62;
-    const cx = i === 0
+    // Wide enough for a two-character picture, which a narrow box shrank.
+    const h = 150 * scale, w = h * 0.95;
+    let cx = i === 0
       ? Math.max(w * 0.42, roundBase ? 0.15 * VB : groupL - garlandReach * 0.55)
       : Math.min(VB - w * 0.42, roundBase ? 0.86 * VB : groupR + garlandReach * 0.55);
+    // The right one steps aside so the number stays in view.
+    if (i === 1 && hasNumber) cx = Math.max(cx, numberX + numberH * 0.35 + w * 0.3);
     return { src, x: cx - w / 2, y: floorY + (roundBase ? 0.05 * VB : 14) - h, w, h };
   });
 
@@ -468,18 +485,29 @@ export default function LiveSketch({
         const longest = Math.max(4, ...ls.map((l) => l.length));
         const k = textSizeScale(p.item.text.size);
         const room = textSpot(p, 0);
-        const size = Math.min(p.w * f.k, room.w / (longest * f.adv)) * k;
+        // As the layout guide does: fitted to the clear width, then the chosen share of that.
+        const size = Math.min(p.w * 0.3, room.w / (longest * f.adv)) * k;
         const gap = size * (p.item.text.fontStyle === "script" ? 1.25 : 1.12);
         const blockH = gap * (ls.length - 1) + size;
         const at = textSpot(p, blockH);
         const script = p.item.text.fontStyle === "script";
-        const stagger = (i: number) => (!script || ls.length < 2 ? 0 : (i === 0 ? -1 : i === ls.length - 1 ? 1 : 0) * size * 0.4);
         const y0 = at.cy - ((ls.length - 1) * gap) / 2 + size * 0.32;
+        // Silver, gold and rose gold are mirror acrylic: bright and dark bands, not flat grey.
+        const metal = METAL_TINT[p.item.text.color];
+        const gid = `skMetal${p.idx}`;
         return (
-          <g key={`t${p.item.id}`} transform={script ? `rotate(-4 ${at.cx} ${at.cy})` : undefined} filter="url(#skSoft)">
+          <g key={`t${p.item.id}`} transform={script ? `rotate(-2 ${at.cx} ${at.cy})` : undefined} filter="url(#skSoft)">
+            {metal && (
+              <defs>
+                <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1={at.cx} y1={at.cy - blockH / 2} x2={at.cx + blockH * 0.25} y2={at.cy + blockH / 2}>
+                  {[[0, 0.94], [0.3, 0.6], [0.47, 1], [0.6, 0.5], [0.78, 0.86], [1, 0.62]].map(([o, l]) => <stop key={o} offset={o} stopColor={tintHex(metal, l)} />)}
+                </linearGradient>
+              </defs>
+            )}
             <text textAnchor="middle" fontFamily={f.family} fontWeight={f.weight} fontSize={size}
-              fill={resolveTextColorHex(p.item.text.color, accent)}>
-              {ls.map((l, i) => <tspan key={i} x={at.cx + stagger(i)} y={y0 + i * gap}>{l}</tspan>)}
+              fill={metal ? `url(#${gid})` : resolveTextColorHex(p.item.text.color, accent)}
+              stroke={metal ? tintHex(metal, 0.42) : undefined} strokeWidth={metal ? Math.max(0.6, size * 0.012) : undefined}>
+              {ls.map((l, i) => <tspan key={i} x={at.cx} y={y0 + i * gap}>{l}</tspan>)}
             </text>
           </g>
         );
@@ -534,9 +562,7 @@ export default function LiveSketch({
 
       {/* Light-up number on the floor, right of the plinths */}
       {hasNumber && pieces.length > 0 && (() => {
-        const h = 100 * scale * 0.9;
-        // Beside the plinths (or the middle of the decor without them), clear of the standees.
-        const x = Math.min(VB - h * 0.4, plinths.length ? plinthRight + h * 0.42 : roundBase ? 0.66 * VB : groupMid + h * 0.5);
+        const h = numberH, x = numberX;
         return (
           <text x={x} y={floorY + (roundBase ? 0.03 * VB : 4)} textAnchor="middle" fontFamily="var(--bz-sans), Arial, sans-serif" fontWeight={900} fontSize={h * 1.15}
             fill="#f6d68f" stroke="#c99a46" strokeWidth={3} strokeDasharray="2 10" strokeLinecap="round" filter="url(#skSoft)">{d.numberLight!.value}</text>

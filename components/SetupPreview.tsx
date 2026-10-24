@@ -1383,7 +1383,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             </div>
           )}
 
-          {showMeasurements && finalUrl && !finalIsLoading && !showSketch && (
+          {showMeasurements && !finalIsLoading && (finalUrl || showSketch) && (
             <MeasurementOverlay config={config}/>
           )}
 
@@ -1408,7 +1408,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
               : "Finish your decor, then generate a render to see your design. Text and graphics update after regeneration."}
           </p>
           <div className="flex items-center gap-2">
-            {finalUrl && (
+            {(finalUrl || showSketch) && (
               <button type="button" className="bz-view-btn" onClick={() => setShowMeasurements((v) => !v)}>
                 {showMeasurements ? "Hide sizes" : "Show sizes"}
               </button>

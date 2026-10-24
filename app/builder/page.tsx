@@ -1338,7 +1338,8 @@ function clearAllStandees() {
   // XXL + XL, three are XXL + XL + L. Picking a count now fills in that set
   // rather than defaulting everything to XL. The per-plinth buttons are still
   // there, so any of the three sizes can still be chosen afterwards.
-  const PLINTH_LADDER: PlinthSize[] = ["large", "medium", "small"]; // XXL, XL, L
+  // 2026-10-24: three plinths are an XXL between two XLs — the L is no longer offered.
+  const PLINTH_LADDER: PlinthSize[] = ["large", "medium", "medium"]; // XXL, XL, XL
   function setPlinthCount(n: number) {
     const sizes: PlinthSize[] = PLINTH_LADDER.slice(0, n);
     patchDecor({ plinths: n, plinthSizes: sizes });
@@ -3351,7 +3352,18 @@ function clearAllStandees() {
               </div>
             </div>
             {!d.neonSign?.enabled && neonFreeBoards.length === 0 && (
-              <p className="bz-ex-note">Your backdrop already has printed text, so a neon sign can’t go on it too. Switch the text off in Style to add one.</p>
+              <div className="bz-ex-note">
+                <p>Your backdrop already has printed text, so a neon sign can’t go on it too.</p>
+                {/* 2026-10-24: one tap — the printed text comes off and its words go on the neon. */}
+                <button type="button" className="bz-ex-notext" onClick={() => {
+                  const i = Math.max(0, d.backdropItems.findIndex((it) => it.type !== "open_arch_frame" && boardHasLettering(it)));
+                  const words = (d.backdropItems[i]?.text.value ?? "").trim() || "Happy Birthday";
+                  patchDecor({
+                    backdropItems: d.backdropItems.map((it, k) => (k === i ? { ...it, text: { ...it.text, enabled: false } } : it)),
+                    neonSign: { text: words.slice(0, 40), panelIndex: i, enabled: true },
+                  });
+                }}>No printed text — use a neon sign instead</button>
+              </div>
             )}
             {d.neonSign?.enabled && (
               <div className="bz-ex-more">

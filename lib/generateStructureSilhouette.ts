@@ -16,7 +16,7 @@
  */
 
 import type { BackdropItem, PlinthSize, BackdropShapeId, BalloonStyleId } from "./config";
-import { resolveTextColorHex } from "./config";
+import { resolveTextColorHex, textSizeScale, messageLines, type TextSize } from "./config";
 import { textAdvance, textPathD } from "./guideFonts";
 import { frozenBannerPrintSvg } from "./bannerPrint";
 import { FROZEN_CASTLE_PRINT } from "./bannerCastlePrint";
@@ -84,6 +84,9 @@ export interface SilhouetteResult {
    *  draws it but does not reliably light the bulbs, so the route lights them
    *  afterwards at these points. Empty when there is no such number. */
   marqueeBulbs: { xFrac: number; yFrac: number; rFrac: number }[];
+  /** The marquee letter's face polygons (canvas fractions), to find the
+   *  letter in the render before its bulbs are lit. */
+  marqueeFaces: [number, number][][];
   /** Full-canvas SVG mask (white on black) of any silver lettering, for the
    *  route's chrome pass. Empty string when there is none. */
   silverTextMaskSvg: string;
@@ -508,7 +511,7 @@ function escapeXml(s: string): string {
 // shape, and it gives the bulbs a centreline to sit on. The strokes are
 // drawn twice — outline colour first, face on top — so the overlaps merge
 // into one letter with one outer edge instead of showing seams.
-function marqueeBlockDigit(glyph: string, x: number, y: number, w: number, h: number, withDefs: boolean, bulbsOut?: [number, number, number][]): string {
+function marqueeBlockDigit(glyph: string, x: number, y: number, w: number, h: number, withDefs: boolean, bulbsOut?: [number, number, number][], facesOut?: [number, number][][]): string {
   const t = w * 0.30;
   const midT = h / 2 - t / 2;
   type Pt = [number, number];
@@ -580,6 +583,8 @@ function marqueeBlockDigit(glyph: string, x: number, y: number, w: number, h: nu
   }
   const br = w * 0.10;
   if (bulbsOut) for (const q of bulbs) bulbsOut.push([x + q[0], y + q[1], br]);
+  // The letter's face, so the route can find where the render really put it.
+  if (facesOut) for (const pt of parts) facesOut.push(pt.poly.map((q) => [x + q[0], y + q[1]] as [number, number]));
   out += bulbs.map((q) => `<circle cx="${(x + q[0]).toFixed(1)}" cy="${(y + q[1]).toFixed(1)}" r="${br.toFixed(1)}" fill="url(#marqueeBulbGlow)"/>`).join("");
   return out;
 }
@@ -713,6 +718,9 @@ function customTextGuide(
     else lines.push(w);
   }
   if (lines.length === 0) lines.push(text.trim());
+  // 2026-10-24: "Happy Birthday" on one line, the name centred under it.
+  const fixedLines = messageLines(text);
+  if (fixedLines) lines.splice(0, lines.length, ...fixedLines);
   // 2026-10-22, customer reference: the lettering is a thin, slanted,
   // handwritten signature script cut from flat mirror-polished acrylic —
   // "flat + handwrite + angled + shiny". The script face is now Sacramento,
@@ -722,10 +730,9 @@ function customTextGuide(
     const widest = Math.max(...lines.map((ln) => textAdvance(ln, fontStyle, fontSize)));
     const fitK = (clearW * 0.96) / Math.max(1, widest);
     fontSize = Math.max(12, Math.round(Math.min(fontSize * fitK, pw * 0.24)));
-    // 2026-10-24: the chosen size. Medium is the fitted size above; large may
-    // reach a little past the clear band, small sits well inside it.
-    if (opts.size === "small") fontSize = Math.max(12, Math.round(fontSize * 0.74));
-    else if (opts.size === "large") fontSize = Math.round(Math.min(fontSize * 1.22, fontSize * fitK * 1.15, pw * 0.3));
+    // 2026-10-24: the chosen size, as a share of the fitted size above (which
+    // fills the clear band and read as too big).
+    fontSize = Math.max(12, Math.round(fontSize * textSizeScale(opts.size as TextSize | undefined)));
   }
   // 2026-10-22: 1.08 -> 1.34 for the script. Brittany Signature's loops
   // reach far above and below its line, and "Happy" and "Birthday" ran into
@@ -778,7 +785,7 @@ function customTextGuide(
   const firstY = y - ((lines.length - 1) * lineGap) / 2;
   // As in the reference: the lines step across — the first set to the left,
   // the next to the right — and the whole block rises slightly to the right.
-  const stagger = (i: number) => lines.length < 2 ? 0
+  const stagger = (i: number) => lines.length < 2 || fixedLines ? 0
     : (i === 0 ? -1 : i === lines.length - 1 ? 1 : 0) * Math.min(fontSize * 0.45, clearW * 0.10);
   const tilt = fontStyle === "script" ? -4 : 0;
   const rot = tilt ? ` transform="rotate(${tilt} ${tx.toFixed(1)} ${y.toFixed(1)})"` : "";
@@ -1093,6 +1100,7 @@ export function generateStructureSilhouette(
   const content: string[] = [];
   const textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[] = [];
   const marqueeBulbsLayout: [number, number, number][] = [];
+  const marqueeFacesLayout: [number, number][][] = [];
   const silverInkLayer: string[] = [];
   const neonOverlayLayer: string[] = [];
   let textMetalTint: [number, number, number] | null = null;
@@ -1447,9 +1455,11 @@ export function generateStructureSilhouette(
   // three-plinth Single Arch rendered four columns: the model was completing
   // shapes it could only half see.
   const plinthMaxDia   = Math.max(...layout.plinths.map((pl) => pl.diameterPx), 1);
+  // 2026-10-24: close together — a hand's width apart, not touching ("cok
+  // uzaklastilar birbirlerinden, hemen yaninda olsun yapisik degil"). Was 1.5.
   const plinthSpacing  = plinthCount > 1
-    ? Math.min(plinthMaxDia * 1.5, (W * 0.86 - plinthMaxDia) / (plinthCount - 1))
-    : plinthMaxDia * 1.5;
+    ? Math.min(plinthMaxDia * 1.18, (W * 0.86 - plinthMaxDia) / (plinthCount - 1))
+    : plinthMaxDia * 1.18;
 
   // 2026-09-09: the plinth row SLIDES to open a slot for the marquee number.
   //
@@ -1550,6 +1560,7 @@ export function generateStructureSilhouette(
   let plinthDrawnTopPx: number | null = null;
   layout.plinths.forEach((p, plinthIdx) => {
     // One plinth lands on the midpoint; two straddle it; three sit centred.
+    // (calculateExactLayout already orders three as XL, XXL, XL — biggest centre.)
     const plinthCx = Math.round(
       decorCx + (plinthIdx - (plinthCount - 1) / 2) * plinthSpacing,
     );
@@ -4739,7 +4750,7 @@ export function generateStructureSilhouette(
       // in it. Every other digit stays type, which renders correctly.
       const glyph = numDigits[d];
       if (singleRound) {
-        plinthLayer.push(marqueeBlockDigit(glyph, x, y, digitW, digitH, d === 0, marqueeBulbsLayout));
+        plinthLayer.push(marqueeBlockDigit(glyph, x, y, digitW, digitH, d === 0, marqueeBulbsLayout, marqueeFacesLayout));
         continue;
       }
       if (glyph === "1") {
@@ -4885,6 +4896,7 @@ export function generateStructureSilhouette(
       yFrac: (marginY + by * SCALE) / H,
       rFrac: (br * SCALE) / W,
     })),
+    marqueeFaces: marqueeFacesLayout.map((poly) => poly.map(([px, py]) => [(marginX + px * SCALE) / W, (marginY + py * SCALE) / H] as [number, number])),
   };
 }
 
