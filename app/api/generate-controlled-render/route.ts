@@ -162,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "neon-v153";
+const RENDER_CACHE_VERSION = "plinths-v155";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -765,7 +765,9 @@ async function generateLayoutReferencePng(
         // them as mirror balls rather than matte spheres.
         chromeColors: chromeHexColors,
         // 2026-10-21: the reference replays' snowflake ornaments, on Frozen.
-        clearColors: clearHexColors, snowflakes: sceneModel.theme === "frozen",
+        // 2026-10-24: none any more — "butun frozen setuplardan balonlarin
+        // arasindaki snowflake kaldiralim".
+        clearColors: clearHexColors, snowflakes: false,
         // (a close-up does not show lettering, so it does not count here)
         styleReference: !!sceneStyleReference(sceneModel) && !sceneStyleReference(sceneModel)?.closeUp },
     );

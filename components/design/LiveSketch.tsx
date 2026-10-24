@@ -11,6 +11,7 @@ import {
   themeById,
   resolveTextColorHex,
   normalizeBalloonStyle,
+  textSizeScale,
   SHIMMER_COLOR_HEX,
   type BuilderConfig,
   type BackdropItem,
@@ -20,19 +21,29 @@ const VB = 1000;
 const FLOOR = 870;
 
 /**
- * 2026-10-24: a photographed base for the Single Round (the customer's own
- * picture): its garland, cut away from the board so the board, lettering and
- * neon can be drawn beneath and above it. The board circle's centre and
- * radius are fractions of the (square) image's width.
+ * 2026-10-24: the Single Round is drawn on the customer's own render of it
+ * (Frozen, no lettering, snowflakes removed), cut into layers: the room with
+ * the plinth painted out, a mask of the board (where its colour goes), the
+ * balloons on their own, and the plinth. The board's lettering goes between
+ * the room and the balloons; plinths, neon, number and standees on top.
+ * Geometry is in fractions of the square image.
  */
 const ROUND_BASE = {
-  src: "/design/sketch/round-base-balloons.webp",
+  room: "/design/sketch/round-room.webp",
+  balloons: "/design/sketch/round-balloons.webp",
   // Which balloon family each pixel belongs to (0 white/silver, 100 blue,
   // 200 lilac), worked out ahead of time and smoothed, so a balloon's
   // highlight is repainted with the balloon.
-  families: "/design/sketch/round-base-families.png",
-  cx: 0.5147, cy: 0.5627, r: 0.3863,
+  families: "/design/sketch/round-families.png",
+  boardMask: "/design/sketch/round-board-mask.png",
+  cx: 0.5004, cy: 0.5154, r: 0.3236,
+  // The photographed plinth (the XXL, 90 cm): left, top, width, height.
+  plinth: { x: 0.4521, y: 0.5605, w: 0.1143, h: 0.3330 },
 };
+/** The plinth cut from the same photo, used for every plinth in every sketch. */
+const PLINTH_SRC = "/design/sketch/plinth.webp";
+const PLINTH_ASPECT = 0.343; // width / height of the sprite (the XXL)
+const PLINTH_CM: Record<string, { h: number; d: number }> = { large: { h: 90, d: 40 }, medium: { h: 75, d: 36 }, small: { h: 60, d: 33 } };
 
 type Rgb = [number, number, number];
 const hexRgb = (h: string): Rgb => {
@@ -41,6 +52,7 @@ const hexRgb = (h: string): Rgb => {
   return [parseInt(v.slice(0, 2), 16), parseInt(v.slice(2, 4), 16), parseInt(v.slice(4, 6), 16)];
 };
 const lum = (r: number, g: number, b: number) => 0.299 * r + 0.587 * g + 0.114 * b;
+const isWhite = (h: string) => { const [r, g, b] = hexRgb(h || "#ffffff"); return r > 246 && g > 246 && b > 246; };
 
 type BaseData = { img: ImageData; fam: Uint8Array; means: { rgb: Rgb; l: number }[] };
 const baseCache = new Map<string, Promise<BaseData>>();
@@ -84,21 +96,22 @@ function loadBase(src: string, familiesSrc: string): Promise<BaseData> {
 
 /**
  * The base's balloons repainted in the chosen colours, keeping their shading:
- * each family takes the closest chosen colour (a family already close to it is
- * left as photographed). Starts as the photo itself.
+ * each family takes the closest chosen colour. `asShot` (the palette the photo
+ * was taken with) shows the photo untouched — "purple kaybolmus" came from
+ * repainting Frozen's own lilac a paler lilac.
  */
-function useRecoloredBase(src: string | null, familiesSrc: string, palette: string[]): string | null {
+function useRecoloredBase(src: string | null, familiesSrc: string, palette: string[], asShot: boolean): string | null {
   const [url, setUrl] = useState<string | null>(src);
   const key = palette.join(",");
   useEffect(() => {
     if (!src) { setUrl(null); return; }
+    if (asShot) { setUrl(src); return; }
     let alive = true;
     let made: string | null = null;
     loadBase(src, familiesSrc).then(({ img, fam, means }) => {
       if (!alive) return;
       const cols = palette.map(hexRgb);
       const dist = (a: Rgb, b: Rgb) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-      // Greedy nearest match, each chosen colour used once while any are left.
       const target: (Rgb | null)[] = [null, null, null];
       const used = new Set<number>();
       // White and silver stay white and silver when a white, silver or grey
@@ -106,6 +119,7 @@ function useRecoloredBase(src: string | null, familiesSrc: string, palette: stri
       const sat = (c: Rgb) => { const mx = Math.max(...c), mn = Math.min(...c); return mx ? (mx - mn) / mx : 0; };
       const neutralK = cols.map((c, k) => ({ c, k })).filter(({ c }) => sat(c) < 0.12).sort((a, b) => lum(...b.c) - lum(...a.c))[0];
       if (neutralK) { target[0] = neutralK.c; used.add(neutralK.k); }
+      // The rest: greedy nearest match, each chosen colour used once while any are left.
       const pairs = means.flatMap((m, f) => cols.map((c, k) => ({ f, k, dd: dist(m.rgb, c) }))).sort((a, b) => a.dd - b.dd);
       for (const pr of pairs) {
         if (target[pr.f] || (used.has(pr.k) && used.size < cols.length)) continue;
@@ -113,7 +127,6 @@ function useRecoloredBase(src: string | null, familiesSrc: string, palette: stri
       }
       const out = new ImageData(new Uint8ClampedArray(img.data), img.width, img.height);
       const px = out.data;
-      // A family already on its colour stays as photographed.
       const keep = target.map((t, f) => !t || dist(t, means[f].rgb) < 24 || (f === 0 && sat(t) < 0.12 && lum(...t) > 170));
       for (let k = 0, i = 0; i < px.length; k++, i += 4) {
         if (px[i + 3] === 0) continue;
@@ -135,7 +148,7 @@ function useRecoloredBase(src: string | null, familiesSrc: string, palette: stri
     }).catch(() => { if (alive) setUrl(src); });
     return () => { alive = false; if (made) URL.revokeObjectURL(made); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, familiesSrc, key]);
+  }, [src, familiesSrc, key, asShot]);
   return url;
 }
 
@@ -246,6 +259,9 @@ function garlandTrack(p: Piece, side: "left" | "right" | "both"): { x: number; y
   return pts;
 }
 
+const sameColours = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((c) => b.some((x) => x.toLowerCase() === c.toLowerCase()));
+
 export default function LiveSketch({
   config,
   activeId,
@@ -254,7 +270,7 @@ export default function LiveSketch({
   config: BuilderConfig;
   /** The piece being styled — outlined in pink. */
   activeId?: string | null;
-  /** Standee pictures (selected characters), drawn standing on the floor. */
+  /** Standee pictures (selected characters): the first left of the backdrop, the second right. */
   cutoutPreviews?: string[];
 }) {
   const d = config.decor;
@@ -262,26 +278,48 @@ export default function LiveSketch({
   const accent = theme?.accent ?? "#ff0d66";
   const items = d.backdropItems;
   const hasNumber = !!d.numberLight?.enabled && !!(d.numberLight.value ?? "").trim();
+  const standees = cutoutPreviews.slice(0, 2);
   // A lone round board is drawn on the photographed base.
   const roundBase = items.length === 1 && items[0].type === "round";
-  const baseS = hasNumber || cutoutPreviews.length ? 740 : 820;
   const { pieces, scale } = useMemo(() => {
-    if (!roundBase) return layoutPieces(items, { maxW: hasNumber || cutoutPreviews.length ? 640 : 760, maxH: 640 });
-    const R = ROUND_BASE.r * baseS;
-    const piece: Piece = { item: items[0], idx: 0, x: VB / 2 - R, w: 2 * R, h: 2 * R, top: FLOOR - 2 * R, curveLeft: false };
+    if (!roundBase) return layoutPieces(items, { maxW: hasNumber || standees.length ? 640 : 760, maxH: 640 });
+    const B = ROUND_BASE, R = B.r * VB;
+    const piece: Piece = { item: items[0], idx: 0, x: B.cx * VB - R, w: 2 * R, h: 2 * R, top: B.cy * VB - R, curveLeft: false };
     return { pieces: [piece], scale: (2 * R) / Math.max(60, items[0].widthCm || 200) };
-  }, [items, hasNumber, cutoutPreviews.length, roundBase, baseS]);
+  }, [items, hasNumber, standees.length, roundBase]);
+  // Where things stand: the floor line, and how far in front of it the front row sits.
+  const floorY = roundBase ? (ROUND_BASE.plinth.y + ROUND_BASE.plinth.h) * VB : FLOOR;
   const palette = d.balloonColors.length ? d.balloonColors : (theme?.balloonColors ?? ["#f7c5d8"]);
   const balloonsOn = normalizeBalloonStyle(d.balloonStyle) !== "none";
-  const baseUrl = useRecoloredBase(roundBase && balloonsOn ? ROUND_BASE.src : null, ROUND_BASE.families, palette);
-  const baseBox = { x: VB / 2 - ROUND_BASE.cx * baseS, y: FLOOR - (ROUND_BASE.cy + ROUND_BASE.r) * baseS, s: baseS };
+  const asShot = config.theme === "frozen" && sameColours(palette, (themeById("frozen")?.balloonColors ?? []).slice(0, 5));
+  const baseBalloons = useRecoloredBase(roundBase && balloonsOn ? ROUND_BASE.balloons : null, ROUND_BASE.families, palette, asShot);
   const garlandSize = 18 + scale * 8;
   // How far the garland reaches past the boards' outer edges.
-  const garlandReach = !balloonsOn ? 12 : roundBase ? (1 - ROUND_BASE.cx - ROUND_BASE.r) * baseS : garlandSize * 2.6;
-  // On the base the garland covers the board's left side: words sit right of centre.
-  const textShift = roundBase && balloonsOn ? pieces[0].w * 0.06 : 0;
+  const garlandReach = !balloonsOn ? 12 : roundBase ? 0.17 * VB : garlandSize * 2.6;
+  const groupL = pieces.length ? pieces[0].x : VB / 2;
+  const groupR = pieces.length ? pieces[pieces.length - 1].x + pieces[pieces.length - 1].w : VB / 2;
+  const groupMid = roundBase ? (ROUND_BASE.plinth.x + ROUND_BASE.plinth.w / 2) * VB : (groupL + groupR) / 2;
 
-  // Garland balloons: on the outer sides of the group, as the renders have them.
+  // Plinths: the photographed one, sized by the ladder (XXL 90, XL 75, L 60 cm).
+  // The biggest stands in the middle, the next on its left, the last on its right.
+  const plinths = useMemo(() => {
+    const sizes = d.plinthSizes.slice(0, 3);
+    const dims = sizes.map((s) => {
+      const c = PLINTH_CM[s] ?? PLINTH_CM.medium;
+      const h = roundBase ? ROUND_BASE.plinth.h * VB * (c.h / 90) : c.h * scale;
+      return { h, w: h * PLINTH_ASPECT * (c.d / 40) / (c.h / 90) };
+    });
+    const order = dims.map((dm, i) => ({ ...dm, i })).sort((a, b) => b.h - a.h);
+    const out: { x: number; y: number; w: number; h: number }[] = [];
+    if (order[0]) out.push({ x: groupMid - order[0].w / 2, y: floorY - order[0].h, w: order[0].w, h: order[0].h });
+    if (order[1]) out.push({ x: out[0].x - order[1].w * 1.02, y: floorY - order[1].h, w: order[1].w, h: order[1].h });
+    if (order[2]) out.push({ x: out[0].x + out[0].w * 1.02, y: floorY - order[2].h, w: order[2].w, h: order[2].h });
+    return out;
+  }, [d.plinthSizes, roundBase, scale, groupMid, floorY]);
+  const plinthTop = plinths.length ? Math.min(...plinths.map((p) => p.y)) : Infinity;
+  const plinthRight = plinths.length ? Math.max(...plinths.map((p) => p.x + p.w)) : groupMid;
+
+  // Garland balloons (drawn setups): on the outer sides of the group, as the renders have them.
   const balloons = useMemo(() => {
     if (!balloonsOn || pieces.length === 0 || roundBase) return [] as { x: number; y: number; r: number; c: string }[];
     const rnd = seeded(items.length * 131 + palette.length * 17 + 7);
@@ -312,13 +350,12 @@ export default function LiveSketch({
     }
     return out.sort((a, b) => a.y - b.y);
   }, [balloonsOn, pieces, palette, garlandSize, items.length, d.balloonRingStyle, roundBase]);
-  // Plinths are left out of the sketch: they stood in front of the lettering.
 
   // Florals on the base: tucked in along its garland (angles in degrees).
   const baseFlorals = roundBase && balloonsOn && d.garlandFlorals
     ? [218, 198, 178, 160, 143, 126, 108, 92, 76, -52, -68].map((a, i) => {
-        const R = pieces[0].w / 2, t = (a * Math.PI) / 180, rr = R * (i % 2 ? 1.08 : 1.0);
-        return { x: VB / 2 + Math.cos(t) * rr, y: FLOOR - R - Math.sin(t) * rr, r: R * 0.11, a: -a + 90 };
+        const R = ROUND_BASE.r * VB * 1.04, t = (a * Math.PI) / 180, rr = R * (i % 2 ? 1.06 : 0.98);
+        return { x: ROUND_BASE.cx * VB + Math.cos(t) * rr, y: ROUND_BASE.cy * VB - Math.sin(t) * rr, r: R * 0.1, a: -a + 90 };
       })
     : [];
 
@@ -330,78 +367,126 @@ export default function LiveSketch({
     if (s.includes("\n")) return s.split("\n").map((l) => l.trim()).filter(Boolean);
     return words.length >= 2 ? [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")] : [s.trim()];
   };
+  // The script is Brittany Signature, the face the renders print.
   const fontFor = (f: string) => f === "block"
-    ? { family: "var(--bz-sans), Arial, sans-serif", weight: 800, k: 0.13 }
-    : f === "elegant" ? { family: "Georgia, 'Times New Roman', serif", weight: 400, k: 0.14 }
-    : { family: "var(--bz-logo), 'Segoe Script', cursive", weight: 600, k: 0.19 };
+    ? { family: "var(--bz-sans), Arial, sans-serif", weight: 800, k: 0.13, adv: 0.62 }
+    : f === "elegant" ? { family: "Georgia, 'Times New Roman', serif", weight: 400, k: 0.14, adv: 0.55 }
+    : { family: "var(--bz-brittany)", weight: 400, k: 0.15, adv: 0.5 };
+
+  /** Where a board's words go: its centre, clear of the garland and above the plinth. */
+  const textSpot = (p: Piece, blockH: number) => {
+    if (roundBase) {
+      // The garland covers the board's left side: the words sit right of centre.
+      const cx = ROUND_BASE.cx * VB + (balloonsOn ? ROUND_BASE.r * VB * 0.12 : 0);
+      let cy = ROUND_BASE.cy * VB - ROUND_BASE.r * VB * 0.18;
+      if (cy + blockH / 2 > plinthTop - 34) cy = plinthTop - 34 - blockH / 2;
+      return { cx, cy, w: p.w * (balloonsOn ? 0.66 : 0.8) };
+    }
+    const cy = p.item.type === "round" ? FLOOR - p.w / 2 : p.top + p.h * 0.36;
+    return { cx: p.x + p.w / 2, cy, w: p.w * 0.85 };
+  };
+
+  // Standees: the first stands left of the backdrop, the second right.
+  const standeeBoxes = standees.map((src, i) => {
+    const h = 150 * scale, w = h * 0.62;
+    const cx = i === 0
+      ? Math.max(w * 0.42, roundBase ? 0.15 * VB : groupL - garlandReach * 0.55)
+      : Math.min(VB - w * 0.42, roundBase ? 0.86 * VB : groupR + garlandReach * 0.55);
+    return { src, x: cx - w / 2, y: floorY + (roundBase ? 0.05 * VB : 14) - h, w, h };
+  });
+
+  const wallTop = "#7d8085", wallLow = "#a4a6aa", floorTop = "#c3c4c7", floorLow = "#e2e3e5";
 
   return (
     <svg viewBox={`0 0 ${VB} ${VB}`} className="bz-sketch" role="img" aria-label="Live sketch of your choices">
       <defs>
-        <linearGradient id="skWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f1ece8" /><stop offset="1" stopColor="#e7e1dc" /></linearGradient>
-        <linearGradient id="skFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ddd6cf" /><stop offset="1" stopColor="#eae4de" /></linearGradient>
+        <linearGradient id="skWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={wallTop} /><stop offset="1" stopColor={wallLow} /></linearGradient>
+        <linearGradient id="skFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={floorTop} /><stop offset="1" stopColor={floorLow} /></linearGradient>
         <radialGradient id="skShine" cx="0.32" cy="0.28" r="0.75"><stop offset="0" stopColor="#fff" stopOpacity=".85" /><stop offset=".35" stopColor="#fff" stopOpacity=".15" /><stop offset="1" stopColor="#000" stopOpacity=".12" /></radialGradient>
         <filter id="skGlow" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="7" /></filter>
-        <filter id="skShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="10" floodColor="#000" floodOpacity=".12" /></filter>
+        <filter id="skShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="10" floodColor="#000" floodOpacity=".18" /></filter>
+        <filter id="skSoft" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="1.5" dy="2.5" stdDeviation="1.6" floodColor="#2a2a30" floodOpacity=".28" /></filter>
         <pattern id="skSequin" width="16" height="16" patternUnits="userSpaceOnUse">
           <circle cx="8" cy="8" r="6.2" fill="rgba(255,255,255,.55)" /><circle cx="6" cy="6" r="2" fill="#fff" opacity=".7" />
         </pattern>
+        {roundBase && <mask id="skBoardMask" maskUnits="userSpaceOnUse" x="0" y="0" width={VB} height={VB}><image href={ROUND_BASE.boardMask} width={VB} height={VB} /></mask>}
       </defs>
-      <rect width={VB} height={FLOOR} fill="url(#skWall)" />
-      <rect y={FLOOR} width={VB} height={VB - FLOOR} fill="url(#skFloor)" />
 
-      {/* Boards */}
-      {pieces.map((p) => {
-        const path = piecePath(p);
-        const color = p.item.type === "shimmer_wall"
-          ? (SHIMMER_COLOR_HEX[d.shimmerColor ?? "silver"] ?? "#d1d5db")
-          : (p.item.color || d.backdropColor || "#ffffff");
-        if (p.item.type === "balloon_ring") {
-          const r = p.w / 2;
-          return <circle key={p.item.id} cx={p.x + r} cy={FLOOR - r} r={r - 6} fill="none" stroke="#efe6d2" strokeWidth={12} filter="url(#skShadow)" />;
-        }
-        if (p.item.type === "open_arch_frame") {
-          return <path key={p.item.id} d={path!} fill="none" stroke={color} strokeWidth={Math.max(18, p.w * 0.16)} strokeLinejoin="round" filter="url(#skShadow)" />;
-        }
-        return (
-          <g key={p.item.id}>
-            <path d={path!} fill={color} stroke="rgba(39,22,23,.18)" strokeWidth={2} filter="url(#skShadow)" />
-            {p.item.type === "shimmer_wall" && <path d={path!} fill="url(#skSequin)" />}
-          </g>
-        );
-      })}
+      {roundBase ? (
+        <>
+          {/* The room, the board and (beneath the balloon layer) the balloons, as photographed. */}
+          <image href={ROUND_BASE.room} width={VB} height={VB} />
+          {/* The board's colour, laid over its photographed light and shade. */}
+          {!isWhite(items[0].color || d.backdropColor) && (
+            <rect width={VB} height={VB} fill={items[0].color || d.backdropColor} mask="url(#skBoardMask)" style={{ mixBlendMode: "multiply" }} />
+          )}
+        </>
+      ) : (
+        <>
+          <rect width={VB} height={FLOOR} fill="url(#skWall)" />
+          <rect y={FLOOR} width={VB} height={VB - FLOOR} fill="url(#skFloor)" />
+          {/* Boards */}
+          {pieces.map((p) => {
+            const path = piecePath(p);
+            const color = p.item.type === "shimmer_wall"
+              ? (SHIMMER_COLOR_HEX[d.shimmerColor ?? "silver"] ?? "#d1d5db")
+              : (p.item.color || d.backdropColor || "#ffffff");
+            if (p.item.type === "balloon_ring") {
+              const r = p.w / 2;
+              return <circle key={p.item.id} cx={p.x + r} cy={FLOOR - r} r={r - 6} fill="none" stroke="#efe6d2" strokeWidth={12} filter="url(#skShadow)" />;
+            }
+            if (p.item.type === "open_arch_frame") {
+              return <path key={p.item.id} d={path!} fill="none" stroke={color} strokeWidth={Math.max(18, p.w * 0.16)} strokeLinejoin="round" filter="url(#skShadow)" />;
+            }
+            return (
+              <g key={p.item.id}>
+                <path d={path!} fill={color} stroke="rgba(39,22,23,.18)" strokeWidth={2} filter="url(#skShadow)" />
+                {p.item.type === "shimmer_wall" && <path d={path!} fill="url(#skSequin)" />}
+              </g>
+            );
+          })}
+        </>
+      )}
 
       {/* Theme graphic: a few small motifs on the board */}
-      {pieces.filter((p) => p.item.graphic?.enabled && piecePath(p)).map((p) => {
+      {pieces.filter((p) => p.item.graphic?.enabled && (roundBase || piecePath(p))).map((p) => {
         const rnd = seeded(p.idx * 97 + 3);
         return (
-          <g key={`g${p.item.id}`} opacity={0.75}>
+          <g key={`g${p.item.id}`} opacity={0.75} mask={roundBase ? "url(#skBoardMask)" : undefined}>
             {Array.from({ length: 6 }, (_, i) => {
-              const cx = p.x + p.w * (0.2 + rnd() * 0.6), cy = p.top + p.h * (0.45 + rnd() * 0.45), s = p.w * 0.05;
+              const cx = p.x + p.w * (0.3 + rnd() * 0.55), cy = p.top + p.h * (0.5 + rnd() * 0.4), s = p.w * 0.05;
               return <path key={i} d={`M ${cx} ${cy - s} L ${cx + s * 0.3} ${cy - s * 0.3} L ${cx + s} ${cy} L ${cx + s * 0.3} ${cy + s * 0.3} L ${cx} ${cy + s} L ${cx - s * 0.3} ${cy + s * 0.3} L ${cx - s} ${cy} L ${cx - s * 0.3} ${cy - s * 0.3} Z`} fill={accent} />;
             })}
           </g>
         );
       })}
 
-      {/* Printed lettering */}
-      {pieces.filter((p) => p.item.text?.enabled && (p.item.text.value ?? "").trim() && piecePath(p) && p.item.type !== "open_arch_frame").map((p) => {
+      {/* Printed lettering — staggered and tilted like the renders' script */}
+      {pieces.filter((p) => p.item.text?.enabled && (p.item.text.value ?? "").trim() && (roundBase || piecePath(p)) && p.item.type !== "open_arch_frame").map((p) => {
         const f = fontFor(p.item.text.fontStyle);
         const ls = lines(p.item.text.value);
-        const size = Math.min(p.w * f.k * (textShift ? 0.9 : 1), (p.w * (textShift ? 0.7 : 0.85)) / Math.max(4, Math.max(...ls.map((l) => l.length)) * 0.5));
-        const cy = p.item.type === "round" ? FLOOR - p.w / 2 : p.top + p.h * 0.36;
-        const tx = p.x + p.w / 2 + textShift;
+        const longest = Math.max(4, ...ls.map((l) => l.length));
+        const k = textSizeScale(p.item.text.size);
+        const room = textSpot(p, 0);
+        const size = Math.min(p.w * f.k, room.w / (longest * f.adv)) * k;
+        const gap = size * (p.item.text.fontStyle === "script" ? 1.25 : 1.12);
+        const blockH = gap * (ls.length - 1) + size;
+        const at = textSpot(p, blockH);
+        const script = p.item.text.fontStyle === "script";
+        const stagger = (i: number) => (!script || ls.length < 2 ? 0 : (i === 0 ? -1 : i === ls.length - 1 ? 1 : 0) * size * 0.4);
+        const y0 = at.cy - ((ls.length - 1) * gap) / 2 + size * 0.32;
         return (
-          <text key={`t${p.item.id}`} x={tx} y={cy - ((ls.length - 1) * size * 0.55)} textAnchor="middle"
-            fontFamily={f.family} fontWeight={f.weight} fontSize={size} fill={resolveTextColorHex(p.item.text.color, accent)}
-            style={{ paintOrder: "stroke" }} stroke="rgba(39,22,23,.12)" strokeWidth={1}>
-            {ls.map((l, i) => <tspan key={i} x={tx} dy={i === 0 ? 0 : size * 1.1}>{l}</tspan>)}
-          </text>
+          <g key={`t${p.item.id}`} transform={script ? `rotate(-4 ${at.cx} ${at.cy})` : undefined} filter="url(#skSoft)">
+            <text textAnchor="middle" fontFamily={f.family} fontWeight={f.weight} fontSize={size}
+              fill={resolveTextColorHex(p.item.text.color, accent)}>
+              {ls.map((l, i) => <tspan key={i} x={at.cx + stagger(i)} y={y0 + i * gap}>{l}</tspan>)}
+            </text>
+          </g>
         );
       })}
 
       {/* The photographed garland on the round base, in the chosen colours */}
-      {roundBase && baseUrl && <image href={baseUrl} x={baseBox.x} y={baseBox.y} width={baseBox.s} height={baseBox.s} />}
+      {roundBase && baseBalloons && <image href={baseBalloons} width={VB} height={VB} />}
       {baseFlorals.map((f, i) => (
         <g key={`bf${i}`} transform={`rotate(${f.a} ${f.x} ${f.y})`}>
           <ellipse cx={f.x - f.r * 0.7} cy={f.y} rx={f.r} ry={f.r * 0.36} fill="#7fa77a" />
@@ -410,7 +495,7 @@ export default function LiveSketch({
         </g>
       ))}
 
-      {/* Balloon garland (and florals tucked in) */}
+      {/* Balloon garland (drawn setups), florals tucked in */}
       {balloons.map((b, i) => (
         <g key={`b${i}`}>
           <circle cx={b.x} cy={b.y} r={b.r} fill={b.c} stroke="rgba(39,22,23,.10)" strokeWidth={1} />
@@ -428,11 +513,12 @@ export default function LiveSketch({
       {neon && neonPiece && (() => {
         const ls = lines(neon.text);
         const isRing = neonPiece.item.type === "balloon_ring";
-        const size = Math.min(neonPiece.w * 0.16, 64);
-        const cx = neonPiece.x + neonPiece.w / 2 + textShift;
-        const cy = isRing ? FLOOR - neonPiece.w * 0.62 : neonPiece.top + neonPiece.h * 0.34;
+        const size = Math.min(neonPiece.w * 0.16, 64) * (roundBase ? 1.2 : 1);
+        const spot = textSpot(neonPiece, size * 1.05 * (ls.length - 1) + size);
+        const cx = spot.cx;
+        const cy = isRing ? FLOOR - neonPiece.w * 0.62 : roundBase ? spot.cy : neonPiece.top + neonPiece.h * 0.34;
         const txt = (glow: boolean) => (
-          <text x={cx} y={cy - (ls.length - 1) * size * 0.5} textAnchor="middle" fontFamily="var(--bz-logo), cursive" fontWeight={700}
+          <text x={cx} y={cy - (ls.length - 1) * size * 0.5} textAnchor="middle" fontFamily="var(--bz-brittany)" fontWeight={400}
             fontSize={size} fill={glow ? "#ffb36b" : "#fffaf0"} filter={glow ? "url(#skGlow)" : undefined} opacity={glow ? 0.9 : 1}
             stroke={glow ? "#ffb36b" : "#f0b36e"} strokeWidth={glow ? 6 : 1.2}>
             {ls.map((l, i) => <tspan key={i} x={cx} dy={i === 0 ? 0 : size * 1.05}>{l}</tspan>)}
@@ -441,23 +527,26 @@ export default function LiveSketch({
         return <g>{txt(true)}{txt(false)}</g>;
       })()}
 
-      {/* Light-up number on the floor, beside the decor */}
+      {/* Plinths in front of the board */}
+      {plinths.map((p, i) => (
+        <image key={`p${i}`} href={PLINTH_SRC} x={p.x} y={p.y} width={p.w} height={p.h} preserveAspectRatio="none" />
+      ))}
+
+      {/* Light-up number on the floor, right of the plinths */}
       {hasNumber && pieces.length > 0 && (() => {
-        const last = pieces[pieces.length - 1];
-        const h = 90 * scale;
-        const x = Math.min(VB - h * 0.45, last.x + last.w + garlandReach + h * 0.3);
+        const h = 100 * scale * 0.9;
+        // Beside the plinths (or the middle of the decor without them), clear of the standees.
+        const x = Math.min(VB - h * 0.4, plinths.length ? plinthRight + h * 0.42 : roundBase ? 0.66 * VB : groupMid + h * 0.5);
         return (
-          <text x={x} y={FLOOR + 4} textAnchor="middle" fontFamily="var(--bz-sans), Arial, sans-serif" fontWeight={900} fontSize={h * 1.15}
-            fill="#f6d68f" stroke="#c99a46" strokeWidth={3} strokeDasharray="2 10" strokeLinecap="round">{d.numberLight!.value}</text>
+          <text x={x} y={floorY + (roundBase ? 0.03 * VB : 4)} textAnchor="middle" fontFamily="var(--bz-sans), Arial, sans-serif" fontWeight={900} fontSize={h * 1.15}
+            fill="#f6d68f" stroke="#c99a46" strokeWidth={3} strokeDasharray="2 10" strokeLinecap="round" filter="url(#skSoft)">{d.numberLight!.value}</text>
         );
       })()}
 
-      {/* Standees on the floor at the front left */}
-      {cutoutPreviews.slice(0, 3).map((src, i) => {
-        const h = 150 * scale, w = h * 0.62;
-        const x = Math.max(8, (pieces[0]?.x ?? 200) - garlandReach - w * 0.9 + i * w * 0.6);
-        return <image key={`s${i}`} href={src} x={x} y={FLOOR - h + 14} width={w} height={h} preserveAspectRatio="xMidYMax meet" />;
-      })}
+      {/* Standees on the floor: the first left of the backdrop, the second right */}
+      {standeeBoxes.map((s, i) => (
+        <image key={`s${i}`} href={s.src} x={s.x} y={s.y} width={s.w} height={s.h} preserveAspectRatio="xMidYMax meet" />
+      ))}
 
       {/* The piece being styled */}
       {activeId && pieces.length > 1 && pieces.filter((p) => p.item.id === activeId).map((p) => {

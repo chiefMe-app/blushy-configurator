@@ -25,6 +25,7 @@ cutoutTotalCount,
   BACKDROP_PRINTS,
   GRAPHIC_STYLES,
   FONT_STYLES,
+  TEXT_SIZES,
   TEXT_COLORS,
   DEFAULT_TEXT_VALUE,
   themeTextColor,
@@ -276,6 +277,9 @@ function Dash() {
 }
 
 // 2026-10-23: the occasions shown as coming soon on the Event step.
+/** 2026-10-24: at most two character standees — one each side of the backdrop. */
+const MAX_STANDEES = 2;
+
 const COMING_SOON_EVENTS: { title: string; sub: string; art: string }[] = [
   { title: "Bridal Corner", sub: "For the bride and her crew", art: "/design/ui/event-bridal.webp" },
   { title: "Graduation", sub: "Hats off to big dreams", art: "/design/ui/event-graduation.webp" },
@@ -1248,6 +1252,8 @@ const selectedCutoutAssets = normalizedCut.selectedAssets ?? [];
 
 function toggleCutoutAsset(preset: { assetId: string; label: string; previewUrl?: string }) {
   const exists = selectedCutoutAssets.some((a) => a.assetId === preset.assetId);
+  // 2026-10-24: two standees at most, one each side of the backdrop.
+  if (!exists && selectedCutoutAssets.length >= MAX_STANDEES) return;
   const next = exists
     ? selectedCutoutAssets.filter((a) => a.assetId !== preset.assetId)
     : [...selectedCutoutAssets, {
@@ -1273,6 +1279,12 @@ function toggleCutoutAsset(preset: { assetId: string; label: string; previewUrl?
 }
 
 function setAssetQuantity(assetId: string, size: "large" | "medium" | "small", quantity: number) {
+  // Kept within the two-standee limit too.
+  const others = selectedCutoutAssets.filter((a) => a.assetId !== assetId)
+    .reduce((n, a) => n + a.quantities.large + a.quantities.medium + a.quantities.small, 0);
+  const mine = selectedCutoutAssets.find((a) => a.assetId === assetId);
+  const mineOther = mine ? (["large", "medium", "small"] as const).filter((k) => k !== size).reduce((n, k) => n + mine.quantities[k], 0) : 0;
+  quantity = Math.min(quantity, Math.max(0, MAX_STANDEES - others - mineOther));
   const next = selectedCutoutAssets.map((a) =>
     a.assetId === assetId
       ? { ...a, quantities: { ...a.quantities, [size]: Math.max(0, Math.min(9, quantity)) } }
@@ -1512,29 +1524,11 @@ function clearAllStandees() {
       case "single_arch":        panels = [makeArchUnsized("arch-1")]; break;
       case "single_round": {
         // 2026-10-20, customer request: Single Round comes with "Happy Birthday"
-        // printed in silver and the Elsa Solo standee already on — the
-        // customer removes either below if they do not want it.
+        // printed in silver.
+        // 2026-10-24: and no longer with a standee — "character standeeler
+        // secili default gelmesin hicbir setupta".
         const round = makeBackdropItem("round");
         panels = [{ ...round, text: { ...round.text, enabled: true, value: DEFAULT_TEXT_VALUE, color: themeTextColor(config.theme) } }];
-        const elsa = (themeCutoutPresets ?? []).find((pr) => /elsa solo/i.test(pr.label));
-        if (elsa && selectedCutoutAssets.length === 0) {
-          patchDecor({
-            cutouts: {
-              ...normalizedCut,
-              size: "none",
-              position: "floor",
-              source: "preset",
-              presetAssetId: undefined,
-              mode: "standees",
-              selectedAssets: [{
-                assetId: elsa.assetId,
-                label: elsa.label,
-                previewUrl: elsa.previewUrl,
-                quantities: { ...emptyCutoutQuantities(), large: 1 },
-              }],
-            },
-          });
-        }
         break;
       }
       // 2026-09-05: the Banner card was in the setup list but clicking it did
@@ -1545,7 +1539,8 @@ function clearAllStandees() {
         // 2026-10-21, customer request: the banner comes already printed with
         // the theme (its first theme graphic), and with NO standee — the
         // Elsa that Single Round turns on is taken back off here if it is
-        // the only one selected. Either can be changed below.
+        // the only one selected. Either can be changed below. (2026-10-24: no
+        // setup turns a standee on any more, so there is nothing to take off.)
         const banner = makeBackdropItem("banner");
         const presets = getThemeCatalogEntry(config.theme)?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
         // The pattern print when the theme has one (Frozen: Snowflake Pattern),
@@ -1554,9 +1549,6 @@ function clearAllStandees() {
         panels = [first
           ? { ...banner, graphic: { ...banner.graphic, enabled: true, theme: first.id, source: "preset", assetId: first.assetId } }
           : banner];
-        if (selectedCutoutAssets.length === 1 && /elsa solo/i.test(selectedCutoutAssets[0].label ?? "")) {
-          clearAllStandees();
-        }
         break;
       }
       case "arch_open_frame":    panels = [makeArchUnsized("arch-1"), makeBackdropItem("open_arch_frame")]; break;
@@ -2091,7 +2083,7 @@ function clearAllStandees() {
         const boardInList = boardSwatches.some((hex) => sameHex(hex, boardHex));
         const sampleText = item.text.value.trim() || DEFAULT_TEXT_VALUE;
         const FONT_FACE: Record<string, { family: string; weight: number; size: number; short: string }> = {
-          script:  { family: "var(--bz-logo), 'Segoe Script', cursive", weight: 600, size: 27, short: "Script" },
+          script:  { family: "var(--bz-brittany)", weight: 400, size: 22, short: "Script" },
           block:   { family: "var(--bz-sans), 'Arial Black', sans-serif", weight: 800, size: 20, short: "Bold" },
           elegant: { family: "Georgia, 'Times New Roman', serif", weight: 400, size: 21, short: "Serif" },
         };
@@ -2220,6 +2212,19 @@ function clearAllStandees() {
                           {sampleText}
                         </span>
                         <strong>{face.short}</strong>
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* 2026-10-24: lettering size. */}
+                <div className="bz-st-size" role="group" aria-label="Text size">
+                  <span className="lbl">Text size</span>
+                  {TEXT_SIZES.map((t) => {
+                    const on = (item.text.size ?? "medium") === t.id;
+                    return (
+                      <button key={t.id} type="button" aria-pressed={on} className={on ? "on" : ""}
+                        onClick={() => patchItemText(itemIdx, { size: t.id })}>
+                        <span className="aa" style={{ fontSize: 11 + 5 * t.scale }} aria-hidden="true">Aa</span>{t.label}
                       </button>
                     );
                   })}
@@ -3223,14 +3228,16 @@ function clearAllStandees() {
           <div className="bz-ex-intro">
             <h3 className="bz-ex-title"><span>1.</span> Character standees <Dash /></h3>
             <p>Bring their favourite characters to life at the party!</p>
-            <small>Each standee is {single.heightCm} cm · +AED {single.unitPrice}</small>
+            <small>Each standee is {single.heightCm} cm · +AED {single.unitPrice} · up to {MAX_STANDEES}</small>
           </div>
           <div className="bz-ex-chars" id="bz-ex-chars">
             {shownChars.map((preset) => {
               const selected = selectedCutoutAssets.some((a) => a.assetId === preset.assetId);
               const preview = (preset as { previewUrl?: string }).previewUrl;
+              const full = !selected && selectedCutoutAssets.length >= MAX_STANDEES;
               return (
-                <button key={preset.assetId} type="button" aria-pressed={selected}
+                <button key={preset.assetId} type="button" aria-pressed={selected} disabled={full}
+                  title={full ? "Two standees at most — remove one to swap" : undefined}
                   onClick={() => toggleCutoutAsset({ assetId: preset.assetId, label: preset.label, previewUrl: preview || undefined })}
                   className={`bz-ex-char ${selected ? "on" : ""}`}>
                   {selected && <span className="bz-st-tick" aria-hidden="true">✓</span>}

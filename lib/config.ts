@@ -380,7 +380,18 @@ export interface BackdropItemText {
   value: string;
   fontStyle: FontStyle;
   color: TextColor;
+  /** 2026-10-24: how big the lettering is on its board ("textin buyuklugu
+   *  kucuklugu degissin"). Undefined is medium, the size it always had. */
+  size?: TextSize;
 }
+
+export type TextSize = "small" | "medium" | "large";
+export const TEXT_SIZES: { id: TextSize; label: string; scale: number }[] = [
+  { id: "small",  label: "Small",  scale: 0.74 },
+  { id: "medium", label: "Medium", scale: 1 },
+  { id: "large",  label: "Large",  scale: 1.22 },
+];
+export const textSizeScale = (s?: TextSize) => TEXT_SIZES.find((t) => t.id === s)?.scale ?? 1;
 
 export interface BackdropItemGraphic {
   enabled: boolean;

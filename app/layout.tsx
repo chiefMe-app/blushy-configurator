@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Kalam, Caveat, DM_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import "./blushy.css";
 
@@ -10,6 +11,9 @@ import "./blushy.css";
 const kalam = Kalam({ subsets: ["latin"], weight: ["300", "400", "700"], variable: "--bz-font-kalam", display: "swap" });
 const caveat = Caveat({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--bz-font-caveat", display: "swap" });
 const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--bz-font-dmsans", display: "swap" });
+// 2026-10-24: Brittany Signature (Creatype Studio, supplied by the customer) —
+// the script the renders print, now also shown in the Style tab and the sketch.
+const brittany = localFont({ src: "./fonts/BrittanySignature.ttf", variable: "--bz-font-brittany", display: "swap" });
 
 export const metadata: Metadata = {
   title: "PartyMuse by Blushy — Sparkly Party in Minutes",
@@ -34,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${kalam.variable} ${caveat.variable} ${dmSans.variable}`}>
+    <html lang="en" className={`${kalam.variable} ${caveat.variable} ${dmSans.variable} ${brittany.variable}`}>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>

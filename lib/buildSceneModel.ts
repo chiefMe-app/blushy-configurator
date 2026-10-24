@@ -99,6 +99,7 @@ export interface ScenePanel {
     value:     string;
     fontStyle: FontStyle;
     color:     TextColor;
+    size?:     "small" | "medium" | "large";
   };
   graphic: {
     enabled: boolean;
@@ -180,6 +181,7 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
         value:     item.text.value.trim(),
         fontStyle: item.text.fontStyle,
         color:     item.text.color,
+        ...(item.text.size && item.text.size !== "medium" ? { size: item.text.size } : {}),
       },
       graphic: {
         enabled: item.graphic.enabled,
@@ -262,6 +264,7 @@ export function buildSceneModelFromItems(
       value:     item.text.value.trim(),
       fontStyle: item.text.fontStyle,
       color:     item.text.color,
+      ...(item.text.size && item.text.size !== "medium" ? { size: item.text.size } : {}),
     },
     graphic: {
       enabled: item.graphic.enabled,

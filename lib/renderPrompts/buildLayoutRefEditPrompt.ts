@@ -1029,6 +1029,10 @@ export function buildLayoutRefEditPrompt(
   // Off Frozen the reference photo is still Frozen's: its blue, lilac and
   // silver balloons, its clear bubbles and its snowflakes must not come
   // across. The balloons take their colours from IMAGE 1 only.
+  // 2026-10-24: and on Frozen itself the photos' snowflakes stay out.
+  const styleRefNoFlakes = styleRef && theme === "frozen" && sceneModel.balloons.style !== "none"
+    ? `Take NOT its snowflake ornaments: the garland is balloons only, with no snowflakes anywhere. `
+    : "";
   const styleRefNotColours = styleRef && theme !== "frozen"
     ? `Take NOT its balloon colours, its snowflakes${selectedSempertexColors.some((c) => /clear/i.test(String(c.colorName ?? ""))) ? "" : " or its clear balloons"}${styleRef.board === "square banner board" ? " or its printed artwork" : ""}: every balloon is coloured exactly as in IMAGE 1. `
     : "";
@@ -1045,17 +1049,45 @@ export function buildLayoutRefEditPrompt(
   const styleRefNoWords = styleRef && !sceneHasLettering
     ? `The photo's lettering is NOT copied: every board is left completely plain — no words, no lettering, no sign anywhere. `
     : "";
+  // 2026-10-24: a pink round came back white — "backdrop color previewda
+  // degisiyor ama renderda degismedi". The photo's white board beat the
+  // guide's colour, so a board that is not white says its colour up front.
+  const isWhiteHex = (c: string) => !c || /^#?(fff|ffffff)$/i.test(c.trim());
+  const colouredBoards = sceneModel.panels
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => p.type !== "shimmer_wall" && p.type !== "balloon_ring" && !isWhiteHex(p.color));
+  const styleRefBoardColour = styleRef && colouredBoards.length > 0
+    ? (sceneModel.panels.length === 1
+        ? `The board itself is painted ${backdropColorLabel(colouredBoards[0].p.color)} (${colouredBoards[0].p.color.toUpperCase()}), exactly as in IMAGE 1 — not white like the board in IMAGE 2. `
+        : colouredBoards.map(({ p, i }) => `The ${(sceneModel.panels.length === 2 ? ["LEFT", "RIGHT"] : ["LEFT", "CENTER", "RIGHT"])[i] ?? ""} board is painted ${backdropColorLabel(p.color)} (${p.color.toUpperCase()}). `).join("") +
+          `Board colours come from IMAGE 1, not from IMAGE 2. `)
+    : "";
+  // 2026-10-24: the style line named "the one white cylindrical pedestal
+  // column" whatever was chosen, and being first it won: two plinths came
+  // back as none, and the light-up number (absent from every photo) was
+  // dropped. It now names what the layout really holds.
+  const nPlinths = sceneModel.plinths.length;
+  const numberOn = !!sceneModel.numberLight?.enabled && (sceneModel.numberLight.value ?? "").trim().length > 0;
+  const pedestalPhrase = (smooth: boolean) =>
+    nPlinths === 0 ? ""
+    : nPlinths === 1 ? ` and the one ${smooth ? "smooth " : ""}white cylindrical pedestal column`
+    : ` and the ${nPlinths === 3 ? "THREE" : "TWO"} ${smooth ? "smooth " : ""}white cylindrical pedestal columns of different heights`;
+  const numberPhrase = numberOn ? `, the light-up marquee number ${sceneModel.numberLight.value.trim()}` : "";
+  const styleRefKeepExtras = styleRef && (nPlinths > 1 || numberOn)
+    ? `Everything IMAGE 1 shows is in the photo even where IMAGE 2 has none: ` +
+      [nPlinths > 1 ? `all ${nPlinths} pedestal columns` : "", numberOn ? `the light-up number ${sceneModel.numberLight.value.trim()}` : ""].filter(Boolean).join(" and ") + `. `
+    : "";
   const frontRoundStyleLine = styleRef?.closeUp
     // A close-up of a garland (the Double Arch): only its light and balloons.
-    ? `IMAGE 1 is the layout: it fixes the shape and place of the ${styleRef.board}, every balloon and the one ` +
-      `smooth plain white cylindrical pedestal column. IMAGE 2 is a close-up of part of a finished garland: copy its ` +
-      `${styleRef.light} and exactly how its balloons look — nothing else from it. ` + styleRefNotColours
+    ? `IMAGE 1 is the layout: it fixes the shape and place of the ${styleRef.board}${numberPhrase}, every balloon${pedestalPhrase(true)}. ` +
+      `IMAGE 2 is a close-up of part of a finished garland: copy its ` +
+      `${styleRef.light} and exactly how its balloons look — nothing else from it. ` + styleRefKeepExtras + styleRefBoardColour + styleRefNotColours + styleRefNoFlakes
     : styleRef
-    ? `IMAGE 1 is the layout: it fixes where the ${styleRef.board}, every balloon and the one ${styleRef.board === "three boards" ? "smooth " : ""}white cylindrical ` +
-      `pedestal column stand. IMAGE 2 is a photo of the finished look: copy its room, its ` +
+    ? `IMAGE 1 is the layout: it fixes where the ${styleRef.board}${numberPhrase}, every balloon${pedestalPhrase(styleRef.board === "three boards")} stand. ` +
+      `IMAGE 2 is a photo of the finished look: copy its room, its ` +
       `${styleRef.light}, its ` +
       `floor and exactly how its balloons${styleRefLook ? ` and ${styleRefLook}` : ""} look` +
-      (styleRef.board === "three boards" ? `, with all three boards clearly visible. ` : `. `) + styleRefNoWords + styleRefNotColours
+      (styleRef.board === "three boards" ? `, with all three boards clearly visible. ` : `. `) + styleRefKeepExtras + styleRefBoardColour + styleRefNoWords + styleRefNotColours + styleRefNoFlakes
     : "";
   const frontImageRolesLine = !styleRef && panelCount === 1 && sceneModel.panels[0]?.type === "arch"
     && hasLoneArchStyleReference()
@@ -1268,7 +1300,8 @@ export function buildLayoutRefEditPrompt(
   const frontOrnamentLine = sceneModel.balloons.style === "none" ? ""
     // (The Double Arch was left out — its photo has none — until the customer
     // asked for them there too, 2026-10-22.)
-    : (theme === "frozen" ? `Large chunky white glitter-foam 3D snowflake ornaments are tucked into the garland where the layout shows them. ` : ``) +
+    // 2026-10-24: no snowflake ornaments any more, on any Frozen setup.
+    : `` +
       (hasClearInPalette ? `The clear balloons are crystal-clear transparent bubbles you can see through. ` : ``);
   // 2026-10-22: name the palette's own metals. This said "the silver
   // balloons" whatever was picked, so Unicorn's rose gold came back as

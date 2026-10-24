@@ -624,6 +624,8 @@ function customTextGuide(
     garlandSide?: "left" | "right" | "both" | "none" | "round" | "banner" | "lonearch" | "lonearchleft" | "shimmer" | "doublearch" | "triple";
     fontStyle?: string;
     color?: string;
+    /** 2026-10-24: the customer's lettering size. */
+    size?: string;
   } = {},
 ): { svg: string; zone: { xMin: number; xMax: number; yMin: number; yMax: number }; fill: string; silverInk: string } {
   const { hasGraphicBelow = false, garlandSide = "none", fontStyle = "script", color = "white" } = opts;
@@ -720,6 +722,10 @@ function customTextGuide(
     const widest = Math.max(...lines.map((ln) => textAdvance(ln, fontStyle, fontSize)));
     const fitK = (clearW * 0.96) / Math.max(1, widest);
     fontSize = Math.max(12, Math.round(Math.min(fontSize * fitK, pw * 0.24)));
+    // 2026-10-24: the chosen size. Medium is the fitted size above; large may
+    // reach a little past the clear band, small sits well inside it.
+    if (opts.size === "small") fontSize = Math.max(12, Math.round(fontSize * 0.74));
+    else if (opts.size === "large") fontSize = Math.round(Math.min(fontSize * 1.22, fontSize * fitK * 1.15, pw * 0.3));
   }
   // 2026-10-22: 1.08 -> 1.34 for the script. Brittany Signature's loops
   // reach far above and below its line, and "Happy" and "Birthday" ran into
@@ -1374,6 +1380,7 @@ export function generateStructureSilhouette(
           garlandSide,
           fontStyle: item?.text?.fontStyle,
           color:     item?.text?.color,
+          size:      item?.text?.size,
         },
       );
       // 2026-10-22: beside an open frame the lettering is laid over the
