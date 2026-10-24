@@ -243,6 +243,7 @@ import OptionCard from "@/components/OptionCard";
 import PackageCard from "@/components/PackageCard";
 import AddOnCard from "@/components/AddOnCard";
 import Sprinkles from "@/components/design/Sprinkles";
+import { PieceDiagram } from "@/components/design/LiveSketch";
 import VenueDetailsForm from "@/components/VenueDetailsForm";
 import ReviewSummary from "@/components/ReviewSummary";
 
@@ -353,6 +354,9 @@ export default function ConfigurePage() {
   const [step, setStep] = useState(0);
   // Which of the Decor step's four tabs is open.
   const [decorTab, setDecorTab] = useState(0);
+  // 2026-10-24: the backdrop piece the Style tab is styling — kept here so the
+  // live sketch in the preview can outline it.
+  const [stylePieceId, setStylePieceId] = useState<string | null>(null);
   // Which list the theme was picked from, so Space (in both) ticks only there.
   const [themeGroup, setThemeGroup] = useState<"girl" | "boy" | null>(null);
   // The landing page links straight to the Theme step (/builder?step=theme).
@@ -576,6 +580,16 @@ export default function ConfigurePage() {
   // "Generate Render" and scroll them to the render card instead. Once a
   // non-stale render exists, the footer reverts to a normal Continue.
   const isDecorStep = step === 2;
+  // 2026-10-24: what the live sketch draws besides the config itself — the
+  // piece the Style tab is on (same default as the tab: the lettered piece),
+  // and the chosen standees' pictures.
+  const sketchItems = config.decor.backdropItems;
+  const sketchActiveId = sketchItems.find((i) => i.id === stylePieceId)?.id
+    ?? sketchItems.find((i) => !["shimmer_wall", "balloon_ring", "open_arch_frame"].includes(i.type) && i.text.enabled)?.id
+    ?? sketchItems[0]?.id ?? null;
+  const sketchCutouts = (config.decor.cutouts.selectedAssets ?? [])
+    .map((a) => a.previewUrl || getThemeCutoutPresets(config.theme)?.find((p) => p.assetId === a.assetId)?.previewUrl || "")
+    .filter(Boolean);
   const decorRenderReady = finalRenderState.hasRender && !finalRenderState.isStale;
   const triggerDecorGenerateRender = () => {
     document.getElementById("party-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -698,6 +712,10 @@ export default function ConfigurePage() {
                 emptyArt={isDecorStep ? THEME_SETUP_PREVIEW[config.theme]?.[inferSetupLayoutTemplateIdFromBackdropItems(config.decor.backdropItems) ?? ""] : undefined}
                 emptyArtLabel={`${themeById(config.theme)?.name ?? "Theme"} example.`}
                 emptyArtNote={isDecorStep && decorTab === 3 ? "Your render will update after generation to show your selected extras." : undefined}
+                // 2026-10-24: from Style on, a live sketch of the choices (not a render).
+                sketchFirst={isDecorStep && decorTab > 0}
+                sketchActiveId={isDecorStep && decorTab === 1 && sketchItems.length > 1 ? sketchActiveId : null}
+                sketchCutouts={sketchCutouts}
               />
               {isDecorStep && !finalRenderState.hasRender && (
                 <div className="bz-little-note">
@@ -806,6 +824,7 @@ export default function ConfigurePage() {
 
             {step === 2 && (
               <DecorStep config={config} patchDecor={patchDecor} decorTab={decorTab} setDecorTab={setDecorTab}
+                stylePieceId={stylePieceId} setStylePieceId={setStylePieceId}
                 onGenerate={triggerDecorGenerateRender} renderReady={decorRenderReady}
                 hasRender={finalRenderState.hasRender} generating={finalRenderState.generating}
                 onContinue={() => goToStep(3)} />
@@ -1058,6 +1077,8 @@ function DecorStep({
   patchDecor,
   decorTab,
   setDecorTab,
+  stylePieceId,
+  setStylePieceId,
   onGenerate,
   renderReady,
   hasRender,
@@ -1069,6 +1090,9 @@ function DecorStep({
   /** 2026-10-22 redesign: which of the four tabs is open. */
   decorTab: number;
   setDecorTab: (n: number) => void;
+  /** Which backdrop piece the Style tab is styling (null: the default one). */
+  stylePieceId: string | null;
+  setStylePieceId: (id: string | null) => void;
   /** The page's existing Generate Render trigger (SetupPreview's own). */
   onGenerate: () => void;
   renderReady: boolean;
@@ -1081,8 +1105,6 @@ function DecorStep({
   const [openCustomizeIds, setOpenCustomizeIds] = useState<Set<string>>(new Set());
   // Manual shape cards are secondary — hidden behind "Change pieces manually"
   const [showManualPieces, setShowManualPieces] = useState(false);
-  // 2026-10-23 Style redesign: which backdrop piece the Style tab is styling.
-  const [stylePieceId, setStylePieceId] = useState<string | null>(null);
   // 2026-10-23: the Extras tab shows three characters until "More characters".
   const [showAllChars, setShowAllChars] = useState(false);
 
@@ -2097,16 +2119,16 @@ function clearAllStandees() {
         return (
           <div className="bz-st">
             {items.length > 1 && (
-              <div className="bz-st-pieces" role="group" aria-label="Which piece are you styling?">
-                <span className="lbl">Now designing:</span>
-                {items.map((it, i) => (
-                  <button key={it.id} type="button" aria-pressed={i === itemIdx}
-                    className={`bz-st-piece ${i === itemIdx ? "on" : ""}`} onClick={() => setStylePieceId(it.id)}>
-                    {pieceName(it, i)}
-                    {isPrintable(it) && it.text.enabled && <span className="dot" title="Has lettering">Aa</span>}
-                  </button>
-                ))}
-                <p className="hint">Your setup has {items.length} pieces — tap one to style it. The steps below change only the piece you pick.</p>
+              // 2026-10-24: a small drawing of the setup instead of name pills —
+              // the piece being designed is the dark one; tap another to switch.
+              <div className="bz-st-pieces diagram">
+                <PieceDiagram items={items} activeId={item.id} onPick={setStylePieceId}
+                  labels={items.map((it, i) => pieceName(it, i))} />
+                <div className="txt">
+                  <span className="lbl">Now designing:</span>
+                  <b className="name">{pieceName(item, itemIdx)}</b>
+                  <p className="hint">Your setup has {items.length} pieces. Tap a shape to design it — the dark one is the piece you’re changing.</p>
+                </div>
               </div>
             )}
 

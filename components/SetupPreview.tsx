@@ -24,7 +24,7 @@ import DesignChangePrompt from "./DesignChangePrompt";
 /** Feature flag: the free-text "Ask for a change" panel is parked (2026-07-20). */
 const ASK_FOR_A_CHANGE_ENABLED = false;
 import type { ChangeType } from "@/lib/generatePrompt";
-import LiveSetupPreview from "./LiveSetupPreview";
+import LiveSketch from "./design/LiveSketch";
 
 const PLINTH_MODE: "ai" | "svg" = "ai";
 
@@ -1174,6 +1174,7 @@ export default function SetupPreview({
   config, status, imageUrl, isIncremental = false, onRegenerate, showControls = true,
   onPatchDecor, onFinalRenderStateChange, onGenerateReady, emptyArt, emptyArtLabel = "Example.",
   emptyArtNote = "Your own render, with your exact choices, appears here after you generate it.",
+  sketchFirst = false, sketchActiveId = null, sketchCutouts = [],
 }: {
   config: BuilderConfig; status: PreviewStatus; imageUrl: string | null;
   isIncremental?: boolean; onRegenerate: () => void; showControls?: boolean;
@@ -1184,6 +1185,13 @@ export default function SetupPreview({
   emptyArtLabel?: string;
   /** The rest of that label. */
   emptyArtNote?: string;
+  /** 2026-10-24: show the live sketch of the choices (not a render) unless a
+   *  fresh render exists. A toggle switches between the two. */
+  sketchFirst?: boolean;
+  /** The piece being styled, outlined on the sketch. */
+  sketchActiveId?: string | null;
+  /** Chosen standees' pictures, drawn on the sketch. */
+  sketchCutouts?: string[];
   /** Optional — enables the Ask for a change prompt when provided. */
   onPatchDecor?: (patch: Partial<import("@/lib/config").DecorConfig>) => void;
   /** Optional — reports the Final Design Render's live state up to the parent
@@ -1237,6 +1245,15 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
 
   const finalIsLoading = finalStatus === "loading";
 
+  // Live sketch vs picture. "auto": the sketch whenever there is no render or
+  // the render is out of date; a tap on the toggle overrides that until the
+  // next render or until the sketch is switched off.
+  const [viewPick, setViewPick] = useState<"auto" | "sketch" | "picture">("auto");
+  useEffect(() => { setViewPick("auto"); }, [finalUrl, sketchFirst]);
+  const canSketch = sketchFirst && config.decor.backdropItems.length > 0 && !finalIsLoading;
+  const hasPicture = !!finalUrl || !!emptyArt;
+  const showSketch = canSketch && (viewPick === "sketch" || (viewPick === "auto" && (!finalUrl || isStale)) || !hasPicture);
+
   useEffect(() => {
     onFinalRenderStateChange?.({ hasRender: !!finalUrl, isStale, generating: finalIsLoading });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1279,13 +1296,21 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             // customer's words were that it comes out "tiny on screen" and
             // should dominate. The card takes the aspect the render was
             // generated at, so the image fills it.
-            aspectRatio: (finalUrl || finalIsLoading) ? renderCssAspect : undefined,
-            minHeight: 360,
+            aspectRatio: showSketch ? "1 / 1" : (finalUrl || finalIsLoading) ? renderCssAspect : undefined,
+            // A square sketch on a narrow phone would be pushed wider than the screen by a 360px floor.
+            minHeight: showSketch ? 0 : 360,
             maxHeight: "min(calc(86vh / var(--bz-zoom, 1)), 1040px)",
             transition: "aspect-ratio 0.35s ease",
           }}
         >
-          {finalUrl ? (
+          {showSketch ? (
+            <div className="bz-sketch-wrap">
+              <LiveSketch config={config} activeId={sketchActiveId} cutoutPreviews={sketchCutouts} />
+              {!(finalUrl && isStale) && (
+                <div className="bz-sketch-tag"><span aria-hidden="true">✏️</span><span><b>Live sketch</b> of your choices — not a render.<span className="more"> It changes with every pick.</span></span></div>
+              )}
+            </div>
+          ) : finalUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={finalKey}
@@ -1344,12 +1369,21 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             showControls
               ? <button type="button" className="bz-stale-banner" onClick={generateFinalRender}
                   disabled={config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}>
-                  <span aria-hidden="true">✦</span> Your design changed — tap to regenerate the preview
+                  <span aria-hidden="true">✦</span> {showSketch ? "Live sketch of your changes — tap to regenerate the render" : "Your design changed — tap to regenerate the preview"}
                 </button>
               : <div className="bz-stale-banner" role="status"><span aria-hidden="true">✦</span> Your design changed — regenerate to see it</div>
           )}
 
-          {showMeasurements && finalUrl && !finalIsLoading && (
+          {canSketch && hasPicture && (
+            <div className="bz-sketch-toggle" role="group" aria-label="What the preview shows">
+              <button type="button" aria-pressed={showSketch} className={showSketch ? "on" : ""} onClick={() => setViewPick("sketch")}>✏️ Live sketch</button>
+              <button type="button" aria-pressed={!showSketch} className={!showSketch ? "on" : ""} onClick={() => setViewPick("picture")}>
+                {finalUrl ? "✨ Render" : "⭐ Example"}
+              </button>
+            </div>
+          )}
+
+          {showMeasurements && finalUrl && !finalIsLoading && !showSketch && (
             <MeasurementOverlay config={config}/>
           )}
 
