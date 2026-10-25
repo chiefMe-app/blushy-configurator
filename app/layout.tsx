@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Kalam, Caveat, DM_Sans } from "next/font/google";
+import { Kalam, Caveat, DM_Sans, Playfair_Display, Archivo_Black } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import "./blushy.css";
@@ -11,9 +11,14 @@ import "./blushy.css";
 const kalam = Kalam({ subsets: ["latin"], weight: ["300", "400", "700"], variable: "--bz-font-kalam", display: "swap" });
 const caveat = Caveat({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--bz-font-caveat", display: "swap" });
 const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--bz-font-dmsans", display: "swap" });
-// 2026-10-24: Brittany Signature (Creatype Studio, supplied by the customer) —
-// the script the renders print, now also shown in the Style tab and the sketch.
-const brittany = localFont({ src: "./fonts/BrittanySignature.ttf", variable: "--bz-font-brittany", display: "swap" });
+// The three lettering faces the render guide draws (lib/guideFontData.ts), so
+// the Style tab and the live sketch show the same letters the render prints.
+// 2026-10-25 (T0): Italianno (OFL) replaces Brittany Signature, whose licence
+// allowed personal use only. Serif and Bold showed Georgia and DM Sans here
+// while the guide drew Playfair Display and Archivo Black; they now match.
+const signature = localFont({ src: "./fonts/Italianno-Regular.ttf", variable: "--bz-font-signature", display: "swap" });
+const playfair = Playfair_Display({ subsets: ["latin", "latin-ext"], weight: ["400"], variable: "--bz-font-playfair", display: "swap", preload: false });
+const archivoBlack = Archivo_Black({ subsets: ["latin", "latin-ext"], weight: ["400"], variable: "--bz-font-archivo", display: "swap", preload: false });
 
 export const metadata: Metadata = {
   title: "PartyMuse by Blushy — Sparkly Party in Minutes",
@@ -38,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${kalam.variable} ${caveat.variable} ${dmSans.variable} ${brittany.variable}`}>
+    <html lang="en" className={`${kalam.variable} ${caveat.variable} ${dmSans.variable} ${signature.variable} ${playfair.variable} ${archivoBlack.variable}`}>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>

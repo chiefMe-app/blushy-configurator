@@ -10,7 +10,8 @@ import { fixtureById } from "../fixtures/configs";
 const aed = (n: number) => `AED ${formatAED(n)}`;
 const shot = async (page: import("@playwright/test").Page, name: string) => {
   await settle(page);
-  await expect(page).toHaveScreenshot(`${name}.png`, { mask: masks(page) });
+  // Soft: one changed screen does not hide the next ones in the same flow.
+  await expect.soft(page).toHaveScreenshot(`${name}.png`, { mask: masks(page) });
 };
 
 test("F1 end to end: Event → Review, the total matches pricing and the order is caught", async ({ page, guard }) => {

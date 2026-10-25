@@ -790,11 +790,11 @@ function customTextGuide(
     // fills the clear band and read as too big).
     fontSize = Math.max(12, Math.round(fontSize * textSizeScale(opts.size as TextSize | undefined)));
   }
-  // 2026-10-22: 1.08 -> 1.34 for the script. Brittany Signature's loops
-  // reach far above and below its line, and "Happy" and "Birthday" ran into
-  // each other ("birthday birazdan daha asagi insin, kelimeler birbirine
-  // girmis").
-  const lineGap = fontSize * (fontStyle === "script" ? 1.34 : 1.18);
+  // 2026-10-22: 1.08 -> 1.34 for the script, for Brittany Signature's tall
+  // loops ("kelimeler birbirine girmis"). 2026-10-25 (T0): back to 1.08 for
+  // Italianno — a narrower face fitted to the same width is set larger, and
+  // at 1.34 its lines drifted apart.
+  const lineGap = fontSize * (fontStyle === "script" ? 1.08 : 1.18);
   const font = TEXT_GUIDE_FONT[fontStyle] ?? TEXT_GUIDE_FONT.script;
   const fill = resolveTextColorHex(color);
   // 2026-10-20: silver lettering is MIRROR acrylic, like the customer's

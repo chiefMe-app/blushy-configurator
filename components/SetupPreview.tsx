@@ -65,12 +65,13 @@ function PlinthOverlay({ sizes }: { sizes: PlinthSize[] }) {
 // Text overlay — anchored to backdrop safe area, no AI regeneration.
 // ---------------------------------------------------------------------------
 
+// The faces the render prints (app/layout.tsx, 2026-10-25 T0).
 const FONT_FAMILY: Record<FontStyle, string> = {
-  script:  '"Brush Script MT", "Segoe Script", cursive',
-  block:   '"Arial Black", Impact, sans-serif',
-  elegant: 'Georgia, "Times New Roman", serif',
+  script:  "var(--bz-signature)",
+  block:   "var(--bz-bold)",
+  elegant: "var(--bz-serif)",
 };
-const FONT_WEIGHT: Record<FontStyle, number> = { script: 400, block: 900, elegant: 400 };
+const FONT_WEIGHT: Record<FontStyle, number> = { script: 400, block: 400, elegant: 400 };
 
 const BACKDROP_SAFE_AREA: Record<BackdropShapeId, { x: number; y: number; w: number; h: number }> = {
   arch:            { x: 22, y: 16, w: 56, h: 40 },

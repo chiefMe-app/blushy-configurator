@@ -90,12 +90,12 @@ exports[`lettering golden > text 00 "Happy Birthday Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 231.2,
-        "path": "8f3a2e114edf9a5c",
+        "advance": 167.8,
+        "path": "4f83b05d361b013e",
       },
     ],
   },
@@ -136,12 +136,12 @@ exports[`lettering golden > text 01 "Happy Birthday, Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 231.2,
-        "path": "8f3a2e114edf9a5c",
+        "advance": 167.8,
+        "path": "4f83b05d361b013e",
       },
     ],
   },
@@ -182,12 +182,12 @@ exports[`lettering golden > text 02 "Happy Birthday Arya!" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 260.5,
-        "path": "35c8585f530558fd",
+        "advance": 197.3,
+        "path": "253cb624baae7f55",
       },
     ],
   },
@@ -228,12 +228,12 @@ exports[`lettering golden > text 03 "Happy Birthday! Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 231.2,
-        "path": "8f3a2e114edf9a5c",
+        "advance": 167.8,
+        "path": "4f83b05d361b013e",
       },
     ],
   },
@@ -274,12 +274,12 @@ exports[`lettering golden > text 04 "Happy Birthday. Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 231.2,
-        "path": "8f3a2e114edf9a5c",
+        "advance": 167.8,
+        "path": "4f83b05d361b013e",
       },
     ],
   },
@@ -312,8 +312,8 @@ exports[`lettering golden > text 05 "Happy 1st Birthday Layla" 1`] = `
     ],
     "script": [
       {
-        "advance": 924.7,
-        "path": "4b5e81a787888ca2",
+        "advance": 724.1,
+        "path": "cbf85bdda4224480",
       },
     ],
   },
@@ -342,8 +342,8 @@ exports[`lettering golden > text 06 "Happy 2nd Birthday Malek" 1`] = `
     ],
     "script": [
       {
-        "advance": 989.7,
-        "path": "e5a7deabababdb38",
+        "advance": 774.1,
+        "path": "b5eaa2ba1fddaf6f",
       },
     ],
   },
@@ -372,8 +372,8 @@ exports[`lettering golden > text 07 "Happy 3rd Birthday Noah" 1`] = `
     ],
     "script": [
       {
-        "advance": 973.2,
-        "path": "0377ed32b86c4d78",
+        "advance": 732.9,
+        "path": "739f42ff8c9de1bf",
       },
     ],
   },
@@ -402,8 +402,8 @@ exports[`lettering golden > text 08 "Happy 4th Birthday Mia" 1`] = `
     ],
     "script": [
       {
-        "advance": 923.8,
-        "path": "1c9a684ebd47a21e",
+        "advance": 708.6,
+        "path": "a1d15e11afbff27f",
       },
     ],
   },
@@ -432,8 +432,8 @@ exports[`lettering golden > text 09 "Happy 11th Birthday Omar" 1`] = `
     ],
     "script": [
       {
-        "advance": 965.5,
-        "path": "6f29b964ee0f1c88",
+        "advance": 748.3,
+        "path": "06e38a9cf12f64b3",
       },
     ],
   },
@@ -462,8 +462,8 @@ exports[`lettering golden > text 10 "Happy 21st Birthday Sara" 1`] = `
     ],
     "script": [
       {
-        "advance": 955.8,
-        "path": "e930fbdba845e2fd",
+        "advance": 719,
+        "path": "c1f534f6acc1cf08",
       },
     ],
   },
@@ -492,8 +492,8 @@ exports[`lettering golden > text 11 "Happy 1st Birthday, Layla" 1`] = `
     ],
     "script": [
       {
-        "advance": 941.3,
-        "path": "d55235c2145219d2",
+        "advance": 737,
+        "path": "2216983e3b70b16c",
       },
     ],
   },
@@ -522,8 +522,8 @@ exports[`lettering golden > text 12 "Happy Birthday" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
     ],
   },
@@ -562,12 +562,12 @@ exports[`lettering golden > text 13 "Happy Birthday Princess" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 328.4,
-        "path": "e70860af1e9f8b72",
+        "advance": 228.6,
+        "path": "0411e3fba23a7052",
       },
     ],
   },
@@ -600,8 +600,8 @@ exports[`lettering golden > text 14 "Let's Celebrate Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 772.2,
-        "path": "5160666881392f0a",
+        "advance": 586.9,
+        "path": "42933a7612211203",
       },
     ],
   },
@@ -630,8 +630,8 @@ exports[`lettering golden > text 15 "Welcome to Arya's Birthday" 1`] = `
     ],
     "script": [
       {
-        "advance": 1057.1,
-        "path": "31e09aefc3fc24a2",
+        "advance": 801.3,
+        "path": "82bf561cdf935528",
       },
     ],
   },
@@ -660,8 +660,8 @@ exports[`lettering golden > text 16 "Welcome to Arya's 5th Birthday" 1`] = `
     ],
     "script": [
       {
-        "advance": 1174.1,
-        "path": "d3b5ef42b31bc23b",
+        "advance": 900.5,
+        "path": "377377c8f63914fc",
       },
     ],
   },
@@ -690,14 +690,14 @@ exports[`lettering golden > text 17 "İyi ki doğdun Ayşe" 1`] = `
     ],
     "script": [
       {
-        "advance": 633.54,
-        "path": "8237f40f3dc1bd1d",
+        "advance": 535.8,
+        "path": "f805067f5067fbf2",
       },
     ],
   },
   "messageLines": null,
   "scriptFace": [
-    "script",
+    "signature",
   ],
 }
 `;
@@ -720,14 +720,14 @@ exports[`lettering golden > text 18 "İyi ki Doğdun Ayşe Gül" 1`] = `
     ],
     "script": [
       {
-        "advance": 867.38,
-        "path": "e7e324f7b8eb14ee",
+        "advance": 704.2,
+        "path": "221aeac2b6479125",
       },
     ],
   },
   "messageLines": null,
   "scriptFace": [
-    "script",
+    "signature",
   ],
 }
 `;
@@ -750,14 +750,14 @@ exports[`lettering golden > text 19 "İyi ki doğdun Çağla" 1`] = `
     ],
     "script": [
       {
-        "advance": 657.18,
-        "path": "980f7aef5944d5ad",
+        "advance": 535.9,
+        "path": "c6d77196e26a9079",
       },
     ],
   },
   "messageLines": null,
   "scriptFace": [
-    "script",
+    "signature",
   ],
 }
 `;
@@ -780,14 +780,14 @@ exports[`lettering golden > text 20 "İyi ki doğdun Işıl" 1`] = `
     ],
     "script": [
       {
-        "advance": 581.01,
-        "path": "5042ca6cef0ea115",
+        "advance": 476.8,
+        "path": "f20427fc4a81dd55",
       },
     ],
   },
   "messageLines": null,
   "scriptFace": [
-    "script",
+    "signature",
   ],
 }
 `;
@@ -810,14 +810,14 @@ exports[`lettering golden > text 21 "İyi ki doğdun Öykü" 1`] = `
     ],
     "script": [
       {
-        "advance": 626.61,
-        "path": "d712dcc7e6cd896b",
+        "advance": 542,
+        "path": "430359aab629c16c",
       },
     ],
   },
   "messageLines": null,
   "scriptFace": [
-    "script",
+    "signature",
   ],
 }
 `;
@@ -840,14 +840,14 @@ exports[`lettering golden > text 22 "İyi ki doğdun Ümit" 1`] = `
     ],
     "script": [
       {
-        "advance": 656.2,
-        "path": "6732ad436c26e756",
+        "advance": 523.6,
+        "path": "5914346aea49b38b",
       },
     ],
   },
   "messageLines": null,
   "scriptFace": [
-    "script",
+    "signature",
   ],
 }
 `;
@@ -878,12 +878,12 @@ exports[`lettering golden > text 23 "Happy Birthday Şule" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 167.09,
-        "path": "8cc75b661750cd5b",
+        "advance": 130.7,
+        "path": "45342e6d365b06e9",
       },
     ],
   },
@@ -893,7 +893,7 @@ exports[`lettering golden > text 23 "Happy Birthday Şule" 1`] = `
   ],
   "scriptFace": [
     "signature",
-    "script",
+    "signature",
   ],
 }
 `;
@@ -924,12 +924,12 @@ exports[`lettering golden > text 24 "Happy Birthday Ğ İ Ş ğ ı ş" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 418.9,
-        "path": "dc2b8ca2a96245a2",
+        "advance": 292.6,
+        "path": "a19b5f667da76329",
       },
     ],
   },
@@ -939,7 +939,7 @@ exports[`lettering golden > text 24 "Happy Birthday Ğ İ Ş ğ ı ş" 1`] = `
   ],
   "scriptFace": [
     "signature",
-    "script",
+    "signature",
   ],
 }
 `;
@@ -962,14 +962,14 @@ exports[`lettering golden > text 25 "Doğum günün kutlu olsun Ela" 1`] = `
     ],
     "script": [
       {
-        "advance": 995.9,
-        "path": "799a5d138bd685de",
+        "advance": 834.8,
+        "path": "8069f01d428767b8",
       },
     ],
   },
   "messageLines": null,
   "scriptFace": [
-    "script",
+    "signature",
   ],
 }
 `;
@@ -1000,12 +1000,12 @@ exports[`lettering golden > text 26 "Happy Birthday Ayşe Gül" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 353.03,
-        "path": "0c0afe3cca6ba8ec",
+        "advance": 294.5,
+        "path": "adbc443d0888e5bf",
       },
     ],
   },
@@ -1015,7 +1015,7 @@ exports[`lettering golden > text 26 "Happy Birthday Ayşe Gül" 1`] = `
   ],
   "scriptFace": [
     "signature",
-    "script",
+    "signature",
   ],
 }
 `;
@@ -1046,12 +1046,12 @@ exports[`lettering golden > text 27 "Happy Birthday Mary Jane" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 460,
-        "path": "5a636c74c3ba688d",
+        "advance": 298.5,
+        "path": "f42270ef84d50542",
       },
     ],
   },
@@ -1092,12 +1092,12 @@ exports[`lettering golden > text 28 "Happy Birthday Al Fahim" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 390.6,
-        "path": "445fc7addae84464",
+        "advance": 298.3,
+        "path": "ae3a1ef789a1f9f9",
       },
     ],
   },
@@ -1138,12 +1138,12 @@ exports[`lettering golden > text 29 "Happy Birthday Mohammed Bin Rashid" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 892,
-        "path": "8b6edce3bf997b2a",
+        "advance": 649.6,
+        "path": "927bf6c3e20d4fae",
       },
     ],
   },
@@ -1184,12 +1184,12 @@ exports[`lettering golden > text 30 "Happy Birthday Arya & Leo" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 467.2,
-        "path": "1957bfb56e1bd67e",
+        "advance": 368.5,
+        "path": "a57e2af3848d69b3",
       },
     ],
   },
@@ -1222,8 +1222,8 @@ exports[`lettering golden > text 31 "Oh Baby" 1`] = `
     ],
     "script": [
       {
-        "advance": 383.3,
-        "path": "8e746661265078ce",
+        "advance": 252.6,
+        "path": "d90b6067ff70c9e6",
       },
     ],
   },
@@ -1252,8 +1252,8 @@ exports[`lettering golden > text 32 "Two Sweet" 1`] = `
     ],
     "script": [
       {
-        "advance": 396,
-        "path": "1666570c88f32f65",
+        "advance": 301.3,
+        "path": "336ba381d4a13169",
       },
     ],
   },
@@ -1282,8 +1282,8 @@ exports[`lettering golden > text 33 "Let's Party" 1`] = `
     ],
     "script": [
       {
-        "advance": 424.9,
-        "path": "6f95b71ef8991940",
+        "advance": 315,
+        "path": "8620219dbffb5e1a",
       },
     ],
   },
@@ -1312,8 +1312,8 @@ exports[`lettering golden > text 34 "Welcome to the party" 1`] = `
     ],
     "script": [
       {
-        "advance": 689,
-        "path": "2ae717dd5fa1dc20",
+        "advance": 565.1,
+        "path": "191260769a093848",
       },
     ],
   },
@@ -1342,8 +1342,8 @@ exports[`lettering golden > text 35 "Arya's 5th" 1`] = `
     ],
     "script": [
       {
-        "advance": 404.4,
-        "path": "c43d24638a1ae3eb",
+        "advance": 300.8,
+        "path": "891e956d5614e7e6",
       },
     ],
   },
@@ -1372,8 +1372,8 @@ exports[`lettering golden > text 36 "Arya Turns One" 1`] = `
     ],
     "script": [
       {
-        "advance": 654.6,
-        "path": "992625c17364f562",
+        "advance": 484.8,
+        "path": "5bd391525766b5d4",
       },
     ],
   },
@@ -1402,8 +1402,8 @@ exports[`lettering golden > text 37 "Baby Shower" 1`] = `
     ],
     "script": [
       {
-        "advance": 542,
-        "path": "89c63530e8c4162a",
+        "advance": 366.9,
+        "path": "b6bdbded74d71fab",
       },
     ],
   },
@@ -1432,8 +1432,8 @@ exports[`lettering golden > text 38 "Bride To Be" 1`] = `
     ],
     "script": [
       {
-        "advance": 496.9,
-        "path": "1cc9c89d0318314b",
+        "advance": 341.5,
+        "path": "6687b1f8ce125618",
       },
     ],
   },
@@ -1462,8 +1462,8 @@ exports[`lettering golden > text 39 "Congrats" 1`] = `
     ],
     "script": [
       {
-        "advance": 316.8,
-        "path": "597078007747a36a",
+        "advance": 238.3,
+        "path": "12327afe3728b9df",
       },
     ],
   },
@@ -1492,8 +1492,8 @@ exports[`lettering golden > text 40 "Happy B-day Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 765.8,
-        "path": "9ebdacf615b1423d",
+        "advance": 567.7,
+        "path": "94877025876d6853",
       },
     ],
   },
@@ -1522,8 +1522,8 @@ exports[`lettering golden > text 41 "Happy Bday Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 730.9,
-        "path": "aeeb0dad5da96063",
+        "advance": 542.8,
+        "path": "7443b547e1a21be1",
       },
     ],
   },
@@ -1552,8 +1552,8 @@ exports[`lettering golden > text 42 "ONE" 1`] = `
     ],
     "script": [
       {
-        "advance": 288.6,
-        "path": "1b2ce4ea94c9e0e5",
+        "advance": 179.3,
+        "path": "f35cbbadefb468d9",
       },
     ],
   },
@@ -1590,12 +1590,12 @@ exports[`lettering golden > text 43 "Happy Birthday\\nArya" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 231.2,
-        "path": "8f3a2e114edf9a5c",
+        "advance": 167.8,
+        "path": "4f83b05d361b013e",
       },
     ],
   },
@@ -1636,12 +1636,12 @@ exports[`lettering golden > text 44 "  Happy Birthday Arya  " 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 231.2,
-        "path": "8f3a2e114edf9a5c",
+        "advance": 167.8,
+        "path": "4f83b05d361b013e",
       },
     ],
   },
@@ -1682,12 +1682,12 @@ exports[`lettering golden > text 45 "HAPPY BIRTHDAY ARYA" 1`] = `
     ],
     "script": [
       {
-        "advance": 1167.1,
-        "path": "9f725cae65531b28",
+        "advance": 781.8,
+        "path": "d17f14a11bbeeb7e",
       },
       {
-        "advance": 406.5,
-        "path": "52cbfe5170fc3d27",
+        "advance": 259,
+        "path": "1421b7136253a5e1",
       },
     ],
   },
@@ -1728,12 +1728,12 @@ exports[`lettering golden > text 46 "happy birthday arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 485.9,
-        "path": "f29a5a777cdb9325",
+        "advance": 376.8,
+        "path": "4696275217b6ee8c",
       },
       {
-        "advance": 158.6,
-        "path": "0f6127617100d456",
+        "advance": 120.4,
+        "path": "6f3687ab1b157c55",
       },
     ],
   },
@@ -1774,12 +1774,12 @@ exports[`lettering golden > text 47 "Happy  Birthday   Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 231.2,
-        "path": "8f3a2e114edf9a5c",
+        "advance": 167.8,
+        "path": "4f83b05d361b013e",
       },
     ],
   },
@@ -1820,12 +1820,12 @@ exports[`lettering golden > text 48 "Happy Birthday\\n\\nArya" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 231.2,
-        "path": "8f3a2e114edf9a5c",
+        "advance": 167.8,
+        "path": "4f83b05d361b013e",
       },
     ],
   },
@@ -1866,12 +1866,12 @@ exports[`lettering golden > text 49 "Happy\\nBirthday\\nArya" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 231.2,
-        "path": "8f3a2e114edf9a5c",
+        "advance": 167.8,
+        "path": "4f83b05d361b013e",
       },
     ],
   },
@@ -1930,8 +1930,8 @@ exports[`lettering golden > text 52 "Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 231.2,
-        "path": "8f3a2e114edf9a5c",
+        "advance": 167.8,
+        "path": "4f83b05d361b013e",
       },
     ],
   },
@@ -1968,8 +1968,8 @@ exports[`lettering golden > text 53 "Happy Birthday Arya 🎉" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
         "advance": 251.42,
@@ -2036,8 +2036,8 @@ exports[`lettering golden > text 55 "1" 1`] = `
     ],
     "script": [
       {
-        "advance": 19.2,
-        "path": "6e7bcf1e80eb7427",
+        "advance": 24.3,
+        "path": "ab0f01a024448477",
       },
     ],
   },
@@ -2066,8 +2066,8 @@ exports[`lettering golden > text 56 "5 Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 291.8,
-        "path": "e9302a87a32ae800",
+        "advance": 217.8,
+        "path": "f2ea26a83f57d769",
       },
     ],
   },
@@ -2104,12 +2104,12 @@ exports[`lettering golden > text 57 "Happy Birthday 1" 1`] = `
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 19.2,
-        "path": "6e7bcf1e80eb7427",
+        "advance": 24.3,
+        "path": "ab0f01a024448477",
       },
     ],
   },
@@ -2150,12 +2150,12 @@ exports[`lettering golden > text 58 "Happy Birthday Alexandrina Montgomery-Fitzg
     ],
     "script": [
       {
-        "advance": 588.2,
-        "path": "a8cdb463dfcab42f",
+        "advance": 453.7,
+        "path": "58ba34a58fb9cacb",
       },
       {
-        "advance": 1301.2,
-        "path": "f2d88d4534534f0f",
+        "advance": 1023.6,
+        "path": "8ba3d0c3a7f5ab9d",
       },
     ],
   },
@@ -2188,8 +2188,8 @@ exports[`lettering golden > text 59 "Birthday Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 592.4,
-        "path": "4fbb330ed181df48",
+        "advance": 429.7,
+        "path": "a2992cd2c4f311c9",
       },
     ],
   },
@@ -2218,8 +2218,8 @@ exports[`lettering golden > text 60 "Happy Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 488.9,
-        "path": "ea6c6be09901f3cf",
+        "advance": 376.5,
+        "path": "b33733639159f65d",
       },
     ],
   },
@@ -2278,8 +2278,8 @@ exports[`lettering golden > text 62 "Joyeux anniversaire Léa" 1`] = `
     ],
     "script": [
       {
-        "advance": 863,
-        "path": "d137226ed08229f7",
+        "advance": 638.1,
+        "path": "d8a175ebbd1cdb94",
       },
     ],
   },

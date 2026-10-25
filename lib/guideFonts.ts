@@ -22,10 +22,10 @@ function face(key: FaceKey): Font {
   return f;
 }
 
-// 2026-10-22: "script" lines are set in Brittany Signature, the customer's
-// chosen face. It has no Turkish Ğ İ Ş ğ ı ş, so a line needing any letter
-// it lacks is set whole in Sacramento instead — mixing faces inside a word
-// looks broken.
+// 2026-10-25 (T0): "script" lines are set in Italianno (OFL), which replaced
+// Brittany Signature (personal-use licence only). A line needing a letter the
+// face lacks is set whole in Sacramento instead — mixing faces inside a word
+// looks broken. Italianno covers Turkish, so this rarely triggers now.
 function fontFor(style: string, text: string): Font {
   if (style === "block" || style === "elegant") return face(style);
   const sig = face("signature");

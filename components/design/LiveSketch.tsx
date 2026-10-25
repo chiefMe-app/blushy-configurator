@@ -471,11 +471,16 @@ export default function LiveSketch({
     if (s.includes("\n")) return s.split("\n").map((l) => l.trim()).filter(Boolean);
     return words.length >= 2 ? [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")] : [s.trim()];
   };
-  // The script is Brittany Signature, the face the renders print.
+  // The faces the render guide draws (lib/guideFontData.ts). `adv` is the
+  // average character width in em, measured from each font (x1.06, the same
+  // allowance the first script was tuned with), so the sketch fits the words
+  // to the board as the guide does. 2026-10-25 (T0): Italianno replaces
+  // Brittany Signature; Serif and Bold were Georgia and DM Sans, not the
+  // Playfair Display and Archivo Black the renders print.
   const fontFor = (f: string) => f === "block"
-    ? { family: "var(--bz-sans), Arial, sans-serif", weight: 800, k: 0.13, adv: 0.62 }
-    : f === "elegant" ? { family: "Georgia, 'Times New Roman', serif", weight: 400, k: 0.14, adv: 0.55 }
-    : { family: "var(--bz-brittany)", weight: 400, k: 0.15, adv: 0.5 };
+    ? { family: "var(--bz-bold)", weight: 400, k: 0.13, adv: 0.65 }
+    : f === "elegant" ? { family: "var(--bz-serif)", weight: 400, k: 0.14, adv: 0.55 }
+    : { family: "var(--bz-signature)", weight: 400, k: 0.15, adv: 0.37 };
 
   /** Where a board's words go: its centre, clear of the garland and above the plinth. */
   const textSpot = (p: Piece, blockH: number) => {
@@ -584,7 +589,8 @@ export default function LiveSketch({
         const room = textSpot(p, 0);
         // As the layout guide does: fitted to the clear width, then the chosen share of that.
         const size = Math.min(p.w * 0.3, room.w / (longest * f.adv)) * k;
-        const gap = size * (p.item.text.fontStyle === "script" ? 1.25 : 1.12);
+        // Script 1.25 -> 1.0 with Italianno (T0), as the guide's 1.34 -> 1.08.
+        const gap = size * (p.item.text.fontStyle === "script" ? 1.0 : 1.12);
         const blockH = gap * (ls.length - 1) + size;
         const at = textSpot(p, blockH);
         const script = p.item.text.fontStyle === "script";
@@ -645,7 +651,7 @@ export default function LiveSketch({
         const cx = spot.cx;
         const cy = isRing ? FLOOR - neonPiece.w * 0.62 : roundBase ? spot.cy : neonPiece.top + neonPiece.h * 0.34;
         const txt = (glow: boolean) => (
-          <text x={cx} y={cy - (ls.length - 1) * size * 0.5} textAnchor="middle" fontFamily="var(--bz-brittany)" fontWeight={400}
+          <text x={cx} y={cy - (ls.length - 1) * size * 0.5} textAnchor="middle" fontFamily="var(--bz-signature)" fontWeight={400}
             fontSize={size} fill={glow ? "#ffb36b" : "#fffaf0"} filter={glow ? "url(#skGlow)" : undefined} opacity={glow ? 0.9 : 1}
             stroke={glow ? "#ffb36b" : "#f0b36e"} strokeWidth={glow ? 6 : 1.2}>
             {ls.map((l, i) => <tspan key={i} x={cx} dy={i === 0 ? 0 : size * 1.05}>{l}</tspan>)}

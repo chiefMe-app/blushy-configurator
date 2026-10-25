@@ -1784,9 +1784,9 @@ function clearAllStandees() {
                         style={{ padding: "4px 11px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
                           border: sel ? `1.5px solid ${accent}` : "1.5px solid rgba(0,0,0,0.12)",
                           background: sel ? accent + "12" : "white", color: sel ? accent : "#555",
-                          fontFamily: f.id === "script" ? "'Segoe Script','Brush Script MT',cursive"
-                            : f.id === "elegant" ? "Georgia,'Times New Roman',serif" : "inherit",
-                          fontStyle: f.id === "script" ? "italic" : "normal" }}>
+                          fontFamily: f.id === "script" ? "var(--bz-signature)"
+                            : f.id === "elegant" ? "var(--bz-serif)" : "var(--bz-bold)",
+                          fontStyle: "normal" }}>
                         {f.label}
                       </button>
                     );
@@ -2089,9 +2089,14 @@ function clearAllStandees() {
         const boardInList = boardSwatches.some((hex) => sameHex(hex, boardHex));
         const sampleText = item.text.value.trim() || DEFAULT_TEXT_VALUE;
         const FONT_FACE: Record<string, { family: string; weight: number; size: number; short: string }> = {
-          script:  { family: "var(--bz-brittany)", weight: 400, size: 22, short: "Script" },
-          block:   { family: "var(--bz-sans), 'Arial Black', sans-serif", weight: 800, size: 20, short: "Bold" },
-          elegant: { family: "Georgia, 'Times New Roman', serif", weight: 400, size: 21, short: "Serif" },
+          // The faces the render prints (app/layout.tsx). 2026-10-25 (T0):
+          // Italianno replaces Brittany Signature; a narrower script, so a
+          // larger size shows it at the same width.
+          script:  { family: "var(--bz-signature)", weight: 400, size: 28, short: "Script" },
+          block:   { family: "var(--bz-bold)", weight: 400, size: 19, short: "Bold" },
+          // 21 -> 18: Playfair's "Birthday" is wider than Georgia's and broke
+          // as "Birthda / y" in the narrow phone card.
+          elegant: { family: "var(--bz-serif)", weight: 400, size: 18, short: "Serif" },
         };
         const textColorName = isCustomTextColor(item.text.color)
           ? "Custom"
@@ -2214,7 +2219,7 @@ function clearAllStandees() {
                         className={`bz-st-card font ${on ? "on" : ""}`}
                         onClick={() => patchItemText(itemIdx, { fontStyle: f.id as FontStyle })}>
                         {on && <Tick />}
-                        <span className="sample" style={{ background: boardHex, color: textHex, fontFamily: face.family, fontWeight: face.weight, fontSize: face.size }}>
+                        <span className="sample" data-face={f.id} style={{ background: boardHex, color: textHex, fontFamily: face.family, fontWeight: face.weight, fontSize: face.size }}>
                           {sampleText}
                         </span>
                         <strong>{face.short}</strong>
@@ -2222,6 +2227,12 @@ function clearAllStandees() {
                     );
                   })}
                 </div>
+                {/* 2026-10-25 (T0): the script face changed (Brittany Signature,
+                    personal-use licence, -> Italianno); say so rather than
+                    switch it silently. */}
+                {item.text.fontStyle === "script" && (
+                  <p className="bz-bl-muted" style={{ margin: "8px 0 0" }}>Script lettering is set in Italianno.</p>
+                )}
                 {/* 2026-10-24: lettering size. */}
                 <div className="bz-st-size" role="group" aria-label="Text size">
                   <span className="lbl">Text size</span>

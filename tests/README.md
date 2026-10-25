@@ -48,6 +48,21 @@ npm run test:sheet                             # contact sheet of the last golde
 Review the diff of `tests/**/__snapshots__`, `tests/golden/render/**` and
 `tests/e2e/__screenshots__/**` before committing it.
 
+## Baseline changes
+
+**T0 — Brittany Signature → Italianno (2026-10-25).** The baselines were updated on purpose. Everything else is identical to Phase 0.0.
+
+- **Render guides:** 37 of 45 changed; every one of them carries script lettering or a neon sign.
+  - The 8 guides without either did not change: Serif, Bold and the bare ring.
+  - Prompts changed in 0 fixtures.
+- **Lettering snapshot:** only the script face's widths and outlines changed.
+  - 10 texts (the Turkish ones) moved from the Sacramento fallback to Italianno.
+  - Line splitting is unchanged.
+- **Screenshots:**
+  - The Style tab now shows the faces the render prints: Italianno, Playfair Display and Archivo Black.
+  - The sketch lettering and the neon sign are set in Italianno.
+- **Pricing, scene model and order format:** unchanged.
+
 ## Known issues recorded as today's behaviour (Phase 0.0, 2026-10-25)
 
 1. **Saved order total misses the theme surcharge.** `submit()` does not send

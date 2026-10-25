@@ -27,7 +27,10 @@
   --bz-hand: var(--bz-font-kalam), "Kalam", "Segoe Print", "Comic Neue", cursive;
   --bz-logo: var(--bz-font-caveat), "Caveat", "Segoe Script", cursive;
   --bz-sans: var(--bz-font-dmsans), "DM Sans", "Segoe UI", sans-serif;
-  --bz-brittany: var(--bz-font-brittany), "Segoe Script", cursive;
+  /* Lettering faces — the same ones the render guide draws (app/layout.tsx). */
+  --bz-signature: var(--bz-font-signature), "Segoe Script", cursive;
+  --bz-serif: var(--bz-font-playfair), Georgia, "Times New Roman", serif;
+  --bz-bold: var(--bz-font-archivo), "Arial Black", sans-serif;
 }
 
 /* 2026-10-23: at 100% browser zoom the app should look as it does at 75%
@@ -528,6 +531,10 @@
   .bz-st-sec { grid-template-columns: 1fr; padding: 15px 14px; gap: 12px; }
   .bz-st-opts.fonts { gap: 7px; }
   .bz-st-card.font .sample { font-size: 15px !important; min-height: 60px; }
+  /* 2026-10-25 (T0): the faces differ in width — narrow Italianno needs more
+     size to read, Playfair less so "Birthday" stays whole in the phone card. */
+  .bz-st-card.font .sample[data-face="script"] { font-size: 21px !important; }
+  .bz-st-card.font .sample[data-face="elegant"] { font-size: 13px !important; }
   .bz-st-opts.yn { grid-template-columns: 1fr 1fr; }
   .bz-st-yn { white-space: normal; padding: 10px 10px; font-size: 12.5px; }
   .bz-st-card.graphic { min-width: 0; padding: 12px 34px 12px 12px; }
@@ -803,6 +810,7 @@
   .bz-decor-tab { padding: 6px 5px; }
   .bz-st-grid .bz-st-sec { padding: 10px 12px; gap: 6px; }
   .bz-st-card.font .sample { min-height: 44px; font-size: 17px !important; }
+  .bz-st-card.font .sample[data-face="script"] { font-size: 23px !important; }
   .bz-st-card.size svg { height: 28px; }
   .bz-ex-card { padding: 10px 12px; }
   .bz-ex-char .pic { height: 60px; }
