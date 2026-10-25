@@ -4638,7 +4638,11 @@ export function generateStructureSilhouette(
     // references. Drawn on one line, the render broke it in two itself and
     // spelled "Happy Happthday".
     const lines = words.length >= 2 ? [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")] : [neonWords];
-    const widest = Math.max(...lines.map((l) => l.length));
+    // 2026-10-25 (T0): the widest line's real width in the script face, per
+    // unit of font size. It was the character count x 0.46 — Brittany
+    // Signature's average letter width — and with the narrower Italianno the
+    // sign came out about a quarter smaller than the 42cm product.
+    const widest = Math.max(...lines.map((l) => textAdvance(l, "script", 1)));
     // 2026-09-05: sized from the REAL product, not from a fraction of the panel.
     // The sign is 16.5 x 12 inches — about 42cm wide — and the guide was drawing
     // it at up to 62% of a 200cm board, i.e. roughly three times life size.
@@ -4663,7 +4667,7 @@ export function generateStructureSilhouette(
         : (backdropItems[np.idx]?.type === "arch" ? np.cx - np.pw * 0.10 : np.cx);
     }
     const signW = onShimmer ? np.pw * 0.40 : isRing ? ringR2 * 0.72 : Math.min(np.pw * 0.62, SIGN_W_CM * pxPerCm);
-    const fontSize = Math.max(9, Math.min(signW / Math.max(1, widest) / 0.46, signW * 0.42));
+    const fontSize = Math.max(9, Math.min(signW / Math.max(0.5, widest), signW * 0.42));
     const lineGap = fontSize * 1.22;
     const firstY = cyN - ((lines.length - 1) * lineGap) / 2;
     // 2026-10-22: on the lone ring the sign is NOT drawn into the guide; it

@@ -646,7 +646,8 @@ export default function LiveSketch({
         const isRing = neonPiece.item.type === "balloon_ring";
         // Fitted to the board's clear width like the lettering ("devasa duruyor" when it was not).
         const longest = Math.max(4, ...ls.map((l) => l.length));
-        const size = Math.min(neonPiece.w * 0.14, textSpot(neonPiece, 0).w / (longest * 0.5)) * 0.85;
+        // The script face's own letter width (T0: was a fixed 0.5, Brittany's).
+        const size = Math.min(neonPiece.w * 0.14, textSpot(neonPiece, 0).w / (longest * fontFor("script").adv)) * 0.85;
         const spot = textSpot(neonPiece, size * 1.05 * (ls.length - 1) + size);
         const cx = spot.cx;
         const cy = isRing ? FLOOR - neonPiece.w * 0.62 : roundBase ? spot.cy : neonPiece.top + neonPiece.h * 0.34;
