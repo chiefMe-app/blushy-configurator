@@ -826,12 +826,35 @@ export interface NumberLight {
   enabled: boolean;
   /** What the light-up number reads, e.g. "1" or "10". Digits only, 1-2 of them. */
   value: string;
+  /** 2026-10-24: a light-up marquee number (the default), or a foil number
+   *  balloon on a small balloon bunch in the theme's colours. */
+  style?: NumberStyle;
 }
+
+export type NumberStyle = "marquee" | "foil";
 
 export const DEFAULT_NUMBER_LIGHT: NumberLight = { enabled: false, value: "1" };
 
 /** Marquee number stand — one 100cm illuminated digit unit. */
 export const NUMBER_LIGHT_PRICE = 0;
+/** Foil number balloon bunch — a 100cm foil number on a balloon cluster.
+ *  2026-10-24: no price given yet, so it is not invented here (as above). */
+export const FOIL_NUMBER_BUNCH_PRICE = 0;
+
+/** The foil number's colour: the palette's most colourful balloon (Frozen:
+ *  icy blue), or silver when the palette has no colour in it. */
+export function foilNumberColour(palette: string[]): string {
+  let best = "#C7C9C7", bestScore = 0.08;
+  for (const hex of palette) {
+    const h = hex.replace("#", "");
+    if (h.length < 6) continue;
+    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    const score = mx ? (mx - mn) / mx : 0;
+    if (score > bestScore) { best = hex; bestScore = score; }
+  }
+  return best;
+}
 /** Florals and greenery worked through the garland. */
 export const GARLAND_FLORALS_PRICE = 0;
 

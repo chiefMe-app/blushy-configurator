@@ -13,6 +13,7 @@ import {
   normalizeBalloonStyle,
   textSizeScale,
   messageLines,
+  foilNumberColour,
   SHIMMER_COLOR_HEX,
   type BuilderConfig,
   type BackdropItem,
@@ -267,6 +268,96 @@ function garlandTrack(p: Piece, side: "left" | "right" | "both"): { x: number; y
   return pts;
 }
 
+/**
+ * The light-up marquee number, drawn as the renders' layout guide draws it
+ * (marqueeBlockDigit): a deep white box letter with thick strokes, rounded
+ * corners and a row of lit bulbs down every stroke.
+ */
+function MarqueeDigit({ glyph, x, y, w, h, uid }: { glyph: string; x: number; y: number; w: number; h: number; uid: string }) {
+  type Pt = [number, number];
+  const t = w * 0.36;
+  const midT = h / 2 - t / 2;
+  const rect = (rx: number, ry: number, rw: number, rh: number) => ({ x: rx, y: ry, w: rw, h: rh });
+  const SEG: Record<string, { r: ReturnType<typeof rect>; line: [Pt, Pt] }> = {
+    a: { r: rect(0, 0, w, t), line: [[t / 2, t / 2], [w - t / 2, t / 2]] },
+    b: { r: rect(w - t, 0, t, h / 2 + t / 2), line: [[w - t / 2, t / 2], [w - t / 2, h / 2]] },
+    c: { r: rect(w - t, midT, t, h - midT), line: [[w - t / 2, h / 2], [w - t / 2, h - t / 2]] },
+    d: { r: rect(0, h - t, w, t), line: [[t / 2, h - t / 2], [w - t / 2, h - t / 2]] },
+    e: { r: rect(0, midT, t, h - midT), line: [[t / 2, h / 2], [t / 2, h - t / 2]] },
+    f: { r: rect(0, 0, t, h / 2 + t / 2), line: [[t / 2, t / 2], [t / 2, h / 2]] },
+    g: { r: rect(0, midT, w, t), line: [[t / 2, h / 2], [w - t / 2, h / 2]] },
+  };
+  const DIGIT: Record<string, string> = {
+    "0": "abcdef", "2": "abged", "3": "abgcd", "4": "fgbc", "5": "afgcd",
+    "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg",
+  };
+  let parts: { d: string; line: [Pt, Pt] }[];
+  const rectD = (r: ReturnType<typeof rect>) => `M ${r.x} ${r.y} h ${r.w} v ${r.h} h ${-r.w} Z`;
+  if (glyph === "1") {
+    const bx = w * 0.40, t1 = w * 0.42;
+    parts = [
+      { d: rectD(rect(bx, 0, t1, h)), line: [[bx + t1 / 2, t / 2], [bx + t1 / 2, h - t / 2]] },
+      { d: `M ${bx + t1 / 2} 0 L ${bx + t1 / 2} ${t * 1.15} L ${w * 0.06} ${h * 0.3} L ${w * 0.06} ${h * 0.3 - t * 1.05} Z`,
+        line: [[bx, t * 0.55], [w * 0.06 + t * 0.45, h * 0.3 - t * 0.6]] },
+    ];
+  } else {
+    parts = (DIGIT[glyph] ?? DIGIT["8"]).split("").map((k) => ({ d: rectD(SEG[k].r), line: SEG[k].line }));
+  }
+  const bulbs: Pt[] = [];
+  const step = h * 0.14;
+  for (const pt of parts) {
+    const [[x0, y0], [x1, y1]] = pt.line;
+    const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / step));
+    for (let i = 0; i <= n; i++) {
+      const q: Pt = [x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n];
+      if (!bulbs.some((b) => Math.hypot(b[0] - q[0], b[1] - q[1]) < t * 0.6)) bulbs.push(q);
+    }
+  }
+  const dx = w * 0.075, dy = -w * 0.045, br = w * 0.075;
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <defs>
+        <clipPath id={`${uid}c`}><rect width={w} height={h} rx={w * 0.12} /></clipPath>
+        <clipPath id={`${uid}s`}><rect x={dx} y={dy} width={w} height={h} rx={w * 0.12} /></clipPath>
+      </defs>
+      <g clipPath={`url(#${uid}s)`}>{parts.map((p, i) => <path key={i} d={p.d} transform={`translate(${dx} ${dy})`} fill="#cfcac2" />)}</g>
+      <g clipPath={`url(#${uid}c)`}>
+        {parts.map((p, i) => <path key={`o${i}`} d={p.d} fill="#a9a6a0" stroke="#a9a6a0" strokeWidth={3} strokeLinejoin="round" />)}
+        {parts.map((p, i) => <path key={`f${i}`} d={p.d} fill="#f8f6f2" />)}
+      </g>
+      {bulbs.map(([bx, by], i) => <circle key={i} cx={bx} cy={by} r={br * 1.9} fill="url(#skBulb)" />)}
+    </g>
+  );
+}
+
+/** A foil number balloon on a small bunch of balloons, as the guide draws it (foilNumberBunch). */
+function FoilDigit({ glyph, x, y, w, h, hex, palette, uid }: { glyph: string; x: number; y: number; w: number; h: number; hex: string; palette: string[]; uid: string }) {
+  const [r, g, b] = hexRgb(hex);
+  const mix = (t: number, to: number) => `rgb(${[r, g, b].map((v) => Math.round(v + (to - v) * t)).join(",")})`;
+  const bunchH = h * 0.36, digitH = h * 0.86;
+  const baseY = y + h - bunchH * 0.55;
+  const R = w * 0.2, cx = x + w / 2, by = y + h;
+  const spots: [number, number, number][] = [[-1.55, -0.95, 1], [1.55, -0.95, 1], [-0.55, -1.15, 1.08], [0.6, -1.1, 1.05], [-1.05, -2, 0.85], [1.05, -1.95, 0.85], [0, -2.15, 0.9]];
+  const cols = palette.length ? palette : [hex, "#ffffff"];
+  return (
+    <g>
+      <defs>
+        <linearGradient id={uid} x1="0" y1="0" x2="0.35" y2="1">
+          {[[0, mix(0.75, 255)], [0.3, mix(0.1, 0)], [0.48, mix(0.85, 255)], [0.66, mix(0.25, 0)], [1, mix(0.45, 255)]].map(([o, c]) => <stop key={o as number} offset={o as number} stopColor={c as string} />)}
+        </linearGradient>
+      </defs>
+      <text x={cx} y={baseY} textAnchor="middle" fontFamily="var(--bz-sans), Arial, sans-serif" fontWeight={900} fontSize={digitH / 0.72}
+        fill={`url(#${uid})`} stroke={mix(0.35, 0)} strokeWidth={w * 0.16} strokeLinejoin="round" style={{ paintOrder: "stroke" }}>{glyph}</text>
+      {spots.map(([ox, oy, k], i) => (
+        <g key={i}>
+          <circle cx={cx + ox * R} cy={by + oy * R} r={R * k} fill={cols[i % cols.length]} stroke="rgba(39,22,23,.12)" strokeWidth={1} />
+          <circle cx={cx + ox * R} cy={by + oy * R} r={R * k} fill="url(#skShine)" />
+        </g>
+      ))}
+    </g>
+  );
+}
+
 const sameColours = (a: string[], b: string[]) =>
   a.length === b.length && a.every((c) => b.some((x) => x.toLowerCase() === c.toLowerCase()));
 
@@ -399,8 +490,11 @@ export default function LiveSketch({
 
   // Standees: the first stands left of the backdrop, the second right.
   // The light-up number: beside the plinths (or the middle of the decor without them).
-  const numberH = 100 * scale * 0.9;
-  const numberX = Math.min(VB - numberH * 0.4, plinths.length ? plinthRight + numberH * 0.42 : roundBase ? 0.66 * VB : groupMid + numberH * 0.5);
+  const numberH = 100 * scale;
+  const numberDigits = String(d.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
+  const digitW = numberH * 0.66, digitGap = digitW * 0.14;
+  const numberW = digitW * numberDigits.length + digitGap * Math.max(0, numberDigits.length - 1);
+  const numberX = Math.min(VB - numberW / 2 - 6, plinths.length ? plinthRight + numberW / 2 + 10 : roundBase ? 0.66 * VB : groupMid + numberW / 2);
   const standeeBoxes = standees.map((src, i) => {
     // Wide enough for a two-character picture, which a narrow box shrank.
     const h = 150 * scale, w = h * 0.95;
@@ -408,7 +502,7 @@ export default function LiveSketch({
       ? Math.max(w * 0.42, roundBase ? 0.15 * VB : groupL - garlandReach * 0.55)
       : Math.min(VB - w * 0.42, roundBase ? 0.86 * VB : groupR + garlandReach * 0.55);
     // The right one steps aside so the number stays in view.
-    if (i === 1 && hasNumber) cx = Math.max(cx, numberX + numberH * 0.35 + w * 0.3);
+    if (i === 1 && hasNumber) cx = Math.max(cx, numberX + numberW / 2 + w * 0.3);
     return { src, x: cx - w / 2, y: floorY + (roundBase ? 0.05 * VB : 14) - h, w, h };
   });
 
@@ -420,6 +514,7 @@ export default function LiveSketch({
         <linearGradient id="skWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={wallTop} /><stop offset="1" stopColor={wallLow} /></linearGradient>
         <linearGradient id="skFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={floorTop} /><stop offset="1" stopColor={floorLow} /></linearGradient>
         <radialGradient id="skShine" cx="0.32" cy="0.28" r="0.75"><stop offset="0" stopColor="#fff" stopOpacity=".85" /><stop offset=".35" stopColor="#fff" stopOpacity=".15" /><stop offset="1" stopColor="#000" stopOpacity=".12" /></radialGradient>
+        <radialGradient id="skBulb"><stop offset="0" stopColor="#fffdf4" /><stop offset=".28" stopColor="#fff0c2" /><stop offset=".45" stopColor="#ffd978" stopOpacity=".85" /><stop offset=".7" stopColor="#ffc45c" stopOpacity=".28" /><stop offset="1" stopColor="#ffb040" stopOpacity="0" /></radialGradient>
         <filter id="skGlow" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="7" /></filter>
         <filter id="skShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="10" floodColor="#000" floodOpacity=".18" /></filter>
         <filter id="skSoft" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="1.5" dy="2.5" stdDeviation="1.6" floodColor="#2a2a30" floodOpacity=".28" /></filter>
@@ -541,7 +636,9 @@ export default function LiveSketch({
       {neon && neonPiece && (() => {
         const ls = lines(neon.text);
         const isRing = neonPiece.item.type === "balloon_ring";
-        const size = Math.min(neonPiece.w * 0.16, 64) * (roundBase ? 1.2 : 1);
+        // Fitted to the board's clear width like the lettering ("devasa duruyor" when it was not).
+        const longest = Math.max(4, ...ls.map((l) => l.length));
+        const size = Math.min(neonPiece.w * 0.14, textSpot(neonPiece, 0).w / (longest * 0.5)) * 0.85;
         const spot = textSpot(neonPiece, size * 1.05 * (ls.length - 1) + size);
         const cx = spot.cx;
         const cy = isRing ? FLOOR - neonPiece.w * 0.62 : roundBase ? spot.cy : neonPiece.top + neonPiece.h * 0.34;
@@ -561,13 +658,16 @@ export default function LiveSketch({
       ))}
 
       {/* Light-up number on the floor, right of the plinths */}
-      {hasNumber && pieces.length > 0 && (() => {
-        const h = numberH, x = numberX;
-        return (
-          <text x={x} y={floorY + (roundBase ? 0.03 * VB : 4)} textAnchor="middle" fontFamily="var(--bz-sans), Arial, sans-serif" fontWeight={900} fontSize={h * 1.15}
-            fill="#f6d68f" stroke="#c99a46" strokeWidth={3} strokeDasharray="2 10" strokeLinecap="round" filter="url(#skSoft)">{d.numberLight!.value}</text>
-        );
-      })()}
+      {hasNumber && pieces.length > 0 && numberDigits.length > 0 && (
+        <g filter="url(#skSoft)">
+          {numberDigits.split("").map((g, i) => d.numberLight?.style === "foil"
+            ? <FoilDigit key={i} uid={`skFoil${i}`} glyph={g} w={digitW} h={numberH} hex={foilNumberColour(palette)} palette={palette}
+                x={numberX - numberW / 2 + i * (digitW + digitGap)} y={floorY + (roundBase ? 0.03 * VB : 4) - numberH} />
+            : <MarqueeDigit key={i} uid={`skMq${i}`} glyph={g} w={digitW} h={numberH}
+                x={numberX - numberW / 2 + i * (digitW + digitGap)} y={floorY + (roundBase ? 0.03 * VB : 4) - numberH} />
+          )}
+        </g>
+      )}
 
       {/* Standees on the floor: the first left of the backdrop, the second right */}
       {standeeBoxes.map((s, i) => (

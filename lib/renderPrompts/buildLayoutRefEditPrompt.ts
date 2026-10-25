@@ -5,7 +5,7 @@ import { hasLoneArchStyleReference } from "./loneArchStyleReference";
 import { sceneStyleReference } from "./frozenStyleReferences";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
-import { describeTextColor, messageLines } from "@/lib/config";
+import { describeTextColor, messageLines, foilNumberColour } from "@/lib/config";
 
 // A raw hex means nothing to the edit model, and "#FFFFFF" used to collapse into
 // the same "cream-white" as an unset panel — so choosing white for one arch read
@@ -1073,10 +1073,13 @@ export function buildLayoutRefEditPrompt(
     nPlinths === 0 ? ""
     : nPlinths === 1 ? ` and the one ${smooth ? "smooth " : ""}white cylindrical pedestal column`
     : ` and the ${nPlinths === 3 ? "THREE" : "TWO"} ${smooth ? "smooth " : ""}white cylindrical pedestal columns of different heights`;
-  const numberPhrase = numberOn ? `, the light-up marquee number ${sceneModel.numberLight.value.trim()}` : "";
+  const foilNumber = sceneModel.numberLight?.style === "foil";
+  const numberPhrase = numberOn
+    ? (foilNumber ? `, the foil number balloon ${sceneModel.numberLight.value.trim()} on its balloon bunch` : `, the light-up marquee number ${sceneModel.numberLight.value.trim()}`)
+    : "";
   const styleRefKeepExtras = styleRef && (nPlinths > 1 || numberOn)
     ? `Everything IMAGE 1 shows is in the photo even where IMAGE 2 has none: ` +
-      [nPlinths > 1 ? `all ${nPlinths} pedestal columns` : "", numberOn ? `the light-up number ${sceneModel.numberLight.value.trim()}` : ""].filter(Boolean).join(" and ") + `. `
+      [nPlinths > 1 ? `all ${nPlinths} pedestal columns` : "", numberOn ? (foilNumber ? `the foil number balloon ${sceneModel.numberLight.value.trim()}` : `the light-up number ${sceneModel.numberLight.value.trim()}`) : ""].filter(Boolean).join(" and ") + `. `
     : "";
   // 2026-10-24: "Happy Birthday Arya" came back as the photo's own two-line
   // "Happy / Birthday" — the name dropped — because "copy how its lettering
@@ -1372,8 +1375,11 @@ export function buildLayoutRefEditPrompt(
     ? `Do NOT draw any person, character, figure, doll or cutout in this image — characters are added ` +
       `afterwards. The far LEFT of the floor and the wall above it stay completely empty — no balloons, ` +
       `no garland, no cluster, no props, and NO NUMBER, no letter, no sign and no lit object of any kind ` +
-      `on that side. Only bare floor and bare wall. There is one marquee number in the picture and it ` +
-      `stands on the RIGHT. ` +
+      `on that side. Only bare floor and bare wall. ` +
+      // 2026-10-24: said only when there IS a number — it used to tell every
+      // standee scene that a marquee number stood on the right.
+      (sceneModel.numberLight?.enabled && String(sceneModel.numberLight.value ?? "").replace(/[^0-9]/g, "").length > 0
+        ? `There is one number in the picture and it stands on the RIGHT. ` : ``) +
       // 2026-09-09: the ban used to cover people only, so the render filled
       // the reserved standee footprint with a second balloon garland instead
       // — and the composited character then landed on top of it.
@@ -1432,9 +1438,25 @@ export function buildLayoutRefEditPrompt(
   const frontBannerGraphicLine = "";
 
   const frontNumDigits = String(sceneModel.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
-  const frontNumberLightLine =
-    sceneModel.numberLight?.enabled && frontNumDigits.length > 0
-      ? `A 90cm modern matte white marquee number ${frontNumDigits}, with warm round bulbs set into its ` +
+  // 2026-10-24: or a foil number balloon on a balloon bunch, in the palette.
+  // Its colour by name: the palette's most colourful balloon (foilNumberColour),
+  // so a Frozen foil is icy blue and not the chrome silver the model reached for.
+  const foilHex = foilNumberColour(sceneModel.balloons.colors ?? []);
+  const foilName = selectedSempertexColors.find((c) => (c.hex ?? "").toLowerCase() === foilHex.toLowerCase())?.colorName
+    ?? backdropColorLabel(foilHex);
+  const frontFoilNumberLine = sceneModel.numberLight?.enabled && frontNumDigits.length > 0 && sceneModel.numberLight.style === "foil"
+    ? `A giant shiny FOIL number balloon "${frontNumDigits}", about 100cm tall, in ${foilName} metallic foil (NOT silver, NOT chrome), ` +
+      `stands on the floor on top of a small tight bunch of round latex balloons` +
+      (nPlinths > 0
+        ? `, to the RIGHT of the white cylindrical pedestal column${nPlinths > 1 ? "s" : ""} — ${nPlinths > 1 ? "they" : "the pedestal column"} still stand${nPlinths > 1 ? "" : "s"} in the middle, in front of the backdrop. `
+        : `, to the right of centre in front of the backdrop. `) +
+      `It is an inflated foil balloon: puffy, rounded edges, a mirror-like metallic sheen with soft ` +
+      `highlights and seams — NOT a light-up marquee number, NOT a white box letter, no bulbs, no lights. ` +
+      `There is EXACTLY ONE number in the entire image. No loose helium balloons on strings anywhere in the scene. `
+    : "";
+  const frontNumberLightLine = frontFoilNumberLine ||
+    (sceneModel.numberLight?.enabled && frontNumDigits.length > 0
+      ? `A 100cm modern matte white marquee number ${frontNumDigits}, with warm round bulbs set into its ` +
         `flat face, stands on the floor in front of the backdrop, FACING THE CAMERA SQUARE-ON — its front ` +
         `face flat to the viewer, not turned, not angled, not in three-quarter view. ` +
         // 2026-10-20: the lone round draws the number as a deep block marquee
@@ -1442,14 +1464,15 @@ export function buildLayoutRefEditPrompt(
         // Its bulbs came back as unlit grey studs on a "50" until they were
         // said to be on.
         (hasRoundPanelInPrompt && panelCount === 1
-          ? `It is a deep white box letter with thick strokes and chamfered corners. Its bulbs are real ` +
+          ? `It is a chunky, deep white box letter with thick strokes and softly rounded corners, like an event-rental ` +
+            `light-up marquee number. A row of small bulbs runs down the middle of every stroke; they are real ` +
             `incandescent light bulbs, EVERY one switched ON and glowing warm yellow light — not silver, not ` +
             `chrome, not metal studs, not unlit white knobs. `
           : ``) +
         // 2026-09-09: the height is stated against the object beside it. "90cm"
         // alone is a number the model cannot see; the plinth is 60-90cm and IS
         // in frame, so the comparison is what fixes the scale.
-        `It is about the same height as the pedestal column beside it — a floor prop, not a full-height ` +
+        `It is a little taller than the tallest pedestal column beside it — a floor prop, not a full-height ` +
         `sign, and clearly shorter than the backdrop board. ` +
         (frontNumDigits.includes("1")
           ? `The 1 is a proper freestanding marquee numeral: one straight wide vertical body, a short angled ` +
@@ -1476,7 +1499,7 @@ export function buildLayoutRefEditPrompt(
         `digit repeated elsewhere in the frame. ` +
         `It stands directly on the floor, never on top of the plinth. ` +
         `No loose helium balloons on strings anywhere in the scene. `
-      : "";
+      : "");
 
   // 2026-09-09: Single Arch is no longer excluded. The exclusion dated from a
   // time when this was the ONLY front line and it displaced the structural
@@ -1711,7 +1734,7 @@ export function buildLayoutRefEditPrompt(
   const numberLightDigits = String(sceneModel.numberLight?.value ?? "")
     .replace(/[^0-9]/g, "")
     .slice(0, 2);
-  const numberLightClause = sceneModel.numberLight?.enabled && numberLightDigits.length > 0
+  const numberLightClause = sceneModel.numberLight?.enabled && numberLightDigits.length > 0 && sceneModel.numberLight.style !== "foil"
     ? `One large illuminated marquee number stands on the floor in front of the backdrop, to the ` +
       `${hasStandeesInScene && hasRingPanelInPrompt ? "right" : "left"} of centre and clear of the balloon garland. ` +
       `It reads exactly "${numberLightDigits}" — ${numberLightDigits.length > 1 ? "two digits" : "a single digit"}, ` +
@@ -1720,7 +1743,7 @@ export function buildLayoutRefEditPrompt(
       // frame, exposed round bulbs, brass fittings. The product is a modern
       // mosaic-style number: a clean matte white shell with bulbs recessed into
       // the flat front face. Height corrected to the real 90cm.
-      `It is a freestanding light-up marquee number exactly 90cm tall: a modern mosaic-style number, ` +
+      `It is a freestanding light-up marquee number exactly 100cm tall: a modern mosaic-style number, ` +
       `a clean smooth MATTE WHITE shell with flat faces and crisp straight edges, standing directly on ` +
       `the floor. Round warm white bulbs are recessed INTO its flat front face in an even row, flush with ` +
       `the surface and glowing softly. ` +
@@ -2217,6 +2240,9 @@ const setupTemplateClause = setupTemplate
   return (
     // (style line first: the close-up was tested ahead of the no-backdrop line)
     frontRoundStyleLine +
+    // 2026-10-25: second — said where the marquee number sits, the foil number
+    // was dropped on every render; the reference photo has none.
+    frontFoilNumberLine +
     frontNeonBoardLine +
     frontDoubleNoBackLine +
     frontImageRolesLine +
@@ -2249,9 +2275,10 @@ const setupTemplateClause = setupTemplate
     frontOpenFrameLine +
     frontFloralsLine +
     frontShimmerLine +
+    // (A foil number is said up front, right after the style line, instead.)
     (loneRoundForCutouts
-      ? frontNumberLightLine + frontNoCharactersLine + frontNeonLine
-      : frontNoCharactersLine + frontNeonLine + frontNumberLightLine) +
+      ? (frontFoilNumberLine ? "" : frontNumberLightLine) + frontNoCharactersLine + frontNeonLine
+      : frontNoCharactersLine + frontNeonLine + (frontFoilNumberLine ? "" : frontNumberLightLine)) +
     frontStructureLine +
     frontNoBalloonTextLine +
     frontNoStandLine +
@@ -2316,7 +2343,11 @@ const setupTemplateClause = setupTemplate
     // numbers printed on them (see allowedPaletteBlock). The old ban covered
     // the backdrop only.
     `The balloons are plain and unprinted: no writing, no letters, no numbers, no logos and no brand ` +
-    `marks on any balloon. ` +
+    // 2026-10-24: the foil number balloon is the one exception — the ban
+    // above dropped it from the render.
+    (sceneModel.numberLight?.enabled && sceneModel.numberLight.style === "foil"
+      ? `marks on any round balloon. The one foil number balloon is the only number-shaped balloon. `
+      : `marks on any balloon. `) +
     `No people. No cake. No table. ` +
     // 2026-09-03: these seven bans on podium/platform/riser/box shapes are
     // only emitted when the scene has NO plinth. When one IS wanted they were

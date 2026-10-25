@@ -39,6 +39,7 @@ cutoutTotalCount,
   NEON_SIGN_PRICE,
   GARLAND_FLORALS_PRICE,
   NUMBER_LIGHT_PRICE,
+  FOIL_NUMBER_BUNCH_PRICE,
   plinthsTotal,
   packageById,
   priceBreakdown,
@@ -3308,21 +3309,31 @@ function clearAllStandees() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="bz-ex-art num" src="/design/ui/extra-number.webp" alt="" />
               <div className="bz-ex-body">
-                <h3 className="bz-ex-title"><span>4.</span> Light-up number</h3>
-                <p>Make their age shine with a light-up number.</p>
+                <h3 className="bz-ex-title"><span>4.</span> Big number</h3>
+                <p>Their age as a light-up number, or as a foil balloon bunch in your theme colours.</p>
               </div>
               <div className="bz-ex-side">
-                {switchBtn({ on: !!d.numberLight?.enabled, label: "Add a light-up number",
-                  onClick: () => patchDecor({ numberLight: { value: d.numberLight?.value ?? "1", enabled: !(d.numberLight?.enabled) } }) })}
-                <span className="lbl">Add light-up number{priceLine(NUMBER_LIGHT_PRICE)}</span>
+                {switchBtn({ on: !!d.numberLight?.enabled, label: "Add a number",
+                  onClick: () => patchDecor({ numberLight: { ...d.numberLight, value: d.numberLight?.value ?? "1", enabled: !(d.numberLight?.enabled) } }) })}
+                <span className="lbl">Add a number{priceLine(d.numberLight?.style === "foil" ? FOIL_NUMBER_BUNCH_PRICE : NUMBER_LIGHT_PRICE)}</span>
               </div>
             </div>
             {d.numberLight?.enabled && (
-              <div className="bz-ex-more inline">
-                <span className="bz-ex-mini">Which number?</span>
-                <input type="text" inputMode="numeric" className="bz-ex-input num" value={d.numberLight?.value ?? ""} placeholder="1"
-                  aria-label="Light-up number"
-                  onChange={(e) => patchDecor({ numberLight: { enabled: true, value: e.target.value.replace(/[^0-9]/g, "").slice(0, 2) } })} />
+              <div className="bz-ex-more">
+                {/* 2026-10-24: two kinds of number, one at a time. */}
+                <div className="bz-st-presets" role="group" aria-label="Kind of number">
+                  {([["marquee", "💡 Light-up marquee"], ["foil", "🎈 Foil balloon bunch"]] as const).map(([id, label]) => (
+                    <button key={id} type="button" aria-pressed={(d.numberLight?.style ?? "marquee") === id}
+                      className={`bz-st-chip ${(d.numberLight?.style ?? "marquee") === id ? "on" : ""}`}
+                      onClick={() => patchDecor({ numberLight: { ...d.numberLight!, style: id } })}>{label}</button>
+                  ))}
+                </div>
+                <div className="bz-ex-more inline">
+                  <span className="bz-ex-mini">Which number?</span>
+                  <input type="text" inputMode="numeric" className="bz-ex-input num" value={d.numberLight?.value ?? ""} placeholder="1"
+                    aria-label="Number"
+                    onChange={(e) => patchDecor({ numberLight: { ...d.numberLight!, enabled: true, value: e.target.value.replace(/[^0-9]/g, "").slice(0, 2) } })} />
+                </div>
               </div>
             )}
           </section>
@@ -3365,6 +3376,20 @@ function clearAllStandees() {
                 }}>No printed text — use a neon sign instead</button>
               </div>
             )}
+            {d.neonSign?.enabled && (() => {
+              // 2026-10-24: the way back — "text ac kapa, light ac kapa".
+              const i = d.neonSign.panelIndex ?? 0;
+              const board = d.backdropItems[i];
+              if (!board || board.type === "open_arch_frame" || board.type === "shimmer_wall" || board.type === "balloon_ring") return null;
+              return (
+                <div className="bz-ex-swap">
+                  <button type="button" className="bz-ex-notext alt" onClick={() => patchDecor({
+                    backdropItems: d.backdropItems.map((it, k) => (k === i ? { ...it, text: { ...it.text, enabled: true, value: (d.neonSign?.text ?? "").trim() || it.text.value } } : it)),
+                    neonSign: { ...d.neonSign!, enabled: false },
+                  })}>Use printed text instead of the neon</button>
+                </div>
+              );
+            })()}
             {d.neonSign?.enabled && (
               <div className="bz-ex-more">
                 <div className="bz-st-presets">

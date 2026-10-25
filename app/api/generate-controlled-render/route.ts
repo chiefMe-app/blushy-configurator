@@ -43,7 +43,7 @@ import { type SceneModel } from "@/lib/buildSceneModel";
 import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
 import { generateStructureSilhouette, computeShimmerWallMaskGeometry, panelRectToFraction, computeDoubleArchPlinthOverlayGeometry, computeBackdropGroupGeometry, type CutoutGuideItem } from "@/lib/generateStructureSilhouette";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems, type LayoutZone } from "@/lib/setupLayoutCatalog";
-import { type BalloonStyleId, SHIMMER_COLOR_HEX, SHIMMER_COLORS, type ShimmerColorId, resolveTextColorHex, describeTextColor } from "@/lib/config";
+import { type BalloonStyleId, SHIMMER_COLOR_HEX, SHIMMER_COLORS, type ShimmerColorId, resolveTextColorHex, describeTextColor, foilNumberColour } from "@/lib/config";
 import { SEMPERTEX_CATALOG, type SempertexColor } from "@/lib/sempertexCatalog";
 import { THEME_CATALOG, getThemeCatalogEntry } from "@/lib/themeCatalog";
 import { frozenBannerPrintSvg } from "@/lib/bannerPrint";
@@ -162,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "words-v157";
+const RENDER_CACHE_VERSION = "foil-v158";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -760,7 +760,11 @@ async function generateLayoutReferencePng(
           : promptInput.balloonColors,
       cutoutGuideItems,
       sceneModel.shimmerColor ? SHIMMER_COLOR_HEX[sceneModel.shimmerColor as ShimmerColorId] : undefined,
-      { florals: sceneModel.garlandFlorals, numberLight: sceneModel.numberLight, neonSign: sceneModel.neonSign,
+      { florals: sceneModel.garlandFlorals,
+        numberLight: sceneModel.numberLight
+          ? { ...sceneModel.numberLight, foilHex: foilNumberColour(selectedHexColors.length ? selectedHexColors : sceneModel.balloons.colors) }
+          : sceneModel.numberLight,
+        neonSign: sceneModel.neonSign,
         ringStyle: sceneModel.balloonRingStyle,
         // Which of the selected balloons are chrome, so the guide can draw
         // them as mirror balls rather than matte spheres.
@@ -1752,16 +1756,21 @@ forbiddenBalloonColorLabels: hasSempertexLock
   // their composited standees/text on an already-paid render (seen 2026-09-01),
   // because every composite stage falls back to the bare AI image.
   const fetchFinalImage = async (): Promise<Buffer | null> => {
-    for (let attempt = 0; attempt < 3; attempt++) {
+    // 2026-10-25: six tries over ~10s (was three over ~1s). A freshly made
+    // image can take a few seconds to reach the CDN, and every failure here
+    // dropped the standees, the lit bulbs and the widened frame.
+    const waits = [500, 1000, 1500, 2500, 4000];
+    for (let attempt = 0; attempt <= waits.length; attempt++) {
       try {
         const resp = await fetch(finalImageUrl);
         if (resp.ok) return Buffer.from(await resp.arrayBuffer());
       } catch (err) {
         if (process.env.NODE_ENV === "development") {
-          console.warn(`[generate-controlled-render] final image fetch attempt ${attempt + 1} failed:`, String(err));
+          const cause = (err as { cause?: { code?: string; message?: string } })?.cause;
+          console.warn(`[generate-controlled-render] final image fetch attempt ${attempt + 1} failed:`, String(err), cause?.code ?? cause?.message ?? "");
         }
       }
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+      if (attempt < waits.length) await new Promise((r) => setTimeout(r, waits[attempt]));
     }
     return null;
   };
@@ -2621,6 +2630,13 @@ forbiddenBalloonColorLabels: hasSempertexLock
         // Each selected design loads its own public/cutouts/[themeId]/[assetId].png.
         const themeIdForAsset = String(selectedThemeId ?? "").toLowerCase();
         let composites: { input: Buffer; left?: number; top?: number; blend: "over" }[] = [];
+        // 2026-10-24: the square frame had no floor beside the backdrop, so a
+        // second standee — pushed right to clear the number — ran off the
+        // picture ("standee renderin disina gitti, render frame ini
+        // genisletsek yanlardan?"). With real standee pictures the frame is
+        // widened: the render's outer columns (plain wall and floor) are
+        // carried out on both sides and the standees stand in that room.
+        let padX = 0;
 
         // Flatten: one entry per physical standee — tallest first, then by
         // selection order. Exact count only.
@@ -2642,6 +2658,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
 
         if (allAssetsExist) {
           try {
+            if (imgW === imgH) padX = Math.round(imgW * 0.14);
             // Load + trim each unique asset once. Trimming removes transparent
             // canvas padding so the visible artwork — not the PNG canvas — is
             // what gets scaled to the target height.
@@ -2802,9 +2819,10 @@ forbiddenBalloonColorLabels: hasSempertexLock
                   // a backdrop does.
                   const panelLeft  = Math.round(groupGeom.leftFrac  * imgW);
                   const panelRight = Math.round(groupGeom.rightFrac * imgW);
+                  // In a widened frame they stand fully beside the boards.
                   left   = onLeft
-                    ? Math.round(panelLeft - rw * 0.75)
-                    : Math.round(panelRight - rw * 0.25);
+                    ? Math.round(panelLeft - rw * (padX ? 1.0 : 0.75))
+                    : Math.round(panelRight - rw * (padX ? 0 : 0.25));
                   // groupGeom.floorYFrac is where the BACKDROP BOARDS meet the
                   // floor — the back plane. A standee stands in FRONT of the
                   // boards, at about the depth of the plinth, and the camera
@@ -2854,7 +2872,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
                   // the left edge instead, the way a real standee at the edge of
                   // a photograph does, capped so no more than a quarter of it is
                   // ever lost.
-                  const maxBleed = Math.round(rw * 0.25);
+                  const maxBleed = padX || Math.round(rw * 0.25);
                   if (left < -maxBleed) left = -maxBleed;
                   if (left + rw > imgW + maxBleed) left = Math.max(-maxBleed, imgW + maxBleed - rw);
                 } else {
@@ -2876,6 +2894,8 @@ forbiddenBalloonColorLabels: hasSempertexLock
                   const numLeft = Math.min(...faces.flat().map(([fx]) => fx)) * imgW;
                   const standeeCentre = left + rw / 2;
                   if (standeeCentre > numLeft - rw * 0.3 && left < numRight + imgW * 0.01) left = Math.round(numRight + imgW * 0.01);
+                  // Kept in the (widened) picture.
+                  if (padX && left + rw > imgW + padX) left = imgW + padX - rw;
                 }
                 standeeOverlayZonesUsed.push(`${sizeKey(cm)}[${zoneIdx}]:${zone.preferredSide ?? "right"}${groupGeom ? ":truescale" : ""}`);
               } else {
@@ -2886,6 +2906,9 @@ forbiddenBalloonColorLabels: hasSempertexLock
               // Left may be negative for an edge-bled standee (see above); only
               // the no-zone fallback path is clamped to the canvas.
               if (!zone) left = Math.max(0, Math.min(left, imgW - rw));
+              // Into the widened canvas's coordinates.
+              left += padX;
+              const canvasW = imgW + 2 * padX;
               const top = Math.max(0, bottom - rh);
 
               // Floor shadow under the asset. This used to be a single ellipse
@@ -2949,8 +2972,8 @@ forbiddenBalloonColorLabels: hasSempertexLock
                   .extract({ left: cut, top: 0, width: rw - cut, height: rh })
                   .png().toBuffer()) as Buffer;
                 placeLeft = 0;
-              } else if (left + rw > imgW) {
-                const visible = Math.max(1, imgW - left);
+              } else if (left + rw > canvasW) {
+                const visible = Math.max(1, canvasW - left);
                 placeBuf = await (sharpFn2(resizedBuf)
                   .extract({ left: 0, top: 0, width: visible, height: rh })
                   .png().toBuffer()) as Buffer;
@@ -2975,6 +2998,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
             cutoutOverlayRenderedAssetHeightPx = null;
             cutoutOverlayScaleReason           = "fallback";
             standeeOverlayZonesUsed.length     = 0;
+            padX = 0;
           }
         }
 
@@ -2984,7 +3008,10 @@ forbiddenBalloonColorLabels: hasSempertexLock
           composites = [{ input: Buffer.from(overlaySvg, "utf8"), blend: "over" }];
         }
 
-        const compBuf = await (sharpFn2(imgBuf)
+        const baseForCutouts = padX
+          ? await (sharpFn2(imgBuf).extend({ top: 0, bottom: 0, left: padX, right: padX, extendWith: "copy" }).png().toBuffer()) as Buffer
+          : imgBuf;
+        const compBuf = await (sharpFn2(baseForCutouts)
           .composite(composites)
           .jpeg({ quality: 92 })
           .toBuffer()) as Buffer;

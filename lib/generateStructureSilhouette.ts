@@ -512,7 +512,10 @@ function escapeXml(s: string): string {
 // drawn twice — outline colour first, face on top — so the overlaps merge
 // into one letter with one outer edge instead of showing seams.
 function marqueeBlockDigit(glyph: string, x: number, y: number, w: number, h: number, withDefs: boolean, bulbsOut?: [number, number, number][], facesOut?: [number, number][][]): string {
-  const t = w * 0.30;
+  // 2026-10-24: chunkier, after the customer's examples ("light hala hosuma
+  // gitmiyor tipi") — thick strokes, softly rounded corners, a deep box and
+  // more, smaller bulbs. Strokes were 30% of the width.
+  const t = w * 0.36;
   const midT = h / 2 - t / 2;
   type Pt = [number, number];
   const rect = (rx: number, ry: number, rw: number, rh: number): Pt[] =>
@@ -533,9 +536,10 @@ function marqueeBlockDigit(glyph: string, x: number, y: number, w: number, h: nu
   let parts: { poly: Pt[]; line: [Pt, Pt] }[];
   if (glyph === "1") {
     // A body down the middle and an angled flag at the top left.
-    const bx = w * 0.42;
+    const bx = w * 0.40;
+    const t1 = w * 0.42;
     parts = [
-      { poly: rect(bx, 0, t, h), line: [[bx + t / 2, t / 2], [bx + t / 2, h - t / 2]] },
+      { poly: rect(bx, 0, t1, h), line: [[bx + t1 / 2, t / 2], [bx + t1 / 2, h - t / 2]] },
       { poly: [[bx + t / 2, 0], [bx + t / 2, t * 1.15], [w * 0.06, h * 0.30], [w * 0.06, h * 0.30 - t * 1.05]],
         line: [[bx, t * 0.55], [w * 0.06 + t * 0.45, h * 0.30 - t * 0.6]] },
     ];
@@ -544,15 +548,21 @@ function marqueeBlockDigit(glyph: string, x: number, y: number, w: number, h: nu
   }
   const at = (q: Pt, ox = 0, oy = 0) => `${(x + q[0] + ox).toFixed(1)},${(y + q[1] + oy).toFixed(1)}`;
   const polyStr = (poly: Pt[], ox = 0, oy = 0) => poly.map((q) => at(q, ox, oy)).join(" ");
-  // Chamfered outer corners, by clipping the whole letter to an octagon.
-  const c = w * 0.14;
+  // Softly rounded outer corners, by clipping the whole letter to a
+  // rounded-corner outline (was a chamfered octagon).
+  const c = w * 0.12;
   const id = `mq${Math.round(x)}x${Math.round(y)}`;
-  const oct = (ox: number, oy: number) => [
-    [c, 0], [w - c, 0], [w, c], [w, h - c], [w - c, h], [c, h], [0, h - c], [0, c],
-  ].map((q) => at(q as Pt, ox, oy)).join(" ");
-  // The letter's depth: the same shape set slightly back and to the side,
-  // in the shade of the box's side wall.
-  const dx = w * 0.05, dy = -w * 0.03;
+  const oct = (ox: number, oy: number) => {
+    const pts: Pt[] = [];
+    const arc = (cx: number, cy: number, a0: number) => {
+      for (let i = 0; i <= 4; i++) { const a = (a0 + i * 22.5) * Math.PI / 180; pts.push([cx + Math.cos(a) * c, cy + Math.sin(a) * c]); }
+    };
+    arc(w - c, c, -90); arc(w - c, h - c, 0); arc(c, h - c, 90); arc(c, c, 180);
+    return pts.map((q) => at(q, ox, oy)).join(" ");
+  };
+  // The letter's depth: the same shape set back and to the side, in the
+  // shade of the box's side wall — deeper than before, a real box letter.
+  const dx = w * 0.075, dy = -w * 0.045;
   let out = withDefs
     ? `<defs><radialGradient id="marqueeBulbGlow">` +
       `<stop offset="0%" stop-color="#FFFFFF"/><stop offset="30%" stop-color="#FFF6D8"/>` +
@@ -571,7 +581,7 @@ function marqueeBlockDigit(glyph: string, x: number, y: number, w: number, h: nu
   // Bulbs at even spacing along each stroke's centreline; where two strokes
   // meet, the shared bulb is drawn once.
   const bulbs: Pt[] = [];
-  const step = h * 0.19;
+  const step = h * 0.14;
   for (const pt of parts) {
     const [[x0, y0], [x1, y1]] = pt.line;
     const len = Math.hypot(x1 - x0, y1 - y0);
@@ -581,11 +591,52 @@ function marqueeBlockDigit(glyph: string, x: number, y: number, w: number, h: nu
       if (!bulbs.some((b) => Math.hypot(b[0] - q[0], b[1] - q[1]) < t * 0.6)) bulbs.push(q);
     }
   }
-  const br = w * 0.10;
+  const br = w * 0.075;
   if (bulbsOut) for (const q of bulbs) bulbsOut.push([x + q[0], y + q[1], br]);
   // The letter's face, so the route can find where the render really put it.
   if (facesOut) for (const pt of parts) facesOut.push(pt.poly.map((q) => [x + q[0], y + q[1]] as [number, number]));
   out += bulbs.map((q) => `<circle cx="${(x + q[0]).toFixed(1)}" cy="${(y + q[1]).toFixed(1)}" r="${br.toFixed(1)}" fill="url(#marqueeBulbGlow)"/>`).join("");
+  return out;
+}
+
+// 2026-10-24: a foil number balloon (customer example: a giant pale-blue foil
+// "6" standing on a bunch of latex balloons). The digit is the embedded block
+// face made puffy with a thick rounded stroke, shaded like foil: bright bands
+// and a dark rim. Under it, a tight bunch of balloons in the palette.
+function foilNumberBunch(glyph: string, x: number, y: number, w: number, h: number, hex: string, palette: string[], idx: number): string {
+  const mix = (a: string, t: number, to: number) => {
+    const n = parseInt(a.replace("#", "").slice(0, 6).padEnd(6, "0"), 16);
+    const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(v + (to - v) * t));
+    return `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+  };
+  const gid = `foil${idx}${Math.round(x)}`;
+  // The digit floats a little above the bunch, which takes the bottom third.
+  const bunchH = h * 0.36;
+  const digitH = h * 0.86;
+  const fontPx = digitH / 0.72;
+  const baseY = y + h - bunchH * 0.55;
+  const d = textPathD(glyph, "block", x + w / 2, baseY, fontPx);
+  const puff = w * 0.16;
+  let out = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0.35" y2="1">` +
+    `<stop offset="0%" stop-color="${mix(hex, 0.75, 255)}"/><stop offset="30%" stop-color="${mix(hex, 0.1, 0)}"/>` +
+    `<stop offset="48%" stop-color="${mix(hex, 0.85, 255)}"/><stop offset="66%" stop-color="${mix(hex, 0.25, 0)}"/>` +
+    `<stop offset="100%" stop-color="${mix(hex, 0.45, 255)}"/></linearGradient></defs>`;
+  // A dark rim so a pale foil still stands out against a white board.
+  out += `<path d="${d}" fill="${mix(hex, 0.55, 0)}" stroke="${mix(hex, 0.55, 0)}" stroke-width="${(puff + 5).toFixed(1)}" stroke-linejoin="round" stroke-linecap="round"/>`;
+  out += `<path d="${d}" fill="url(#${gid})" stroke="url(#${gid})" stroke-width="${puff.toFixed(1)}" stroke-linejoin="round" stroke-linecap="round"/>`;
+  // The bunch: seven balloons in a mound, palette colours in turn.
+  const cols = palette.length ? palette : [hex, "#FFFFFF"];
+  const cx = x + w / 2, by = y + h;
+  const R = w * 0.2;
+  const spots: [number, number, number][] = [
+    [-1.55, -0.95, 1.0], [1.55, -0.95, 1.0], [-0.55, -1.15, 1.08], [0.6, -1.1, 1.05],
+    [-1.05, -2.0, 0.85], [1.05, -1.95, 0.85], [0, -2.15, 0.9],
+  ];
+  spots.forEach(([ox, oy, k], i) => {
+    const c = cols[(i + idx) % cols.length];
+    out += `<circle cx="${(cx + ox * R).toFixed(1)}" cy="${(by + oy * R).toFixed(1)}" r="${(R * k).toFixed(1)}" fill="${c}" stroke="rgba(0,0,0,0.25)" stroke-width="1.2"/>` +
+      `<circle cx="${(cx + ox * R - R * k * 0.3).toFixed(1)}" cy="${(by + oy * R - R * k * 0.35).toFixed(1)}" r="${(R * k * 0.22).toFixed(1)}" fill="rgba(255,255,255,0.55)"/>`;
+  });
   return out;
 }
 
@@ -954,7 +1005,7 @@ export function generateStructureSilhouette(
   // objects belong in the guide.
   extras?: {
     florals?: boolean;
-    numberLight?: { enabled: boolean; value: string };
+    numberLight?: { enabled: boolean; value: string; style?: "marquee" | "foil"; foilHex?: string };
     neonSign?: { enabled: boolean; text: string; panelIndex?: number };
     /** Balloon Ring dressing — "half" leaves the gold hoop bare on one side. */
     ringStyle?: "full" | "half" | "none";
@@ -1536,7 +1587,7 @@ export function generateStructureSilhouette(
     if (standeeCm <= 0) return null;
     const pn = layout.panels[0];
     const pxPerCm = (pn.floorY - pn.apexY) / Math.max(1, backdropItems[pn.idx]?.heightCm ?? 200);
-    const digitH = 90 * pxPerCm, digitW = digitH * 0.60, gap = digitW * 0.14;
+    const digitH = 100 * pxPerCm, digitW = digitH * 0.66, gap = digitW * 0.14;
     const groupW = digitW * digits.length + gap * (digits.length - 1);
     const cx = pn.cx + 0.85 * (pn.pw / 2);
     const visRight = (W - marginX) / SCALE;
@@ -4663,10 +4714,12 @@ export function generateStructureSilhouette(
     // panel. The unit is 90cm tall, so against a 220cm arch it is 41% of the
     // panel and against a 200cm ring 45% — the old flat 0.45 was drawing it
     // over-tall on the taller boards.
-    const NUMBER_H_CM = 90;
+    // 2026-10-24: 100cm, the product's own size (MARQUEE number stand); was 90.
+    const NUMBER_H_CM = 100;
     const pxPerCmN = ringScenePxPerCm ?? (panelH / Math.max(1, backdropItems[tallest.idx]?.heightCm ?? 200));
     const digitH = NUMBER_H_CM * pxPerCmN;
-    const digitW = digitH * 0.60;
+    // The lone round's block letter is chunkier (see marqueeBlockDigit).
+    const digitW = digitH * (singleRound ? 0.66 : 0.60);
     const gap = digitW * 0.14;
     const groupW = digitW * numDigits.length + gap * (numDigits.length - 1);
     // Where it stands. Rewritten 2026-09-09 after the number kept landing on a
@@ -4749,6 +4802,13 @@ export function generateStructureSilhouette(
       // it stands on, so that one is drawn as an explicit path with its bulbs
       // in it. Every other digit stays type, which renders correctly.
       const glyph = numDigits[d];
+      // 2026-10-24: a foil number balloon on a small bunch of balloons.
+      if (extras?.numberLight?.style === "foil") {
+        plinthLayer.push(foilNumberBunch(glyph, x, y, digitW, digitH, extras.numberLight.foilHex ?? "#BAE6FD", balloonColors ?? [], d));
+        // Its footprint, so a standee composited later keeps clear of it.
+        marqueeFacesLayout.push([[x, y], [x + digitW, y], [x + digitW, y + digitH], [x, y + digitH]]);
+        continue;
+      }
       if (singleRound) {
         plinthLayer.push(marqueeBlockDigit(glyph, x, y, digitW, digitH, d === 0, marqueeBulbsLayout, marqueeFacesLayout));
         continue;
