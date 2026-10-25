@@ -610,38 +610,38 @@ function foilNumberBunch(glyph: string, x: number, y: number, w: number, h: numb
     return `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
   };
   const gid = `foil${idx}${Math.round(x)}`;
-  // The digit floats a little above the bunch, which takes the bottom third.
-  // 2026-10-25: bigger balloons under it ("daha iri iri olmali").
-  const bunchH = h * 0.42;
-  const digitH = h * 0.86;
+  // 2026-10-25 (later): a LOW bunch of medium balloons at the number's feet,
+  // drawn first so the number stands in front of it — the big bunch hid the
+  // bottom of the 1 ("rakamin tam gozukmesini engelliyor"). Its colours are
+  // the garland's, mixed ("garlanddaki renklerden karisik olsun").
+  const cx = x + w / 2, by = y + h;
+  const R = w * 0.22;
+  const cols = palette.length ? palette : [hex, "#FFFFFF"];
+  const spots: [number, number, number][] = [
+    [-1.55, -1.0, 1.0], [-0.52, -1.05, 1.05], [0.52, -1.0, 1.0], [1.55, -1.05, 1.05],
+    [-1.05, -1.95, 0.8], [1.05, -1.9, 0.8],
+  ];
+  let out = "";
+  spots.forEach(([ox, oy, k], i) => {
+    const c = cols[(i * 2 + idx) % cols.length];
+    out += `<circle cx="${(cx + ox * R).toFixed(1)}" cy="${(by + oy * R).toFixed(1)}" r="${(R * k).toFixed(1)}" fill="${c}" stroke="rgba(0,0,0,0.25)" stroke-width="1.2"/>` +
+      `<circle cx="${(cx + ox * R - R * k * 0.3).toFixed(1)}" cy="${(by + oy * R - R * k * 0.35).toFixed(1)}" r="${(R * k * 0.22).toFixed(1)}" fill="rgba(255,255,255,0.55)"/>`;
+  });
+  // The number stands on the bunch, its whole height above the balloons' tops.
+  const digitH = h * 0.8;
   const fontPx = digitH / 0.72;
-  const baseY = y + h - bunchH * 0.55;
-  const d = textPathD(glyph, "block", x + w / 2, baseY, fontPx);
+  const baseY = by - R * 1.75;
+  const d = textPathD(glyph, "block", cx, baseY, fontPx);
   // Slimmer: the block face narrowed about its centre, and a thinner puff.
-  const narrow = ` transform="translate(${(x + w / 2).toFixed(1)} 0) scale(0.8 1) translate(${(-(x + w / 2)).toFixed(1)} 0)"`;
+  const narrow = ` transform="translate(${cx.toFixed(1)} 0) scale(0.8 1) translate(${(-cx).toFixed(1)} 0)"`;
   const puff = w * 0.1;
-  let out = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0.35" y2="1">` +
+  out += `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0.35" y2="1">` +
     `<stop offset="0%" stop-color="${mix(hex, 0.75, 255)}"/><stop offset="30%" stop-color="${mix(hex, 0.1, 0)}"/>` +
     `<stop offset="48%" stop-color="${mix(hex, 0.85, 255)}"/><stop offset="66%" stop-color="${mix(hex, 0.25, 0)}"/>` +
     `<stop offset="100%" stop-color="${mix(hex, 0.45, 255)}"/></linearGradient></defs>`;
   // A dark rim so a pale foil still stands out against a white board.
   out += `<path d="${d}"${narrow} fill="${mix(hex, 0.55, 0)}" stroke="${mix(hex, 0.55, 0)}" stroke-width="${(puff + 5).toFixed(1)}" stroke-linejoin="round" stroke-linecap="round"/>`;
   out += `<path d="${d}"${narrow} fill="url(#${gid})" stroke="url(#${gid})" stroke-width="${puff.toFixed(1)}" stroke-linejoin="round" stroke-linecap="round"/>`;
-  // The bunch: seven balloons in a mound, in the foil's own colour and white —
-  // in the palette's colours it melted into the garland behind it (2026-10-25).
-  void palette;
-  const cols = [mix(hex, 0.35, 255), "#FFFFFF", mix(hex, 0.6, 255)];
-  const cx = x + w / 2, by = y + h;
-  const R = w * 0.3;
-  const spots: [number, number, number][] = [
-    [-1.55, -0.95, 1.0], [1.55, -0.95, 1.0], [-0.55, -1.15, 1.08], [0.6, -1.1, 1.05],
-    [-1.05, -2.0, 0.85], [1.05, -1.95, 0.85], [0, -2.15, 0.9],
-  ];
-  spots.forEach(([ox, oy, k], i) => {
-    const c = cols[(i + idx) % cols.length];
-    out += `<circle cx="${(cx + ox * R).toFixed(1)}" cy="${(by + oy * R).toFixed(1)}" r="${(R * k).toFixed(1)}" fill="${c}" stroke="rgba(0,0,0,0.25)" stroke-width="1.2"/>` +
-      `<circle cx="${(cx + ox * R - R * k * 0.3).toFixed(1)}" cy="${(by + oy * R - R * k * 0.35).toFixed(1)}" r="${(R * k * 0.22).toFixed(1)}" fill="rgba(255,255,255,0.55)"/>`;
-  });
   return out;
 }
 

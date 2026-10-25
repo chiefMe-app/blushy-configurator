@@ -1450,14 +1450,21 @@ export function buildLayoutRefEditPrompt(
   const foilName = FOIL_NUMBER_COLOURS.find((c) => c.hex.toLowerCase() === foilHex.toLowerCase())?.label
     ?? selectedSempertexColors.find((c) => (c.hex ?? "").toLowerCase() === foilHex.toLowerCase())?.colorName
     ?? backdropColorLabel(foilHex);
+  const bunchColourNames = selectedSempertexColors
+    .filter((c) => !/clear/i.test(String(c.colorName ?? "")))
+    .map((c) => (getVisualLabel(c) || String(c.colorName ?? "").toLowerCase()).split(",")[0].replace(/ — .*$/, "").trim())
+    .filter((v, i, arr) => v && arr.indexOf(v) === i)
+    .slice(0, 4);
   const frontFoilNumberLine = sceneModel.numberLight?.enabled && frontNumDigits.length > 0 && sceneModel.numberLight.style === "foil"
     // 2026-10-25: no "NOT silver, NOT chrome" here — said this early, the
     // render took it for the whole garland and dropped the chrome and clear
     // balloons ("silver clear kaybolmus"). The garland's own balloons are
     // named as staying exactly as they are instead.
     ? `A shiny FOIL number balloon "${frontNumDigits}", about 80cm tall and SLIM (a normal party foil number, not chunky), in ${foilName} metallic foil, ` +
-      `stands on the floor on top of its own separate bunch of seven BIG round latex balloons (each about 30cm across) in pale ${foilName} and white, ` +
-      `clearly apart from the garland, exactly where IMAGE 1 draws it` +
+      `stands on a LOW bunch of six medium round latex balloons (each about 25cm across) at its feet, ` +
+      // The colours by name: "the garland's colours" came back all one blue.
+      (bunchColourNames.length > 1 ? `a MIX of ${bunchColourNames.join(", ")} — every colour there, side by side, not all one colour, ` : `in the garland's own colours, `) +
+      `exactly where IMAGE 1 draws it. The bunch sits BELOW the number: the whole number, from its foot to its top, is in full view in front of it, nothing covering it` +
       (nPlinths > 0
         ? ` beside the white cylindrical pedestal column${nPlinths > 1 ? "s" : ""}, which still stand${nPlinths > 1 ? "" : "s"} in the middle in front of the backdrop. `
         : `, in front of the backdrop. `) +

@@ -334,13 +334,12 @@ function MarqueeDigit({ glyph, x, y, w, h, uid }: { glyph: string; x: number; y:
 function FoilDigit({ glyph, x, y, w, h, hex, palette, uid }: { glyph: string; x: number; y: number; w: number; h: number; hex: string; palette: string[]; uid: string }) {
   const [r, g, b] = hexRgb(hex);
   const mix = (t: number, to: number) => `rgb(${[r, g, b].map((v) => Math.round(v + (to - v) * t)).join(",")})`;
-  const bunchH = h * 0.42, digitH = h * 0.86;
-  const baseY = y + h - bunchH * 0.55;
-  const R = w * 0.3, cx = x + w / 2, by = y + h;
-  const spots: [number, number, number][] = [[-1.55, -0.95, 1], [1.55, -0.95, 1], [-0.55, -1.15, 1.08], [0.6, -1.1, 1.05], [-1.05, -2, 0.85], [1.05, -1.95, 0.85], [0, -2.15, 0.9]];
-  // In the foil's own colour and white, as the guide draws it.
-  void palette;
-  const cols = [mix(0.35, 255), "#ffffff", mix(0.6, 255)];
+  // A low bunch of medium balloons at its feet in the garland's colours, the
+  // number standing in front of it, whole — as the guide draws it.
+  const R = w * 0.22, cx = x + w / 2, by = y + h;
+  const digitH = h * 0.8, baseY = by - R * 1.75;
+  const spots: [number, number, number][] = [[-1.55, -1, 1], [-0.52, -1.05, 1.05], [0.52, -1, 1], [1.55, -1.05, 1.05], [-1.05, -1.95, 0.8], [1.05, -1.9, 0.8]];
+  const cols = palette.length ? palette : [hex, "#ffffff"];
   return (
     <g>
       <defs>
@@ -348,15 +347,15 @@ function FoilDigit({ glyph, x, y, w, h, hex, palette, uid }: { glyph: string; x:
           {[[0, mix(0.75, 255)], [0.3, mix(0.1, 0)], [0.48, mix(0.85, 255)], [0.66, mix(0.25, 0)], [1, mix(0.45, 255)]].map(([o, c]) => <stop key={o as number} offset={o as number} stopColor={c as string} />)}
         </linearGradient>
       </defs>
-      <text x={cx} y={baseY} textAnchor="middle" fontFamily="var(--bz-sans), Arial, sans-serif" fontWeight={800} fontSize={digitH / 0.72}
-        transform={`translate(${cx} 0) scale(0.8 1) translate(${-cx} 0)`}
-        fill={`url(#${uid})`} stroke={mix(0.35, 0)} strokeWidth={w * 0.1} strokeLinejoin="round" style={{ paintOrder: "stroke" }}>{glyph}</text>
       {spots.map(([ox, oy, k], i) => (
         <g key={i}>
-          <circle cx={cx + ox * R} cy={by + oy * R} r={R * k} fill={cols[i % cols.length]} stroke="rgba(39,22,23,.12)" strokeWidth={1} />
+          <circle cx={cx + ox * R} cy={by + oy * R} r={R * k} fill={cols[(i * 2) % cols.length]} stroke="rgba(39,22,23,.12)" strokeWidth={1} />
           <circle cx={cx + ox * R} cy={by + oy * R} r={R * k} fill="url(#skShine)" />
         </g>
       ))}
+      <text x={cx} y={baseY} textAnchor="middle" fontFamily="var(--bz-sans), Arial, sans-serif" fontWeight={800} fontSize={digitH / 0.72}
+        transform={`translate(${cx} 0) scale(0.8 1) translate(${-cx} 0)`}
+        fill={`url(#${uid})`} stroke={mix(0.35, 0)} strokeWidth={w * 0.1} strokeLinejoin="round" style={{ paintOrder: "stroke" }}>{glyph}</text>
     </g>
   );
 }
