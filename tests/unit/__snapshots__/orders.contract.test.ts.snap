@@ -1,0 +1,49 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`orders contract > B01-hb-arya-script: stored as sent, total recomputed 1`] = `
+{
+  "garland": "full",
+  "shape": "round",
+  "theme": "frozen",
+}
+`;
+
+exports[`orders contract > B08-turkish: stored as sent, total recomputed 1`] = `
+{
+  "garland": "full",
+  "shape": "round",
+  "theme": "frozen",
+}
+`;
+
+exports[`orders contract > B13-newline: stored as sent, total recomputed 1`] = `
+{
+  "garland": "full",
+  "shape": "round",
+  "theme": "frozen",
+}
+`;
+
+exports[`orders contract > C01-legacy-birthday: stored as sent, total recomputed 1`] = `
+{
+  "garland": "full",
+  "shape": "round",
+  "theme": "frozen",
+}
+`;
+
+exports[`orders contract > D06-double-two-colours: stored as sent, total recomputed 1`] = `
+{
+  "garland": "full",
+  "shape": "large,medium",
+  "theme": "frozen",
+}
+`;
+
+exports[`orders contract > E03-foil-pink: stored as sent, total recomputed 1`] = `
+{
+  "garland": "full",
+  "shape": "round",
+  "theme": "frozen",
+}
+`;

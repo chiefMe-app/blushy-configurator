@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:unit": "vitest run tests/unit",
+    "test:golden": "vitest run tests/golden",
+    "test:sheet": "tsx scripts/golden/contact-sheet.ts",
+    "test:e2e": "playwright test",
+    "test:all": "vitest run && playwright test"
   },
   "dependencies": {
     "@fal-ai/client": "^1.10.1",
@@ -18,6 +23,7 @@
     "sharp": "^0.35.2"
   },
   "devDependencies": {
+    "@playwright/test": "1.55.0",
     "@types/node": "^20.14.0",
     "@types/opentype.js": "^1.3.8",
     "@types/react": "^18.3.3",
@@ -25,6 +31,8 @@
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.6",
-    "typescript": "^5.5.3"
+    "tsx": "4.20.5",
+    "typescript": "^5.5.3",
+    "vitest": "3.2.4"
   }
 }

@@ -1,0 +1,1881 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`pricing golden > A-arch_open_frame 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 1",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Open Arch Frame - panel 2",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1440,
+  },
+  "total": 1440,
+}
+`;
+
+exports[`pricing golden > A-arch_shimmer 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 1",
+        "section": "design",
+      },
+      {
+        "amount": 430,
+        "label": "Shimmer Wall - panel 2",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Neon LED sign",
+        "section": "design",
+      },
+    ],
+    "total": 1690,
+  },
+  "total": 1690,
+}
+`;
+
+exports[`pricing golden > A-balloon_ring 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Balloon Ring",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+    ],
+    "total": 1010,
+  },
+  "total": 1010,
+}
+`;
+
+exports[`pricing golden > A-double_arch 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 1",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 2",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1440,
+  },
+  "total": 1440,
+}
+`;
+
+exports[`pricing golden > A-single_arch 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > A-single_banner 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Banner Backdrop 2x2m",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+      {
+        "amount": 150,
+        "label": "Theme graphic",
+        "section": "design",
+      },
+    ],
+    "total": 1240,
+  },
+  "total": 1240,
+}
+`;
+
+exports[`pricing golden > A-single_round 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > A-single_shimmer 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 430,
+        "label": "Shimmer Wall",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Neon LED sign",
+        "section": "design",
+      },
+    ],
+    "total": 1340,
+  },
+  "total": 1340,
+}
+`;
+
+exports[`pricing golden > A-triple_arch 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Half Arch Panel - panel 1",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 2",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Half Arch Panel - panel 3",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1790,
+  },
+  "total": 1790,
+}
+`;
+
+exports[`pricing golden > B01-hb-arya-script 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B02-hb-arya-elegant 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B03-hb-arya-block 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B04-hb-arya-small 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B05-hb-arya-large 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B06-ordinal-layla 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B07-ordinal-malek-elegant 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B08-turkish 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B09-name-only 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B10-oh-baby 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B11-welcome-elegant 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B12-hb-only 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B13-newline 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > B14-long-block 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > C01-legacy-birthday 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > C02-legacy-custom 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > C03-legacy-turkish 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > C04-legacy-off 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > D01-gold 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > D02-rose-gold 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > D03-white 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > D04-custom-hex 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > D05-pink-board 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > D06-double-two-colours 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 1",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 2",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1440,
+  },
+  "total": 1440,
+}
+`;
+
+exports[`pricing golden > E01-neon 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Neon LED sign",
+        "section": "design",
+      },
+    ],
+    "total": 1260,
+  },
+  "total": 1260,
+}
+`;
+
+exports[`pricing golden > E02-marquee-3-plinths 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 270,
+        "label": "Plinths (3)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+      {
+        "amount": 200,
+        "label": "Light-up marquee number",
+        "section": "design",
+      },
+    ],
+    "total": 1450,
+  },
+  "total": 1450,
+}
+`;
+
+exports[`pricing golden > E03-foil-pink 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+      {
+        "amount": 150,
+        "label": "Foil number balloon bunch",
+        "section": "design",
+      },
+    ],
+    "total": 1240,
+  },
+  "total": 1240,
+}
+`;
+
+exports[`pricing golden > E04-foil-gold 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+      {
+        "amount": 150,
+        "label": "Foil number balloon bunch",
+        "section": "design",
+      },
+    ],
+    "total": 1240,
+  },
+  "total": 1240,
+}
+`;
+
+exports[`pricing golden > E05-florals 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+      {
+        "amount": 120,
+        "label": "Florals & greenery",
+        "section": "design",
+      },
+    ],
+    "total": 1210,
+  },
+  "total": 1210,
+}
+`;
+
+exports[`pricing golden > E06-two-standees 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 360,
+        "label": "Character standees (2)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1450,
+  },
+  "total": 1450,
+}
+`;
+
+exports[`pricing golden > E07-ring-half 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Balloon Ring",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+    ],
+    "total": 1010,
+  },
+  "total": 1010,
+}
+`;
+
+exports[`pricing golden > E08-ring-none 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Balloon Ring",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+    ],
+    "total": 760,
+  },
+  "total": 760,
+}
+`;
+
+exports[`pricing golden > E09-no-balloons 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 840,
+  },
+  "total": 840,
+}
+`;
+
+exports[`pricing golden > E10-barbie 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 60,
+        "label": "Barbie theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1100,
+  },
+  "total": 1100,
+}
+`;
+
+exports[`pricing golden > E11-minecraft 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 40,
+        "label": "Minecraft theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 1",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 2",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1430,
+  },
+  "total": 1430,
+}
+`;
+
+exports[`pricing golden > E12-zero-plinths 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 980,
+  },
+  "total": 980,
+}
+`;

@@ -1,0 +1,2291 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`lettering golden > guide faces, sizes and font styles on offer 1`] = `
+{
+  "defaultScale": 0.8,
+  "faces": [
+    "script",
+    "signature",
+    "block",
+    "elegant",
+  ],
+  "sizes": [
+    {
+      "id": "small",
+      "label": "Small",
+      "scale": 0.64,
+    },
+    {
+      "id": "medium",
+      "label": "Medium",
+      "scale": 0.8,
+    },
+    {
+      "id": "large",
+      "label": "Large",
+      "scale": 1,
+    },
+  ],
+  "styles": [
+    {
+      "id": "script",
+      "label": "Script / Cursive",
+    },
+    {
+      "id": "block",
+      "label": "Bold Block",
+    },
+    {
+      "id": "elegant",
+      "label": "Elegant Serif",
+    },
+  ],
+}
+`;
+
+exports[`lettering golden > legacy decor.backdropText resolves 1`] = `
+[
+  [
+    "C01-legacy-birthday",
+    "Happy Birthday Arya",
+  ],
+  [
+    "C02-legacy-custom",
+    "Oh Baby",
+  ],
+  [
+    "C03-legacy-turkish",
+    "Happy Birthday Ayşe",
+  ],
+  [
+    "C04-legacy-off",
+    "",
+  ],
+]
+`;
+
+exports[`lettering golden > text 00 "Happy Birthday Arya" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 254.1,
+        "path": "a6d63d8842e5b57f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 207.7,
+        "path": "7bd87b5f62e6f800",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 231.2,
+        "path": "8f3a2e114edf9a5c",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Arya",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 01 "Happy Birthday, Arya" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 254.1,
+        "path": "a6d63d8842e5b57f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 207.7,
+        "path": "7bd87b5f62e6f800",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 231.2,
+        "path": "8f3a2e114edf9a5c",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Arya",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 02 "Happy Birthday Arya!" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 287.4,
+        "path": "8fd88f1b8c2c9082",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 233.9,
+        "path": "faa42fa957880463",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 260.5,
+        "path": "35c8585f530558fd",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Arya!",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 03 "Happy Birthday! Arya" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 254.1,
+        "path": "a6d63d8842e5b57f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 207.7,
+        "path": "7bd87b5f62e6f800",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 231.2,
+        "path": "8f3a2e114edf9a5c",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Arya",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 04 "Happy Birthday. Arya" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 254.1,
+        "path": "a6d63d8842e5b57f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 207.7,
+        "path": "7bd87b5f62e6f800",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 231.2,
+        "path": "8f3a2e114edf9a5c",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Arya",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 05 "Happy 1st Birthday Layla" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 1376.5,
+        "path": "228335d4ca1cf187",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 1109.9,
+        "path": "0bde79240da66898",
+      },
+    ],
+    "script": [
+      {
+        "advance": 924.7,
+        "path": "4b5e81a787888ca2",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 06 "Happy 2nd Birthday Malek" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 1437.7,
+        "path": "6b1f03806cfef6e0",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 1192.2,
+        "path": "ed9da93639720ea4",
+      },
+    ],
+    "script": [
+      {
+        "advance": 989.7,
+        "path": "e5a7deabababdb38",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 07 "Happy 3rd Birthday Noah" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 1373.5,
+        "path": "294fffdcfef17df2",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 1137.1,
+        "path": "706517143aaf32b9",
+      },
+    ],
+    "script": [
+      {
+        "advance": 973.2,
+        "path": "0377ed32b86c4d78",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 08 "Happy 4th Birthday Mia" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 1282,
+        "path": "d8bf7f1ecfeed3bd",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 1065.2,
+        "path": "92e8ae15fae5341c",
+      },
+    ],
+    "script": [
+      {
+        "advance": 923.8,
+        "path": "1c9a684ebd47a21e",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 09 "Happy 11th Birthday Omar" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 1448.7,
+        "path": "10c965be701e1226",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 1180.8,
+        "path": "7c344d99f8a3dd57",
+      },
+    ],
+    "script": [
+      {
+        "advance": 965.5,
+        "path": "6f29b964ee0f1c88",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 10 "Happy 21st Birthday Sara" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 1400.4,
+        "path": "a0267c045f17376b",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 1118.5,
+        "path": "95251046dff74dee",
+      },
+    ],
+    "script": [
+      {
+        "advance": 955.8,
+        "path": "e930fbdba845e2fd",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 11 "Happy 1st Birthday, Layla" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 1401.3,
+        "path": "c97461f356190e92",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 1136,
+        "path": "1bed7b166bb398d6",
+      },
+    ],
+    "script": [
+      {
+        "advance": 941.3,
+        "path": "d55235c2145219d2",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 12 "Happy Birthday" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+  ],
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 13 "Happy Birthday Princess" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 472.2,
+        "path": "1a57fa4ad601ca03",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 380.6,
+        "path": "78d6909d2b44a982",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 328.4,
+        "path": "e70860af1e9f8b72",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Princess",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 14 "Let's Celebrate Arya" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 1119.8,
+        "path": "5fddb7b3e8e8bf0f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 901.1,
+        "path": "a553b17219def5ac",
+      },
+    ],
+    "script": [
+      {
+        "advance": 772.2,
+        "path": "5160666881392f0a",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 15 "Welcome to Arya's Birthday" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 1517.6,
+        "path": "e86497c779eb70cd",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 1237.3,
+        "path": "22aaef2122a406e3",
+      },
+    ],
+    "script": [
+      {
+        "advance": 1057.1,
+        "path": "31e09aefc3fc24a2",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 16 "Welcome to Arya's 5th Birthday" 1`] = `
+{
+  "group": "english",
+  "guide": {
+    "block": [
+      {
+        "advance": 1728.7,
+        "path": "f48bee45b96c39a8",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 1397.9,
+        "path": "e13bce62c13a5902",
+      },
+    ],
+    "script": [
+      {
+        "advance": 1174.1,
+        "path": "d3b5ef42b31bc23b",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 17 "İyi ki doğdun Ayşe" 1`] = `
+{
+  "group": "turkish",
+  "guide": {
+    "block": [
+      {
+        "advance": 1000.1,
+        "path": "1487d5cd5e15a72c",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 822.9,
+        "path": "c467b51f03f23042",
+      },
+    ],
+    "script": [
+      {
+        "advance": 633.54,
+        "path": "8237f40f3dc1bd1d",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 18 "İyi ki Doğdun Ayşe Gül" 1`] = `
+{
+  "group": "turkish",
+  "guide": {
+    "block": [
+      {
+        "advance": 1227.8,
+        "path": "4b0a446482bf7e52",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 1019,
+        "path": "978a1921701db644",
+      },
+    ],
+    "script": [
+      {
+        "advance": 867.38,
+        "path": "e7e324f7b8eb14ee",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 19 "İyi ki doğdun Çağla" 1`] = `
+{
+  "group": "turkish",
+  "guide": {
+    "block": [
+      {
+        "advance": 1044.6,
+        "path": "1ffecdd7eca4ee64",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 864,
+        "path": "6a514c3b015826e6",
+      },
+    ],
+    "script": [
+      {
+        "advance": 657.18,
+        "path": "980f7aef5944d5ad",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 20 "İyi ki doğdun Işıl" 1`] = `
+{
+  "group": "turkish",
+  "guide": {
+    "block": [
+      {
+        "advance": 900,
+        "path": "15567a0c5d6e2cb4",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 750.7,
+        "path": "c3fb55403c16d507",
+      },
+    ],
+    "script": [
+      {
+        "advance": 581.01,
+        "path": "5042ca6cef0ea115",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 21 "İyi ki doğdun Öykü" 1`] = `
+{
+  "group": "turkish",
+  "guide": {
+    "block": [
+      {
+        "advance": 1011.2,
+        "path": "8cdb926b826ac461",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 851.8,
+        "path": "9c09d0b13cc8f835",
+      },
+    ],
+    "script": [
+      {
+        "advance": 626.61,
+        "path": "d712dcc7e6cd896b",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 22 "İyi ki doğdun Ümit" 1`] = `
+{
+  "group": "turkish",
+  "guide": {
+    "block": [
+      {
+        "advance": 994.4,
+        "path": "8d155e4c8b093a81",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 835.9,
+        "path": "52e40843d0fe743b",
+      },
+    ],
+    "script": [
+      {
+        "advance": 656.2,
+        "path": "6732ad436c26e756",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 23 "Happy Birthday Şule" 1`] = `
+{
+  "group": "turkish",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 238.9,
+        "path": "2d60fb9ffaae7dae",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 191.3,
+        "path": "17eea4ab73df833b",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 167.09,
+        "path": "8cc75b661750cd5b",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Şule",
+  ],
+  "scriptFace": [
+    "signature",
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 24 "Happy Birthday Ğ İ Ş ğ ı ş" 1`] = `
+{
+  "group": "turkish",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 522,
+        "path": "69d5ec5908bb671d",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 409.5,
+        "path": "f2811c0ee95c7cbc",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 418.9,
+        "path": "dc2b8ca2a96245a2",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Ğ İ Ş ğ ı ş",
+  ],
+  "scriptFace": [
+    "signature",
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 25 "Doğum günün kutlu olsun Ela" 1`] = `
+{
+  "group": "turkish",
+  "guide": {
+    "block": [
+      {
+        "advance": 1589.1,
+        "path": "789be91b63c27744",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 1335.2,
+        "path": "a40c2208ba7dc678",
+      },
+    ],
+    "script": [
+      {
+        "advance": 995.9,
+        "path": "799a5d138bd685de",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 26 "Happy Birthday Ayşe Gül" 1`] = `
+{
+  "group": "multi-word-name",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 483.3,
+        "path": "af256181239b8baa",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 390.6,
+        "path": "ba9be09e29d361c6",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 353.03,
+        "path": "0c0afe3cca6ba8ec",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Ayşe Gül",
+  ],
+  "scriptFace": [
+    "signature",
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 27 "Happy Birthday Mary Jane" 1`] = `
+{
+  "group": "multi-word-name",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 570.8,
+        "path": "79479d6ad547b64f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 449.4,
+        "path": "12fbaa6d16d5035b",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 460,
+        "path": "5a636c74c3ba688d",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Mary Jane",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 28 "Happy Birthday Al Fahim" 1`] = `
+{
+  "group": "multi-word-name",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 475.2,
+        "path": "9e2e9a7aff87fff7",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 400.1,
+        "path": "de56b125391455df",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 390.6,
+        "path": "445fc7addae84464",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Al Fahim",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 29 "Happy Birthday Mohammed Bin Rashid" 1`] = `
+{
+  "group": "multi-word-name",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 1244.6,
+        "path": "4d8392976245929f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 1043.4,
+        "path": "14b38a31cdcff206",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 892,
+        "path": "8b6edce3bf997b2a",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Mohammed Bin Rashid",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 30 "Happy Birthday Arya & Leo" 1`] = `
+{
+  "group": "multi-word-name",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 609.7,
+        "path": "c5fcb225b574002a",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 505.4,
+        "path": "826d7ecd751e03e8",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 467.2,
+        "path": "1957bfb56e1bd67e",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Arya & Leo",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 31 "Oh Baby" 1`] = `
+{
+  "group": "free-phrase",
+  "guide": {
+    "block": [
+      {
+        "advance": 456.6,
+        "path": "813fb3ebc2b148be",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 376.6,
+        "path": "69a6b16aba3da4fd",
+      },
+    ],
+    "script": [
+      {
+        "advance": 383.3,
+        "path": "8e746661265078ce",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 32 "Two Sweet" 1`] = `
+{
+  "group": "free-phrase",
+  "guide": {
+    "block": [
+      {
+        "advance": 607.2,
+        "path": "ceae4e131ec2b60a",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 486.4,
+        "path": "532d3d123afcefab",
+      },
+    ],
+    "script": [
+      {
+        "advance": 396,
+        "path": "1666570c88f32f65",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 33 "Let's Party" 1`] = `
+{
+  "group": "free-phrase",
+  "guide": {
+    "block": [
+      {
+        "advance": 592.1,
+        "path": "15c788e16d7ae02a",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 471.9,
+        "path": "d36fe05a714ef512",
+      },
+    ],
+    "script": [
+      {
+        "advance": 424.9,
+        "path": "6f95b71ef8991940",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 34 "Welcome to the party" 1`] = `
+{
+  "group": "free-phrase",
+  "guide": {
+    "block": [
+      {
+        "advance": 1174.6,
+        "path": "c95fec7c6643393b",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 960.4,
+        "path": "1daeaa49098b69fa",
+      },
+    ],
+    "script": [
+      {
+        "advance": 689,
+        "path": "2ae717dd5fa1dc20",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 35 "Arya's 5th" 1`] = `
+{
+  "group": "free-phrase",
+  "guide": {
+    "block": [
+      {
+        "advance": 554.1,
+        "path": "a67f42fb8b40af04",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 431.9,
+        "path": "b1279455933f465e",
+      },
+    ],
+    "script": [
+      {
+        "advance": 404.4,
+        "path": "c43d24638a1ae3eb",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 36 "Arya Turns One" 1`] = `
+{
+  "group": "free-phrase",
+  "guide": {
+    "block": [
+      {
+        "advance": 849.2,
+        "path": "fe705a4460a232f9",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 711,
+        "path": "cd7a7a12fa8fd7b5",
+      },
+    ],
+    "script": [
+      {
+        "advance": 654.6,
+        "path": "992625c17364f562",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 37 "Baby Shower" 1`] = `
+{
+  "group": "free-phrase",
+  "guide": {
+    "block": [
+      {
+        "advance": 714.8,
+        "path": "58bd3ba1bc4e10ef",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 583.4,
+        "path": "f33033fd672ad092",
+      },
+    ],
+    "script": [
+      {
+        "advance": 542,
+        "path": "89c63530e8c4162a",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 38 "Bride To Be" 1`] = `
+{
+  "group": "free-phrase",
+  "guide": {
+    "block": [
+      {
+        "advance": 632.1,
+        "path": "089c33df694a265d",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 524.4,
+        "path": "9f921660e9ccb2dc",
+      },
+    ],
+    "script": [
+      {
+        "advance": 496.9,
+        "path": "1cc9c89d0318314b",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 39 "Congrats" 1`] = `
+{
+  "group": "free-phrase",
+  "guide": {
+    "block": [
+      {
+        "advance": 496.3,
+        "path": "bde90be0312d89dc",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 410.5,
+        "path": "1b92001adef8f668",
+      },
+    ],
+    "script": [
+      {
+        "advance": 316.8,
+        "path": "597078007747a36a",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 40 "Happy B-day Arya" 1`] = `
+{
+  "group": "free-phrase",
+  "guide": {
+    "block": [
+      {
+        "advance": 970.1,
+        "path": "6dbbb23c4050c6ea",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 820.1,
+        "path": "41723dbcbf8b5079",
+      },
+    ],
+    "script": [
+      {
+        "advance": 765.8,
+        "path": "9ebdacf615b1423d",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 41 "Happy Bday Arya" 1`] = `
+{
+  "group": "free-phrase",
+  "guide": {
+    "block": [
+      {
+        "advance": 936.8,
+        "path": "ae8fa643dfb5dc49",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 770.2,
+        "path": "6facd4eb2c712500",
+      },
+    ],
+    "script": [
+      {
+        "advance": 730.9,
+        "path": "aeeb0dad5da96063",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 42 "ONE" 1`] = `
+{
+  "group": "free-phrase",
+  "guide": {
+    "block": [
+      {
+        "advance": 238.8,
+        "path": "88875a0f0a89ef01",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 205.6,
+        "path": "783929dcbe29f597",
+      },
+    ],
+    "script": [
+      {
+        "advance": 288.6,
+        "path": "1b2ce4ea94c9e0e5",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 43 "Happy Birthday\\nArya" 1`] = `
+{
+  "group": "format",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 254.1,
+        "path": "a6d63d8842e5b57f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 207.7,
+        "path": "7bd87b5f62e6f800",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 231.2,
+        "path": "8f3a2e114edf9a5c",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Arya",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 44 "  Happy Birthday Arya  " 1`] = `
+{
+  "group": "format",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 254.1,
+        "path": "a6d63d8842e5b57f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 207.7,
+        "path": "7bd87b5f62e6f800",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 231.2,
+        "path": "8f3a2e114edf9a5c",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Arya",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 45 "HAPPY BIRTHDAY ARYA" 1`] = `
+{
+  "group": "format",
+  "guide": {
+    "block": [
+      {
+        "advance": 986.3,
+        "path": "03caa478d0ee1838",
+      },
+      {
+        "advance": 297.5,
+        "path": "7fceb70142522c01",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 832.9,
+        "path": "0400a526f88dc171",
+      },
+      {
+        "advance": 249.9,
+        "path": "f62fcd0bee74e3b1",
+      },
+    ],
+    "script": [
+      {
+        "advance": 1167.1,
+        "path": "9f725cae65531b28",
+      },
+      {
+        "advance": 406.5,
+        "path": "52cbfe5170fc3d27",
+      },
+    ],
+  },
+  "messageLines": [
+    "HAPPY BIRTHDAY",
+    "ARYA",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 46 "happy birthday arya" 1`] = `
+{
+  "group": "format",
+  "guide": {
+    "block": [
+      {
+        "advance": 815.5,
+        "path": "4713f86e11381b4a",
+      },
+      {
+        "advance": 243,
+        "path": "b4f0181cb4bc89b7",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 682.7,
+        "path": "f80e900bdb73e5b0",
+      },
+      {
+        "advance": 194.5,
+        "path": "87f0bc567a8de85f",
+      },
+    ],
+    "script": [
+      {
+        "advance": 485.9,
+        "path": "f29a5a777cdb9325",
+      },
+      {
+        "advance": 158.6,
+        "path": "0f6127617100d456",
+      },
+    ],
+  },
+  "messageLines": [
+    "happy birthday",
+    "arya",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 47 "Happy  Birthday   Arya" 1`] = `
+{
+  "group": "format",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 254.1,
+        "path": "a6d63d8842e5b57f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 207.7,
+        "path": "7bd87b5f62e6f800",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 231.2,
+        "path": "8f3a2e114edf9a5c",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Arya",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 48 "Happy Birthday\\n\\nArya" 1`] = `
+{
+  "group": "format",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 254.1,
+        "path": "a6d63d8842e5b57f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 207.7,
+        "path": "7bd87b5f62e6f800",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 231.2,
+        "path": "8f3a2e114edf9a5c",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Arya",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 49 "Happy\\nBirthday\\nArya" 1`] = `
+{
+  "group": "format",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 254.1,
+        "path": "a6d63d8842e5b57f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 207.7,
+        "path": "7bd87b5f62e6f800",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 231.2,
+        "path": "8f3a2e114edf9a5c",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Arya",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 50 "" 1`] = `
+{
+  "group": "edge",
+  "guide": {
+    "block": [],
+    "elegant": [],
+    "script": [],
+  },
+  "messageLines": null,
+  "scriptFace": [],
+}
+`;
+
+exports[`lettering golden > text 51 "   " 1`] = `
+{
+  "group": "edge",
+  "guide": {
+    "block": [],
+    "elegant": [],
+    "script": [],
+  },
+  "messageLines": null,
+  "scriptFace": [],
+}
+`;
+
+exports[`lettering golden > text 52 "Arya" 1`] = `
+{
+  "group": "edge",
+  "guide": {
+    "block": [
+      {
+        "advance": 254.1,
+        "path": "a6d63d8842e5b57f",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 207.7,
+        "path": "7bd87b5f62e6f800",
+      },
+    ],
+    "script": [
+      {
+        "advance": 231.2,
+        "path": "8f3a2e114edf9a5c",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 53 "Happy Birthday Arya 🎉" 1`] = `
+{
+  "group": "edge",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 362.4,
+        "path": "0820ea064915b303",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 288.8,
+        "path": "b07f6cdfd3da7db1",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 251.42,
+        "path": "c338e9f20b0bf487",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Arya 🎉",
+  ],
+  "scriptFace": [
+    "signature",
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 54 "🎂" 1`] = `
+{
+  "group": "edge",
+  "guide": {
+    "block": [
+      {
+        "advance": 75,
+        "path": "2ac6757aa8d46b4c",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 56.2,
+        "path": "9acc227d68b0eb1a",
+      },
+    ],
+    "script": [
+      {
+        "advance": 24.41,
+        "path": "e3b0c44298fc1c14",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 55 "1" 1`] = `
+{
+  "group": "edge",
+  "guide": {
+    "block": [
+      {
+        "advance": 66.7,
+        "path": "685730d67b20ce77",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 37,
+        "path": "38977047b0037cf9",
+      },
+    ],
+    "script": [
+      {
+        "advance": 19.2,
+        "path": "6e7bcf1e80eb7427",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 56 "5 Arya" 1`] = `
+{
+  "group": "edge",
+  "guide": {
+    "block": [
+      {
+        "advance": 354.1,
+        "path": "2b91a7e6778060ff",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 274.1,
+        "path": "f427e3cefd78d6e7",
+      },
+    ],
+    "script": [
+      {
+        "advance": 291.8,
+        "path": "e9302a87a32ae800",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 57 "Happy Birthday 1" 1`] = `
+{
+  "group": "edge",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 66.7,
+        "path": "685730d67b20ce77",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 37,
+        "path": "38977047b0037cf9",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 19.2,
+        "path": "6e7bcf1e80eb7427",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "1",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 58 "Happy Birthday Alexandrina Montgomery-Fitzgerald" 1`] = `
+{
+  "group": "edge",
+  "guide": {
+    "block": [
+      {
+        "advance": 843.2,
+        "path": "798282745c6e6771",
+      },
+      {
+        "advance": 1949.5,
+        "path": "b71151acd70c0061",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 705.6,
+        "path": "e13e902cf222779f",
+      },
+      {
+        "advance": 1652.3,
+        "path": "57409f664adf746a",
+      },
+    ],
+    "script": [
+      {
+        "advance": 588.2,
+        "path": "a8cdb463dfcab42f",
+      },
+      {
+        "advance": 1301.2,
+        "path": "f2d88d4534534f0f",
+      },
+    ],
+  },
+  "messageLines": [
+    "Happy Birthday",
+    "Alexandrina Montgomery-Fitzgerald",
+  ],
+  "scriptFace": [
+    "signature",
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 59 "Birthday Arya" 1`] = `
+{
+  "group": "edge",
+  "guide": {
+    "block": [
+      {
+        "advance": 753.5,
+        "path": "f9c7eae7c0ef90d8",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 621.2,
+        "path": "13ca66c09c814aa0",
+      },
+    ],
+    "script": [
+      {
+        "advance": 592.4,
+        "path": "4fbb330ed181df48",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 60 "Happy Arya" 1`] = `
+{
+  "group": "edge",
+  "guide": {
+    "block": [
+      {
+        "advance": 631.2,
+        "path": "b75d069eb1f99786",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 524.7,
+        "path": "9f7a7250a6fbb6ea",
+      },
+    ],
+    "script": [
+      {
+        "advance": 488.9,
+        "path": "ea6c6be09901f3cf",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;
+
+exports[`lettering golden > text 61 "عيد ميلاد سعيد" 1`] = `
+{
+  "group": "other-language",
+  "guide": {
+    "block": [
+      {
+        "advance": 966.6,
+        "path": "d4d6d953a112823b",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 724.2,
+        "path": "5905f3d1e02c93f7",
+      },
+    ],
+    "script": [
+      {
+        "advance": 336.91,
+        "path": "e3b0c44298fc1c14",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "script",
+  ],
+}
+`;
+
+exports[`lettering golden > text 62 "Joyeux anniversaire Léa" 1`] = `
+{
+  "group": "other-language",
+  "guide": {
+    "block": [
+      {
+        "advance": 1334.6,
+        "path": "bc71de99771a0bc1",
+      },
+    ],
+    "elegant": [
+      {
+        "advance": 1068.8,
+        "path": "c6c7bd556106e72d",
+      },
+    ],
+    "script": [
+      {
+        "advance": 863,
+        "path": "d137226ed08229f7",
+      },
+    ],
+  },
+  "messageLines": null,
+  "scriptFace": [
+    "signature",
+  ],
+}
+`;

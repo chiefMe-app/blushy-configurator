@@ -11,3 +11,7 @@
 next-env.d.ts
 
 .vercel
+
+# test output (baselines under tests/ are committed)
+/test-results
+/playwright-report

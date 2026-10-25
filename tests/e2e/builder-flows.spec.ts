@@ -1,0 +1,170 @@
+// Today's builder behaviour, step by step, on desktop and mobile. Each flow
+// checks what the customer can see (choices, prices, the live sketch) and
+// saves screenshots as the visual baseline. Renders and orders never leave
+// the browser (see guard.ts); where a flow has to get past Decor, the render
+// request is answered with a local stand-in picture.
+import { test, expect, next, total, openDecor, chooseSetup, decorTab, settle, masks } from "./guard";
+import { computeTotal, formatAED } from "@/lib/config";
+import { fixtureById } from "../fixtures/configs";
+
+const aed = (n: number) => `AED ${formatAED(n)}`;
+const shot = async (page: import("@playwright/test").Page, name: string) => {
+  await settle(page);
+  await expect(page).toHaveScreenshot(`${name}.png`, { mask: masks(page) });
+};
+
+test("F1 end to end: Event → Review, the total matches pricing and the order is caught", async ({ page, guard }) => {
+  guard.fakeRender = true;
+  guard.fakeOrder = true;
+  await page.goto("/builder");
+  await shot(page, "f1-01-event");
+  await page.locator(".bz-choice.bz-birthday").click();
+  await next(page).click();
+  await expect(next(page)).toBeDisabled(); // no theme yet
+  await shot(page, "f1-02-theme");
+  await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: /^Frozen$/ }) }).first().click();
+  await next(page).click();
+  await chooseSetup(page, "Single Round");
+  await expect(total(page)).toHaveText(aed(computeTotal(fixtureById("A-single_round").config)));
+  await shot(page, "f1-03-decor-backdrop");
+  for (const tab of ["Style", "Balloons", "Extras"] as const) {
+    await next(page).click();
+    await expect(page.locator(".bz-decor-tab.on")).toContainText(tab);
+    await shot(page, `f1-04-decor-${tab.toLowerCase()}`);
+  }
+  await next(page).click(); // Generate render → stand-in
+  await expect(next(page)).toHaveText(/Continue to Package/);
+  await next(page).click();
+  await shot(page, "f1-05-package");
+  await next(page).click();
+  await shot(page, "f1-06-addons");
+  await next(page).click();
+  await page.getByPlaceholder("Full name").fill("Test Customer");
+  await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
+  await shot(page, "f1-07-venue");
+  await next(page).click();
+  await shot(page, "f1-08-review");
+  const shown = await total(page).textContent();
+  await next(page).click(); // Request Final Quote → caught
+  await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
+  const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
+  expect(aed(order.estimatedTotal)).toBe(shown);
+  expect(order.decor.backdropItems[0].text).toMatchObject({ enabled: true, value: "Happy Birthday", fontStyle: "script" });
+});
+
+const SETUPS = ["Single Arch", "Single Round", "Banner Backdrop", "Shimmer Wall", "Arch + Shimmer", "Balloon Ring", "Arch + Open Frame", "Double Arch", "Triple Arch"];
+
+test("F2 every setup opens with its price and sketch", async ({ page }) => {
+  await openDecor(page);
+  const names = await page.locator(".bz-choice.bz-layout h3").allTextContents();
+  expect(names).toEqual(SETUPS);
+  for (const name of names) {
+    await chooseSetup(page, name);
+    await expect(page.locator(".bz-choice.bz-layout.selected h3")).toHaveText(name);
+    await shot(page, `f2-${name.toLowerCase().replace(/[^a-z]+/g, "-")}`);
+  }
+});
+
+test("F3 lettering: font, size and colour change only themselves", async ({ page }) => {
+  await openDecor(page, "Frozen", "Single Round");
+  await decorTab(page, "Style");
+  const msg = page.getByLabel("Your message");
+  await msg.fill("Happy Birthday Arya");
+  const sizes = page.getByRole("group", { name: "Text size" });
+  await sizes.getByRole("button", { name: /Large/ }).click();
+  const before = await total(page).textContent();
+  for (const font of ["Serif", "Bold", "Script"]) {
+    await page.locator(".bz-st-card.font", { hasText: font }).click();
+    await expect(page.locator(".bz-st-card.font.on")).toContainText(font);
+    await expect(msg).toHaveValue("Happy Birthday Arya");
+    await expect(sizes.getByRole("button", { name: /Large/ })).toHaveAttribute("aria-pressed", "true");
+    await expect(total(page)).toHaveText(before!);
+    await shot(page, `f3-font-${font.toLowerCase()}`);
+  }
+  for (const size of ["Small", "Medium"]) {
+    await sizes.getByRole("button", { name: new RegExp(size) }).click();
+    await expect(page.locator(".bz-st-card.font.on")).toContainText("Script");
+    await shot(page, `f3-size-${size.toLowerCase()}`);
+  }
+});
+
+test("F4 text off and on again keeps the message", async ({ page }) => {
+  await openDecor(page, "Frozen", "Single Round");
+  await decorTab(page, "Style");
+  await page.getByLabel("Your message").fill("Happy Birthday Arya");
+  await page.getByRole("button", { name: /No, keep it clean/ }).click();
+  await expect(page.getByLabel("Your message")).toHaveCount(0);
+  await shot(page, "f4-text-off");
+  await page.getByRole("button", { name: /Yes, add text/ }).click();
+  await expect(page.getByLabel("Your message")).toHaveValue("Happy Birthday Arya");
+});
+
+test("F5 standees: none by default, at most two", async ({ page }) => {
+  await openDecor(page, "Frozen", "Single Round");
+  await decorTab(page, "Extras");
+  await expect(page.locator(".bz-ex-squad")).toContainText("No characters yet");
+  const chars = page.locator(".bz-ex-char:not(.more)");
+  await chars.nth(0).click();
+  await chars.nth(1).click();
+  await expect(page.locator(".bz-ex-squad")).toContainText("2 standees selected");
+  await expect(chars.nth(2)).toBeDisabled();
+  await shot(page, "f5-two-standees");
+});
+
+test("F6 plinths 0–3, three is XXL · XL · XL", async ({ page }) => {
+  await openDecor(page, "Frozen", "Single Round");
+  await decorTab(page, "Extras");
+  const fewer = page.getByRole("button", { name: "One fewer plinth" });
+  const more = page.getByRole("button", { name: "One more plinth" });
+  const count = page.getByRole("group", { name: "Number of plinths" }).locator("span");
+  await expect(count).toHaveText("1");
+  await fewer.click();
+  await expect(count).toHaveText("0");
+  await expect(fewer).toBeDisabled();
+  await more.click(); await more.click(); await more.click();
+  await expect(count).toHaveText("3");
+  await expect(more).toBeDisabled();
+  await expect(page.locator(".bz-ex-side .lbl.small")).toContainText("XXL · XL · XL");
+  await shot(page, "f6-three-plinths");
+});
+
+test("F7 foil number: AED 150, colour of the customer's choice", async ({ page }) => {
+  await openDecor(page, "Frozen", "Single Round");
+  await decorTab(page, "Extras");
+  const base = fixtureById("A-single_round").config;
+  await page.getByRole("switch", { name: "Add a number" }).click();
+  await page.getByRole("button", { name: /Foil balloon bunch/ }).click();
+  await expect(total(page)).toHaveText(aed(computeTotal(base) + 150));
+  await page.getByRole("button", { name: "pink", exact: true }).click();
+  await expect(page.getByRole("button", { name: "pink", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await shot(page, "f7-foil-pink");
+});
+
+test("F8 neon swap and back", async ({ page }) => {
+  await openDecor(page, "Frozen", "Single Round");
+  await decorTab(page, "Style");
+  await page.getByLabel("Your message").fill("Happy Birthday Arya");
+  await decorTab(page, "Extras");
+  await page.getByRole("button", { name: /use a neon sign instead/ }).click();
+  await expect(page.getByLabel("Neon sign text")).toHaveValue("Happy Birthday Arya");
+  await shot(page, "f8-neon-on");
+  await page.getByRole("button", { name: /Use printed text instead of the neon/ }).click();
+  await decorTab(page, "Style");
+  await expect(page.getByLabel("Your message")).toHaveValue("Happy Birthday Arya");
+});
+
+test("F9 show sizes", async ({ page }) => {
+  await openDecor(page, "Frozen", "Single Round");
+  await decorTab(page, "Style");
+  const toggle = page.getByRole("button", { name: /Show sizes/ });
+  await toggle.click();
+  await expect(page.getByRole("button", { name: /Hide sizes/ })).toBeVisible();
+  await shot(page, "f9-sizes");
+});
+
+test("F10 nothing paid or stored is reached while browsing every step", async ({ page, guard }) => {
+  await openDecor(page, "Frozen", "Double Arch");
+  for (const tab of ["Style", "Balloons", "Extras"] as const) await decorTab(page, tab);
+  // Browsing alone sends no render and no order.
+  expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual([]);
+});
