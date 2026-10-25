@@ -4,8 +4,9 @@
 // test can write to a real database.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { computeTotal, themeById, type BuilderConfig } from "@/lib/config";
+import { computeTotal, defaultConfig, THEMES, type BuilderConfig } from "@/lib/config";
 import { FIXTURES, fixtureById } from "../fixtures/configs";
+import { withSetup, withTheme } from "../fixtures/builder";
 import { POST } from "@/app/api/orders/route";
 
 const inserted: Record<string, unknown>[] = [];
@@ -22,6 +23,7 @@ function orderBody(config: BuilderConfig) {
   return {
     eventType: config.eventType,
     theme: config.theme,
+    themeSelected: config.themeSelected,
     package: config.package,
     servicePackageId: config.servicePackageId,
     decor: config.decor,
@@ -31,10 +33,6 @@ function orderBody(config: BuilderConfig) {
     estimatedTotal: computeTotal(config),
   };
 }
-
-// What the server prices today: the submitted body has no themeSelected, so
-// the theme surcharge line is dropped (see the KNOWN ISSUE test below).
-const serverTotal = (config: BuilderConfig) => computeTotal({ ...config, themeSelected: undefined } as unknown as BuilderConfig);
 
 const post = (body: unknown) =>
   POST(new NextRequest("http://localhost/api/orders", { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" } }));
@@ -50,12 +48,12 @@ describe("orders contract", () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.persisted).toBe(true);
-      expect(json.total).toBe(serverTotal(config));
+      expect(json.total).toBe(computeTotal(config));
       expect(inserted).toHaveLength(1);
       const row = inserted[0] as { extras: { decor: unknown }; total_price: number; theme: string; shape: string; garland: string };
       // Lettering and font style pass through byte-for-byte.
       expect(JSON.stringify(row.extras.decor)).toBe(JSON.stringify(JSON.parse(JSON.stringify(body.decor))));
-      expect(row.total_price).toBe(serverTotal(config));
+      expect(row.total_price).toBe(computeTotal(config));
       expect({ theme: row.theme, shape: row.shape, garland: row.garland }).toMatchSnapshot();
     });
   }
@@ -63,18 +61,7 @@ describe("orders contract", () => {
   it("a client total is never trusted", async () => {
     const body = { ...orderBody(fixtureById("B01-hb-arya-script").config), estimatedTotal: 1 };
     const json = await (await post(body)).json();
-    expect(json.total).toBe(serverTotal(fixtureById("B01-hb-arya-script").config));
-  });
-
-  // KNOWN ISSUE (found in Phase 0.0, 2026-10-25, not fixed here — app code is
-  // out of scope): app/builder/page.tsx submit() does not send themeSelected,
-  // so the saved total_price is lower than the Review total the customer saw
-  // by the theme's priceModifier. When that is fixed, this test changes on
-  // purpose: the gap becomes 0.
-  it("KNOWN ISSUE: saved total misses the theme surcharge the customer saw", async () => {
-    const config = fixtureById("B01-hb-arya-script").config;
-    const json = await (await post(orderBody(config))).json();
-    expect(computeTotal(config) - json.total).toBe(themeById(config.theme)!.priceModifier);
+    expect(json.total).toBe(computeTotal(fixtureById("B01-hb-arya-script").config));
   });
 
   it("without Supabase the order is only logged", async () => {
@@ -89,5 +76,42 @@ describe("orders contract", () => {
   it("rejects an order without a name", async () => {
     const res = await post({ ...orderBody(FIXTURES[0].config), customer: { name: "", whatsapp: "" } });
     expect(res.status).toBe(400);
+  });
+});
+
+// 2026-10-25 fix: the saved total missed the theme surcharge (AED 30-60) the
+// customer saw on Review, because the order body had no themeSelected.
+describe("saved total = the total the customer saw", () => {
+  it.each(FIXTURES.map((f) => [f.id, f.config] as const))("%s", async (_id, config) => {
+    const json = await (await post(orderBody(config))).json();
+    expect(json.total).toBe(computeTotal(config));
+  });
+
+  it.each(THEMES.map((t) => [t.id, t.priceModifier] as const))("theme %s (+AED %i)", async (id) => {
+    const config = withSetup(withTheme(defaultConfig(), id), "single_round");
+    const json = await (await post(orderBody(config))).json();
+    expect(json.total).toBe(computeTotal(config));
+  });
+
+  it("a page loaded before the fix (no themeSelected in the body) is still charged the theme", async () => {
+    const config = fixtureById("A-single_round").config;
+    const { themeSelected: _omit, ...oldBody } = orderBody(config);
+    const json = await (await post(oldBody)).json();
+    expect(json.total).toBe(computeTotal(config));
+  });
+
+  it("a client cannot drop the surcharge by sending themeSelected: false", async () => {
+    const config = fixtureById("A-single_round").config;
+    const json = await (await post({ ...orderBody(config), themeSelected: false })).json();
+    expect(json.total).toBe(computeTotal(config));
+  });
+
+  it("everything else in the price is unchanged: only the theme line moved", async () => {
+    for (const f of FIXTURES) {
+      const config = f.config;
+      const withoutTheme = computeTotal({ ...config, themeSelected: false });
+      const json = await (await post(orderBody(config))).json();
+      expect(json.total - withoutTheme, f.id).toBe(config.themeSelected ? THEMES.find((t) => t.id === config.theme)!.priceModifier : 0);
+    }
   });
 });

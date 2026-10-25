@@ -65,10 +65,13 @@ Review the diff of `tests/**/__snapshots__`, `tests/golden/render/**` and
 
 ## Known issues recorded as today's behaviour (Phase 0.0, 2026-10-25)
 
-1. **Saved order total misses the theme surcharge.** `submit()` does not send
-   `themeSelected`, so `/api/orders` recomputes the total without the theme line.
-   The `KNOWN ISSUE` test in `unit/orders.contract.test.ts` pins the gap; when it
-   is fixed, that test changes on purpose.
+1. ~~Saved order total misses the theme surcharge.~~ **Fixed on 2026-10-25,
+   branch `fix-order-theme-total`.**
+   - **Cause:** `submit()` did not send `themeSelected`, so `/api/orders`
+     recomputed the total without the theme line.
+   - **Fix:** the server now charges the theme for any valid theme.
+   - **Regression tests:** "saved total = the total the customer saw" in
+     `unit/orders.contract.test.ts`, and F1.
 2. **Long lettering runs under the garland.** Texts that `messageLines` does not
    split are wrapped word by word. On Single Round their first line is drawn
    beneath the balloons, for example:
