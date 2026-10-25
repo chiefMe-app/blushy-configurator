@@ -1,0 +1,4 @@
+# Test baselines are compared byte for byte; keep them exactly as written.
+tests/golden/render/** -text
+tests/**/__snapshots__/** eol=lf
+tests/e2e/__screenshots__/** binary

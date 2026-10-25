@@ -56,7 +56,8 @@ describe("render golden", () => {
         fs.writeFileSync(path.join(dir, "prompt.txt"), prompt);
         return;
       }
-      expect(prompt, `${f.id} prompt`).toBe(fs.readFileSync(path.join(dir, "prompt.txt"), "utf8"));
+      const lf = (s: string) => s.replace(/\r\n/g, "\n");
+      expect(lf(prompt), `${f.id} prompt`).toBe(lf(fs.readFileSync(path.join(dir, "prompt.txt"), "utf8")));
       expect(sha, `${f.id} guide`).toBe(fs.readFileSync(path.join(dir, "guide.sha256"), "utf8").trim());
     });
   }
