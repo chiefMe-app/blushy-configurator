@@ -13,7 +13,7 @@ import {
   normalizeBalloonStyle,
   textSizeScale,
   messageLines,
-  foilNumberColour,
+  foilColourFor,
   SHIMMER_COLOR_HEX,
   type BuilderConfig,
   type BackdropItem,
@@ -334,11 +334,13 @@ function MarqueeDigit({ glyph, x, y, w, h, uid }: { glyph: string; x: number; y:
 function FoilDigit({ glyph, x, y, w, h, hex, palette, uid }: { glyph: string; x: number; y: number; w: number; h: number; hex: string; palette: string[]; uid: string }) {
   const [r, g, b] = hexRgb(hex);
   const mix = (t: number, to: number) => `rgb(${[r, g, b].map((v) => Math.round(v + (to - v) * t)).join(",")})`;
-  const bunchH = h * 0.36, digitH = h * 0.86;
+  const bunchH = h * 0.42, digitH = h * 0.86;
   const baseY = y + h - bunchH * 0.55;
-  const R = w * 0.2, cx = x + w / 2, by = y + h;
+  const R = w * 0.3, cx = x + w / 2, by = y + h;
   const spots: [number, number, number][] = [[-1.55, -0.95, 1], [1.55, -0.95, 1], [-0.55, -1.15, 1.08], [0.6, -1.1, 1.05], [-1.05, -2, 0.85], [1.05, -1.95, 0.85], [0, -2.15, 0.9]];
-  const cols = palette.length ? palette : [hex, "#ffffff"];
+  // In the foil's own colour and white, as the guide draws it.
+  void palette;
+  const cols = [mix(0.35, 255), "#ffffff", mix(0.6, 255)];
   return (
     <g>
       <defs>
@@ -663,7 +665,7 @@ export default function LiveSketch({
         <g filter="url(#skSoft)">
           {numberDigits.split("").map((g, i) => d.numberLight?.style === "foil"
             // 80cm and slimmer than the marquee.
-            ? <FoilDigit key={i} uid={`skFoil${i}`} glyph={g} w={digitW * 0.78} h={numberH * 0.8} hex={foilNumberColour(palette)} palette={palette}
+            ? <FoilDigit key={i} uid={`skFoil${i}`} glyph={g} w={digitW * 0.78} h={numberH * 0.8} hex={foilColourFor(d.numberLight, palette)} palette={palette}
                 x={numberX - numberW / 2 + i * (digitW + digitGap) + digitW * 0.11} y={floorY + (roundBase ? 0.03 * VB : 4) - numberH * 0.8} />
             : <MarqueeDigit key={i} uid={`skMq${i}`} glyph={g} w={digitW} h={numberH}
                 x={numberX - numberW / 2 + i * (digitW + digitGap)} y={floorY + (roundBase ? 0.03 * VB : 4) - numberH} />

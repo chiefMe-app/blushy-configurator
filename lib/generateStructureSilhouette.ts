@@ -611,7 +611,8 @@ function foilNumberBunch(glyph: string, x: number, y: number, w: number, h: numb
   };
   const gid = `foil${idx}${Math.round(x)}`;
   // The digit floats a little above the bunch, which takes the bottom third.
-  const bunchH = h * 0.36;
+  // 2026-10-25: bigger balloons under it ("daha iri iri olmali").
+  const bunchH = h * 0.42;
   const digitH = h * 0.86;
   const fontPx = digitH / 0.72;
   const baseY = y + h - bunchH * 0.55;
@@ -626,10 +627,12 @@ function foilNumberBunch(glyph: string, x: number, y: number, w: number, h: numb
   // A dark rim so a pale foil still stands out against a white board.
   out += `<path d="${d}"${narrow} fill="${mix(hex, 0.55, 0)}" stroke="${mix(hex, 0.55, 0)}" stroke-width="${(puff + 5).toFixed(1)}" stroke-linejoin="round" stroke-linecap="round"/>`;
   out += `<path d="${d}"${narrow} fill="url(#${gid})" stroke="url(#${gid})" stroke-width="${puff.toFixed(1)}" stroke-linejoin="round" stroke-linecap="round"/>`;
-  // The bunch: seven balloons in a mound, palette colours in turn.
-  const cols = palette.length ? palette : [hex, "#FFFFFF"];
+  // The bunch: seven balloons in a mound, in the foil's own colour and white —
+  // in the palette's colours it melted into the garland behind it (2026-10-25).
+  void palette;
+  const cols = [mix(hex, 0.35, 255), "#FFFFFF", mix(hex, 0.6, 255)];
   const cx = x + w / 2, by = y + h;
-  const R = w * 0.2;
+  const R = w * 0.3;
   const spots: [number, number, number][] = [
     [-1.55, -0.95, 1.0], [1.55, -0.95, 1.0], [-0.55, -1.15, 1.08], [0.6, -1.1, 1.05],
     [-1.05, -2.0, 0.85], [1.05, -1.95, 0.85], [0, -2.15, 0.9],
@@ -4517,7 +4520,7 @@ export function generateStructureSilhouette(
     const BLOOMS = ["#FFFFFF", "#FCF4E4", "#F6E1E7", "#F2E9D8", "#E9E1F1"];
 
     const floralCluster = (cx: number, cy: number, R: number): void => {
-      const leafN = 8 + Math.floor(frnd() * 5);
+      const leafN = 11 + Math.floor(frnd() * 5);
       for (let i = 0; i < leafN; i++) {
         const a  = (i / leafN) * Math.PI * 2 + frnd() * 0.5;
         const d  = R * (0.55 + frnd() * 0.60);
@@ -4589,7 +4592,8 @@ export function generateStructureSilhouette(
 
       // Three more of the same, spaced up the climb — the topmost sits on the
       // shoulder, which is where the customer's marked ones were.
-      for (const frac of [0.05, 0.38, 0.68]) {
+      // 2026-10-25: more of them — "yesillikler biraz artmali". Was three.
+      for (const frac of [0.04, 0.18, 0.32, 0.46, 0.6, 0.74, 0.88]) {
         const targetY = topY + (botY - topY) * frac;
         let best = byY[0];
         let bestD = Infinity;

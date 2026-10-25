@@ -40,6 +40,8 @@ cutoutTotalCount,
   GARLAND_FLORALS_PRICE,
   NUMBER_LIGHT_PRICE,
   FOIL_NUMBER_BUNCH_PRICE,
+  FOIL_NUMBER_COLOURS,
+  foilNumberColour,
   plinthsTotal,
   packageById,
   priceBreakdown,
@@ -3330,6 +3332,24 @@ function clearAllStandees() {
                       onClick={() => patchDecor({ numberLight: { ...d.numberLight!, style: id } })}>{label}</button>
                   ))}
                 </div>
+                {d.numberLight?.style === "foil" && (() => {
+                  // 2026-10-25: the customer picks the foil's colour; the first swatch is the theme's own.
+                  const themeFoil = foilNumberColour(d.balloonColors);
+                  const current = d.numberLight?.foilColor ?? "";
+                  const swatches = [{ hex: "", label: "Theme colour", show: themeFoil }, ...FOIL_NUMBER_COLOURS.map((c) => ({ ...c, show: c.hex }))];
+                  return (
+                    <div className="bz-ex-more inline bz-foil-cols">
+                      <span className="bz-ex-mini">Foil colour</span>
+                      <div className="bz-st-swatches">
+                        {swatches.map((c) => (
+                          <button key={c.label} type="button" aria-pressed={current === c.hex} aria-label={c.label} title={c.label}
+                            className={`bz-st-sw ${current === c.hex ? "on" : ""}`} style={{ background: c.show }}
+                            onClick={() => patchDecor({ numberLight: { ...d.numberLight!, foilColor: c.hex || undefined } })} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div className="bz-ex-more inline">
                   <span className="bz-ex-mini">Which number?</span>
                   <input type="text" inputMode="numeric" className="bz-ex-input num" value={d.numberLight?.value ?? ""} placeholder="1"

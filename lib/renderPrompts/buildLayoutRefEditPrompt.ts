@@ -5,7 +5,7 @@ import { hasLoneArchStyleReference } from "./loneArchStyleReference";
 import { sceneStyleReference } from "./frozenStyleReferences";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
-import { describeTextColor, messageLines, foilNumberColour } from "@/lib/config";
+import { describeTextColor, messageLines, foilColourFor, FOIL_NUMBER_COLOURS } from "@/lib/config";
 
 // A raw hex means nothing to the edit model, and "#FFFFFF" used to collapse into
 // the same "cream-white" as an unset panel — so choosing white for one arch read
@@ -1084,7 +1084,7 @@ export function buildLayoutRefEditPrompt(
     ? `Everything IMAGE 1 shows is in the photo even where IMAGE 2 has none: ` +
       [nPlinths > 1 ? `all ${nPlinths} pedestal columns` : "",
        numberOn ? (foilNumber ? `the foil number balloon ${sceneModel.numberLight.value.trim()}` : `the light-up number ${sceneModel.numberLight.value.trim()}`) : "",
-       floralsOn ? `the fresh flowers and green eucalyptus tucked between the balloons all along the garland` : ""].filter(Boolean).join(", and ") + `. `
+       floralsOn ? `plenty of fresh flowers and lush green eucalyptus sprigs tucked between the balloons all along the garland` : ""].filter(Boolean).join(", and ") + `. `
     : "";
   // 2026-10-24: "Happy Birthday Arya" came back as the photo's own two-line
   // "Happy / Birthday" — the name dropped — because "copy how its lettering
@@ -1446,8 +1446,9 @@ export function buildLayoutRefEditPrompt(
   // 2026-10-24: or a foil number balloon on a balloon bunch, in the palette.
   // Its colour by name: the palette's most colourful balloon (foilNumberColour),
   // so a Frozen foil is icy blue and not the chrome silver the model reached for.
-  const foilHex = foilNumberColour(sceneModel.balloons.colors ?? []);
-  const foilName = selectedSempertexColors.find((c) => (c.hex ?? "").toLowerCase() === foilHex.toLowerCase())?.colorName
+  const foilHex = foilColourFor(sceneModel.numberLight, sceneModel.balloons.colors ?? []);
+  const foilName = FOIL_NUMBER_COLOURS.find((c) => c.hex.toLowerCase() === foilHex.toLowerCase())?.label
+    ?? selectedSempertexColors.find((c) => (c.hex ?? "").toLowerCase() === foilHex.toLowerCase())?.colorName
     ?? backdropColorLabel(foilHex);
   const frontFoilNumberLine = sceneModel.numberLight?.enabled && frontNumDigits.length > 0 && sceneModel.numberLight.style === "foil"
     // 2026-10-25: no "NOT silver, NOT chrome" here — said this early, the
@@ -1455,7 +1456,8 @@ export function buildLayoutRefEditPrompt(
     // balloons ("silver clear kaybolmus"). The garland's own balloons are
     // named as staying exactly as they are instead.
     ? `A shiny FOIL number balloon "${frontNumDigits}", about 80cm tall and SLIM (a normal party foil number, not chunky), in ${foilName} metallic foil, ` +
-      `stands on the floor on top of a small tight bunch of round latex balloons, exactly where IMAGE 1 draws it` +
+      `stands on the floor on top of its own separate bunch of seven BIG round latex balloons (each about 30cm across) in pale ${foilName} and white, ` +
+      `clearly apart from the garland, exactly where IMAGE 1 draws it` +
       (nPlinths > 0
         ? ` beside the white cylindrical pedestal column${nPlinths > 1 ? "s" : ""}, which still stand${nPlinths > 1 ? "" : "s"} in the middle in front of the backdrop. `
         : `, in front of the backdrop. `) +
@@ -1733,7 +1735,8 @@ export function buildLayoutRefEditPrompt(
   const floralsClause = sceneModel.garlandFlorals && balloonStyle !== "none"
     ? `Fresh florals and greenery are worked into the balloon garland: sprigs of eucalyptus and soft dried ` +
       `grasses, with a few delicate blooms, tucked into the gaps BETWEEN the balloons along the whole ` +
-      `garland — heaviest in the fuller clusters, sparse in the thin stretches. ` +
+      // 2026-10-25: generous — "yesillikler biraz artmali".
+      `garland — generous and clearly visible: a green sprig every few balloons, fullest in the bigger clusters. ` +
       `The foliage is muted sage green and the blooms are soft and pale, picking up the balloon colours. ` +
       `They sit among the balloons as part of the same garland, not as a separate bouquet, not in vases, ` +
       `and never covering the backdrop face. `

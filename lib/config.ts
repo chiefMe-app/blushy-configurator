@@ -831,6 +831,26 @@ export interface NumberLight {
   /** 2026-10-24: a light-up marquee number (the default), or a foil number
    *  balloon on a small balloon bunch in the theme's colours. */
   style?: NumberStyle;
+  /** 2026-10-25: the foil number's colour, chosen by the customer. Unset is
+   *  the theme's own (foilNumberColour of the balloon palette). */
+  foilColor?: string;
+}
+
+/** Foil number colours on offer (besides the theme's own). */
+export const FOIL_NUMBER_COLOURS: { hex: string; label: string }[] = [
+  { hex: "#C7C9C7", label: "silver" },
+  { hex: "#D4AF37", label: "gold" },
+  { hex: "#C9907E", label: "rose gold" },
+  { hex: "#3B82F6", label: "blue" },
+  { hex: "#93C5FD", label: "pale blue" },
+  { hex: "#F472B6", label: "pink" },
+  { hex: "#A78BFA", label: "lilac" },
+  { hex: "#34D399", label: "mint green" },
+];
+
+/** The foil number's colour for a design: the customer's pick, else the theme's. */
+export function foilColourFor(n: NumberLight | undefined, palette: string[]): string {
+  return n?.foilColor || foilNumberColour(palette);
 }
 
 export type NumberStyle = "marquee" | "foil";

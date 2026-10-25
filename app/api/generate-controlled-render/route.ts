@@ -43,7 +43,7 @@ import { type SceneModel } from "@/lib/buildSceneModel";
 import { type FalImageSize } from "@/lib/calculateRenderAspectRatio";
 import { generateStructureSilhouette, computeShimmerWallMaskGeometry, panelRectToFraction, computeDoubleArchPlinthOverlayGeometry, computeBackdropGroupGeometry, type CutoutGuideItem } from "@/lib/generateStructureSilhouette";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems, type LayoutZone } from "@/lib/setupLayoutCatalog";
-import { type BalloonStyleId, SHIMMER_COLOR_HEX, SHIMMER_COLORS, type ShimmerColorId, resolveTextColorHex, describeTextColor, foilNumberColour } from "@/lib/config";
+import { type BalloonStyleId, SHIMMER_COLOR_HEX, SHIMMER_COLORS, type ShimmerColorId, resolveTextColorHex, describeTextColor, foilColourFor } from "@/lib/config";
 import { SEMPERTEX_CATALOG, type SempertexColor } from "@/lib/sempertexCatalog";
 import { THEME_CATALOG, getThemeCatalogEntry } from "@/lib/themeCatalog";
 import { frozenBannerPrintSvg } from "@/lib/bannerPrint";
@@ -162,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "chromerefs-v161";
+const RENDER_CACHE_VERSION = "foilpick-v162";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -762,7 +762,7 @@ async function generateLayoutReferencePng(
       sceneModel.shimmerColor ? SHIMMER_COLOR_HEX[sceneModel.shimmerColor as ShimmerColorId] : undefined,
       { florals: sceneModel.garlandFlorals,
         numberLight: sceneModel.numberLight
-          ? { ...sceneModel.numberLight, foilHex: foilNumberColour(selectedHexColors.length ? selectedHexColors : sceneModel.balloons.colors) }
+          ? { ...sceneModel.numberLight, foilHex: foilColourFor(sceneModel.numberLight, selectedHexColors.length ? selectedHexColors : sceneModel.balloons.colors) }
           : sceneModel.numberLight,
         neonSign: sceneModel.neonSign,
         ringStyle: sceneModel.balloonRingStyle,
@@ -2446,8 +2446,34 @@ forbiddenBalloonColorLabels: hasSempertexLock
         const { data, info } = await (sharpFnC(baseBuf).removeAlpha().raw()
           .toBuffer({ resolveWithObject: true })) as { data: Buffer; info: { width: number; height: number; channels: number } };
         const mw = info.width, mh = info.height, mc = info.channels;
-        const mask = await (sharpFnC(Buffer.from(pngResult.silverTextMaskSvg, "utf8"))
+        const guideMask = await (sharpFnC(Buffer.from(pngResult.silverTextMaskSvg, "utf8"))
           .resize(mw, mh, { fit: "fill" }).greyscale().blur(2).raw().toBuffer()) as Buffer;
+        // 2026-10-25: the render does not always set the words the way the
+        // guide does — one line in the guide came back as "Happy / Birthday"
+        // on two, the pass found no letters under its mask and the words
+        // stayed flat grey ("textteki silverlik gitmis"). The mask now covers
+        // the guide lettering's box, grown about it, feathered at its edge;
+        // the test below (grey, darker than the board) still picks out only
+        // the letters inside it.
+        const mask = Buffer.from(guideMask);
+        {
+          let x0 = mw, y0 = mh, x1 = -1, y1 = -1;
+          for (let y = 0; y < mh; y++) for (let x = 0; x < mw; x++) {
+            if (guideMask[y * mw + x] > 25) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+          }
+          if (x1 > x0 && y1 > y0) {
+            const bw = x1 - x0, bh = y1 - y0;
+            const gx0 = Math.max(0, Math.round(x0 - bw * 0.15)), gx1 = Math.min(mw - 1, Math.round(x1 + bw * 0.15));
+            const gy0 = Math.max(0, Math.round(y0 - bh * 0.7)), gy1 = Math.min(mh - 1, Math.round(y1 + bh * 0.7));
+            const fe = Math.max(6, Math.round(Math.min(bw, bh) * 0.08));
+            for (let y = gy0; y <= gy1; y++) for (let x = gx0; x <= gx1; x++) {
+              const edge = Math.min(x - gx0, gx1 - x, y - gy0, gy1 - y);
+              const v = Math.round(255 * Math.min(1, edge / fe));
+              const k = y * mw + x;
+              if (v > mask[k]) mask[k] = v;
+            }
+          }
+        }
         for (let p = 0; p < mw * mh; p++) {
           const m = mask[p] / 255;
           if (m < 0.02) continue;
