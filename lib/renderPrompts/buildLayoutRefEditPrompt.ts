@@ -1445,7 +1445,7 @@ export function buildLayoutRefEditPrompt(
   const foilName = selectedSempertexColors.find((c) => (c.hex ?? "").toLowerCase() === foilHex.toLowerCase())?.colorName
     ?? backdropColorLabel(foilHex);
   const frontFoilNumberLine = sceneModel.numberLight?.enabled && frontNumDigits.length > 0 && sceneModel.numberLight.style === "foil"
-    ? `A giant shiny FOIL number balloon "${frontNumDigits}", about 100cm tall, in ${foilName} metallic foil (NOT silver, NOT chrome), ` +
+    ? `A shiny FOIL number balloon "${frontNumDigits}", about 80cm tall and SLIM (a normal party foil number, not chunky), in ${foilName} metallic foil (NOT silver, NOT chrome), ` +
       `stands on the floor on top of a small tight bunch of round latex balloons` +
       (nPlinths > 0
         ? `, to the RIGHT of the white cylindrical pedestal column${nPlinths > 1 ? "s" : ""} — ${nPlinths > 1 ? "they" : "the pedestal column"} still stand${nPlinths > 1 ? "" : "s"} in the middle, in front of the backdrop. `

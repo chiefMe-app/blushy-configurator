@@ -819,8 +819,10 @@ export const NEON_SIGN_PRESETS: string[] = [
   "Congrats",
 ];
 
-/** Neon LED sign — one made-to-order unit. */
-export const NEON_SIGN_PRICE = 0;
+/** Neon LED sign — one made-to-order unit.
+ *  2026-10-25: placeholder price, to be set by the customer ("simdilik bir
+ *  fiyat yaz sonra degistiririz"). Every item now shows a price. */
+export const NEON_SIGN_PRICE = 250;
 
 export interface NumberLight {
   enabled: boolean;
@@ -835,11 +837,11 @@ export type NumberStyle = "marquee" | "foil";
 
 export const DEFAULT_NUMBER_LIGHT: NumberLight = { enabled: false, value: "1" };
 
-/** Marquee number stand — one 100cm illuminated digit unit. */
-export const NUMBER_LIGHT_PRICE = 0;
-/** Foil number balloon bunch — a 100cm foil number on a balloon cluster.
- *  2026-10-24: no price given yet, so it is not invented here (as above). */
-export const FOIL_NUMBER_BUNCH_PRICE = 0;
+/** Marquee number stand — one 100cm illuminated digit unit (placeholder price, 2026-10-25). */
+export const NUMBER_LIGHT_PRICE = 200;
+/** Foil number balloon bunch — an 80cm foil number on a balloon cluster.
+ *  AED 150, the customer's price (2026-10-25). */
+export const FOIL_NUMBER_BUNCH_PRICE = 150;
 
 /** The foil number's colour: the palette's most colourful balloon (Frozen:
  *  icy blue), or silver when the palette has no colour in it. */
@@ -855,8 +857,8 @@ export function foilNumberColour(palette: string[]): string {
   }
   return best;
 }
-/** Florals and greenery worked through the garland. */
-export const GARLAND_FLORALS_PRICE = 0;
+/** Florals and greenery worked through the garland (placeholder price, 2026-10-25). */
+export const GARLAND_FLORALS_PRICE = 120;
 
 export interface SempertexSelection {
   code: string;
@@ -1370,9 +1372,33 @@ export function priceBreakdown(config: BuilderConfig): {
     });
   }
 
+  // 2026-10-25: lettering and theme graphics are chosen per board on the
+  // Style tab, which shows "+AED 80" / "+AED 150" — but only the old
+  // whole-backdrop print reached the total, so those were never charged.
+  // They are priced per board now; the old print line stays for designs that
+  // still carry it and have no per-board choice.
+  const printable = (it: BackdropItem) => !["shimmer_wall", "balloon_ring", "open_arch_frame"].includes(it.type);
+  const textPrice = backdropPrintById("name_only")?.price ?? 0;
+  const graphicPrice = backdropPrintById("theme_print")?.price ?? 0;
+  const lettered = d.backdropItems.filter((it) => printable(it) && it.text?.enabled && (it.text.value ?? "").trim());
+  const graphics = d.backdropItems.filter((it) => printable(it) && it.graphic?.enabled);
+  if (lettered.length > 0) lines.push({ label: lettered.length > 1 ? `Lettering (${lettered.length} boards)` : "Lettering", amount: textPrice * lettered.length, section: "design" });
+  if (graphics.length > 0) lines.push({ label: graphics.length > 1 ? `Theme graphic (${graphics.length} boards)` : "Theme graphic", amount: graphicPrice * graphics.length, section: "design" });
   const printOpt = backdropPrintById(d.backdropPrint?.type ?? "none");
-  if (printOpt && printOpt.price > 0) {
+  if (printOpt && printOpt.price > 0 && lettered.length === 0 && graphics.length === 0) {
     lines.push({ label: printOpt.label, amount: printOpt.price, section: "design" });
+  }
+
+  // 2026-10-25: the Extras, which were shown without a price and not charged.
+  if (d.garlandFlorals && normalizeBalloonStyle(d.balloonStyle) !== "none") {
+    lines.push({ label: "Florals & greenery", amount: GARLAND_FLORALS_PRICE, section: "design" });
+  }
+  if (d.neonSign?.enabled && (d.neonSign.text ?? "").trim()) {
+    lines.push({ label: "Neon LED sign", amount: NEON_SIGN_PRICE, section: "design" });
+  }
+  if (d.numberLight?.enabled && (d.numberLight.value ?? "").replace(/[^0-9]/g, "")) {
+    const foil = d.numberLight.style === "foil";
+    lines.push({ label: foil ? "Foil number balloon bunch" : "Light-up marquee number", amount: foil ? FOIL_NUMBER_BUNCH_PRICE : NUMBER_LIGHT_PRICE, section: "design" });
   }
 
   if (d.cakeTable) {

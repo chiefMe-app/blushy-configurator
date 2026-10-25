@@ -1941,6 +1941,8 @@ function clearAllStandees() {
                       : <SetupMiniPreview shapes={tpl.miniPreview} />}
                   </span>
                   <h3>{tpl.name}</h3>
+                  {/* 2026-10-25: every choice shows its price. Boards cost PER_BACKDROP each (+80 for a shimmer wall). */}
+                  <small className="bz-layout-price">AED {formatAED(tpl.backdropTypes.reduce((s, t) => s + PER_BACKDROP + (t === "shimmer_wall" ? 80 : 0), 0))}</small>
                 </button>
               );
             })}

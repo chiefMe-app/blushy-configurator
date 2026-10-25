@@ -933,3 +933,5 @@ div.bz-stale-banner { cursor: default; }
 .bz-ex-notext:hover { filter: brightness(1.05); }
 .bz-ex-swap { margin-top: 8px; }
 .bz-ex-notext.alt { margin-top: 0; background: #fff; color: var(--bz-pink); border: 1.5px solid var(--bz-pink); }
+/* 2026-10-25: a price on every setup card. */
+.bz-layout .bz-layout-price { display: block; margin-top: 2px; font: 700 12px/1.1 var(--bz-sans); color: var(--bz-pink); }

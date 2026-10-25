@@ -616,14 +616,16 @@ function foilNumberBunch(glyph: string, x: number, y: number, w: number, h: numb
   const fontPx = digitH / 0.72;
   const baseY = y + h - bunchH * 0.55;
   const d = textPathD(glyph, "block", x + w / 2, baseY, fontPx);
-  const puff = w * 0.16;
+  // Slimmer: the block face narrowed about its centre, and a thinner puff.
+  const narrow = ` transform="translate(${(x + w / 2).toFixed(1)} 0) scale(0.8 1) translate(${(-(x + w / 2)).toFixed(1)} 0)"`;
+  const puff = w * 0.1;
   let out = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0.35" y2="1">` +
     `<stop offset="0%" stop-color="${mix(hex, 0.75, 255)}"/><stop offset="30%" stop-color="${mix(hex, 0.1, 0)}"/>` +
     `<stop offset="48%" stop-color="${mix(hex, 0.85, 255)}"/><stop offset="66%" stop-color="${mix(hex, 0.25, 0)}"/>` +
     `<stop offset="100%" stop-color="${mix(hex, 0.45, 255)}"/></linearGradient></defs>`;
   // A dark rim so a pale foil still stands out against a white board.
-  out += `<path d="${d}" fill="${mix(hex, 0.55, 0)}" stroke="${mix(hex, 0.55, 0)}" stroke-width="${(puff + 5).toFixed(1)}" stroke-linejoin="round" stroke-linecap="round"/>`;
-  out += `<path d="${d}" fill="url(#${gid})" stroke="url(#${gid})" stroke-width="${puff.toFixed(1)}" stroke-linejoin="round" stroke-linecap="round"/>`;
+  out += `<path d="${d}"${narrow} fill="${mix(hex, 0.55, 0)}" stroke="${mix(hex, 0.55, 0)}" stroke-width="${(puff + 5).toFixed(1)}" stroke-linejoin="round" stroke-linecap="round"/>`;
+  out += `<path d="${d}"${narrow} fill="url(#${gid})" stroke="url(#${gid})" stroke-width="${puff.toFixed(1)}" stroke-linejoin="round" stroke-linecap="round"/>`;
   // The bunch: seven balloons in a mound, palette colours in turn.
   const cols = palette.length ? palette : [hex, "#FFFFFF"];
   const cx = x + w / 2, by = y + h;
@@ -4804,9 +4806,12 @@ export function generateStructureSilhouette(
       const glyph = numDigits[d];
       // 2026-10-24: a foil number balloon on a small bunch of balloons.
       if (extras?.numberLight?.style === "foil") {
-        plinthLayer.push(foilNumberBunch(glyph, x, y, digitW, digitH, extras.numberLight.foilHex ?? "#BAE6FD", balloonColors ?? [], d));
+        // 2026-10-25: 80cm and slimmer ("boyu 80cm olmali, fazla kalin duruyor").
+        const fh = digitH * 0.8, fw = digitW * 0.78;
+        const fx = x + (digitW - fw) / 2, fy = y + digitH - fh;
+        plinthLayer.push(foilNumberBunch(glyph, fx, fy, fw, fh, extras.numberLight.foilHex ?? "#BAE6FD", balloonColors ?? [], d));
         // Its footprint, so a standee composited later keeps clear of it.
-        marqueeFacesLayout.push([[x, y], [x + digitW, y], [x + digitW, y + digitH], [x, y + digitH]]);
+        marqueeFacesLayout.push([[fx, fy], [fx + fw, fy], [fx + fw, fy + fh], [fx, fy + fh]]);
         continue;
       }
       if (singleRound) {
