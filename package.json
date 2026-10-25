@@ -11,7 +11,12 @@
     "test:golden": "vitest run tests/golden",
     "test:sheet": "tsx scripts/golden/contact-sheet.ts",
     "test:e2e": "playwright test",
-    "test:all": "vitest run && playwright test"
+    "test:all": "vitest run && playwright test",
+    "typography:fetch": "node scripts/typography/fetch-fonts.mjs",
+    "typography:verify": "node scripts/typography/fetch-fonts.mjs --verify",
+    "typography:qualify": "tsx scripts/typography/qualify.mts",
+    "typography:webfonts": "tsx scripts/typography/build-webfonts.mts",
+    "typography:report": "tsx scripts/typography/report.mts"
   },
   "dependencies": {
     "@fal-ai/client": "^1.10.1",
@@ -29,7 +34,9 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
+    "harfbuzzjs": "1.6.3",
     "postcss": "^8.4.39",
+    "subset-font": "2.9.0",
     "tailwindcss": "^3.4.6",
     "tsx": "4.20.5",
     "typescript": "^5.5.3",

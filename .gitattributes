@@ -2,3 +2,6 @@
 tests/golden/render/** -text
 tests/**/__snapshots__/** eol=lf
 tests/e2e/__screenshots__/** binary
+# Vendored fonts and their licence/metadata are hashed in assets/fonts/fonts.lock.json.
+assets/fonts/** -text
+public/fonts/typography/** -text
