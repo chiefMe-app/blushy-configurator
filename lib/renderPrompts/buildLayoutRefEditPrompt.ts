@@ -1077,9 +1077,14 @@ export function buildLayoutRefEditPrompt(
   const numberPhrase = numberOn
     ? (foilNumber ? `, the foil number balloon ${sceneModel.numberLight.value.trim()} on its balloon bunch` : `, the light-up marquee number ${sceneModel.numberLight.value.trim()}`)
     : "";
-  const styleRefKeepExtras = styleRef && (nPlinths > 1 || numberOn)
+  // 2026-10-25: and the florals, which no reference photo has either — chosen
+  // and paid for, they did not appear.
+  const floralsOn = !!sceneModel.garlandFlorals && sceneModel.balloons.style !== "none";
+  const styleRefKeepExtras = styleRef && (nPlinths > 1 || numberOn || floralsOn)
     ? `Everything IMAGE 1 shows is in the photo even where IMAGE 2 has none: ` +
-      [nPlinths > 1 ? `all ${nPlinths} pedestal columns` : "", numberOn ? (foilNumber ? `the foil number balloon ${sceneModel.numberLight.value.trim()}` : `the light-up number ${sceneModel.numberLight.value.trim()}`) : ""].filter(Boolean).join(" and ") + `. `
+      [nPlinths > 1 ? `all ${nPlinths} pedestal columns` : "",
+       numberOn ? (foilNumber ? `the foil number balloon ${sceneModel.numberLight.value.trim()}` : `the light-up number ${sceneModel.numberLight.value.trim()}`) : "",
+       floralsOn ? `the fresh flowers and green eucalyptus tucked between the balloons all along the garland` : ""].filter(Boolean).join(", and ") + `. `
     : "";
   // 2026-10-24: "Happy Birthday Arya" came back as the photo's own two-line
   // "Happy / Birthday" — the name dropped — because "copy how its lettering
@@ -1445,11 +1450,16 @@ export function buildLayoutRefEditPrompt(
   const foilName = selectedSempertexColors.find((c) => (c.hex ?? "").toLowerCase() === foilHex.toLowerCase())?.colorName
     ?? backdropColorLabel(foilHex);
   const frontFoilNumberLine = sceneModel.numberLight?.enabled && frontNumDigits.length > 0 && sceneModel.numberLight.style === "foil"
-    ? `A shiny FOIL number balloon "${frontNumDigits}", about 80cm tall and SLIM (a normal party foil number, not chunky), in ${foilName} metallic foil (NOT silver, NOT chrome), ` +
-      `stands on the floor on top of a small tight bunch of round latex balloons` +
+    // 2026-10-25: no "NOT silver, NOT chrome" here — said this early, the
+    // render took it for the whole garland and dropped the chrome and clear
+    // balloons ("silver clear kaybolmus"). The garland's own balloons are
+    // named as staying exactly as they are instead.
+    ? `A shiny FOIL number balloon "${frontNumDigits}", about 80cm tall and SLIM (a normal party foil number, not chunky), in ${foilName} metallic foil, ` +
+      `stands on the floor on top of a small tight bunch of round latex balloons, exactly where IMAGE 1 draws it` +
       (nPlinths > 0
-        ? `, to the RIGHT of the white cylindrical pedestal column${nPlinths > 1 ? "s" : ""} — ${nPlinths > 1 ? "they" : "the pedestal column"} still stand${nPlinths > 1 ? "" : "s"} in the middle, in front of the backdrop. `
-        : `, to the right of centre in front of the backdrop. `) +
+        ? ` beside the white cylindrical pedestal column${nPlinths > 1 ? "s" : ""}, which still stand${nPlinths > 1 ? "" : "s"} in the middle in front of the backdrop. `
+        : `, in front of the backdrop. `) +
+      `Only the number is ${foilName}: the garland keeps every one of its balloon colours, its mirror-chrome silver and its clear balloons exactly as described below. ` +
       `It is an inflated foil balloon: puffy, rounded edges, a mirror-like metallic sheen with soft ` +
       `highlights and seams — NOT a light-up marquee number, NOT a white box letter, no bulbs, no lights. ` +
       `There is EXACTLY ONE number in the entire image. No loose helium balloons on strings anywhere in the scene. `
