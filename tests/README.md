@@ -62,6 +62,16 @@ Review the diff of `tests/**/__snapshots__`, `tests/golden/render/**` and
   - The Style tab now shows the faces the render prints: Italianno, Playfair Display and Archivo Black.
   - The sketch lettering and the neon sign are set in Italianno.
 - **Pricing, scene model and order format:** unchanged.
+- **Neon follow-up:** the neon sign is now sized from the face's real width rather than the character count × 0.46 (Brittany's average letter width).
+  - It is back to the 42cm product size.
+  - Changed: the guides for E01, Shimmer Wall and Arch + Shimmer, and the F8 screenshot.
+
+**Order total fix (2026-10-25, `fix-order-theme-total`).** The saved total now includes the theme surcharge.
+
+- Pricing goldens are unchanged.
+- New regression tests are in `unit/orders.contract.test.ts` and F1.
+
+**Known screenshot noise:** the Theme step differs by 29px on desktop and 405px on mobile between runs. That is within the 0.2% threshold.
 
 ## Known issues recorded as today's behaviour (Phase 0.0, 2026-10-25)
 
