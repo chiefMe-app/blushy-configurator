@@ -45,8 +45,15 @@ export async function POST(req: NextRequest) {
   }
 
   // Recompute total server-side — never trust the client value.
+  // 2026-10-25: the theme surcharge was missing from every saved total (AED
+  // 30-60 below the Review total). The builder did not send themeSelected, and
+  // priceBreakdown() only charges the theme when it is set. An order can only
+  // be submitted after the Theme step, which cannot be passed without picking
+  // a theme, so a valid theme is a selected one. Set here rather than read from
+  // the body, so a client cannot drop the surcharge by omitting it.
   const pricingConfig = {
     ...body,
+    themeSelected: true,
     venue: { ...body.venue, photos: [] },
   } as unknown as BuilderConfig;
   const total = computeTotal(pricingConfig);

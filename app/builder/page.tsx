@@ -487,6 +487,10 @@ export default function ConfigurePage() {
     const payload = {
       eventType: config.eventType,
       theme: config.theme,
+      // 2026-10-25: was missing, so the server priced orders without the
+      // theme. The server now charges the theme for any valid theme anyway
+      // (app/api/orders/route.ts); this keeps the body a full priced config.
+      themeSelected: config.themeSelected,
       package: config.package,
       // The Package step (step 3) only ever writes servicePackageId — config.package
       // is a legacy field nothing sets anymore, permanently stuck at its "mini"

@@ -49,6 +49,12 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
   const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
   expect(aed(order.estimatedTotal)).toBe(shown);
+  // The total the server would save for exactly this body. The test server has
+  // no database (00-safety), so nothing is stored. Before the 2026-10-25 fix
+  // this was AED 50 (the Frozen surcharge) below the Review total.
+  const saved = await (await page.request.post("/api/orders", { data: order })).json();
+  expect(saved.persisted).toBe(false);
+  expect(aed(saved.total)).toBe(shown);
   expect(order.decor.backdropItems[0].text).toMatchObject({ enabled: true, value: "Happy Birthday", fontStyle: "script" });
 });
 
