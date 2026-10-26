@@ -567,8 +567,64 @@
       "weights": {
         "500": {
           "axes": {
-            "opsz": 11,
-            "wght": 500
+            "wght": 500,
+            "opsz": 96
+          },
+          "coverage": {
+            "ok": true,
+            "missing": ""
+          },
+          "capHeightEm": 0.75,
+          "stroke": {
+            "thinOfCap": 0.0067,
+            "thin10OfCap": 0.0067,
+            "medianOfCap": 0.1387,
+            "monoline": 0.048
+          },
+          "pieces": {
+            "Layla": 5,
+            "Arya": 6,
+            "Malek": 6,
+            "Ayşe": 4
+          },
+          "shaping": {
+            "widthDiffMax": 0,
+            "f1Min": 1,
+            "pass": true
+          }
+        },
+        "700": {
+          "axes": {
+            "wght": 700,
+            "opsz": 96
+          },
+          "coverage": {
+            "ok": true,
+            "missing": ""
+          },
+          "capHeightEm": 0.75,
+          "stroke": {
+            "thinOfCap": 0.0067,
+            "thin10OfCap": 0.0067,
+            "medianOfCap": 0.1867,
+            "monoline": 0.036
+          },
+          "pieces": {
+            "Layla": 5,
+            "Arya": 6,
+            "Malek": 6,
+            "Ayşe": 5
+          },
+          "shaping": {
+            "widthDiffMax": 0.0016,
+            "f1Min": 1,
+            "pass": true
+          }
+        },
+        "500/text": {
+          "axes": {
+            "wght": 500,
+            "opsz": 11
           },
           "coverage": {
             "ok": true,
@@ -593,10 +649,10 @@
             "pass": true
           }
         },
-        "700": {
+        "700/text": {
           "axes": {
-            "opsz": 11,
-            "wght": 700
+            "wght": 700,
+            "opsz": 11
           },
           "coverage": {
             "ok": true,

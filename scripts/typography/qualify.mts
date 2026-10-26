@@ -16,10 +16,10 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import * as hb from "harfbuzzjs";
 import sharp from "sharp";
-import type { RegistryFont, FontWeight } from "../../lib/typography/registry.ts";
+import type { RegistryFont, FontWeight, FontVariant } from "../../lib/typography/registry.ts";
 import * as registryModule from "../../lib/typography/registry.ts";
 // registry.ts is loaded as CommonJS by tsx (the package is not "type": "module").
-const { FONTS } = ((registryModule as unknown as { default?: typeof registryModule }).default ?? registryModule);
+const { FONTS, fontVariants } = ((registryModule as unknown as { default?: typeof registryModule }).default ?? registryModule);
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 const ASSETS = path.join(ROOT, "assets/fonts");
@@ -41,7 +41,7 @@ const SHAPING_MIN_F1 = 0.97;
 // ---- HarfBuzz ---------------------------------------------------------------
 interface Loaded { font: hb.Font; upem: number; axes: Record<string, number>; features: hb.Feature[]; css: string[] }
 const faces = new Map<string, Buffer>();
-function load(f: RegistryFont, w: FontWeight): Loaded {
+function load(f: RegistryFont, w: FontWeight, variantAxes?: FontVariant["axes"]): Loaded {
   const file = path.join(ASSETS, f.dir, w.file);
   const data = faces.get(file) ?? fs.readFileSync(file);
   faces.set(file, data);
@@ -49,7 +49,7 @@ function load(f: RegistryFont, w: FontWeight): Loaded {
   const font = new hb.Font(face);
   const info = face.getAxisInfos();
   const axes: Record<string, number> = {};
-  for (const [tag, v] of Object.entries({ ...(w.axes ?? {}), ...(AXES[f.id] ?? {}) })) {
+  for (const [tag, v] of Object.entries({ ...(variantAxes ?? w.axes ?? {}), ...(AXES[f.id] ?? {}) })) {
     const a = info[tag];
     if (!a) throw new Error(`${f.id}: no ${tag} axis`);
     axes[tag] = v === "max" ? a.max : Math.min(a.max, Math.max(a.min, v));
@@ -229,11 +229,12 @@ function f1Of(ga: Uint8Array, gb: Uint8Array, W: number, H: number) {
     const meta = fs.readFileSync(path.join(ASSETS, f.dir, "METADATA.pb"), "utf8");
     const licence = {
       ofl: (meta.match(/license: "(\w+)"/) ?? [])[1] === "OFL" && fs.existsSync(path.join(ASSETS, f.dir, "OFL.txt")),
-      lockMatch: [...f.weights.map((w) => `${f.dir}/${w.file}`), `${f.dir}/OFL.txt`].every((k) => lock.files[k] && lock.files[k] === sha(path.join(ASSETS, k))),
+      lockMatch: [...f.weights.map((w2) => `${f.dir}/${w2.file}`), `${f.dir}/OFL.txt`].every((k) => lock.files[k] && lock.files[k] === sha(path.join(ASSETS, k))),
     };
     const weights: Record<string, unknown> = {};
-    for (const w of f.weights) {
-      const l = load(f, w);
+    for (const v of fontVariants(f)) {
+      const w = v.weight;
+      const l = load(f, w, v.axes);
       const missing = Array.from(CHARSET).filter((ch) => !l.font.nominalGlyph(ch.codePointAt(0)!));
       const cap = capHeightEm(l);
       const strokeImg = await rasterLine(l, STROKE_SAMPLE, EM);
@@ -252,7 +253,7 @@ function f1Of(ga: Uint8Array, gb: Uint8Array, W: number, H: number) {
         }
         shaping = { widthDiffMax: +widthDiffMax.toFixed(4), f1Min: +f1Min.toFixed(3), pass: widthDiffMax <= 0.02 && f1Min >= SHAPING_MIN_F1 };
       }
-      weights[w.weight] = {
+      weights[v.key] = {
         axes: l.axes,
         coverage: { ok: missing.length === 0, missing: missing.join("") },
         capHeightEm: +cap.toFixed(4),
@@ -260,9 +261,9 @@ function f1Of(ga: Uint8Array, gb: Uint8Array, W: number, H: number) {
         pieces: pc,
         shaping,
       };
-      const row = linePath(l, `${f.family} ${w.weight} — Happy 1st Birthday · Layla · Ayşe Gül · Malek`, 16, 62, 44);
-      sheetRows.push({ label: `${f.id}@${w.weight}`, svg: row.svg, w: Math.ceil(row.advance + 40), h: 86 });
-      console.log(f.id.padEnd(20), String(w.weight).padEnd(4), missing.length ? `MISSING ${missing.join("")}` : "coverage ok",
+      const row = linePath(l, `${f.family} ${v.key} — Happy 1st Birthday · Layla · Ayşe Gül · Malek`, 16, 62, 44);
+      sheetRows.push({ label: `${f.id}@${v.key}`, svg: row.svg, w: Math.ceil(row.advance + 40), h: 86 });
+      console.log(f.id.padEnd(20), v.key.padEnd(8), missing.length ? `MISSING ${missing.join("")}` : "coverage ok",
         `thin/cap ${(st.p05 / EM / cap).toFixed(3)}`, `mono ${(st.p10 / st.median).toFixed(2)}`, `pieces ${JSON.stringify(pc)}`,
         shaping ? `shaping ${shaping.pass ? "ok" : "FAIL"} (w ${shaping.widthDiffMax}, f1 ${shaping.f1Min})` : "");
     }

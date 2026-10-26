@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { createHash } from "crypto";
 import { describe, expect, it } from "vitest";
-import { FONTS, PICKER_FONTS, fontById } from "@/lib/typography/registry";
+import { FONTS, PICKER_FONTS, fontById, fontVariants, webFontFile, cssFamily } from "@/lib/typography/registry";
 import { PRESETS, DEFAULT_PRESET_ID, presetById } from "@/lib/typography/presets";
 import { FINISHES } from "@/lib/typography/production";
 import { measured, neonFriendly, preliminaryCheck } from "@/lib/typography/check";
@@ -39,18 +39,18 @@ describe("registry and measurements", () => {
   });
   it("measurements exist for exactly the registry's fonts and weights (not stale)", () => {
     expect(Object.keys(gen).sort()).toEqual(FONTS.map((f) => f.id).sort());
-    for (const f of FONTS) expect(Object.keys(gen[f.id].weights).sort(), f.id).toEqual(f.weights.map((w) => String(w.weight)).sort());
+    for (const f of FONTS) expect(Object.keys(gen[f.id].weights).sort(), f.id).toEqual(fontVariants(f).map((v) => v.key).sort());
   });
-  it.each(FONTS.flatMap((f) => f.weights.map((w) => [`${f.id}@${w.weight}`, f.id, w.weight] as const)))("%s: OFL, full English + Turkish coverage, shaping matches the browser", (_k, id, weight) => {
+  it.each(FONTS.flatMap((f) => fontVariants(f).map((v) => [`${f.id}@${v.key}`, f.id, v.key] as const)))("%s: OFL, full English + Turkish coverage, shaping matches the browser", (_k, id, key) => {
     expect(gen[id].licence).toEqual({ ofl: true, lockMatch: true });
-    const w = gen[id].weights[String(weight)];
+    const w = gen[id].weights[key];
     expect(w.coverage.ok).toBe(true);
     expect(w.shaping?.pass).toBe(true);
   });
   it("measurement table (drift guard)", () => {
-    const table = FONTS.flatMap((f) => f.weights.map((w) => {
-      const m = measured(f.id, w.weight)!;
-      return `${f.id}@${w.weight} thin/cap=${m.stroke.thinOfCap} median/cap=${m.stroke.medianOfCap} mono=${m.stroke.monoline} neon=${neonFriendly(f.id, w.weight)}`;
+    const table = FONTS.flatMap((f) => fontVariants(f).map((v) => {
+      const m = measured(f.id, v.weight.weight, v.optical?.id)!;
+      return `${f.id}@${v.key} thin/cap=${m.stroke.thinOfCap} median/cap=${m.stroke.medianOfCap} mono=${m.stroke.monoline} neon=${neonFriendly(f.id, v.weight.weight, v.optical?.id)}`;
     }));
     expect(table).toMatchSnapshot();
   });
@@ -58,11 +58,11 @@ describe("registry and measurements", () => {
 
 describe("web fonts", () => {
   const css = fs.readFileSync(path.resolve(__dirname, "../../public/fonts/typography/fonts.css"), "utf8");
-  it.each(FONTS.flatMap((f) => f.weights.map((w) => [`${f.id}-${w.weight}.woff2`, f, w.weight] as const)))("%s exists, is WOFF2, under 50 KB, and has an @font-face", (file, f, weight) => {
+  it.each(FONTS.flatMap((f) => fontVariants(f).map((v) => [webFontFile(v), v] as const)))("%s exists, is WOFF2, under 50 KB, and has an @font-face", (file, v) => {
     const buf = fs.readFileSync(path.resolve(__dirname, "../../public/fonts/typography", file));
     expect(buf.subarray(0, 4).toString("latin1")).toBe("wOF2");
     expect(buf.length).toBeLessThan(50 * 1024);
-    expect(css).toContain(`font-family:"PM ${f.family}";src:url("/fonts/typography/${file}") format("woff2");font-weight:${weight};`);
+    expect(css).toContain(`font-family:"${cssFamily(v)}";src:url("/fonts/typography/${file}") format("woff2");font-weight:${v.weight.weight};`);
   });
   it("nothing in the app loads them yet (T1 changes no page)", () => {
     const appFiles = ["app/layout.tsx", "app/blushy.css", "app/globals.css"].map((p) => fs.readFileSync(path.resolve(__dirname, "../..", p), "utf8")).join("\n");

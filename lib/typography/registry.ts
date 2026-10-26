@@ -18,13 +18,21 @@ export interface FontWeight {
   weight: number;
   /** File in assets/fonts/<dir>/. */
   file: string;
-  /**
-   * Axis values for a variable file ("max" = the axis maximum). Optical size
-   * is set low on purpose: at display sizes (opsz max) Bodoni Moda's and
-   * Fraunces' hairlines thin to under 1% of the cap height — unreadable in a
-   * render and impossible to cut (qualify sweep, 2026-10-25).
-   */
+  /** Axis values for a variable file ("max" = the axis maximum). */
   axes?: Record<string, number | "max">;
+}
+
+/**
+ * Optical-size versions of a variable font. The default keeps the face's
+ * intended look; another version is offered only as an option the customer
+ * previews and confirms (e.g. when a production method needs sturdier
+ * strokes) — never applied on its own.
+ */
+export interface OpticalVariant {
+  id: string;
+  label: string;
+  opsz: number | "max";
+  default?: boolean;
 }
 
 export interface RegistryFont {
@@ -47,6 +55,7 @@ export interface RegistryFont {
   features?: string[];
   /** Kept so existing designs keep working; not offered in the picker. */
   legacyOnly?: boolean;
+  optical?: OpticalVariant[];
 }
 
 const one = (file: string): FontWeight[] => [{ weight: 400, file }];
@@ -69,7 +78,11 @@ export const FONTS: RegistryFont[] = [
   { id: "gilda-display", family: "Gilda Display", dir: "gildadisplay", category: "elegant_serif", weights: one("GildaDisplay-Regular.ttf"), defaultWeight: 400, bestFor: ["heading"], promptDescriptor: "a graceful display serif" },
   { id: "eb-garamond", family: "EB Garamond", dir: "ebgaramond", category: "elegant_serif", weights: vf("EBGaramond[wght].ttf", [400, 500]), features: ["lnum"], defaultWeight: 500, bestFor: ["heading"], promptDescriptor: "a traditional book-style Garamond serif" },
   // Modern Serif
-  { id: "bodoni-moda", family: "Bodoni Moda", dir: "bodonimoda", category: "modern_serif", weights: vf("BodoniModa[opsz,wght].ttf", [500, 700], { opsz: 11 }), features: ["lnum"], defaultWeight: 700, bestFor: ["name", "heading"], promptDescriptor: "a bold high-contrast Bodoni editorial serif" },
+  { id: "bodoni-moda", family: "Bodoni Moda", dir: "bodonimoda", category: "modern_serif", weights: vf("BodoniModa[opsz,wght].ttf", [500, 700]), features: ["lnum"], defaultWeight: 700,
+    // 2026-10-26: the fine display cut is the default ("Bodoni Moda'nın zarif
+    // versiyonunu korumak istiyorum"); its hairlines are under 1% of the cap
+    // height, so the sturdier text cut is offered where a method needs it.
+    optical: [{ id: "display", label: "Display — fine hairlines", opsz: "max", default: true }, { id: "text", label: "Sturdy — stronger hairlines", opsz: 11 }], bestFor: ["name", "heading"], promptDescriptor: "a bold high-contrast Bodoni editorial serif" },
   { id: "dm-serif-display", family: "DM Serif Display", dir: "dmserifdisplay", category: "modern_serif", weights: one("DMSerifDisplay-Regular.ttf"), defaultWeight: 400, bestFor: ["name", "heading"], promptDescriptor: "a strong contemporary display serif" },
   { id: "gloock", family: "Gloock", dir: "gloock", category: "modern_serif", weights: one("Gloock-Regular.ttf"), defaultWeight: 400, bestFor: ["name"], promptDescriptor: "a heavy high-contrast modern serif" },
   { id: "instrument-serif", family: "Instrument Serif", dir: "instrumentserif", category: "modern_serif", weights: one("InstrumentSerif-Regular.ttf"), defaultWeight: 400, bestFor: ["heading", "name"], promptDescriptor: "a condensed modern editorial serif" },
@@ -80,6 +93,7 @@ export const FONTS: RegistryFont[] = [
   { id: "libre-baskerville", family: "Libre Baskerville", dir: "librebaskerville", category: "classic", weights: vf("LibreBaskerville[wght].ttf", [400, 700]), defaultWeight: 400, bestFor: ["heading"], promptDescriptor: "a classic Baskerville serif" },
   { id: "marcellus", family: "Marcellus", dir: "marcellus", category: "classic", weights: one("Marcellus-Regular.ttf"), defaultWeight: 400, bestFor: ["heading"], promptDescriptor: "a flared Roman inscription serif" },
   // Playful
+  // opsz 24: at the display maximum Fraunces' hairlines fall to ~1% of the cap height.
   { id: "fraunces", family: "Fraunces", dir: "fraunces", category: "playful", weights: vf("Fraunces[SOFT,WONK,opsz,wght].ttf", [600], { opsz: 24 }), defaultWeight: 600, bestFor: ["heading", "name"], promptDescriptor: "a soft chunky old-style display serif" },
   { id: "young-serif", family: "Young Serif", dir: "youngserif", category: "playful", weights: one("YoungSerif-Regular.ttf"), defaultWeight: 400, bestFor: ["heading", "name"], promptDescriptor: "a friendly rounded heavy serif" },
   { id: "birthstone-bounce", family: "Birthstone Bounce", dir: "birthstonebounce", category: "playful", weights: [{ weight: 400, file: "BirthstoneBounce-Regular.ttf" }, { weight: 500, file: "BirthstoneBounce-Medium.ttf" }], defaultWeight: 500, bestFor: ["name"], promptDescriptor: "a bouncy playful handwritten script" },
@@ -88,6 +102,47 @@ export const FONTS: RegistryFont[] = [
 ];
 
 export const fontById = (id: string) => FONTS.find((f) => f.id === id);
+
+/** One measurable/renderable version of a font: a weight, plus an optical version if it has them. */
+export interface FontVariant {
+  font: RegistryFont;
+  weight: FontWeight;
+  optical?: OpticalVariant;
+  /** "700", or "700/text" for a non-default optical version. */
+  key: string;
+  axes: Record<string, number | "max">;
+}
+
+export function variantKey(weight: number, opticalId?: string, font?: RegistryFont): string {
+  const def = font?.optical?.find((o) => o.default)?.id;
+  return opticalId && opticalId !== def ? `${weight}/${opticalId}` : String(weight);
+}
+
+export function fontVariants(f: RegistryFont): FontVariant[] {
+  return f.weights.flatMap((w) => (f.optical ?? [undefined]).map((o) => ({
+    font: f, weight: w, optical: o,
+    key: variantKey(w.weight, o?.id, f),
+    axes: { ...(w.axes ?? {}), ...(o ? { opsz: o.opsz } : {}) },
+  })));
+}
+
+/** CSS family of a variant's web font (public/fonts/typography/fonts.css). */
+export function cssFamily(v: Pick<FontVariant, "font" | "optical">): string {
+  const def = v.font.optical?.find((o) => o.default)?.id;
+  return `PM ${v.font.family}${v.optical && v.optical.id !== def ? ` ${v.optical.id}` : ""}`;
+}
+
+/** Web font file of a variant, in public/fonts/typography/. */
+export function webFontFile(v: Pick<FontVariant, "font" | "weight" | "key">): string {
+  return `${v.font.id}-${v.key.replace("/", "-")}.woff2`;
+}
+
+export function resolveVariant(fontId: string, weight: number, opticalId?: string): FontVariant | undefined {
+  const f = fontById(fontId);
+  if (!f) return undefined;
+  const key = variantKey(weight, opticalId ?? f.optical?.find((o) => o.default)?.id, f);
+  return fontVariants(f).find((v) => v.key === key);
+}
 
 /** Fonts the picker offers (legacy-only ones stay out of it). */
 export const PICKER_FONTS = FONTS.filter((f) => !f.legacyOnly);

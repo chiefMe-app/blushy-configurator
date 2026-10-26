@@ -17,7 +17,7 @@ import subsetFont from "subset-font";
 import * as hb from "harfbuzzjs";
 import * as reg from "../../lib/typography/registry.ts";
 
-const { FONTS } = ((reg as unknown as { default?: typeof reg }).default ?? reg);
+const { FONTS, fontVariants, cssFamily, webFontFile } = ((reg as unknown as { default?: typeof reg }).default ?? reg);
 const ROOT = path.resolve(import.meta.dirname, "../..");
 const OUT = path.join(ROOT, "public/fonts/typography");
 const TEXT = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÇĞİÖŞÜçğıöşüÄËÏÖÜäëïöüÂÊÎÔÛâêîôûÀÈÌÒÙàèìòùÁÉÍÓÚáéíóúÑñ0123456789 &'’‘\"“”-–—.,:;!?()/@#+*%";
@@ -31,14 +31,15 @@ const rows: string[] = [];
 const failures: string[] = [];
 const sizes: number[] = [];
 for (const f of FONTS) {
-  for (const w of f.weights) {
+  for (const v of fontVariants(f)) {
+    const w = v.weight;
     const src = fs.readFileSync(path.join(ROOT, "assets/fonts", f.dir, w.file));
     const face = new hb.Face(new hb.Blob(src));
     const info = face.getAxisInfos();
     const axes: Record<string, number> = {};
     for (const [tag, a] of Object.entries(info)) {
-      const v = w.axes?.[tag];
-      axes[tag] = v === undefined ? a.default : v === "max" ? a.max : v;
+      const val = v.axes[tag];
+      axes[tag] = val === undefined ? a.default : val === "max" ? a.max : val;
     }
     const always = f.features ?? [];
     const opts = {
@@ -48,7 +49,7 @@ for (const f of FONTS) {
     };
     const woff2 = await subsetFont(src, TEXT, { ...opts, targetFormat: "woff2" });
     const sfnt = await subsetFont(src, TEXT, { ...opts, targetFormat: "sfnt" }); // HarfBuzz cannot read WOFF2: checked as sfnt
-    const name = `${f.id}-${w.weight}.woff2`;
+    const name = webFontFile(v);
     fs.writeFileSync(path.join(OUT, name), woff2);
     const full = new hb.Font(face);
     if (Object.keys(axes).length) full.setVariations(Object.entries(axes).map(([t2, v]) => new hb.Variation(t2, v)));
@@ -61,7 +62,7 @@ for (const f of FONTS) {
     const kb = woff2.length / 1024;
     sizes.push(kb);
     rows.push(`${name.padEnd(30)} ${kb.toFixed(1).padStart(6)} KB ${kb > BUDGET_KB ? "over target" : "           "}  shaping ${bad.length ? "DIFFERS" : "identical"}  features: ${[...new Set(kept)].join(",")}`);
-    css.push(`@font-face{font-family:"PM ${f.family}";src:url("/fonts/typography/${name}") format("woff2");font-weight:${w.weight};font-style:normal;font-display:swap;}`);
+    css.push(`@font-face{font-family:"${cssFamily(v)}";src:url("/fonts/typography/${name}") format("woff2");font-weight:${w.weight};font-style:normal;font-display:swap;}`);
   }
 }
 fs.writeFileSync(path.join(OUT, "fonts.css"), css.join("\n") + "\n");

@@ -24,7 +24,7 @@ export const FINISHES: FinishLimits[] = [
   { id: "vinyl", label: "Vinyl Lettering", minStrokeMm: 1.2, prefersConnectedScript: false, prefersMonoline: false, provisional: true, note: "Plan assumption ~1.0–1.5 mm; producer to confirm." },
   { id: "acrylic", label: "Acrylic Lettering", minStrokeMm: 2.5, prefersConnectedScript: true, prefersMonoline: false, provisional: true, note: "Plan assumption ~2.5–3 mm for 3 mm acrylic; producer to confirm." },
   { id: "mirror_acrylic", label: "Mirror Acrylic Lettering", minStrokeMm: 2.5, prefersConnectedScript: true, prefersMonoline: false, provisional: true, note: "Plan assumption ~2.5–3 mm for 3 mm mirror acrylic; producer to confirm." },
-  { id: "neon", label: "LED Neon", minStrokeMm: null, prefersConnectedScript: true, prefersMonoline: true, provisional: true, note: "Bent as one even tube; monoline faces read best. Producer to confirm minimum letter height." },
+  { id: "neon", label: "LED Neon", minStrokeMm: null, prefersConnectedScript: false, prefersMonoline: true, provisional: true, note: "Bent as an even tube, letter by letter or word by word on a backing; monoline faces read best. Producer to confirm minimum letter height." },
 ];
 
 export const finishById = (id: FinishId) => FINISHES.find((f) => f.id === id)!;
