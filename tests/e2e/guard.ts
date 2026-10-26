@@ -23,10 +23,12 @@ export interface Guard {
 }
 
 /**
- * A stand-in for Supabase, answered inside the browser: guest sign-in and the
- * parties / party_items tables, kept in memory, with every request recorded.
- * The Builder is built with NEXT_PUBLIC_SUPABASE_URL=http://supabase.test
- * (playwright.config.ts); nothing reaches a real Supabase.
+ * A stand-in for Supabase, answered inside the browser: guest sign-in, the
+ * emailed-link sign-in (with its code exchange), and the parties /
+ * party_items tables kept in memory and filtered by owner the way the table
+ * rules do, with every request recorded. The Builder is built with
+ * NEXT_PUBLIC_SUPABASE_URL=http://supabase.test (playwright.config.ts);
+ * nothing reaches a real Supabase.
  */
 export interface FakeSupabase {
   requests: { method: string; path: string; body: unknown }[];
@@ -34,9 +36,21 @@ export interface FakeSupabase {
   items: Record<string, unknown>[];
   /** Answer guest sign-in the way Supabase does when it is switched off. */
   anonymousOff: boolean;
+  /** The account an emailed link signs in to. */
+  account: { id: string; email: string };
 }
+export const FAKE_GUEST_ID = "00000000-0000-4000-8000-0000000000e2";
+export const FAKE_ACCOUNT = { id: "00000000-0000-4000-8000-0000000000a1", email: "arya.parent@example.com" };
 const FAKE_SUPABASE_HOST = "supabase.test";
 const b64url = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
+
+function session(id: string, anonymous: boolean, email?: string) {
+  const exp = Math.floor(Date.now() / 1000) + 3600;
+  const user = { id, aud: "authenticated", role: "authenticated", is_anonymous: anonymous, email, app_metadata: { provider: anonymous ? "anonymous" : "email" },
+    user_metadata: {}, identities: [], created_at: new Date().toISOString() };
+  const access_token = `${b64url({ alg: "HS256", typ: "JWT" })}.${b64url({ sub: id, role: "authenticated", is_anonymous: anonymous, email, exp })}.e2e`;
+  return { access_token, token_type: "bearer", expires_in: 3600, expires_at: exp, refresh_token: `e2e-refresh-${id}`, user };
+}
 
 async function fakeSupabase(route: Route, db: FakeSupabase) {
   const req = route.request();
@@ -45,7 +59,7 @@ async function fakeSupabase(route: Route, db: FakeSupabase) {
     "access-control-allow-origin": req.headers()["origin"] ?? "*",
     "access-control-allow-credentials": "true",
     "access-control-allow-headers": "*",
-    "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
+    "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
     "access-control-expose-headers": "content-range",
   };
   if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
@@ -53,36 +67,67 @@ async function fakeSupabase(route: Route, db: FakeSupabase) {
   try { body = req.postData() ? JSON.parse(req.postData()!) : null; } catch { body = req.postData(); }
   db.requests.push({ method: req.method(), path: url.pathname + url.search, body });
   const json = (status: number, data: unknown) => route.fulfill({ status, headers: { ...cors, "content-type": "application/json" }, body: JSON.stringify(data) });
+  // Who is asking: the user in the request's access token (none for the anon key).
+  const who = (() => {
+    const t = (req.headers()["authorization"] ?? "").replace(/^Bearer /, "").split(".")[1];
+    try { return t ? (JSON.parse(Buffer.from(t, "base64url").toString()) as { sub?: string }).sub ?? null : null; } catch { return null; }
+  })();
+  const path = url.pathname;
 
-  if (url.pathname === "/auth/v1/signup" && req.method() === "POST") {
+  if (path === "/auth/v1/signup" && req.method() === "POST") {
     if (db.anonymousOff) return json(422, { code: 422, error_code: "anonymous_provider_disabled", msg: "Anonymous sign-ins are disabled" });
-    const id = "00000000-0000-4000-8000-0000000000e2";
-    const exp = Math.floor(Date.now() / 1000) + 3600;
-    const user = { id, aud: "authenticated", role: "authenticated", is_anonymous: true, app_metadata: {}, user_metadata: {}, identities: [], created_at: new Date().toISOString() };
-    const access_token = `${b64url({ alg: "HS256", typ: "JWT" })}.${b64url({ sub: id, role: "authenticated", is_anonymous: true, exp })}.e2e`;
-    return json(200, { access_token, token_type: "bearer", expires_in: 3600, expires_at: exp, refresh_token: "e2e-refresh", user });
+    return json(200, session(FAKE_GUEST_ID, true));
   }
-  const table = url.pathname === "/rest/v1/parties" ? db.parties : url.pathname === "/rest/v1/party_items" ? db.items : null;
+  if (path === "/auth/v1/otp" && req.method() === "POST") return json(200, {});
+  if (path === "/auth/v1/user" && req.method() === "PUT") {
+    // A guest adding an email that already has an account (the test case): refused, as Supabase does.
+    return json(422, { code: 422, error_code: "email_exists", msg: "A user with this email address has already been registered" });
+  }
+  if (path === "/auth/v1/token" && url.searchParams.get("grant_type") === "pkce") return json(200, session(db.account.id, false, db.account.email));
+  if (path === "/auth/v1/logout") return route.fulfill({ status: 204, headers: cors });
+  // Google: linking a guest returns the provider page to go to; that page is a stand-in.
+  if (path === "/auth/v1/user/identities/authorize") {
+    return json(200, { url: `http://${FAKE_SUPABASE_HOST}/auth/v1/authorize?provider=${url.searchParams.get("provider")}&redirect_to=${encodeURIComponent(url.searchParams.get("redirect_to") ?? "")}` });
+  }
+  if (path === "/auth/v1/authorize") return route.fulfill({ status: 200, headers: { "content-type": "text/html" }, body: "<h1>Google sign-in (stand-in)</h1>" });
+
+  const table = path === "/rest/v1/parties" ? db.parties : path === "/rest/v1/party_items" ? db.items : null;
   if (!table) return json(404, { message: "not in the stand-in" });
+  const mine = table.filter((r) => r.owner_id === who);
+  const eq = (k: string) => url.searchParams.get(k)?.replace(/^eq\./, "");
   const one = (req.headers()["accept"] ?? "").includes("vnd.pgrst.object");
   const wantsRows = (req.headers()["prefer"] ?? "").includes("return=representation");
+  const tag = path.split("/").pop();
+  if (req.method() === "GET") {
+    const rows = mine.map((r) => (table === db.items ? { ...r, parties: { title: db.parties.find((p) => p.id === r.party_id)?.title ?? "My party" } } : r));
+    return json(200, rows);
+  }
   if (req.method() === "POST") {
-    const row = { id: `${url.pathname.split("/").pop()}-${table.length + 1}`, ...(body as object) };
-    table.push(row);
-    return wantsRows ? json(201, one ? { id: row.id } : [{ id: row.id }]) : route.fulfill({ status: 201, headers: cors });
+    const added = (Array.isArray(body) ? body : [body]).map((b) => {
+      const row: Record<string, unknown> = { id: `${tag}-${table.length + 1}`, owner_id: who, title: tag === "parties" ? "My party" : undefined,
+        updated_at: new Date().toISOString(), ...(b as object) };
+      if (row.title === undefined) delete row.title;
+      table.push(row);
+      return row;
+    });
+    const ids = added.map((r) => ({ id: r.id }));
+    return wantsRows ? json(201, one ? ids[0] : ids) : route.fulfill({ status: 201, headers: cors });
   }
   if (req.method() === "PATCH") {
-    const id = url.searchParams.get("id")?.replace(/^eq./, "");
-    const hit = table.filter((r) => r.id === id);
-    hit.forEach((r) => Object.assign(r, body));
+    const hit = mine.filter((r) => r.id === eq("id"));
+    hit.forEach((r) => Object.assign(r, body, { updated_at: new Date().toISOString() }));
     return wantsRows ? json(200, hit.map((r) => ({ id: r.id }))) : route.fulfill({ status: 204, headers: cors });
+  }
+  if (req.method() === "DELETE") {
+    for (const r of mine.filter((x) => x.id === eq("id"))) table.splice(table.indexOf(r), 1);
+    return route.fulfill({ status: 204, headers: cors });
   }
   return json(405, { message: "method not in the stand-in" });
 }
 
 export async function lockNetwork(page: Page): Promise<Guard> {
   const guard: Guard = { blocked: [], external: [], fakeRender: false, fakeOrder: false,
-    supabase: { requests: [], parties: [], items: [], anonymousOff: false } };
+    supabase: { requests: [], parties: [], items: [], anonymousOff: false, account: { ...FAKE_ACCOUNT } } };
   await page.route("**/*", async (route: Route) => {
     const req = route.request();
     const url = new URL(req.url());

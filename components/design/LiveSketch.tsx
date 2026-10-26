@@ -6,7 +6,7 @@
 // a choice does, so each step can be seen as it is made. The same layout also
 // draws the small clickable piece picker on the Style tab.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   themeById,
   resolveTextColorHex,
@@ -413,6 +413,9 @@ export default function LiveSketch({
 }) {
   const d = config.decor;
   const theme = themeById(config.theme);
+  // 2026-10-26: several sketches on one page (My designs) — each one's
+  // per-design gradients need their own ids.
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const accent = theme?.accent ?? "#ff0d66";
   const items = d.backdropItems;
   const hasNumber = !!d.numberLight?.enabled && !!(d.numberLight.value ?? "").trim();
@@ -622,7 +625,7 @@ export default function LiveSketch({
         if (p.item.text.lettering) {
           return (
             <SketchLettering key={`t${p.item.id}`} lettering={p.item.text.lettering} spot={(h) => textSpot(p, h)}
-              fill={resolveTextColorHex(p.item.text.color, accent)} metal={METAL_TINT[p.item.text.color]} gid={`skMetal${p.idx}`} />
+              fill={resolveTextColorHex(p.item.text.color, accent)} metal={METAL_TINT[p.item.text.color]} gid={`skMetal${uid}${p.idx}`} />
           );
         }
         const f = fontFor(p.item.text.fontStyle);
@@ -640,7 +643,7 @@ export default function LiveSketch({
         const y0 = at.cy - ((ls.length - 1) * gap) / 2 + size * 0.32;
         // Silver, gold and rose gold are mirror acrylic: bright and dark bands, not flat grey.
         const metal = METAL_TINT[p.item.text.color];
-        const gid = `skMetal${p.idx}`;
+        const gid = `skMetal${uid}${p.idx}`;
         return (
           <g key={`t${p.item.id}`} transform={script ? `rotate(-2 ${at.cx} ${at.cy})` : undefined} filter="url(#skSoft)">
             {metal && (

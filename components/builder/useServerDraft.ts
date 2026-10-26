@@ -15,7 +15,7 @@ const SERVER_DRAFT_KEY = "partymuse.party.v1"; // lib/serverDraft.ts
 export type ServerSaveStatus = "idle" | "saving" | "saved" | "error" | "unavailable";
 
 /** A short fingerprint of the design (not the step or tab), to tell saved from changed. */
-function fingerprint(config: BuilderConfig): string {
+export function fingerprint(config: BuilderConfig): string {
   const s = JSON.stringify(toDraft(config, 0, 0, new Date(0)).config);
   let h = 5381;
   for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;

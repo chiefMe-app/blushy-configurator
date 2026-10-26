@@ -33,6 +33,7 @@ import DecorStep from "@/components/builder/decor/DecorStep";
 import { useBuilderConfig } from "@/components/builder/useBuilderConfig";
 import { useLocalDraft } from "@/components/builder/useLocalDraft";
 import { useServerDraft } from "@/components/builder/useServerDraft";
+import AccountMenu from "@/components/account/AccountMenu";
 
 import Sprinkles from "@/components/design/Sprinkles";
 
@@ -337,6 +338,8 @@ export default function ConfigurePage() {
               );
             })}
           </nav>
+          {/* 2026-10-26 (0.4): Sign in, or the customer's account. */}
+          <AccountMenu />
           <div className="bz-total">
             <div>
               <div className="word">Your party so far</div>
