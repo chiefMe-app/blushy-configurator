@@ -1,3 +1,4 @@
+import path from "path";
 import { defineConfig } from "@playwright/test";
 
 // The tests start their own dev server on port 3100 with every external key
@@ -47,6 +48,14 @@ export default defineConfig({
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
       SUPABASE_SERVICE_ROLE_KEY: "",
       NEXT_TELEMETRY_DISABLED: "1",
+      // No internet needed for screenshots: next/font/google reads the captured
+      // stylesheets and font files (tests/fixtures/google-fonts) instead of
+      // fetching them, and any fetch it still tried would hit a dead proxy
+      // and fail loudly rather than fall back to other fonts.
+      NEXT_FONT_GOOGLE_MOCKED_RESPONSES: path.resolve(__dirname, "tests/fixtures/google-fonts/mock.cjs"),
+      HTTPS_PROXY: "http://127.0.0.1:9",
+      HTTP_PROXY: "http://127.0.0.1:9",
+      NO_PROXY: "localhost,127.0.0.1",
     },
   },
 });

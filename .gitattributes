@@ -5,3 +5,4 @@ tests/e2e/__screenshots__/** binary
 # Vendored fonts and their licence/metadata are hashed in assets/fonts/fonts.lock.json.
 assets/fonts/** -text
 public/fonts/typography/** -text
+tests/fixtures/google-fonts/files/** binary
