@@ -16,6 +16,7 @@ import {
   type BuilderConfig,
 } from "@/lib/config";
 import PriceSummary from "./PriceSummary";
+import { presetById } from "@/lib/typography/presets";
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
@@ -93,9 +94,21 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
               : backdropPrintById(decor.backdropPrint.type)?.label ?? decor.backdropPrint.type
           }
         />
+        {/* 2026-10-26: the boards' own lettering. This row read only the old
+            decor-level text, so a board saying "Happy Birthday" showed "None". */}
         <Row
-          k="Backdrop text"
-          v={decor.backdropText.enabled ? `"${resolveBackdropText(decor.backdropText)}"` : "None"}
+          k="Lettering"
+          v={(() => {
+            const boards = decor.backdropItems
+              .filter((i) => i.text?.enabled && i.text.value.trim())
+              .map((i) => {
+                const l = i.text.lettering;
+                const style = l ? (l.presetId ? presetById(l.presetId)?.name : "Your own mix") : undefined;
+                return `"${i.text.value.trim()}"${style ? ` · ${style}` : ""}`;
+              });
+            if (boards.length) return boards.join(" / ");
+            return decor.backdropText.enabled ? `"${resolveBackdropText(decor.backdropText)}"` : "None";
+          })()}
         />
         <Row k="Cake / dessert table" v={decor.cakeTable ? "Yes" : "No"} />
       </Section>

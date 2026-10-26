@@ -341,7 +341,10 @@ export default function ConfigurePage() {
               <div className="word">Your party so far</div>
               <strong>AED {formatAED(total)}</strong>
             </div>
-            <span className="bz-mini-pill">✦ party in progress</span>
+            {/* 2026-10-26: the design's save state, where it can be seen on every step. */}
+            <span className="bz-mini-pill" data-testid="save-pill">
+              {serverDraft.status === "saving" ? "Saving…" : serverDraft.status === "saved" ? "✓ Saved" : "✦ party in progress"}
+            </span>
           </div>
         </div>
       </header>

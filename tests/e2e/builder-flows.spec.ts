@@ -50,6 +50,8 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   await shot(page, "f1-07-venue");
   await next(page).click();
   await shot(page, "f1-08-review");
+  // The board's lettering is listed (until 2026-10-26 this row said "None").
+  await expect(page.getByText('"Happy Birthday" · Soft Signature')).toBeVisible();
   const shown = await total(page).textContent();
   await next(page).click(); // Request Final Quote → caught
   await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
