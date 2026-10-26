@@ -1,5 +1,6 @@
 // The isolated /typography-demo page: the real engine behind every control,
-// Heading and Name edited independently, on desktop and mobile.
+// Heading and Name edited independently (font, size, colour, position), vinyl
+// lettering only, on desktop and mobile.
 import { test, expect, settle } from "./guard";
 import type { Page } from "@playwright/test";
 
@@ -18,7 +19,8 @@ async function open(page: Page) {
   return errors;
 }
 // The tab's accessible name is lowercase ("heading · Bellefair"); CSS capitalises it.
-const tab = (page: Page, role: "Heading" | "Name") => page.getByRole("tab", { name: new RegExp(`^${role}`, "i") }).click();
+const tabButton = (page: Page, role: "Heading" | "Name") => page.getByRole("tab", { name: new RegExp(`^${role}`, "i") });
+const tab = (page: Page, role: "Heading" | "Name") => tabButton(page, role).click();
 /** A path's points relative to its first point: its shape without its position. */
 const shape = (d: string | null) => {
   const pts = Array.from((d ?? "").matchAll(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g)).map((m) => [Number(m[1]), Number(m[2])]);
@@ -29,17 +31,26 @@ const sameShape = (a: string | null, b: string | null) => {
   const p = shape(a), q = shape(b);
   return p.length === q.length && p.every(([x, y], i) => Math.abs(x - q[i][0]) <= 0.02 && Math.abs(y - q[i][1]) <= 0.02);
 };
+/** Width of an element's lettering in mm (the lettering SVG's units are mm). */
+const widthMm = (page: Page, role: string) => page.locator(`[data-testid="lettering"] path[data-role="${role}"]`).evaluate((p) => (p as SVGPathElement).getBBox().width);
 
 test.describe.configure({ timeout: 60_000 });
 
-test("opens on #5 Soft Signature with the engine's lettering, no console errors, no sideways scroll", async ({ page }) => {
+test("opens on #5 Soft Signature, big lettering, customer choices only, no console errors, fits the screen", async ({ page }) => {
   const errors = await open(page);
   await expect(page.getByRole("radio", { name: /Soft Signature/ })).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByTestId("preset-state")).toContainText("Soft Signature");
-  await expect(page.getByTestId("measurements")).toContainText("Bellefair 400");
-  await expect(page.getByTestId("measurements")).toContainText("Italianno 400");
+  await expect(tabButton(page, "Heading")).toContainText("Bellefair");
+  await expect(tabButton(page, "Name")).toContainText("Italianno");
   const p = await paths(page);
   expect(Object.keys(p).sort()).toEqual(["heading", "name"]);
+  // The name leads: a short name spans well over a third of the 2 m board.
+  expect(await widthMm(page, "name")).toBeGreaterThan(700);
+  expect(await widthMm(page, "heading")).toBeGreaterThan(450);
+  // Vinyl only; no production engineering on the page.
+  await expect(page.getByTestId("finish")).toContainText("vinyl");
+  const text = await page.locator("body").innerText();
+  for (const word of ["Acrylic", "Mirror", "Neon", "LED", "producer", "provisional"]) expect(text, word).not.toContain(word);
+  expect(text).not.toMatch(/\d\s?mm\b/); // no measurements shown
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   // The preview fits the screen and covers no control (on phones the photo once
   // grew to 1288 px and lay over the controls below it).
@@ -79,60 +90,51 @@ test("the heading's text and font change only the heading", async ({ page }) => 
   const p2 = await paths(page);
   expect(p2.heading.d).not.toBe(p1.heading.d);
   expect(p2.name.d).toBe(p0.name.d);
-  await expect(page.getByTestId("measurements")).toContainText("Libre Baskerville 400");
-  await expect(page.getByTestId("preset-state")).toContainText("Custom (based on Soft Signature)");
+  await expect(tabButton(page, "Heading")).toContainText("Libre Baskerville");
+  await expect(page.getByTestId("preset-state")).toContainText("Your own mix (from Soft Signature)");
 });
 
-test("the name's font, size, colour and position change only the name; Reset to preset restores both fonts", async ({ page }) => {
+test("the name's font, size, colour and position change only the name; back to the preset restores both fonts", async ({ page }) => {
   await open(page);
   const p0 = await paths(page);
   for (const step of [
     async () => page.getByRole("radio", { name: "WindSong" }).click(),
-    async () => page.getByRole("group", { name: "name size" }).getByRole("button", { name: "Large" }).click(),
-    async () => page.getByRole("group", { name: "name colour" }).getByRole("button", { name: "Pink" }).click(),
-    async () => page.getByLabel("name horizontal position").fill("0.2"),
+    async () => page.getByRole("group", { name: "name size" }).getByRole("button", { name: "Medium" }).click(),
+    async () => page.getByRole("group", { name: "name colour" }).getByRole("button", { name: "Gold", exact: true }).click(),
+    async () => page.getByLabel("name horizontal position").fill("0.15"),
   ]) {
     const h = await hash(page);
     await step();
     await waitForNewLayout(page, h);
     const p = await paths(page);
-    // The heading keeps its letters, font and size. It may only move up — and
-    // then the page says so — when a taller name would touch it.
+    // The heading keeps its letters, font, size and colour; it may only move
+    // up when a taller name would touch it.
     expect(sameShape(p.heading.d, p0.heading.d)).toBe(true);
     expect(p.heading.fill).toBe(p0.heading.fill);
-    if (p.heading.d !== p0.heading.d) await expect(page.getByTestId("measurements")).toContainText("Moved up to clear the name");
   }
   const p = await paths(page);
   expect(p.name.d).not.toBe(p0.name.d);
-  expect(p.name.fill).toBe("#F472B6");
-  await expect(page.getByTestId("measurements")).toContainText("WindSong 500");
+  expect(p.name.fill).toBe("#C9A24A");
+  await expect(tabButton(page, "Name")).toContainText("WindSong");
   const h = await hash(page);
-  await page.getByRole("button", { name: "Reset to preset" }).click();
+  await page.getByRole("button", { name: "Back to Soft Signature" }).click();
   await waitForNewLayout(page, h);
-  await expect(page.getByTestId("measurements")).toContainText("Italianno 400");
-  await expect(page.getByTestId("preset-state")).toContainText("Preset: Soft Signature");
+  await expect(tabButton(page, "Name")).toContainText("Italianno");
+  await expect(page.getByTestId("preset-state")).toContainText("Style: Soft Signature");
 });
 
-test("#9 Modern Editorial: Bodoni keeps its display cut until the customer previews the sturdy option", async ({ page }) => {
+test("#9 Modern Editorial: Cormorant heading and Bodoni name, with lining figures in the tiles", async ({ page }) => {
   await open(page);
-  let h = await hash(page);
+  const h = await hash(page);
   await page.getByRole("radio", { name: /Modern Editorial/ }).click();
   await waitForNewLayout(page, h);
-  await expect(page.getByTestId("measurements")).toContainText("Cormorant Garamond 600");
-  await expect(page.getByTestId("measurements")).toContainText("Bodoni Moda 700");
-  await expect(page.getByTestId("measurements")).not.toContainText("· text");
-  const mirror = page.locator('[data-testid="assessment"] [data-finish="mirror_acrylic"]');
-  await expect(mirror).toHaveAttribute("data-status", "check");
-  const p0 = await paths(page);
-  h = await hash(page);
-  await mirror.getByRole("button", { name: /Preview Sturdy/ }).click();
-  await waitForNewLayout(page, h);
-  await expect(page.getByTestId("measurements")).toContainText("Bodoni Moda 700 · text");
-  const p1 = await paths(page);
-  expect(p1.name.d).not.toBe(p0.name.d);
-  expect(p1.heading.d).toBe(p0.heading.d);
+  await expect(tabButton(page, "Heading")).toContainText("Cormorant Garamond");
+  await expect(tabButton(page, "Name")).toContainText("Bodoni Moda");
+  // "1st" in Cormorant must not read as a Turkish dotless ı: tiles use lining figures like the engine.
+  const tileHeading = page.getByRole("radio", { name: /Modern Editorial/ }).locator("div").nth(1);
+  expect(await tileHeading.evaluate((d) => getComputedStyle(d).fontFeatureSettings)).toContain("lnum");
   await settle(page);
-  await expect.soft(page).toHaveScreenshot("demo-modern-editorial-sturdy.png", { fullPage: false });
+  await expect.soft(page).toHaveScreenshot("demo-modern-editorial.png", { fullPage: false });
 });
 
 test("Turkish heading and name are drawn in full", async ({ page }) => {
@@ -145,15 +147,5 @@ test("Turkish heading and name are drawn in full", async ({ page }) => {
   await tab(page, "Name");
   await page.getByLabel("Name text").fill("Ayşe Gül Çağla");
   await waitForNewLayout(page, h);
-  await expect(page.getByTestId("measurements")).not.toContainText("No glyph");
-});
-
-test("the production SVG download is the same lettering in millimetres", async ({ page }) => {
-  await open(page);
-  const [dl] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Download production SVG (mm)" }).click()]);
-  const svg = await (await dl.createReadStream()).toArray().then((c) => Buffer.concat(c).toString("utf8"));
-  expect(svg).toContain('width="691mm" height="420mm" viewBox="0 0 691 420"');
-  const preview = await paths(page);
-  const dls = Array.from(svg.matchAll(/data-role="(\w+)" d="([^"]+)"/g)).map((m) => [m[1], m[2]]);
-  expect(Object.fromEntries(dls)).toEqual({ heading: preview.heading.d, name: preview.name.d });
+  await expect(page.getByText(/This font has no/)).toHaveCount(0);
 });

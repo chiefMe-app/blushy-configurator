@@ -10,8 +10,13 @@ import { fixtureById } from "../fixtures/configs";
 const aed = (n: number) => `AED ${formatAED(n)}`;
 const shot = async (page: import("@playwright/test").Page, name: string) => {
   await settle(page);
+  // On phones a Decor tab change scrolls the page, and where it lands varies
+  // by 1–50 px from run to run; there the shot is of the settings panel
+  // itself rather than of the viewport. Desktop shots stay full-viewport.
+  const phoneDecor = (page.viewportSize()?.width ?? 1000) < 768 && (await page.locator(".bz-decor-tabbar").count()) > 0;
   // Soft: one changed screen does not hide the next ones in the same flow.
-  await expect.soft(page).toHaveScreenshot(`${name}.png`, { mask: masks(page) });
+  if (phoneDecor) await expect.soft(page.locator(".bz-content")).toHaveScreenshot(`${name}.png`, { mask: masks(page) });
+  else await expect.soft(page).toHaveScreenshot(`${name}.png`, { mask: masks(page) });
 };
 
 test("F1 end to end: Event → Review, the total matches pricing and the order is caught", async ({ page, guard }) => {

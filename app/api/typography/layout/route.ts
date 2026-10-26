@@ -10,7 +10,7 @@ import { previewSvg, productionSvg } from "@/lib/typography/svg";
 import { cutSvg } from "@/lib/typography/cutReady";
 import { fontById } from "@/lib/typography/registry";
 import { presetById } from "@/lib/typography/presets";
-import { DEMO_BOX, MAX_TEXT } from "@/lib/typography/demo";
+import { DEMO_BOX, DEMO_NAME_CAP_MM, MAX_TEXT } from "@/lib/typography/demo";
 
 export const runtime = "nodejs";
 
@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
     name: (name as { el?: LetteringElementInput }).el,
     headingRatio: ratio,
     box: DEMO_BOX,
+    nameCapMm: DEMO_NAME_CAP_MM,
   });
 
   const format = req.nextUrl.searchParams.get("format");

@@ -44,6 +44,16 @@ describe("millimetre accuracy", () => {
     expect(el(l, "name").capHeightMm).toBeCloseTo(691 * 0.13 * 0.8, 0);
     expect(el(l, "heading").capHeightMm).toBeLessThanOrEqual(691 * 0.13 * 0.42 * 0.8 + 0.01);
   });
+  it("nameCapMm sets the name's base size for boards that call for it; without it nothing changes", () => {
+    const base = fromPreset("soft-signature", "Happy 1st Birthday", "Layla");
+    const big = layoutLettering({ ...base, name: { ...base.name!, size: "large" }, box: { widthMm: 1159, heightMm: 757 }, nameCapMm: 240 });
+    expect(el(big, "name").capHeightMm).toBeCloseTo(240, 0);
+    expect(el(big, "heading").capHeightMm).toBeLessThanOrEqual(240 * 0.42 * 0.8 + 0.01); // heading follows the preset ratio
+    // the box's height still caps it
+    expect(el(layoutLettering({ ...base, box: { widthMm: 1159, heightMm: 300 }, nameCapMm: 240 }), "name").capHeightMm).toBeLessThanOrEqual(300 * 0.35 * 0.8 + 0.01);
+    // absent: identical to before
+    expect(layoutLettering({ ...base, nameCapMm: undefined }).hash).toBe(layoutLettering(base).hash);
+  });
   it("a long name shrinks to fit instead of overflowing", () => {
     const long = layoutLettering({ name: { text: "Alexandrina Montgomery-Fitzgerald", fontId: "italianno", weight: 400, size: "large" }, box: ROUND });
     const e = el(long, "name");

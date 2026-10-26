@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 import { POST } from "@/app/api/typography/layout/route";
 import { layoutLettering } from "@/lib/typography/layout";
 import { previewSvg } from "@/lib/typography/svg";
-import { DEMO_BOX } from "@/lib/typography/demo";
+import { DEMO_BOX, DEMO_NAME_CAP_MM } from "@/lib/typography/demo";
 
 const call = (body: unknown, q = "") => POST(new NextRequest(`http://localhost/api/typography/layout${q}`, { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" } }));
 const ok = { presetId: "soft-signature", heading: { text: "Happy 1st Birthday", fontId: "bellefair", weight: 400 }, name: { text: "Layla", fontId: "italianno", weight: 400 } };
@@ -14,7 +14,7 @@ afterEach(() => { delete process.env.VERCEL_ENV; });
 describe("typography demo API", () => {
   it("returns exactly the engine's preview SVG", async () => {
     const json = await (await call(ok)).json();
-    expect(json.svg).toBe(previewSvg(layoutLettering({ heading: ok.heading, name: ok.name, headingRatio: 0.42, box: DEMO_BOX }), 1));
+    expect(json.svg).toBe(previewSvg(layoutLettering({ heading: ok.heading, name: ok.name, headingRatio: 0.42, box: DEMO_BOX, nameCapMm: DEMO_NAME_CAP_MM }), 1));
     expect(json.elements.map((e: { role: string }) => e.role)).toEqual(["heading", "name"]);
     expect(Object.keys(json.elements[1].finishes).sort()).toEqual(["acrylic", "mirror_acrylic", "neon", "printed", "vinyl"]);
   });
@@ -35,14 +35,14 @@ describe("typography demo API", () => {
   });
   it("offsets are clamped", async () => {
     const json = await (await call({ ...ok, name: { ...ok.name, offset: { x: 9, y: -9 } } })).json();
-    const clamped = previewSvg(layoutLettering({ heading: ok.heading, name: { ...ok.name, offset: { x: 0.45, y: -0.45 } }, headingRatio: 0.42, box: DEMO_BOX }), 1);
+    const clamped = previewSvg(layoutLettering({ heading: ok.heading, name: { ...ok.name, offset: { x: 0.45, y: -0.45 } }, headingRatio: 0.42, box: DEMO_BOX, nameCapMm: DEMO_NAME_CAP_MM }), 1);
     expect(json.svg).toBe(clamped);
   });
   it("production and cut downloads are 1:1 mm SVG files", async () => {
     for (const f of ["production", "cut"]) {
       const res = await call(ok, `?format=${f}`);
       expect(res.headers.get("content-type")).toContain("image/svg+xml");
-      expect(await res.text()).toContain('width="691mm" height="420mm"');
+      expect(await res.text()).toContain(`width="${DEMO_BOX.widthMm}mm" height="${DEMO_BOX.heightMm}mm"`);
     }
   });
   it("is closed on the production deployment", async () => {

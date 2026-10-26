@@ -36,6 +36,12 @@ export interface LayoutInput {
   headingRatio?: number;
   /** The clear area the lettering may use, in mm. */
   box: { widthMm: number; heightMm: number };
+  /**
+   * The name's cap height at Large, in mm, when the board calls for a set
+   * proportion (e.g. Blushy's own boards). Default: from the box (0.13 of its
+   * width, at most 0.35 of its height). Never more than the box's height allows.
+   */
+  nameCapMm?: number;
 }
 
 export interface LaidOutElement {
@@ -89,7 +95,7 @@ function sized(el: LetteringElementInput, baseCapMm: number, maxWidthMm: number)
 export function layoutLettering(input: LayoutInput): LetteringLayout {
   const { box } = input;
   const ratio = input.headingRatio ?? 0.42;
-  const nameBase = Math.min(box.widthMm * NAME_CAP_OF_WIDTH, box.heightMm * NAME_CAP_OF_HEIGHT);
+  const nameBase = Math.min(input.nameCapMm ?? box.widthMm * NAME_CAP_OF_WIDTH, box.heightMm * NAME_CAP_OF_HEIGHT);
   const headingBase = nameBase * ratio;
   const hasH = !!input.heading?.text.trim(), hasN = !!input.name?.text.trim();
 
