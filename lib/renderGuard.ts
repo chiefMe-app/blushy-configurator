@@ -40,7 +40,7 @@ export function acquireRender(ip: string, now = Date.now()): GuardResult {
   const day = dayOf(now);
   if (global.day !== day) global = { day, count: 0 };
   if (global.count >= num(process.env.RENDER_DAILY_CAP, 400)) {
-    return { ok: false, status: 503, error: "We have reached today's render limit — please try again tomorrow.", retryAfter: secondsToMidnightUtc(now) };
+    return { ok: false, status: 503, error: "Today's render limit has been reached — please try again tomorrow.", retryAfter: secondsToMidnightUtc(now) };
   }
   if (inflight.has(ip)) {
     return { ok: false, status: 429, error: "Your render is still on its way — one moment.", retryAfter: 20 };
@@ -51,12 +51,12 @@ export function acquireRender(ip: string, now = Date.now()): GuardResult {
   u.recent = u.recent.filter((t) => now - t < WINDOW_MS);
   if (u.dayCount >= num(process.env.RENDER_LIMIT_PER_IP_DAY, 30)) {
     usage.set(ip, u);
-    return { ok: false, status: 429, error: "You have made a lot of renders today — please try again tomorrow.", retryAfter: secondsToMidnightUtc(now) };
+    return { ok: false, status: 429, error: "You've reached today's render limit — you can render again tomorrow.", retryAfter: secondsToMidnightUtc(now) };
   }
   if (u.recent.length >= num(process.env.RENDER_LIMIT_PER_IP_10MIN, 6)) {
     usage.set(ip, u);
     const wait = Math.ceil((WINDOW_MS - (now - u.recent[0])) / 1000);
-    return { ok: false, status: 429, error: `That's a lot of renders in a few minutes — please try again in ${Math.max(1, Math.ceil(wait / 60))} min.`, retryAfter: wait };
+    return { ok: false, status: 429, error: `You've reached your render limit — you can render again in ${Math.max(1, Math.ceil(wait / 60))} min.`, retryAfter: wait };
   }
   u.recent.push(now);
   u.dayCount++;

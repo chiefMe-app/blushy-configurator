@@ -27,7 +27,7 @@ describe("render guard", () => {
     expect(res.status).toBe(429);
     const json = await res.json();
     expect(json.limited).toBe(true);
-    expect(json.error).toMatch(/try again in \d+ min/);
+    expect(json.error).toMatch(/^You've reached your render limit — you can render again in \d+ min\.$/);
     expect(Number(res.headers.get("retry-after"))).toBeGreaterThan(0);
     // Another visitor is not affected.
     expect((await call({ renderMode: "first_generate" }, "198.51.100.9")).status).toBe(500);
@@ -53,7 +53,7 @@ describe("render guard", () => {
     await call({}, "192.0.2.1"); await call({}, "192.0.2.2");
     const res = await call({}, "192.0.2.3");
     expect(res.status).toBe(503);
-    expect((await res.json()).error).toMatch(/today's render limit/);
+    expect((await res.json()).error).toMatch(/^Today's render limit has been reached/);
   });
 
   it("a request without a scene is refused (400), not a crash", async () => {

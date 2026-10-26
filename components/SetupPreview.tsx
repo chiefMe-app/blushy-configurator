@@ -1401,8 +1401,9 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
 
           {finalStatus === "error" && (
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 px-3 py-2" style={{ background: "rgba(39,22,23,.72)" }}>
-              <span className="text-[11px] text-white">{limitMessage ?? "Render unavailable"}</span>
-              {showControls && (
+              {/* 2026-10-26: a render limit says so — and Retry would only be refused again. */}
+              <span className="text-[11px] text-white" data-testid="render-error">{limitMessage ?? "Render unavailable"}</span>
+              {showControls && !limitMessage && (
                 <button type="button" onClick={generateFinalRender}
                         className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-medium text-white">
                   Retry

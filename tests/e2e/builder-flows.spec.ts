@@ -207,3 +207,14 @@ test("F10 nothing paid or stored is reached while browsing every step", async ({
   // Browsing alone sends no render and no order.
   expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual([]);
 });
+
+test("F11 a render limit says so in the render card, with no Retry", async ({ page, guard }) => {
+  guard.limitRender = { status: 429, error: "You've reached your render limit — you can render again in 7 min." };
+  await openDecor(page, "Frozen", "Single Round");
+  await decorTab(page, "Extras");
+  await next(page).click(); // Generate render → refused by the limit
+  const card = page.getByTestId("render-error");
+  await expect(card).toHaveText("You've reached your render limit — you can render again in 7 min.");
+  await expect(page.getByRole("button", { name: "Retry" })).toHaveCount(0);
+  await expect(page.getByText("Render unavailable")).toHaveCount(0);
+});
