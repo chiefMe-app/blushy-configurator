@@ -7,6 +7,8 @@ import path from "path";
 // a stray real call would be rejected by fal rather than billed.
 export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname) } },
+  // JSX as Next.js compiles it (automatic runtime), for tests that render a page.
+  esbuild: { jsx: "automatic" },
   test: {
     include: ["tests/unit/**/*.test.ts", "tests/golden/**/*.test.ts"],
     environment: "node",

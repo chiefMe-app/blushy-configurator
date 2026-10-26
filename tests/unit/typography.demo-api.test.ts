@@ -49,4 +49,11 @@ describe("typography demo API", () => {
     process.env.VERCEL_ENV = "production";
     expect((await call(ok)).status).toBe(404);
   });
+  it("the demo page is closed on the production deployment too, open on previews", async () => {
+    const { default: Page } = await import("@/app/typography-demo/page");
+    process.env.VERCEL_ENV = "production";
+    expect(() => Page()).toThrow(/NEXT_NOT_FOUND/);
+    process.env.VERCEL_ENV = "preview";
+    expect(() => Page()).not.toThrow();
+  });
 });
