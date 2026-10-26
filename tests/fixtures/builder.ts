@@ -57,7 +57,7 @@ export function withTheme(c: BuilderConfig, id: string): BuilderConfig {
     : { balloonColors: t.balloonColors.slice(0, 5), sempertexSelection: [] });
 }
 
-/** applySetupTemplate (app/builder/page.tsx) + the lone-arch-is-Large effect. */
+/** applySetupTemplate (components/builder/decor/useDecorStep.tsx) + the lone-arch-is-Large effect. */
 export function withSetup(c: BuilderConfig, templateId: string): BuilderConfig {
   const archUnsized = (id: string): BackdropItem => ({ ...makeBackdropItem("arch"), sizeId: undefined, id });
   let panels: BackdropItem[];
