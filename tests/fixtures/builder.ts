@@ -17,7 +17,7 @@ import {
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
 import { getThemeCatalogEntry, getThemeCutoutPresets } from "@/lib/themeCatalog";
 
-// app/builder/page.tsx DEFAULT_SEMPERTEX_IDS / getThemeDefault
+// components/builder/constants.ts DEFAULT_SEMPERTEX_IDS / getThemeDefault
 const DEFAULT_SEMPERTEX_IDS = ["fashion-005-white", "pastel-matte-609-pink", "pastel-matte-650-lilac"];
 function themeSempertexIds(themeId: string): string[] {
   const entry = getThemeCatalogEntry(themeId);
