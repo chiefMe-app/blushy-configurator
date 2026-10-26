@@ -32,6 +32,7 @@ import ReviewStep from "@/components/builder/steps/ReviewStep";
 import DecorStep from "@/components/builder/decor/DecorStep";
 import { useBuilderConfig } from "@/components/builder/useBuilderConfig";
 import { useLocalDraft } from "@/components/builder/useLocalDraft";
+import { useServerDraft } from "@/components/builder/useServerDraft";
 
 import Sprinkles from "@/components/design/Sprinkles";
 
@@ -76,8 +77,11 @@ export default function ConfigurePage() {
       setDecorTab(d.decorTab);
     },
   });
+  // 2026-10-26 (0.3): and in the guest's party in the database.
+  const serverDraft = useServerDraft({ config, step, decorTab, enabled: view === "configure" });
   const startOver = () => {
     draft.clear();
+    serverDraft.forget();
     setConfig(defaultConfig());
     setStep(0);
     setDecorTab(0);
@@ -161,6 +165,7 @@ export default function ConfigurePage() {
       setResult({ designId, total });
       // The request is sent; the next visit starts a new design.
       draft.clear();
+      serverDraft.forget(); // the next design is a new one
       setView("success");
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Could not submit request");
@@ -419,7 +424,7 @@ export default function ConfigurePage() {
                 stylePieceId={stylePieceId} setStylePieceId={setStylePieceId}
                 onGenerate={triggerDecorGenerateRender} renderReady={decorRenderReady}
                 hasRender={finalRenderState.hasRender} generating={finalRenderState.generating}
-                onContinue={() => goToStep(3)} />
+                onContinue={() => goToStep(3)} saveStatus={serverDraft.status} />
             )}
 
             {step === 3 && <PackageStep config={config} setServicePackage={setServicePackage} />}
