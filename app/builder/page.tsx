@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   THEMES,
   themeById,
+  defaultConfig,
   priceBreakdown,
   formatAED,
   hexToRgbTriplet,
@@ -30,6 +31,7 @@ import VenueStep from "@/components/builder/steps/VenueStep";
 import ReviewStep from "@/components/builder/steps/ReviewStep";
 import DecorStep from "@/components/builder/decor/DecorStep";
 import { useBuilderConfig } from "@/components/builder/useBuilderConfig";
+import { useLocalDraft } from "@/components/builder/useLocalDraft";
 
 import Sprinkles from "@/components/design/Sprinkles";
 
@@ -42,7 +44,7 @@ interface SubmitResult {
 
 export default function ConfigurePage() {
   const {
-    config, patchDecor, patchVenue, patchCustomer, setEventType, setTheme,
+    config, setConfig, patchDecor, patchVenue, patchCustomer, setEventType, setTheme,
     setServicePackage, toggleAddOn, setAddOnOption,
   } = useBuilderConfig();
   const [step, setStep] = useState(0);
@@ -59,6 +61,30 @@ export default function ConfigurePage() {
     if (p === "theme") setStep(1);
   }, []);
   const [view, setView] = useState<View>("configure");
+
+  // 2026-10-26: the design is kept on this device; a reload or a return visit
+  // opens where the customer left off (the landing page's Theme link still
+  // opens on Theme). Only design choices are stored.
+  const draft = useLocalDraft({
+    config, step, decorTab, enabled: view === "configure",
+    onRestore: (d) => {
+      setConfig(d.config);
+      const toTheme = new URLSearchParams(window.location.search).get("step") === "theme";
+      setStep(toTheme ? 1 : d.step);
+      // The restored tab is not a tab change: no scroll.
+      if (d.decorTab !== decorTab) firstDecorTab.current = true;
+      setDecorTab(d.decorTab);
+    },
+  });
+  const startOver = () => {
+    draft.clear();
+    setConfig(defaultConfig());
+    setStep(0);
+    setDecorTab(0);
+    setStylePieceId(null);
+    setThemeGroup(null);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+  };
 
   // Auto-generating photorealistic preview (debounced, server-side fal.ai).
   const preview = useSetupPreview(config);
@@ -133,6 +159,8 @@ export default function ConfigurePage() {
         throw new Error(data?.error ?? "Could not submit request");
       }
       setResult({ designId, total });
+      // The request is sent; the next visit starts a new design.
+      draft.clear();
       setView("success");
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Could not submit request");
@@ -140,6 +168,20 @@ export default function ConfigurePage() {
       setSubmitting(false);
     }
   }
+
+  // Every hook stays above the success screen's early return: one below it
+  // crashed the page as soon as a request was sent (2026-10-26).
+  // 2026-10-23: a new Decor tab opens at the top of its options — the panel
+  // scrolls on desktop, the page on phones and tablets.
+  const firstDecorTab = useRef(true);
+  useEffect(() => {
+    if (firstDecorTab.current) { firstDecorTab.current = false; return; }
+    document.querySelector<HTMLElement>(".bz-content")?.scrollTo({ top: 0 });
+    if (window.innerWidth < 1024) {
+      // Instant: a smooth scroll lands short when the new tab's pictures load mid-way.
+      document.querySelector(".bz-decor-tabbar")?.scrollIntoView({ block: "start" });
+    }
+  }, [decorTab]);
 
   // =========================================================================
   // SUCCESS SCREEN
@@ -225,17 +267,6 @@ export default function ConfigurePage() {
     document.getElementById("party-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
     generateFinalRender?.();
   };
-  // 2026-10-23: a new Decor tab opens at the top of its options — the panel
-  // scrolls on desktop, the page on phones and tablets.
-  const firstDecorTab = useRef(true);
-  useEffect(() => {
-    if (firstDecorTab.current) { firstDecorTab.current = false; return; }
-    document.querySelector<HTMLElement>(".bz-content")?.scrollTo({ top: 0 });
-    if (window.innerWidth < 1024) {
-      // Instant: a smooth scroll lands short when the new tab's pictures load mid-way.
-      document.querySelector(".bz-decor-tabbar")?.scrollIntoView({ block: "start" });
-    }
-  }, [decorTab]);
   // The Decor step is split into four tabs (Backdrop, Style, Balloons,
   // Extras); Generate Render is offered once the customer reaches Extras.
   const onLastDecorTab = decorTab === DECOR_TABS.length - 1;
@@ -243,6 +274,7 @@ export default function ConfigurePage() {
 
   const goToStep = (n: number) => {
     setStep(Math.max(0, Math.min(STEPS.length - 1, n)));
+    draft.dismiss();
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -371,6 +403,13 @@ export default function ConfigurePage() {
           <div className="bz-progress"><span style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} /></div>
 
           <div className="bz-content">
+            {draft.restored && (
+              <div className="bz-tip bz-restored" data-testid="draft-restored" role="status">
+                <span className="icon" aria-hidden="true">✓</span>
+                <span><b>Welcome back!</b> We kept your design on this device.</span>
+                <button type="button" className="bz-restart" onClick={startOver}>Start over</button>
+              </div>
+            )}
             {step === 0 && <EventStep config={config} setEventType={setEventType} />}
 
             {step === 1 && <ThemeStep config={config} theme={theme} themeGroup={themeGroup} setTheme={setTheme} setThemeGroup={setThemeGroup} />}

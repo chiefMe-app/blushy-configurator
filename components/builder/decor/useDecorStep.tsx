@@ -33,6 +33,15 @@ import {
   getThemeDefault,
 } from "@/components/builder/constants";
 
+/** Catalogue ids of the Sempertex colours a design already carries, or null if none. */
+function savedSempertexIds(sel: DecorConfig["sempertexSelection"]): string[] | null {
+  if (!sel?.length) return null;
+  const ids = sel
+    .map((s) => SEMPERTEX_CATALOG.find((c) => c.code === s.code && c.hex === s.hex)?.id)
+    .filter((id): id is string => !!id);
+  return ids.length ? ids : null;
+}
+
 export interface DecorStepProps {
   config: BuilderConfig;
   patchDecor: (p: Partial<DecorConfig>) => void;
@@ -61,8 +70,15 @@ export function useDecorStep(props: DecorStepProps) {
   const [showAllChars, setShowAllChars] = useState(false);
 
   // Sempertex picker -UI only, does not affect pricing/render
-  const [sempertexIds, setSempertexIds] = useState<string[]>(() => getThemeDefault(config.theme));
-  const [sempertexManual, setSempertexManual] = useState(false); // true once user manually changes
+  // 2026-10-26: starts from the colours already in the design (a return to
+  // this step, or a restored design). It used to start from the theme's
+  // palette every time, so leaving Decor and coming back lost a custom mix.
+  const [sempertexIds, setSempertexIds] = useState<string[]>(() => savedSempertexIds(config.decor.sempertexSelection) ?? getThemeDefault(config.theme));
+  const [sempertexManual, setSempertexManual] = useState(() => { // true once user manually changes
+    const saved = savedSempertexIds(config.decor.sempertexSelection);
+    const themed = getThemeDefault(config.theme).filter((id) => SEMPERTEX_CATALOG.some((c) => c.id === id));
+    return !!saved && saved.join() !== themed.join();
+  });
   const [showSempertexBrowser, setShowSempertexBrowser] = useState(false);
   const [sempertexQuery, setSempertexQuery] = useState("");
   const [sempertexFilter, setSempertexFilter] = useState("All");

@@ -64,6 +64,9 @@ export function useBuilderConfig() {
             // has already chosen a colour for, so an existing choice is kept.
             backdropColor: c.decor.backdropColor || DEFAULT_BACKDROP_COLOR,
             balloonColors: t.balloonColors.slice(0, 5),
+            // 2026-10-26: a new theme brings its own Sempertex palette (the
+            // Decor step fills it in); the same theme keeps the customer's mix.
+            sempertexSelection: c.theme === id ? c.decor.sempertexSelection : [],
             cutouts: c.theme === id ? c.decor.cutouts : keepCutouts(c.decor.cutouts),
             // 2026-10-22: lettering still in the old theme's colour follows
             // the new theme; a colour the customer picked themselves stays.

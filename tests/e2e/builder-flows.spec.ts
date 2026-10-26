@@ -55,6 +55,9 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
   const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
   expect(aed(order.estimatedTotal)).toBe(shown);
+  // The customer sees the confirmation (until 2026-10-26 a hook below the
+  // success screen's early return crashed the page here).
+  await expect(page.getByText("Request received!")).toBeVisible();
   // The total the server would save for exactly this body. The test server has
   // no database (00-safety), so nothing is stored. Before the 2026-10-25 fix
   // this was AED 50 (the Frozen surcharge) below the Review total.
