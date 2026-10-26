@@ -206,6 +206,13 @@
   box-shadow: 0 5px 0 rgba(255,13,102,.13), 0 11px 25px rgba(255,13,102,.15); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .bz-next:hover:not(:disabled) { filter: brightness(.98); transform: translateY(1px); }
 .bz-next:disabled { opacity: .5; cursor: default; }
+/* 2026-10-26: Save — big, in the middle of the footer, on every step. */
+.bz-save { border: 2px solid var(--bz-pink); border-radius: 999px; background: #fff; color: var(--bz-pink); font: 400 22px var(--bz-hand);
+  padding: 12px 38px 8px; min-width: 250px; white-space: nowrap; cursor: pointer; box-shadow: 0 4px 0 #ffe1ec; transition: transform .12s, background .15s; }
+.bz-save:hover:not(:disabled) { background: var(--bz-pink-fog); transform: translateY(1px); }
+.bz-save:disabled { cursor: default; }
+.bz-save.done { border-color: #47d67a; color: #23934b; box-shadow: 0 4px 0 #dff5e6; }
+.bz-save .short { display: none; }
 .bz-spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; animation: bz-spin .8s linear infinite; display: inline-block; }
 @keyframes bz-spin { to { transform: rotate(360deg); } }
 
@@ -349,6 +356,7 @@
   .bz-footer-inner { padding: 10px 14px; }
   .bz-footer-note { display: none; }
   .bz-next { min-width: 150px; font-size: 18px; }
+  .bz-save { min-width: 0; font-size: 17px; padding: 9px 18px 5px; }
   .bz-content { padding: 17px; }
   .bz-tip { font-size: 11px; }
   .bz-layout-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -410,6 +418,10 @@
   .bz-footer-inner { padding: 9px 12px; }
   .bz-back { padding: 10px 16px 7px; font-size: 16px; }
   .bz-next { padding: 11px 18px 6px; min-width: 0; font-size: 17px; }
+  .bz-save { font-size: 16px; padding: 9px 14px 5px; }
+  .bz-save .full { display: none; }
+  .bz-save .short { display: inline; }
+  .bz-back, .bz-next { white-space: nowrap; }
   .bz-main { padding: 0 12px; }
   .bz-placeholder { min-height: 300px; }
   .bz-placeholder .msg { font-size: 13px; }

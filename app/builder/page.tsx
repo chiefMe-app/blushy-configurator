@@ -77,8 +77,9 @@ export default function ConfigurePage() {
       setDecorTab(d.decorTab);
     },
   });
-  // 2026-10-26 (0.3): and in the guest's party in the database.
-  const serverDraft = useServerDraft({ config, step, decorTab, enabled: view === "configure" });
+  // 2026-10-26 (0.3): the guest's party in the database — when the customer
+  // presses Save (the footer button), never on its own.
+  const serverDraft = useServerDraft({ config, step, decorTab });
   const startOver = () => {
     draft.clear();
     serverDraft.forget();
@@ -341,10 +342,7 @@ export default function ConfigurePage() {
               <div className="word">Your party so far</div>
               <strong>AED {formatAED(total)}</strong>
             </div>
-            {/* 2026-10-26: the design's save state, where it can be seen on every step. */}
-            <span className="bz-mini-pill" data-testid="save-pill">
-              {serverDraft.status === "saving" ? "Saving…" : serverDraft.status === "saved" ? "✓ Saved" : "✦ party in progress"}
-            </span>
+            <span className="bz-mini-pill">✦ party in progress</span>
           </div>
         </div>
       </header>
@@ -427,7 +425,7 @@ export default function ConfigurePage() {
                 stylePieceId={stylePieceId} setStylePieceId={setStylePieceId}
                 onGenerate={triggerDecorGenerateRender} renderReady={decorRenderReady}
                 hasRender={finalRenderState.hasRender} generating={finalRenderState.generating}
-                onContinue={() => goToStep(3)} saveStatus={serverDraft.status} />
+                onContinue={() => goToStep(3)} />
             )}
 
             {step === 3 && <PackageStep config={config} setServicePackage={setServicePackage} />}
@@ -445,7 +443,24 @@ export default function ConfigurePage() {
       <footer className="bz-footer">
         <div className="bz-footer-inner">
           <button type="button" className="bz-back" onClick={() => goToStep(step - 1)} disabled={step === 0}>← Back</button>
-          <div className="bz-footer-note">Small steps, big party energy <b>✳</b></div>
+          {/* 2026-10-26: Save — the design goes to the guest's party only when pressed. */}
+          {serverDraft.available && config.themeSelected ? (
+            <button type="button" className={`bz-save ${serverDraft.saved ? "done" : ""}`} data-testid="save-design"
+              onClick={() => { void serverDraft.save(); }}
+              disabled={serverDraft.saved || serverDraft.status === "saving" || serverDraft.status === "unavailable"}>
+              {(() => {
+                // Full label, and a short one for phones (blushy.css).
+                const [full, short] = serverDraft.status === "saving" ? ["Saving…", "Saving…"]
+                  : serverDraft.saved ? ["✓ Saved", "✓ Saved"]
+                  : serverDraft.status === "unavailable" ? ["Saving is unavailable", "Unavailable"]
+                  : serverDraft.status === "error" ? ["↻ Try saving again", "↻ Retry"]
+                  : serverDraft.savedBefore ? ["♡ Save changes", "♡ Save"] : ["♡ Save my design", "♡ Save"];
+                return <><span className="full">{full}</span><span className="short" aria-hidden="true">{short}</span></>;
+              })()}
+            </button>
+          ) : (
+            <div className="bz-footer-note">Small steps, big party energy <b>✳</b></div>
+          )}
           <button type="button" className="bz-next" onClick={onNext} disabled={nextDisabled || busy}>
             {busy && <span className="bz-spinner" aria-hidden="true" />}
             {busy ? (submitting ? "Sending…" : "Generating…") : nextLabel}

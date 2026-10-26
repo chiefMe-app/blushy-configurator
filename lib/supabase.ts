@@ -1,7 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// SUPABASE_URL / SUPABASE_ANON_KEY, when set (even to ""), override the
+// public values for the server only. Next.js bakes NEXT_PUBLIC_* into the
+// build, so this is how the e2e tests give the browser a stand-in Supabase
+// while the server keeps no database at all. Production sets neither.
+const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+const anonKey = process.env.SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!url || !anonKey) {
   // Don't throw at import time in dev so the UI still renders without keys;

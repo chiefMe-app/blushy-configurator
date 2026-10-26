@@ -24,7 +24,6 @@ import {
 } from "@/lib/config";
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
 import { letteringFromLegacy, letteringPatch } from "@/lib/typography/lettering";
-import type { ServerSaveStatus } from "@/components/builder/useServerDraft";
 import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS, getThemeCutoutPresets } from "@/lib/themeCatalog";
 import { inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 import {
@@ -59,8 +58,6 @@ export interface DecorStepProps {
   hasRender: boolean;
   generating: boolean;
   onContinue: () => void;
-  /** 2026-10-26 (0.3): whether the design is being saved to the guest's party. */
-  saveStatus?: ServerSaveStatus;
 }
 
 export function useDecorStep(props: DecorStepProps) {

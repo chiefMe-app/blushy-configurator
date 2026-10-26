@@ -44,8 +44,13 @@ export default defineConfig({
     env: {
       FAL_KEY: "",
       REPLICATE_API_TOKEN: "",
-      NEXT_PUBLIC_SUPABASE_URL: "",
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+      // The server has no database (orders are only logged; 00-safety). The
+      // browser gets a stand-in Supabase at supabase.test, answered inside the
+      // test browser by guard.ts — nothing leaves the machine.
+      SUPABASE_URL: "",
+      SUPABASE_ANON_KEY: "",
+      NEXT_PUBLIC_SUPABASE_URL: "http://supabase.test",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "e2e-anon-key",
       SUPABASE_SERVICE_ROLE_KEY: "",
       NEXT_TELEMETRY_DISABLED: "1",
       // No internet needed for screenshots: next/font/google reads the captured

@@ -63,7 +63,7 @@ export default function DecorStep(props: DecorStepProps) {
 
       {/* == Tab footer: next tab, or Generate Render after Extras == */}
       <div className="bz-decor-footer">
-        <span data-testid="save-status">{props.saveStatus === "saving" ? "Saving…" : props.saveStatus === "saved" ? "✓ Saved to your party" : "✓ Saved as you go"}</span>
+        <span>✓ Saved as you go</span>
         {decorTab < DECOR_TABS.length - 1 ? (
           <button type="button" className="bz-decor-hint" onClick={() => setDecorTab(decorTab + 1)}>
             Next up: {DECOR_TABS[decorTab + 1].name} →

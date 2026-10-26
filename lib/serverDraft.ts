@@ -17,6 +17,8 @@ export interface ServerDraftRef {
   userId?: string;
   partyId?: string;
   itemId?: string;
+  /** Fingerprint of the design last saved (components/builder/useServerDraft.ts). */
+  savedPrint?: string;
 }
 
 export class GuestSessionUnavailable extends Error {}

@@ -1,62 +1,76 @@
-// Saves the design to the guest's party in the database (lib/serverDraft.ts),
-// a moment after each change, once the customer has chosen something. Quietly
-// does nothing when Supabase is not set up or guest sessions are switched
-// off — the device copy (useLocalDraft) still keeps the design.
-import { useEffect, useRef, useState } from "react";
+// Saves the design to the guest's party in the database (lib/serverDraft.ts)
+// when the customer presses Save — never on its own (2026-10-26: "müşteri
+// save'e bassın öyle saved olsun"). The device copy (useLocalDraft) still
+// keeps the design between visits without a button.
+import { useMemo, useState } from "react";
 import type { BuilderConfig } from "@/lib/config";
-import { isWorthSaving } from "@/lib/draft";
-// The Supabase client and the save itself are loaded on the first save, so
-// the Builder's first load does not carry them.
+import { toDraft } from "@/lib/draft";
+
+// The Supabase client and the save itself load on the first Save, so the
+// Builder's first load does not carry them.
 const loadSaver = () => Promise.all([import("@/lib/supabase/browser"), import("@/lib/serverDraft")]);
 const SERVER_DRAFT_KEY = "partymuse.party.v1"; // lib/serverDraft.ts
 
-const SAVE_DELAY_MS = 1500;
+/** "unavailable": guest sessions are switched off in Supabase. */
+export type ServerSaveStatus = "idle" | "saving" | "saved" | "error" | "unavailable";
 
-/** "off": not saving to the server (no Supabase, no guest sessions). */
-export type ServerSaveStatus = "off" | "saving" | "saved" | "error";
+/** A short fingerprint of the design (not the step or tab), to tell saved from changed. */
+function fingerprint(config: BuilderConfig): string {
+  const s = JSON.stringify(toDraft(config, 0, 0, new Date(0)).config);
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
 
-export function useServerDraft({ config, step, decorTab, enabled }: {
-  config: BuilderConfig;
-  step: number;
-  decorTab: number;
-  /** Off once the request is sent. */
-  enabled: boolean;
-}) {
-  const [status, setStatus] = useState<ServerSaveStatus>("off");
-  const unavailable = useRef(false);
-  const running = useRef<Promise<void> | null>(null);
+const readSavedPrint = (): string | null => {
+  try { return (JSON.parse(window.localStorage.getItem(SERVER_DRAFT_KEY) ?? "{}") ?? {}).savedPrint ?? null; } catch { return null; }
+};
 
-  useEffect(() => {
-    // Supabase is set up when its public URL is (inlined at build time).
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || unavailable.current || !enabled || !isWorthSaving(config, step)) return;
-    const t = setTimeout(() => {
-      const run = async () => {
-        await running.current; // one save at a time, in order
-        const [{ browserSupabase }, { GuestSessionUnavailable, readRef, saveDesign, writeRef }] = await loadSaver();
-        const sb = browserSupabase();
-        if (!sb) return;
-        setStatus("saving");
-        try {
-          writeRef(await saveDesign(sb, config, step, decorTab, readRef()));
-          setStatus("saved");
-        } catch (err) {
-          if (err instanceof GuestSessionUnavailable) { unavailable.current = true; setStatus("off"); return; }
-          if ((err as { resetParty?: boolean }).resetParty) writeRef({ ...readRef(), partyId: undefined, itemId: undefined });
-          console.warn("[draft] could not save to the server; the device copy is kept", err);
-          setStatus("error");
-        }
-      };
-      running.current = run();
-    }, SAVE_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [config, step, decorTab, enabled]);
+export function useServerDraft({ config, step, decorTab }: { config: BuilderConfig; step: number; decorTab: number }) {
+  // Supabase is set up when its public URL is (inlined at build time).
+  const available = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const [status, setStatus] = useState<ServerSaveStatus>("idle");
+  const [savedPrint, setSavedPrint] = useState<string | null>(() => (typeof window === "undefined" ? null : readSavedPrint()));
+  const print = useMemo(() => fingerprint(config), [config]);
+
+  async function save() {
+    if (!available || status === "saving") return;
+    const at = print;
+    setStatus("saving");
+    try {
+      const [{ browserSupabase }, { GuestSessionUnavailable, readRef, saveDesign, writeRef }] = await loadSaver();
+      const sb = browserSupabase();
+      if (!sb) { setStatus("unavailable"); return; }
+      try {
+        writeRef({ ...(await saveDesign(sb, config, step, decorTab, readRef())), savedPrint: at });
+        setSavedPrint(at);
+        setStatus("saved");
+      } catch (err) {
+        if (err instanceof GuestSessionUnavailable) { setStatus("unavailable"); return; }
+        if ((err as { resetParty?: boolean }).resetParty) writeRef({ ...readRef(), partyId: undefined, itemId: undefined });
+        console.warn("[draft] could not save to the server", err);
+        setStatus("error");
+      }
+    } catch (err) {
+      console.warn("[draft] could not load the saver", err);
+      setStatus("error");
+    }
+  }
 
   return {
+    /** Supabase is configured, so Save can be offered. */
+    available,
     status,
-    /** A new design ("Start over"): the next save starts a new item. */
+    /** This exact design is the one last saved. */
+    saved: savedPrint === print && status !== "saving",
+    /** Something was saved before (the button then says "Save changes"). */
+    savedBefore: savedPrint !== null,
+    save,
+    /** A new design ("Start over", or after the request is sent): the next Save starts a new item. */
     forget: () => {
       try { window.localStorage.removeItem(SERVER_DRAFT_KEY); } catch { /* storage blocked */ }
-      setStatus("off");
+      setSavedPrint(null);
+      setStatus("idle");
     },
   };
 }
