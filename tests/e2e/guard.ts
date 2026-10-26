@@ -90,11 +90,21 @@ export async function captureRenderBody(page: Page, guard: Guard): Promise<Recor
   return JSON.parse(req.postData() ?? "{}");
 }
 
-/** Pause animated images and wait for fonts, so screenshots are stable. */
+/**
+ * Wait for fonts, images and a still page, so screenshots are stable. On
+ * phones a tab change scrolls the page to the tab bar, and pictures loading
+ * meanwhile can move it again: wait until the scroll position and the page
+ * height have not changed for 6 frames (up to 3 s).
+ */
 export async function settle(page: Page) {
   await page.evaluate(async () => {
     await document.fonts.ready;
     await Promise.all(Array.from(document.images).filter((i) => !i.complete).map((i) => new Promise((r) => { i.onload = i.onerror = r; })));
+    const frame = () => new Promise((r) => requestAnimationFrame(() => r(null)));
+    const state = () => `${window.scrollY}|${document.documentElement.scrollHeight}`;
+    let last = state(), still = 0;
+    const until = performance.now() + 3000;
+    while (still < 6 && performance.now() < until) { await frame(); const s = state(); still = s === last ? still + 1 : 0; last = s; }
   });
 }
 

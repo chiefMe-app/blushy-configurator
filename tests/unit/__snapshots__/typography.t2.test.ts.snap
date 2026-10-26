@@ -1,0 +1,1793 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`golden layouts (drift guard) > flowing-script · Happy 1st Birthday / Layla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 154.6,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 35.219,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 128.541,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 116.526,
+    },
+  ],
+  "hash": "cfcb24003600600f624d1dbd0a647df36780689f7c97a910ece5029e7370a256",
+}
+`;
+
+exports[`golden layouts (drift guard) > flowing-script · Happy 1st Birthday / Layla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 173.988,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 39.636,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 144.661,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 131.139,
+    },
+  ],
+  "hash": "e398f8e04951744d851ce1a8999cd98f87bfebfbe2cb9ba45a5900d89c9db014",
+}
+`;
+
+exports[`golden layouts (drift guard) > flowing-script · Happy Birthday / Ayşe Gül · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 174.971,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 35.219,
+    },
+    {
+      "adjusted": false,
+      "cap": 48.346,
+      "origin": {
+        "x": 71.312,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 88.223,
+    },
+  ],
+  "hash": "290747b08c2af82c6ed2ce18fde7631d77001f6934817a25b42d8cc30c625666",
+}
+`;
+
+exports[`golden layouts (drift guard) > flowing-script · Happy Birthday / Ayşe Gül · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 196.914,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 39.636,
+    },
+    {
+      "adjusted": false,
+      "cap": 54.409,
+      "origin": {
+        "x": 80.255,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 99.287,
+    },
+  ],
+  "hash": "11acb528c8ba6791e2a92fbfc8b0430ff5dd5409f0d42f606f39c19cdcfed81c",
+}
+`;
+
+exports[`golden layouts (drift guard) > flowing-script · Welcome to / Malek · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 207.101,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 35.219,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 74.881,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 116.526,
+    },
+  ],
+  "hash": "5373a71bf8f997527ef3a10c2981cd503144f35ce4bf2ed0045e11c209886848",
+}
+`;
+
+exports[`golden layouts (drift guard) > flowing-script · Welcome to / Malek · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 233.072,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 39.636,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 84.272,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 131.139,
+    },
+  ],
+  "hash": "2e042b4d2dd3b8705ad33ade55744b1c1cda4f4d6ea0893babb1a93d362c7955",
+}
+`;
+
+exports[`golden layouts (drift guard) > flowing-script · İyi ki doğdun / Çağla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 197.133,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 35.219,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 113.8,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 116.526,
+    },
+  ],
+  "hash": "ef44d723431d7fbe98c6b63d576be67cb4356b73f74a8fedc5c186877c76d575",
+}
+`;
+
+exports[`golden layouts (drift guard) > flowing-script · İyi ki doğdun / Çağla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 221.855,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 39.636,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 128.072,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 131.139,
+    },
+  ],
+  "hash": "c92c88532c309878a355772637a8e002034822b3abd63c86766f21fcb80a3901",
+}
+`;
+
+exports[`golden layouts (drift guard) > gallery · Happy 1st Birthday / Layla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 192.324,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 37.249,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 226.293,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 88.689,
+    },
+  ],
+  "hash": "e080f6b8482eff08ab5cfc740a5ce81b5b214138e004a2463a3ae3294a7e3e26",
+}
+`;
+
+exports[`golden layouts (drift guard) > gallery · Happy 1st Birthday / Layla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 216.444,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 41.921,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 254.672,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 99.811,
+    },
+  ],
+  "hash": "53dff86138796d246accf4fecb51bbe29b2e0bc3400b2bd5d59a59d623ac3359",
+}
+`;
+
+exports[`golden layouts (drift guard) > gallery · Happy Birthday / Ayşe Gül · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 206.464,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 37.249,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 183.012,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 88.689,
+    },
+  ],
+  "hash": "0930638bca9f725e6d85958ff7b0367eb157e1afa72c58dca5d3d8df2ad96d5d",
+}
+`;
+
+exports[`golden layouts (drift guard) > gallery · Happy Birthday / Ayşe Gül · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 232.356,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 41.921,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 205.965,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 99.811,
+    },
+  ],
+  "hash": "b708760e1b0a969ae06404a9eb554f2e7ac41b15137968016e344abf064b84a8",
+}
+`;
+
+exports[`golden layouts (drift guard) > gallery · Welcome to / Malek · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 236.897,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 37.249,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 213.699,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 88.689,
+    },
+  ],
+  "hash": "6d1160b3fd3de5a45cf974a11b755067167fda830ec9d0e2a2996394aad7112f",
+}
+`;
+
+exports[`golden layouts (drift guard) > gallery · Welcome to / Malek · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 266.606,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 41.921,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 240.499,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 99.811,
+    },
+  ],
+  "hash": "9af139cf609283f83f627deed16ebc3f794460bfbdaec2816b55371b0ad52970",
+}
+`;
+
+exports[`golden layouts (drift guard) > gallery · İyi ki doğdun / Çağla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 223.058,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 37.249,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 221.637,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 88.689,
+    },
+  ],
+  "hash": "f0dc00ec9386c284c56a4a58b9d9969e58802fa215db249cd20dee0c892571ec",
+}
+`;
+
+exports[`golden layouts (drift guard) > gallery · İyi ki doğdun / Çağla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 251.032,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 41.921,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 249.432,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 99.811,
+    },
+  ],
+  "hash": "666e8d5c29666e9e96575964ec51904a0269383d33bdf69cb44a3bdc90dcc2cb",
+}
+`;
+
+exports[`golden layouts (drift guard) > modern-editorial · Happy 1st Birthday / Layla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 149.172,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 42.911,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 191.431,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 85.141,
+    },
+  ],
+  "hash": "1c6bbba010113ea2389cb0e7d8cc4fe3c1fba2f16b32d425d3b8168ddcac94a4",
+}
+`;
+
+exports[`golden layouts (drift guard) > modern-editorial · Happy 1st Birthday / Layla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 167.879,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 48.293,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 215.438,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 95.819,
+    },
+  ],
+  "hash": "0267869e6eea6b6601fcbd652f5064003e157a1c807eef47b8256f36bc8e177d",
+}
+`;
+
+exports[`golden layouts (drift guard) > modern-editorial · Happy Birthday / Ayşe Gül · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 171.258,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 42.911,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 122.19,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 85.141,
+    },
+  ],
+  "hash": "aeb24e0425ffd4df65d352fb0006226c68d28f358716ff6a95e0598d48f954a0",
+}
+`;
+
+exports[`golden layouts (drift guard) > modern-editorial · Happy Birthday / Ayşe Gül · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 192.736,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 48.293,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 137.513,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 95.819,
+    },
+  ],
+  "hash": "384d8c9b06c94d65c6cb51869193781a138c02971d6a04c8eabf640e5bb19498",
+}
+`;
+
+exports[`golden layouts (drift guard) > modern-editorial · Welcome to / Malek · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 207.609,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 42.911,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 179.671,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 85.141,
+    },
+  ],
+  "hash": "1f746d5a158196fbff51dbe7833f38b0fc089f0eba6564a9978b1bc676c3aafe",
+}
+`;
+
+exports[`golden layouts (drift guard) > modern-editorial · Welcome to / Malek · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 233.644,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 48.293,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 202.203,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 95.819,
+    },
+  ],
+  "hash": "f74631e95a7f7e3ba84668c7074c18695c34d68ea5ea6ec9a4b3952a847eff55",
+}
+`;
+
+exports[`golden layouts (drift guard) > modern-editorial · İyi ki doğdun / Çağla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 194.257,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 42.911,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 184.513,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 85.141,
+    },
+  ],
+  "hash": "52b3b18cc4911d32a0b8dc301f8ed054c08ddd1e383baba0dfcf2055109918eb",
+}
+`;
+
+exports[`golden layouts (drift guard) > modern-editorial · İyi ki doğdun / Çağla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 218.619,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 48.293,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 207.653,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 95.819,
+    },
+  ],
+  "hash": "0330bb5d11d9b45493f40464c4f06aeb4d0f37a854efaa1213c5a38bd66a953d",
+}
+`;
+
+exports[`golden layouts (drift guard) > party-pop · Happy 1st Birthday / Layla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 136.674,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 38.314,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 216.166,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 82.501,
+    },
+  ],
+  "hash": "1367870a369037b29a414a4392dda406664e6a607858b57b8f5115177afbb5cb",
+}
+`;
+
+exports[`golden layouts (drift guard) > party-pop · Happy 1st Birthday / Layla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 153.814,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 43.118,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 243.275,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 92.848,
+    },
+  ],
+  "hash": "2e110f3af04bf34ef8b70d4b56ce893214e31d763f204290e4fb07e94fa1e6ff",
+}
+`;
+
+exports[`golden layouts (drift guard) > party-pop · Happy Birthday / Ayşe Gül · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 159.628,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 38.314,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 168.357,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 82.501,
+    },
+  ],
+  "hash": "5768302c096ad8f6a1385e013f4b95bd002ff167584483c915f456c1334dac66",
+}
+`;
+
+exports[`golden layouts (drift guard) > party-pop · Happy Birthday / Ayşe Gül · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 179.647,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 43.118,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 189.47,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 92.848,
+    },
+  ],
+  "hash": "82691d02d1ad4a96ea1cb21768da75eb2c4cefd35bd7d71a7965f79ee6520ff5",
+}
+`;
+
+exports[`golden layouts (drift guard) > party-pop · Welcome to / Malek · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 200.022,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 38.314,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 201.399,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 82.501,
+    },
+  ],
+  "hash": "07056a1ddbd97bc3b7dc7938747c4579e0aa655013a77a3c2a68bd4e6d3c6efb",
+}
+`;
+
+exports[`golden layouts (drift guard) > party-pop · Welcome to / Malek · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 225.107,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 43.118,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 226.656,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 92.848,
+    },
+  ],
+  "hash": "87cb8ead5571a1ebbe0447af4e6dd0d6c6d53914194d968ca3b1a424045b26b1",
+}
+`;
+
+exports[`golden layouts (drift guard) > party-pop · İyi ki doğdun / Çağla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 185.909,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 38.314,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 218.847,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 82.501,
+    },
+  ],
+  "hash": "fab74cd510ef6c6e186bc7e8822fd1ba90e23e7cb475b9928ce38d85cb958b7c",
+}
+`;
+
+exports[`golden layouts (drift guard) > party-pop · İyi ki doğdun / Çağla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 209.224,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 43.118,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 246.292,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 92.848,
+    },
+  ],
+  "hash": "4a39700ee4b8d61f14af86699181af0e6496c9679719195df2584177be2c7ac8",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-romance · Happy 1st Birthday / Layla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 145.891,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 38.314,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 228.564,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 106.427,
+    },
+  ],
+  "hash": "9cd9e1c28898ae7a0ec347201529bec3780ce2ca1881fa3132ddc90c9f79efb5",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-romance · Happy 1st Birthday / Layla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 164.187,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 43.118,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 257.227,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 119.773,
+    },
+  ],
+  "hash": "b0df2c187a9742b0c45cb7174fb97a4c1079ba13c3241ac3afca467eb76b205d",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-romance · Happy Birthday / Ayşe Gül · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 169.607,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 38.314,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 168.388,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 106.427,
+    },
+  ],
+  "hash": "d32e81fd2cfe6252d32537dd3dbc2e371bd319eb98e9361c23d5f9acc8a36515",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-romance · Happy Birthday / Ayşe Gül · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 190.877,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 43.118,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 189.505,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 119.773,
+    },
+  ],
+  "hash": "1e0766fe11ae05c45105c64b4d04200769947c4270285cc4e189b3aaa5bfcb54",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-romance · Welcome to / Malek · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 206.849,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 38.314,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 197.374,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 106.427,
+    },
+  ],
+  "hash": "9f76a0e8e7c7cfd49c23b1ec4e804542035f977e82c1f0397cae9c0781a446a6",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-romance · Welcome to / Malek · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 232.788,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 43.118,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 222.127,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 119.773,
+    },
+  ],
+  "hash": "202f09fcca2e75de9f953d436a5870f4ca877cfd27e4215ebe8964f9605276a7",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-romance · İyi ki doğdun / Çağla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 193.036,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 38.314,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 224.945,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 106.427,
+    },
+  ],
+  "hash": "b4b47259be55b24ac710692741ff588af9509918e7dcf5d9198b9aef72839cba",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-romance · İyi ki doğdun / Çağla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 217.245,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 43.118,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 253.155,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 119.773,
+    },
+  ],
+  "hash": "a097129bb4b5287abf86f597963c296656a9dbb66d50b084258abe77822ff272",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-signature · Happy 1st Birthday / Layla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 172.111,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 38.813,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 210.062,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 110.669,
+    },
+  ],
+  "hash": "5f69d194d4095e8b31c5eb4b1ae6c8675a8c3b89cece0b76f45d14873e405298",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-signature · Happy 1st Birthday / Layla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 193.694,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 43.68,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 236.406,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 124.548,
+    },
+  ],
+  "hash": "eef0d825b7a4deae213f3a8b2f64c716f4b6c716b90d43e39205ba75824775b4",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-signature · Happy Birthday / Ayşe Gül · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 190.678,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 38.813,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 131.626,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 110.669,
+    },
+  ],
+  "hash": "f9d3e055b37060ca07b22cd7a9ddb15ec4f8b970bcbe385c7b7db63306034864",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-signature · Happy Birthday / Ayşe Gül · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 214.591,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 43.68,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 148.133,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 124.548,
+    },
+  ],
+  "hash": "15fcf6eadd630cb82925a9396ed35063ee9439c0beebecf941143fa74b2ebbe8",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-signature · Welcome to / Malek · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 220.254,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 38.813,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 192.125,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 110.669,
+    },
+  ],
+  "hash": "cdc1c936bd64cb29d707f9d5917c15e2cb311768869bc2475d853365f2b832df",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-signature · Welcome to / Malek · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 247.875,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 43.68,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 216.219,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 124.548,
+    },
+  ],
+  "hash": "ea2ae014844974688c002bb5fa362d5e63cd8005037b6810be16099c9a9e6474",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-signature · İyi ki doğdun / Çağla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 212.22,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 38.813,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 213.604,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 110.669,
+    },
+  ],
+  "hash": "e87c991cf09fd2b8f903bf8524a1a51439647d59882392c7fd2d4067d3d5ccc9",
+}
+`;
+
+exports[`golden layouts (drift guard) > soft-signature · İyi ki doğdun / Çağla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 238.834,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 43.68,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 240.391,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 124.548,
+    },
+  ],
+  "hash": "2e40dd0bb6314a86616e5439546066ee9bc43ef875365a01703db451db75a25d",
+}
+`;
+
+exports[`golden layouts (drift guard) > timeless-bold · Happy 1st Birthday / Layla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 154.6,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 35.219,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 195.712,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 90.192,
+    },
+  ],
+  "hash": "8b8bcae231e4588674affda27aadd43df4c61e3e462ca09a6c7757223de7c44c",
+}
+`;
+
+exports[`golden layouts (drift guard) > timeless-bold · Happy 1st Birthday / Layla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 173.988,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 39.636,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 220.256,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 101.503,
+    },
+  ],
+  "hash": "1e3171d70cec9b700c91d05d54bd96c4da01dcb24bedecedd4ba18740934e090",
+}
+`;
+
+exports[`golden layouts (drift guard) > timeless-bold · Happy Birthday / Ayşe Gül · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 174.971,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 35.219,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 127.058,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 90.192,
+    },
+  ],
+  "hash": "c2c8d1a364f9a3572898d4e263c529324c17e103eb430993220b353b84b08ded",
+}
+`;
+
+exports[`golden layouts (drift guard) > timeless-bold · Happy Birthday / Ayşe Gül · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 196.914,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 39.636,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 142.992,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 101.503,
+    },
+  ],
+  "hash": "81d673bad722dabac79accac8eee31c3fe0e99203a5652e1538e8fb6226e6489",
+}
+`;
+
+exports[`golden layouts (drift guard) > timeless-bold · Welcome to / Malek · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 207.101,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 35.219,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 177.908,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 90.192,
+    },
+  ],
+  "hash": "571dc627a42e23c0a4381ee4e541e4d126d2a7a271e343629cf957e129441c43",
+}
+`;
+
+exports[`golden layouts (drift guard) > timeless-bold · Welcome to / Malek · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 233.072,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 39.636,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 200.219,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 101.503,
+    },
+  ],
+  "hash": "c09e476f8c42614a0bfb78053c596100a77cb25514397297c22f83487551cc08",
+}
+`;
+
+exports[`golden layouts (drift guard) > timeless-bold · İyi ki doğdun / Çağla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 197.133,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 35.219,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 187.811,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 90.192,
+    },
+  ],
+  "hash": "98bc60ce64c5ea79a773ac16a8347fab70f1a66fa667808f0361467e1f2d7f61",
+}
+`;
+
+exports[`golden layouts (drift guard) > timeless-bold · İyi ki doğdun / Çağla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 221.855,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 39.636,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 211.364,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 101.503,
+    },
+  ],
+  "hash": "9ea004b536c8a748259e77aa5f1ab48af96cc314d69c86ecfbc7a857d38d8553",
+}
+`;
+
+exports[`golden layouts (drift guard) > whisper-light · Happy 1st Birthday / Layla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 152.448,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 41.008,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 211.317,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 100.561,
+    },
+  ],
+  "hash": "bc965936b47cdf620a6ebd3bec9d6790900794a4e6a7ee8d98c8b62ea8ec0d2b",
+}
+`;
+
+exports[`golden layouts (drift guard) > whisper-light · Happy 1st Birthday / Layla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 171.565,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 46.151,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 237.817,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 113.172,
+    },
+  ],
+  "hash": "f269130f0207906c8cceb87fc96b1e41d2f0b6a648f47254331d79da552ce610",
+}
+`;
+
+exports[`golden layouts (drift guard) > whisper-light · Happy Birthday / Ayşe Gül · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 175.261,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 41.008,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 126.846,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 100.561,
+    },
+  ],
+  "hash": "d381611f394ea6d6e1d82e4b1adb11b21f6df856f12c3789a3b6a85a4e6ae26b",
+}
+`;
+
+exports[`golden layouts (drift guard) > whisper-light · Happy Birthday / Ayşe Gül · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 197.239,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 46.151,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 142.753,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 113.172,
+    },
+  ],
+  "hash": "0b15e63b126d38846af47f2981a50c0a033aad52adadd176839a5e3abc60e195",
+}
+`;
+
+exports[`golden layouts (drift guard) > whisper-light · Welcome to / Malek · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 212.846,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 41.008,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 182.406,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 100.561,
+    },
+  ],
+  "hash": "c17e2342e456c5e4d66bb11d662a14d754db824c38444b20b4be8777c0362a3a",
+}
+`;
+
+exports[`golden layouts (drift guard) > whisper-light · Welcome to / Malek · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 239.538,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 46.151,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 205.281,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 113.172,
+    },
+  ],
+  "hash": "ee5958204a881d2ba76ee4bdbabb54f40dca75ddfc224d40a9b22e52e79e180d",
+}
+`;
+
+exports[`golden layouts (drift guard) > whisper-light · İyi ki doğdun / Çağla · arch 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 26.82,
+      "origin": {
+        "x": 198.071,
+        "y": 213.864,
+      },
+      "role": "heading",
+      "size": 41.008,
+    },
+    {
+      "adjusted": false,
+      "cap": 63.856,
+      "origin": {
+        "x": 197.791,
+        "y": 321.781,
+      },
+      "role": "name",
+      "size": 100.561,
+    },
+  ],
+  "hash": "9bfc26a6fa1d11b10d86e733e360eb129c80b6e7fdb4947524eec2ba0f8a8b61",
+}
+`;
+
+exports[`golden layouts (drift guard) > whisper-light · İyi ki doğdun / Çağla · round 1`] = `
+{
+  "elements": [
+    {
+      "adjusted": false,
+      "cap": 30.183,
+      "origin": {
+        "x": 222.911,
+        "y": 158.078,
+      },
+      "role": "heading",
+      "size": 46.151,
+    },
+    {
+      "adjusted": false,
+      "cap": 71.864,
+      "origin": {
+        "x": 222.596,
+        "y": 279.528,
+      },
+      "role": "name",
+      "size": 113.172,
+    },
+  ],
+  "hash": "d9d3d83355a9e35b07dc1bffad74675853ef389c91618cf6105121ebb3aa1bb8",
+}
+`;
