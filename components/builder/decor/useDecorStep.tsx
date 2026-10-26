@@ -564,17 +564,13 @@ function clearAllStandees() {
 
   return {
     config, patchDecor, decorTab, setDecorTab, stylePieceId, setStylePieceId, onGenerate, renderReady,
-    hasRender, generating, onContinue, printFile, setPrintFile, showAdvancedPanel, setShowAdvancedPanel,
-    openCustomizeIds, setOpenCustomizeIds, showManualPieces, setShowManualPieces, showAllChars, setShowAllChars,
-    sempertexIds, setSempertexIds, sempertexManual, setSempertexManual, showSempertexBrowser, setShowSempertexBrowser,
-    sempertexQuery, setSempertexQuery, sempertexFilter, setSempertexFilter, lastTheme, setLastTheme,
-    sempertexExceeded, setSempertexExceeded, effectiveSempertexSelection, toggleSempertex, resetToThemePalette,
-    toggleCustomize, d, boardHasLettering, neonFreeBoards, theme, t, cut, normalizedCut, themeCutoutPresets,
-    cutoutPresetOptions, selectedCutoutAssets, toggleCutoutAsset, setAssetQuantity, clearAllStandees,
-    print, setText, setPrint, setGraphicStyle, PLINTH_LADDER, setPlinthCount, setPlinthSize, patchItem,
-    patchItemText, patchItemGraphic, toggleBalloon, swatch, accent, card, numBadge, secLabel, secSub,
-    nextCue, BackdropShapePreview, chip, checkBadge, toggleArchSize, toggleRound, toggleOtherType,
-    applySetupTemplate, activeSetupTemplateId, TYPE_LABEL,
+    hasRender, generating, onContinue, setOpenCustomizeIds, showManualPieces, setShowManualPieces,
+    showAllChars, setShowAllChars, sempertexIds, sempertexManual, showSempertexBrowser, setShowSempertexBrowser,
+    sempertexQuery, setSempertexQuery, sempertexFilter, setSempertexFilter, sempertexExceeded, effectiveSempertexSelection,
+    toggleSempertex, resetToThemePalette, d, boardHasLettering, neonFreeBoards, theme, t, normalizedCut,
+    cutoutPresetOptions, selectedCutoutAssets, toggleCutoutAsset, clearAllStandees, print, setPlinthCount,
+    patchItem, patchItemText, patchItemGraphic, accent, card, nextCue, BackdropShapePreview, chip,
+    toggleArchSize, toggleRound, toggleOtherType, applySetupTemplate, activeSetupTemplateId, TYPE_LABEL,
   };
 }
 
