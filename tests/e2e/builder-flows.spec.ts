@@ -64,7 +64,12 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   const saved = await (await page.request.post("/api/orders", { data: order })).json();
   expect(saved.persisted).toBe(false);
   expect(aed(saved.total)).toBe(shown);
-  expect(order.decor.backdropItems[0].text).toMatchObject({ enabled: true, value: "Happy Birthday", fontStyle: "script" });
+  // 2026-10-26: board lettering is the Typography System's — the default
+  // board opens on #5 Soft Signature with "Happy Birthday" as its heading.
+  expect(order.decor.backdropItems[0].text).toMatchObject({
+    enabled: true, value: "Happy Birthday",
+    lettering: { presetId: "soft-signature", heading: { text: "Happy Birthday", fontId: "bellefair" }, name: { text: "", fontId: "italianno" } },
+  });
 });
 
 const SETUPS = ["Single Arch", "Single Round", "Banner Backdrop", "Shimmer Wall", "Arch + Shimmer", "Balloon Ring", "Arch + Open Frame", "Double Arch", "Triple Arch"];
@@ -80,42 +85,57 @@ test("F2 every setup opens with its price and sketch", async ({ page }) => {
   }
 });
 
-test("F3 lettering: font, size and colour change only themselves", async ({ page }) => {
+test("F3 lettering: presets, each line's font and size change only themselves", async ({ page }) => {
   await openDecor(page, "Frozen", "Single Round");
   await decorTab(page, "Style");
-  const msg = page.getByLabel("Your message");
-  await msg.fill("Happy Birthday Arya");
-  const sizes = page.getByRole("group", { name: "Text size" });
-  await sizes.getByRole("button", { name: /Large/ }).click();
+  await page.getByLabel("Name text").fill("Arya");
   const before = await total(page).textContent();
-  for (const font of ["Serif", "Bold", "Script"]) {
-    await page.locator(".bz-st-card.font", { hasText: font }).click();
-    await expect(page.locator(".bz-st-card.font.on")).toContainText(font);
-    await expect(msg).toHaveValue("Happy Birthday Arya");
-    await expect(sizes.getByRole("button", { name: /Large/ })).toHaveAttribute("aria-pressed", "true");
+  const sketch = page.getByTestId("sketch-lettering");
+  await expect(sketch.locator("path")).toHaveCount(2); // heading and name, drawn by the engine
+  await expect(page.getByTestId("lettering-state")).toContainText("Style: Soft Signature");
+  await shot(page, "f3-soft-signature");
+  for (const preset of ["Modern Editorial", "Party Pop"]) {
+    const h = await sketch.getAttribute("data-hash");
+    await page.getByRole("radio", { name: preset, exact: true }).click();
+    await expect(page.getByTestId("lettering-state")).toContainText(`Style: ${preset}`);
+    await expect(sketch).not.toHaveAttribute("data-hash", h!);
+    await expect(page.getByLabel("Heading text")).toHaveValue("Happy Birthday");
+    await expect(page.getByLabel("Name text")).toHaveValue("Arya");
     await expect(total(page)).toHaveText(before!);
-    await shot(page, `f3-font-${font.toLowerCase()}`);
+    await shot(page, `f3-${preset.toLowerCase().replace(/ /g, "-")}`);
   }
-  for (const size of ["Small", "Medium"]) {
-    await sizes.getByRole("button", { name: new RegExp(size) }).click();
-    await expect(page.locator(".bz-st-card.font.on")).toContainText("Script");
-    await shot(page, `f3-size-${size.toLowerCase()}`);
-  }
+  // The name's own font: the heading keeps Party Pop's, the mix is the customer's.
+  await page.getByRole("tab", { name: /^Name/ }).click();
+  let h = await sketch.getAttribute("data-hash");
+  await page.getByRole("radio", { name: "WindSong", exact: true }).click();
+  await expect(sketch).not.toHaveAttribute("data-hash", h!);
+  await expect(page.getByRole("tab", { name: /^Name/ })).toContainText("WindSong");
+  await expect(page.getByRole("tab", { name: /^Heading/ })).toContainText("Fraunces");
+  await expect(page.getByTestId("lettering-state")).toContainText("Your own mix (from Party Pop)");
+  // Sizes: each line on its own, never the price.
+  h = await sketch.getAttribute("data-hash");
+  await page.getByRole("group", { name: "Name size" }).getByRole("button", { name: /Small/ }).click();
+  await expect(sketch).not.toHaveAttribute("data-hash", h!);
+  await expect(total(page)).toHaveText(before!);
+  await shot(page, "f3-own-mix-small-name");
+  await page.getByRole("button", { name: "Back to Party Pop" }).click();
+  await expect(page.getByTestId("lettering-state")).toContainText("Style: Party Pop");
 });
 
 test("F4 text off and on again keeps the message", async ({ page }) => {
   await openDecor(page, "Frozen", "Single Round");
   await decorTab(page, "Style");
-  await page.getByLabel("Your message").fill("Happy Birthday Arya");
+  await page.getByLabel("Name text").fill("Arya");
   await page.getByRole("button", { name: /No, keep it clean/ }).click();
-  await expect(page.getByLabel("Your message")).toHaveCount(0);
+  await expect(page.getByLabel("Name text")).toHaveCount(0);
   // Removing the field shortens the page and scroll anchoring lands a few
   // pixels differently from run to run (0–50 px on phones), so this shot is of
   // the Style panel itself rather than of the viewport.
   await settle(page);
   await expect.soft(page.locator(".bz-content")).toHaveScreenshot("f4-text-off.png", { mask: masks(page) });
   await page.getByRole("button", { name: /Yes, add text/ }).click();
-  await expect(page.getByLabel("Your message")).toHaveValue("Happy Birthday Arya");
+  await expect(page.getByLabel("Name text")).toHaveValue("Arya");
+  await expect(page.getByLabel("Heading text")).toHaveValue("Happy Birthday");
 });
 
 test("F5 standees: none by default, at most two", async ({ page }) => {
@@ -162,14 +182,14 @@ test("F7 foil number: AED 150, colour of the customer's choice", async ({ page }
 test("F8 neon swap and back", async ({ page }) => {
   await openDecor(page, "Frozen", "Single Round");
   await decorTab(page, "Style");
-  await page.getByLabel("Your message").fill("Happy Birthday Arya");
+  await page.getByLabel("Name text").fill("Arya");
   await decorTab(page, "Extras");
   await page.getByRole("button", { name: /use a neon sign instead/ }).click();
   await expect(page.getByLabel("Neon sign text")).toHaveValue("Happy Birthday Arya");
   await shot(page, "f8-neon-on");
   await page.getByRole("button", { name: /Use printed text instead of the neon/ }).click();
   await decorTab(page, "Style");
-  await expect(page.getByLabel("Your message")).toHaveValue("Happy Birthday Arya");
+  await expect(page.getByLabel("Name text")).toHaveValue("Arya");
 });
 
 test("F9 show sizes", async ({ page }) => {

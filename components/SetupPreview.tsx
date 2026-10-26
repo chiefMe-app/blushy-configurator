@@ -740,7 +740,9 @@ function computeSceneHash(config: BuilderConfig): string {
       widthCm: i.widthCm, heightCm: i.heightCm, color: i.color,
       // text INCLUDED: customized text is baked into the AI render, so a text
       // change must trigger a fresh render (no longer an instant overlay)
-      text:    { enabled: i.text.enabled, value: i.text.value.trim(), fontStyle: i.text.fontStyle, color: i.text.color },
+      // 2026-10-26: size and the Typography System lettering too — a font or
+      // size change must not be answered with the previous render.
+      text:    { enabled: i.text.enabled, value: i.text.value.trim(), fontStyle: i.text.fontStyle, color: i.text.color, size: i.text.size, lettering: i.text.lettering },
       graphic: { enabled: i.graphic.enabled, style: i.graphic.style, assetId: i.graphic.assetId },
     })),
     backdropColor: d.backdropColor,
@@ -776,7 +778,9 @@ function computeStructureHash(config: BuilderConfig): string {
     backdropItems: d.backdropItems.map((i) => ({
       id: i.id, type: i.type, sizeId: i.sizeId,
       widthCm: i.widthCm, heightCm: i.heightCm, color: i.color,
-      text:    { enabled: i.text.enabled, value: i.text.value.trim(), fontStyle: i.text.fontStyle, color: i.text.color },
+      // 2026-10-26: size and the Typography System lettering too — a font or
+      // size change must not be answered with the previous render.
+      text:    { enabled: i.text.enabled, value: i.text.value.trim(), fontStyle: i.text.fontStyle, color: i.text.color, size: i.text.size, lettering: i.text.lettering },
       graphic: { enabled: i.graphic.enabled, style: i.graphic.style, assetId: i.graphic.assetId },
     })),
     backdropColor: d.backdropColor,

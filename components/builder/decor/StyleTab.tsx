@@ -23,6 +23,10 @@ import {
 import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS } from "@/lib/themeCatalog";
 import { PieceDiagram } from "@/components/design/LiveSketch";
 import type { DecorCtx } from "@/components/builder/decor/useDecorStep";
+import LetteringControls from "@/components/builder/decor/LetteringControls";
+import { changeLine, letteringFromLegacy, letteringPatch, MAX_LETTERING_TEXT } from "@/lib/typography/lettering";
+import { presetById } from "@/lib/typography/presets";
+import type { BoardLettering } from "@/lib/config";
 
 export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
   const {
@@ -106,6 +110,11 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
   const sameHex = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
   const boardInList = boardSwatches.some((hex) => sameHex(hex, boardHex));
   const sampleText = item.text.value.trim() || DEFAULT_TEXT_VALUE;
+  // 2026-10-26: the board's lettering — a Heading over a Name, each in its
+  // own font and size (useDecorStep gives every board one).
+  const lettering = item.text.lettering ?? letteringFromLegacy(item.text);
+  const setLettering = (l: BoardLettering) => patchItemText(itemIdx, letteringPatch(l));
+  const letteringStyleName = lettering.presetId ? presetById(lettering.presetId)?.name ?? "" : "Your own mix";
   const FONT_FACE: Record<string, { family: string; weight: number; size: number; short: string }> = {
     // The faces the render prints (app/layout.tsx). 2026-10-25 (T0):
     // Italianno replaces Brittany Signature; a narrower script, so a
@@ -131,7 +140,8 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
   const nGraphic = showGraphic ? ++k : 0;
   // In the two-column grid only an odd last card spans both columns, so
   // a hidden step never leaves a hole beside the colours.
-  const lastWide = k % 2 === 1;
+  // The lettering card (3) always spans both columns, so it counts twice.
+  const lastWide = (k + (showFont ? 1 : 0)) % 2 === 1;
 
   const sizeChip = (() => {
     const o = sizeOpts.find(isSizeOn);
@@ -152,6 +162,9 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
 
   return (
     <div className="bz-st">
+      {/* The lettering fonts (Typography System web fonts); each file loads when first shown. */}
+      {/* eslint-disable-next-line @next/next/no-css-tags */}
+      <link rel="stylesheet" href="/fonts/typography/fonts.css" />
       {items.length > 1 && (
         // 2026-10-24: a small drawing of the setup instead of name pills —
         // the piece being designed is the dark one; tap another to switch.
@@ -198,7 +211,7 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
             <div className="bz-st-opts yn">
               <button type="button" aria-pressed={item.text.enabled}
                 className={`bz-st-yn ${item.text.enabled ? "on" : ""}`}
-                onClick={() => { if (!item.text.enabled) patchItemText(itemIdx, { enabled: true, ...(!item.text.value.trim() ? { value: DEFAULT_TEXT_VALUE, color: themeTextColor(config.theme) } : {}) }); }}>
+                onClick={() => { if (!item.text.enabled) patchItemText(itemIdx, { enabled: true, ...(!item.text.value.trim() ? { color: themeTextColor(config.theme), ...letteringPatch(changeLine(lettering, "heading", { text: DEFAULT_TEXT_VALUE })) } : {}) }); }}>
                 <span className="radio" aria-hidden="true">{item.text.enabled ? "✓" : ""}</span>
                 Yes, add text
                 {textPrice != null && <span className="price">+AED {textPrice}</span>}
@@ -211,59 +224,34 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
               </button>
             </div>
             {item.text.enabled && (
-              <div className="bz-st-input">
-                <span className="lbl">Your message</span>
-                <textarea rows={1} value={item.text.value} aria-label="Your message"
-                  onChange={(e) => patchItemText(itemIdx, { value: e.target.value })}
-                  placeholder="Type the name or message..." />
-                <span className="count">{item.text.value.length}</span>
+              // 2026-10-26: two lines, each set in its own font (step 3).
+              <div className="bz-st-lines">
+                <label className="bz-st-input">
+                  <span className="lbl">Heading</span>
+                  <input value={lettering.heading.text} aria-label="Heading text" maxLength={MAX_LETTERING_TEXT}
+                    onChange={(e) => setLettering(changeLine(lettering, "heading", { text: e.target.value }))}
+                    placeholder="Happy Birthday" />
+                  <span className="count">{lettering.heading.text.length}</span>
+                </label>
+                <label className="bz-st-input">
+                  <span className="lbl">Name</span>
+                  <input value={lettering.name.text} aria-label="Name text" maxLength={MAX_LETTERING_TEXT}
+                    onChange={(e) => setLettering(changeLine(lettering, "name", { text: e.target.value }))}
+                    placeholder="Add a name, e.g. Arya" />
+                  <span className="count">{lettering.name.text.length}</span>
+                </label>
               </div>
             )}
           </div>
         </section>
       )}
 
-      {/* 3 — Lettering style: each card shows the real message, in its
-           colour, on the chosen backdrop colour. */}
+      {/* 3 — Lettering: presets, then each line's font and size, shown in the
+           customer's words, colour and backdrop colour (2026-10-26). */}
       {showFont && (
-        <section className="bz-st-sec c-green">
-          <Head n={nFont} title="Pick your text style" sub="Choose a style for your message." />
-          <div className="bz-st-opts fonts">
-            {FONT_STYLES.map((f) => {
-              const on = item.text.fontStyle === f.id;
-              const face = FONT_FACE[f.id] ?? FONT_FACE.block;
-              return (
-                <button key={f.id} type="button" aria-pressed={on}
-                  className={`bz-st-card font ${on ? "on" : ""}`}
-                  onClick={() => patchItemText(itemIdx, { fontStyle: f.id as FontStyle })}>
-                  {on && <Tick />}
-                  <span className="sample" data-face={f.id} style={{ background: boardHex, color: textHex, fontFamily: face.family, fontWeight: face.weight, fontSize: face.size }}>
-                    {sampleText}
-                  </span>
-                  <strong>{face.short}</strong>
-                </button>
-              );
-            })}
-          </div>
-          {/* 2026-10-25 (T0): the script face changed (Brittany Signature,
-              personal-use licence, -> Italianno); say so rather than
-              switch it silently. */}
-          {item.text.fontStyle === "script" && (
-            <p className="bz-bl-muted" style={{ margin: "8px 0 0" }}>Script lettering is set in Italianno.</p>
-          )}
-          {/* 2026-10-24: lettering size. */}
-          <div className="bz-st-size" role="group" aria-label="Text size">
-            <span className="lbl">Text size</span>
-            {TEXT_SIZES.map((t) => {
-              const on = (item.text.size ?? "medium") === t.id;
-              return (
-                <button key={t.id} type="button" aria-pressed={on} className={on ? "on" : ""}
-                  onClick={() => patchItemText(itemIdx, { size: t.id })}>
-                  <span className="aa" style={{ fontSize: 11 + 5 * t.scale }} aria-hidden="true">Aa</span>{t.label}
-                </button>
-              );
-            })}
-          </div>
+        <section className="bz-st-sec c-green wide">
+          <Head n={nFont} title="Pick your lettering" sub="Choose a style, then fine-tune the heading and the name." />
+          <LetteringControls lettering={lettering} onChange={setLettering} boardHex={boardHex} textHex={textHex} />
         </section>
       )}
 
@@ -407,7 +395,7 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
         {printable && (
           <span className="bz-st-pill">{item.text.enabled ? <>Tт {sampleText.length > 22 ? `${sampleText.slice(0, 21)}…` : sampleText}</> : "No text"}</span>
         )}
-        {printable && item.text.enabled && <span className="bz-st-pill">✎ {FONT_FACE[item.text.fontStyle]?.short ?? item.text.fontStyle}</span>}
+        {printable && item.text.enabled && <span className="bz-st-pill">✎ {letteringStyleName}</span>}
         {printable && item.text.enabled && (
           <span className="bz-st-pill"><i style={{ background: textHex }} />{textColorName}</span>
         )}

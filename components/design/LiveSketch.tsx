@@ -17,7 +17,9 @@ import {
   SHIMMER_COLOR_HEX,
   type BuilderConfig,
   type BackdropItem,
+  type BoardLettering,
 } from "@/lib/config";
+import { useLetteringLayout } from "./useLetteringLayout";
 
 const VB = 1000;
 const FLOOR = 870;
@@ -363,6 +365,41 @@ function FoilDigit({ glyph, x, y, w, h, hex, palette, uid }: { glyph: string; x:
 const sameColours = (a: string[], b: string[]) =>
   a.length === b.length && a.every((c) => b.some((x) => x.toLowerCase() === c.toLowerCase()));
 
+/**
+ * 2026-10-26: Typography System lettering — the engine's own paths (the same
+ * the render guide draws), scaled into the board's clear area and centred
+ * where the sketch puts lettering.
+ */
+function SketchLettering({ lettering, spot, fill, metal, gid }: {
+  lettering: BoardLettering;
+  /** Where the lettering goes for a block this tall: its centre and the clear width. */
+  spot: (blockH: number) => { cx: number; cy: number; w: number };
+  fill: string;
+  metal?: [number, number, number];
+  gid: string;
+}) {
+  const drawing = useLetteringLayout(lettering);
+  if (!drawing) return null;
+  const w = spot(0).w;
+  const s = w / drawing.box.widthMm, h = drawing.box.heightMm * s;
+  const at = spot(h * 0.62);
+  return (
+    <g transform={`translate(${at.cx - w / 2} ${at.cy - h / 2}) scale(${s})`} filter="url(#skSoft)" data-testid="sketch-lettering" data-hash={drawing.hash}>
+      {metal && (
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0.25" y2="1">
+            {[[0, 0.94], [0.3, 0.6], [0.47, 1], [0.6, 0.5], [0.78, 0.86], [1, 0.62]].map(([o, l]) => <stop key={o} offset={o} stopColor={tintHex(metal, l)} />)}
+          </linearGradient>
+        </defs>
+      )}
+      {drawing.paths.map((p) => (
+        <path key={p.role} d={p.d} data-role={p.role} fill={metal ? `url(#${gid})` : fill}
+          stroke={metal ? tintHex(metal, 0.42) : undefined} strokeWidth={metal ? Math.max(0.6, p.fontSizeMm * 0.012) : undefined} />
+      ))}
+    </g>
+  );
+}
+
 export default function LiveSketch({
   config,
   activeId,
@@ -582,6 +619,12 @@ export default function LiveSketch({
 
       {/* Printed lettering — staggered and tilted like the renders' script */}
       {pieces.filter((p) => p.item.text?.enabled && (p.item.text.value ?? "").trim() && (roundBase || piecePath(p)) && p.item.type !== "open_arch_frame").map((p) => {
+        if (p.item.text.lettering) {
+          return (
+            <SketchLettering key={`t${p.item.id}`} lettering={p.item.text.lettering} spot={(h) => textSpot(p, h)}
+              fill={resolveTextColorHex(p.item.text.color, accent)} metal={METAL_TINT[p.item.text.color]} gid={`skMetal${p.idx}`} />
+          );
+        }
         const f = fontFor(p.item.text.fontStyle);
         const ls = lines(p.item.text.value);
         const longest = Math.max(4, ...ls.map((l) => l.length));

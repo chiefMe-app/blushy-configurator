@@ -6,6 +6,7 @@ import { sceneStyleReference } from "./frozenStyleReferences";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 import { describeTextColor, messageLines, foilColourFor, FOIL_NUMBER_COLOURS } from "@/lib/config";
+import { cleanLettering, lineDescriptor } from "@/lib/typography/lettering";
 
 // A raw hex means nothing to the edit model, and "#FFFFFF" used to collapse into
 // the same "cream-white" as an unset panel — so choosing white for one arch read
@@ -74,6 +75,32 @@ function panelTypeLabel(type: string): string {
 
 // 2026-10-22: the lettering colours that are mirror-polished metal.
 const isMetalText = (c: string | undefined): boolean => c === "silver" || c === "gold" || c === "rose_gold";
+
+// 2026-10-26: boards with Typography System lettering (a Heading over a Name,
+// each in its own font) say both lines and both typefaces; boards without it
+// are described exactly as before.
+type PanelText = SceneModel["panels"][number]["text"];
+function panelLettering(t: PanelText) {
+  const l = t.enabled ? cleanLettering(t.lettering) : null;
+  if (!l) return null;
+  const lines = [l.heading, l.name].filter((x) => x.text.trim());
+  return lines.length ? lines : null;
+}
+/** The typeface words for a board: the old style label, or the lettering's own fonts. */
+function letteringTypeface(t: PanelText, legacy: string): string {
+  const lines = panelLettering(t);
+  if (!lines) return legacy;
+  const descs = Array.from(new Set(lines.map(lineDescriptor)));
+  return descs.length === 1 ? descs[0] : "two-typeface";
+}
+/** One sentence on how the lines are set, or "" for boards without lettering. */
+function letteringLayoutSentence(t: PanelText): string {
+  const lines = panelLettering(t);
+  if (!lines) return "";
+  if (lines.length === 1) return `It is ONE line, "${lines[0].text.trim()}" in ${lineDescriptor(lines[0])}, letter for letter as IMAGE 1 draws it. `;
+  return `It is set in two lines exactly as IMAGE 1 draws them: "${lines[0].text.trim()}" in ${lineDescriptor(lines[0])} on top, and ` +
+    `"${lines[1].text.trim()}" larger, centred below it, in ${lineDescriptor(lines[1])} — the same letterforms, not another font. `;
+}
 
 export function buildLayoutRefEditPrompt(
   sceneModel: SceneModel,
@@ -1095,6 +1122,8 @@ export function buildLayoutRefEditPrompt(
     .filter(({ p }) => p.text?.enabled && (p.text.value ?? "").trim().length > 0);
   const styleRefWords = styleRef && letteredPanels.length > 0
     ? letteredPanels.map(({ p }) => {
+        const lettering = letteringLayoutSentence(p.text);
+        if (lettering) return `The lettering reads exactly "${p.text.value.trim()}". ${lettering}`;
         const ls = messageLines(p.text.value) ?? [p.text.value.trim()];
         return ls.length > 1
           ? `The lettering reads exactly "${p.text.value.trim()}", in ${ls.length} lines as IMAGE 1 sets it: "${ls[0]}" on one line and "${ls.slice(1).join(" ")}" centred on the line below. `
@@ -1416,12 +1445,13 @@ export function buildLayoutRefEditPrompt(
     : "";
   const frontRoundTextLine = frontRoundTextPanel
     ? `The words "${frontRoundTextPanel.text.value.trim()}" are ${isMetalText(frontRoundTextPanel.text.color) ? "mounted" : "printed"} on the round board in ` +
-      `${describeTextColor(frontRoundTextPanel.text.color)} ${({ script: "thin slanted handwritten signature script", block: "bold block", elegant: "elegant serif" } as Record<string, string>)[frontRoundTextPanel.text.fontStyle] ?? "flowing script"} ` +
+      `${describeTextColor(frontRoundTextPanel.text.color)} ${letteringTypeface(frontRoundTextPanel.text, ({ script: "thin slanted handwritten signature script", block: "bold block", elegant: "elegant serif" } as Record<string, string>)[frontRoundTextPanel.text.fontStyle] ?? "flowing script")} ` +
       `lettering, clearly readable, in the clear white area right of centre below the balloons. ` +
+      letteringLayoutSentence(frontRoundTextPanel.text) +
       (isMetalText(frontRoundTextPanel.text.color)
         // 2026-10-22: FLAT. "Blown-white highlights and dark reflected bands"
         // drew puffy foil-balloon letters ("kabarik duruyor").
-        ? `The letters are FLAT: thin handwritten letters cut from 3mm polished metal acrylic, lying flat ` +
+        ? `The letters are FLAT: thin ${panelLettering(frontRoundTextPanel.text) ? "" : "handwritten "}letters cut from 3mm polished metal acrylic, lying flat ` +
           `against the board with a soft metallic sheen — not puffy, not inflated, not rounded, not foil-balloon ` +
           `letters, not printed ink. `
         : ``)
@@ -1967,7 +1997,8 @@ export function buildLayoutRefEditPrompt(
           : "across the upper-middle of that board";
         const colourName = describeTextColor(p.text.color);
         return `The ${panelPositionLabel(i)} reads exactly "${v}", ${place}, in ` +
-          `${TEXT_FONT_LABEL[p.text.fontStyle] ?? p.text.fontStyle} lettering, spelled exactly as "${v}" and clearly readable. ` +
+          `${letteringTypeface(p.text, TEXT_FONT_LABEL[p.text.fontStyle] ?? p.text.fontStyle)} lettering, spelled exactly as "${v}" and clearly readable. ` +
+          letteringLayoutSentence(p.text) +
           // The colour is stated on its own and repeated, because the round-
           // backdrop path (fal-ai/flux-2/edit) was quietly recolouring the
           // lettering to match the balloons: black was reported coming back

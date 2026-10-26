@@ -20,8 +20,20 @@ describe("typography demo API", () => {
     const json = await (await call(ok)).json();
     expect(json.svg).toBe(previewSvg(layoutLettering({ heading: ok.heading, name: ok.name, headingRatio: 0.42, box: DEMO_BOX, nameCapMm: DEMO_NAME_CAP_MM }), 1));
     expect(json.elements).toEqual([{ role: "heading", missing: "" }, { role: "name", missing: "" }]);
-    // only what the page uses: no production engineering in the response
-    expect(Object.keys(json).sort()).toEqual(["box", "elements", "hash", "svg"]);
+    // only what the pages use: no production engineering in the response
+    expect(Object.keys(json).sort()).toEqual(["box", "elements", "hash", "paths", "svg"]);
+    // The Builder's sketch draws `paths`: the very outlines in the SVG.
+    const svgPaths = Array.from(String(json.svg).matchAll(/data-role="(\w+)" d="([^"]+)"/g)).map((m) => [m[1], m[2]]);
+    expect(json.paths.map((p: { role: string; d: string }) => [p.role, p.d])).toEqual(svgPaths);
+  });
+  it("a heading on its own leads, at the name's size", async () => {
+    // A short line, so the width does not cap it.
+    const short = { ...ok, heading: { ...ok.heading, text: "Oh Baby" } };
+    const one = await (await call({ ...short, name: { ...ok.name, text: "" } })).json();
+    const both = await (await call(short)).json();
+    expect(one.paths.map((p: { role: string }) => p.role)).toEqual(["name"]);
+    expect(one.paths[0].fontId).toBe("bellefair");
+    expect(one.paths[0].fontSizeMm).toBeGreaterThan(both.paths.find((p: { role: string }) => p.role === "heading").fontSizeMm * 1.5);
   });
   it.each([
     ["an unknown font", { ...ok, name: { ...ok.name, fontId: "comic-sans" } }],
@@ -68,11 +80,11 @@ describe("typography demo API", () => {
     const a = await (await call(ok)).text(), b = await (await call(ok)).text();
     expect(b).toBe(a);
   });
-  it("rate-limits one client after 60 layouts a minute, without affecting others", async () => {
+  it("rate-limits one client after 120 layouts a minute, without affecting others", async () => {
     const statuses: number[] = [];
-    for (let i = 0; i < 62; i++) statuses.push((await call(ok, "", "203.0.113.9")).status);
-    expect(statuses.slice(0, 60).every((s) => s === 200)).toBe(true);
-    expect(statuses.slice(60)).toEqual([429, 429]);
+    for (let i = 0; i < 122; i++) statuses.push((await call(ok, "", "203.0.113.9")).status);
+    expect(statuses.slice(0, 120).every((s) => s === 200)).toBe(true);
+    expect(statuses.slice(120)).toEqual([429, 429]);
     expect((await call(ok, "", "198.51.100.7")).status).toBe(200);
   });
 });

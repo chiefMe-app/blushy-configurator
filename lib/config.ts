@@ -383,6 +383,32 @@ export interface BackdropItemText {
   /** 2026-10-24: how big the lettering is on its board ("textin buyuklugu
    *  kucuklugu degissin"). Undefined is medium, the size it always had. */
   size?: TextSize;
+  /**
+   * 2026-10-26: the Typography System — a Heading over a Name, each in its own
+   * font and size (lib/typography). When present, the lettering is drawn from
+   * this; `value`, `fontStyle` and `size` are kept in step with it for
+   * everything that still reads them. Designs saved before it have none and
+   * are drawn exactly as before.
+   */
+  lettering?: BoardLettering;
+}
+
+/** One line of board lettering in the Typography System. */
+export interface LetteringLine {
+  text: string;
+  /** lib/typography/registry.ts font id. */
+  fontId: string;
+  weight: number;
+  size: TextSize;
+}
+
+export interface BoardLettering {
+  /** The preset whose two fonts are in use, or null once either font is changed. */
+  presetId: string | null;
+  /** The preset the customer started from ("Back to …"). */
+  basedOn: string;
+  heading: LetteringLine;
+  name: LetteringLine;
 }
 
 export type TextSize = "small" | "medium" | "large";

@@ -162,7 +162,7 @@ function isAuthOrBillingError(message: string | null): boolean {
 // process (sufficient for a single-instance/dev deployment — not a
 // distributed cache). Bump RENDER_CACHE_VERSION whenever a prompt/negative
 // change should invalidate previously cached (now-stale) renders.
-const RENDER_CACHE_VERSION = "italianno-v165";
+const RENDER_CACHE_VERSION = "lettering-v166";
 
 interface RenderCacheEntry {
   imageUrl: string;
@@ -2456,6 +2456,8 @@ forbiddenBalloonColorLabels: hasSempertexLock
         // the test below (grey, darker than the board) still picks out only
         // the letters inside it.
         const mask = Buffer.from(guideMask);
+        // The lettering's box, for the warm metals' sheen below.
+        let sheenX0 = 0, sheenY0 = 0, sheenH = mh;
         {
           let x0 = mw, y0 = mh, x1 = -1, y1 = -1;
           for (let y = 0; y < mh; y++) for (let x = 0; x < mw; x++) {
@@ -2465,12 +2467,42 @@ forbiddenBalloonColorLabels: hasSempertexLock
             const bw = x1 - x0, bh = y1 - y0;
             const gx0 = Math.max(0, Math.round(x0 - bw * 0.15)), gx1 = Math.min(mw - 1, Math.round(x1 + bw * 0.15));
             const gy0 = Math.max(0, Math.round(y0 - bh * 0.7)), gy1 = Math.min(mh - 1, Math.round(y1 + bh * 0.7));
+            sheenX0 = x0; sheenY0 = y0; sheenH = Math.max(1, bh);
             const fe = Math.max(6, Math.round(Math.min(bw, bh) * 0.08));
             for (let y = gy0; y <= gy1; y++) for (let x = gx0; x <= gx1; x++) {
               const edge = Math.min(x - gx0, gx1 - x, y - gy0, gy1 - y);
               const v = Math.round(255 * Math.min(1, edge / fe));
               const k = y * mw + x;
               if (v > mask[k]) mask[k] = v;
+            }
+            // 2026-10-26: the model sets the words larger than the guide, so
+            // the first and last letters can reach past the box and stayed
+            // unpainted (a gold "Layla" with a black last "a"). Every letter
+            // that is partly under the box is followed out to its own edge —
+            // only through connected letter pixels, inside a wider search box,
+            // so it cannot run into the balloons around the board.
+            const isInk = (q: number) => {
+              const i = q * mc, r = data[i], g = data[i + 1], b = data[i + 2];
+              return Math.max(r, g, b) - Math.min(r, g, b) <= 28 && (0.299 * r + 0.587 * g + 0.114 * b) / 255 <= 0.80;
+            };
+            const sx0 = Math.max(0, Math.round(x0 - bw * 0.6)), sx1 = Math.min(mw - 1, Math.round(x1 + bw * 0.6));
+            const sy0 = Math.max(0, Math.round(y0 - bh * 1.0)), sy1 = Math.min(mh - 1, Math.round(y1 + bh * 1.0));
+            const seen = new Uint8Array(mw * mh);
+            const stack: number[] = [];
+            for (let y = gy0; y <= gy1; y++) for (let x = gx0; x <= gx1; x++) {
+              const k = y * mw + x;
+              if (mask[k] > 128 && isInk(k)) { seen[k] = 1; stack.push(k); }
+            }
+            while (stack.length) {
+              const k = stack.pop()!;
+              const x = k % mw, y = (k - x) / mw;
+              if (mask[k] < 255) mask[k] = 255;
+              for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+                const nx = x + dx, ny = y + dy;
+                if (nx < sx0 || nx > sx1 || ny < sy0 || ny > sy1) continue;
+                const q = ny * mw + nx;
+                if (!seen[q] && isInk(q)) { seen[q] = 1; stack.push(q); }
+              }
             }
           }
         }
@@ -2483,12 +2515,23 @@ forbiddenBalloonColorLabels: hasSempertexLock
           const l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
           if (mx - mn > 28 || l > 0.80) continue;
           const a = m * Math.min(1, (0.80 - l) / 0.10);
+          const tint = pngResult.textMetalTint ?? [1.0, 1.01, 1.04];
+          // 2026-10-26: gold and rose gold. Heavy lettering (a bold serif
+          // name) comes back painted black whatever the prompt says, and the
+          // silver curve below keeps black black — "gold" Bodoni came out
+          // black. Warm metals map every stroke, black included, into the
+          // metal's own range, with a soft diagonal sheen across the words.
+          const warm = tint[2] < 0.9;
+          const sheen = warm
+            ? 0.9 + 0.2 * (0.5 + 0.5 * Math.cos((((p % mw) - sheenX0) * 0.5 + (Math.floor(p / mw) - sheenY0)) / (sheenH * 0.9) * Math.PI * 2))
+            : 1;
           // 2026-10-22: gentler — the hard curve made the letters look puffy.
-          const c = Math.min(1, Math.max(0, (l - 0.45) * 1.3 + 0.50)) * 255; // light, but every stroke still reads
+          const c = warm
+            ? Math.min(255, (0.50 + 0.47 * Math.min(1, l / 0.8)) * 255 * sheen)
+            : Math.min(1, Math.max(0, (l - 0.45) * 1.3 + 0.50)) * 255; // light, but every stroke still reads
           // 2026-10-22: in the lettering's own metal — silver, gold or rose
           // gold. Dark reflected bands stay nearly neutral, as on real metal.
-          const tint = pngResult.textMetalTint ?? [1.0, 1.01, 1.04];
-          const tc = (k: number, add: number) => Math.min(255, (c > 128 ? c * tint[k] : c * (1 + (tint[k] - 1) * 0.5)) + add);
+          const tc = (k: number, add: number) => Math.min(255, (warm || c > 128 ? c * tint[k] : c * (1 + (tint[k] - 1) * 0.5)) + add);
           data[i]     = Math.round(r * (1 - a) + tc(0, 4)  * a);
           data[i + 1] = Math.round(g * (1 - a) + tc(1, 6)  * a);
           data[i + 2] = Math.round(b * (1 - a) + tc(2, 10) * a);

@@ -1879,3 +1879,351 @@ exports[`pricing golden > E12-zero-plinths 1`] = `
   "total": 980,
 }
 `;
+
+exports[`pricing golden > N01-soft-signature-round 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > N02-editorial-gold 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > N03-party-pop-double 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 1",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 2",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1440,
+  },
+  "total": 1440,
+}
+`;
+
+exports[`pricing golden > N04-one-line 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > N05-timeless-black-arch 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > N06-triple-overlay 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Half Arch Panel - panel 1",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 2",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Half Arch Panel - panel 3",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1790,
+  },
+  "total": 1790,
+}
+`;
+
+exports[`pricing golden > N07-turkish 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Round Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
+}
+`;
+
+exports[`pricing golden > N08-open-frame-overlay 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Frozen theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Arch Backdrop - panel 1",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Open Arch Frame - panel 2",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1440,
+  },
+  "total": 1440,
+}
+`;

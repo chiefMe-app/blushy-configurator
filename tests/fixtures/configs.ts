@@ -2,7 +2,8 @@
 // against (pricing, scene, lettering, render guide and prompt). Add new
 // fixtures at the end; never edit one that already has a baseline without an
 // approved, listed reason.
-import type { BuilderConfig } from "@/lib/config";
+import type { BoardLettering, BuilderConfig } from "@/lib/config";
+import { applyPreset, letteringPatch } from "@/lib/typography/lettering";
 import { finalize, frozen, withDecor, withSetup, withStandees, withText, withTheme } from "./builder";
 import { defaultConfig } from "@/lib/config";
 
@@ -20,6 +21,18 @@ const SETUPS = [
 const round = () => frozen("single_round");
 const roundText = (value: string, fontStyle: "script" | "block" | "elegant" = "script", extra: Record<string, unknown> = {}) =>
   withText(round(), 0, { enabled: true, value, fontStyle, ...extra });
+
+// 2026-10-26: Typography System lettering on the setup's lettered board.
+const lettered = (setup: string, presetId: string, heading: string, name: string, color?: string) => {
+  const c = frozen(setup);
+  const idx = Math.max(0, c.decor.backdropItems.findIndex((i) => i.text.enabled));
+  const base: BoardLettering = {
+    presetId: null, basedOn: presetId,
+    heading: { text: heading, fontId: "", weight: 0, size: "medium" },
+    name: { text: name, fontId: "", weight: 0, size: "large" },
+  };
+  return withText(c, idx, { enabled: true, ...letteringPatch(applyPreset(base, presetId)), ...(color ? { color } : {}) });
+};
 
 const list: Fixture[] = [
   // A. Every setup as it opens, Frozen
@@ -74,6 +87,16 @@ const list: Fixture[] = [
   { id: "E10-barbie", note: "Barbie palette, Single Round", config: withSetup(withTheme(defaultConfig(), "barbie"), "single_round") },
   { id: "E11-minecraft", note: "Minecraft palette, Double Arch", config: withSetup(withTheme(defaultConfig(), "minecraft"), "double_arch") },
   { id: "E12-zero-plinths", note: "no plinth", config: withDecor(round(), { plinths: 0, plinthSizes: [] }) },
+
+  // N. Typography System lettering (2026-10-26): a Heading over a Name, each in its own font
+  { id: "N01-soft-signature-round", note: "#5 Soft Signature, Single Round", config: lettered("single_round", "soft-signature", "Happy Birthday", "Arya") },
+  { id: "N02-editorial-gold", note: "#9 Modern Editorial, gold, ordinal", config: lettered("single_round", "modern-editorial", "Happy 1st Birthday", "Layla", "gold") },
+  { id: "N03-party-pop-double", note: "Party Pop, Double Arch", config: lettered("double_arch", "party-pop", "Happy Birthday", "Malek") },
+  { id: "N04-one-line", note: "one line only: it leads at the name's size", config: lettered("single_round", "flowing-script", "Oh Baby", "") },
+  { id: "N05-timeless-black-arch", note: "Timeless Bold, black, Single Arch", config: lettered("single_arch", "timeless-bold", "Happy Birthday", "Zayn", "black") },
+  { id: "N06-triple-overlay", note: "Soft Signature, Triple Arch (laid over the render)", config: lettered("triple_arch", "soft-signature", "Happy Birthday", "Arya") },
+  { id: "N07-turkish", note: "Whisper Light, Turkish letters", config: lettered("single_round", "whisper-light", "İyi ki doğdun", "Ayşe Gül") },
+  { id: "N08-open-frame-overlay", note: "Gallery, Arch + Open Frame (laid over the render)", config: lettered("arch_open_frame", "gallery", "Happy Birthday", "Noor") },
 ];
 
 export const FIXTURES: Fixture[] = list.map((f) => ({ ...f, config: finalize(f.config) }));

@@ -18,6 +18,10 @@
 import type { BackdropItem, PlinthSize, BackdropShapeId, BalloonStyleId } from "./config";
 import { resolveTextColorHex, textSizeScale, messageLines, type TextSize } from "./config";
 import { textAdvance, textPathD } from "./guideFonts";
+import type { BoardLettering } from "./config";
+import { cleanLettering } from "./typography/lettering";
+import { layoutBoardLettering, placeLettering } from "./typography/boardLayout";
+import { fontById } from "./typography/registry";
 import { frozenBannerPrintSvg } from "./bannerPrint";
 import { FROZEN_CASTLE_PRINT } from "./bannerCastlePrint";
 import { calculateExactLayout } from "./calculateExactLayout";
@@ -687,6 +691,8 @@ function customTextGuide(
     color?: string;
     /** 2026-10-24: the customer's lettering size. */
     size?: string;
+    /** 2026-10-26: Typography System lettering (already checked by cleanLettering). */
+    lettering?: BoardLettering | null;
   } = {},
 ): { svg: string; zone: { xMin: number; xMax: number; yMin: number; yMax: number }; fill: string; silverInk: string } {
   const { hasGraphicBelow = false, garlandSide = "none", fontStyle = "script", color = "white" } = opts;
@@ -843,24 +849,42 @@ function customTextGuide(
   // the next to the right — and the whole block rises slightly to the right.
   const stagger = (i: number) => lines.length < 2 || fixedLines ? 0
     : (i === 0 ? -1 : i === lines.length - 1 ? 1 : 0) * Math.min(fontSize * 0.45, clearW * 0.10);
-  const tilt = fontStyle === "script" ? -4 : 0;
+  // 2026-10-26: board lettering from the Typography System (a Heading over a
+  // Name, each in its own font) is laid out by the real engine and placed in
+  // the same clear band, straight; designs without it are drawn as before.
+  const placed = (() => {
+    const l = opts.lettering;
+    if (!l || !(l.heading.text.trim() || l.name.text.trim())) return null;
+    try {
+      const layout = layoutBoardLettering({ heading: l.heading, name: l.name, presetId: l.presetId ?? l.basedOn });
+      return placeLettering(layout, clearW, tx, y);
+    } catch (err) {
+      console.error("[guide] lettering layout failed; drawing the message the old way", err);
+      return null;
+    }
+  })();
+  const tilt = !placed && fontStyle === "script" ? -4 : 0;
   const rot = tilt ? ` transform="rotate(${tilt} ${tx.toFixed(1)} ${y.toFixed(1)})"` : "";
   // The script face is a hairline; on its own it gives a reflection nothing
   // to show on and the render can lose it, so every stroke is thickened.
   const thick = fontStyle === "script" ? fontSize * 0.045 : 0;
-  const svg = `<g${rot}>` + lines.map((line, i) => {
-    const ly    = firstY + i * lineGap;
-    // 2026-10-20: drawn as a path from an embedded font (lib/guideFonts),
-    // not as <text>. On Vercel the rasteriser has no fonts installed, so
-    // every word came out as a row of empty boxes and the render printed
-    // "□□□□□" on the backdrop. Locally it looked fine — Windows has fonts.
-    const d = textPathD(line, fontStyle, tx + stagger(i), ly, fontSize);
+  // 2026-10-20: drawn as paths from embedded fonts (lib/guideFonts, or the
+  // engine's outlines), not as <text>. On Vercel the rasteriser has no fonts
+  // installed, so every word came out as a row of empty boxes and the render
+  // printed "□□□□□" on the backdrop. Locally it looked fine — Windows has fonts.
+  const strokes: { d: string; size: number; thick: number }[] = placed
+    ? placed.map((p) => {
+        const signature = fontById(p.fontId)?.category === "signature";
+        return { d: p.d, size: p.fontSizePx, thick: signature ? p.fontSizePx * 0.045 : 0 };
+      })
+    : lines.map((line, i) => ({ d: textPathD(line, fontStyle, tx + stagger(i), firstY + i * lineGap, fontSize), size: fontSize, thick }));
+  const svg = `<g${rot}>` + strokes.map(({ d, size, thick }) => {
     // Halo first so the word stays legible wherever it meets a balloon edge.
     return `<path d="${d}" fill="none" stroke="${halo}" stroke-width="${(4 + thick).toFixed(1)}" stroke-linejoin="round"/>` +
            (silver
              // Thickened with a stroke in the same gradient: a script hairline has
              // no surface for a reflection to show on.
-             ? `<path d="${d}" fill="url(#mirrorSilverText)" stroke="url(#mirrorSilverText)" stroke-width="${(fontSize * 0.038).toFixed(1)}" stroke-linejoin="round"/>` +
+             ? `<path d="${d}" fill="url(#mirrorSilverText)" stroke="url(#mirrorSilverText)" stroke-width="${(size * 0.038).toFixed(1)}" stroke-linejoin="round"/>` +
                `<path d="${d}" fill="none" stroke="rgba(60,64,70,0.70)" stroke-width="0.9"/>`
              : `<path d="${d}" fill="${fill}" stroke="${fill}" stroke-width="${thick.toFixed(1)}" stroke-linejoin="round"${thick ? "" : outline}/>`);
   }).join("") + `</g>`;
@@ -871,11 +895,10 @@ function customTextGuide(
     // the words where the guide draws them, so a slightly fattened copy of
     // the guide's letters covers the painted ones and nothing else.
     silverInk: silver
-      ? `<g${rot}>` + lines.map((line, i) => {
-          const ly = firstY + i * lineGap;
-          return `<path d="${textPathD(line, fontStyle, tx + stagger(i), ly, fontSize)}" ` +
-            `fill="#FFFFFF" stroke="#FFFFFF" stroke-width="${(fontSize * 0.16).toFixed(1)}" stroke-linejoin="round"/>`;
-        }).join("") + `</g>`
+      ? `<g${rot}>` + strokes.map(({ d, size }) =>
+          `<path d="${d}" ` +
+            `fill="#FFFFFF" stroke="#FFFFFF" stroke-width="${(size * 0.16).toFixed(1)}" stroke-linejoin="round"/>`,
+        ).join("") + `</g>`
       : "",
     // Deliberately larger than the guide's own lettering: the render model
     // draws the words bigger and lower than the guide does, and a box sized to
@@ -1445,6 +1468,7 @@ export function generateStructureSilhouette(
           fontStyle: item?.text?.fontStyle,
           color:     item?.text?.color,
           size:      item?.text?.size,
+          lettering: item?.text?.enabled ? cleanLettering(item.text.lettering) : null,
         },
       );
       // 2026-10-22: beside an open frame the lettering is laid over the

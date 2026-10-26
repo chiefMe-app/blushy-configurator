@@ -1,9 +1,12 @@
 // The render golden (tests/golden) builds request bodies from fixtures, not
 // from the UI. This proves the two are the same: each case is clicked through
 // the real builder, the render request it sends is caught before it leaves
-// the browser, and it must equal renderBody(fixture) field for field.
+// the browser, and it must equal renderBody(fixture) field for field — the
+// fixture as the Builder holds it, every board lettered with the Typography
+// System (withBuilderLettering, 2026-10-26).
 import { test, expect, openDecor, decorTab, captureRenderBody } from "./guard";
 import { fixtureById } from "../fixtures/configs";
+import { withBuilderLettering } from "../fixtures/builder";
 import { renderBody, comparableBody } from "../../scripts/golden/renderBody";
 
 const cases: { fixture: string; setup: string; steps?: (page: import("@playwright/test").Page) => Promise<void> }[] = [
@@ -13,7 +16,7 @@ const cases: { fixture: string; setup: string; steps?: (page: import("@playwrigh
     fixture: "B01-hb-arya-script", setup: "Single Round",
     steps: async (page) => {
       await decorTab(page, "Style");
-      await page.getByLabel("Your message").fill("Happy Birthday Arya");
+      await page.getByLabel("Name text").fill("Arya");
     },
   },
   {
@@ -32,7 +35,7 @@ for (const c of cases) {
     await openDecor(page, "Frozen", c.setup);
     if (c.steps) await c.steps(page);
     const sent = comparableBody(await captureRenderBody(page, guard));
-    const expected = comparableBody(renderBody(fixtureById(c.fixture).config) as Record<string, unknown>);
+    const expected = comparableBody(renderBody(withBuilderLettering(fixtureById(c.fixture).config)) as Record<string, unknown>);
     expect(sent).toEqual(expected);
   });
 }

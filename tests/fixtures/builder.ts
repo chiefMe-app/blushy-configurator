@@ -2,6 +2,7 @@
 // app code. The builder keeps these steps inside its page component, so they
 // are mirrored here; tests/e2e/body-parity.spec.ts proves the mirror sends the
 // same render request as the real UI.
+import { letteringFromLegacy, letteringPatch } from "@/lib/typography/lettering";
 import {
   ARCH_SIZES,
   DEFAULT_TEXT_VALUE,
@@ -164,6 +165,18 @@ export function frozen(setup: string): BuilderConfig {
  * totalPrice stays at the opening total. Fixtures keep that value too —
  * nothing in the render route reads it.
  */
+/**
+ * What the Builder holds once the Decor step has opened (2026-10-26): every
+ * board lettered with the Typography System — the useDecorStep effect in
+ * components/builder/decor/useDecorStep.tsx.
+ */
+export function withBuilderLettering(c: BuilderConfig): BuilderConfig {
+  return withDecor(c, {
+    backdropItems: c.decor.backdropItems.map((i) => i.text.lettering ? i
+      : { ...i, text: { ...i.text, ...letteringPatch(letteringFromLegacy(i.text)) } }),
+  });
+}
+
 export function finalize(c: BuilderConfig): BuilderConfig {
   return { ...c, estimatedTotal: defaultConfig().estimatedTotal };
 }

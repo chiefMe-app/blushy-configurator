@@ -1,6 +1,7 @@
-// Typography demo API (used by /typography-demo; not by the Builder). Lays out
-// a board's Heading and Name with the real lettering engine (lib/typography)
-// and returns the preview SVG.
+// Lettering layout API: lays out a board's Heading and Name with the real
+// lettering engine (lib/typography/boardLayout.ts) and returns the preview SVG
+// and its paths. Used by /typography-demo and, since 2026-10-26, by the
+// Builder's live sketch (the render guide calls the same layout directly).
 //
 // Public on the live site, so it is kept cheap and safe:
 // - every field is validated against the registry; text only ever becomes
@@ -11,19 +12,20 @@
 // - the production SVG / cut file downloads (?format=) are off on the
 //   production deployment (heavier, and not part of the demo).
 import { NextRequest, NextResponse } from "next/server";
-import { layoutLettering, type LetteringElementInput } from "@/lib/typography/layout";
+import type { LetteringElementInput } from "@/lib/typography/layout";
+import { layoutBoardLettering, LETTERING_BOX } from "@/lib/typography/boardLayout";
 import { previewSvg, productionSvg } from "@/lib/typography/svg";
 import { cutSvg } from "@/lib/typography/cutReady";
 import { fontById } from "@/lib/typography/registry";
-import { presetById } from "@/lib/typography/presets";
-import { DEMO_BOX, DEMO_NAME_CAP_MM, MAX_TEXT } from "@/lib/typography/demo";
+import { MAX_TEXT } from "@/lib/typography/demo";
 
 export const runtime = "nodejs";
 
 const SIZES = ["small", "medium", "large"] as const;
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const MAX_BODY_BYTES = 4096;
-const RATE_LIMIT = 60; // layouts per IP per window
+// 2026-10-26: 60 -> 120, the Builder's live sketch asks on every lettering change.
+const RATE_LIMIT = 120; // layouts per IP per window
 const RATE_WINDOW_MS = 60_000;
 const CACHE_ENTRIES = 300;
 
@@ -81,17 +83,14 @@ export async function POST(req: NextRequest) {
   const heading = parseElement(body.heading, "heading");
   const name = parseElement(body.name, "name");
   for (const p of [heading, name]) if (!p.ok) return NextResponse.json({ error: p.error }, { status: 400 });
-  const ratio = typeof body.presetId === "string" ? presetById(body.presetId)?.headingRatio : undefined;
   const input = {
     heading: (heading as { el?: LetteringElementInput }).el,
     name: (name as { el?: LetteringElementInput }).el,
-    headingRatio: ratio,
-    box: DEMO_BOX,
-    nameCapMm: DEMO_NAME_CAP_MM,
+    presetId: typeof body.presetId === "string" ? body.presetId : undefined,
   };
 
   if (download) {
-    const layout = layoutLettering(input);
+    const layout = layoutBoardLettering(input);
     const svg = format === "production" ? productionSvg(layout) : cutSvg(layout);
     return new NextResponse(svg, {
       headers: { "content-type": "image/svg+xml; charset=utf-8", "content-disposition": `attachment; filename="lettering-${format}-${layout.hash.slice(0, 8)}.svg"` },
@@ -103,11 +102,13 @@ export async function POST(req: NextRequest) {
   if (json) {
     cache.delete(key); // keep the most recent at the end
   } else {
-    const layout = layoutLettering(input);
+    const layout = layoutBoardLettering(input);
     json = JSON.stringify({
-      box: DEMO_BOX,
+      box: LETTERING_BOX,
       hash: layout.hash,
       svg: previewSvg(layout, 1),
+      // Each line's outline (box mm) and size, for the Builder's sketch.
+      paths: layout.elements.map((e) => ({ role: e.role, fontId: e.input.fontId, d: e.glyphs.join(""), fontSizeMm: e.fontSizeMm })),
       elements: layout.elements.map((e) => ({ role: e.role, missing: e.missing })),
     });
     if (cache.size >= CACHE_ENTRIES) cache.delete(cache.keys().next().value!);

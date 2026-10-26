@@ -25,6 +25,7 @@ import type {
   ShimmerColorId,
   NumberLight,
   NeonSign,
+  BoardLettering,
 } from "./config";
 import { getPlinthDimensions } from "./layoutDimensions";
 import { normalizeCutouts, normalizeBalloonStyle } from "@/lib/config";
@@ -100,6 +101,8 @@ export interface ScenePanel {
     fontStyle: FontStyle;
     color:     TextColor;
     size?:     "small" | "medium" | "large";
+    /** 2026-10-26: Typography System lettering, when the board has it. */
+    lettering?: BoardLettering;
   };
   graphic: {
     enabled: boolean;
@@ -182,6 +185,7 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
         fontStyle: item.text.fontStyle,
         color:     item.text.color,
         ...(item.text.size && item.text.size !== "medium" ? { size: item.text.size } : {}),
+        ...(item.text.lettering ? { lettering: item.text.lettering } : {}),
       },
       graphic: {
         enabled: item.graphic.enabled,
@@ -265,6 +269,7 @@ export function buildSceneModelFromItems(
       fontStyle: item.text.fontStyle,
       color:     item.text.color,
       ...(item.text.size && item.text.size !== "medium" ? { size: item.text.size } : {}),
+      ...(item.text.lettering ? { lettering: item.text.lettering } : {}),
     },
     graphic: {
       enabled: item.graphic.enabled,

@@ -36,7 +36,7 @@ test("D2 a new theme still brings its own balloon colours", async ({ page }) => 
 test("D3 a reload opens the design where the customer left off", async ({ page }) => {
   await openDecor(page, "Frozen", "Single Round");
   await decorTab(page, "Style");
-  await page.getByLabel("Your message").fill("Happy Birthday Arya");
+  await page.getByLabel("Name text").fill("Arya");
   await decorTab(page, "Balloons");
   await page.locator(".bz-bl-chip").first().click();
   const mine = await chips(page);
@@ -53,7 +53,7 @@ test("D3 a reload opens the design where the customer left off", async ({ page }
   await settle(page);
   await expect.soft(page.getByTestId("draft-restored")).toHaveScreenshot("d3-restored-note.png", { mask: masks(page) });
   await decorTab(page, "Style");
-  await expect(page.getByLabel("Your message")).toHaveValue("Happy Birthday Arya");
+  await expect(page.getByLabel("Name text")).toHaveValue("Arya");
 });
 
 test("D4 Start over clears the saved design", async ({ page }) => {

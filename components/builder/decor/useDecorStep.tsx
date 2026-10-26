@@ -23,6 +23,7 @@ import {
   type GraphicStyle,
 } from "@/lib/config";
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
+import { letteringFromLegacy, letteringPatch } from "@/lib/typography/lettering";
 import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS, getThemeCutoutPresets } from "@/lib/themeCatalog";
 import { inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 import {
@@ -145,6 +146,20 @@ export function useDecorStep(props: DecorStepProps) {
         i.id === only.id
           ? { ...i, sizeId: large.id, widthCm: large.widthCm, heightCm: large.heightCm }
           : i),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.decor.backdropItems]);
+
+  // 2026-10-26: every board in the Builder is lettered with the Typography
+  // System (a Heading over a Name, each in its own font). A board that has
+  // only the old single message — a new setup, or a design from before — gets
+  // the same words split into heading and name, in the preset closest to its
+  // old style.
+  useEffect(() => {
+    if (config.decor.backdropItems.every((i: BackdropItem) => i.text.lettering)) return;
+    patchDecor({
+      backdropItems: config.decor.backdropItems.map((i: BackdropItem) => i.text.lettering ? i
+        : { ...i, text: { ...i.text, ...letteringPatch(letteringFromLegacy(i.text)) } }),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.decor.backdropItems]);
