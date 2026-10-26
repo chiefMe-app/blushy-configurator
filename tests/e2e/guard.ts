@@ -93,17 +93,19 @@ export async function captureRenderBody(page: Page, guard: Guard): Promise<Recor
 /**
  * Wait for fonts, images and a still page, so screenshots are stable. On
  * phones a tab change scrolls the page to the tab bar, and pictures loading
- * meanwhile can move it again: wait until the scroll position and the page
- * height have not changed for 6 frames (up to 3 s).
+ * meanwhile can move it again — including SVG <image>s, which are not in
+ * document.images. Wait until the scroll position, the page height and where
+ * the headings and buttons sit have not changed for 6 frames (up to 5 s).
  */
 export async function settle(page: Page) {
   await page.evaluate(async () => {
     await document.fonts.ready;
     await Promise.all(Array.from(document.images).filter((i) => !i.complete).map((i) => new Promise((r) => { i.onload = i.onerror = r; })));
     const frame = () => new Promise((r) => requestAnimationFrame(() => r(null)));
-    const state = () => `${window.scrollY}|${document.documentElement.scrollHeight}`;
+    const marks = () => Array.from(document.querySelectorAll("h1,h2,h3,button")).slice(0, 80).reduce((s, el) => s + Math.round(el.getBoundingClientRect().top), 0);
+    const state = () => `${window.scrollY}|${document.documentElement.scrollHeight}|${marks()}`;
     let last = state(), still = 0;
-    const until = performance.now() + 3000;
+    const until = performance.now() + 5000;
     while (still < 6 && performance.now() < until) { await frame(); const s = state(); still = s === last ? still + 1 : 0; last = s; }
   });
 }

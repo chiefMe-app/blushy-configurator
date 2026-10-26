@@ -101,7 +101,11 @@ test("F4 text off and on again keeps the message", async ({ page }) => {
   await page.getByLabel("Your message").fill("Happy Birthday Arya");
   await page.getByRole("button", { name: /No, keep it clean/ }).click();
   await expect(page.getByLabel("Your message")).toHaveCount(0);
-  await shot(page, "f4-text-off");
+  // Removing the field shortens the page and scroll anchoring lands a few
+  // pixels differently from run to run (0–50 px on phones), so this shot is of
+  // the Style panel itself rather than of the viewport.
+  await settle(page);
+  await expect.soft(page.locator(".bz-content")).toHaveScreenshot("f4-text-off.png", { mask: masks(page) });
   await page.getByRole("button", { name: /Yes, add text/ }).click();
   await expect(page.getByLabel("Your message")).toHaveValue("Happy Birthday Arya");
 });
