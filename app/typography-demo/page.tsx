@@ -1,9 +1,8 @@
 // Isolated typography demo: the real lettering engine on the Single Round
 // photo, with only the customer's choices — Heading and Name font, size,
-// colour and position, in vinyl. Not linked from the Builder, not indexed, and
-// not served on the production deployment.
+// colour and position, in vinyl. Live on the site (2026-10-26); not linked
+// from the Builder and not indexed by search engines.
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import TypographyDemo from "@/components/typography-demo/TypographyDemo";
 import { FONTS, FONT_CATEGORIES, cssFamily, fontVariants } from "@/lib/typography/registry";
 import { PRESETS, DEFAULT_PRESET_ID } from "@/lib/typography/presets";
@@ -16,7 +15,6 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default function TypographyDemoPage() {
-  if (process.env.VERCEL_ENV === "production") notFound();
   const fonts = FONTS.map((f) => ({
     id: f.id,
     family: f.family,
