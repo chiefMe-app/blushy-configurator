@@ -11,10 +11,14 @@ import { POST } from "@/app/api/orders/route";
 
 const inserted: Record<string, unknown>[] = [];
 let configured = true;
+let failWith: string | null = null;
 vi.mock("@/lib/supabase", () => ({
   getSupabase: () => {
     if (!configured) throw new Error("Supabase is not configured.");
-    return { from: () => ({ insert: async (row: Record<string, unknown>) => { inserted.push(row); return { error: null }; } }) };
+    return { from: () => ({ insert: async (row: Record<string, unknown>) => {
+      if (failWith) return { error: { message: failWith } };
+      inserted.push(row); return { error: null };
+    } }) };
   },
 }));
 
@@ -37,7 +41,22 @@ function orderBody(config: BuilderConfig) {
 const post = (body: unknown) =>
   POST(new NextRequest("http://localhost/api/orders", { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" } }));
 
-beforeEach(() => { inserted.length = 0; configured = true; });
+beforeEach(() => { inserted.length = 0; configured = true; failWith = null; });
+
+describe("a request the database cannot take", () => {
+  it("still fails visibly, and is written to the server log in full for follow-up", async () => {
+    failWith = "TypeError: fetch failed"; // e.g. the Supabase project is gone
+    const logged: string[] = [];
+    const spy = vi.spyOn(console, "error").mockImplementation((...a: unknown[]) => { logged.push(a.map(String).join(" ")); });
+    const res = await post(orderBody(fixtureById("A-single_round").config));
+    spy.mockRestore();
+    expect(res.status).toBe(502);
+    expect(inserted).toHaveLength(0);
+    const line = logged.find((l) => l.includes("[orders] NOT SAVED"));
+    expect(line).toBeDefined();
+    for (const s of ["Test Customer", "+971500000000", "TypeError: fetch failed", "\"type\":\"round\""]) expect(line).toContain(s);
+  });
+});
 
 describe("orders contract", () => {
   for (const id of ["B01-hb-arya-script", "B08-turkish", "B13-newline", "C01-legacy-birthday", "E03-foil-pink", "D06-double-two-colours"]) {

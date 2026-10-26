@@ -155,6 +155,30 @@ describe("the one-file version for the SQL editor", () => {
   }, 60_000);
 });
 
+describe("orders-table.sql (a project without the orders table)", () => {
+  const order = `insert into public.orders (theme, shape, garland, total_price, customer_name, customer_phone)
+                 values ('frozen', 'round', 'full', 1090, 'Test', '+971500000000')`;
+  for (const [label, first, second] of [["after phase-0.2", "phase-0.2.sql", "orders-table.sql"], ["before phase-0.2", "orders-table.sql", "phase-0.2.sql"]] as const) {
+    it(`${label}: orders can be created by the configurator and read by staff only`, async () => {
+      const fresh = new PGlite();
+      await fresh.exec(SUPABASE_LIKE); // no schema.sql: the table does not exist yet
+      await fresh.exec(read("apply", first));
+      await fresh.exec(read("apply", second));
+      await fresh.exec(read("apply", "orders-table.sql")); // re-runnable
+      await fresh.exec(`insert into auth.users (id) values ('${A}'), ('${STAFF}'); insert into public.staff (user_id) values ('${STAFF}');`);
+      const run = async (claims: string, role: string, sql: string) => {
+        await fresh.query(`select set_config('request.jwt.claims', $1, false)`, [claims]);
+        await fresh.exec(`set role ${role}`);
+        try { return (await fresh.query(sql)).rows; } finally { await fresh.exec("reset role"); }
+      };
+      await run("", "anon", order);
+      expect(await run(JSON.stringify({ sub: A, is_anonymous: true }), "authenticated", "select * from public.orders")).toEqual([]);
+      expect(await run(JSON.stringify({ sub: STAFF, is_anonymous: false }), "authenticated", "select * from public.orders")).toHaveLength(1);
+      await fresh.close();
+    }, 60_000);
+  }
+});
+
 describe("rollback", () => {
   it("every migration undoes cleanly and applies again", async () => {
     const fresh = new PGlite();

@@ -85,6 +85,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ designId: id, total, persisted: false });
   }
 
+  // 2026-10-26: the live site pointed at a Supabase project that no longer
+  // exists, and every request failed without a trace. A request that cannot
+  // be saved is now written to the server log (Vercel → Logs) in full, so
+  // the team can still contact the customer.
+  const keepForFollowUp = (reason: string) => {
+    // eslint-disable-next-line no-console
+    console.error("[orders] NOT SAVED — follow up from this log:", JSON.stringify({ reason, id, createdAt, total, theme: body.theme, customer: body.customer, venue: body.venue, decor: body.decor, addOns: body.addOns, servicePackageId: body.servicePackageId }));
+  };
+
   try {
     const { error } = await supabase.from("orders").insert({
       id,
@@ -101,6 +110,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
+      keepForFollowUp(error.message);
       return NextResponse.json(
         { error: "Failed to save request", detail: error.message },
         { status: 502 }
@@ -114,6 +124,7 @@ export async function POST(req: NextRequest) {
       persisted: true,
     });
   } catch (err) {
+    keepForFollowUp(String(err));
     return NextResponse.json(
       { error: "Order service unavailable", detail: String(err) },
       { status: 500 }
