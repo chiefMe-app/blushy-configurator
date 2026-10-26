@@ -836,6 +836,9 @@ export function useFinalRender(config: BuilderConfig) {
   // 2026-10-26: why a render was refused (the render limits), in words for
   // the customer; null for any other failure.
   const [limitMessage, setLimitMessage] = useState<string | null>(null);
+  // True for a render limit (Retry would be refused too); false when renders
+  // from this connection are still running (Retry in a few seconds works).
+  const [limitFinal, setLimitFinal] = useState(false);
   const [finalUrl, setFinalUrl] = useState<string | null>(null);
 
   // Always use the latest config — avoid stale closures by reading from ref
@@ -959,7 +962,8 @@ export function useFinalRender(config: BuilderConfig) {
       });
 
       const data = await res.json().catch(() => ({}));
-      setLimitMessage(data?.limited && typeof data.error === "string" ? data.error : null);
+      setLimitMessage((data?.limited || data?.busy) && typeof data.error === "string" ? data.error : null);
+      setLimitFinal(!!data?.limited);
       if (!res.ok || !data.imageUrl) {
         setStatus("error");
         return;
@@ -1037,7 +1041,8 @@ export function useFinalRender(config: BuilderConfig) {
         }),
       });
       const data = await res.json().catch(() => ({}));
-      setLimitMessage(data?.limited && typeof data.error === "string" ? data.error : null);
+      setLimitMessage((data?.limited || data?.busy) && typeof data.error === "string" ? data.error : null);
+      setLimitFinal(!!data?.limited);
       if (res.ok && data.imageUrl) {
         currentFinalRenderUrl.current           = data.imageUrl;
         currentFinalRenderSceneHash.current     = computeSceneHash(configRef.current);
@@ -1089,6 +1094,7 @@ export function useFinalRender(config: BuilderConfig) {
     markStale:           stableMarkStale,
     appliedChangeLabel,
     limitMessage,
+    limitFinal,
   };
 }
 
@@ -1234,6 +1240,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
     markStale,
     appliedChangeLabel,
     limitMessage,
+    limitFinal,
   } = useFinalRender(config);
 
   // Hero presentation: the preview card uses a fixed 4:3 stage regardless of the
@@ -1403,7 +1410,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 px-3 py-2" style={{ background: "rgba(39,22,23,.72)" }}>
               {/* 2026-10-26: a render limit says so — and Retry would only be refused again. */}
               <span className="text-[11px] text-white" data-testid="render-error">{limitMessage ?? "Render unavailable"}</span>
-              {showControls && !limitMessage && (
+              {showControls && !limitFinal && (
                 <button type="button" onClick={generateFinalRender}
                         className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-medium text-white">
                   Retry

@@ -19,10 +19,10 @@ beforeEach(() => {
 afterEach(() => { for (const k of ENV) { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; } });
 
 describe("render guard", () => {
-  it("lets 6 renders through per IP in 10 minutes, then says when to come back", async () => {
+  it("lets 10 renders through per IP in 10 minutes, then says when to come back", async () => {
     const statuses: number[] = [];
-    for (let i = 0; i < 7; i++) statuses.push((await call({ renderMode: "first_generate" })).status);
-    expect(statuses.slice(0, 6)).toEqual([500, 500, 500, 500, 500, 500]); // reached the handler (no key)
+    for (let i = 0; i < 10; i++) statuses.push((await call({ renderMode: "first_generate" })).status);
+    expect(statuses).toEqual(Array(10).fill(500)); // reached the handler (no key)
     const res = await call({ renderMode: "first_generate" });
     expect(res.status).toBe(429);
     const json = await res.json();
@@ -39,7 +39,7 @@ describe("render guard", () => {
   });
 
   it("a 'preview' that asks for an edit is counted: that path calls fal first", async () => {
-    for (let i = 0; i < 6; i++) await call({ debugLayoutReferenceOnly: true, renderMode: "edit_existing" });
+    for (let i = 0; i < 10; i++) await call({ debugLayoutReferenceOnly: true, renderMode: "edit_existing" });
     expect((await call({ debugLayoutReferenceOnly: true, renderMode: "edit_existing" })).status).toBe(429);
   });
 
@@ -70,14 +70,34 @@ describe("render guard", () => {
     expect((await res.json()).error).toMatch(/paused/);
   });
 
-  it("one render at a time per IP; the slot is freed when it ends", () => {
-    const a = acquireRender("203.0.113.77");
-    expect(a.ok).toBe(true);
-    const b = acquireRender("203.0.113.77");
-    expect(b.ok).toBe(false);
-    if (!b.ok) expect(b.status).toBe(429);
-    if (a.ok) a.release();
-    expect(acquireRender("203.0.113.77").ok).toBe(true);
+  it("three at a time per IP (a shared mobile or office IP); a slot is freed when its render ends", () => {
+    const ip = "203.0.113.77";
+    const slots = [acquireRender(ip), acquireRender(ip), acquireRender(ip)];
+    expect(slots.every((s) => s.ok)).toBe(true);
+    const fourth = acquireRender(ip);
+    expect(fourth.ok).toBe(false);
+    if (!fourth.ok) {
+      expect(fourth.status).toBe(429);
+      expect(fourth.busy).toBe(true); // not a limit: try again shortly
+      expect(fourth.error).toMatch(/still being made/);
+    }
+    const first = slots[0];
+    if (first.ok) { first.release(); first.release(); } // releasing twice frees one slot only
+    expect(acquireRender(ip).ok).toBe(true);
+    expect(acquireRender(ip).ok).toBe(false);
+  });
+
+  it("a render that never ended (stopped at the time limit) stops blocking after 2 minutes", () => {
+    const ip = "203.0.113.78", t = Date.UTC(2026, 9, 26, 12);
+    for (let i = 0; i < 3; i++) acquireRender(ip, t); // never released
+    expect(acquireRender(ip, t + 60_000).ok).toBe(false);
+    expect(acquireRender(ip, t + 121_000).ok).toBe(true);
+  });
+
+  it("the route answers busy with busy: true, a limit with limited: true", async () => {
+    for (let i = 0; i < 3; i++) acquireRender("203.0.113.5");
+    const json = await (await call({ renderMode: "first_generate" })).json();
+    expect(json).toEqual({ error: expect.stringMatching(/still being made/), busy: true });
   });
 
   it("a new UTC day starts the counts again", () => {

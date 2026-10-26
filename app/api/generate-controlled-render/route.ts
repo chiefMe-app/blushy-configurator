@@ -853,7 +853,10 @@ export async function POST(req: NextRequest) {
   if (freePreview) return handleRender(inner);
   const slot = acquireRender(clientIp(req.headers));
   if (!slot.ok) {
-    return NextResponse.json({ error: slot.error, limited: true }, { status: slot.status, headers: { "retry-after": String(slot.retryAfter) } });
+    // busy: renders already running from this connection (try again shortly);
+    // limited: a render limit (trying again now would be refused too).
+    return NextResponse.json(slot.busy ? { error: slot.error, busy: true } : { error: slot.error, limited: true },
+      { status: slot.status, headers: { "retry-after": String(slot.retryAfter) } });
   }
   try {
     return await handleRender(inner);

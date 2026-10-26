@@ -220,3 +220,12 @@ test("F11 a render limit says so in the render card, with no Retry", async ({ pa
   await expect(page.getByRole("button", { name: "Retry" })).toHaveCount(0);
   await expect(page.getByText("Render unavailable")).toHaveCount(0);
 });
+
+test("F12 renders still running from the same connection: says so, and Retry stays", async ({ page, guard }) => {
+  guard.limitRender = { status: 429, busy: true, error: "A render from this connection is still being made — please try again in a few seconds." };
+  await openDecor(page, "Frozen", "Single Round");
+  await decorTab(page, "Extras");
+  await next(page).click();
+  await expect(page.getByTestId("render-error")).toHaveText(/still being made/);
+  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+});

@@ -17,7 +17,7 @@ export interface Guard {
   /** Answer blocked order requests the way the route does without Supabase. */
   fakeOrder: boolean;
   /** Answer blocked render requests the way the render limits do (lib/renderGuard.ts). */
-  limitRender?: { status: number; error: string };
+  limitRender?: { status: number; error: string; busy?: boolean };
 }
 
 export async function lockNetwork(page: Page): Promise<Guard> {
@@ -34,7 +34,8 @@ export async function lockNetwork(page: Page): Promise<Guard> {
     if (BLOCKED_API.test(url.pathname)) {
       guard.blocked.push(req);
       if (guard.limitRender && url.pathname.startsWith("/api/generate-controlled-render")) {
-        return route.fulfill({ status: guard.limitRender.status, json: { error: guard.limitRender.error, limited: true } });
+        const { status, error, busy } = guard.limitRender;
+        return route.fulfill({ status, json: busy ? { error, busy: true } : { error, limited: true } });
       }
       if (guard.fakeRender && url.pathname.startsWith("/api/generate-controlled-render")) {
         return route.fulfill({ json: { imageUrl: FAKE_RENDER } });
