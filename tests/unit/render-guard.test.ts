@@ -56,6 +56,13 @@ describe("render guard", () => {
     expect((await res.json()).error).toMatch(/today's render limit/);
   });
 
+  it("a request without a scene is refused (400), not a crash", async () => {
+    process.env.FAL_KEY = "not-a-real-key";
+    const res = await call({ renderMode: "first_generate" });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/Missing sceneModel/);
+  });
+
   it("the kill switch stops every render at once", async () => {
     process.env.RENDERS_DISABLED = "1";
     const res = await call({});

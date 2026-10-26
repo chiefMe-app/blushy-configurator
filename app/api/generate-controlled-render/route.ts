@@ -874,6 +874,10 @@ async function handleRender(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
+  // 2026-10-26: a body without a scene used to crash below (500).
+  if (!body || typeof body !== "object" || !Array.isArray(body.sceneModel?.panels) || !body.promptInput) {
+    return NextResponse.json({ error: "Missing sceneModel or promptInput." }, { status: 400 });
+  }
 
   const {
     promptInput, sceneModel,
