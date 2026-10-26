@@ -31,6 +31,7 @@
  * of truth. AI render is a visual preview, not the production measurement source.
  */
 
+import { acquireRender, clientIp } from "@/lib/renderGuard";
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
@@ -834,7 +835,34 @@ async function generateLayoutReferencePng(
 // Route handler
 // ---------------------------------------------------------------------------
 
+/**
+ * 2026-10-26: every request that can reach fal (and so cost money) takes a
+ * render slot first — lib/renderGuard.ts (per-IP and daily limits, one at a
+ * time per IP, a kill switch). The free layout-guide preview does not, unless
+ * it asks for an edit of an earlier render, which calls fal before the
+ * preview returns.
+ */
 export async function POST(req: NextRequest) {
+  const raw = await req.text();
+  let freePreview = false;
+  try {
+    const b = JSON.parse(raw) as Partial<RequestBody>;
+    freePreview = b?.debugLayoutReferenceOnly === true && b?.renderMode !== "edit_existing";
+  } catch { /* handleRender answers invalid JSON */ }
+  const inner = new NextRequest(req.url, { method: "POST", headers: req.headers, body: raw });
+  if (freePreview) return handleRender(inner);
+  const slot = acquireRender(clientIp(req.headers));
+  if (!slot.ok) {
+    return NextResponse.json({ error: slot.error, limited: true }, { status: slot.status, headers: { "retry-after": String(slot.retryAfter) } });
+  }
+  try {
+    return await handleRender(inner);
+  } finally {
+    slot.release();
+  }
+}
+
+async function handleRender(req: NextRequest) {
   const falKey = process.env.FAL_KEY;
   if (!falKey) {
     return NextResponse.json({ error: "Missing FAL_KEY." }, { status: 500 });
