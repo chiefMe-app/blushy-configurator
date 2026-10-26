@@ -5,53 +5,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getThemeGraphicPresets } from "@/lib/themeCatalog";
 import {
-  EVENT_TYPES,
   THEMES,
-  PACKAGES,
-  BACKDROP_SHAPES,
-  ARCH_SIZES,
-  RECT_SIZES,
-  makeBackdropItem,
-  BALLOON_STYLES,
-  PLINTH_SIZES,
-  CUTOUT_SETS,
-  CUTOUT_STANDEE_OPTIONS,
-emptyCutoutStandees,
-emptyCutoutQuantities,
-normalizeCutouts,
-type CutoutSelection,
-cutoutPrice,
-cutoutTotalCount,
-  BACKDROP_PRINTS,
-  GRAPHIC_STYLES,
-  FONT_STYLES,
-  TEXT_SIZES,
-  TEXT_COLORS,
-  DEFAULT_TEXT_VALUE,
+  normalizeCutouts,
+  type CutoutSelection,
   themeTextColor,
-  resolveTextColorHex,
-  isCustomTextColor,
-  ADDONS,
-  CAKE_TABLE_PRICE,
-  PER_BACKDROP,
   defaultConfig,
   themeById,
-  NEON_SIGN_PRICE,
-  GARLAND_FLORALS_PRICE,
-  NUMBER_LIGHT_PRICE,
-  FOIL_NUMBER_BUNCH_PRICE,
-  FOIL_NUMBER_COLOURS,
-  foilNumberColour,
-  plinthsTotal,
-  packageById,
   priceBreakdown,
   formatAED,
-  SERVICE_PACKAGES,
-  servicePackageById,
-  isAddOnRecommended,
   hexToRgbTriplet,
   softTriplet,
-  type CutoutStandeeItem,
   type BuilderConfig,
   type DecorConfig,
   type VenueDetails,
@@ -59,59 +22,29 @@ cutoutTotalCount,
   type AddOnId,
   type EventTypeId,
   type ThemeId,
-  type PackageId,
   type ServicePackageId,
-  type BalloonStyleId,
-  type BackdropShapeId,
-  type BackdropItem,
-  type BackdropItemText,
-  type BackdropItemGraphic,
-  type ArchSizeId,
-  type RectSizeId,
-  type PlinthSize,
-  type CutoutPosition,
-  type BackdropPrintType,
-  type GraphicStyle,
-  type FontStyle,
-  type TextColor,
-  type TextAlign,
-  SHIMMER_COLORS,
-  SHIMMER_COLOR_HEX,
-  NEON_SIGN_PRESETS,
-  type ShimmerColorId,
   DEFAULT_BACKDROP_COLOR,
-  backdropSwatchesForTheme,
-  BALLOON_RING_STYLES,
 } from "@/lib/config";
-import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
-import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS, getThemeCutoutPresets } from "@/lib/themeCatalog";
+import { getThemeCutoutPresets } from "@/lib/themeCatalog";
 
-import { SETUP_LAYOUT_TEMPLATES, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
+import { inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 import SetupPreview, { useSetupPreview, type FinalRenderState } from "@/components/SetupPreview";
 import {
-  MAX_BACKDROP_ITEMS, SERIF, DC, STEPS, STEP_COPY, MAX_STANDEES, COMING_SOON_EVENTS, DECOR_STEP_COPY,
-  DECOR_TABS, THEME_GROUPS, SETUP_ICON, THEME_SETUP_PREVIEW, THEME_PRINT_SUGGESTIONS, PLINTH_SHORT,
-  getThemeDefault,
+  STEPS,
+  STEP_COPY,
+  DECOR_STEP_COPY,
+  DECOR_TABS,
+  THEME_SETUP_PREVIEW,
 } from "@/components/builder/constants";
-import { OptionSample, SetupMiniPreview, Dash, StepShell, ChoiceRow } from "@/components/builder/ui";
-import { useDecorStep, type DecorStepProps, type DecorCtx } from "@/components/builder/decor/useDecorStep";
-import StyleTab from "@/components/builder/decor/StyleTab";
-import ExtrasTab from "@/components/builder/decor/ExtrasTab";
 import EventStep from "@/components/builder/steps/EventStep";
 import ThemeStep from "@/components/builder/steps/ThemeStep";
 import PackageStep from "@/components/builder/steps/PackageStep";
 import AddOnsStep from "@/components/builder/steps/AddOnsStep";
 import VenueStep from "@/components/builder/steps/VenueStep";
 import ReviewStep from "@/components/builder/steps/ReviewStep";
+import DecorStep from "@/components/builder/decor/DecorStep";
 
-import StepNavigation from "@/components/StepNavigation";
-import OptionCard from "@/components/OptionCard";
-import PackageCard from "@/components/PackageCard";
-import AddOnCard from "@/components/AddOnCard";
 import Sprinkles from "@/components/design/Sprinkles";
-import { PieceDiagram } from "@/components/design/LiveSketch";
-import VenueDetailsForm from "@/components/VenueDetailsForm";
-import ReviewSummary from "@/components/ReviewSummary";
 
 type View = "configure" | "success";
 
@@ -568,335 +501,4 @@ export default function ConfigurePage() {
 // ---------------------------------------------------------------------------
 // Step shells + decor controls
 // ---------------------------------------------------------------------------
-
-
-function DecorStep(props: DecorStepProps) {
-  const ctx = useDecorStep(props);
-  const {
-    patchDecor, decorTab, setDecorTab, onGenerate, renderReady, hasRender, generating, onContinue,
-    showManualPieces, setShowManualPieces, sempertexIds, sempertexManual, showSempertexBrowser, setShowSempertexBrowser,
-    sempertexQuery, setSempertexQuery, sempertexFilter, setSempertexFilter, sempertexExceeded, effectiveSempertexSelection,
-    toggleSempertex, resetToThemePalette, d, theme, t, card, nextCue, BackdropShapePreview, chip,
-    toggleArchSize, toggleRound, toggleOtherType, applySetupTemplate, activeSetupTemplateId, TYPE_LABEL,
-  } = ctx;
-  return (
-    <div>
-      {/* == Compact decor head + the four tabs (2026-10-22 redesign) == */}
-      <div className="bz-decor-head">
-        <span>YOUR DECOR</span>
-        <strong>{SETUP_LAYOUT_TEMPLATES.find((t) => t.id === activeSetupTemplateId)?.name ?? "Pick a backdrop"}</strong>
-        <span style={{ marginLeft: "auto", color: "#7f717c", fontWeight: 650 }}>{theme.name} theme</span>
-      </div>
-      <div className="bz-decor-tabbar" role="tablist" aria-label="Decor customization">
-        {DECOR_TABS.map((t, i) => (
-          <button key={t.name} type="button" role="tab" aria-selected={decorTab === i}
-            className={`bz-decor-tab ${decorTab === i ? "on" : ""}`} onClick={() => setDecorTab(i)}>
-            <span className="num">{t.num}</span><span>{t.name}</span>
-          </button>
-        ))}
-      </div>
-      {/* 2026-10-23: only the Backdrop tab keeps its own panel head. */}
-      {decorTab === 0 && <div className="bz-decor-panel-head">
-        <div>
-          <span className="bz-decor-kicker">{DECOR_TABS[decorTab].kicker}</span>
-          <h2>{DECOR_TABS[decorTab].title}</h2>
-          <p>{DECOR_TABS[decorTab].sub}</p>
-        </div>
-        <span className="bz-decor-count">{DECOR_TABS[decorTab].num} / 04</span>
-      </div>}
-
-      {/* == 1 · BACKDROP (tab 01) ============================= */}
-      {decorTab === 0 && (
-      <div>
-      <div>
-        {/* Curated setup layouts — illustrated icon cards */}
-        <div style={{ marginBottom: 16 }}>
-          {d.backdropItems.length === 0 && <div style={{ marginBottom: 10 }}>{nextCue("Start here — tap a layout")}</div>}
-          <div className="bz-layout-grid">
-            {SETUP_LAYOUT_TEMPLATES.map((tpl) => {
-              const active = activeSetupTemplateId === tpl.id;
-              const icon = SETUP_ICON[tpl.id];
-              return (
-                <button key={tpl.id} type="button" aria-pressed={active}
-                  onClick={() => {
-                    applySetupTemplate(tpl.id);
-                    // 2026-10-23: on phones and tablets the preview sits below the
-                    // options, so each pick scrolls down to show it.
-                    if (window.innerWidth < 1024) {
-                      setTimeout(() => document.getElementById("party-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
-                    }
-                  }}
-                  className={`bz-choice bz-layout ${active ? "selected" : ""}`} title={tpl.description}>
-                  {active && <span className="tick">✓</span>}
-                  {tpl.badge && !active && (
-                    <span className="bz-coming" style={{ top: 5, right: 5, padding: "3px 7px" }}>{tpl.badge}</span>
-                  )}
-                  {/* 2026-10-22 redesign: the reference's illustrated backdrop icon. */}
-                  <span className="art">
-                    {icon
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={icon} alt="" loading="lazy" />
-                      : <SetupMiniPreview shapes={tpl.miniPreview} />}
-                  </span>
-                  <h3>{tpl.name}</h3>
-                  {/* 2026-10-25: every choice shows its price. Boards cost PER_BACKDROP each (+80 for a shimmer wall). */}
-                  <small className="bz-layout-price">AED {formatAED(tpl.backdropTypes.reduce((s, t) => s + PER_BACKDROP + (t === "shimmer_wall" ? 80 : 0), 0))}</small>
-                </button>
-              );
-            })}
-          </div>
-          {d.backdropItems.length > 0 && (
-            <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF0F6", border: "1px solid #F7C9DD", borderRadius: 20, padding: "4px 12px", fontSize: 11, fontWeight: 700, color: "#EC4D8D" }}>
-              <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "#EC4D8D", display: "inline-block" }}/>
-              <span>Your set: {d.backdropItems.map(i => TYPE_LABEL[i.type] ?? i.type).join(" + ")}</span>
-            </div>
-          )}
-          {d.backdropItems.length >= MAX_BACKDROP_ITEMS && (
-            <div style={{ marginTop: 8, fontSize: 11, color: "#73778A", fontWeight: 500 }}>
-              You can select up to 3 backdrop pieces for a controlled render.
-            </div>
-          )}
-          <button type="button" onClick={() => setShowManualPieces(v => !v)}
-            style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: "#8A8DA0", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
-            {showManualPieces ? "Hide manual piece options" : "Change pieces manually"}
-          </button>
-        </div>
-
-        {/* 4 type cards in a row — secondary, behind "Change pieces manually" */}
-        {showManualPieces && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
-          {[
-            { type: "arch" as const, label: "Arch Backdrop", badge: "Most popular", click: () => { const hasArch = d.backdropItems.some(i=>i.type==="arch"); if(!hasArch) toggleArchSize(ARCH_SIZES.find(s=>s.id==="large") ?? ARCH_SIZES[2]); else patchDecor({ backdropItems: d.backdropItems.filter(i=>i.type!=="arch") }); } },
-            { type: "rect" as const, label: "Rectangular Backdrop", badge: null, click: () => toggleOtherType("rect") },
-            { type: "round" as const, label: "Round Backdrop", badge: null, click: () => toggleRound() },
-          ].map(({ type, label, badge, click }) => {
-            const isSelected = type === "arch"
-              ? d.backdropItems.some(i => i.type === "arch")
-              : d.backdropItems.some(i => i.type === type);
-            return (
-              <div key={type} onClick={click} style={{
-                border: isSelected ? "2px solid #F7A7C8" : "1.5px solid #ECEAF1",
-                borderRadius: 14, padding: "20px 10px 14px", textAlign: "center",
-                background: isSelected ? "linear-gradient(145deg, #FFF7FB 0%, #FFFFFF 100%)" : "#FAFAFA",
-                cursor: "pointer", position: "relative", transition: "all 0.18s",
-                minHeight: 160, boxShadow: isSelected ? "0 8px 24px rgba(236,77,141,0.10)" : "none",
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
-              }}>
-                {/* Elegant check -no SELECTED text */}
-                {isSelected && (
-                  <span style={{ position: "absolute", top: 9, right: 9, background: "#EC4D8D", color: "white", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900 }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
-                )}
-                {badge && <span style={{ position: "absolute", top: 9, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: isSelected ? "#EC4D8D" : "#FFE8F0", color: isSelected ? "white" : "#EC4D8D", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>{badge}</span>}
-                <div style={{ marginTop: badge ? 10 : 0 }}>
-                  <BackdropShapePreview type={type} color={isSelected ? "#EC4D8D" : "#E8D5E8"} />
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: isSelected ? "#EC4D8D" : "#15182E", lineHeight: 1.3 }}>{label}</div>
-              </div>
-            );
-          })}
-        </div>
-        )}
-
-      </div>
-      </div>
-      )}{/* == end 1 · Backdrop == */}
-
-      {/* == 2 · STYLE (tab 02) — 2026-10-23 redesign: five numbered steps for
-           one piece at a time (size, message, lettering, colours, graphic).
-           Every control writes through the same patchItem / patchItemText /
-           patchItemGraphic handlers and keeps the same sales rules as before;
-           only the presentation changed. == */}
-      {decorTab === 1 && <StyleTab ctx={ctx} />}
-
-      {/* == 3 · BALLOONS (tab 03) ============================= */}
-      {decorTab === 2 && (
-      <div>
-        {d.backdropItems.length > 0 && d.balloonStyle === "none" && <div style={{ marginBottom: 10 }}>{nextCue("Optional — add a garland")}</div>}
-
-      {/* Garland choice — balloons are opt-in (2026-07-20). They used to be
-          pre-added by the package's defaultDecor with no way to decline.
-          2026-10-23: presented as the two large illustrated cards. */}
-      <section className="bz-ex-card c-pink">
-        <h3 className="bz-ex-title"><span>1.</span> Choose your balloon style <Dash /></h3>
-        <div className="bz-bl-styles">
-          {/* 2026-09-09: "No balloons" is offered on a Balloon Ring again. It
-              used to be hidden because a ring WAS the balloons — but the ring
-              now has a bare gold hoop dressing, and with that chosen the tier
-              below has to be able to say "no balloons" too, or the quote still
-              charges for a garland that is not in the render. The two controls
-              are kept in step in both directions. */}
-          {BALLOON_STYLES
-            .map((b) => {
-            const active = d.balloonStyle === b.id;
-            const hasRing = d.backdropItems.some((i) => i.type === "balloon_ring");
-            return (
-              <button key={b.id} type="button"
-                onClick={() => patchDecor(
-                  hasRing
-                    ? { balloonStyle: b.id, balloonRingStyle: b.id === "none" ? "none" : (d.balloonRingStyle === "none" ? "full" : (d.balloonRingStyle ?? "full")) }
-                    : { balloonStyle: b.id },
-                )}
-                aria-pressed={active}
-                className={`bz-bl-style ${b.id === "none" ? "none" : "garland"} ${active ? "on" : ""}`}>
-                {active ? <span className="bz-st-tick" aria-hidden="true">✓</span> : <span className="radio" aria-hidden="true" />}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={b.id === "none" ? "/design/ui/balloons-none.webp" : "/design/ui/balloons-garland.webp"} alt="" />
-                <span className="txt">
-                  <strong>{b.id === "none" ? "No balloons" : "Organic Garland"}</strong>
-                  {b.price > 0 && <em>+AED {b.price}</em>}
-                  <small>{b.id === "none" ? "Keep it simple – backdrop only." : "A beautiful, modern garland to complete your backdrop."}</small>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* SEMPERTEX PICKER — the palette as balloon chips; expanded: full browser */}
-      <section className="bz-ex-card c-yellow" style={{ opacity: d.balloonStyle === "none" ? 0.55 : 1 }}>
-        <div className="bz-bl-head">
-          <h3 className="bz-ex-title"><span>2.</span> Your balloon colours <Dash /></h3>
-          <span className="bz-bl-pill">{sempertexManual ? "Your Sempertex mix" : `Matched to ${theme.name}`} · {effectiveSempertexSelection.length} colours</span>
-        </div>
-        {d.balloonStyle !== "none" && (
-          <p className="bz-bl-lead">
-            {sempertexManual
-              ? "Your own pick of real Sempertex shades. Reset to go back to the theme’s colours."
-              : <>Already chosen for your <b>{theme.name}</b> theme from the real Sempertex range — nothing to pick. Want something different? Change colours.</>}
-          </p>
-        )}
-        {d.balloonStyle === "none" && <p className="bz-bl-muted">Pick a garland above to choose balloon colours.</p>}
-
-        <div style={{ marginBottom: 12 }}>
-          {/* Chips — rendered directly from effectiveSempertexSelection (single source of truth).
-              Tapping one removes it, as before. */}
-          <div className="bz-bl-chips">
-            {effectiveSempertexSelection.length === 0 && (
-              <span className="bz-bl-muted">No colours selected — tap “Change colours” to pick.</span>
-            )}
-            {effectiveSempertexSelection.map(c => (
-              <button key={c.id} type="button" onClick={() => toggleSempertex(c.id)} className="bz-bl-chip" title={`Remove ${c.code} ${c.colorName}`}>
-                <span className={`ball ${/reflex|chrome|metallic/i.test(c.finish) ? "chrome" : ""} ${/clear/i.test(c.colorName) ? "clear" : ""}`} style={{ ["--c" as string]: c.hex } as React.CSSProperties} aria-hidden="true" />
-                <span className="txt"><strong>{c.code}</strong><small>{c.colorName}</small></span>
-                <span className="x" aria-hidden="true">×</span>
-              </button>
-            ))}
-          </div>
-          <div className="bz-bl-actions">
-            <button type="button" onClick={() => setShowSempertexBrowser(v => !v)} className={`bz-st-chip ${showSempertexBrowser ? "on" : ""}`}>
-              {showSempertexBrowser ? "Done" : "Change colours"}
-            </button>
-            <button type="button" onClick={resetToThemePalette} className="bz-st-chip" style={{ opacity: sempertexManual ? 1 : 0.5 }}>
-              Reset to theme
-            </button>
-          </div>
-          {sempertexExceeded && (
-            <div style={{ marginTop: 6, fontSize: 11, color: "#EC4D8D", fontWeight: 600 }}>Maximum 5 colors selected. Remove one to add another.</div>
-          )}
-          {sempertexManual && (
-            <div style={{ marginTop: 8, padding: "6px 10px", background: "#FFF7E6", border: "1px solid #FCD9A0", borderRadius: 8, fontSize: 11, color: "#92620A", fontWeight: 600 }}>
-              Balloon colors changed - regenerate to update preview.
-            </div>
-          )}
-        </div>
-
-        <div className="bz-bl-tip"><span aria-hidden="true">💡</span> These are the exact Sempertex shades our team will inflate on the day.</div>
-
-        {/* Expandable catalogue browser */}
-        {showSempertexBrowser && (
-          <div style={{ borderTop: "1px solid #F1D8E2", paddingTop: 14 }}>
-            {/* Search */}
-            <input aria-label="Search Sempertex colors" type="text"
-              placeholder="Search code or color, e.g. 609, Pastel Matte Pink, Reflex Gold"
-              value={sempertexQuery} onChange={e => setSempertexQuery(e.target.value)}
-              style={{ width: "100%", padding: "9px 14px", borderRadius: 10, border: "1.5px solid #ECEAF1", fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box", color: "#15182E" }} />
-
-            {/* Filter pills */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
-              {["All","Pastel Matte","Silk","Reflex","White","Pink","Purple","Gold"].map(f => (
-                <button key={f} type="button" onClick={() => setSempertexFilter(f)}
-                  style={{ padding: "4px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
-                    background: sempertexFilter === f ? "#EC4D8D" : "white",
-                    color: sempertexFilter === f ? "white" : "#73778A",
-                    border: sempertexFilter === f ? "none" : "1.5px solid #ECEAF1" }}>
-                  {f}
-                </button>
-              ))}
-            </div>
-
-            {/* Color grid */}
-            {(() => {
-              const q = sempertexQuery.toLowerCase();
-              const filtered = SEMPERTEX_CATALOG.filter(c => {
-                const matchSearch = !q || c.code.includes(q) || c.colorName.toLowerCase().includes(q) || c.finish.toLowerCase().includes(q) || c.family.toLowerCase().includes(q);
-                const matchFilter = sempertexFilter === "All" || c.finish.includes(sempertexFilter) || c.family === sempertexFilter;
-                return matchSearch && matchFilter;
-              });
-              return (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 8 }}>
-                  {filtered.map(c => {
-                    const sel = sempertexIds.includes(c.id);
-                    const maxed = sempertexIds.length >= 5 && !sel;
-                    return (
-                      <button key={c.id} type="button" onClick={() => !maxed && toggleSempertex(c.id)}
-                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px", borderRadius: 12,
-                          cursor: maxed ? "not-allowed" : "pointer",
-                          border: sel ? "2px solid #EC4D8D" : "1.5px solid #ECEAF1",
-                          background: sel ? "#FFF7FB" : "white",
-                          opacity: maxed ? 0.42 : 1, transition: "all 0.15s", position: "relative", textAlign: "left" }}>
-                        {sel && <span style={{ position: "absolute", top: 5, right: 5, width: 16, height: 16, borderRadius: "50%", background: "#EC4D8D", color: "white", fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
-                        <span style={{ width: 30, height: 30, borderRadius: "50%", background: c.hex, border: "1.5px solid rgba(0,0,0,0.10)", flexShrink: 0, display: "block" }} />
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: sel ? "#EC4D8D" : "#15182E" }}>{c.code}</div>
-                          <div style={{ fontSize: 10, color: "#73778A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.colorName}</div>
-                          <div style={{ fontSize: 9, color: "#A1A3B4", marginTop: 1 }}>{c.finish}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-          </div>
-        )}
-      </section>
-
-      </div>
-      )}{/* -"--"- end Balloons tab -"--"- */}
-
-      {/* == 4 · EXTRAS (tab 04) =============================== */}
-      {/* == 4 · EXTRAS (tab 04) — 2026-10-23 redesign: five colour cards.
-           Every control is the one that was here before (toggleCutoutAsset,
-           patchDecor for florals / neon / number, setPlinthCount); prices come
-           from the product data. == */}
-      {decorTab === 3 && <ExtrasTab ctx={ctx} />}
-
-      {/* == Tab footer: next tab, or Generate Render after Extras == */}
-      <div className="bz-decor-footer">
-        <span>✓ Saved as you go</span>
-        {decorTab < DECOR_TABS.length - 1 ? (
-          <button type="button" className="bz-decor-hint" onClick={() => setDecorTab(decorTab + 1)}>
-            Next up: {DECOR_TABS[decorTab + 1].name} →
-          </button>
-        ) : renderReady ? (
-          <button type="button" className="bz-decor-cta" onClick={onContinue}>Continue to Package →</button>
-        ) : (
-          <button type="button" className="bz-decor-cta" onClick={onGenerate}
-            disabled={generating || d.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}>
-            {generating ? "Generating…" : hasRender ? "Regenerate render ✨" : "Generate render ✨"}
-          </button>
-        )}
-      </div>
-      <div className="bz-decor-note">✳ No need to scroll through every option — just switch tabs.</div>
-    </div>
-  );
-}
-
-
-
-
-
-
-
-
 
