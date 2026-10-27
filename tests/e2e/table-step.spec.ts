@@ -85,7 +85,7 @@ test("K4 the backdrop is a choice too: skipping it leaves it out of the total", 
 
 const tableRenders = (blocked: { url(): string }[]) => blocked.filter((r) => r.url().includes("/api/table-render")).length;
 
-test("K5 the real render: both views, and it says when the table has changed since", async ({ page, guard }) => {
+test("K5 the real render: every view, and it says when the table has changed since", async ({ page, guard }) => {
   guard.fakeRender = true;
   await signIn(page);
   await toTable(page);
@@ -95,7 +95,10 @@ test("K5 the real render: both views, and it says when the table has changed sin
   await expect(photo).toHaveAttribute("src", FAKE_TABLE_RENDER.perspective);
   await page.getByRole("tab", { name: "Top view" }).click();
   await expect(photo).toHaveAttribute("src", FAKE_TABLE_RENDER.top);
-  expect(tableRenders(guard.blocked)).toBe(1); // one request, both views
+  await page.getByRole("tab", { name: "Close-up" }).click();
+  await expect(photo).toHaveAttribute("src", FAKE_TABLE_RENDER.close);
+  await page.getByRole("tab", { name: "Top view" }).click();
+  expect(tableRenders(guard.blocked)).toBe(1); // one request, every view
   // The sketch is a click away.
   await page.getByRole("button", { name: "Show the sketch" }).click();
   await expect(page.getByTestId("table-sketch")).toBeVisible();
@@ -107,6 +110,12 @@ test("K5 the real render: both views, and it says when the table has changed sin
   await page.getByRole("button", { name: "Update the render ✦" }).click();
   await expect(photo).toBeVisible();
   expect(tableRenders(guard.blocked)).toBe(2);
+  // Indoors instead of the garden is a change too.
+  await page.getByRole("radio", { name: "Indoors" }).click();
+  await expect(page.getByTestId("table-render-box")).toContainText("You changed the table since your render");
+  await page.getByRole("button", { name: "Update the render ✦" }).click();
+  await expect(photo).toBeVisible();
+  expect(tableRenders(guard.blocked)).toBe(3);
 });
 
 test("K7 the render is kept: back on the page it comes from the customer's storage, with no new render", async ({ page, guard }) => {

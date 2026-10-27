@@ -21,15 +21,21 @@ async function imageBytes(imageUrl: string): Promise<Buffer | null> {
   return buf.length <= MAX_SOURCE_BYTES ? buf : null;
 }
 
-/**
- * Stores the render; returns where, or null if it could not be stored (the
- * customer still sees the render — only keeping it failed, and is logged).
- */
-export async function storeRender(client: SupabaseClient, userId: string, imageUrl: string, sceneHash: string): Promise<{ path: string; key: string } | null> {
+/** The render as the JPEG that is kept (at most MAX_WIDTH wide), or null. */
+export async function renderJpeg(imageUrl: string): Promise<Buffer | null> {
   try {
     const source = await imageBytes(imageUrl);
-    if (!source) { console.warn("[render] not stored: no image bytes"); return null; }
-    const jpeg = await sharp(source).resize({ width: MAX_WIDTH, withoutEnlargement: true }).jpeg({ quality: 85, mozjpeg: true }).toBuffer();
+    if (!source) { console.warn("[render] no image bytes"); return null; }
+    return await sharp(source).resize({ width: MAX_WIDTH, withoutEnlargement: true }).jpeg({ quality: 85, mozjpeg: true }).toBuffer();
+  } catch (err) {
+    console.warn("[render] no image bytes:", err);
+    return null;
+  }
+}
+
+/** Keeps a JPEG made by renderJpeg; returns where, or null (logged). */
+export async function storeRenderJpeg(client: SupabaseClient, userId: string, jpeg: Buffer, sceneHash: string): Promise<{ path: string; key: string } | null> {
+  try {
     const key = renderKey(sceneHash);
     const path = `${userId}/${key}.jpg`;
     const { error } = await client.storage.from(RENDER_BUCKET).upload(path, jpeg, { contentType: "image/jpeg", upsert: true });
@@ -39,4 +45,14 @@ export async function storeRender(client: SupabaseClient, userId: string, imageU
     console.warn("[render] not stored:", err);
     return null;
   }
+}
+
+/**
+ * Stores the render; returns where, or null if it could not be stored (the
+ * customer still sees the render — only keeping it failed, and is logged).
+ */
+export async function storeRender(client: SupabaseClient, userId: string, imageUrl: string, sceneHash: string): Promise<{ path: string; key: string } | null> {
+  const jpeg = await renderJpeg(imageUrl);
+  if (!jpeg) { console.warn("[render] not stored: no image bytes"); return null; }
+  return storeRenderJpeg(client, userId, jpeg, sceneHash);
 }

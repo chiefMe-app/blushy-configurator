@@ -14,7 +14,7 @@ const BLOCKED_API = /\/api\/(orders|generate|generate-cutouts|generate-controlle
 /** A stand-in render: any local picture, so the flow can move past Decor. */
 export const FAKE_RENDER = "/design/balloon-dog-outline.webp";
 /** Stand-ins for the table render's two views. */
-export const FAKE_TABLE_RENDER = { perspective: "/design/table/table-long.webp", top: "/design/table/table-round.webp" };
+export const FAKE_TABLE_RENDER = { perspective: "/design/table/table-long.webp", top: "/design/table/table-round.webp", close: "/design/table/plates-themed.webp" };
 
 export interface Guard {
   blocked: Request[];
@@ -184,7 +184,7 @@ export async function lockNetwork(page: Page): Promise<Guard> {
         if (!table) return route.fulfill({ status: 400, json: { error: "Missing table" } });
         const sub = tokenSubject(req.headers()["authorization"]);
         const key = tableRenderKey(table);
-        return route.fulfill({ json: { urls: FAKE_TABLE_RENDER, ...(sub ? { render: { key, perspective: `${sub}/p${key}.jpg`, top: `${sub}/t${key}.jpg` } } : {}) } });
+        return route.fulfill({ json: { urls: FAKE_TABLE_RENDER, ...(sub ? { render: { key, perspective: `${sub}/p${key}.jpg`, top: `${sub}/t${key}.jpg`, close: `${sub}/c${key}.jpg` } } : {}) } });
       }
       if (guard.fakeOrder && url.pathname.startsWith("/api/orders")) {
         return route.fulfill({ json: { designId: "TEST-ORDER", total: 0, persisted: false } });

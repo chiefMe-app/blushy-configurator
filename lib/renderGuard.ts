@@ -21,7 +21,7 @@ const usage = new Map<string, Usage>();
 // Renders in progress per IP, by start time. One that never ended (the
 // function was stopped at its time limit) stops counting after STALE_MS.
 const inflight = new Map<string, number[]>();
-const STALE_MS = 120_000; // the route's maxDuration is 90 s
+const STALE_MS = 320_000; // the longest route (the table render) may run 300 s
 let global = { day: "", count: 0 };
 
 export type GuardResult =

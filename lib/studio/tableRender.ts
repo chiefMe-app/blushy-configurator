@@ -5,15 +5,15 @@
 // the API route (the prompt) and the builder (is the render still current?).
 import { hexToColorName } from "@/lib/generatePrompt";
 import { NONE, type TableItemKey } from "./tableCatalog";
-import { clampKids, tableCounts, type TableSetup } from "./tableSetup";
+import { clampKids, tableCounts, type TableScene, type TableSetup } from "./tableSetup";
 
 export type { TableRender } from "./tableSetup";
 
-export type TableView = "perspective" | "top";
+export type TableView = "perspective" | "top" | "close";
 
 /** Changes whenever anything that shows in the picture changes. */
 export function tableRenderKey(t: TableSetup): string {
-  const s = JSON.stringify([clampKids(t.kids), Object.entries(t.choices).sort(), t.clothColor, t.runnerColor, t.napkinColor].flat(2));
+  const s = JSON.stringify([clampKids(t.kids), Object.entries(t.choices).sort(), t.clothColor, t.runnerColor, t.napkinColor, t.scene ?? "garden"].flat(2));
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
   return (h >>> 0).toString(36);
@@ -37,7 +37,8 @@ const WORDS: Partial<Record<TableItemKey, Record<string, string>>> = {
 
 /** The seating in words, exactly as TableSketch's arrangeTables lays it out. */
 export function seatingWords(t: TableSetup, view: TableView = "perspective"): string {
-  const [far, near] = view === "top" ? ["the top side", "the bottom side"] : ["the far side", "the near side"];
+  // The front photo looks down the table from one end, so its sides are left and right.
+  const [far, near] = view === "top" ? ["the top side", "the bottom side"] : ["the left side", "the right side"];
   const { perTable, tables } = tableCounts(t);
   const shape = t.choices.table;
   if (shape === "round" || shape === "square") {
@@ -51,6 +52,26 @@ export function seatingWords(t: TableSetup, view: TableView = "perspective"): st
     : `${rows.length} parallel rows: ${rows.map((k, i) => `row ${i + 1} is ${row(k, Math.min(2, perTable.length - i * 2))}`).join("; ")}`;
 }
 
+// The look every view shares (2026-10-27: "daha cool, daha eğlenceli, daha
+// kaliteli" — and the owner's reference shots: long lenses, soft background
+// blur, outdoors in sunlight).
+const STYLE = "High-end editorial photograph for a children's party magazine: joyful, magical and fun, airy, soft vivid colours, crisp fine detail, shot on a full-frame camera with a shallow depth of field. No people, no children, no cartoon characters, no faces, no text, no letters, no logos.";
+const SETTING: Record<TableScene, string> = {
+  garden: "The party is outdoors in a sunny garden: the table stands on a pale stone terrace, with a green lawn and trees softly blurred behind, in warm late-afternoon sunlight with soft dappled shadows.",
+  indoor: "The party is in a bright, airy party room with tall windows and soft daylight, the room softly decorated in the same colours and out of focus.",
+};
+// The lens for each view, as in the owner's reference photos.
+const LENS: Record<TableView, string> = {
+  perspective: "Shot with a long 85mm lens at f/2 from one end of the table at standing eye height, looking down the whole length of the table: the chairs line both sides and recede into soft blur, the nearest place settings are sharp.",
+  top: "Shot straight down from directly above, like a drone photo, the whole table in the picture.",
+  close: "Shot with a 50mm lens at f/1.8 from a high three-quarter angle just above one place setting: that seat is sharp and fills most of the picture, the rest of the table and the setting fall into soft blur behind.",
+};
+
+/**
+ * The words for each view. The front view comes first, from the drawing; the
+ * top view and the close-up are made from that photo (image 2 / image 1), so
+ * all three show the very same chairs, tableware and colours.
+ */
 export function tablePrompt(t: TableSetup, theme: { name: string; balloonColors: string[] }, view: TableView): string {
   const c = t.choices;
   const word = (k: TableItemKey) => (c[k] === NONE ? "" : (WORDS[k]?.[c[k]] ?? "")
@@ -58,17 +79,32 @@ export function tablePrompt(t: TableSetup, theme: { name: string; balloonColors:
   const kids = clampKids(t.kids);
   const colours = Array.from(new Set(theme.balloonColors.map(hexToColorName).filter(Boolean))).join(", ");
   const seat = ["plates", "chargers", "napkins", "cups", "cutlery", "nameCards", "partyHats"].map((k) => word(k as TableItemKey)).filter(Boolean).join(", ");
-  const camera = view === "top"
-    ? "Seen straight down from directly above (a flat top-down view), exactly as the drawing shows."
-    : "Seen from the front at a gentle three-quarter angle, slightly from above, exactly as the drawing shows.";
-  return [
-    "Turn this simple line drawing into a realistic, high-quality photograph of a children's birthday party table setup in a bright, elegant party room.",
-    `Keep the layout exactly as drawn: ${seatingWords(t, view)} — ${kids} chairs in all, one place setting in front of every chair, nothing added or moved. ${camera}`,
+  const choices = [
     `Colour palette: ${colours}.`,
     `Every table has ${word("tablecloth")}${word("runner") ? ` and ${word("runner")}` : ""}.`,
     `The chairs are ${word("chairs")}${word("chairDecor") ? `, with ${word("chairDecor")}` : ""}.`,
     `At every seat: ${seat}.`,
     word("centrepiece") ? `In the middle of each table: ${word("centrepiece")}.` : "",
-    "Photorealistic styled event photography, soft natural daylight, fine detail, everything neat and symmetrical. No people, no children, no cartoon characters, no faces, no text, no letters, no logos.",
-  ].filter(Boolean).join(" ");
+  ];
+  const layout = `${seatingWords(t, view)} — ${kids} chairs in all, tucked in at the table, with one place setting on the table in front of every chair, nothing added or moved`;
+  // Seedream likes to stretch a long table and add seats (2026-10-27 test: 6–7
+  // a side for 5). The front view may (the owner chose its look, "A olsun");
+  // the top view is the exact layout.
+  const count = `Count before you finish: exactly ${kids} chairs and ${kids} place settings in the whole picture, no more. The table is only as long as the drawing shows; do not extend it.`;
+  const lines = view === "perspective" ? [
+    "Turn this simple line drawing into a photograph of a children's birthday party table setup. The drawing is only a rough layout: photograph it as a real camera would see it.",
+    `Keep the layout as drawn: ${layout}.`,
+    ...choices,
+  ] : view === "top" ? [
+    "Image 1 is the exact layout, seen straight down from directly above. Image 2 is a photo of this very party table.",
+    `Make a photograph of the table from directly above (a flat top-down view), laid out exactly as image 1: ${layout}.`,
+    count,
+    "Everything must look exactly as in image 2: the same chairs, tablecloth, runner, plates, napkins, cups, cutlery, name cards, hats, chair decorations and centrepieces, in the same colours and materials, and the same surroundings and light.",
+  ] : [
+    "Image 1 is a photo of a children's party table.",
+    "Make a close-up photograph of ONE place setting at this very table: the plate with everything on and around it, the cup, the cutlery, the name card and the hat, with a centrepiece and the runner softly out of focus.",
+    "Everything must look exactly as in image 1: the same plate, napkin, cup, cutlery, name card, hat, charger, chair and decorations, in the same colours and materials, and the same surroundings and light.",
+    `At this seat: ${seat}.`,
+  ];
+  return [...lines, LENS[view], SETTING[t.scene ?? "garden"], STYLE].filter(Boolean).join(" ");
 }

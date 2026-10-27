@@ -13,9 +13,13 @@ export interface TableSetup {
   clothColor: string;
   runnerColor: string;
   napkinColor: string;
+  /** Where the render is set (2026-10-27: "outdoorda bakalım"); a garden unless chosen. */
+  scene?: TableScene;
   /** The last real render of this table (F3), if one was made. */
   render?: TableRender;
 }
+
+export type TableScene = "garden" | "indoor";
 
 export interface TableRender {
   /** tableRenderKey of the table this was made from. */
@@ -23,6 +27,8 @@ export interface TableRender {
   /** Where each view is kept: the customer's folder of the private renders bucket (lib/renderStore.ts). */
   perspective: string;
   top: string;
+  /** One place setting up close (renders made before it have none). */
+  close?: string;
 }
 
 // A stored render is only ever a file in the customer's own folder — never a
@@ -36,7 +42,7 @@ export function readTableRender(raw: unknown): TableRender | undefined {
   const ok = (v: unknown): v is string => typeof v === "string" && RENDER_PATH.test(v);
   return typeof r.key === "string" && /^[a-z0-9]{1,13}$/.test(r.key) && ok(r.perspective) && ok(r.top)
     && r.perspective.split("/")[0] === r.top.split("/")[0]
-    ? { key: r.key, perspective: r.perspective, top: r.top } : undefined;
+    ? { key: r.key, perspective: r.perspective, top: r.top, ...(ok(r.close) && r.close.split("/")[0] === r.top.split("/")[0] ? { close: r.close } : {}) } : undefined;
 }
 
 export const MIN_KIDS = 4;
@@ -117,6 +123,7 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     clothColor: colour(r.clothColor, base.clothColor),
     runnerColor: colour(r.runnerColor, base.runnerColor),
     napkinColor: colour(r.napkinColor, base.napkinColor),
+    ...(r.scene === "garden" || r.scene === "indoor" ? { scene: r.scene } : {}),
     ...(readTableRender(r.render) ? { render: readTableRender(r.render) } : {}),
   };
 }

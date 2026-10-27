@@ -87,11 +87,11 @@ describe("render guard", () => {
     expect(acquireRender(ip).ok).toBe(false);
   });
 
-  it("a render that never ended (stopped at the time limit) stops blocking after 2 minutes", () => {
+  it("a render that never ended (stopped at the time limit) stops blocking after the longest route's limit", () => {
     const ip = "203.0.113.78", t = Date.UTC(2026, 9, 26, 12);
     for (let i = 0; i < 3; i++) acquireRender(ip, t); // never released
-    expect(acquireRender(ip, t + 60_000).ok).toBe(false);
-    expect(acquireRender(ip, t + 121_000).ok).toBe(true);
+    expect(acquireRender(ip, t + 200_000).ok).toBe(false); // a table render may still be running
+    expect(acquireRender(ip, t + 321_000).ok).toBe(true);
   });
 
   it("the route answers busy with busy: true, a limit with limited: true", async () => {

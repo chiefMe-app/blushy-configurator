@@ -1,31 +1,44 @@
-// The real render of the kids' table (2026-10-27, F3): a front three-quarter
-// photo and a top-down photo, made from the live drawings as layout guides
+// The real render of the kids' table (2026-10-27, F3): a down-the-table photo,
+// a top-down photo and a close-up of one place setting, made from the live
+// drawings as layout guides
 // (lib/studio/tableGuide.ts) and every choice in words (lib/studio/tableRender.ts).
 // Like the backdrop render it costs money, so it needs a signed-in account and
 // counts as one of the day's renders (lib/renderAccount.ts), behind the
 // per-IP guard (lib/renderGuard.ts). The two pictures are kept in the
-// customer's folder of the private renders bucket (lib/renderStore.ts) and
-// shown through signed links — never fal's own links, which did not load on
-// the owner's network (2026-10-27).
+// customer's folder of the private renders bucket (lib/renderStore.ts), and
+// come back in the answer itself, as pictures: the browser needs no other
+// address to show them (2026-10-27: the owner's network kept failing to look
+// up fal's and Supabase's picture hosts).
 import { NextResponse, type NextRequest } from "next/server";
 import { fal } from "@fal-ai/client";
 import { themeById } from "@/lib/config";
 import { acquireRender, clientIp } from "@/lib/renderGuard";
 import { renderUser, takeAccountRender } from "@/lib/renderAccount";
-import { storeRender } from "@/lib/renderStore";
-import { RENDER_BUCKET } from "@/lib/renderKey";
+import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { readTableSetup } from "@/lib/studio/tableSetup";
 import { tablePrompt, tableRenderKey, type TableRender, type TableView } from "@/lib/studio/tableRender";
 import { GUIDE_SIZE, tableGuide } from "@/lib/studio/tableGuide";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 90;
+export const maxDuration = 300; // two rounds of Seedream pictures (60–90 s each), one after the other
 
-// flux-2-pro/edit keeps the drawn layout (the chair count) far better than
-// flash/edit did in testing.
-const MODEL = "fal-ai/flux-2-pro/edit";
+// Seedream 5 Lite: in the 2026-10-27 comparison with flux-2-pro and
+// nano-banana (same guide and prompt) it came closest to the owner's reference
+// photos, and is the cheapest ($0.035 a picture) — "A olsun": its front view
+// is free to make a magazine shot, the top view keeps the exact layout.
+// TABLE_RENDER_MODEL switches the engine; each takes its picture size in its own way.
+const MODEL = process.env.TABLE_RENDER_MODEL || "fal-ai/bytedance/seedream/v5/lite/edit";
 const SEED = 777;
+
+function engineInput(model: string, prompt: string, imageUrls: string[], size: { width: number; height: number }) {
+  const base = { prompt, image_urls: imageUrls, num_images: 1, output_format: "jpeg" };
+  const upright = size.width < size.height, wide = size.width > size.height;
+  if (model.includes("nano-banana")) return { ...base, aspect_ratio: wide ? "4:3" : upright ? "3:4" : "1:1" };
+  // Seedream has no seed, and wants at least 2560×1440 pixels: a named size it scales itself.
+  if (model.includes("seedream")) return { ...base, image_size: wide ? "landscape_4_3" : upright ? "portrait_4_3" : "square_hd" };
+  return { ...base, image_size: size, seed: SEED };
+}
 
 export async function POST(req: NextRequest) {
   let body: { table?: unknown; theme?: unknown };
@@ -47,40 +60,43 @@ export async function POST(req: NextRequest) {
     const taken = await takeAccountRender(user);
     if (!taken.ok) return NextResponse.json({ error: taken.error, signin: taken.signin, limited: taken.limited }, { status: taken.status });
     fal.config({ credentials: falKey });
-    const one = async (view: TableView) => {
-      const guide = await tableGuide(table, theme, view);
+    const edit = async (view: TableView, imageUrls: string[]) => {
       const result = await fal.subscribe(MODEL, {
-        input: {
-          prompt: tablePrompt(table, theme, view),
-          image_urls: [`data:image/png;base64,${guide.toString("base64")}`],
-          image_size: GUIDE_SIZE[view],
-          seed: SEED,
-          output_format: "jpeg",
-        } as never,
-        abortSignal: AbortSignal.timeout(80_000),
+        input: engineInput(MODEL, tablePrompt(table, theme, view), imageUrls, GUIDE_SIZE[view]) as never,
+        abortSignal: AbortSignal.timeout(130_000),
       });
       const url = (result.data as { images?: { url?: string }[] })?.images?.[0]?.url;
-      if (!url) throw new Error("no image");
+      if (!url) throw new Error(`no ${view} image`);
       return url;
     };
-    const [perspective, top] = await Promise.all([one("perspective"), one("top")]);
+    const dataUri = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
+    const [perspectiveGuide, topGuide] = await Promise.all([tableGuide(table, theme, "perspective"), tableGuide(table, theme, "top")]);
+    // The front view first, from the drawing; then the top view (the drawing
+    // for the layout, the front photo for the look) and the close-up (from
+    // the front photo), so all three show the same things.
+    const perspective = await edit("perspective", [dataUri(perspectiveGuide)]);
+    const [top, close] = await Promise.all([edit("top", [dataUri(topGuide), perspective]), edit("close", [perspective])]);
     const key = tableRenderKey(table);
-    // Without a database (local development) fal's links are all there is.
-    if (!user.client || !user.userId) return NextResponse.json({ urls: { perspective, top }, left: taken.left });
-    const { client, userId } = user;
-    const [p, t] = await Promise.all([
-      storeRender(client, userId, perspective, `table:perspective:${key}`),
-      storeRender(client, userId, top, `table:top:${key}`),
+    const jpegs = await Promise.all([renderJpeg(perspective), renderJpeg(top), renderJpeg(close)]);
+    if (jpegs.some((j) => !j)) throw new Error("render pictures could not be read");
+    const [pj, tj, cj] = jpegs as Buffer[];
+    const picture = (j: Buffer) => `data:image/jpeg;base64,${j.toString("base64")}`;
+    const urls = { perspective: picture(pj), top: picture(tj), close: picture(cj) };
+    // Without a database (local development) nothing is kept.
+    if (!user.client || !user.userId) return NextResponse.json({ urls, left: taken.left });
+    const [p, t, c] = await Promise.all([
+      storeRenderJpeg(user.client, user.userId, pj, `table:perspective:${key}`),
+      storeRenderJpeg(user.client, user.userId, tj, `table:top:${key}`),
+      storeRenderJpeg(user.client, user.userId, cj, `table:close:${key}`),
     ]);
-    const signed = p && t ? (await client.storage.from(RENDER_BUCKET).createSignedUrls([p.path, t.path], 3600)).data : null;
-    if (!p || !t || !signed?.[0]?.signedUrl || !signed[1]?.signedUrl) {
-      console.warn("[table-render] not stored; showing fal's links");
-      return NextResponse.json({ urls: { perspective, top }, left: taken.left });
-    }
-    const render: TableRender = { key, perspective: p.path, top: t.path };
-    return NextResponse.json({ render, urls: { perspective: signed[0].signedUrl, top: signed[1].signedUrl }, left: taken.left });
+    const render: TableRender | undefined = p && t && c ? { key, perspective: p.path, top: t.path, close: c.path } : undefined;
+    if (!render) console.warn("[table-render] not kept; shown only");
+    return NextResponse.json({ urls, ...(render ? { render } : {}), left: taken.left });
   } catch (err) {
     console.error("[table-render]", err);
+    // fal refusing the account (no credit, bad key) is not worth retrying.
+    const status = (err as { status?: number })?.status;
+    if (status === 401 || status === 403) return NextResponse.json({ error: "Renders are paused for a moment — please try again later." }, { status: 503 });
     return NextResponse.json({ error: "The render didn't come out — please try again." }, { status: 502 });
   } finally {
     slot.release();

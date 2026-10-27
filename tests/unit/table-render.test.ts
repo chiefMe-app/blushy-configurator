@@ -14,15 +14,16 @@ vi.mock("@fal-ai/client", () => ({ fal: { config: vi.fn(), subscribe: (...a: unk
 // A signed-in customer's session with Supabase (for the route's storing).
 const getUser = vi.fn(), createSignedUrls = vi.fn(), rpc = vi.fn();
 vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ auth: { getUser }, rpc, storage: { from: () => ({ createSignedUrls }) } }) }));
-const storeRender = vi.fn();
-vi.mock("@/lib/renderStore", () => ({ storeRender: (...a: unknown[]) => storeRender(...a) }));
+const storeRenderJpeg = vi.fn();
+const JPEG = Buffer.from("jpeg-bytes"), PICTURE = `data:image/jpeg;base64,${JPEG.toString("base64")}`;
+vi.mock("@/lib/renderStore", () => ({ renderJpeg: async () => JPEG, storeRenderJpeg: (...a: unknown[]) => storeRenderJpeg(...a) }));
 
 const frozen = themeById("frozen")!;
 const table = (over: Partial<ReturnType<typeof defaultTableSetup>["choices"]> = {}, kids = 10) =>
   ({ ...defaultTableSetup(frozen), kids, choices: { ...defaultTableSetup(frozen).choices, ...over } });
 const FAL = "https://v3.fal.media/files/rabbit/abc_123.jpg";
 const USER = "00000000-0000-4000-8000-0000000000a1";
-const P = `${USER}/1abc.jpg`, T = `${USER}/2def.jpg`;
+const P = `${USER}/1abc.jpg`, T = `${USER}/2def.jpg`, C = `${USER}/3ghi.jpg`;
 
 describe("is the render current?", () => {
   it("the key follows every choice, colour and child — not the render itself", () => {
@@ -43,17 +44,37 @@ describe("what may be stored", () => {
     expect(readTableRender({ key: "abc1", perspective: P, top: "someone-else/2def.jpg" })).toBeUndefined();
     expect(readTableRender({ key: "<b>", perspective: P, top: T })).toBeUndefined();
   });
+  it("the close-up is kept when it is in the same folder, and older renders without one still read", () => {
+    expect(readTableRender({ key: "abc1", perspective: P, top: T, close: C })?.close).toBe(C);
+    expect(readTableRender({ key: "abc1", perspective: P, top: T, close: "other/3ghi.jpg" })).toEqual({ key: "abc1", perspective: P, top: T });
+  });
   it("a stored table keeps a good render and drops a bad one", () => {
     expect(readTableSetup({ ...table(), render: { key: "k1", perspective: P, top: T } }, frozen)!.render).toEqual({ key: "k1", perspective: P, top: T });
     expect(readTableSetup({ ...table(), render: { key: "k1", perspective: FAL, top: FAL } }, frozen)!.render).toBeUndefined();
   });
 });
 
+describe("where and how it is photographed", () => {
+  it("a garden unless indoors is chosen; the choice is part of the render's key and reads back", () => {
+    expect(tablePrompt(table(), frozen, "perspective")).toContain("outdoors in a sunny garden");
+    expect(tablePrompt({ ...table(), scene: "indoor" }, frozen, "perspective")).toContain("bright, airy party room");
+    expect(tableRenderKey({ ...table(), scene: "indoor" })).not.toBe(tableRenderKey(table()));
+    expect(tableRenderKey({ ...table(), scene: "garden" })).toBe(tableRenderKey(table()));
+    expect(readTableSetup({ ...table(), scene: "indoor" }, frozen)!.scene).toBe("indoor");
+    expect(readTableSetup({ ...table(), scene: "moon" }, frozen)!.scene).toBeUndefined();
+  });
+  it("each view has its own lens, as in the owner's reference shots", () => {
+    expect(tablePrompt(table(), frozen, "perspective")).toMatch(/85mm lens .* looking down the whole length of the table/);
+    expect(tablePrompt(table(), frozen, "top")).toContain("straight down from directly above");
+    expect(tablePrompt(table(), frozen, "close")).toMatch(/50mm lens .* one place setting/);
+  });
+});
+
 describe("the prompt", () => {
   it("says the seating exactly as the drawings lay it out", () => {
-    expect(seatingWords(table())).toContain("exactly 5 chairs along the far side and 5 along the near side");
+    expect(seatingWords(table())).toContain("exactly 5 chairs along the left side and 5 along the right side");
     expect(seatingWords(table(), "top")).toContain("5 along the bottom side");
-    expect(seatingWords(table({}, 11))).toContain("exactly 6 chairs along the far side and 5");
+    expect(seatingWords(table({}, 11))).toContain("exactly 6 chairs along the left side and 5");
     expect(seatingWords(table({ table: "round" }, 12))).toContain("2 separate round kids' tables");
     expect(seatingWords(table({ table: "round" }, 12))).toContain("exactly 6 chairs");
     expect(seatingWords(table({}, 20))).toContain("2 parallel rows");
@@ -75,25 +96,33 @@ describe("the route", () => {
     vi.stubEnv("FAL_KEY", "test-key");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     vi.stubEnv("SUPABASE_URL", "");
-    subscribe.mockReset(); storeRender.mockReset(); createSignedUrls.mockReset(); getUser.mockReset(); rpc.mockReset();
+    subscribe.mockReset(); storeRenderJpeg.mockReset(); createSignedUrls.mockReset(); getUser.mockReset(); rpc.mockReset();
     resetRenderGuard();
   });
   afterEach(() => vi.unstubAllEnvs());
 
-  it("renders both views from the drawings with the pro model", async () => {
-    subscribe.mockImplementation(async () => ({ data: { images: [{ url: FAL }] } }));
+  it("the front view from the drawing first; the top view and the close-up from that photo", async () => {
+    const FRONT = "https://v3.fal.media/files/front.jpg";
+    subscribe.mockImplementation(async (_m: string, { input }: { input: { prompt: string } }) =>
+      ({ data: { images: [{ url: input.prompt.startsWith("Turn this simple line drawing") ? FRONT : FAL }] } }));
     const { POST } = await import("@/app/api/table-render/route");
     const res = await POST(post({ table: table(), theme: "frozen" }));
     expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json.urls).toEqual({ perspective: FAL, top: FAL }); // no database here: nothing is kept
+    // The pictures come in the answer itself: no other address to look up.
+    expect(json.urls).toEqual({ perspective: PICTURE, top: PICTURE, close: PICTURE }); // no database here: nothing is kept
     expect(json.render).toBeUndefined();
-    expect(subscribe).toHaveBeenCalledTimes(2);
-    for (const [model, { input }] of subscribe.mock.calls as [string, { input: { image_urls: string[]; prompt: string } }][]) {
-      expect(model).toBe("fal-ai/flux-2-pro/edit");
-      expect(input.image_urls[0]).toMatch(/^data:image\/png;base64,/);
-      expect(input.prompt).toContain("10 chairs in all");
-    }
+    const calls = (subscribe.mock.calls as [string, { input: { image_urls: string[]; prompt: string } }][]).map(([model, { input }]) => ({ model, ...input }));
+    expect(calls).toHaveLength(3);
+    expect(calls.every((c) => c.model === "fal-ai/bytedance/seedream/v5/lite/edit")).toBe(true);
+    const [front, ...after] = calls;
+    expect(front.image_urls).toHaveLength(1);
+    expect(front.image_urls[0]).toMatch(/^data:image\/png;base64,/);
+    expect(front.prompt).toContain("10 chairs in all");
+    const top = after.find((c) => c.prompt.includes("from directly above"))!, close = after.find((c) => c.prompt.includes("close-up"))!;
+    expect(top.image_urls).toEqual([expect.stringMatching(/^data:image\/png;base64,/), FRONT]); // the layout, then the look
+    expect(close.image_urls).toEqual([FRONT]);
+    for (const c of calls) expect(c.prompt).not.toMatch(/frozen/i);
   }, 30_000);
 
   it("refuses a missing or skipped table without calling fal", async () => {
@@ -119,19 +148,25 @@ describe("the route", () => {
     expect((await POST(post({ table: table(), theme: "frozen" }))).status).toBe(200);
   }, 30_000);
 
-  it("signed in: both pictures are kept in the customer's folder and shown through signed links", async () => {
+  it("fal refusing the account says renders are paused, not to try again", async () => {
+    subscribe.mockRejectedValue(Object.assign(new Error("Forbidden"), { status: 403, body: { detail: "User is locked. Reason: TOP_UP." } }));
+    const { POST } = await import("@/app/api/table-render/route");
+    const res = await POST(post({ table: table(), theme: "frozen" }));
+    expect(res.status).toBe(503);
+    expect((await res.json()).error).toMatch(/paused/);
+  });
+
+  it("signed in: both pictures are kept in the customer's folder, and come in the answer", async () => {
     vi.stubEnv("SUPABASE_URL", "https://db.test");
     vi.stubEnv("SUPABASE_ANON_KEY", "anon");
     getUser.mockResolvedValue({ data: { user: { id: USER, is_anonymous: false } }, error: null });
     rpc.mockResolvedValue({ data: 5, error: null });
     subscribe.mockImplementation(async () => ({ data: { images: [{ url: FAL }] } }));
-    storeRender.mockImplementation(async (_c: unknown, _u: string, _url: string, hash: string) => ({ path: hash.includes("top") ? T : P, key: "k" }));
-    createSignedUrls.mockResolvedValue({ data: [{ signedUrl: "https://db.test/sign/p?token=1" }, { signedUrl: "https://db.test/sign/t?token=1" }], error: null });
+    storeRenderJpeg.mockImplementation(async (_c: unknown, _u: string, _jpeg: Buffer, hash: string) => ({ path: hash.includes("top") ? T : hash.includes("close") ? C : P, key: "k" }));
     const { POST } = await import("@/app/api/table-render/route");
     const json = await (await POST(post({ table: table(), theme: "frozen" }, { authorization: "Bearer tok" }))).json();
-    expect(json.render).toEqual({ key: tableRenderKey(table()), perspective: P, top: T });
-    expect(json.urls).toEqual({ perspective: "https://db.test/sign/p?token=1", top: "https://db.test/sign/t?token=1" });
-    expect(storeRender.mock.calls.map((c) => c[1])).toEqual([USER, USER]);
-    expect(createSignedUrls).toHaveBeenCalledWith([P, T], 3600);
+    expect(json.render).toEqual({ key: tableRenderKey(table()), perspective: P, top: T, close: C });
+    expect(json.urls).toEqual({ perspective: PICTURE, top: PICTURE, close: PICTURE });
+    expect(storeRenderJpeg.mock.calls.map((c) => [c[1], c[2]])).toEqual([[USER, JPEG], [USER, JPEG], [USER, JPEG]]);
   }, 30_000);
 });

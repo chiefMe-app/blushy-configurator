@@ -7,24 +7,26 @@ import { createElement } from "react";
 // but here the markup is an SVG for sharp, never a page.
 import { renderToStaticMarkup } from "react-dom/server.node";
 import sharp from "sharp";
-import TablePerspective from "@/components/studio/table/TablePerspective";
+import TablePerspective, { DOWN_THE_TABLE } from "@/components/studio/table/TablePerspective";
 import TableSketch from "@/components/studio/table/TableSketch";
 import type { TableSetup } from "./tableSetup";
 import type { TableView } from "./tableRender";
 
 export const GUIDE_SIZE: Record<TableView, { width: number; height: number }> = {
-  perspective: { width: 1280, height: 720 },
-  top: { width: 1024, height: 768 },
+  perspective: { width: 960, height: 1280 }, // upright, like the owner's reference shots
+  top: { width: 1152, height: 864 },
+  close: { width: 1152, height: 864 },
 };
 
 const BG = { r: 251, g: 247, b: 244, alpha: 1 }; // the drawings' own background
 
-export async function tableGuide(t: TableSetup, theme: { balloonColors: string[]; accent: string }, view: TableView): Promise<Buffer> {
+/** The drawing for the front view or the top view (the close-up is made from the front photo). */
+export async function tableGuide(t: TableSetup, theme: { balloonColors: string[]; accent: string }, view: Exclude<TableView, "close">): Promise<Buffer> {
   const props = { table: t, palette: theme.balloonColors, accent: theme.accent };
-  const svg = renderToStaticMarkup(createElement(view === "top" ? TableSketch : TablePerspective, props))
+  const svg = renderToStaticMarkup(view === "top" ? createElement(TableSketch, props) : createElement(TablePerspective, { ...props, camera: DOWN_THE_TABLE }))
     .replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
   const { width, height } = GUIDE_SIZE[view];
-  const pad = Math.round(width * 0.04);
+  const pad = Math.round(width * 0.015); // tight: the table fills the picture
   const drawing = await sharp(Buffer.from(svg), { density: 220 })
     .resize(width - 2 * pad, height - 2 * pad, { fit: "inside" }).png().toBuffer();
   return sharp({ create: { width, height, channels: 4, background: BG } })
