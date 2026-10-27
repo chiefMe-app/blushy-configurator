@@ -1068,3 +1068,18 @@ div.bz-stale-banner { cursor: default; }
   .bz-signin-btn { padding: 6px 12px; font-size: 12px; }
   .bz-avatar { width: 30px; height: 30px; font-size: 13px; }
 }
+
+/* Privacy Policy and Terms */
+.bz-legal { min-height: 100vh; background: #fff; }
+.bz-legal-main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; font-family: var(--bz-sans); color: var(--bz-ink); font-size: 15px; line-height: 1.65; }
+.bz-legal-main h1 { margin: 0; font: 400 36px var(--bz-hand); }
+.bz-legal-main h2 { margin: 28px 0 6px; font-size: 18px; font-weight: 700; }
+.bz-legal-main p, .bz-legal-main ul { margin: 0 0 12px; }
+.bz-legal-main ul { padding-left: 20px; }
+.bz-legal-main li { margin-bottom: 6px; }
+.bz-legal-main a { color: var(--bz-pink); }
+.bz-legal-main .updated { color: var(--bz-muted); font-size: 13px; }
+.bz-legal-main .links { margin-top: 36px; color: var(--bz-muted); font-size: 13px; }
+.bz-land-legal { text-align: center; padding: 22px 16px 30px; font: 13px var(--bz-sans); color: var(--bz-muted); }
+.bz-land-legal a { color: inherit; }
+.bz-signin .fine a { color: inherit; }

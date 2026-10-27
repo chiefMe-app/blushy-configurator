@@ -64,7 +64,7 @@ export default function SignInDialog({ open, onClose }: { open: boolean; onClose
               <button type="submit" className="email" disabled={state === "busy"}>Email me a sign-in link</button>
             </form>
             {error && <p className="err" role="alert">{error}</p>}
-            <p className="fine">No password needed. We only use your email to sign you in.</p>
+            <p className="fine">No password needed. By signing in you agree to our <a href="/terms" target="_blank">Terms</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.</p>
           </>
         )}
       </div>

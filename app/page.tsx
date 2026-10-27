@@ -90,6 +90,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <footer className="bz-land-legal">
+        © Blushy Events · <Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Service</Link>
+      </footer>
     </div>
   );
 }
