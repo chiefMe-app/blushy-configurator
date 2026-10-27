@@ -28,6 +28,18 @@ const SUPABASE_LIKE = `
   grant usage on schema public to anon, authenticated, service_role;
   alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
   alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+  -- Storage, as far as the rules need it: buckets, objects (row level
+  -- security on, as in Supabase) and storage.foldername().
+  create schema storage;
+  create table storage.buckets (id text primary key, name text, public boolean default false, file_size_limit bigint, allowed_mime_types text[]);
+  create table storage.objects (id serial primary key, bucket_id text references storage.buckets (id), name text, owner uuid default auth.uid());
+  alter table storage.objects enable row level security;
+  create function storage.foldername(name text) returns text[] language sql immutable as
+    $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $$;
+  grant usage on schema storage to anon, authenticated, service_role;
+  grant all on all tables in schema storage to anon, authenticated, service_role;
+  grant usage, select on all sequences in schema storage to anon, authenticated, service_role;
+  grant execute on all functions in schema storage to anon, authenticated, service_role;
 `;
 
 const A = "00000000-0000-4000-8000-00000000000a"; // a guest (anonymous session)
@@ -156,8 +168,37 @@ describe("render limit per account (0.5b)", () => {
   });
 });
 
+describe("renders in Storage (0.5c)", () => {
+  const put = (who: Who, name: string) => as(who, `insert into storage.objects (bucket_id, name) values ('renders', '${name}')`);
+  const names = async (who: Who) => (await as<{ name: string }>(who, "select name from storage.objects where bucket_id = 'renders' order by name")).map((r) => r.name);
+  it("the bucket is private and takes JPEGs up to 5 MB", async () => {
+    const [b] = (await db.query<{ public: boolean; file_size_limit: number; allowed_mime_types: string[] }>("select * from storage.buckets where id = 'renders'")).rows;
+    expect(b).toMatchObject({ public: false, file_size_limit: 5242880, allowed_mime_types: ["image/jpeg"] });
+  });
+  it("a customer adds, reads, replaces and deletes renders in their own folder only", async () => {
+    await put(user(REAL), `${REAL}/scene-1.jpg`);
+    expect(await names(user(REAL))).toEqual([`${REAL}/scene-1.jpg`]);
+    await as(user(REAL), `update storage.objects set name = '${REAL}/scene-2.jpg' where name = '${REAL}/scene-1.jpg'`);
+    expect(await names(user(REAL))).toEqual([`${REAL}/scene-2.jpg`]);
+    expect(await fails(put(user(REAL), `${STAFF}/sneaky.jpg`))).toBe(true); // not in another's folder
+    expect(await fails(put(user(REAL), "loose.jpg"))).toBe(true); // nor outside a folder
+    await as(user(REAL), `delete from storage.objects where name = '${REAL}/scene-2.jpg'`);
+    expect(await names(user(REAL))).toEqual([]);
+  });
+  it("another customer, a guest or a visitor sees none of them and cannot add any", async () => {
+    await put(user(REAL), `${REAL}/mine.jpg`);
+    expect(await names(user(STAFF))).toEqual([]);
+    expect(await names(guest(A))).toEqual([]);
+    expect(await names("nobody")).toEqual([]);
+    expect(await fails(put(guest(A), `${A}/guest.jpg`))).toBe(true);
+    expect(await fails(put("nobody", `${REAL}/anon.jpg`))).toBe(true);
+    await as(user(STAFF), `delete from storage.objects where name = '${REAL}/mine.jpg'`); // removes nothing
+    expect(await names(user(REAL))).toEqual([`${REAL}/mine.jpg`]);
+  });
+});
+
 // Each stage's migrations, pasted in one go from supabase/apply/.
-const STAGES = [["phase-0.2.sql", "20261026"], ["phase-0.5b.sql", "20261027"]] as const;
+const STAGES = [["phase-0.2.sql", "20261026"], ["phase-0.5b.sql", "20261027120000"], ["phase-0.5c.sql", "20261027130000"]] as const;
 
 describe("the one-file versions for the SQL editor", () => {
   for (const [file, prefix] of STAGES) {

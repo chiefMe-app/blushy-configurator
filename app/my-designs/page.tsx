@@ -1,7 +1,9 @@
 "use client";
 // My designs (Phase 0.4): every design the customer saved — as a guest on
 // this device, or in their account on any device — with a sketch, Open (back
-// into the Builder, where Save updates it) and Delete.
+// into the Builder, where Save updates it) and Delete. 0.5c: a design saved
+// with its render shows the render (from the account's private Storage, by a
+// short-lived signed link) instead of the sketch.
 import { useEffect, useState } from "react";
 import LiveSketch from "@/components/design/LiveSketch";
 import AccountMenu from "@/components/account/AccountMenu";
@@ -12,6 +14,7 @@ import { formatAED, themeById, type BuilderConfig } from "@/lib/config";
 import { DRAFT_KEY, fromDraft } from "@/lib/draft";
 import { SERVER_DRAFT_KEY } from "@/lib/serverDraft";
 import { SETUP_LAYOUT_TEMPLATES, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
+import { RENDER_BUCKET, renderKeyOf } from "@/lib/renderKey";
 import type { AccountState } from "@/lib/account";
 
 interface Saved {
@@ -29,6 +32,7 @@ export default function MyDesigns() {
   const [problem, setProblem] = useState<string | null>(null);
   const [signingIn, setSigningIn] = useState(false);
   const [imported, setImported] = useState(0);
+  const [renders, setRenders] = useState<Record<string, string>>({}); // Storage path → signed link
 
   async function load() {
     const sb = await loadClient();
@@ -42,7 +46,12 @@ export default function MyDesigns() {
       .eq("owner_id", who.userId)
       .order("updated_at", { ascending: false });
     if (error) { setProblem("Your designs could not be loaded. Please try again."); setItems([]); return; }
-    setItems((data ?? []) as unknown as Saved[]);
+    const list = (data ?? []) as unknown as Saved[];
+    setItems(list);
+    const paths = Array.from(new Set(list.map(renderPath).filter((p): p is string => !!p)));
+    if (!paths.length) return;
+    const { data: signed } = await sb.storage.from(RENDER_BUCKET).createSignedUrls(paths, 3600);
+    setRenders(Object.fromEntries((signed ?? []).filter((x) => x.signedUrl && x.path).map((x) => [x.path as string, x.signedUrl as string])));
   }
   useEffect(() => {
     setImported(Number(new URLSearchParams(window.location.search).get("imported") ?? 0) || 0);
@@ -65,6 +74,11 @@ export default function MyDesigns() {
     if (!sb) return;
     const { error } = await sb.from("party_items").delete().eq("id", item.id);
     if (error) { setProblem("That design could not be deleted. Please try again."); return; }
+    // Its render goes too, unless another saved design shows the same one.
+    const path = renderPath(item);
+    if (path && !(items ?? []).some((i) => i.id !== item.id && renderPath(i) === path)) {
+      void sb.storage.from(RENDER_BUCKET).remove([path]);
+    }
     setItems((list) => (list ?? []).filter((i) => i.id !== item.id));
   }
 
@@ -120,7 +134,12 @@ export default function MyDesigns() {
               const words = c.decor.backdropItems.find((i) => i.text?.enabled && i.text.value.trim())?.text.value.trim();
               return (
                 <li key={item.id} className="bz-md-card" data-testid="saved-design">
-                  <div className="sketch"><LiveSketch config={c} /></div>
+                  <div className="sketch">
+                    {renders[renderPath(item) ?? ""]
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img className="render" src={renders[renderPath(item)!]} alt="Your render of this design" data-testid="saved-render" />
+                      : <LiveSketch config={c} />}
+                  </div>
                   <div className="body">
                     <strong>{themeById(c.theme)?.name ?? "Party"} · {setup}</strong>
                     {words && <span className="words">“{words}”</span>}
@@ -143,4 +162,11 @@ export default function MyDesigns() {
       <SignInDialog open={signingIn} onClose={() => setSigningIn(false)} />
     </div>
   );
+}
+
+/** The stored render of a saved design, while it still matches the design. */
+function renderPath(item: Saved): string | null {
+  const restored = fromDraft(JSON.stringify(item.config));
+  const saved = restored?.config.decor.savedRender;
+  return saved && saved.key === renderKeyOf(restored.config) ? saved.path : null;
 }

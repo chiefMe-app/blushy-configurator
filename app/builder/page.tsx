@@ -410,6 +410,8 @@ export default function ConfigurePage() {
                 onFinalRenderStateChange={setFinalRenderState}
                 onGenerateReady={(fn) => setGenerateFinalRender(() => fn)}
                 onSignInNeeded={() => askSignIn("render")}
+                // 0.5c: the render kept in the account goes with the design (Save keeps it).
+                onRenderStored={(savedRender) => patchDecor({ savedRender })}
                 // 2026-10-23: the theme's example photo of the selected setup shows until a render exists.
                 emptyArt={isDecorStep ? THEME_SETUP_PREVIEW[config.theme]?.[inferSetupLayoutTemplateIdFromBackdropItems(config.decor.backdropItems) ?? ""] : undefined}
                 emptyArtLabel={`${themeById(config.theme)?.name ?? "Theme"} example.`}

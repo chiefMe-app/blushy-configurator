@@ -33,6 +33,7 @@
 
 import { acquireRender, clientIp } from "@/lib/renderGuard";
 import { renderUser, takeAccountRender } from "@/lib/renderAccount";
+import { storeRender } from "@/lib/renderStore";
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
@@ -846,9 +847,11 @@ async function generateLayoutReferencePng(
 export async function POST(req: NextRequest) {
   const raw = await req.text();
   let freePreview = false;
+  let sceneHash = "";
   try {
     const b = JSON.parse(raw) as Partial<RequestBody>;
     freePreview = b?.debugLayoutReferenceOnly === true && b?.renderMode !== "edit_existing";
+    sceneHash = typeof b?.currentSceneHash === "string" ? b.currentSceneHash : "";
   } catch { /* handleRender answers invalid JSON */ }
   const inner = new NextRequest(req.url, { method: "POST", headers: req.headers, body: raw });
   if (freePreview) return handleRender(inner);
@@ -866,7 +869,12 @@ export async function POST(req: NextRequest) {
     // Counted last, so a refusal above uses none of the customer's renders.
     const taken = await takeAccountRender(user);
     if (!taken.ok) return NextResponse.json({ error: taken.error, signin: taken.signin, limited: taken.limited }, { status: taken.status });
-    return await handleRender(inner);
+    const res = await handleRender(inner);
+    // 0.5c: keep the finished render in the customer's account.
+    if (res.status !== 200 || !user.client || !user.userId || !sceneHash) return res;
+    const data = await res.json();
+    const stored = typeof data?.imageUrl === "string" ? await storeRender(user.client, user.userId, data.imageUrl, sceneHash) : null;
+    return NextResponse.json(stored ? { ...data, storedRender: stored } : data);
   } finally {
     slot.release();
   }

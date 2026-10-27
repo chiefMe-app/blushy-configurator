@@ -821,6 +821,13 @@ export interface DecorConfig {
    * ring, which is the setup it was asked for.
    */
   neonSign?: NeonSign;
+  /**
+   * 2026-10-27 (0.5c): the last render, kept in the customer's account
+   * (Storage path renders/<user id>/<key>.jpg) — shown again while the
+   * design's render key (lib/renderKey.ts) still equals `key`. Not part of
+   * the scene, so it never changes what a render is made of.
+   */
+  savedRender?: { path: string; key: string };
 }
 
 export interface NeonSign {

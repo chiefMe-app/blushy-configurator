@@ -1059,6 +1059,7 @@ div.bz-stale-banner { cursor: default; }
 .bz-md-card { border: 1px solid var(--bz-border); border-radius: 20px; overflow: hidden; background: #fff; box-shadow: 0 8px 25px rgba(103,44,71,.05); display: flex; flex-direction: column; }
 .bz-md-card .sketch { aspect-ratio: 1 / 1; background: #f6f1f3; }
 .bz-md-card .sketch .bz-sketch { width: 100% !important; height: 100% !important; max-width: none; display: block; }
+.bz-md-card .sketch .render { width: 100%; height: 100%; object-fit: cover; display: block; }
 .bz-md-card .body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 5px; }
 .bz-md-card strong { font-size: 15px; }
 .bz-md-card .words { font-size: 13px; color: #5b4941; }

@@ -2,7 +2,10 @@
 // machine, and the endpoints that cost money or store data never reach the
 // server: they are recorded (so a test can inspect what the UI sent) and
 // either aborted or answered with a stand-in.
+import fs from "fs";
+import nodePath from "path";
 import { test as base, expect, type Page, type Request, type Route } from "@playwright/test";
+import { renderKey } from "@/lib/renderKey";
 
 const BLOCKED_API = /\/api\/(orders|generate|generate-cutouts|generate-controlled-render|generate-structure-render-test)\/?(\?|$)/;
 
@@ -91,6 +94,19 @@ async function fakeSupabase(route: Route, db: FakeSupabase) {
   }
   if (path === "/auth/v1/authorize") return route.fulfill({ status: 200, headers: { "content-type": "text/html" }, body: "<h1>Google sign-in (stand-in)</h1>" });
 
+  // Storage (0.5c): signed links to stored renders, the pictures behind them, removal.
+  const storage = path.match(/^\/storage\/v1\/object\/(sign\/)?renders(?:\/(.+))?$/);
+  if (storage) {
+    const [, sign, file] = storage;
+    const signed = (p: string) => `/object/sign/renders/${p}?token=e2e`;
+    if (sign && req.method() === "POST" && !file) return json(200, ((body as { paths: string[] }).paths ?? []).map((p) => ({ path: p, signedURL: signed(p), error: null })));
+    if (sign && req.method() === "POST") return json(200, { signedURL: signed(decodeURIComponent(file)) });
+    if (sign && req.method() === "GET") {
+      return route.fulfill({ status: 200, headers: { ...cors, "content-type": "image/webp" }, body: fs.readFileSync(nodePath.join(process.cwd(), "public", FAKE_RENDER)) });
+    }
+    if (!sign && req.method() === "DELETE") return json(200, []);
+    return json(405, { message: "storage call not in the stand-in" });
+  }
   const table = path === "/rest/v1/parties" ? db.parties : path === "/rest/v1/party_items" ? db.items : null;
   if (!table) return json(404, { message: "not in the stand-in" });
   const mine = table.filter((r) => r.owner_id === who);
@@ -125,6 +141,12 @@ async function fakeSupabase(route: Route, db: FakeSupabase) {
   return json(405, { message: "method not in the stand-in" });
 }
 
+/** The user id in a request's `Authorization: Bearer <JWT>`, if any. */
+function tokenSubject(header: string | undefined): string | null {
+  const t = (header ?? "").replace(/^Bearer /, "").split(".")[1];
+  try { return t ? (JSON.parse(Buffer.from(t, "base64url").toString()) as { sub?: string }).sub ?? null : null; } catch { return null; }
+}
+
 export async function lockNetwork(page: Page): Promise<Guard> {
   const guard: Guard = { blocked: [], external: [], fakeRender: false, fakeOrder: false,
     supabase: { requests: [], parties: [], items: [], anonymousOff: false, account: { ...FAKE_ACCOUNT } } };
@@ -145,7 +167,11 @@ export async function lockNetwork(page: Page): Promise<Guard> {
         return route.fulfill({ status, json: busy ? { error, busy: true } : { error, limited: true } });
       }
       if (guard.fakeRender && url.pathname.startsWith("/api/generate-controlled-render")) {
-        return route.fulfill({ json: { imageUrl: FAKE_RENDER } });
+        // As the server does for a signed-in customer (0.5c): the render is also kept in their account.
+        const sub = tokenSubject(req.headers()["authorization"]);
+        const scene = (() => { try { return String(JSON.parse(req.postData() ?? "{}").currentSceneHash ?? ""); } catch { return ""; } })();
+        const key = renderKey(scene);
+        return route.fulfill({ json: sub && scene ? { imageUrl: FAKE_RENDER, storedRender: { path: `${sub}/${key}.jpg`, key } } : { imageUrl: FAKE_RENDER } });
       }
       if (guard.fakeOrder && url.pathname.startsWith("/api/orders")) {
         return route.fulfill({ json: { designId: "TEST-ORDER", total: 0, persisted: false } });

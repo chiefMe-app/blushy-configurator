@@ -26,6 +26,8 @@ const ASK_FOR_A_CHANGE_ENABLED = false;
 import type { ChangeType } from "@/lib/generatePrompt";
 import LiveSketch from "./design/LiveSketch";
 import { accountToken } from "./account/useAccount";
+import { computeSceneHash, renderKey, RENDER_BUCKET } from "@/lib/renderKey";
+import { loadClient } from "./account/useAccount";
 
 const PLINTH_MODE: "ai" | "svg" = "ai";
 
@@ -728,39 +730,6 @@ function CutoutOverlay({
 export type FinalRenderStatus = "idle" | "loading" | "done" | "error";
 
 /**
- * Stable hash of all visual fields that affect the Final Design Render.
- * Excludes non-visual fields (customer name, WhatsApp, venue form, package scope).
- */
-function computeSceneHash(config: BuilderConfig): string {
-  const d = config.decor;
-  return JSON.stringify({
-    theme:         config.theme,
-    eventType:     config.eventType,
-    backdropItems: d.backdropItems.map((i) => ({
-      id: i.id, type: i.type, sizeId: i.sizeId,
-      widthCm: i.widthCm, heightCm: i.heightCm, color: i.color,
-      // text INCLUDED: customized text is baked into the AI render, so a text
-      // change must trigger a fresh render (no longer an instant overlay)
-      // 2026-10-26: size and the Typography System lettering too — a font or
-      // size change must not be answered with the previous render.
-      text:    { enabled: i.text.enabled, value: i.text.value.trim(), fontStyle: i.text.fontStyle, color: i.text.color, size: i.text.size, lettering: i.text.lettering },
-      graphic: { enabled: i.graphic.enabled, style: i.graphic.style, assetId: i.graphic.assetId },
-    })),
-    backdropColor: d.backdropColor,
-    balloonStyle:  d.balloonStyle,
-    balloonColors: d.balloonColors,
-    // Shimmer wall color — included so a shimmer-color-only change is treated
-    // as a scene change (cache miss) rather than silently reusing the last
-    // rendered (wrong-colored) shimmer wall.
-    shimmerColor:  d.shimmerColor,
-    plinthSizes:   d.plinthSizes,
-    backdropPrint: d.backdropPrint,
-    cutouts:       d.cutouts,
-    cakeTable:     d.cakeTable,
-  });
-}
-
-/**
  * Same as computeSceneHash but EXCLUDES balloon color fields (balloonColors,
  * sempertexSelection). Used to detect "only the balloon colors changed" so a
  * color change can be routed through edit_existing (recolor in place) instead
@@ -835,6 +804,8 @@ function buildColorLockEditDescription(d: DecorConfig): string {
 export function useFinalRender(config: BuilderConfig, opts: {
   /** 2026-10-27 (0.5b): a render needs a signed-in account — asked for here. */
   onSignInNeeded?: () => void;
+  /** 2026-10-27 (0.5c): the render was kept in the customer's account. */
+  onStored?: (saved: { path: string; key: string }) => void;
 } = {}) {
   const [status, setStatus]     = useState<FinalRenderStatus>("idle");
   // 2026-10-26: why a render was refused (the render limits), in words for
@@ -868,6 +839,30 @@ export function useFinalRender(config: BuilderConfig, opts: {
   configRef.current = config;
   const onSignInNeeded = useRef(opts.onSignInNeeded);
   onSignInNeeded.current = opts.onSignInNeeded;
+  const onStored = useRef(opts.onStored);
+  onStored.current = opts.onStored;
+
+  // 0.5c: a design that comes with its stored render (opened from My designs,
+  // or back on this device) shows that render again, through a short-lived
+  // signed link, while the scene is still the one it was made for.
+  const saved = config.decor.savedRender;
+  const restoredPath = useRef<string | null>(null);
+  useEffect(() => {
+    if (!saved || restoredPath.current === saved.path || currentFinalRenderUrl.current) return;
+    const live = configRef.current;
+    if (renderKey(computeSceneHash(live)) !== saved.key) return;
+    restoredPath.current = saved.path;
+    void (async () => {
+      const sb = await loadClient();
+      const { data } = (await sb?.storage.from(RENDER_BUCKET).createSignedUrl(saved.path, 3600)) ?? { data: null };
+      if (!data?.signedUrl || currentFinalRenderUrl.current) return;
+      currentFinalRenderUrl.current           = data.signedUrl;
+      currentFinalRenderSceneHash.current     = computeSceneHash(configRef.current);
+      currentFinalRenderStructureHash.current = computeStructureHash(configRef.current);
+      setFinalUrl(data.signedUrl);
+      setStatus("done");
+    })();
+  }, [saved?.path, saved?.key]);
 
   /** The render API's sign-in header; null when the customer must sign in first (asked for). */
   async function authHeaders(): Promise<Record<string, string> | null> {
@@ -991,6 +986,7 @@ export function useFinalRender(config: BuilderConfig, opts: {
       currentFinalRenderStructureHash.current = liveStructureHash;
       setFinalUrl(data.imageUrl);
       setStatus("done");
+      if (data.storedRender?.path) { restoredPath.current = data.storedRender.path; onStored.current?.(data.storedRender); }
 
       // If the user applied a change request before any render existed,
       // apply it now on the freshly generated image so it actually reflects it.
@@ -1070,6 +1066,7 @@ export function useFinalRender(config: BuilderConfig, opts: {
         setFinalUrl(data.imageUrl);
         setStatus("done");
         setAppliedChangeLabel(editDescription);
+        if (data.storedRender?.path) { restoredPath.current = data.storedRender.path; onStored.current?.(data.storedRender); }
       } else {
         setStatus("error");
       }
@@ -1209,7 +1206,7 @@ export type FinalRenderState = { hasRender: boolean; isStale: boolean; generatin
 
 export default function SetupPreview({
   config, status, imageUrl, isIncremental = false, onRegenerate, showControls = true,
-  onPatchDecor, onFinalRenderStateChange, onGenerateReady, onSignInNeeded, emptyArt, emptyArtLabel = "Example.",
+  onPatchDecor, onFinalRenderStateChange, onGenerateReady, onSignInNeeded, onRenderStored, emptyArt, emptyArtLabel = "Example.",
   emptyArtNote = "Your own render, with your exact choices, appears here after you generate it.",
   sketchFirst = false, sketchActiveId = null, sketchCutouts = [],
 }: {
@@ -1240,6 +1237,8 @@ export default function SetupPreview({
   onGenerateReady?: (fn: () => void) => void;
   /** 2026-10-27 (0.5b): a render needs a signed-in account; the parent opens sign-in. */
   onSignInNeeded?: () => void;
+  /** 2026-10-27 (0.5c): the render was kept in the account; the parent records it in the design. */
+  onRenderStored?: (saved: { path: string; key: string }) => void;
 }) {
   const themeAccent = THEMES.find((t) => t.id === config.theme)?.accent ?? "#C77DD6";
 
@@ -1263,7 +1262,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
     appliedChangeLabel,
     limitMessage,
     limitFinal,
-  } = useFinalRender(config, { onSignInNeeded });
+  } = useFinalRender(config, { onSignInNeeded, onStored: onRenderStored });
 
   // Hero presentation: the preview card uses a fixed 4:3 stage regardless of the
   // render's own aspect ratio — renders are letterboxed with object-contain on
