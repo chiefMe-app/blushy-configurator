@@ -17,6 +17,9 @@ const nextConfig = {
       "/api/typography/layout": ["./assets/fonts/**/*", "./node_modules/harfbuzzjs/dist/*.wasm"],
       "/api/generate-controlled-render": ["./assets/fonts/**/*", "./node_modules/harfbuzzjs/dist/*.wasm"],
       "/api/generate-structure-render-test": ["./assets/fonts/**/*", "./node_modules/harfbuzzjs/dist/*.wasm"],
+      // 2026-10-27 (Phase 1.3): the Design Pack — lettering, the PDF's DM Sans,
+      // the label font, and the sample pack's example picture.
+      "/api/packs/sample": ["./assets/fonts/**/*", "./node_modules/harfbuzzjs/dist/*.wasm", "./public/design/theme-previews/frozen/single-round.webp"],
     },
   },
 };

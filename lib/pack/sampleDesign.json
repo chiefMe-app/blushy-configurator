@@ -1,0 +1,124 @@
+{
+ "v": 1,
+ "savedAt": "2026-10-27T00:00:00.000Z",
+ "step": 2,
+ "decorTab": 3,
+ "config": {
+  "eventType": "birthday",
+  "theme": "frozen",
+  "themeSelected": true,
+  "package": "mini",
+  "servicePackageId": "design_only",
+  "decor": {
+   "backdropItems": [
+    {
+     "id": "round",
+     "type": "round",
+     "widthCm": 200,
+     "heightCm": 200,
+     "color": "",
+     "text": {
+      "enabled": true,
+      "value": "Happy Birthday Arya",
+      "fontStyle": "script",
+      "color": "silver",
+      "lettering": {
+       "presetId": "soft-signature",
+       "basedOn": "soft-signature",
+       "heading": {
+        "text": "Happy Birthday",
+        "fontId": "bellefair",
+        "weight": 400,
+        "size": "medium"
+       },
+       "name": {
+        "text": "Arya",
+        "fontId": "italianno",
+        "weight": 400,
+        "size": "large"
+       }
+      },
+      "size": "large"
+     },
+     "graphic": {
+      "enabled": false,
+      "theme": "",
+      "style": "illustrated"
+     }
+    }
+   ],
+   "balloonStyle": "full",
+   "plinths": 1,
+   "plinthSizes": [
+    "large"
+   ],
+   "cutouts": {
+    "size": "none",
+    "position": "floor"
+   },
+   "backdropPrint": {
+    "type": "none"
+   },
+   "backdropText": {
+    "enabled": false,
+    "type": "birthday",
+    "name": "",
+    "customText": "",
+    "fontStyle": "script",
+    "color": "white",
+    "fontSize": 4,
+    "lineHeight": 140,
+    "verticalOffset": 30,
+    "horizontalOffset": 50,
+    "align": "center"
+   },
+   "cakeTable": false,
+   "backdropColor": "#FFFFFF",
+   "balloonColors": [
+    "#FFFFFF",
+    "#BAE6FD",
+    "#DCD7F2",
+    "#C7C9C7",
+    "#F0F4F8"
+   ],
+   "sempertexSelection": [
+    {
+     "code": "005",
+     "colorName": "White",
+     "finish": "Fashion",
+     "family": "white",
+     "hex": "#FFFFFF"
+    },
+    {
+     "code": "640",
+     "colorName": "Blue",
+     "finish": "Pastel Matte",
+     "family": "blue",
+     "hex": "#BAE6FD"
+    },
+    {
+     "code": "850",
+     "colorName": "Light Amethyst",
+     "finish": "Silk",
+     "family": "purple",
+     "hex": "#DCD7F2"
+    },
+    {
+     "code": "981",
+     "colorName": "Silver",
+     "finish": "Reflex",
+     "family": "silver",
+     "hex": "#C7C9C7"
+    },
+    {
+     "code": "390",
+     "colorName": "Clear",
+     "finish": "Fashion",
+     "family": "white",
+     "hex": "#F0F4F8"
+    }
+   ]
+  },
+  "addOns": []
+ }
+}

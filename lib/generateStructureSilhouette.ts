@@ -83,6 +83,11 @@ export interface SilhouetteResult {
    *  recolour the rendered lettering, which the arch edit model paints black
    *  whatever colour it is asked for. */
   textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[];
+  /** 2026-10-27 (Design Pack): where each board's lettering block sits on the
+   *  real board — its width (the clear band the lettering box is scaled into)
+   *  and its centre, in millimetres from the board's left edge and top. The
+   *  guide's own drawing is unchanged; this only reports it in board units. */
+  letteringPlacements: { panelIdx: number; widthMm: number; centreXMm: number; centreYMm: number }[];
   /** Centre and radius of every bulb on a block marquee number, as fractions
    *  of the canvas width/height. The render paints the number where the guide
    *  draws it but does not reliably light the bulbs, so the route lights them
@@ -694,7 +699,7 @@ function customTextGuide(
     /** 2026-10-26: Typography System lettering (already checked by cleanLettering). */
     lettering?: BoardLettering | null;
   } = {},
-): { svg: string; zone: { xMin: number; xMax: number; yMin: number; yMax: number }; fill: string; silverInk: string } {
+): { svg: string; zone: { xMin: number; xMax: number; yMin: number; yMax: number }; fill: string; silverInk: string; placement: { widthPx: number; cx: number; cy: number } } {
   const { hasGraphicBelow = false, garlandSide = "none", fontStyle = "script", color = "white" } = opts;
   const panelH = floorY - apexY;
   // The illustration zone starts at 32% of the panel height, so a text
@@ -922,6 +927,8 @@ function customTextGuide(
       yMax: apexY + panelH * 0.55,
     },
     fill,
+    /** The lettering block's width and centre, in guide px. */
+    placement: { widthPx: clearW, cx: tx, cy: y },
   };
 }
 
@@ -1178,6 +1185,7 @@ export function generateStructureSilhouette(
   // content: everything else — scaled and centered
   const content: string[] = [];
   const textZones: { panelIdx: number; colorHex: string; xMin: number; xMax: number; yMin: number; yMax: number }[] = [];
+  const letteringPlacements: SilhouetteResult["letteringPlacements"] = [];
   const marqueeBulbsLayout: [number, number, number][] = [];
   const marqueeFacesLayout: [number, number][][] = [];
   const silverInkLayer: string[] = [];
@@ -1502,6 +1510,15 @@ export function generateStructureSilhouette(
         textMetalTint = textMetalTint ?? metalTextTint(item?.text?.color);
       }
       textZones.push({ panelIdx: panel.idx, colorHex: textGuide.fill, ...textGuide.zone });
+      // In board millimetres, each axis by its own scale.
+      const wCm = Math.max(1, item?.widthCm ?? 100), hCm = Math.max(1, item?.heightCm ?? 200);
+      const mmX = (wCm * 10) / Math.max(1, panel.pw), mmY = (hCm * 10) / Math.max(1, panel.floorY - panel.apexY);
+      letteringPlacements.push({
+        panelIdx: panel.idx,
+        widthMm: textGuide.placement.widthPx * mmX,
+        centreXMm: (textGuide.placement.cx - (panel.cx - panel.pw / 2)) * mmX,
+        centreYMm: (textGuide.placement.cy - panel.apexY) * mmY,
+      });
     }
   });
 
@@ -4953,6 +4970,7 @@ export function generateStructureSilhouette(
     archShimmerCompositionBalloons,
     archShimmerAccentZone,
     textZones,
+    letteringPlacements,
     bannerPrintInGuide: bannerPrintInGuide as boolean,
     bannerPrintMaskSvg: (bannerPrintLayout as { x: number; y: number; w: number; h: number } | null)
       ? (() => {
