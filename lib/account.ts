@@ -1,5 +1,6 @@
 // Accounts (Phase 0.4): sign in with Google or an emailed link, and keep a
-// guest's saved designs.
+// guest's saved designs. Since 2026-10-27 saving needs an account, so guests
+// are only those who saved before then.
 //
 // - A guest (anonymous session) who signs in with a NEW Google account or
 //   email is linked: same user id, so every saved design simply stays theirs.
@@ -32,6 +33,27 @@ export async function currentAccount(sb: SupabaseClient): Promise<AccountState> 
 }
 
 export const callbackUrl = () => `${window.location.origin}/account/callback`;
+
+// 2026-10-27: after signing in, the customer goes back to the page they
+// signed in from — and when they signed in to save, the Builder saves the
+// design straight away.
+export const AFTER_SIGN_IN_KEY = "partymuse.after-sign-in.v1";
+interface AfterSignIn { to: string; save: boolean; at: number }
+
+/** Before leaving for Google or the inbox: where to come back to. */
+export function rememberReturn(save: boolean) {
+  const to = window.location.pathname || "/my-designs";
+  try { window.localStorage.setItem(AFTER_SIGN_IN_KEY, JSON.stringify({ to, save, at: Date.now() } satisfies AfterSignIn)); } catch { /* storage blocked */ }
+}
+
+/** Where the sign-in callback sends the customer; the save itself is the Builder's to take. */
+export function afterSignIn(): { to: string; save: boolean } | null {
+  let a: AfterSignIn | null = null;
+  try { a = JSON.parse(window.localStorage.getItem(AFTER_SIGN_IN_KEY) ?? "null"); } catch { /* storage blocked */ }
+  const fresh = a && Date.now() - a.at < IMPORT_MAX_AGE_MS && typeof a.to === "string" && a.to.startsWith("/") && !a.to.startsWith("//");
+  if (!fresh || !a!.save) { try { window.localStorage.removeItem(AFTER_SIGN_IN_KEY); } catch { /* storage blocked */ } }
+  return fresh ? { to: a!.to, save: a!.save } : null;
+}
 
 interface Stash {
   fromUserId: string;

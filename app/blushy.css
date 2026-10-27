@@ -1004,9 +1004,10 @@ div.bz-stale-banner { cursor: default; }
 .bz-account + .bz-total { margin-left: 0; }
 .bz-account-link { font: 700 13px var(--bz-sans); color: var(--bz-ink); text-decoration: none; padding: 8px 4px; }
 .bz-account-link:hover { color: var(--bz-pink); }
-.bz-signin-btn { border: 1.5px solid var(--bz-pink); border-radius: 999px; background: #fff; color: var(--bz-pink); font: 800 13px var(--bz-sans);
-  padding: 8px 16px; cursor: pointer; white-space: nowrap; }
-.bz-signin-btn:hover { background: var(--bz-pink-fog); }
+/* 2026-10-27: bigger and filled ("sign in çok küçük duruyor"). */
+.bz-signin-btn { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; background: var(--bz-pink); color: #fff;
+  font: 800 15px var(--bz-sans); padding: 11px 22px; cursor: pointer; white-space: nowrap; box-shadow: 0 6px 16px rgba(249,21,102,.28); }
+.bz-signin-btn:hover { filter: brightness(1.06); transform: translateY(1px); }
 .bz-avatar { width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--bz-pink); color: #fff; font: 800 15px var(--bz-sans); cursor: pointer; }
 .bz-account-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; min-width: 220px; background: #fff; border: 1px solid var(--bz-border);
   border-radius: 14px; box-shadow: 0 12px 30px rgba(80,38,51,.14); padding: 8px; display: flex; flex-direction: column; }
@@ -1021,8 +1022,8 @@ div.bz-stale-banner { cursor: default; }
 .bz-signin .x { position: absolute; top: 10px; right: 14px; border: 0; background: none; font-size: 26px; line-height: 1; color: var(--bz-muted); cursor: pointer; }
 .bz-signin h2 { margin: 0 0 6px; font: 400 26px var(--bz-hand); }
 .bz-signin .lead { margin: 0 0 18px; font-size: 13px; line-height: 1.5; color: var(--bz-muted); }
-.bz-signin .google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; border-radius: 999px;
-  border: 1.5px solid #e6dbe0; background: #fff; font: 750 14px var(--bz-sans); color: var(--bz-ink); cursor: pointer; }
+.bz-signin .google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; border-radius: 999px;
+  border: 1.5px solid #e6dbe0; background: #fff; font: 750 15.5px var(--bz-sans); color: var(--bz-ink); cursor: pointer; box-shadow: 0 4px 12px rgba(39,22,23,.07); }
 .bz-signin .google:hover:not(:disabled) { border-color: var(--bz-pink-soft); }
 .bz-signin .or { display: flex; align-items: center; gap: 10px; margin: 16px 0; color: var(--bz-muted); font-size: 12px; }
 .bz-signin .or::before, .bz-signin .or::after { content: ""; flex: 1; height: 1px; background: var(--bz-border); }
@@ -1065,7 +1066,8 @@ div.bz-stale-banner { cursor: default; }
 .bz-md-card .actions .bz-back { padding: 9px 18px 5px; font-size: 16px; }
 @media (max-width: 720px) {
   .bz-account-link { display: none; }
-  .bz-signin-btn { padding: 6px 12px; font-size: 12px; }
+  .bz-signin-btn { padding: 8px 14px; font-size: 13.5px; gap: 6px; }
+  .bz-signin-btn svg { width: 16px; height: 16px; }
   .bz-avatar { width: 30px; height: 30px; font-size: 13px; }
 }
 

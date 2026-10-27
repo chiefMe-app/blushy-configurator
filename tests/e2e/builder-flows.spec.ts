@@ -36,6 +36,8 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   for (const tab of ["Style", "Balloons", "Extras"] as const) {
     await next(page).click();
     await expect(page.locator(".bz-decor-tab.on")).toContainText(tab);
+    // Desktop shots show the live sketch: its lettering comes a moment later.
+    if ((page.viewportSize()?.width ?? 1000) >= 768) await expect(page.getByTestId("sketch-lettering").locator("path").first()).toBeAttached();
     await shot(page, `f1-04-decor-${tab.toLowerCase()}`);
   }
   await next(page).click(); // Generate render → stand-in

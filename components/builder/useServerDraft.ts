@@ -1,8 +1,11 @@
-// Saves the design to the guest's party in the database (lib/serverDraft.ts)
+// Saves the design to the customer's party in the database (lib/serverDraft.ts)
 // when the customer presses Save — never on its own (2026-10-26: "müşteri
 // save'e bassın öyle saved olsun"). The device copy (useLocalDraft) still
 // keeps the design between visits without a button.
-import { useMemo, useState } from "react";
+// 2026-10-27: Save needs an account. Nobody signed in: save() answers
+// "signin" and the Builder opens the sign-in window; back from signing in
+// to save, the design is saved once, on arrival.
+import { useEffect, useMemo, useState } from "react";
 import type { BuilderConfig } from "@/lib/config";
 import { toDraft } from "@/lib/draft";
 
@@ -10,8 +13,19 @@ import { toDraft } from "@/lib/draft";
 // Builder's first load does not carry them.
 const loadSaver = () => Promise.all([import("@/lib/supabase/browser"), import("@/lib/serverDraft")]);
 const SERVER_DRAFT_KEY = "partymuse.party.v1"; // lib/serverDraft.ts
+const AFTER_SIGN_IN_KEY = "partymuse.after-sign-in.v1"; // lib/account.ts
 
-/** "unavailable": guest sessions are switched off in Supabase. */
+/** Back from signing in to save (lib/account.ts rememberReturn): taken once. */
+function takeSaveOnArrival(): boolean {
+  try {
+    const a = JSON.parse(window.localStorage.getItem(AFTER_SIGN_IN_KEY) ?? "null") as { save?: boolean; at?: number } | null;
+    if (!a?.save) return false;
+    window.localStorage.removeItem(AFTER_SIGN_IN_KEY);
+    return Date.now() - (a.at ?? 0) < 60 * 60_000;
+  } catch { return false; }
+}
+
+/** "unavailable": Supabase is not set up in this browser. */
 export type ServerSaveStatus = "idle" | "saving" | "saved" | "error" | "unavailable";
 
 /** A short fingerprint of the design (not the step or tab), to tell saved from changed. */
@@ -33,12 +47,12 @@ export function useServerDraft({ config, step, decorTab }: { config: BuilderConf
   const [savedPrint, setSavedPrint] = useState<string | null>(() => (typeof window === "undefined" ? null : readSavedPrint()));
   const print = useMemo(() => fingerprint(config), [config]);
 
-  async function save() {
+  async function save(): Promise<"signin" | void> {
     if (!available || status === "saving") return;
     const at = print;
     setStatus("saving");
     try {
-      const [{ browserSupabase }, { GuestSessionUnavailable, readRef, saveDesign, writeRef }] = await loadSaver();
+      const [{ browserSupabase }, { SignInNeeded, readRef, saveDesign, writeRef }] = await loadSaver();
       const sb = browserSupabase();
       if (!sb) { setStatus("unavailable"); return; }
       try {
@@ -46,7 +60,7 @@ export function useServerDraft({ config, step, decorTab }: { config: BuilderConf
         setSavedPrint(at);
         setStatus("saved");
       } catch (err) {
-        if (err instanceof GuestSessionUnavailable) { setStatus("unavailable"); return; }
+        if (err instanceof SignInNeeded) { setStatus("idle"); return "signin"; }
         if ((err as { resetParty?: boolean }).resetParty) writeRef({ ...readRef(), partyId: undefined, itemId: undefined });
         console.warn("[draft] could not save to the server", err);
         setStatus("error");
@@ -56,6 +70,17 @@ export function useServerDraft({ config, step, decorTab }: { config: BuilderConf
       setStatus("error");
     }
   }
+
+  // Back from signing in to save: the restored design (useLocalDraft restores
+  // it in the same first pass) is saved once.
+  const [saveOnArrival, setSaveOnArrival] = useState(false);
+  useEffect(() => { if (available && takeSaveOnArrival()) setSaveOnArrival(true); }, [available]);
+  useEffect(() => {
+    if (!saveOnArrival) return;
+    setSaveOnArrival(false);
+    void save();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveOnArrival]);
 
   return {
     /** Supabase is configured, so Save can be offered. */

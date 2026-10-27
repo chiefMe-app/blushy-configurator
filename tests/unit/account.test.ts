@@ -2,7 +2,7 @@
 // an in-memory stand-in for the Supabase client and for localStorage.
 import { beforeEach, describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { IMPORT_KEY, importGuestDesigns, signInWithEmail, signInWithGoogle } from "@/lib/account";
+import { AFTER_SIGN_IN_KEY, IMPORT_KEY, afterSignIn, importGuestDesigns, rememberReturn, signInWithEmail, signInWithGoogle } from "@/lib/account";
 import { SERVER_DRAFT_KEY } from "@/lib/serverDraft";
 
 const store = new Map<string, string>();
@@ -12,7 +12,7 @@ const store = new Map<string, string>();
     setItem: (k: string, v: string) => { store.set(k, v); },
     removeItem: (k: string) => { store.delete(k); },
   },
-  location: { origin: "https://blushy-events.vercel.app" },
+  location: { origin: "https://blushy-events.vercel.app", pathname: "/builder" },
 };
 
 const GUEST = "guest-1", ACCOUNT = "account-1";
@@ -130,5 +130,30 @@ describe("bringing a guest's designs into the account", () => {
     store.set(IMPORT_KEY, JSON.stringify({ ...s, at: Date.now() - 2 * 60 * 60_000 }));
     const f = fake({ user: { id: ACCOUNT, is_anonymous: false } });
     expect(await importGuestDesigns(f.sb)).toBe(0);
+  });
+});
+
+describe("after signing in", () => {
+  const loc = (globalThis as unknown as { window: { location: { pathname: string } } }).window.location;
+  beforeEach(() => { loc.pathname = "/builder"; });
+
+  it("signed in to save: back to the Builder, and the save is left for the Builder to take", () => {
+    rememberReturn(true);
+    expect(afterSignIn()).toEqual({ to: "/builder", save: true });
+    expect(store.has(AFTER_SIGN_IN_KEY)).toBe(true);
+  });
+  it("signed in from the top bar: back to that page, nothing left over", () => {
+    loc.pathname = "/my-designs";
+    rememberReturn(false);
+    expect(afterSignIn()).toEqual({ to: "/my-designs", save: false });
+    expect(store.has(AFTER_SIGN_IN_KEY)).toBe(false);
+  });
+  it("old, missing or foreign destinations are ignored", () => {
+    expect(afterSignIn()).toBeNull();
+    store.set(AFTER_SIGN_IN_KEY, JSON.stringify({ to: "//evil.example", save: false, at: Date.now() }));
+    expect(afterSignIn()).toBeNull();
+    store.set(AFTER_SIGN_IN_KEY, JSON.stringify({ to: "/builder", save: true, at: Date.now() - 2 * 60 * 60_000 }));
+    expect(afterSignIn()).toBeNull();
+    expect(store.has(AFTER_SIGN_IN_KEY)).toBe(false);
   });
 });

@@ -38,6 +38,11 @@ export function useLocalDraft({ config, step, decorTab, enabled, onRestore }: {
     /** The design on screen came back from an earlier visit. */
     restored,
     dismiss: () => setRestored(false),
+    /** Writes the device copy now, e.g. before leaving to sign in. */
+    flush: () => {
+      if (!enabled || !isWorthSaving(config, step)) return;
+      try { window.localStorage.setItem(DRAFT_KEY, JSON.stringify(toDraft(config, step, decorTab))); } catch { /* storage full or blocked */ }
+    },
     clear: () => {
       setRestored(false);
       try { window.localStorage.removeItem(DRAFT_KEY); } catch { /* storage blocked */ }

@@ -35,7 +35,10 @@ export default function AccountMenu() {
   return (
     <div className="bz-account">
       {account.kind === "guest" && <a href="/my-designs" className="bz-account-link">My designs</a>}
-      <button type="button" className="bz-signin-btn" onClick={() => setSigningIn(true)}>Sign in</button>
+      <button type="button" className="bz-signin-btn" onClick={() => setSigningIn(true)}>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" strokeWidth="2.2" /><path d="M4 21c1.2-4.2 4.3-6.3 8-6.3s6.8 2.1 8 6.3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
+        Sign in
+      </button>
       <SignInDialog open={signingIn} onClose={() => setSigningIn(false)} />
     </div>
   );

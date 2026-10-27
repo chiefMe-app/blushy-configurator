@@ -1,8 +1,9 @@
-// The guest's design saved in the database (Phase 0.3): a party with the
-// backdrop design in it, written with the guest's own session under the
+// The customer's design saved in the database (Phase 0.3): a party with the
+// backdrop design in it, written with the customer's own session under the
 // table rules of supabase/migrations (only its owner can read or change it).
-// The session is anonymous and starts only once the customer has chosen
-// something (lazy), so visits that only look around create nothing.
+// 2026-10-27: saving needs a signed-in account ("misafirler save edemesin"):
+// no guest (anonymous) sessions are started, and an old guest session is
+// asked to sign in, which keeps its designs (lib/account.ts).
 // Only design choices are stored — the same fields as the device copy
 // (lib/draft.ts), never the customer's name, phone or venue.
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -21,7 +22,8 @@ export interface ServerDraftRef {
   savedPrint?: string;
 }
 
-export class GuestSessionUnavailable extends Error {}
+/** Nobody signed in (or only an old guest session): sign in first. */
+export class SignInNeeded extends Error {}
 
 export function readRef(): ServerDraftRef {
   try { return JSON.parse(window.localStorage.getItem(SERVER_DRAFT_KEY) ?? "{}") ?? {}; } catch { return {}; }
@@ -33,18 +35,16 @@ export function forgetRef() {
   try { window.localStorage.removeItem(SERVER_DRAFT_KEY); } catch { /* storage blocked */ }
 }
 
-/** The signed-in or guest user, starting a guest session if there is none. */
+/** The signed-in customer. */
 async function sessionUser(sb: SupabaseClient): Promise<string> {
   const { data } = await sb.auth.getSession();
-  if (data.session?.user) return data.session.user.id;
-  const { data: anon, error } = await sb.auth.signInAnonymously();
-  // e.g. "Anonymous sign-ins are disabled": stay on the device copy.
-  if (error || !anon.user) throw new GuestSessionUnavailable(error?.message ?? "no guest session");
-  return anon.user.id;
+  const user = data.session?.user;
+  if (!user || user.is_anonymous) throw new SignInNeeded("sign in to save");
+  return user.id;
 }
 
 /**
- * Saves the design to the guest's party, creating the party and the item the
+ * Saves the design to the customer's party, creating the party and the item the
  * first time. Returns the reference to keep for the next save.
  */
 export async function saveDesign(sb: SupabaseClient, config: BuilderConfig, step: number, decorTab: number, ref: ServerDraftRef): Promise<ServerDraftRef> {

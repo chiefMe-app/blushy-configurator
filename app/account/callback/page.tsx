@@ -2,7 +2,7 @@
 // Where Google and the emailed sign-in link come back to (Phase 0.4). The
 // Supabase client finishes the sign-in from the link itself (PKCE); then a
 // guest's saved designs are brought into the account and the customer goes
-// to My designs.
+// back to the page they signed in from (My designs when unknown).
 import { useEffect, useRef, useState } from "react";
 import { loadClient } from "@/components/account/useAccount";
 
@@ -37,7 +37,11 @@ export default function AccountCallback() {
       }
       let imported = 0;
       try { imported = await account.importGuestDesigns(sb); } catch (err) { console.warn("[account] import failed", err); }
-      window.location.replace(`/my-designs${imported ? `?imported=${imported}` : ""}`);
+      // Back where they signed in (the Builder then saves the design, when
+      // that is why they signed in); else My designs.
+      const back = account.afterSignIn();
+      const to = back && back.to !== "/my-designs" ? back.to : "/my-designs";
+      window.location.replace(to === "/my-designs" && imported ? `${to}?imported=${imported}` : to);
     })();
   }, []);
 

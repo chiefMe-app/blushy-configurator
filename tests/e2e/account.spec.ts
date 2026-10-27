@@ -1,32 +1,37 @@
 // Sign in and My designs (Phase 0.4), against the in-browser stand-in
-// Supabase (guard.ts): an emailed link, a guest's saved design moving into
-// the account, My designs (open, delete), Google linking, and the edges.
-import { test, expect, openDecor, decorTab, next, settle, masks, FAKE_ACCOUNT, FAKE_GUEST_ID } from "./guard";
+// Supabase (guard.ts): an emailed link, saving (which needs an account since
+// 2026-10-27), coming back to the page signed in from, My designs (open,
+// delete), and the edges. A guest's old designs moving into an account is
+// covered in tests/unit/account.test.ts.
+import { test, expect, openDecor, decorTab, settle, masks, FAKE_ACCOUNT } from "./guard";
 import type { Page } from "@playwright/test";
 
 const saveLabel = (page: Page) => page.getByTestId("save-design").locator(".full");
 
-async function saveAsGuest(page: Page) {
-  await openDecor(page, "Frozen", "Single Round");
-  await page.getByTestId("save-design").click();
-  await expect(saveLabel(page)).toHaveText("✓ Saved");
-}
-
+/** Sign in from the dialog with the emailed link, opened on this device. */
 async function signInByEmail(page: Page) {
-  await page.getByRole("button", { name: "Sign in" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await dialog.getByLabel("Email").fill(FAKE_ACCOUNT.email);
   await dialog.getByRole("button", { name: "Email me a sign-in link" }).click();
   await expect(dialog.getByRole("status")).toContainText("Check your inbox");
-  // The customer opens the link from the email on this device:
   await page.goto("/account/callback?code=e2e-link");
+}
+
+/** A design saved to the account: Save, sign in, back in the Builder. */
+async function saveSignedIn(page: Page) {
+  await openDecor(page, "Frozen", "Single Round");
+  await page.getByTestId("save-design").click();
+  await signInByEmail(page);
+  await expect(page).toHaveURL(/\/builder$/);
+  await expect(saveLabel(page)).toHaveText("✓ Saved");
 }
 
 test("A1 Sign in offers Google and an emailed link", async ({ page }) => {
   await page.goto("/builder");
   await page.getByRole("button", { name: "Sign in" }).click();
   const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: "Keep your designs" })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Continue with Google" })).toBeVisible();
   await expect(dialog.getByLabel("Email")).toBeVisible();
   await settle(page);
@@ -36,28 +41,22 @@ test("A1 Sign in offers Google and an emailed link", async ({ page }) => {
   await expect(dialog.getByRole("alert")).toHaveText("Please enter a valid email address.");
 });
 
-test("A2 a guest's saved design moves into the account they sign in to", async ({ page, guard }) => {
-  await saveAsGuest(page);
-  expect(guard.supabase.items.map((i) => i.owner_id)).toEqual([FAKE_GUEST_ID]);
-  await signInByEmail(page);
-  await expect(page).toHaveURL(/\/my-designs\?imported=1$/);
-  await expect(page.getByRole("status")).toContainText("Your saved design is now in your account.");
+test("A2 a saved design is in My designs", async ({ page, guard }) => {
+  await saveSignedIn(page);
+  await page.goto("/my-designs");
   const cards = page.getByTestId("saved-design");
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText("Frozen · Single Round");
-  await expect(cards.first()).toContainText("Imported from guest session");
-  const mine = guard.supabase.items.filter((i) => i.owner_id === FAKE_ACCOUNT.id);
-  expect(mine).toHaveLength(1);
-  expect(guard.supabase.parties.find((p) => p.owner_id === FAKE_ACCOUNT.id)?.title).toBe("Imported from guest session");
+  expect(guard.supabase.items.map((i) => i.owner_id)).toEqual([FAKE_ACCOUNT.id]);
   await expect(page.getByRole("button", { name: /^Account:/ })).toHaveText("A");
   await expect(cards.first().getByTestId("sketch-lettering").locator("path").first()).toBeAttached(); // the sketch's lettering has come
   await settle(page);
   await expect.soft(page).toHaveScreenshot("a2-my-designs.png", { mask: masks(page) });
 });
 
-test("A3 Open brings a saved design back; Save changes updates it in the account", async ({ page, guard }) => {
-  await saveAsGuest(page);
-  await signInByEmail(page);
+test("A3 Open brings a saved design back; Save changes updates it", async ({ page, guard }) => {
+  await saveSignedIn(page);
+  await page.goto("/my-designs");
   await page.getByTestId("saved-design").getByRole("button", { name: "Open" }).click();
   await expect(page).toHaveURL(/\/builder$/);
   await expect(page.getByTestId("draft-restored")).toBeVisible();
@@ -71,38 +70,38 @@ test("A3 Open brings a saved design back; Save changes updates it in the account
   await expect(saveLabel(page)).toHaveText("✓ Saved");
   const patched = guard.supabase.requests.slice(before).filter((r) => r.method === "PATCH" && r.path.startsWith("/rest/v1/party_items"));
   expect(patched).toHaveLength(1);
-  const accountItem = guard.supabase.items.find((i) => i.owner_id === FAKE_ACCOUNT.id)!;
-  expect(patched[0].path).toContain(`id=eq.${accountItem.id}`);
-  expect(guard.supabase.items.filter((i) => i.owner_id === FAKE_ACCOUNT.id)).toHaveLength(1); // no copy made
+  expect(patched[0].path).toContain(`id=eq.${guard.supabase.items[0].id}`);
+  expect(guard.supabase.items).toHaveLength(1); // no copy made
 });
 
 test("A4 Delete removes a design from My designs", async ({ page, guard }) => {
-  await saveAsGuest(page);
-  await signInByEmail(page);
+  await saveSignedIn(page);
+  await page.goto("/my-designs");
   page.once("dialog", (d) => d.accept());
   await page.getByTestId("saved-design").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByTestId("saved-design")).toHaveCount(0);
   await expect(page.getByText("No saved designs yet.")).toBeVisible();
-  expect(guard.supabase.items.filter((i) => i.owner_id === FAKE_ACCOUNT.id)).toHaveLength(0);
+  expect(guard.supabase.items).toHaveLength(0);
 });
 
-test("A5 My designs with nobody signed in asks to sign in; a guest sees their designs", async ({ page }) => {
+test("A5 My designs signed out asks to sign in, and signing in there comes back to it", async ({ page }) => {
   await page.goto("/my-designs");
   await expect(page.getByText("Sign in to see the designs you saved.")).toBeVisible();
-  await saveAsGuest(page);
-  await page.goto("/my-designs");
-  await expect(page.getByTestId("saved-design")).toHaveCount(1);
-  await expect(page.getByText("These designs are saved on this device.")).toBeVisible();
+  await page.getByRole("main").getByRole("button", { name: "Sign in" }).click();
+  await signInByEmail(page);
+  await expect(page).toHaveURL(/\/my-designs$/);
+  await expect(page.getByText("No saved designs yet.")).toBeVisible();
 });
 
-test("A6 a guest's Google sign-in links the guest (same account, designs stay)", async ({ page, guard }) => {
-  await saveAsGuest(page);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Continue with Google" }).click();
-  await expect(page).toHaveURL(/supabase\.test\/auth\/v1\/authorize\?provider=google/);
-  const link = guard.supabase.requests.find((r) => r.path.startsWith("/auth/v1/user/identities/authorize"));
-  expect(link?.path).toContain("provider=google");
-  expect(decodeURIComponent(link!.path)).toContain("/account/callback");
+test("A6 signing in from the Builder's top bar comes back to the Builder, saving nothing", async ({ page, guard }) => {
+  await openDecor(page, "Frozen", "Single Round");
+  await page.getByRole("banner").getByRole("button", { name: "Sign in" }).click();
+  await signInByEmail(page);
+  await expect(page).toHaveURL(/\/builder$/);
+  await expect(page.getByRole("button", { name: /^Account:/ })).toBeVisible();
+  await expect(page.locator(".bz-decor-head strong")).toHaveText("Single Round");
+  await expect(saveLabel(page)).toHaveText("♡ Save my design");
+  expect(guard.supabase.items).toHaveLength(0);
 });
 
 test("A7 a sign-in link opened without its code says so", async ({ page }) => {
@@ -112,8 +111,7 @@ test("A7 a sign-in link opened without its code says so", async ({ page }) => {
 });
 
 test("A8 Sign out", async ({ page }) => {
-  await saveAsGuest(page);
-  await signInByEmail(page);
+  await saveSignedIn(page);
   await page.getByRole("button", { name: /^Account:/ }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/builder$/);

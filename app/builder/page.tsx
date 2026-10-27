@@ -34,6 +34,7 @@ import { useBuilderConfig } from "@/components/builder/useBuilderConfig";
 import { useLocalDraft } from "@/components/builder/useLocalDraft";
 import { useServerDraft } from "@/components/builder/useServerDraft";
 import AccountMenu from "@/components/account/AccountMenu";
+import SignInDialog from "@/components/account/SignInDialog";
 
 import Sprinkles from "@/components/design/Sprinkles";
 
@@ -78,9 +79,17 @@ export default function ConfigurePage() {
       setDecorTab(d.decorTab);
     },
   });
-  // 2026-10-26 (0.3): the guest's party in the database — when the customer
-  // presses Save (the footer button), never on its own.
+  // 2026-10-26 (0.3): the customer's party in the database — when the customer
+  // presses Save (the footer button), never on its own. 2026-10-27: Save
+  // needs an account; nobody signed in, it opens the sign-in window.
   const serverDraft = useServerDraft({ config, step, decorTab });
+  const [signInToSave, setSignInToSave] = useState(false);
+  const onSave = async () => {
+    if ((await serverDraft.save()) === "signin") {
+      draft.flush(); // the design must be here when they come back
+      setSignInToSave(true);
+    }
+  };
   const startOver = () => {
     draft.clear();
     serverDraft.forget();
@@ -446,10 +455,10 @@ export default function ConfigurePage() {
       <footer className="bz-footer">
         <div className="bz-footer-inner">
           <button type="button" className="bz-back" onClick={() => goToStep(step - 1)} disabled={step === 0}>← Back</button>
-          {/* 2026-10-26: Save — the design goes to the guest's party only when pressed. */}
+          {/* 2026-10-26: Save — the design goes to the database only when pressed. */}
           {serverDraft.available && config.themeSelected ? (
             <button type="button" className={`bz-save ${serverDraft.saved ? "done" : ""}`} data-testid="save-design"
-              onClick={() => { void serverDraft.save(); }}
+              onClick={() => { void onSave(); }}
               disabled={serverDraft.saved || serverDraft.status === "saving" || serverDraft.status === "unavailable"}>
               {(() => {
                 // Full label, and a short one for phones (blushy.css).
@@ -470,6 +479,7 @@ export default function ConfigurePage() {
           </button>
         </div>
       </footer>
+      <SignInDialog open={signInToSave} forSave onClose={() => setSignInToSave(false)} />
     </div>
   );
 }

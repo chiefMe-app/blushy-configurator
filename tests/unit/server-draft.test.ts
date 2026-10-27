@@ -1,16 +1,16 @@
-// lib/serverDraft.ts: the guest's design saved to its party (Phase 0.3),
+// lib/serverDraft.ts: the customer's design saved to its party (Phase 0.3),
 // against an in-memory stand-in for the Supabase client. The table rules
 // themselves are tested on real Postgres in db.rls.test.ts.
 import { describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { GuestSessionUnavailable, saveDesign, BACKDROP_ITEM } from "@/lib/serverDraft";
+import { SignInNeeded, saveDesign, BACKDROP_ITEM } from "@/lib/serverDraft";
 import { fixtureById } from "../fixtures/configs";
 
 type Row = Record<string, unknown> & { id: string };
 
-function fakeSupabase(opts: { anonymousAllowed?: boolean; startUser?: string } = {}) {
+function fakeSupabase(opts: { startUser?: string | null; anonymous?: boolean } = {}) {
   const tables: Record<string, Row[]> = { parties: [], party_items: [] };
-  let user: string | null = opts.startUser ?? null;
+  let user: string | null = opts.startUser === undefined ? "account-1" : opts.startUser;
   let n = 0;
   const calls: string[] = [];
   const from = (table: string) => {
@@ -44,13 +44,7 @@ function fakeSupabase(opts: { anonymousAllowed?: boolean; startUser?: string } =
   };
   const sb = {
     auth: {
-      getSession: async () => ({ data: { session: user ? { user: { id: user } } : null } }),
-      signInAnonymously: async () => {
-        calls.push("signInAnonymously");
-        if (opts.anonymousAllowed === false) return { data: { user: null }, error: { message: "Anonymous sign-ins are disabled" } };
-        user = `guest-${++n}`;
-        return { data: { user: { id: user } }, error: null };
-      },
+      getSession: async () => ({ data: { session: user ? { user: { id: user, is_anonymous: !!opts.anonymous } } : null } }),
     },
     from,
   } as unknown as SupabaseClient;
@@ -62,14 +56,14 @@ const config = (() => {
   return { ...c, customer: { ...c.customer, name: "Ayşe Test", whatsapp: "+971500000000" }, venue: { ...c.venue, area: "Villa 12" } };
 })();
 
-describe("saving the guest's design", () => {
-  it("first save: a guest session, a party, the backdrop design in it — design only", async () => {
+describe("saving the customer's design", () => {
+  it("first save: a party, the backdrop design in it — design only", async () => {
     const f = fakeSupabase();
     const ref = await saveDesign(f.sb, config, 2, 1, {});
-    expect(f.calls).toEqual(["signInAnonymously", "insert parties", "insert party_items"]);
-    expect(ref).toEqual({ userId: "guest-1", partyId: "parties-2", itemId: "party_items-3" });
+    expect(f.calls).toEqual(["insert parties", "insert party_items"]);
+    expect(ref).toEqual({ userId: "account-1", partyId: "parties-1", itemId: "party_items-2" });
     const item = f.tables.party_items[0];
-    expect(item).toMatchObject({ kind: "product", ref_id: BACKDROP_ITEM, party_id: "parties-2" });
+    expect(item).toMatchObject({ kind: "product", ref_id: BACKDROP_ITEM, party_id: "parties-1" });
     expect(item.config).toMatchObject({ v: 1, step: 2, decorTab: 1 });
     const text = JSON.stringify(f.tables);
     for (const s of ["Ayşe Test", "971500000000", "Villa 12"]) expect(text).not.toContain(s);
@@ -77,7 +71,7 @@ describe("saving the guest's design", () => {
     expect(f.tables.parties[0].context).toEqual({ theme: "frozen", eventType: "birthday" });
   });
 
-  it("later saves change the same item; no new session, party or item", async () => {
+  it("later saves change the same item; no new party or item", async () => {
     const f = fakeSupabase();
     const ref = await saveDesign(f.sb, config, 2, 1, {});
     f.calls.length = 0;
@@ -88,7 +82,7 @@ describe("saving the guest's design", () => {
     expect((f.tables.party_items[0].config as { step: number }).step).toBe(3);
   });
 
-  it("a different session (another guest, or signed out) starts its own party", async () => {
+  it("a different account on this device starts its own party", async () => {
     const f = fakeSupabase();
     const ref = await saveDesign(f.sb, config, 2, 1, {});
     f.setUser("someone-else");
@@ -107,10 +101,17 @@ describe("saving the guest's design", () => {
     expect(f.tables.party_items).toHaveLength(1);
   });
 
-  it("guest sessions switched off: says so, writes nothing", async () => {
-    const f = fakeSupabase({ anonymousAllowed: false });
-    await expect(saveDesign(f.sb, config, 2, 1, {})).rejects.toBeInstanceOf(GuestSessionUnavailable);
+  it("nobody signed in: asks to sign in, starts no guest session, writes nothing", async () => {
+    const f = fakeSupabase({ startUser: null });
+    await expect(saveDesign(f.sb, config, 2, 1, {})).rejects.toBeInstanceOf(SignInNeeded);
+    expect(f.calls).toEqual([]);
     expect(f.tables.parties).toHaveLength(0);
+  });
+
+  it("an old guest session also asks to sign in (signing in keeps its designs)", async () => {
+    const f = fakeSupabase({ startUser: "guest-1", anonymous: true });
+    await expect(saveDesign(f.sb, config, 2, 1, { userId: "guest-1", partyId: "p", itemId: "i" })).rejects.toBeInstanceOf(SignInNeeded);
+    expect(f.calls).toEqual([]);
   });
 
   it("a party that is gone asks for a new one (resetParty)", async () => {
