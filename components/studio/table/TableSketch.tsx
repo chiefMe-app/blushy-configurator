@@ -125,7 +125,6 @@ export default function TableSketch({ table, palette, accent, className }: { tab
         {at(-15, 0, "cutlery")}
         {at(11.5, -5, "cups")}
         {at(0, 12.5, "nameCards")}
-        {at(12, 5, "favourBoxes")}
         {at(0, 0, "partyHats")}
       </g>
     );

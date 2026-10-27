@@ -109,6 +109,22 @@ test("K5 the real render: both views, and it says when the table has changed sin
   expect(tableRenders(guard.blocked)).toBe(2);
 });
 
+test("K7 the render is kept: back on the page it comes from the customer's storage, with no new render", async ({ page, guard }) => {
+  guard.fakeRender = true;
+  await signIn(page);
+  await toTable(page);
+  await page.getByRole("button", { name: /Yes, design the table/ }).click();
+  await page.getByRole("button", { name: "Generate table render ✦" }).click();
+  await expect(page.getByTestId("table-render")).toHaveAttribute("src", FAKE_TABLE_RENDER.perspective);
+  await page.waitForTimeout(800); // the device copy
+  await page.reload();
+  await page.getByRole("tab", { name: /Table setup/ }).click();
+  const photo = page.getByTestId("table-render");
+  await expect(photo).toHaveAttribute("src", /supabase\.test\/storage\/v1\/object\/sign\/renders\/00000000-0000-4000-8000-0000000000a1\/p[0-9a-z]+\.jpg\?token=/);
+  await expect.poll(() => photo.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBeGreaterThan(0);
+  expect(tableRenders(guard.blocked)).toBe(1);
+});
+
 test("K6 the table render needs an account: not signed in, it asks first and renders nothing", async ({ page, guard }) => {
   guard.fakeRender = true;
   await toTable(page);

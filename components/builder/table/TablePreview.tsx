@@ -1,16 +1,20 @@
 // The left-hand preview during the table part of Decor (2026-10-27): a front
 // perspective and the to-scale top view, both live drawings of every choice —
 // and, on request, the real render of both views (F3, /api/table-render; it
-// needs an account, like the backdrop render).
+// needs an account, like the backdrop render). The pictures are kept in the
+// customer's own storage and shown through signed links.
 import { useEffect, useRef, useState } from "react";
 import { themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { tableCounts, type TableSetup } from "@/lib/studio/tableSetup";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import TableSketch from "@/components/studio/table/TableSketch";
 import TablePerspective from "@/components/studio/table/TablePerspective";
-import { accountToken } from "@/components/account/useAccount";
+import { accountToken, loadClient } from "@/components/account/useAccount";
+import { RENDER_BUCKET } from "@/lib/renderKey";
 
 type View = "perspective" | "top";
+/** Pictures that can be shown now, and the table (tableRenderKey) they show. */
+interface Shown { key: string; perspective: string; top: string }
 
 export default function TablePreview({ config, setTable, onSignInNeeded, startNow, onStarted }: {
   config: BuilderConfig;
@@ -28,15 +32,32 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
   const theme = themeById(config.theme) ?? THEMES[0];
   const table = config.table;
   const render = table?.render;
-  const current = !!render && !!table && render.key === tableRenderKey(table) && !expired;
+  const [shown, setShown] = useState<Shown | null>(null);
+  const current = !!shown && !!table && shown.key === tableRenderKey(table) && !expired;
   const latest = useRef(table);
   latest.current = table;
+
+  // A kept render (back on the page, or the design reopened): new signed links.
+  useEffect(() => {
+    if (!render || shown?.key === render.key) return;
+    let cancelled = false;
+    void (async () => {
+      const sb = await loadClient();
+      const { data } = (await sb?.storage.from(RENDER_BUCKET).createSignedUrls([render.perspective, render.top], 3600)) ?? { data: null };
+      const [p, t] = [data?.[0]?.signedUrl, data?.[1]?.signedUrl];
+      if (cancelled) return;
+      if (p && t) { setShown({ key: render.key, perspective: p, top: t }); setExpired(false); } else setExpired(true);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [render?.key, render?.perspective, render?.top]);
 
   async function makeRender() {
     if (status === "loading" || !latest.current?.enabled) return;
     const token = await accountToken();
     if (token === null) { onSignInNeeded(); return; }
     setStatus("loading"); setError(null);
+    const key = tableRenderKey(latest.current);
     try {
       const res = await fetch("/api/table-render", {
         method: "POST",
@@ -45,8 +66,10 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
       });
       const data = await res.json().catch(() => null);
       if (data?.signin) { setStatus("idle"); onSignInNeeded(); return; }
-      if (!res.ok || !data?.render) throw new Error(data?.error ?? "The render didn't come out — please try again.");
-      if (latest.current) setTable({ ...latest.current, render: data.render });
+      if (!res.ok || !data?.urls?.perspective || !data?.urls?.top) throw new Error(data?.error ?? "The render didn't come out — please try again.");
+      setShown({ key, perspective: data.urls.perspective, top: data.urls.top });
+      // Kept with the design when it was stored (signed in, with a database).
+      if (latest.current && data.render) setTable({ ...latest.current, render: data.render });
       setExpired(false); setShowSketch(false); setStatus("idle");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e)); setStatus("error");
@@ -62,6 +85,8 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
   }, [startNow, table?.enabled]);
 
   const photo = current && !showSketch;
+  // A render of an earlier version of the table.
+  const stale = !expired && !current && !!table && ((!!shown && shown.key !== tableRenderKey(table)) || (!!render && render.key !== tableRenderKey(table)));
   return (
     <div className="bz-tb-preview" id="party-preview-card">
       <div className="head">
@@ -77,7 +102,7 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
         <>
           {photo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="bz-tb-photo" data-testid="table-render" src={view === "top" ? render!.top : render!.perspective}
+            <img className="bz-tb-photo" data-testid="table-render" src={view === "top" ? shown!.top : shown!.perspective}
               alt={`Your kids' table, ${view === "top" ? "from above" : "from the front"}`} onError={() => setExpired(true)} />
           ) : view === "top" ? (
             <TableSketch table={table} palette={theme.balloonColors} accent={theme.accent} className="bz-tb-sketch" />
@@ -96,9 +121,9 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
             ) : current ? null : (
               <>
                 <button type="button" className="bz-next" onClick={() => void makeRender()}>
-                  {render && !expired ? "Update the render ✦" : "Generate table render ✦"}
+                  {stale ? "Update the render ✦" : "Generate table render ✦"}
                 </button>
-                <p className="hint">{render && !expired ? "You changed the table since your render." : expired ? "Your last render is no longer available." : "A photo-real look at every choice — from the front and from above."} Needs a free account.</p>
+                <p className="hint">{stale ? "You changed the table since your render." : expired ? "Your last render is no longer available." : "A photo-real look at every choice — from the front and from above."} Needs a free account.</p>
               </>
             )}
             {status === "error" && error && <p className="error" role="alert">{error}</p>}

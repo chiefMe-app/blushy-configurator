@@ -32,7 +32,6 @@ const WORDS: Partial<Record<TableItemKey, Record<string, string>>> = {
   centrepiece: { balloons: "a small bunch of mini balloons in the theme colours", florals: "a low arrangement of fresh flowers", toppers: "glittery star and snowflake toppers on sticks in a little pot" },
   chairDecor: { tulle_bow: "a big tulle bow on every chair back", balloon: "a balloon tied to every chair back", name_flag: "a little blank fabric flag on every chair back" },
   nameCards: { tent: "a blank folded tent name card", tag: "a blank round name tag on the napkin", acrylic: "a blank clear acrylic name card" },
-  favourBoxes: { box: "a little gift box with a bow", bag: "a clear treat bag of sweets", bucket: "a mini bucket of surprises" },
   partyHats: { cone: "a cone party hat", crown: "a little party crown", headband: "a party headband" },
 };
 
@@ -58,7 +57,7 @@ export function tablePrompt(t: TableSetup, theme: { name: string; balloonColors:
     .replace("{cloth}", hexToColorName(t.clothColor)).replace("{runner}", hexToColorName(t.runnerColor)).replace("{napkin}", hexToColorName(t.napkinColor)));
   const kids = clampKids(t.kids);
   const colours = Array.from(new Set(theme.balloonColors.map(hexToColorName).filter(Boolean))).join(", ");
-  const seat = ["plates", "chargers", "napkins", "cups", "cutlery", "nameCards", "partyHats", "favourBoxes"].map((k) => word(k as TableItemKey)).filter(Boolean).join(", ");
+  const seat = ["plates", "chargers", "napkins", "cups", "cutlery", "nameCards", "partyHats"].map((k) => word(k as TableItemKey)).filter(Boolean).join(", ");
   const camera = view === "top"
     ? "Seen straight down from directly above (a flat top-down view), exactly as the drawing shows."
     : "Seen from the front at a gentle three-quarter angle, slightly from above, exactly as the drawing shows.";

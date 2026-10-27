@@ -3,12 +3,17 @@
 // (lib/studio/tableGuide.ts) and every choice in words (lib/studio/tableRender.ts).
 // Like the backdrop render it costs money, so it needs a signed-in account and
 // counts as one of the day's renders (lib/renderAccount.ts), behind the
-// per-IP guard (lib/renderGuard.ts).
+// per-IP guard (lib/renderGuard.ts). The two pictures are kept in the
+// customer's folder of the private renders bucket (lib/renderStore.ts) and
+// shown through signed links — never fal's own links, which did not load on
+// the owner's network (2026-10-27).
 import { NextResponse, type NextRequest } from "next/server";
 import { fal } from "@fal-ai/client";
 import { themeById } from "@/lib/config";
 import { acquireRender, clientIp } from "@/lib/renderGuard";
 import { renderUser, takeAccountRender } from "@/lib/renderAccount";
+import { storeRender } from "@/lib/renderStore";
+import { RENDER_BUCKET } from "@/lib/renderKey";
 import { readTableSetup } from "@/lib/studio/tableSetup";
 import { tablePrompt, tableRenderKey, type TableRender, type TableView } from "@/lib/studio/tableRender";
 import { GUIDE_SIZE, tableGuide } from "@/lib/studio/tableGuide";
@@ -59,8 +64,21 @@ export async function POST(req: NextRequest) {
       return url;
     };
     const [perspective, top] = await Promise.all([one("perspective"), one("top")]);
-    const render: TableRender = { key: tableRenderKey(table), perspective, top };
-    return NextResponse.json({ render, left: taken.left });
+    const key = tableRenderKey(table);
+    // Without a database (local development) fal's links are all there is.
+    if (!user.client || !user.userId) return NextResponse.json({ urls: { perspective, top }, left: taken.left });
+    const { client, userId } = user;
+    const [p, t] = await Promise.all([
+      storeRender(client, userId, perspective, `table:perspective:${key}`),
+      storeRender(client, userId, top, `table:top:${key}`),
+    ]);
+    const signed = p && t ? (await client.storage.from(RENDER_BUCKET).createSignedUrls([p.path, t.path], 3600)).data : null;
+    if (!p || !t || !signed?.[0]?.signedUrl || !signed[1]?.signedUrl) {
+      console.warn("[table-render] not stored; showing fal's links");
+      return NextResponse.json({ urls: { perspective, top }, left: taken.left });
+    }
+    const render: TableRender = { key, perspective: p.path, top: t.path };
+    return NextResponse.json({ render, urls: { perspective: signed[0].signedUrl, top: signed[1].signedUrl }, left: taken.left });
   } catch (err) {
     console.error("[table-render]", err);
     return NextResponse.json({ error: "The render didn't come out — please try again." }, { status: 502 });

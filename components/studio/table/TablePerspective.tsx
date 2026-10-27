@@ -106,7 +106,6 @@ export default function TablePerspective({ table, palette, accent, className }: 
         {ch.partyHats === "crown" && <path d={`M${x - 5},${y - 1}V${y - 7}L${x - 2.5},${y - 4}L${x},${y - 9}L${x + 2.5},${y - 4}L${x + 5},${y - 7}V${y - 1}Z`} fill={GOLD} stroke={INK} strokeWidth={0.6} />}
         {ch.partyHats === "headband" && <path d={`M${x - 5},${y - 2}q5,-8 10,0`} fill="none" stroke={accent} strokeWidth={1.4} />}
         {ch.nameCards !== NONE && <rect x={x - 6} y={y + 3} width={12} height={4} rx={0.8} fill={ch.nameCards === "acrylic" ? "#EEF5FA" : "#fff"} stroke={INK} strokeWidth={0.5} />}
-        {ch.favourBoxes !== NONE && <rect x={x + 9} y={y - 7} width={6} height={6} fill={ch.favourBoxes === "bag" ? "#F3F7FA" : accent} stroke={INK} strokeWidth={0.6} />}
       </g>;
     });
 

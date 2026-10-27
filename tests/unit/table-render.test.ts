@@ -11,16 +11,23 @@ import { resetRenderGuard } from "@/lib/renderGuard";
 
 const subscribe = vi.fn();
 vi.mock("@fal-ai/client", () => ({ fal: { config: vi.fn(), subscribe: (...a: unknown[]) => subscribe(...a) } }));
+// A signed-in customer's session with Supabase (for the route's storing).
+const getUser = vi.fn(), createSignedUrls = vi.fn(), rpc = vi.fn();
+vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ auth: { getUser }, rpc, storage: { from: () => ({ createSignedUrls }) } }) }));
+const storeRender = vi.fn();
+vi.mock("@/lib/renderStore", () => ({ storeRender: (...a: unknown[]) => storeRender(...a) }));
 
 const frozen = themeById("frozen")!;
 const table = (over: Partial<ReturnType<typeof defaultTableSetup>["choices"]> = {}, kids = 10) =>
   ({ ...defaultTableSetup(frozen), kids, choices: { ...defaultTableSetup(frozen).choices, ...over } });
 const FAL = "https://v3.fal.media/files/rabbit/abc_123.jpg";
+const USER = "00000000-0000-4000-8000-0000000000a1";
+const P = `${USER}/1abc.jpg`, T = `${USER}/2def.jpg`;
 
 describe("is the render current?", () => {
   it("the key follows every choice, colour and child — not the render itself", () => {
     const t = table();
-    expect(tableRenderKey({ ...t, render: { key: "x", perspective: FAL, top: FAL } })).toBe(tableRenderKey(t));
+    expect(tableRenderKey({ ...t, render: { key: "x", perspective: P, top: T } })).toBe(tableRenderKey(t));
     expect(tableRenderKey(table({ chairs: "gold_chiavari" }))).not.toBe(tableRenderKey(t));
     expect(tableRenderKey({ ...t, napkinColor: "#000000" })).not.toBe(tableRenderKey(t));
     expect(tableRenderKey(table({}, 11))).not.toBe(tableRenderKey(t));
@@ -28,16 +35,17 @@ describe("is the render current?", () => {
 });
 
 describe("what may be stored", () => {
-  it("only fal's own picture addresses read back", () => {
-    expect(readTableRender({ key: "abc1", perspective: FAL, top: FAL })).toEqual({ key: "abc1", perspective: FAL, top: FAL });
-    for (const bad of ["http://v3.fal.media/x.jpg", "https://evil.example/x.jpg", "https://fal.media.evil.com/x.jpg", "javascript:alert(1)", "https://v3.fal.media/x.jpg\"onerror=1"]) {
-      expect(readTableRender({ key: "abc1", perspective: bad, top: FAL })).toBeUndefined();
+  it("only files in one customer's folder — never a link", () => {
+    expect(readTableRender({ key: "abc1", perspective: P, top: T })).toEqual({ key: "abc1", perspective: P, top: T });
+    for (const bad of [FAL, "/design/x.jpg", `../${USER}/a.jpg`, `${USER}/a.png`, `${USER}/a/b.jpg`, "javascript:alert(1)"]) {
+      expect(readTableRender({ key: "abc1", perspective: bad, top: T })).toBeUndefined();
     }
-    expect(readTableRender({ key: "<b>", perspective: FAL, top: FAL })).toBeUndefined();
+    expect(readTableRender({ key: "abc1", perspective: P, top: "someone-else/2def.jpg" })).toBeUndefined();
+    expect(readTableRender({ key: "<b>", perspective: P, top: T })).toBeUndefined();
   });
   it("a stored table keeps a good render and drops a bad one", () => {
-    expect(readTableSetup({ ...table(), render: { key: "k1", perspective: FAL, top: FAL } }, frozen)!.render).toEqual({ key: "k1", perspective: FAL, top: FAL });
-    expect(readTableSetup({ ...table(), render: { key: "k1", perspective: "https://x.com/a.jpg", top: FAL } }, frozen)!.render).toBeUndefined();
+    expect(readTableSetup({ ...table(), render: { key: "k1", perspective: P, top: T } }, frozen)!.render).toEqual({ key: "k1", perspective: P, top: T });
+    expect(readTableSetup({ ...table(), render: { key: "k1", perspective: FAL, top: FAL } }, frozen)!.render).toBeUndefined();
   });
 });
 
@@ -67,7 +75,7 @@ describe("the route", () => {
     vi.stubEnv("FAL_KEY", "test-key");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     vi.stubEnv("SUPABASE_URL", "");
-    subscribe.mockReset();
+    subscribe.mockReset(); storeRender.mockReset(); createSignedUrls.mockReset(); getUser.mockReset(); rpc.mockReset();
     resetRenderGuard();
   });
   afterEach(() => vi.unstubAllEnvs());
@@ -78,7 +86,8 @@ describe("the route", () => {
     const res = await POST(post({ table: table(), theme: "frozen" }));
     expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json.render).toEqual({ key: tableRenderKey(table()), perspective: FAL, top: FAL });
+    expect(json.urls).toEqual({ perspective: FAL, top: FAL }); // no database here: nothing is kept
+    expect(json.render).toBeUndefined();
     expect(subscribe).toHaveBeenCalledTimes(2);
     for (const [model, { input }] of subscribe.mock.calls as [string, { input: { image_urls: string[]; prompt: string } }][]) {
       expect(model).toBe("fal-ai/flux-2-pro/edit");
@@ -108,5 +117,21 @@ describe("the route", () => {
     expect((await POST(post({ table: table(), theme: "frozen" }))).status).toBe(502);
     subscribe.mockImplementation(async () => ({ data: { images: [{ url: FAL }] } }));
     expect((await POST(post({ table: table(), theme: "frozen" }))).status).toBe(200);
+  }, 30_000);
+
+  it("signed in: both pictures are kept in the customer's folder and shown through signed links", async () => {
+    vi.stubEnv("SUPABASE_URL", "https://db.test");
+    vi.stubEnv("SUPABASE_ANON_KEY", "anon");
+    getUser.mockResolvedValue({ data: { user: { id: USER, is_anonymous: false } }, error: null });
+    rpc.mockResolvedValue({ data: 5, error: null });
+    subscribe.mockImplementation(async () => ({ data: { images: [{ url: FAL }] } }));
+    storeRender.mockImplementation(async (_c: unknown, _u: string, _url: string, hash: string) => ({ path: hash.includes("top") ? T : P, key: "k" }));
+    createSignedUrls.mockResolvedValue({ data: [{ signedUrl: "https://db.test/sign/p?token=1" }, { signedUrl: "https://db.test/sign/t?token=1" }], error: null });
+    const { POST } = await import("@/app/api/table-render/route");
+    const json = await (await POST(post({ table: table(), theme: "frozen" }, { authorization: "Bearer tok" }))).json();
+    expect(json.render).toEqual({ key: tableRenderKey(table()), perspective: P, top: T });
+    expect(json.urls).toEqual({ perspective: "https://db.test/sign/p?token=1", top: "https://db.test/sign/t?token=1" });
+    expect(storeRender.mock.calls.map((c) => c[1])).toEqual([USER, USER]);
+    expect(createSignedUrls).toHaveBeenCalledWith([P, T], 3600);
   }, 30_000);
 });

@@ -74,11 +74,6 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
       if (id === "tag") return <g><circle r={2.6} fill="#fff" stroke={INK} strokeWidth={0.6} /><path d="M2.6,0h3" stroke={c.accent} strokeWidth={0.6} /></g>;
       if (id === "acrylic") return <rect x={-6} y={-1.6} width={12} height={3.2} rx={0.6} fill="#EEF5FA" fillOpacity={0.8} stroke="#9FB4C8" strokeWidth={0.6} />;
       return null;
-    case "favourBoxes":
-      if (id === "box") return <g><rect x={-3.5} y={-3.5} width={7} height={7} fill={c.accent} stroke={INK} strokeWidth={0.6} /><path d="M-3.5,0h7M0,-3.5v7" stroke="#fff" strokeWidth={0.9} /></g>;
-      if (id === "bag") return <g><path d="M-3,-4h6l1,8h-8Z" fill="#F3F7FA" stroke={INK} strokeWidth={0.6} /><circle cx={-1} cy={1} r={1.1} fill={pick(c, 1)} /><circle cx={1.2} cy={2} r={1.1} fill={pick(c, 3)} /><path d="M-3,-2.5h6" stroke={c.accent} strokeWidth={0.8} /></g>;
-      if (id === "bucket") return <g><circle r={4} fill={pick(c, 4)} stroke={INK} strokeWidth={0.6} /><path d="M-4,0q4,-6 8,0" fill="none" stroke={INK} strokeWidth={0.6} /></g>;
-      return null;
     case "partyHats":
       if (id === "cone") return <g><circle r={4} fill={pick(c, 3)} stroke={INK} strokeWidth={0.6} /><circle r={1.2} fill="#fff" /></g>;
       if (id === "crown") return <path d="M-4.5,2.5L-4.5,-2L-2,0.5L0,-3.5L2,0.5L4.5,-2L4.5,2.5Z" fill={GOLD} stroke={INK} strokeWidth={0.6} />;

@@ -20,18 +20,22 @@ export interface TableSetup {
 export interface TableRender {
   /** tableRenderKey of the table this was made from. */
   key: string;
+  /** Where each view is kept: the customer's folder of the private renders bucket (lib/renderStore.ts). */
   perspective: string;
   top: string;
 }
 
-// fal's own file hosts only: a stored render is never an arbitrary address.
-const FAL_URL = /^https:\/\/([a-z0-9-]+\.)*fal\.media\/[\w\-./%]+$/i;
+// A stored render is only ever a file in the customer's own folder — never a
+// link (2026-10-27: fal's picture host did not resolve on the owner's network,
+// so the pictures are kept in Supabase, which the site already reaches).
+const RENDER_PATH = /^[0-9a-z-]{1,64}\/[0-9a-z]{1,40}\.jpg$/i;
 
 export function readTableRender(raw: unknown): TableRender | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const r = raw as Record<string, unknown>;
-  const ok = (v: unknown): v is string => typeof v === "string" && v.length < 600 && FAL_URL.test(v);
+  const ok = (v: unknown): v is string => typeof v === "string" && RENDER_PATH.test(v);
   return typeof r.key === "string" && /^[a-z0-9]{1,13}$/.test(r.key) && ok(r.perspective) && ok(r.top)
+    && r.perspective.split("/")[0] === r.top.split("/")[0]
     ? { key: r.key, perspective: r.perspective, top: r.top } : undefined;
 }
 
@@ -45,7 +49,7 @@ const DEFAULT_CHOICES: Record<TableItemKey, string> = {
   table: "long", chairs: "white_kids",
   tablecloth: "classic", runner: "tulle", napkins: "folded",
   plates: "themed", cups: "straw", cutlery: "wooden", chargers: NONE,
-  centrepiece: "balloons", chairDecor: NONE, nameCards: "tent", favourBoxes: NONE, partyHats: NONE,
+  centrepiece: "balloons", chairDecor: NONE, nameCards: "tent", partyHats: NONE,
 };
 
 /** A new table, in the theme's colours. */

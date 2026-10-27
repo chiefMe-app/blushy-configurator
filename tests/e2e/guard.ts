@@ -180,7 +180,11 @@ export async function lockNetwork(page: Page): Promise<Guard> {
       if (guard.fakeRender && url.pathname.startsWith("/api/table-render")) {
         // Local pictures stand in for the two views (F3).
         const table = (() => { try { return JSON.parse(req.postData() ?? "{}").table as TableSetup; } catch { return null; } })();
-        return table ? route.fulfill({ json: { render: { key: tableRenderKey(table), perspective: FAKE_TABLE_RENDER.perspective, top: FAKE_TABLE_RENDER.top } } }) : route.fulfill({ status: 400, json: { error: "Missing table" } });
+        // As the server does for a signed-in customer: both views kept in their folder, shown by link.
+        if (!table) return route.fulfill({ status: 400, json: { error: "Missing table" } });
+        const sub = tokenSubject(req.headers()["authorization"]);
+        const key = tableRenderKey(table);
+        return route.fulfill({ json: { urls: FAKE_TABLE_RENDER, ...(sub ? { render: { key, perspective: `${sub}/p${key}.jpg`, top: `${sub}/t${key}.jpg` } } : {}) } });
       }
       if (guard.fakeOrder && url.pathname.startsWith("/api/orders")) {
         return route.fulfill({ json: { designId: "TEST-ORDER", total: 0, persisted: false } });

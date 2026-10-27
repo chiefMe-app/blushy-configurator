@@ -1,5 +1,6 @@
 // The kids' table: every item the customer chooses, three options each (plus
-// "None" where an item is optional). 2026-10-27: the owner picks the real
+// "None" where an item is optional). Party favours are not here: they are
+// Giveaways, a Decor part of their own (2026-10-27). The owner picks the real
 // options — replace a name, price or picture here and the step follows:
 //   - name / note: what the card says;
 //   - price, unit: AED per table, per child or once (placeholder prices for now);
@@ -11,7 +12,7 @@ export type TableItemKey =
   | "table" | "chairs"
   | "tablecloth" | "runner" | "napkins"
   | "plates" | "cups" | "cutlery" | "chargers"
-  | "centrepiece" | "chairDecor" | "nameCards" | "favourBoxes" | "partyHats";
+  | "centrepiece" | "chairDecor" | "nameCards" | "partyHats";
 
 export type PriceUnit = "per_table" | "per_child";
 
@@ -97,11 +98,6 @@ export const TABLE_ITEMS: TableItem[] = [
     { id: "tag", name: "Round tag", note: "Tied to the napkin", price: 4, unit: "per_child", photo: "/design/table/nameCards-tag.webp" },
     { id: "acrylic", name: "Acrylic name", note: "Clear acrylic with the name", price: 9, unit: "per_child", photo: "/design/table/nameCards-acrylic.webp" },
   ] },
-  { key: "favourBoxes", label: "Party favours", optional: true, options: [
-    { id: "box", name: "Gift box", note: "A little box with a bow", price: 15, unit: "per_child", photo: "/design/table/favourBoxes-box.webp" },
-    { id: "bag", name: "Treat bag", note: "Clear bag of sweets", price: 10, unit: "per_child", photo: "/design/table/favourBoxes-bag.webp" },
-    { id: "bucket", name: "Mini bucket", note: "Filled with surprises", price: 18, unit: "per_child", photo: "/design/table/favourBoxes-bucket.webp" },
-  ] },
   { key: "partyHats", label: "Party hats", optional: true, options: [
     { id: "cone", name: "Cone hat", note: "The classic", price: 4, unit: "per_child", photo: "/design/table/partyHats-cone.webp" },
     { id: "crown", name: "Crown", note: "For little kings and queens", price: 6, unit: "per_child", photo: "/design/table/partyHats-crown.webp" },
@@ -114,7 +110,7 @@ export const TABLE_TABS: { name: string; title: string; sub: string; items: Tabl
   { name: "Table & chairs", title: "How many, and where they sit", sub: "Pick the table and the chairs — we work out how many.", items: ["table", "chairs"] },
   { name: "Linens", title: "Cloth, runner and napkins", sub: "Soft layers in your theme's colours.", items: ["tablecloth", "runner", "napkins"] },
   { name: "Tableware", title: "Plates, cups and cutlery", sub: "What every little guest eats and drinks from.", items: ["plates", "cups", "cutlery", "chargers"] },
-  { name: "Decor & extras", title: "The finishing touches", sub: "Centrepieces and a little something at every seat.", items: ["centrepiece", "chairDecor", "nameCards", "favourBoxes", "partyHats"] },
+  { name: "Decor & extras", title: "The finishing touches", sub: "Centrepieces, chair touches, name cards and hats.", items: ["centrepiece", "chairDecor", "nameCards", "partyHats"] },
 ];
 
 export const tableItem = (key: TableItemKey) => TABLE_ITEMS.find((i) => i.key === key)!;

@@ -23,7 +23,7 @@ function OptionArt({ item, option, colours }: { item: TableItem; option: TableOp
   }
   if (!option) return <svg viewBox="-24 -24 48 48" aria-hidden="true"><circle r={14} fill="none" stroke="#d9c9cf" strokeWidth={2} strokeDasharray="4 3" /><path d="M-8,8L8,-8" stroke="#d9c9cf" strokeWidth={2} /></svg>;
   // Big items are drawn smaller; small ones (cups, cards, hats) larger.
-  const scale: Partial<Record<TableItemKey, number>> = { chairs: 0.9, centrepiece: 0.85, chargers: 1.4, plates: 1.9, napkins: 1.9, cutlery: 2, cups: 4, nameCards: 3, favourBoxes: 3.6, partyHats: 3.6, chairDecor: 1.8 };
+  const scale: Partial<Record<TableItemKey, number>> = { chairs: 0.9, centrepiece: 0.85, chargers: 1.4, plates: 1.9, napkins: 1.9, cutlery: 2, cups: 4, nameCards: 3, partyHats: 3.6, chairDecor: 1.8 };
   if (item.key === "table") {
     return <svg viewBox="-60 -40 120 80" aria-hidden="true">
       {option.id === "round" ? <circle r={30} fill="#fff" stroke="#5a4950" strokeWidth={2} /> : option.id === "square" ? <rect x={-27} y={-27} width={54} height={54} rx={3} fill="#fff" stroke="#5a4950" strokeWidth={2} /> : <rect x={-50} y={-17} width={100} height={34} rx={3} fill="#fff" stroke="#5a4950" strokeWidth={2} />}
