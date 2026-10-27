@@ -139,18 +139,44 @@ describe("parties and items (0.2 · 3/3)", () => {
   });
 });
 
-describe("the one-file version for the SQL editor", () => {
-  it("supabase/apply/phase-0.2.sql is exactly the migrations, in order", () => {
-    const apply = read("apply", "phase-0.2.sql").replace(/\r\n/g, "\n");
-    const body = MIGRATIONS.map((f) => `\n-- ===== ${f} =====\n` + read("migrations", f).replace(/\r\n/g, "\n")).join("");
-    expect(apply.endsWith(body)).toBe(true);
+describe("render limit per account (0.5b)", () => {
+  it("a customer takes renders until the limit, then is told so; nothing more is counted", async () => {
+    for (const left of [2, 1, 0, -2]) expect(await as(user(REAL), "select public.take_render(3) as left")).toEqual([{ left }]);
+    const [row] = (await db.query<{ renders: number }>(`select renders from public.render_usage where user_id = '${REAL}'`)).rows;
+    expect(row.renders).toBe(3);
   });
-  it("and runs on its own, twice", async () => {
+  it("a guest session gets no render, and with no session it cannot be called", async () => {
+    expect(await as(guest(A), "select public.take_render(3) as left")).toEqual([{ left: -1 }]);
+    expect(await fails(as("nobody", "select public.take_render(3)"))).toBe(true);
+  });
+  it("nobody reads or changes the counts directly", async () => {
+    expect(await fails(as(user(REAL), "select * from public.render_usage"))).toBe(true);
+    expect(await fails(as(user(REAL), "update public.render_usage set renders = 0"))).toBe(true);
+    expect(await fails(as(user(REAL), "select public.forget_old_render_usage()"))).toBe(true);
+  });
+});
+
+// Each stage's migrations, pasted in one go from supabase/apply/.
+const STAGES = [["phase-0.2.sql", "20261026"], ["phase-0.5b.sql", "20261027"]] as const;
+
+describe("the one-file versions for the SQL editor", () => {
+  for (const [file, prefix] of STAGES) {
+    it(`supabase/apply/${file} is exactly its migrations, in order`, () => {
+      const apply = read("apply", file).replace(/\r\n/g, "\n");
+      const body = MIGRATIONS.filter((f) => f.startsWith(prefix))
+        .map((f) => `\n-- ===== ${f} =====\n` + read("migrations", f).replace(/\r\n/g, "\n")).join("");
+      expect(body).not.toBe("");
+      expect(apply.endsWith(body)).toBe(true);
+    });
+  }
+  it("every migration is in one of them", () => {
+    expect(MIGRATIONS.every((f) => STAGES.some(([, prefix]) => f.startsWith(prefix)))).toBe(true);
+  });
+  it("and they run on their own, in order, twice", async () => {
     const fresh = new PGlite();
     await fresh.exec(SUPABASE_LIKE);
     await fresh.exec(read("schema.sql"));
-    await fresh.exec(read("apply", "phase-0.2.sql"));
-    await fresh.exec(read("apply", "phase-0.2.sql"));
+    for (let i = 0; i < 2; i++) for (const [file] of STAGES) await fresh.exec(read("apply", file));
     await fresh.close();
   }, 60_000);
 });

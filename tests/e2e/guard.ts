@@ -195,6 +195,21 @@ export async function decorTab(page: Page, name: "Backdrop" | "Style" | "Balloon
   await page.locator(".bz-decor-tab", { hasText: name }).click();
 }
 
+/**
+ * Signs in to the stand-in account with the emailed link (since 2026-10-27
+ * renders need an account), from My designs, so the test then starts afresh.
+ */
+export async function signIn(page: Page) {
+  await page.goto("/my-designs");
+  await page.getByRole("main").getByRole("button", { name: "Sign in" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Email").fill(FAKE_ACCOUNT.email);
+  await dialog.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await expect(dialog.getByRole("status")).toContainText("Check your inbox");
+  await page.goto("/account/callback?code=e2e-link");
+  await expect(page).toHaveURL(/\/my-designs$/);
+}
+
 /** The request body the UI sends when Generate render is pressed. */
 export async function captureRenderBody(page: Page, guard: Guard): Promise<Record<string, unknown>> {
   const before = guard.blocked.length;

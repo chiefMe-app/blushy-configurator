@@ -4,7 +4,7 @@
 // the browser, and it must equal renderBody(fixture) field for field — the
 // fixture as the Builder holds it, every board lettered with the Typography
 // System (withBuilderLettering, 2026-10-26).
-import { test, expect, openDecor, decorTab, captureRenderBody } from "./guard";
+import { test, expect, openDecor, decorTab, captureRenderBody, signIn } from "./guard";
 import { fixtureById } from "../fixtures/configs";
 import { withBuilderLettering } from "../fixtures/builder";
 import { renderBody, comparableBody } from "../../scripts/golden/renderBody";
@@ -32,6 +32,7 @@ const cases: { fixture: string; setup: string; steps?: (page: import("@playwrigh
 
 for (const c of cases) {
   test(`${c.fixture}: UI sends the fixture's render body`, async ({ page, guard }) => {
+    await signIn(page); // renders need an account
     await openDecor(page, "Frozen", c.setup);
     if (c.steps) await c.steps(page);
     const sent = comparableBody(await captureRenderBody(page, guard));

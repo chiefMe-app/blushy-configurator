@@ -4,7 +4,7 @@
 // keeps the design between visits without a button.
 // 2026-10-27: Save needs an account. Nobody signed in: save() answers
 // "signin" and the Builder opens the sign-in window; back from signing in
-// to save, the design is saved once, on arrival.
+// to save, the Builder calls saveOnArrival() and the design is saved once.
 import { useEffect, useMemo, useState } from "react";
 import type { BuilderConfig } from "@/lib/config";
 import { toDraft } from "@/lib/draft";
@@ -13,17 +13,6 @@ import { toDraft } from "@/lib/draft";
 // Builder's first load does not carry them.
 const loadSaver = () => Promise.all([import("@/lib/supabase/browser"), import("@/lib/serverDraft")]);
 const SERVER_DRAFT_KEY = "partymuse.party.v1"; // lib/serverDraft.ts
-const AFTER_SIGN_IN_KEY = "partymuse.after-sign-in.v1"; // lib/account.ts
-
-/** Back from signing in to save (lib/account.ts rememberReturn): taken once. */
-function takeSaveOnArrival(): boolean {
-  try {
-    const a = JSON.parse(window.localStorage.getItem(AFTER_SIGN_IN_KEY) ?? "null") as { save?: boolean; at?: number } | null;
-    if (!a?.save) return false;
-    window.localStorage.removeItem(AFTER_SIGN_IN_KEY);
-    return Date.now() - (a.at ?? 0) < 60 * 60_000;
-  } catch { return false; }
-}
 
 /** "unavailable": Supabase is not set up in this browser. */
 export type ServerSaveStatus = "idle" | "saving" | "saved" | "error" | "unavailable";
@@ -72,9 +61,8 @@ export function useServerDraft({ config, step, decorTab }: { config: BuilderConf
   }
 
   // Back from signing in to save: the restored design (useLocalDraft restores
-  // it in the same first pass) is saved once.
+  // it in the same first pass) is saved once, on the next render.
   const [saveOnArrival, setSaveOnArrival] = useState(false);
-  useEffect(() => { if (available && takeSaveOnArrival()) setSaveOnArrival(true); }, [available]);
   useEffect(() => {
     if (!saveOnArrival) return;
     setSaveOnArrival(false);
@@ -91,6 +79,8 @@ export function useServerDraft({ config, step, decorTab }: { config: BuilderConf
     /** Something was saved before (the button then says "Save changes"). */
     savedBefore: savedPrint !== null,
     save,
+    /** Back from signing in to save: save the (restored) design once. */
+    saveOnArrival: () => { if (available) setSaveOnArrival(true); },
     /** A new design ("Start over", or after the request is sent): the next Save starts a new item. */
     forget: () => {
       try { window.localStorage.removeItem(SERVER_DRAFT_KEY); } catch { /* storage blocked */ }

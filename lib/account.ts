@@ -35,24 +35,35 @@ export async function currentAccount(sb: SupabaseClient): Promise<AccountState> 
 export const callbackUrl = () => `${window.location.origin}/account/callback`;
 
 // 2026-10-27: after signing in, the customer goes back to the page they
-// signed in from — and when they signed in to save, the Builder saves the
-// design straight away.
+// signed in from — and when they signed in to save or to see a render, the
+// Builder then does that straight away (0.5b: renders need an account).
 export const AFTER_SIGN_IN_KEY = "partymuse.after-sign-in.v1";
-interface AfterSignIn { to: string; save: boolean; at: number }
+export type AfterSignInAction = "save" | "render";
+interface AfterSignIn { to: string; then?: AfterSignInAction; at: number }
 
-/** Before leaving for Google or the inbox: where to come back to. */
-export function rememberReturn(save: boolean) {
+/** Before leaving for Google or the inbox: where to come back to, and what to do there. */
+export function rememberReturn(then?: AfterSignInAction) {
   const to = window.location.pathname || "/my-designs";
-  try { window.localStorage.setItem(AFTER_SIGN_IN_KEY, JSON.stringify({ to, save, at: Date.now() } satisfies AfterSignIn)); } catch { /* storage blocked */ }
+  try { window.localStorage.setItem(AFTER_SIGN_IN_KEY, JSON.stringify({ to, then, at: Date.now() } satisfies AfterSignIn)); } catch { /* storage blocked */ }
 }
 
-/** Where the sign-in callback sends the customer; the save itself is the Builder's to take. */
-export function afterSignIn(): { to: string; save: boolean } | null {
+/** Where the sign-in callback sends the customer; the action itself is the Builder's to take. */
+export function afterSignIn(): { to: string; then?: AfterSignInAction } | null {
   let a: AfterSignIn | null = null;
   try { a = JSON.parse(window.localStorage.getItem(AFTER_SIGN_IN_KEY) ?? "null"); } catch { /* storage blocked */ }
   const fresh = a && Date.now() - a.at < IMPORT_MAX_AGE_MS && typeof a.to === "string" && a.to.startsWith("/") && !a.to.startsWith("//");
-  if (!fresh || !a!.save) { try { window.localStorage.removeItem(AFTER_SIGN_IN_KEY); } catch { /* storage blocked */ } }
-  return fresh ? { to: a!.to, save: a!.save } : null;
+  if (!fresh || !a!.then) { try { window.localStorage.removeItem(AFTER_SIGN_IN_KEY); } catch { /* storage blocked */ } }
+  return fresh ? { to: a!.to, then: a!.then } : null;
+}
+
+/** Back in the Builder: the action to do now, taken once (fresh notes only). */
+export function takeAfterSignIn(): AfterSignInAction | null {
+  try {
+    const a = JSON.parse(window.localStorage.getItem(AFTER_SIGN_IN_KEY) ?? "null") as AfterSignIn | null;
+    if (!a?.then) return null;
+    window.localStorage.removeItem(AFTER_SIGN_IN_KEY);
+    return Date.now() - a.at < IMPORT_MAX_AGE_MS ? a.then : null;
+  } catch { return null; }
 }
 
 interface Stash {

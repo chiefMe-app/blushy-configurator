@@ -1,11 +1,27 @@
 "use client";
 // Sign in (Phase 0.4): Google, or a sign-in link by email. A guest's saved
-// designs come along (lib/account.ts). Opened by Save (`forSave`), it says so,
-// and the design is saved as soon as the customer is back from signing in.
+// designs come along (lib/account.ts). Opened to save or to see a render
+// (`purpose`), it says so, and the Builder does that as soon as the customer
+// is back from signing in.
 import { useEffect, useId, useRef, useState } from "react";
 import { loadClient } from "./useAccount";
 
-export default function SignInDialog({ open, onClose, forSave = false }: { open: boolean; onClose: () => void; forSave?: boolean }) {
+const COPY = {
+  account: { title: "Keep your designs", lead: "Sign in to save your designs and open them on any device.", after: "" },
+  save: {
+    title: "Sign in to save your design",
+    lead: "It only takes a moment. Your design is saved to My designs as soon as you're signed in — open it on any device.",
+    after: " — your design is saved right after",
+  },
+  render: {
+    title: "Sign in to see your render",
+    lead: "Renders come with a free account. Sign in and your render starts right away — your design stays as it is.",
+    after: " — your render starts right after",
+  },
+};
+
+export default function SignInDialog({ open, onClose, purpose }: { open: boolean; onClose: () => void; purpose?: "save" | "render" }) {
+  const copy = COPY[purpose ?? "account"];
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "sent" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +40,7 @@ export default function SignInDialog({ open, onClose, forSave = false }: { open:
     const sb = await loadClient();
     if (!sb) { setState("error"); setError("Sign-in is not available right now."); return; }
     const { rememberReturn, signInWithGoogle } = await import("@/lib/account");
-    rememberReturn(forSave);
+    rememberReturn(purpose);
     const r = await signInWithGoogle(sb);
     if (r.error) { setState("error"); setError(r.error); }
     // Otherwise the browser is on its way to Google.
@@ -39,7 +55,7 @@ export default function SignInDialog({ open, onClose, forSave = false }: { open:
     const { rememberReturn, signInWithEmail } = await import("@/lib/account");
     const r = await signInWithEmail(sb, email.trim());
     if (r.error) { setState("error"); setError(r.error); return; }
-    rememberReturn(forSave);
+    rememberReturn(purpose);
     setState("sent");
   }
 
@@ -47,14 +63,12 @@ export default function SignInDialog({ open, onClose, forSave = false }: { open:
     <dialog ref={dialog} className="bz-signin" onClose={onClose} onClick={(e) => { if (e.target === dialog.current) onClose(); }} aria-labelledby={`${id}-title`}>
       <div className="inner">
         <button type="button" className="x" aria-label="Close" onClick={onClose}>×</button>
-        <h2 id={`${id}-title`}>{forSave ? "Sign in to save your design" : "Keep your designs"}</h2>
-        <p className="lead">{forSave
-          ? "It only takes a moment. Your design is saved to My designs as soon as you're signed in — open it on any device."
-          : "Sign in to save your designs and open them on any device."}</p>
+        <h2 id={`${id}-title`}>{copy.title}</h2>
+        <p className="lead">{copy.lead}</p>
         {state === "sent" ? (
           <div className="sent" role="status">
             <strong>Check your inbox ✉</strong>
-            <p>We sent a sign-in link to <b>{email.trim()}</b>. Open it on this device to finish signing in{forSave ? " — your design is saved right after" : ""}.</p>
+            <p>We sent a sign-in link to <b>{email.trim()}</b>. Open it on this device to finish signing in{copy.after}.</p>
           </div>
         ) : (
           <>

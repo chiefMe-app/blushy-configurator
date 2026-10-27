@@ -32,6 +32,7 @@
  */
 
 import { acquireRender, clientIp } from "@/lib/renderGuard";
+import { renderUser, takeAccountRender } from "@/lib/renderAccount";
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
@@ -851,6 +852,9 @@ export async function POST(req: NextRequest) {
   } catch { /* handleRender answers invalid JSON */ }
   const inner = new NextRequest(req.url, { method: "POST", headers: req.headers, body: raw });
   if (freePreview) return handleRender(inner);
+  // 2026-10-27 (0.5b): a paid render needs a signed-in account (lib/renderAccount.ts).
+  const user = await renderUser(req.headers);
+  if (!user.ok) return NextResponse.json({ error: user.error, signin: user.signin }, { status: user.status });
   const slot = acquireRender(clientIp(req.headers));
   if (!slot.ok) {
     // busy: renders already running from this connection (try again shortly);
@@ -859,6 +863,9 @@ export async function POST(req: NextRequest) {
       { status: slot.status, headers: { "retry-after": String(slot.retryAfter) } });
   }
   try {
+    // Counted last, so a refusal above uses none of the customer's renders.
+    const taken = await takeAccountRender(user);
+    if (!taken.ok) return NextResponse.json({ error: taken.error, signin: taken.signin, limited: taken.limited }, { status: taken.status });
     return await handleRender(inner);
   } finally {
     slot.release();

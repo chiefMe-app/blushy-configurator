@@ -35,6 +35,7 @@ import { useLocalDraft } from "@/components/builder/useLocalDraft";
 import { useServerDraft } from "@/components/builder/useServerDraft";
 import AccountMenu from "@/components/account/AccountMenu";
 import SignInDialog from "@/components/account/SignInDialog";
+import { takeAfterSignIn } from "@/lib/account";
 
 import Sprinkles from "@/components/design/Sprinkles";
 
@@ -83,13 +84,24 @@ export default function ConfigurePage() {
   // presses Save (the footer button), never on its own. 2026-10-27: Save
   // needs an account; nobody signed in, it opens the sign-in window.
   const serverDraft = useServerDraft({ config, step, decorTab });
-  const [signInToSave, setSignInToSave] = useState(false);
-  const onSave = async () => {
-    if ((await serverDraft.save()) === "signin") {
-      draft.flush(); // the design must be here when they come back
-      setSignInToSave(true);
-    }
+  // 2026-10-27 (0.5b): renders need an account too. One sign-in window, for
+  // saving or for a render; back from signing in, that is done at once.
+  const [signInFor, setSignInFor] = useState<"save" | "render" | null>(null);
+  const askSignIn = (purpose: "save" | "render") => {
+    draft.flush(); // the design must be here when they come back
+    setSignInFor(purpose);
   };
+  const onSave = async () => {
+    if ((await serverDraft.save()) === "signin") askSignIn("save");
+  };
+  const [renderOnArrival, setRenderOnArrival] = useState(false);
+  useEffect(() => {
+    // After the device copy is restored (useLocalDraft, above), in the same pass.
+    const then = takeAfterSignIn();
+    if (then === "save") serverDraft.saveOnArrival();
+    if (then === "render") setRenderOnArrival(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const startOver = () => {
     draft.clear();
     serverDraft.forget();
@@ -117,6 +129,15 @@ export default function ConfigurePage() {
     hasRender: false, isStale: false, generating: false,
   });
   const [generateFinalRender, setGenerateFinalRender] = useState<(() => void) | null>(null);
+
+  // Back from signing in to see a render: start it (above the success screen's
+  // early return, like every hook here).
+  useEffect(() => {
+    if (!renderOnArrival || !generateFinalRender) return;
+    setRenderOnArrival(false);
+    document.getElementById("party-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    generateFinalRender();
+  }, [renderOnArrival, generateFinalRender]);
 
   const theme = themeById(config.theme) ?? THEMES[0];
   // 2026-10-22 redesign: the interface stays in Blushy brand pink whatever the
@@ -388,6 +409,7 @@ export default function ConfigurePage() {
                 showControls={step > 2 || onLastDecorTab || finalRenderState.hasRender}
                 onFinalRenderStateChange={setFinalRenderState}
                 onGenerateReady={(fn) => setGenerateFinalRender(() => fn)}
+                onSignInNeeded={() => askSignIn("render")}
                 // 2026-10-23: the theme's example photo of the selected setup shows until a render exists.
                 emptyArt={isDecorStep ? THEME_SETUP_PREVIEW[config.theme]?.[inferSetupLayoutTemplateIdFromBackdropItems(config.decor.backdropItems) ?? ""] : undefined}
                 emptyArtLabel={`${themeById(config.theme)?.name ?? "Theme"} example.`}
@@ -479,7 +501,7 @@ export default function ConfigurePage() {
           </button>
         </div>
       </footer>
-      <SignInDialog open={signInToSave} forSave onClose={() => setSignInToSave(false)} />
+      <SignInDialog open={signInFor !== null} purpose={signInFor ?? undefined} onClose={() => setSignInFor(null)} />
     </div>
   );
 }

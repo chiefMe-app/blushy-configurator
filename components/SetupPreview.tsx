@@ -25,6 +25,7 @@ import DesignChangePrompt from "./DesignChangePrompt";
 const ASK_FOR_A_CHANGE_ENABLED = false;
 import type { ChangeType } from "@/lib/generatePrompt";
 import LiveSketch from "./design/LiveSketch";
+import { accountToken } from "./account/useAccount";
 
 const PLINTH_MODE: "ai" | "svg" = "ai";
 
@@ -831,7 +832,10 @@ function buildColorLockEditDescription(d: DecorConfig): string {
  * as a fallback when that primary edit call fails. See the routing comment at
  * the top of app/api/generate-controlled-render/route.ts for the full table.
  */
-export function useFinalRender(config: BuilderConfig) {
+export function useFinalRender(config: BuilderConfig, opts: {
+  /** 2026-10-27 (0.5b): a render needs a signed-in account — asked for here. */
+  onSignInNeeded?: () => void;
+} = {}) {
   const [status, setStatus]     = useState<FinalRenderStatus>("idle");
   // 2026-10-26: why a render was refused (the render limits), in words for
   // the customer; null for any other failure.
@@ -862,6 +866,15 @@ export function useFinalRender(config: BuilderConfig) {
 
   // Keep ref current on every render
   configRef.current = config;
+  const onSignInNeeded = useRef(opts.onSignInNeeded);
+  onSignInNeeded.current = opts.onSignInNeeded;
+
+  /** The render API's sign-in header; null when the customer must sign in first (asked for). */
+  async function authHeaders(): Promise<Record<string, string> | null> {
+    const token = await accountToken();
+    if (token === null) { onSignInNeeded.current?.(); return null; }
+    return token ? { Authorization: `Bearer ${token}` } : {}; // undefined: no sign-in on this site
+  }
 
   // Compute current scene hash from live config
   const currentSceneHash = computeSceneHash(config);
@@ -905,6 +918,8 @@ export function useFinalRender(config: BuilderConfig) {
   }
 
   async function runFirstGenerate(liveConfig: BuilderConfig, liveHash: string, liveStructureHash: string) {
+    const auth = await authHeaders();
+    if (!auth) return;
     setStatus("loading");
     try {
       // Edge-only structure map (reserved for future ControlNet use).
@@ -946,7 +961,7 @@ export function useFinalRender(config: BuilderConfig) {
 
       const res = await fetch("/api/generate-controlled-render", {
         method:  "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({
           promptInput,
           sceneModel,
@@ -962,6 +977,8 @@ export function useFinalRender(config: BuilderConfig) {
       });
 
       const data = await res.json().catch(() => ({}));
+      // Signed out meanwhile (the session ended): ask again, no error shown.
+      if (data?.signin) { setStatus("idle"); onSignInNeeded.current?.(); return; }
       setLimitMessage((data?.limited || data?.busy) && typeof data.error === "string" ? data.error : null);
       setLimitFinal(!!data?.limited);
       if (!res.ok || !data.imageUrl) {
@@ -1007,13 +1024,15 @@ export function useFinalRender(config: BuilderConfig) {
     // delegation, or the pending-change auto-apply chain), don't re-guard —
     // just do the work and let the outer caller release the lock when it's
     // done. Otherwise (called directly, e.g. "Ask for a change"), own it here.
+    const auth = await authHeaders();
+    if (!auth) return;
     const ownsLock = !isRequestPending.current;
     if (ownsLock) isRequestPending.current = true;
     setStatus("loading");
     try {
       const res = await fetch("/api/generate-controlled-render", {
         method:  "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({
           promptInput: {
             theme:   configRef.current.theme,
@@ -1041,6 +1060,7 @@ export function useFinalRender(config: BuilderConfig) {
         }),
       });
       const data = await res.json().catch(() => ({}));
+      if (data?.signin) { setStatus("idle"); onSignInNeeded.current?.(); return; }
       setLimitMessage((data?.limited || data?.busy) && typeof data.error === "string" ? data.error : null);
       setLimitFinal(!!data?.limited);
       if (res.ok && data.imageUrl) {
@@ -1189,7 +1209,7 @@ export type FinalRenderState = { hasRender: boolean; isStale: boolean; generatin
 
 export default function SetupPreview({
   config, status, imageUrl, isIncremental = false, onRegenerate, showControls = true,
-  onPatchDecor, onFinalRenderStateChange, onGenerateReady, emptyArt, emptyArtLabel = "Example.",
+  onPatchDecor, onFinalRenderStateChange, onGenerateReady, onSignInNeeded, emptyArt, emptyArtLabel = "Example.",
   emptyArtNote = "Your own render, with your exact choices, appears here after you generate it.",
   sketchFirst = false, sketchActiveId = null, sketchCutouts = [],
 }: {
@@ -1218,6 +1238,8 @@ export default function SetupPreview({
    *  Render trigger, so an external button (the Decor step footer CTA) can
    *  fire the exact same render pass instead of duplicating the request. */
   onGenerateReady?: (fn: () => void) => void;
+  /** 2026-10-27 (0.5b): a render needs a signed-in account; the parent opens sign-in. */
+  onSignInNeeded?: () => void;
 }) {
   const themeAccent = THEMES.find((t) => t.id === config.theme)?.accent ?? "#C77DD6";
 
@@ -1241,7 +1263,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
     appliedChangeLabel,
     limitMessage,
     limitFinal,
-  } = useFinalRender(config);
+  } = useFinalRender(config, { onSignInNeeded });
 
   // Hero presentation: the preview card uses a fixed 4:3 stage regardless of the
   // render's own aspect ratio — renders are letterboxed with object-contain on

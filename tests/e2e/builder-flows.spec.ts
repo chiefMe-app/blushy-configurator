@@ -3,7 +3,7 @@
 // saves screenshots as the visual baseline. Renders and orders never leave
 // the browser (see guard.ts); where a flow has to get past Decor, the render
 // request is answered with a local stand-in picture.
-import { test, expect, next, total, openDecor, chooseSetup, decorTab, settle, masks } from "./guard";
+import { test, expect, next, total, openDecor, chooseSetup, decorTab, settle, masks, signIn, FAKE_ACCOUNT } from "./guard";
 import { computeTotal, formatAED } from "@/lib/config";
 import { fixtureById } from "../fixtures/configs";
 
@@ -40,8 +40,22 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
     if ((page.viewportSize()?.width ?? 1000) >= 768) await expect(page.getByTestId("sketch-lettering").locator("path").first()).toBeAttached();
     await shot(page, `f1-04-decor-${tab.toLowerCase()}`);
   }
-  await next(page).click(); // Generate render → stand-in
+  // Generate render, signed out (2026-10-27: renders need an account): the
+  // sign-in window, and no render asked for.
+  await next(page).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: "Sign in to see your render" })).toBeVisible();
+  expect(guard.blocked.some((r) => r.url().includes("/api/generate-controlled-render"))).toBe(false);
+  await dialog.getByLabel("Email").fill(FAKE_ACCOUNT.email);
+  await dialog.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await expect(dialog.getByRole("status")).toContainText("your render starts right after");
+  await page.goto("/account/callback?code=e2e-link"); // the emailed link
+  // Back on the same design, and the render starts by itself → stand-in.
+  await expect(page).toHaveURL(/\/builder$/);
   await expect(next(page)).toHaveText(/Continue to Package/);
+  const renders = guard.blocked.filter((r) => r.url().includes("/api/generate-controlled-render"));
+  expect(renders).toHaveLength(1);
+  expect(renders[0].headers()["authorization"]).toMatch(/^Bearer \S+/);
   await next(page).click();
   await shot(page, "f1-05-package");
   await next(page).click();
@@ -214,6 +228,7 @@ test("F10 nothing paid or stored is reached while browsing every step", async ({
 
 test("F11 a render limit says so in the render card, with no Retry", async ({ page, guard }) => {
   guard.limitRender = { status: 429, error: "You've reached your render limit — you can render again in 7 min." };
+  await signIn(page); // renders need an account
   await openDecor(page, "Frozen", "Single Round");
   await decorTab(page, "Extras");
   await next(page).click(); // Generate render → refused by the limit
@@ -225,6 +240,7 @@ test("F11 a render limit says so in the render card, with no Retry", async ({ pa
 
 test("F12 renders still running from the same connection: says so, and Retry stays", async ({ page, guard }) => {
   guard.limitRender = { status: 429, busy: true, error: "A render from this connection is still being made — please try again in a few seconds." };
+  await signIn(page); // renders need an account
   await openDecor(page, "Frozen", "Single Round");
   await decorTab(page, "Extras");
   await next(page).click();
