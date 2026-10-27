@@ -22,19 +22,23 @@ function arrange(d: TableDesign): { tables: Placed[]; width: number; height: num
   if (d.shape === "long") {
     // Rows of up to two tables joined end to end; four seats a side per table.
     const rowPitch = T.depthCm + 2 * reach + 70;
-    perTable.forEach((kids, i) => {
-      const row = Math.floor(i / 2), col = i % 2;
-      const x = margin + col * T.widthCm, y = margin + reach + row * rowPitch;
-      // Up to four a side, spread evenly along the table; the extra child (odd counts) sits on the near side.
-      const near = Math.ceil(kids / 2), far = kids - near;
+    // A row's children are split evenly between its two sides and spread
+    // along the whole row (2026-10-27: "10 kişide 5 bir tarafta 5 öbür tarafta").
+    for (let row = 0; row * 2 < perTable.length; row++) {
+      const inRow = perTable.slice(row * 2, row * 2 + 2);
+      const rowKids = inRow.reduce((a, b) => a + b, 0), rowLen = inRow.length * T.widthCm;
+      const y = margin + reach + row * rowPitch;
       const side = (n: number, top: boolean): Seat[] => Array.from({ length: n }, (_, k) => ({
-        x: x + (k + 0.5) * (T.widthCm / n),
+        x: margin + (k + 0.5) * (rowLen / n),
         y: top ? y - CHAIR.gap - CHAIR.d / 2 : y + T.depthCm + CHAIR.gap + CHAIR.d / 2,
         facing: top ? Math.PI / 2 : -Math.PI / 2,
       }));
-      const seats = [...side(near, true), ...side(far, false)];
-      tables.push({ kind: "long", x, y, w: T.widthCm, h: T.depthCm, seats });
-    });
+      const seats = [...side(Math.ceil(rowKids / 2), true), ...side(Math.floor(rowKids / 2), false)];
+      inRow.forEach((_, col) => {
+        const x = margin + col * T.widthCm;
+        tables.push({ kind: "long", x, y, w: T.widthCm, h: T.depthCm, seats: seats.filter((s) => s.x >= x && s.x < x + T.widthCm) });
+      });
+    }
     const rows = Math.ceil(perTable.length / 2), cols = Math.min(2, perTable.length);
     return { tables, width: 2 * margin + cols * T.widthCm, height: 2 * margin + rows * rowPitch - 70 };
   }

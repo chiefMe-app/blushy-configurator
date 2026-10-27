@@ -21,10 +21,6 @@ export default function AddOnsStep({ config, toggleAddOn, setAddOnOption }: {
               onToggle={() => toggleAddOn(addon.id)}
               onOption={(k, v) => setAddOnOption(addon.id, k, v)}
             />
-            {/* 2026-10-27: the kids' table can be designed in its own studio. */}
-            {addon.id === "kids_tables" && (
-              <a className="bz-studio-link" href="/studio/table" data-testid="table-studio-link">Design the kids' table in the Table Setup studio →</a>
-            )}
           </div>
         ))}
       </div>

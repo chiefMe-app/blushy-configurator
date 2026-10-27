@@ -1,12 +1,9 @@
-// The free sample Design Pack (Phase 1.3): offered on the landing page and in
-// the Package step, and downloaded as a ZIP with the pack's folders, no cut files.
+// The free sample Design Pack (Phase 1.3): offered in the Package step and on
+// My designs, and downloaded as a ZIP with the pack's folders, no cut files.
 import { unzipSync } from "fflate";
 import { test, expect, openDecor } from "./guard";
 
-test("P1 the landing page offers the sample pack, which downloads as a ZIP", async ({ page }) => {
-  await page.goto("/");
-  const link = page.getByRole("link", { name: /New: Design Pack/ });
-  await expect(link).toHaveAttribute("href", "/api/packs/sample");
+test("P1 the sample pack downloads as a ZIP", async ({ page }) => {
   const res = await page.request.get("/api/packs/sample");
   expect(res.status()).toBe(200);
   expect(res.headers()["content-type"]).toBe("application/zip");

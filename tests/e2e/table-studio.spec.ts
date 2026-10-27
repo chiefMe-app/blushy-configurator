@@ -1,6 +1,5 @@
 // Table Setup studio (Phase 3): the kids' table, drawn from above as it is
-// chosen, with an estimate, kept on this device, and reachable from the
-// landing page and the Add-ons step.
+// chosen, with an estimate, kept on this device.
 import { test, expect, settle } from "./guard";
 import type { Page } from "@playwright/test";
 
@@ -48,18 +47,13 @@ test("T3 it starts in the backdrop's theme", async ({ page }) => {
   await expect(page.getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: "Unicorn" })).toHaveAttribute("aria-checked", "true");
 });
 
-test("T4 reached from the landing page and the Add-ons step", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.getByRole("link", { name: /Set the kids' table/ })).toHaveAttribute("href", "/studio/table"); // every screen size
-  await page.goto("/builder");
-  await page.locator(".bz-choice.bz-birthday").click();
-  await page.locator("button.bz-next").click();
-  await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: /^Frozen$/ }) }).first().click();
-  await page.waitForTimeout(600);
-  await page.evaluate(() => {
-    const key = "partymuse.builder.draft.v1";
-    localStorage.setItem(key, JSON.stringify({ ...JSON.parse(localStorage.getItem(key)!), step: 4 }));
-  });
-  await page.reload();
-  await expect(page.getByTestId("table-studio-link")).toHaveAttribute("href", "/studio/table");
+test("T4 ten children: five a side", async ({ page }) => {
+  await page.goto("/studio/table");
+  await page.getByRole("button", { name: "One fewer child" }).click();
+  await page.getByRole("button", { name: "One fewer child" }).click();
+  await expect(page.getByTestId("kids-count")).toHaveText("10");
+  const ys = await chairs(page).evaluateAll((els) => els.map((e) => (e as SVGGraphicsElement).getBoundingClientRect().y));
+  const top = Math.min(...ys);
+  expect(ys.filter((y) => Math.abs(y - top) < 2)).toHaveLength(5);
+  expect(ys.filter((y) => Math.abs(y - top) >= 2)).toHaveLength(5);
 });
