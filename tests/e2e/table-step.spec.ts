@@ -90,9 +90,18 @@ test("K5 the real render: every view, and it says when the table has changed sin
   await signIn(page);
   await toTable(page);
   await page.getByRole("button", { name: /Yes, design the table/ }).click();
+  let answer!: () => void;
+  guard.holdTableRender = new Promise((r) => { answer = r; });
   await page.getByRole("button", { name: "Generate table render ✦" }).click();
+  // While it renders: the drawing, faded, under three moving dots.
+  const wait = page.getByTestId("table-render-wait");
+  await expect(wait).toContainText("Rendering your table");
+  await expect(wait.locator(".dots i")).toHaveCount(3);
+  await expect(page.getByTestId("table-render-box")).toContainText("Three views, one by one");
+  answer();
   const photo = page.getByTestId("table-render");
   await expect(photo).toHaveAttribute("src", FAKE_TABLE_RENDER.perspective);
+  await expect(wait).toHaveCount(0);
   await page.getByRole("tab", { name: "Top view" }).click();
   await expect(photo).toHaveAttribute("src", FAKE_TABLE_RENDER.top);
   await page.getByRole("tab", { name: "Close-up" }).click();

@@ -8,13 +8,15 @@
 // customer's folder of the private renders bucket (lib/renderStore.ts), and
 // come back in the answer itself, as pictures: the browser needs no other
 // address to show them (2026-10-27: the owner's network kept failing to look
-// up fal's and Supabase's picture hosts).
+// up fal's and Supabase's picture hosts). The answer is a stream, one picture
+// per line as each is made (lib/ndjson.ts).
 import { NextResponse, type NextRequest } from "next/server";
 import { fal } from "@fal-ai/client";
 import { themeById } from "@/lib/config";
 import { acquireRender, clientIp } from "@/lib/renderGuard";
 import { renderUser, takeAccountRender } from "@/lib/renderAccount";
 import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
+import { ndjsonLine } from "@/lib/ndjson";
 import { readTableSetup } from "@/lib/studio/tableSetup";
 import { tablePrompt, tableRenderKey, type TableRender, type TableView } from "@/lib/studio/tableRender";
 import { GUIDE_SIZE, tableGuide } from "@/lib/studio/tableGuide";
@@ -56,6 +58,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(slot.busy ? { error: slot.error, busy: true } : { error: slot.error, limited: true },
       { status: slot.status, headers: { "retry-after": String(slot.retryAfter) } });
   }
+  let streaming = false;
   try {
     const taken = await takeAccountRender(user);
     if (!taken.ok) return NextResponse.json({ error: taken.error, signin: taken.signin, limited: taken.limited }, { status: taken.status });
@@ -70,35 +73,62 @@ export async function POST(req: NextRequest) {
       return url;
     };
     const dataUri = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
-    const [perspectiveGuide, topGuide] = await Promise.all([tableGuide(table, theme, "perspective"), tableGuide(table, theme, "top")]);
-    // The front view first, from the drawing; then the top view (the drawing
-    // for the layout, the front photo for the look) and the close-up (from
-    // the front photo), so all three show the same things.
-    const perspective = await edit("perspective", [dataUri(perspectiveGuide)]);
-    const [top, close] = await Promise.all([edit("top", [dataUri(topGuide), perspective]), edit("close", [perspective])]);
-    const key = tableRenderKey(table);
-    const jpegs = await Promise.all([renderJpeg(perspective), renderJpeg(top), renderJpeg(close)]);
-    if (jpegs.some((j) => !j)) throw new Error("render pictures could not be read");
-    const [pj, tj, cj] = jpegs as Buffer[];
     const picture = (j: Buffer) => `data:image/jpeg;base64,${j.toString("base64")}`;
-    const urls = { perspective: picture(pj), top: picture(tj), close: picture(cj) };
-    // Without a database (local development) nothing is kept.
-    if (!user.client || !user.userId) return NextResponse.json({ urls, left: taken.left });
-    const [p, t, c] = await Promise.all([
-      storeRenderJpeg(user.client, user.userId, pj, `table:perspective:${key}`),
-      storeRenderJpeg(user.client, user.userId, tj, `table:top:${key}`),
-      storeRenderJpeg(user.client, user.userId, cj, `table:close:${key}`),
-    ]);
-    const render: TableRender | undefined = p && t && c ? { key, perspective: p.path, top: t.path, close: c.path } : undefined;
-    if (!render) console.warn("[table-render] not kept; shown only");
-    return NextResponse.json({ urls, ...(render ? { render } : {}), left: taken.left });
+    // Each picture goes out the moment it is made (one JSON line each), so
+    // the front view shows after about a minute; the last line says it is
+    // done (with where the pictures are kept) or what went wrong.
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const send = (o: unknown) => controller.enqueue(ndjsonLine(o));
+        try {
+          const jpegs: Partial<Record<TableView, Buffer>> = {};
+          const made = async (view: TableView, url: string) => {
+            const jpeg = await renderJpeg(url);
+            if (!jpeg) throw new Error(`the ${view} picture could not be read`);
+            jpegs[view] = jpeg;
+            send({ view, url: picture(jpeg) });
+          };
+          const [perspectiveGuide, topGuide] = await Promise.all([tableGuide(table, theme, "perspective"), tableGuide(table, theme, "top")]);
+          // The front view first, from the drawing; then the top view (the drawing
+          // for the layout, the front photo for the look) and the close-up (from
+          // the front photo), so all three show the same things.
+          const perspective = await edit("perspective", [dataUri(perspectiveGuide)]);
+          await Promise.all([
+            made("perspective", perspective),
+            edit("top", [dataUri(topGuide), perspective]).then((u) => made("top", u)),
+            edit("close", [perspective]).then((u) => made("close", u)),
+          ]);
+          const key = tableRenderKey(table);
+          // Without a database (local development) nothing is kept.
+          let render: TableRender | undefined;
+          if (user.client && user.userId) {
+            const [p, t, c] = await Promise.all((["perspective", "top", "close"] as const).map((v) =>
+              storeRenderJpeg(user.client!, user.userId!, jpegs[v]!, `table:${v}:${key}`)));
+            render = p && t && c ? { key, perspective: p.path, top: t.path, close: c.path } : undefined;
+            if (!render) console.warn("[table-render] not kept; shown only");
+          }
+          send({ done: true, ...(render ? { render } : {}), left: taken.left });
+        } catch (err) {
+          console.error("[table-render]", err);
+          send({ error: renderError(err) });
+        } finally {
+          slot.release();
+          controller.close();
+        }
+      },
+    });
+    streaming = true;
+    return new Response(stream, { headers: { "content-type": "application/x-ndjson; charset=utf-8", "cache-control": "no-store" } });
   } catch (err) {
     console.error("[table-render]", err);
-    // fal refusing the account (no credit, bad key) is not worth retrying.
-    const status = (err as { status?: number })?.status;
-    if (status === 401 || status === 403) return NextResponse.json({ error: "Renders are paused for a moment — please try again later." }, { status: 503 });
-    return NextResponse.json({ error: "The render didn't come out — please try again." }, { status: 502 });
+    return NextResponse.json({ error: renderError(err) }, { status: 502 });
   } finally {
-    slot.release();
+    if (!streaming) slot.release();
   }
+}
+
+function renderError(err: unknown) {
+  // fal refusing the account (no credit, bad key) is not worth retrying.
+  const status = (err as { status?: number })?.status;
+  return status === 401 || status === 403 ? "Renders are paused for a moment — please try again later." : "The render didn't come out — please try again.";
 }

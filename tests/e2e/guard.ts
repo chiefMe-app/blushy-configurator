@@ -25,6 +25,8 @@ export interface Guard {
   fakeOrder: boolean;
   /** Answer blocked render requests the way the render limits do (lib/renderGuard.ts). */
   limitRender?: { status: number; error: string; busy?: boolean };
+  /** The stand-in table render answers only once this has settled (to see it waiting). */
+  holdTableRender?: Promise<void>;
   /** The stand-in Supabase at supabase.test (see fakeSupabase below). */
   supabase: FakeSupabase;
 }
@@ -184,7 +186,11 @@ export async function lockNetwork(page: Page): Promise<Guard> {
         if (!table) return route.fulfill({ status: 400, json: { error: "Missing table" } });
         const sub = tokenSubject(req.headers()["authorization"]);
         const key = tableRenderKey(table);
-        return route.fulfill({ json: { urls: FAKE_TABLE_RENDER, ...(sub ? { render: { key, perspective: `${sub}/p${key}.jpg`, top: `${sub}/t${key}.jpg`, close: `${sub}/c${key}.jpg` } } : {}) } });
+        await guard.holdTableRender;
+        // As the route streams it: one picture per line, then the end.
+        const lines = [...(["perspective", "top", "close"] as const).map((view) => ({ view, url: FAKE_TABLE_RENDER[view] })),
+          { done: true, ...(sub ? { render: { key, perspective: `${sub}/p${key}.jpg`, top: `${sub}/t${key}.jpg`, close: `${sub}/c${key}.jpg` } } : {}) }];
+        return route.fulfill({ contentType: "application/x-ndjson", body: lines.map((l) => `${JSON.stringify(l)}\n`).join("") });
       }
       if (guard.fakeOrder && url.pathname.startsWith("/api/orders")) {
         return route.fulfill({ json: { designId: "TEST-ORDER", total: 0, persisted: false } });

@@ -8,6 +8,7 @@ import { NONE } from "@/lib/studio/tableCatalog";
 import { defaultTableSetup, readTableRender, readTableSetup } from "@/lib/studio/tableSetup";
 import { seatingWords, tablePrompt, tableRenderKey } from "@/lib/studio/tableRender";
 import { resetRenderGuard } from "@/lib/renderGuard";
+import { readNdjson } from "@/lib/ndjson";
 
 const subscribe = vi.fn();
 vi.mock("@fal-ai/client", () => ({ fal: { config: vi.fn(), subscribe: (...a: unknown[]) => subscribe(...a) } }));
@@ -89,6 +90,24 @@ describe("the prompt", () => {
   });
 });
 
+/** The streamed answer's lines, in order. */
+async function lines(res: Response) {
+  const out: Record<string, unknown>[] = [];
+  await readNdjson(res.body!, (l) => out.push(l as Record<string, unknown>));
+  return out;
+}
+
+describe("reading the stream", () => {
+  it("lines split anywhere across chunks, and the last one without a newline", async () => {
+    const text = ['{"view":"perspective","url":"a"}', "", '{"view":"top","url":"ü"}', '{"done":true}'].join("\n");
+    const bytes = new TextEncoder().encode(text);
+    const body = new ReadableStream<Uint8Array>({ start(c) { for (let i = 0; i < bytes.length; i += 7) c.enqueue(bytes.slice(i, i + 7)); c.close(); } });
+    const got: unknown[] = [];
+    await readNdjson(body, (l) => got.push(l));
+    expect(got).toEqual([{ view: "perspective", url: "a" }, { view: "top", url: "ü" }, { done: true }]);
+  });
+});
+
 describe("the route", () => {
   const post = (body: unknown, headers: Record<string, string> = {}) =>
     new NextRequest("http://localhost/api/table-render", { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json", ...headers } });
@@ -108,10 +127,14 @@ describe("the route", () => {
     const { POST } = await import("@/app/api/table-render/route");
     const res = await POST(post({ table: table(), theme: "frozen" }));
     expect(res.status).toBe(200);
-    const json = await res.json();
-    // The pictures come in the answer itself: no other address to look up.
-    expect(json.urls).toEqual({ perspective: PICTURE, top: PICTURE, close: PICTURE }); // no database here: nothing is kept
-    expect(json.render).toBeUndefined();
+    expect(res.headers.get("content-type")).toContain("ndjson");
+    const got = await lines(res);
+    // The pictures come in the answer itself, the front view first: no other address to look up.
+    expect(got[0]).toEqual({ view: "perspective", url: PICTURE });
+    expect(got.slice(1, 3).map((l) => l.view).sort()).toEqual(["close", "top"]);
+    expect(got.slice(0, 3).every((l) => l.url === PICTURE)).toBe(true);
+    expect(got[3]).toMatchObject({ done: true });
+    expect(got[3].render).toBeUndefined(); // no database here: nothing is kept
     const calls = (subscribe.mock.calls as [string, { input: { image_urls: string[]; prompt: string } }][]).map(([model, { input }]) => ({ model, ...input }));
     expect(calls).toHaveLength(3);
     expect(calls.every((c) => c.model === "fal-ai/bytedance/seedream/v5/lite/edit")).toBe(true);
@@ -143,17 +166,32 @@ describe("the route", () => {
   it("a failed render says so, and frees the slot", async () => {
     subscribe.mockRejectedValue(new Error("boom"));
     const { POST } = await import("@/app/api/table-render/route");
-    expect((await POST(post({ table: table(), theme: "frozen" }))).status).toBe(502);
+    for (let i = 0; i < 4; i++) { // more than the three at a time one IP may have
+      expect(await lines(await POST(post({ table: table(), theme: "frozen" })))).toEqual([{ error: expect.stringMatching(/didn't come out/) }]);
+    }
     subscribe.mockImplementation(async () => ({ data: { images: [{ url: FAL }] } }));
-    expect((await POST(post({ table: table(), theme: "frozen" }))).status).toBe(200);
+    expect((await lines(await POST(post({ table: table(), theme: "frozen" })))).at(-1)).toMatchObject({ done: true });
+  }, 30_000);
+
+  it("the front view goes out before the other two are made", async () => {
+    let finish!: () => void;
+    const held = new Promise<void>((r) => { finish = r; });
+    subscribe.mockImplementation(async (_m: string, { input }: { input: { prompt: string } }) => {
+      if (!input.prompt.startsWith("Turn this simple line drawing")) await held;
+      return { data: { images: [{ url: FAL }] } };
+    });
+    const { POST } = await import("@/app/api/table-render/route");
+    const reader = (await POST(post({ table: table(), theme: "frozen" }))).body!.getReader();
+    const first = JSON.parse(new TextDecoder().decode((await reader.read()).value));
+    expect(first).toEqual({ view: "perspective", url: PICTURE });
+    finish();
+    while (!(await reader.read()).done) { /* the rest */ }
   }, 30_000);
 
   it("fal refusing the account says renders are paused, not to try again", async () => {
     subscribe.mockRejectedValue(Object.assign(new Error("Forbidden"), { status: 403, body: { detail: "User is locked. Reason: TOP_UP." } }));
     const { POST } = await import("@/app/api/table-render/route");
-    const res = await POST(post({ table: table(), theme: "frozen" }));
-    expect(res.status).toBe(503);
-    expect((await res.json()).error).toMatch(/paused/);
+    expect(await lines(await POST(post({ table: table(), theme: "frozen" })))).toEqual([{ error: expect.stringMatching(/paused/) }]);
   });
 
   it("signed in: both pictures are kept in the customer's folder, and come in the answer", async () => {
@@ -164,9 +202,9 @@ describe("the route", () => {
     subscribe.mockImplementation(async () => ({ data: { images: [{ url: FAL }] } }));
     storeRenderJpeg.mockImplementation(async (_c: unknown, _u: string, _jpeg: Buffer, hash: string) => ({ path: hash.includes("top") ? T : hash.includes("close") ? C : P, key: "k" }));
     const { POST } = await import("@/app/api/table-render/route");
-    const json = await (await POST(post({ table: table(), theme: "frozen" }, { authorization: "Bearer tok" }))).json();
-    expect(json.render).toEqual({ key: tableRenderKey(table()), perspective: P, top: T, close: C });
-    expect(json.urls).toEqual({ perspective: PICTURE, top: PICTURE, close: PICTURE });
+    const got = await lines(await POST(post({ table: table(), theme: "frozen" }, { authorization: "Bearer tok" })));
+    expect(got.at(-1)).toMatchObject({ done: true, render: { key: tableRenderKey(table()), perspective: P, top: T, close: C } });
+    expect(got.slice(0, 3).every((l) => l.url === PICTURE)).toBe(true);
     expect(storeRenderJpeg.mock.calls.map((c) => [c[1], c[2]])).toEqual([[USER, JPEG], [USER, JPEG], [USER, JPEG]]);
   }, 30_000);
 });
