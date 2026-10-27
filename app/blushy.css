@@ -1002,8 +1002,10 @@ div.bz-stale-banner { cursor: default; }
 /* ---------- 2026-10-26 (0.4): sign in, account menu, My designs ---------- */
 .bz-account { position: relative; display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .bz-account + .bz-total { margin-left: 0; }
-.bz-account-link { font: 700 13px var(--bz-sans); color: var(--bz-ink); text-decoration: none; padding: 8px 4px; }
-.bz-account-link:hover { color: var(--bz-pink); }
+/* 2026-10-27: bigger, on a background ("my designs daha büyük olsun, backgroundu olsun"). */
+.bz-account-link { display: inline-flex; align-items: center; gap: 7px; font: 800 15px var(--bz-sans); color: var(--bz-pink); text-decoration: none;
+  padding: 10px 18px; border-radius: 999px; background: var(--bz-pink-fog); border: 1.5px solid var(--bz-pink-soft); white-space: nowrap; }
+.bz-account-link:hover { background: #ffe1ec; }
 /* 2026-10-27: bigger and filled ("sign in çok küçük duruyor"). */
 .bz-signin-btn { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; background: var(--bz-pink); color: #fff;
   font: 800 15px var(--bz-sans); padding: 11px 22px; cursor: pointer; white-space: nowrap; box-shadow: 0 6px 16px rgba(249,21,102,.28); }
@@ -1065,7 +1067,7 @@ div.bz-stale-banner { cursor: default; }
 .bz-md-card .actions .bz-next { padding: 9px 22px 5px; font-size: 18px; }
 .bz-md-card .actions .bz-back { padding: 9px 18px 5px; font-size: 16px; }
 @media (max-width: 720px) {
-  .bz-account-link { display: none; }
+  .bz-account-link { font-size: 12.5px; padding: 7px 11px; gap: 5px; }
   .bz-signin-btn { padding: 8px 14px; font-size: 13.5px; gap: 6px; }
   .bz-signin-btn svg { width: 16px; height: 16px; }
   .bz-avatar { width: 30px; height: 30px; font-size: 13px; }
