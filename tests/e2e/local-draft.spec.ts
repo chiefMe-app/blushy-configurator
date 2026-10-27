@@ -2,7 +2,7 @@
 // opens where the customer left off; "Start over" clears it. Only design
 // choices are stored, never the customer's name, phone or venue. Balloon
 // colours the customer picked survive leaving the Decor step and coming back.
-import { test, expect, next, total, openDecor, decorTab, settle, masks, signIn } from "./guard";
+import { test, expect, next, total, openDecor, decorTab, settle, masks, signIn, renderButton } from "./guard";
 import { computeTotal, defaultConfig, formatAED } from "@/lib/config";
 
 const KEY = "partymuse.builder.draft.v1";
@@ -101,8 +101,8 @@ test("D8 the saved design is cleared once the request is sent", async ({ page, g
   await signIn(page); // renders need an account
   await openDecor(page, "Frozen", "Single Round");
   for (let i = 0; i < 3; i++) await next(page).click(); // Style, Balloons, Extras
-  await next(page).click(); // Generate render → stand-in
-  await expect(next(page)).toHaveText(/Continue to Package/);
+  await renderButton(page).click(); // → stand-in
+  await expect(renderButton(page)).toHaveCount(0); // the render is in
   await next(page).click();
   await next(page).click();
   await next(page).click();

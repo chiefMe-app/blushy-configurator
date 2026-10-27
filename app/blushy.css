@@ -1095,4 +1095,10 @@ div.bz-stale-banner { cursor: default; }
 .bz-sample-pack:hover { border-style: solid; }
 .bz-sample-pack .icon { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--bz-pink); color: #fff; display: grid; place-items: center; font-size: 13px; }
 .bz-sample-pack b { color: var(--bz-pink); }
-.bz-land-sample { max-width: 640px; margin: 0 auto; padding: 8px 16px 0; }
+.bz-land-pack { display: inline-flex; align-items: center; gap: 9px; margin-top: 16px; padding: 7px 14px 7px 7px; border-radius: 999px; background: var(--bz-pink-fog);
+  border: 1px solid var(--bz-pink-soft); color: var(--bz-ink); font: 500 13px/1.35 var(--bz-sans); text-decoration: none; }
+.bz-land-pack:hover { background: #ffe6ef; }
+.bz-land-pack .icon { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--bz-pink); color: #fff; display: grid; place-items: center; }
+.bz-land-pack b { color: var(--bz-pink); }
+.bz-md-pack { margin: 0 0 20px; }
+.bz-decor-actions { display: inline-flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; align-items: center; }

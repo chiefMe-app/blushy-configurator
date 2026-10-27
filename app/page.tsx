@@ -39,6 +39,11 @@ export default function Home() {
                 <Link href="/builder" className="bz-land-main-cta">Start your party <span aria-hidden="true">⟶</span></Link>
                 <a href="#how-it-works" className="bz-land-sub-cta"><span className="bz-play" aria-hidden="true">▶</span> See how it works</a>
               </div>
+              {/* 2026-10-27: the Design Pack, right under the call to action ("start your party'den sonra olmalı"). */}
+              <a className="bz-land-pack" href="/api/packs/sample" download>
+                <span className="icon" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0l-3.5-3.5M8 10l3.5-3.5M3 13.5h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                <span><b>New: Design Pack</b> — see what you receive with a design. Download a free sample.</span>
+              </a>
             </div>
             <div className="bz-land-art">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -90,12 +95,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <div className="bz-land-sample">
-        <a className="bz-sample-pack" href="/api/packs/sample" download>
-          <span className="icon" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0l-3.5-3.5M8 10l3.5-3.5M3 13.5h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
-          <span><b>New: Design Pack (Beta).</b> See what you receive with a design — download a free sample.</span>
-        </a>
-      </div>
       <footer className="bz-land-legal">
         © Blushy Events · <Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Service</Link>
       </footer>

@@ -3,7 +3,7 @@
 // saves screenshots as the visual baseline. Renders and orders never leave
 // the browser (see guard.ts); where a flow has to get past Decor, the render
 // request is answered with a local stand-in picture.
-import { test, expect, next, total, openDecor, chooseSetup, decorTab, settle, masks, signIn, FAKE_ACCOUNT } from "./guard";
+import { test, expect, next, total, openDecor, chooseSetup, decorTab, settle, masks, signIn, renderButton, FAKE_ACCOUNT } from "./guard";
 import { computeTotal, formatAED } from "@/lib/config";
 import { fixtureById } from "../fixtures/configs";
 
@@ -40,9 +40,11 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
     if ((page.viewportSize()?.width ?? 1000) >= 768) await expect(page.getByTestId("sketch-lettering").locator("path").first()).toBeAttached();
     await shot(page, `f1-04-decor-${tab.toLowerCase()}`);
   }
+  // The footer goes on to Package; the render is the Extras tab's own button.
+  await expect(next(page)).toHaveText(/Continue to Package/);
   // Generate render, signed out (2026-10-27: renders need an account): the
   // sign-in window, and no render asked for.
-  await next(page).click();
+  await renderButton(page).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("heading", { name: "Sign in to see your render" })).toBeVisible();
   expect(guard.blocked.some((r) => r.url().includes("/api/generate-controlled-render"))).toBe(false);
@@ -52,8 +54,10 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   await page.goto("/account/callback?code=e2e-link"); // the emailed link
   // Back on the same design, and the render starts by itself → stand-in.
   await expect(page).toHaveURL(/\/builder$/);
-  await expect(next(page)).toHaveText(/Continue to Package/);
-  const renders = guard.blocked.filter((r) => r.url().includes("/api/generate-controlled-render"));
+  const renderCalls = () => guard.blocked.filter((r) => r.url().includes("/api/generate-controlled-render"));
+  await expect.poll(() => renderCalls().length).toBe(1);
+  await expect(page.getByRole("button", { name: /^Regenerate/ }).first()).toBeVisible(); // the render is in
+  const renders = renderCalls();
   expect(renders).toHaveLength(1);
   expect(renders[0].headers()["authorization"]).toMatch(/^Bearer \S+/);
   await next(page).click();
@@ -231,7 +235,7 @@ test("F11 a render limit says so in the render card, with no Retry", async ({ pa
   await signIn(page); // renders need an account
   await openDecor(page, "Frozen", "Single Round");
   await decorTab(page, "Extras");
-  await next(page).click(); // Generate render → refused by the limit
+  await renderButton(page).click(); // refused by the limit
   const card = page.getByTestId("render-error");
   await expect(card).toHaveText("You've reached your render limit — you can render again in 7 min.");
   await expect(page.getByRole("button", { name: "Retry" })).toHaveCount(0);
@@ -243,7 +247,18 @@ test("F12 renders still running from the same connection: says so, and Retry sta
   await signIn(page); // renders need an account
   await openDecor(page, "Frozen", "Single Round");
   await decorTab(page, "Extras");
-  await next(page).click();
+  await renderButton(page).click();
   await expect(page.getByTestId("render-error")).toHaveText(/still being made/);
   await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+});
+
+test("F13 the Package step without a render: the render is optional", async ({ page, guard }) => {
+  await openDecor(page, "Frozen", "Single Round");
+  await decorTab(page, "Extras");
+  await expect(renderButton(page)).toBeVisible(); // offered, not required
+  await expect(next(page)).toHaveText(/Continue to Package/);
+  await next(page).click();
+  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  expect(guard.blocked.some((r) => r.url().includes("/api/generate-controlled-render"))).toBe(false);
+  expect(guard.supabase.requests).toEqual([]); // nor any sign-in asked for
 });

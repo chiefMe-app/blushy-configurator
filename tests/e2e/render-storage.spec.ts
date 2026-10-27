@@ -3,7 +3,7 @@
 // real one does), goes with the design on Save, shows on its My designs card,
 // comes back when the design is opened — without a new render — and is
 // removed with the design.
-import { test, expect, openDecor, decorTab, next, signIn, FAKE_ACCOUNT } from "./guard";
+import { test, expect, openDecor, decorTab, signIn, renderButton, FAKE_ACCOUNT } from "./guard";
 import type { Page } from "@playwright/test";
 import type { Guard } from "./guard";
 
@@ -14,8 +14,8 @@ async function renderAndSave(page: Page, guard: Guard) {
   await signIn(page);
   await openDecor(page, "Frozen", "Single Round");
   await decorTab(page, "Extras");
-  await next(page).click(); // Generate render → stand-in, stored
-  await expect(next(page)).toHaveText(/Continue to Package/);
+  await renderButton(page).click(); // → stand-in, stored
+  await expect(renderButton(page)).toHaveCount(0); // the render is in
   expect(renderCalls(guard)).toBe(1);
   await page.getByTestId("save-design").click();
   await expect(page.getByTestId("save-design").locator(".full")).toHaveText("✓ Saved");
@@ -39,7 +39,8 @@ test("R2 opening the design brings its render back, with no new render", async (
   await page.getByTestId("saved-design").getByRole("button", { name: "Open" }).click();
   await expect(page).toHaveURL(/\/builder$/);
   await expect(page.locator("img[src*='/storage/v1/object/sign/renders/']").first()).toBeVisible();
-  await expect(next(page)).toHaveText(/Continue to Package/); // the render counts as done
+  await decorTab(page, "Extras");
+  await expect(renderButton(page)).toHaveCount(0); // the render counts as done
   expect(renderCalls(guard)).toBe(1); // only the first one, before saving
 });
 

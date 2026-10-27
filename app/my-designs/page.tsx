@@ -98,6 +98,11 @@ export default function MyDesigns() {
           <h1>My designs</h1>
           <a className="bz-next" href="/builder">+ New design</a>
         </div>
+        {/* 2026-10-27: what a Design Pack holds, next to the designs it will be made from. */}
+        <a className="bz-sample-pack bz-md-pack" href="/api/packs/sample" download data-testid="my-designs-sample-pack">
+          <span className="icon" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0l-3.5-3.5M8 10l3.5-3.5M3 13.5h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+          <span><b>Design Pack:</b> the specification, cut files and lists for a design. See what one looks like — download a free sample.</span>
+        </a>
         {account?.kind === "guest" && (
           <div className="bz-tip bz-md-guest">
             <span className="icon" aria-hidden="true">✳</span>

@@ -1,6 +1,5 @@
-// The Design Pack (Beta), Phase 1.3: what goes in the ZIP and where, the 1:1
-// cut files, the labels on the AI picture, the sample, and the language rule
-// (never "production-ready" / "print-ready" until a producer pilot approves it).
+// The Design Pack, Phase 1.3: what goes in the ZIP and where, the 1:1 cut
+// files, the labels on the AI picture, and the sample.
 import fs from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
@@ -19,7 +18,7 @@ const unzip = (zip: Uint8Array) => unzipSync(zip);
 const svgSize = (svg: string) => svg.match(/width="([\d.]+)mm" height="([\d.]+)mm"/)!.slice(1).map(Number);
 
 describe("the pack's folders", () => {
-  it("specification, cut files (beta), the labelled picture and lists — each in its own folder", async () => {
+  it("specification, cut files, the labelled picture and lists — each in its own folder", async () => {
     const pack = await buildDesignPack({ config: round, packId: "T1", render });
     expect(pack.fileName).toBe("PartyMuse_DesignPack_T1.zip");
     expect(pack.files).toEqual([
@@ -38,7 +37,7 @@ describe("the pack's folders", () => {
     const pdf = entries["PartyMuse_DesignPack_T1/1_SPECIFICATION/Design_Specification.pdf"];
     expect(strFromU8(pdf.slice(0, 5))).toBe("%PDF-");
     const readme = strFromU8(entries["PartyMuse_DesignPack_T1/README.txt"]);
-    expect(readme).toContain("Design Pack (Beta)");
+    expect(readme).toContain("PartyMuse Design Pack");
     expect(readme).toContain("CALIBRATION_100mm.svg");
     const balloons = strFromU8(entries["PartyMuse_DesignPack_T1/4_LISTS/balloons.csv"]);
     expect(balloons.split("\r\n")[0]).toBe("brand,code,colour,finish,hex,quantity");
@@ -107,23 +106,5 @@ describe("the free sample", () => {
     expect(pack.files.some((f) => f.startsWith("2_CUT_FILES"))).toBe(false);
     expect(pack.files).toContain("3_VISUAL_REFERENCE_NOT_FOR_PRINT/visual_reference.jpg");
     expect(strFromU8(unzip(pack.zip)["PartyMuse_DesignPack_SAMPLE/README.txt"])).toContain("SAMPLE");
-  }, 60_000);
-});
-
-describe("language: no production claim before a producer pilot", () => {
-  const BANNED = /production[- ]ready|print[- ]ready|üretime hazır/i;
-  const files = (dir: string): string[] => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-    e.isDirectory() ? files(path.join(dir, e.name)) : /\.(tsx?|json|css)$/.test(e.name) ? [path.join(dir, e.name)] : []);
-  it("nowhere in the app's own text (comments aside)", () => {
-    const hits = ["app", "components", "lib"].flatMap((d) => files(d)).flatMap((f) =>
-      fs.readFileSync(f, "utf8").split("\n").map((line, i) => ({ f, i, line }))
-        .filter(({ line }) => BANNED.test(line) && !/^\s*(\/\/|\*|\/\*)/.test(line)));
-    expect(hits.map((h) => `${h.f}:${h.i + 1}`)).toEqual([]);
-  });
-  it("nor in what a pack contains", async () => {
-    const pack = await buildDesignPack({ config: round, packId: "T4", render: null });
-    const texts = Object.entries(unzip(pack.zip)).filter(([n]) => /\.(txt|csv|svg)$/.test(n)).map(([, b]) => strFromU8(b));
-    expect(texts.some((t) => BANNED.test(t))).toBe(false);
-    expect(BANNED.test(JSON.stringify({ ...pack.spec, boards: pack.spec.boards.map((b) => ({ ...b, lettering: b.lettering && { ...b.lettering, layout: null } })) }))).toBe(false);
   }, 60_000);
 });

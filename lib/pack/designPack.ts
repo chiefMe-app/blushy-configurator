@@ -1,9 +1,9 @@
-// The Design Pack (Beta) as a ZIP (Phase 1.3):
+// The Design Pack as a ZIP (Phase 1.3):
 //
 //   PartyMuse_DesignPack_<id>/
 //     README.txt
 //     1_SPECIFICATION/Design_Specification.pdf
-//     2_CUT_FILES (beta - verify with your producer)/   board outlines, lettering, calibration
+//     2_CUT_FILES/   board outlines, lettering, calibration
 //     3_VISUAL_REFERENCE_NOT_FOR_PRINT/visual_reference.jpg
 //     4_LISTS/balloons.csv, props.csv
 //
@@ -36,7 +36,7 @@ const csv = (rows: (string | number)[][]) => rows.map((r) => r.map((c) => {
 
 function readme(spec: PackSpec, packId: string, sample: boolean) {
   return [
-    `PartyMuse Design Pack (Beta)${sample ? " — SAMPLE" : ""}`,
+    `PartyMuse Design Pack${sample ? " — SAMPLE" : ""}`,
     spec.title,
     `Pack ${packId}`,
     "",
@@ -46,13 +46,13 @@ function readme(spec: PackSpec, packId: string, sample: boolean) {
     sample
       ? "  2_CUT_FILES      Not in a sample. Your own Design Pack has 1:1 board outlines and lettering in millimetres."
       : "  2_CUT_FILES      1:1 SVG files in millimetres: board outlines, lettering (merged outlines), where the lettering goes,",
-    sample ? "" : "                   and CALIBRATION_100mm.svg. BETA: verify with your producer before cutting.",
+    sample ? "" : "                   and CALIBRATION_100mm.svg.",
     "  3_VISUAL_REFERENCE_NOT_FOR_PRINT  The AI picture of the design. Indicative only — not artwork, not to scale.",
     "  4_LISTS          balloons.csv and props.csv.",
     "",
     "Before anything is made",
-    "  - Open CALIBRATION_100mm.svg in your producer's software at 100 %: the red square must measure 100 x 100 mm.",
-    `  - Values marked ${TO_CONFIRM} are not confirmed by a producer yet.`,
+    "  - Open CALIBRATION_100mm.svg in the cutting software at 100 %: the red square must measure 100 x 100 mm.",
+    `  - Values marked ${TO_CONFIRM} are not set by the design (materials, quantities): choose them with your maker.`,
     "  - Make everything from the specification and the cut files, never from the picture.",
     "",
     "PartyMuse by Blushy — https://blushy-events.vercel.app",

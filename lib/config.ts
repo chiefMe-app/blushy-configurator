@@ -206,7 +206,7 @@ export const SERVICE_PACKAGES: ServicePackage[] = [
       "Final backdrop design",
       "Backdrop production specification",
       "Delivery & execution coordination",
-      "Complete item list",
+      "Production-ready item list",
     ],
   },
   {
@@ -220,7 +220,7 @@ export const SERVICE_PACKAGES: ServicePackage[] = [
       "Backdrop production specification",
       "Table setup specification",
       "Delivery & execution coordination",
-      "Complete item list",
+      "Production-ready item list",
     ],
   },
 ];

@@ -41,7 +41,7 @@ export default function PackageStep({ config, setServicePackage }: { config: Bui
         {/* 2026-10-27 (Phase 1.3): what a design package delivers, as a file to look at. */}
         <a className="bz-sample-pack" href="/api/packs/sample" download data-testid="sample-pack">
           <span className="icon" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0l-3.5-3.5M8 10l3.5-3.5M3 13.5h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
-          <span><b>See what you receive:</b> download a free sample Design Pack (Beta) — specification PDF, lists and a labelled visual reference.</span>
+          <span><b>See what you receive:</b> download a free sample Design Pack — specification PDF, lists and a labelled visual reference.</span>
         </a>
       </div>
 

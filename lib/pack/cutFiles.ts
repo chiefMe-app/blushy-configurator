@@ -1,13 +1,13 @@
 // The Design Pack's cut files (Phase 1.3): 1:1 SVGs in millimetres. Board
 // outlines from the design's sizes; lettering from the typography engine's
 // merged outlines (lib/typography/cutReady.ts), scaled from the layout box to
-// the real board. Beta: to be checked against the producer's own software
-// with CALIBRATION_100mm.svg before cutting.
+// the real board. Open CALIBRATION_100mm.svg in the cutting software first
+// to check the scale.
 import { cutElements } from "@/lib/typography/cutReady";
 import type { BoardSpec, LetteringSpec } from "./spec";
 
 /** The cut files' folder in the ZIP. ASCII only: some unzip tools garble other characters in names. */
-export const CUT_DIR = "2_CUT_FILES (beta - verify with your producer)";
+export const CUT_DIR = "2_CUT_FILES";
 
 const CUT = `fill="none" stroke="#FF0000" stroke-width="0.25"`;
 const n = (v: number) => +v.toFixed(3);
@@ -30,7 +30,7 @@ export function boardOutlinePath(b: Pick<BoardSpec, "type" | "widthMm" | "height
 
 export function boardOutlineSvg(b: BoardSpec): string {
   return svgDoc(b.widthMm, b.heightMm, `<path ${CUT} d="${boardOutlinePath(b)}"/>`,
-    `${b.name} outline — ${b.kind}, ${b.widthMm} x ${b.heightMm} mm, 1:1 (beta: verify with your producer)`);
+    `${b.name} outline — ${b.kind}, ${b.widthMm} x ${b.heightMm} mm, 1:1`);
 }
 
 /** The lettering's merged outlines in board mm. */
@@ -58,7 +58,7 @@ export function letteringCutSvg(b: BoardSpec): string | null {
   const x0 = Math.min(...xs) - MARGIN, y0 = Math.min(...ys) - MARGIN;
   const w = Math.max(...xs) + MARGIN - x0, h = Math.max(...ys) + MARGIN - y0;
   const body = letteringRings(l, -x0, -y0).map((p) => `<path data-role="${p.role}" ${CUT} fill-rule="evenodd" d="${p.d}"/>`).join("\n");
-  return svgDoc(w, h, body, `${b.name} lettering — ${l.finishLabel}; ${n(w - 2 * MARGIN)} x ${n(h - 2 * MARGIN)} mm ink, 1:1 (beta: verify with your producer)`);
+  return svgDoc(w, h, body, `${b.name} lettering — ${l.finishLabel}; ${n(w - 2 * MARGIN)} x ${n(h - 2 * MARGIN)} mm ink, 1:1`);
 }
 
 /** Where the lettering goes on the board: outline in grey, lettering in black. Reference, not a cut file. */

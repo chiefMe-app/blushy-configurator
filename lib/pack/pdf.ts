@@ -1,7 +1,6 @@
 // Design_Specification.pdf (Phase 1.3). Two parts, always in this order:
 //   A. Production information — read from the design (lib/pack/spec.ts);
 //   B. Visual reference — the AI render, labelled indicative only.
-// Never "production-ready" / "print-ready": the Design Pack is a Beta.
 import fs from "fs";
 import path from "path";
 import { PDFDocument, rgb, degrees, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
@@ -90,18 +89,18 @@ export interface PdfOptions {
 export async function specificationPdf(spec: PackSpec, o: PdfOptions): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  doc.setTitle(`PartyMuse Design Pack (Beta) — ${spec.title}`);
+  doc.setTitle(`PartyMuse Design Pack — ${spec.title}`);
   doc.setAuthor("PartyMuse by Blushy");
   doc.setCreationDate(o.createdAt);
   const font = await doc.embedFont(fontFile(), { subset: true });
   const date = o.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-  const w = new Writer(doc, font, !!o.sample, `PartyMuse Design Pack (Beta) · ${o.packId} · ${date} · Visual references are AI-generated and indicative only.`);
+  const w = new Writer(doc, font, !!o.sample, `PartyMuse Design Pack · ${o.packId} · ${date} · Visual references are AI-generated and indicative only.`);
 
-  w.text(o.sample ? "PartyMuse Design Pack (Beta) — SAMPLE" : "PartyMuse Design Pack (Beta)", { size: 20, color: PINK, gap: 2 });
+  w.text(o.sample ? "PartyMuse Design Pack — SAMPLE" : "PartyMuse Design Pack", { size: 20, color: PINK, gap: 2 });
   w.text(spec.title, { size: 14, gap: 2 });
   w.text(`${spec.eventType} · Pack ${o.packId} · ${date}`, { size: 9, color: MUTED, gap: 10 });
-  w.text("Before anything is made: check every size and material with your producer, and open CALIBRATION_100mm.svg at 100 % — it must measure 100 mm. "
-    + `Values marked ${TO_CONFIRM} are not confirmed by a producer. The cut files are a beta.`, { size: 9, color: WARN, gap: 8 });
+  w.text("Before cutting, open CALIBRATION_100mm.svg at 100 % — it must measure 100 mm. "
+    + `Values marked ${TO_CONFIRM} are not set by the design (materials, quantities): choose them with your maker.`, { size: 9, color: WARN, gap: 8 });
   if (o.sample) w.text("This sample shows the layout of a Design Pack for a demo design. It has no cut files.", { size: 9, color: WARN, gap: 8 });
 
   w.heading("A. Production information");
@@ -162,7 +161,7 @@ export async function specificationPdf(spec: PackSpec, o: PdfOptions): Promise<U
 
   w.sub("A6. Setting up");
   w.text("Set the boards on a level floor, against a wall or on their stands. Fix the lettering to the board at the centre given in A2. "
-    + "Hang or tie the balloon garland after the boards are in place. Stands, fixings and weights: " + TO_CONFIRM + " with your producer.", { gap: 6 });
+    + "Hang or tie the balloon garland after the boards are in place. Stands, fixings and weights: " + TO_CONFIRM + ".", { gap: 6 });
 
   // B. Visual reference
   w.newPage();

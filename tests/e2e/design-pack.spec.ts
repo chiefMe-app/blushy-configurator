@@ -5,7 +5,7 @@ import { test, expect, openDecor } from "./guard";
 
 test("P1 the landing page offers the sample pack, which downloads as a ZIP", async ({ page }) => {
   await page.goto("/");
-  const link = page.getByRole("link", { name: /Design Pack \(Beta\)/ });
+  const link = page.getByRole("link", { name: /New: Design Pack/ });
   await expect(link).toHaveAttribute("href", "/api/packs/sample");
   const res = await page.request.get("/api/packs/sample");
   expect(res.status()).toBe(200);
@@ -34,5 +34,12 @@ test("P2 the Package step links the sample under the design packages", async ({ 
   const link = page.getByTestId("sample-pack");
   await expect(link).toBeVisible();
   await expect(link).toHaveAttribute("href", "/api/packs/sample");
-  await expect(link).toContainText("free sample Design Pack (Beta)");
+  await expect(link).toContainText("free sample Design Pack");
+});
+
+test("P3 My designs offers the sample pack under its heading", async ({ page }) => {
+  await page.goto("/my-designs");
+  const link = page.getByTestId("my-designs-sample-pack");
+  await expect(link).toBeVisible();
+  await expect(link).toHaveAttribute("href", "/api/packs/sample");
 });

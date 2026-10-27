@@ -236,11 +236,19 @@ export async function signIn(page: Page) {
   await expect(page).toHaveURL(/\/my-designs$/);
 }
 
+/**
+ * The visible Generate render button (2026-10-27: optional; the footer goes on
+ * to Package): the preview card's on desktop, where the Extras tab's own
+ * footer is hidden; the first of the two on phones. Gone once the render is in
+ * (the card then offers "Regenerate").
+ */
+export const renderButton = (page: Page) => page.getByRole("button", { name: /^Generate render/ }).first();
+
 /** The request body the UI sends when Generate render is pressed. */
 export async function captureRenderBody(page: Page, guard: Guard): Promise<Record<string, unknown>> {
   const before = guard.blocked.length;
   await decorTab(page, "Extras");
-  await next(page).click();
+  await renderButton(page).click();
   await expect.poll(() => guard.blocked.slice(before).some((r) => r.url().includes("/api/generate-controlled-render"))).toBe(true);
   const req = guard.blocked.slice(before).find((r) => r.url().includes("/api/generate-controlled-render"))!;
   return JSON.parse(req.postData() ?? "{}");

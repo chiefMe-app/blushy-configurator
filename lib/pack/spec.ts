@@ -4,9 +4,9 @@
 // engine and placed where the render guide puts it (generateStructureSilhouette's
 // letteringPlacements), scaled to the real board.
 //
-// Materials and production limits are not confirmed by a producer yet: every
-// value that depends on them is marked TO CONFIRM, and nothing here claims to
-// be production-ready (the Design Pack is a Beta).
+// Materials and quantities are not set by the design: every value that
+// depends on them is marked TO CONFIRM. Lettering strokes thinner than the
+// provisional limits of lib/typography/production.ts are flagged CHECK.
 import { BALLOON_STYLES, PLINTH_SIZES, TEXT_COLORS, describeTextColor, eventTypeById, foilColourFor, priceBreakdown, resolveTextColorHex, themeById, type BuilderConfig } from "@/lib/config";
 import { buildSceneModel } from "@/lib/buildSceneModel";
 import { generateStructureSilhouette } from "@/lib/generateStructureSilhouette";

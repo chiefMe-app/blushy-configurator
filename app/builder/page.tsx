@@ -327,17 +327,18 @@ export default function ConfigurePage() {
     if (!onLastDecorTab) {
       nextLabel = `Next: ${DECOR_TABS[decorTab + 1].name} →`;
       onNext = () => setDecorTab(decorTab + 1);
-    } else if (!decorRenderReady) {
-      nextLabel = finalRenderState.hasRender ? "Regenerate render ✨" : "Generate render ✨";
-      onNext = triggerDecorGenerateRender;
-      nextDisabled = archUnsized;
     } else {
+      // 2026-10-27: the render is optional ("extras'tan sonraki adıma geçebilmek
+      // için illa generate render olmamalı") — it is offered beside this, in
+      // the Extras tab and on the preview card.
       nextLabel = "Continue to Package →";
+      nextDisabled = archUnsized;
     }
   }
   if (step === 5) nextLabel = "See my party →";
   if (isReview) { nextLabel = "Request Final Quote ✦"; onNext = submit; nextDisabled = !canSubmit; }
-  const busy = submitting || (isDecorStep && finalRenderState.generating);
+  // A render in progress does not hold the customer on Decor any more.
+  const busy = submitting;
 
   return (
     <div className="bz-body" style={{ minHeight: "calc(100vh / var(--bz-zoom, 1))", background: "#fff" }}>
@@ -424,7 +425,7 @@ export default function ConfigurePage() {
               {isDecorStep && !finalRenderState.hasRender && (
                 <div className="bz-little-note">
                   <svg viewBox="0 0 35 28" aria-hidden="true"><path d="M3 4Q6 23 29 16M21 11L30 16L23 23" /></svg>
-                  <span>Finish the Extras tab, then tap <b>Generate render</b> to see your design.</span>
+                  <span>Want to see it for real? Tap <b>Generate render</b> on the Extras tab — or carry on without one.</span>
                 </div>
               )}
             </>

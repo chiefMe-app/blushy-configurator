@@ -222,6 +222,26 @@ describe("the one-file versions for the SQL editor", () => {
   }, 60_000);
 });
 
+describe("new-project-all.sql (a new project, e.g. staging, in one go)", () => {
+  const PARTS = ["orders-table.sql", "phase-0.2.sql", "phase-0.5b.sql", "phase-0.5c.sql"];
+  it("is exactly those files, in order", () => {
+    const lf = (s: string) => s.replace(/\r\n/g, "\n");
+    const all = lf(read("apply", "new-project-all.sql"));
+    const body = PARTS.map((f) => `\n-- ######## supabase/apply/${f} ########\n` + lf(read("apply", f))).join("");
+    expect(all.endsWith(body)).toBe(true);
+  });
+  it("runs on an empty project, twice, and leaves every table and the renders bucket", async () => {
+    const fresh = new PGlite();
+    await fresh.exec(SUPABASE_LIKE); // no schema.sql: nothing exists yet
+    await fresh.exec(read("apply", "new-project-all.sql"));
+    await fresh.exec(read("apply", "new-project-all.sql"));
+    const tables = await fresh.query<{ t: string }>(`select table_name as t from information_schema.tables where table_schema = 'public' order by 1`);
+    expect(tables.rows.map((r) => r.t)).toEqual(["orders", "parties", "party_items", "render_usage", "staff"]);
+    expect((await fresh.query("select id from storage.buckets where id = 'renders'")).rows).toHaveLength(1);
+    await fresh.close();
+  }, 60_000);
+});
+
 describe("orders-table.sql (a project without the orders table)", () => {
   const order = `insert into public.orders (theme, shape, garland, total_price, customer_name, customer_phone)
                  values ('frozen', 'round', 'full', 1090, 'Test', '+971500000000')`;

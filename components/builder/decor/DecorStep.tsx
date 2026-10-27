@@ -61,20 +61,23 @@ export default function DecorStep(props: DecorStepProps) {
            from the product data. == */}
       {decorTab === 3 && <ExtrasTab ctx={ctx} />}
 
-      {/* == Tab footer: next tab, or Generate Render after Extras == */}
+      {/* == Tab footer: next tab; after Extras, Package — and the render, which is optional (2026-10-27) == */}
       <div className="bz-decor-footer">
         <span>✓ Saved as you go</span>
         {decorTab < DECOR_TABS.length - 1 ? (
           <button type="button" className="bz-decor-hint" onClick={() => setDecorTab(decorTab + 1)}>
             Next up: {DECOR_TABS[decorTab + 1].name} →
           </button>
-        ) : renderReady ? (
-          <button type="button" className="bz-decor-cta" onClick={onContinue}>Continue to Package →</button>
         ) : (
-          <button type="button" className="bz-decor-cta" onClick={onGenerate}
-            disabled={generating || d.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}>
-            {generating ? "Generating…" : hasRender ? "Regenerate render ✨" : "Generate render ✨"}
-          </button>
+          <span className="bz-decor-actions">
+            {!renderReady && (
+              <button type="button" className="bz-decor-hint" onClick={onGenerate} data-testid="generate-render"
+                disabled={generating || d.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}>
+                {generating ? "Generating…" : hasRender ? "Regenerate render ✨" : "Generate render ✨"}
+              </button>
+            )}
+            <button type="button" className="bz-decor-cta" onClick={onContinue}>Continue to Package →</button>
+          </span>
         )}
       </div>
       <div className="bz-decor-note">✳ No need to scroll through every option — just switch tabs.</div>
