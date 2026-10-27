@@ -13,14 +13,19 @@ export default function AddOnsStep({ config, toggleAddOn, setAddOnOption }: {
       <div className="bz-tip"><span className="icon">✳</span><span>A little extra sparkle? Totally optional!</span><span className="arrow">↙</span></div>
       <div className="space-y-3">
         {ADDONS.map((addon) => (
-          <AddOnCard
-            key={addon.id}
-            addon={addon}
-            selection={config.addOns.find((a) => a.id === addon.id)}
-            recommended={isAddOnRecommended(addon, config)}
-            onToggle={() => toggleAddOn(addon.id)}
-            onOption={(k, v) => setAddOnOption(addon.id, k, v)}
-          />
+          <div key={addon.id}>
+            <AddOnCard
+              addon={addon}
+              selection={config.addOns.find((a) => a.id === addon.id)}
+              recommended={isAddOnRecommended(addon, config)}
+              onToggle={() => toggleAddOn(addon.id)}
+              onOption={(k, v) => setAddOnOption(addon.id, k, v)}
+            />
+            {/* 2026-10-27: the kids' table can be designed in its own studio. */}
+            {addon.id === "kids_tables" && (
+              <a className="bz-studio-link" href="/studio/table" data-testid="table-studio-link">Design the kids' table in the Table Setup studio →</a>
+            )}
+          </div>
         ))}
       </div>
     </StepShell>

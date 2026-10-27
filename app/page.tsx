@@ -22,6 +22,7 @@ export default function Home() {
             <Link href="/builder?step=theme">Themes</Link>
             <Link href="/builder?step=theme">Decor</Link>
             <Link href="/builder?step=theme">Pricing</Link>
+            <Link href="/studio/table">Table setup</Link>
           </nav>
           <Link href="/builder" className="bz-land-top-cta">Start planning <span aria-hidden="true">✦</span></Link>
         </div>
@@ -91,6 +92,11 @@ export default function Home() {
             <Link href="/builder?step=theme" className="bz-discover">
               <span className="icon"><svg viewBox="0 0 108 90" aria-hidden="true"><path d="M17 45h75v35H17z" fill="#ffc7dc" stroke="#ec6993" strokeWidth="2" /><path d="M17 49q9 16 18 0 9 16 18 0 9 16 18 0 9 16 21 0V37H17Z" fill="#fff0f4" /><path d="M22 38q5-13 12 0q7-13 15 0q7-13 15 0q8-13 19 0" fill="#fff0f4" /><path d="M30 28v-17M50 27V8M70 28V10" stroke="#493329" strokeWidth="3" /><path d="M30 9l3-7 4 7M50 7l3-7 4 7M70 7l3-7 4 7" fill="#ffb53c" /></svg></span>
               <span><strong>Preview before you book</strong><small>See your party concept<br />before checkout.</small></span><span className="go green">→</span>
+            </Link>
+            {/* 2026-10-27: the Table Setup studio (Phase 3). */}
+            <Link href="/studio/table" className="bz-discover">
+              <span className="icon"><svg viewBox="0 0 110 90" aria-hidden="true"><rect x="12" y="38" width="86" height="22" rx="4" fill="#fff0f4" stroke="#3a2b2b" strokeWidth="3" /><circle cx="33" cy="49" r="7" fill="#bae6fd" stroke="#3a2b2b" strokeWidth="2" /><circle cx="55" cy="49" r="7" fill="#fbcfe8" stroke="#3a2b2b" strokeWidth="2" /><circle cx="77" cy="49" r="7" fill="#fef08a" stroke="#3a2b2b" strokeWidth="2" /><rect x="22" y="14" width="20" height="17" rx="5" fill="#fff" stroke="#3a2b2b" strokeWidth="3" /><rect x="68" y="14" width="20" height="17" rx="5" fill="#fff" stroke="#3a2b2b" strokeWidth="3" /><rect x="22" y="67" width="20" height="17" rx="5" fill="#fff" stroke="#3a2b2b" strokeWidth="3" /><rect x="68" y="67" width="20" height="17" rx="5" fill="#fff" stroke="#3a2b2b" strokeWidth="3" /></svg></span>
+              <span><strong>Set the kids&apos; table</strong><small>Seats, colours and treats<br />for every guest.</small></span><span className="go pink">→</span>
             </Link>
           </div>
         </div>
