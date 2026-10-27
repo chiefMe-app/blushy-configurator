@@ -6,11 +6,15 @@ import fs from "fs";
 import nodePath from "path";
 import { test as base, expect, type Page, type Request, type Route } from "@playwright/test";
 import { renderKey } from "@/lib/renderKey";
+import { tableRenderKey } from "@/lib/studio/tableRender";
+import type { TableSetup } from "@/lib/studio/tableSetup";
 
-const BLOCKED_API = /\/api\/(orders|generate|generate-cutouts|generate-controlled-render|generate-structure-render-test)\/?(\?|$)/;
+const BLOCKED_API = /\/api\/(orders|generate|generate-cutouts|generate-controlled-render|generate-structure-render-test|table-render)\/?(\?|$)/;
 
 /** A stand-in render: any local picture, so the flow can move past Decor. */
 export const FAKE_RENDER = "/design/balloon-dog-outline.webp";
+/** Stand-ins for the table render's two views. */
+export const FAKE_TABLE_RENDER = { perspective: "/design/table/table-long.webp", top: "/design/table/table-round.webp" };
 
 export interface Guard {
   blocked: Request[];
@@ -173,6 +177,11 @@ export async function lockNetwork(page: Page): Promise<Guard> {
         const key = renderKey(scene);
         return route.fulfill({ json: sub && scene ? { imageUrl: FAKE_RENDER, storedRender: { path: `${sub}/${key}.jpg`, key } } : { imageUrl: FAKE_RENDER } });
       }
+      if (guard.fakeRender && url.pathname.startsWith("/api/table-render")) {
+        // Local pictures stand in for the two views (F3).
+        const table = (() => { try { return JSON.parse(req.postData() ?? "{}").table as TableSetup; } catch { return null; } })();
+        return table ? route.fulfill({ json: { render: { key: tableRenderKey(table), perspective: FAKE_TABLE_RENDER.perspective, top: FAKE_TABLE_RENDER.top } } }) : route.fulfill({ status: 400, json: { error: "Missing table" } });
+      }
       if (guard.fakeOrder && url.pathname.startsWith("/api/orders")) {
         return route.fulfill({ json: { designId: "TEST-ORDER", total: 0, persisted: false } });
       }
@@ -210,6 +219,7 @@ export async function openDecor(page: Page, theme = "Frozen", setup?: string) {
   await next(page).click();
   await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: exactly(theme) }) }).first().click();
   await next(page).click();
+  await page.getByRole("button", { name: /Yes, design the backdrop/ }).click(); // 2026-10-27: the backdrop is a choice
   if (setup) await chooseSetup(page, setup);
 }
 

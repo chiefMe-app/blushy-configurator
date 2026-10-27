@@ -829,6 +829,12 @@ export interface DecorConfig {
    * the scene, so it never changes what a render is made of.
    */
   savedRender?: { path: string; key: string };
+  /**
+   * 2026-10-27: the backdrop is a choice, as the kids' table is ("aynı soruyu
+   * başta backdrop için de soralım"). Unset until asked; "skip" leaves every
+   * backdrop line (boards, balloons, extras) out of the price.
+   */
+  backdropChoice?: "yes" | "skip";
 }
 
 export interface NeonSign {
@@ -1385,6 +1391,9 @@ export function priceBreakdown(config: BuilderConfig): {
     lines.push({ label: `${theme.name} theme`, amount: theme.priceModifier, section: "design" });
   }
 
+  // Everything below until the kids' table belongs to the backdrop: left out when it is skipped.
+  const backdropStart = lines.length;
+
   // Backdrop panel pricing: each selected panel costs PER_BACKDROP.
   // Service packages no longer include a free backdrop - panels are priced individually.
   for (let i = 0; i < d.backdropItems.length; i++) {
@@ -1460,6 +1469,8 @@ export function priceBreakdown(config: BuilderConfig): {
   if (d.cakeTable) {
     lines.push({ label: "Cake / dessert table", amount: CAKE_TABLE_PRICE, section: "design" });
   }
+
+  if (d.backdropChoice === "skip") lines.splice(backdropStart);
 
   // -- The kids' table (2026-10-27, F2) ---------------------------------------
   if (config.table) for (const l of tablePriceLines(config.table)) lines.push({ ...l, section: "table" });

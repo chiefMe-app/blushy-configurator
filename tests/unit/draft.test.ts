@@ -16,9 +16,17 @@ describe("draft on the device", () => {
     const back = fromDraft(JSON.stringify(toDraft(config, 2, 3)))!;
     expect(back.step).toBe(2);
     expect(back.decorTab).toBe(3);
-    for (const k of ["eventType", "theme", "themeSelected", "package", "servicePackageId", "decor", "addOns"] as const) {
+    for (const k of ["eventType", "theme", "themeSelected", "package", "servicePackageId", "addOns"] as const) {
       expect(back.config[k]).toEqual(config[k]);
     }
+    // A design kept before the backdrop became a choice (2026-10-27) comes back as designed.
+    expect(back.config.decor).toEqual({ ...config.decor, backdropChoice: "yes" });
+  });
+
+  it("a skipped backdrop stays skipped", () => {
+    const config = { ...fixtureById("A-single_round").config };
+    config.decor = { ...config.decor, backdropChoice: "skip" };
+    expect(fromDraft(JSON.stringify(toDraft(config, 2, 0)))!.config.decor.backdropChoice).toBe("skip");
   });
 
   it("never stores the customer's name, phone or venue", () => {

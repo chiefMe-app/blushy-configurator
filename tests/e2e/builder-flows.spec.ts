@@ -30,6 +30,8 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   await shot(page, "f1-02-theme");
   await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: /^Frozen$/ }) }).first().click();
   await next(page).click();
+  await expect(page.getByTestId("backdrop-intro")).toBeVisible(); // the backdrop is a choice
+  await page.getByRole("button", { name: /Yes, design the backdrop/ }).click();
   await chooseSetup(page, "Single Round");
   await expect(total(page)).toHaveText(aed(computeTotal(fixtureById("A-single_round").config)));
   await shot(page, "f1-03-decor-backdrop");

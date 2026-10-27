@@ -18,9 +18,14 @@ const COPY = {
     lead: "Renders come with a free account. Sign in and your render starts right away — your design stays as it is.",
     after: " — your render starts right after",
   },
+  "table-render": {
+    title: "Sign in to see your table",
+    lead: "Renders come with a free account. Sign in and your table render starts right away — your design stays as it is.",
+    after: " — your render starts right after",
+  },
 };
 
-export default function SignInDialog({ open, onClose, purpose }: { open: boolean; onClose: () => void; purpose?: "save" | "render" }) {
+export default function SignInDialog({ open, onClose, purpose }: { open: boolean; onClose: () => void; purpose?: "save" | "render" | "table-render" }) {
   const copy = COPY[purpose ?? "account"];
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "sent" | "error">("idle");

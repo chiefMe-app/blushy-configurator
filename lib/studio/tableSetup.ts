@@ -13,6 +13,26 @@ export interface TableSetup {
   clothColor: string;
   runnerColor: string;
   napkinColor: string;
+  /** The last real render of this table (F3), if one was made. */
+  render?: TableRender;
+}
+
+export interface TableRender {
+  /** tableRenderKey of the table this was made from. */
+  key: string;
+  perspective: string;
+  top: string;
+}
+
+// fal's own file hosts only: a stored render is never an arbitrary address.
+const FAL_URL = /^https:\/\/([a-z0-9-]+\.)*fal\.media\/[\w\-./%]+$/i;
+
+export function readTableRender(raw: unknown): TableRender | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const r = raw as Record<string, unknown>;
+  const ok = (v: unknown): v is string => typeof v === "string" && v.length < 600 && FAL_URL.test(v);
+  return typeof r.key === "string" && /^[a-z0-9]{1,13}$/.test(r.key) && ok(r.perspective) && ok(r.top)
+    ? { key: r.key, perspective: r.perspective, top: r.top } : undefined;
 }
 
 export const MIN_KIDS = 4;
@@ -93,5 +113,6 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     clothColor: colour(r.clothColor, base.clothColor),
     runnerColor: colour(r.runnerColor, base.runnerColor),
     napkinColor: colour(r.napkinColor, base.napkinColor),
+    ...(readTableRender(r.render) ? { render: readTableRender(r.render) } : {}),
   };
 }

@@ -62,7 +62,8 @@ export function fromDraft(raw: string | null): RestoredDraft | null {
     package: typeof c.package === "string" ? (c.package as BuilderConfig["package"]) : base.package,
     servicePackageId: typeof c.servicePackageId === "string" && servicePackageById(c.servicePackageId as BuilderConfig["servicePackageId"])
       ? (c.servicePackageId as BuilderConfig["servicePackageId"]) : base.servicePackageId,
-    decor: { ...base.decor, ...(c.decor as Partial<BuilderConfig["decor"]>) },
+    // A design kept before the backdrop became a choice was designed: "yes".
+    decor: { ...base.decor, backdropChoice: "yes", ...(c.decor as Partial<BuilderConfig["decor"]>) },
     addOns: c.addOns as BuilderConfig["addOns"],
   };
   const table = readTableSetup(c.table, themeById(config.theme) ?? THEMES[0]);

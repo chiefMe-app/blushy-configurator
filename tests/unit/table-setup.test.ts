@@ -48,6 +48,14 @@ describe("prices", () => {
     expect(priceBreakdown(withTable).lines.filter((l) => l.section === "table").length).toBeGreaterThan(5);
     expect(priceBreakdown({ ...base, table: { ...withTable.table, enabled: false } }).total).toBe(priceBreakdown(base).total);
   });
+  it("a skipped backdrop adds none of its lines; the table still counts", () => {
+    const base = { ...defaultConfig(), table: defaultTableSetup(frozen) };
+    const skipped = { ...base, decor: { ...base.decor, backdropChoice: "skip" as const } };
+    const lines = priceBreakdown(skipped).lines;
+    expect(lines.some((l) => l.section === "design" && /Backdrop|Balloons|Plinth/i.test(l.label))).toBe(false);
+    expect(lines.filter((l) => l.section === "table").length).toBeGreaterThan(5);
+    expect(priceBreakdown(skipped).total).toBeLessThan(priceBreakdown(base).total);
+  });
 });
 
 describe("kept on the device", () => {

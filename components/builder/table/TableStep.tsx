@@ -13,8 +13,13 @@ const COLOUR_OF: Partial<Record<TableItemKey, keyof Pick<TableSetup, "clothColor
 
 function OptionArt({ item, option, colours }: { item: TableItem; option: TableOption | null; colours: GlyphColours }) {
   if (option?.photo) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={option.photo} alt="" />;
+    // A coloured item shows the chosen colour on its picture.
+    const swatch = item.key === "tablecloth" ? colours.cloth : item.key === "runner" ? colours.runner : item.key === "napkins" ? colours.napkin : null;
+    return <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="photo" src={option.photo} alt="" loading="lazy" />
+      {swatch && !(item.key === "runner" && option.id === "greenery") && <i className="swatch" style={{ background: swatch }} aria-hidden="true" />}
+    </>;
   }
   if (!option) return <svg viewBox="-24 -24 48 48" aria-hidden="true"><circle r={14} fill="none" stroke="#d9c9cf" strokeWidth={2} strokeDasharray="4 3" /><path d="M-8,8L8,-8" stroke="#d9c9cf" strokeWidth={2} /></svg>;
   // Big items are drawn smaller; small ones (cups, cards, hats) larger.

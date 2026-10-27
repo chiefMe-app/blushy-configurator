@@ -37,6 +37,7 @@ import AccountMenu from "@/components/account/AccountMenu";
 import SignInDialog from "@/components/account/SignInDialog";
 import { takeAfterSignIn } from "@/lib/account";
 import TableStep from "@/components/builder/table/TableStep";
+import BackdropIntro from "@/components/builder/decor/BackdropIntro";
 import TablePreview from "@/components/builder/table/TablePreview";
 import { TABLE_TABS } from "@/lib/studio/tableCatalog";
 
@@ -101,8 +102,8 @@ export default function ConfigurePage() {
   const serverDraft = useServerDraft({ config, step, decorTab });
   // 2026-10-27 (0.5b): renders need an account too. One sign-in window, for
   // saving or for a render; back from signing in, that is done at once.
-  const [signInFor, setSignInFor] = useState<"save" | "render" | null>(null);
-  const askSignIn = (purpose: "save" | "render") => {
+  const [signInFor, setSignInFor] = useState<"save" | "render" | "table-render" | null>(null);
+  const askSignIn = (purpose: "save" | "render" | "table-render") => {
     draft.flush(); // the design must be here when they come back
     setSignInFor(purpose);
   };
@@ -110,11 +111,13 @@ export default function ConfigurePage() {
     if ((await serverDraft.save()) === "signin") askSignIn("save");
   };
   const [renderOnArrival, setRenderOnArrival] = useState(false);
+  const [tableRenderOnArrival, setTableRenderOnArrival] = useState(false);
   useEffect(() => {
     // After the device copy is restored (useLocalDraft, above), in the same pass.
     const then = takeAfterSignIn();
     if (then === "save") serverDraft.saveOnArrival();
     if (then === "render") setRenderOnArrival(true);
+    if (then === "table-render") { setDecorPart("table"); setTableRenderOnArrival(true); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const startOver = () => {
@@ -331,6 +334,9 @@ export default function ConfigurePage() {
   };
 
   const onTable = step === 2 && decorPart === "table";
+  // The backdrop is a choice too: asked first, and skippable.
+  const backdropAsked = config.decor.backdropChoice === "yes";
+  const onBackdropQuestion = step === 2 && decorPart === "backdrop" && !backdropAsked;
   const copy = onTable
     ? { eyebrow: "DECOR · PART 2 · TABLE SETUP", heading: ["Set the", "kids' table"] as [string, string], description: TABLE_TABS[tableTab]?.sub ?? "", progress: TABLE_TABS[tableTab]?.title ?? "" }
     : (step === 2 && DECOR_STEP_COPY[decorTab]) || STEP_COPY[step];
@@ -341,7 +347,10 @@ export default function ConfigurePage() {
   let nextDisabled = false;
   if (step === 0) nextLabel = "Let’s go! →";
   if (step === 1) { nextDisabled = !config.themeSelected; }
-  if (isDecorStep && decorPart === "backdrop") {
+  if (onBackdropQuestion) {
+    nextLabel = "Next: Table setup →";
+    onNext = () => { setDecorPart("table"); setTableTab(0); };
+  } else if (isDecorStep && decorPart === "backdrop") {
     if (!onLastDecorTab) {
       nextLabel = `Next: ${DECOR_TABS[decorTab + 1].name} →`;
       onNext = () => setDecorTab(decorTab + 1);
@@ -434,9 +443,14 @@ export default function ConfigurePage() {
             </div>
           ) : (
             <>
-              {onTable && <TablePreview config={config} />}
+              {onTable && <TablePreview config={config} setTable={(table) => setConfig((c) => ({ ...c, table }))}
+                onSignInNeeded={() => askSignIn("table-render")}
+                startNow={tableRenderOnArrival} onStarted={() => setTableRenderOnArrival(false)} />}
+              {!onTable && config.decor.backdropChoice === "skip" && (
+                <div className="bz-tb-preview"><div className="empty">No backdrop in this party — add one any time.</div></div>
+              )}
               {/* The backdrop's preview stays mounted (its render is kept) while the table is on show. */}
-              <div hidden={onTable}>
+              <div hidden={onTable || config.decor.backdropChoice === "skip"}>
               <SetupPreview
                 config={config}
                 status={preview.status}
@@ -498,17 +512,27 @@ export default function ConfigurePage() {
             {step === 1 && <ThemeStep config={config} theme={theme} themeGroup={themeGroup} setTheme={setTheme} setThemeGroup={setThemeGroup} />}
 
             {step === 2 && (
-              <div className="bz-parts" role="tablist" aria-label="Decor parts">
-                {([["backdrop", "Backdrop"], ["table", "Table setup"]] as const).map(([id, name], i) => (
-                  <button key={id} type="button" role="tab" aria-selected={decorPart === id} className={decorPart === id ? "on" : ""}
-                    onClick={() => setDecorPart(id)}><span className="n">{i + 1}</span>{name}</button>
-                ))}
-                {["Welcome board", "Giveaways", "Helium balloons"].map((name) => (
-                  <span key={name} className="soon" aria-disabled="true">{name} <small>soon</small></span>
-                ))}
+              <div className="bz-parts-wrap">
+                <span className="label">Your party, piece by piece</span>
+                <div className="bz-parts" role="tablist" aria-label="Decor parts">
+                  {([["backdrop", "Backdrop"], ["table", "Table setup"]] as const).map(([id, name], i) => (
+                    <span key={id} style={{ display: "contents" }}>
+                      {i > 0 && <span className="arrow" aria-hidden="true">→</span>}
+                      <button type="button" role="tab" aria-selected={decorPart === id} className={decorPart === id ? "on" : ""}
+                        onClick={() => setDecorPart(id)}><span className="n">{i + 1}</span>{name}</button>
+                    </span>
+                  ))}
+                  {["Welcome board", "Giveaways", "Helium balloons"].map((name) => (
+                    <span key={name} style={{ display: "contents" }}>
+                      <span className="arrow" aria-hidden="true">→</span>
+                      <span className="soon" aria-disabled="true">{name} <small>soon</small></span>
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
-            {step === 2 && decorPart === "backdrop" && (
+            {onBackdropQuestion && <BackdropIntro config={config} patchDecor={patchDecor} />}
+            {step === 2 && decorPart === "backdrop" && backdropAsked && (
               <DecorStep config={config} patchDecor={patchDecor} decorTab={decorTab} setDecorTab={setDecorTab}
                 stylePieceId={stylePieceId} setStylePieceId={setStylePieceId}
                 onGenerate={triggerDecorGenerateRender} renderReady={decorRenderReady}
