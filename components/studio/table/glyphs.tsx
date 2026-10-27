@@ -23,7 +23,15 @@ export interface GlyphColours {
 
 const pick = (c: GlyphColours, k: number) => c.palette[((c.seat ?? 0) + k) % c.palette.length];
 
-export const CHAIR_COLOUR: Record<string, string> = { white_kids: "#FFFFFF", gold_chiavari: GOLD, clear_ghost: "#E6EEF5" };
+export const CHAIR_COLOUR: Record<string, string> = { white_kids: "#FFFFFF", pastel_kids: "#DDD6FE", gold_chiavari: GOLD, clear_ghost: "#E6EEF5" };
+
+/** A paper plate cut with a wavy edge, radius r. */
+export function scallop(r: number, bumps = 14) {
+  return Array.from({ length: bumps * 2 }, (_, i) => {
+    const a = (i * Math.PI) / bumps, rr = i % 2 ? r * 0.9 : r;
+    return `${i ? "L" : "M"}${(Math.cos(a) * rr).toFixed(1)},${(Math.sin(a) * rr).toFixed(1)}`;
+  }).join("") + "Z";
+}
 
 /** One item's drawing, from above, centred on (0, 0). */
 export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode {
@@ -41,6 +49,7 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
       return null;
     case "napkins": {
       const fill = id === "printed" ? `url(#napkin-print)` : c.napkin;
+      if (id === "plain") return <path d="M-6,-8L6,0L-6,8Z" fill={c.napkin} stroke={INK} strokeWidth={0.6} />;
       return <g>
         <rect x={-5} y={-9} width={10} height={18} rx={1.5} fill={c.napkin} stroke={INK} strokeWidth={0.6} />
         {id === "printed" && <rect x={-5} y={-9} width={10} height={18} rx={1.5} fill={fill} />}
@@ -49,7 +58,7 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
       </g>;
     }
     case "cutlery": {
-      const col = id === "gold" ? GOLD : id === "wooden" ? "#C9A06B" : pick(c, 3);
+      const col = id === "gold" ? GOLD : id === "wooden" ? "#C9A06B" : id === "silver" ? "#C9CED6" : pick(c, 3);
       return <g stroke={INK} strokeWidth={0.4} fill={col}>
         <rect x={-3.5} y={-8} width={2} height={16} rx={1} /><rect x={1.5} y={-8} width={2} height={16} rx={1} />
       </g>;
@@ -59,13 +68,24 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
       if (id === "rattan") return <g><circle r={12.5} fill="#D9B98C" stroke={INK} strokeWidth={0.7} /><circle r={12.5} fill="url(#rattan)" /></g>;
       if (id === "beaded") return <g><circle r={12.5} fill="#EEF5FA" fillOpacity={0.7} stroke="#9FB4C8" strokeWidth={0.7} />{Array.from({ length: 24 }, (_, i) => <circle key={i} cx={Math.cos((i * Math.PI) / 12) * 11.5} cy={Math.sin((i * Math.PI) / 12) * 11.5} r={0.9} fill="#C7D6E2" />)}</g>;
       return null;
+    case "placemats":
+      if (id === "printed") return <g><rect x={-20} y={-11} width={36} height={22} rx={2} fill={pick(c, 1)} stroke={INK} strokeWidth={0.6} /><rect x={-20} y={-11} width={36} height={22} rx={2} fill="url(#napkin-print)" /></g>;
+      if (id === "shaped") return <path d={star(0, 0, 16)} fill={pick(c, 1)} stroke={INK} strokeWidth={0.6} />;
+      if (id === "name") return <g><rect x={-20} y={-11} width={36} height={22} rx={2} fill={pick(c, 1)} stroke={INK} strokeWidth={0.6} /><rect x={-17} y={-8} width={30} height={16} rx={1} fill="#fff" /></g>;
+      return null;
     case "plates": {
+      // The kids' table's paper plates; white & gold and pastel melamine are the grown-ups'.
+      if (id === "scalloped") return <path d={scallop(9.5)} fill={PASTELS[(c.seat ?? 0) % PASTELS.length]} stroke={INK} strokeWidth={0.8} />;
+      if (id === "shaped") return <path d={star(0, 0, 10.5)} fill={pick(c, 0)} stroke={INK} strokeWidth={0.8} />;
+      if (id === "themed") return <g><circle r={9} fill={pick(c, 0)} stroke={INK} strokeWidth={0.9} /><circle r={9} fill="url(#napkin-print)" /><circle r={5.2} fill="#fff" stroke={INK} strokeWidth={0.5} opacity={0.85} /></g>;
       const fill = id === "white_gold" ? "#FFFFFF" : id === "pastel" ? PASTELS[(c.seat ?? 0) % PASTELS.length] : pick(c, 0);
       const rim = id === "white_gold" ? GOLD : INK;
       return <g><circle r={9} fill={fill} stroke={rim} strokeWidth={id === "white_gold" ? 1.8 : 0.9} /><circle r={5.2} fill="none" stroke={rim} strokeWidth={0.5} opacity={0.6} /></g>;
     }
     case "cups":
       if (id === "straw") return <g><circle r={3.4} fill={pick(c, 2)} stroke={INK} strokeWidth={0.7} /><path d="M0,0L4,-5" stroke="#fff" strokeWidth={1.4} /><path d="M0,0L4,-5" stroke={c.accent} strokeWidth={0.6} strokeDasharray="1 1" /></g>;
+      if (id === "printed") return <g><circle r={3.4} fill={pick(c, 2)} stroke={INK} strokeWidth={0.7} /><circle r={3.4} fill="url(#napkin-print)" /></g>;
+      if (id === "pouch") return <g><rect x={-2.6} y={-3.6} width={5.2} height={7.2} rx={1.2} fill={pick(c, 2)} stroke={INK} strokeWidth={0.6} /><path d="M0,-3.6L1.5,-6.5" stroke={c.accent} strokeWidth={0.8} /></g>;
       if (id === "gold_rim") return <circle r={3.4} fill="#F3F7FA" stroke={GOLD} strokeWidth={1.2} />;
       if (id === "lidded") return <g><circle r={3.4} fill={pick(c, 2)} stroke={INK} strokeWidth={0.7} /><circle r={2.2} fill="#fff" stroke={INK} strokeWidth={0.4} /><path d="M-1,0h2M0,-1v2" stroke={INK} strokeWidth={0.4} /></g>;
       return null;
@@ -108,5 +128,17 @@ export function GlyphDefs() {
     <pattern id="leaves" width="14" height="10" patternUnits="userSpaceOnUse"><ellipse cx="7" cy="5" rx="5" ry="2.2" fill="#5E8C5A" opacity="0.8" transform="rotate(-25 7 5)" /></pattern>
     <pattern id="napkin-print" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="0.7" fill="#FFFFFF" opacity="0.9" /></pattern>
     <pattern id="rattan" width="3" height="3" patternUnits="userSpaceOnUse"><path d="M0,3L3,0" stroke="#A9865A" strokeWidth="0.6" /></pattern>
+    <PartyPatterns />
+  </>;
+}
+
+/** The kids' table's printed cover and confetti: also used by the perspective drawing. */
+export function PartyPatterns() {
+  return <>
+    <pattern id="cloth-print" width="14" height="14" patternUnits="userSpaceOnUse"><path d={star(4, 4, 2.6)} fill="#FFFFFF" opacity="0.9" /><circle cx="11" cy="10" r="1.3" fill="#FFFFFF" opacity="0.8" /></pattern>
+    <pattern id="confetti" width="12" height="10" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#F472B6" /><circle cx="8" cy="3" r="1" fill="#60A5FA" /><rect x="5" y="6" width="2.4" height="1.2" fill="#FACC15" transform="rotate(30 6 6.5)" />
+      <circle cx="10.5" cy="8" r="1.1" fill="#A78BFA" /><path d="M1,8q1.5,-2 3,0" fill="none" stroke="#C0C7D1" strokeWidth="0.7" />
+    </pattern>
   </>;
 }

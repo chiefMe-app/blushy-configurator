@@ -8,7 +8,7 @@
 import { NONE } from "@/lib/studio/tableCatalog";
 import type { TableSetup } from "@/lib/studio/tableSetup";
 import { arrangeTables } from "./TableSketch";
-import { CHAIR_COLOUR, GOLD, INK, PASTELS, star } from "./glyphs";
+import { CHAIR_COLOUR, GOLD, INK, PASTELS, PartyPatterns, star } from "./glyphs";
 
 // Projection: floor depth (y) is squeezed and lifted, height rises, and the far
 // side shrinks towards the middle (FAR) so the room reads in perspective.
@@ -67,7 +67,7 @@ export default function TablePerspective({ table, palette, accent, className, ca
     const [sx, sy] = P(x, y, CHAIR_SEAT), [bxp, byp] = P(bx, by, CHAIR_BACK);
     const facingUs = Math.sin(facing + turn) < 0; // a chair on the near side faces away from us: its back is in front
     const k = K(x, y);
-    ceil = Math.min(ceil, byp - (ch.chairDecor === "balloon" ? 26 * k : 4));
+    ceil = Math.min(ceil, byp - (ch.chairDecor === "balloon" ? 30 * k : 4));
     minX = Math.min(minX, bxp - 20 * k); maxX = Math.max(maxX, bxp + 20 * k);
     // A near chair's back is see-through, so the table behind it still shows.
     const op = clear ? 0.45 : facingUs ? 0.72 : 1;
@@ -77,7 +77,8 @@ export default function TablePerspective({ table, palette, accent, className, ca
     const decor = ch.chairDecor === NONE ? null : ch.chairDecor === "tulle_bow"
       ? <g fill={pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.7} transform={`translate(${bxp} ${byp + 10 * k}) scale(${k})`}><path d="M0,0L-11,-6L-11,6Z" /><path d="M0,0L11,-6L11,6Z" /><circle r={2.6} /></g>
       : ch.chairDecor === "balloon"
-        ? <g transform={`translate(${bxp + 10 * k} ${byp - 4 * k}) scale(${k})`}><path d="M0,0q3,8 -2,16" fill="none" stroke={INK} strokeWidth={0.6} /><ellipse cx={0} cy={-9} rx={8} ry={10} fill={pal[(n + 2) % pal.length]} stroke={INK} strokeWidth={0.8} /></g>
+        // Tied to the back's corner and floating off to the side, so a chair never reads as a figure with a head (2026-10-27 render).
+        ? <g transform={`translate(${bxp + 15 * k} ${byp + 2 * k}) scale(${k})`}><path d="M0,0q2,-8 8,-14" fill="none" stroke={INK} strokeWidth={0.6} /><ellipse cx={10} cy={-21} rx={6} ry={7.5} fill={pal[(n + 2) % pal.length]} stroke={INK} strokeWidth={0.8} /><path d="M9,-13.5l1,-1l1,1Z" fill={INK} /></g>
         : <g transform={`translate(${bxp} ${byp + 8 * k}) scale(${k})`}><path d="M-9,-6L9,-6L0,6Z" fill={accent} stroke={INK} strokeWidth={0.7} /></g>;
     pieces.push({ depth: tableDepth + (facingUs ? 0.5 : -0.5), node: <g key={key}><ellipse cx={P(x, y)[0]} cy={P(x, y)[1]} rx={19 * k} ry={5 * k} fill="#000" opacity={0.06} />{facingUs ? <>{legs}{seat}{back}{decor}</> : <>{back}{decor}{legs}{seat}</>}</g> });
   };
@@ -90,7 +91,7 @@ export default function TablePerspective({ table, palette, accent, className, ca
     t.seats.forEach((s, k) => chair(s.x + (s.ex - s.x) * tuck, s.y + (s.ey - s.y) * tuck, s.facing, `ch-${ti}-${k}`, k, depth));
 
     const cloth = table.clothColor;
-    const ruffle = ch.tablecloth === "ruffle", sequin = ch.tablecloth === "sequin";
+    const ruffle = ch.tablecloth === "ruffle", sequin = ch.tablecloth === "sequin", printed = ch.tablecloth === "printed";
     const items: JSX.Element[] = [];
     items.push(<ellipse key="shadow" cx={P(cx, cy)[0]} cy={P(cx, cy)[1] + 6} rx={(t.w / 2 + 8) * K(cx, cy)} ry={14} fill="#000" opacity={0.06} />);
     // The tabletop and the cloth hanging to the floor in front.
@@ -100,8 +101,8 @@ export default function TablePerspective({ table, palette, accent, className, ca
       items.push(<path key="drape" d={`M${ex - rx},${ey}V${P(cx, cy)[1]}A${rx},${ry} 0 0 0 ${ex + rx},${P(cx, cy)[1]}V${ey}Z`} fill={cloth} stroke={INK} strokeWidth={1.2} />);
       if (ruffle) items.push(<path key="ruf" d={`M${ex - rx},${P(cx, cy)[1] - 10}A${rx},${ry} 0 0 0 ${ex + rx},${P(cx, cy)[1] - 10}`} fill="none" stroke={INK} strokeWidth={0.9} strokeDasharray="4 3" />);
       items.push(<ellipse key="top" cx={ex} cy={ey} rx={rx} ry={ry} fill={cloth} stroke={INK} strokeWidth={1.3} />);
-      if (sequin) items.push(<ellipse key="seq" cx={ex} cy={ey} rx={rx} ry={ry} fill="url(#sequin)" />);
-      if (ch.runner !== NONE) items.push(<ellipse key="run" cx={ex} cy={ey} rx={30 * K(cx, cy)} ry={30 * DEPTH * K(cx, cy)} fill={ch.runner === "tulle" ? `${table.runnerColor}99` : table.runnerColor} />);
+      if (sequin || printed) items.push(<ellipse key="seq" cx={ex} cy={ey} rx={rx} ry={ry} fill={sequin ? "url(#sequin)" : "url(#cloth-print)"} />);
+      if (ch.runner !== NONE) items.push(<ellipse key="run" cx={ex} cy={ey} rx={30 * K(cx, cy)} ry={30 * DEPTH * K(cx, cy)} fill={ch.runner === "tulle" ? `${table.runnerColor}99` : ch.runner === "confetti" ? "url(#confetti)" : table.runnerColor} />);
     } else {
       const a = P(t.x, t.y, TABLE_H), b = P(t.x + t.w, t.y, TABLE_H), c = P(t.x + t.w, near, TABLE_H), d = P(t.x, near, TABLE_H);
       // The cloth hangs to the floor on every side that faces us.
@@ -112,12 +113,13 @@ export default function TablePerspective({ table, palette, accent, className, ca
         if (nx * sin + ny * cos <= 0.02) return; // turned away
         const [x2, y2] = corners[(i + 1) % 4];
         items.push(<polygon key={`side-${i}`} points={pts([P(x1, y1, TABLE_H), P(x2, y2, TABLE_H), P(x2, y2), P(x1, y1)])} fill={cloth} stroke={INK} strokeWidth={1.2} />);
+        if (printed) items.push(<polygon key={`print-${i}`} points={pts([P(x1, y1, TABLE_H), P(x2, y2, TABLE_H), P(x2, y2), P(x1, y1)])} fill="url(#cloth-print)" />);
         if (ruffle) items.push(<path key={`ruf-${i}`} d={`M${P(x1, y1, 10).join(",")}L${P(x2, y2, 10).join(",")}`} stroke={INK} strokeWidth={0.9} strokeDasharray="4 3" />);
       });
       items.push(<polygon key="top" points={pts([a, b, c, d])} fill={cloth} stroke={INK} strokeWidth={1.3} />);
-      if (sequin) items.push(<polygon key="seq" points={pts([a, b, c, d])} fill="url(#sequin)" />);
+      if (sequin || printed) items.push(<polygon key="seq" points={pts([a, b, c, d])} fill={sequin ? "url(#sequin)" : "url(#cloth-print)"} />);
       if (ch.runner !== NONE) {
-        const fill = ch.runner === "tulle" ? `${table.runnerColor}99` : table.runnerColor;
+        const fill = ch.runner === "tulle" ? `${table.runnerColor}99` : ch.runner === "confetti" ? "url(#confetti)" : table.runnerColor;
         const r = t.kind === "long"
           ? [P(t.x, cy - 9, TABLE_H), P(t.x + t.w, cy - 9, TABLE_H), P(t.x + t.w, cy + 9, TABLE_H), P(t.x, cy + 9, TABLE_H)]
           : [P(cx - 9, t.y, TABLE_H), P(cx + 9, t.y, TABLE_H), P(cx + 9, near, TABLE_H), P(cx - 9, near, TABLE_H)];
@@ -133,13 +135,20 @@ export default function TablePerspective({ table, palette, accent, className, ca
       const inward = round ? 16 : 13;
       const px = s.ex + Math.cos(s.facing) * inward, py = s.ey + Math.sin(s.facing) * inward;
       const [x, y] = P(px, py, TABLE_H);
-      const plateFill = ch.plates === "white_gold" ? "#fff" : ch.plates === "pastel" ? PASTELS[n % PASTELS.length] : pal[n % pal.length];
+      const plateFill = ch.plates === "white_gold" ? "#fff" : ch.plates === "pastel" || ch.plates === "scalloped" ? PASTELS[n % PASTELS.length] : pal[n % pal.length];
       const cupX = x + Math.cos(s.facing + turn - Math.PI / 2) * 11;
       return <g key={`s-${n}`} transform={at(x, y, K(px, py) * SET)}>
+        {ch.placemats !== NONE && <rect x={x - 16} y={y - 5.5} width={30} height={11} rx={ch.placemats === "shaped" ? 5.5 : 1.2} fill={pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.5} />}
+        {ch.placemats === "printed" && <rect x={x - 16} y={y - 5.5} width={30} height={11} rx={1.2} fill="url(#cloth-print)" />}
+        {ch.placemats === "name" && <rect x={x - 13} y={y - 3.5} width={24} height={7} rx={0.8} fill="#fff" />}
         {ch.chargers !== NONE && <ellipse cx={x} cy={y} rx={12.5} ry={5.3} fill={ch.chargers === "gold" ? GOLD : ch.chargers === "rattan" ? "#D9B98C" : "#EEF5FA"} stroke={INK} strokeWidth={0.6} />}
-        <ellipse cx={x} cy={y} rx={9} ry={3.8} fill={plateFill} stroke={ch.plates === "white_gold" ? GOLD : INK} strokeWidth={ch.plates === "white_gold" ? 1.4 : 0.8} />
+        <ellipse cx={x} cy={y} rx={9} ry={3.8} fill={plateFill} stroke={ch.plates === "white_gold" ? GOLD : INK} strokeWidth={ch.plates === "white_gold" ? 1.4 : 0.8} strokeDasharray={ch.plates === "scalloped" || ch.plates === "shaped" ? "2.2 1" : undefined} />
+        {ch.plates === "themed" && <ellipse cx={x} cy={y} rx={9} ry={3.8} fill="url(#cloth-print)" />}
         <rect x={x - 17} y={y - 3} width={6} height={5} rx={1} fill={table.napkinColor} stroke={INK} strokeWidth={0.5} />
-        <path d={`M${cupX - 3},${y - 10}L${cupX - 2.4},${y - 1}H${cupX + 2.4}L${cupX + 3},${y - 10}Z`} fill={ch.cups === "gold_rim" ? "#F3F7FA" : pal[(n + 2) % pal.length]} stroke={ch.cups === "gold_rim" ? GOLD : INK} strokeWidth={0.7} />
+        {ch.cups === "pouch"
+          ? <rect x={cupX - 3} y={y - 10} width={6} height={9} rx={1.5} fill={pal[(n + 2) % pal.length]} stroke={INK} strokeWidth={0.7} />
+          : <path d={`M${cupX - 3},${y - 10}L${cupX - 2.4},${y - 1}H${cupX + 2.4}L${cupX + 3},${y - 10}Z`} fill={ch.cups === "gold_rim" ? "#F3F7FA" : pal[(n + 2) % pal.length]} stroke={ch.cups === "gold_rim" ? GOLD : INK} strokeWidth={0.7} />}
+        {ch.cups === "pouch" && <path d={`M${cupX},${y - 10}L${cupX + 2},${y - 14}`} stroke={accent} strokeWidth={1} />}
         {ch.cups === "straw" && <path d={`M${cupX},${y - 10}L${cupX + 3},${y - 17}`} stroke={accent} strokeWidth={1} />}
         {ch.cups === "lidded" && <ellipse cx={cupX} cy={y - 10} rx={3.2} ry={1.2} fill="#fff" stroke={INK} strokeWidth={0.5} />}
         {ch.partyHats === "cone" && <path d={`M${x - 4},${y - 1}L${x},${y - 13}L${x + 4},${y - 1}Z`} fill={pal[(n + 3) % pal.length]} stroke={INK} strokeWidth={0.6} />}
@@ -176,6 +185,7 @@ export default function TablePerspective({ table, palette, accent, className, ca
       <defs>
         <pattern id="sequin" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.4" fill="#FFFFFF" opacity="0.65" /></pattern>
         <pattern id="leaves" width="14" height="10" patternUnits="userSpaceOnUse"><ellipse cx="7" cy="5" rx="5" ry="2.2" fill="#5E8C5A" opacity="0.8" transform="rotate(-25 7 5)" /></pattern>
+        <PartyPatterns />
       </defs>
       <rect x={x0} y={y0} width={W} height={H} rx={18} fill="#FBF7F4" />
       <path d={`M${x0},${top - 10}H${x0 + W}V${y0 + H - 18}a18,18 0 0 1 -18,18H${x0 + 18}a18,18 0 0 1 -18,-18Z`} fill="#F3ECE7" />

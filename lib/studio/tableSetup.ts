@@ -53,9 +53,10 @@ export const clampKids = (n: number) => Math.max(MIN_KIDS, Math.min(MAX_KIDS, Ma
 
 const DEFAULT_CHOICES: Record<TableItemKey, string> = {
   table: "long", chairs: "white_kids",
-  tablecloth: "classic", runner: "tulle", napkins: "folded",
-  plates: "themed", cups: "straw", cutlery: "wooden", chargers: NONE,
-  centrepiece: "balloons", chairDecor: NONE, nameCards: "tent", partyHats: NONE,
+  tablecloth: "classic", runner: "confetti", napkins: "printed",
+  // Charger plates are not offered at the kids' table (the grown-ups' table has them).
+  placemats: "printed", plates: "themed", cups: "straw", cutlery: "pastel", chargers: NONE,
+  centrepiece: "balloons", chairDecor: NONE, nameCards: "tent", partyHats: "cone",
 };
 
 /** A new table, in the theme's colours. */

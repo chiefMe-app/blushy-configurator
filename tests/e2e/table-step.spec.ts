@@ -26,8 +26,8 @@ test("K1 design the kids' table: picture options, the total grows, every tab, th
   expect(aed(await total(page).textContent())).toBe(before + tableSum);
   // Every item: three picture options (plus None where optional).
   await expect(page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio")).toHaveCount(3);
-  await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Gold chiavari/ }).click();
-  expect(aed(await total(page).textContent())).toBe(before + tableSum + 10 * 5); // gold is AED 5 a child more
+  await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Pastel kids' chairs/ }).click();
+  expect(aed(await total(page).textContent())).toBe(before + tableSum + 10 * 2); // pastel is AED 2 a child more
   await settle(page);
   await expect.soft(page).toHaveScreenshot("k1-table-chairs.png");
   for (const tab of ["Linens", "Tableware", "Decor & extras"]) {
@@ -113,7 +113,7 @@ test("K5 the real render: every view, and it says when the table has changed sin
   await expect(page.getByTestId("table-sketch")).toBeVisible();
   await page.getByRole("button", { name: "Show the render" }).click();
   // A change: the drawing comes back, with an offer to update.
-  await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Gold chiavari/ }).click();
+  await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Pastel kids' chairs/ }).click();
   await expect(photo).toHaveCount(0);
   await expect(page.getByTestId("table-render-box")).toContainText("You changed the table since your render");
   await page.getByRole("button", { name: "Update the render ✦" }).click();

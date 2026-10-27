@@ -89,12 +89,14 @@ export default function TableSketch({ table, palette, accent, className }: { tab
       : <rect x={t.x - 5} y={t.y - 5} width={t.w + 10} height={t.h + 10} rx={6} fill={table.clothColor} stroke={INK} strokeWidth={0.8} strokeDasharray="3 2" />)}
     {tableShape(t, { fill: table.clothColor, stroke: INK, strokeWidth: 1.4 })}
     {ch.tablecloth === "sequin" && tableShape(t, { fill: "url(#sequin)" })}
+    {ch.tablecloth === "printed" && tableShape(t, { fill: "url(#cloth-print)" })}
   </g>;
 
   const runner = (t: Placed) => {
     if (ch.runner === NONE) return null;
-    const fill = ch.runner === "tulle" ? `${table.runnerColor}99` : table.runnerColor;
-    const over = ch.runner === "sequin" ? "url(#sequin)" : ch.runner === "greenery" ? "url(#leaves)" : null;
+    // Confetti is scattered on the cloth itself: no runner under it.
+    const fill = ch.runner === "tulle" ? `${table.runnerColor}99` : ch.runner === "confetti" ? "none" : table.runnerColor;
+    const over = ch.runner === "sequin" ? "url(#sequin)" : ch.runner === "greenery" ? "url(#leaves)" : ch.runner === "confetti" ? "url(#confetti)" : null;
     const cx = t.x + t.w / 2, cy = t.y + t.h / 2;
     if (t.kind === "long") return <g><rect x={t.x} y={cy - 9} width={t.w} height={18} fill={fill} />{over && <rect x={t.x} y={cy - 9} width={t.w} height={18} fill={over} />}</g>;
     if (t.kind === "square") return <g><rect x={cx - 9} y={t.y} width={18} height={t.h} fill={fill} />{over && <rect x={cx - 9} y={t.y} width={18} height={t.h} fill={over} />}</g>;
@@ -119,6 +121,7 @@ export default function TableSketch({ table, palette, accent, className }: { tab
     const at = (x: number, y: number, key: Parameters<typeof glyph>[0]) => ch[key] !== NONE && <g transform={`translate(${x} ${y})`}>{glyph(key, ch[key], c)}</g>;
     return (
       <g key={`set-${c.seat}`} transform={`translate(${px} ${py}) rotate(${deg(s.facing) - 90})`}>
+        {at(-2, 0, "placemats")}
         {at(0, 0, "chargers")}
         {at(0, 0, "plates")}
         {at(-15, 0, "napkins")}

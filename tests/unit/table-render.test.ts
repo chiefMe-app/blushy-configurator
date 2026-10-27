@@ -30,7 +30,7 @@ describe("is the render current?", () => {
   it("the key follows every choice, colour and child — not the render itself", () => {
     const t = table();
     expect(tableRenderKey({ ...t, render: { key: "x", perspective: P, top: T } })).toBe(tableRenderKey(t));
-    expect(tableRenderKey(table({ chairs: "gold_chiavari" }))).not.toBe(tableRenderKey(t));
+    expect(tableRenderKey(table({ chairs: "pastel_kids" }))).not.toBe(tableRenderKey(t));
     expect(tableRenderKey({ ...t, napkinColor: "#000000" })).not.toBe(tableRenderKey(t));
     expect(tableRenderKey(table({}, 11))).not.toBe(tableRenderKey(t));
   });
@@ -81,12 +81,20 @@ describe("the prompt", () => {
     expect(seatingWords(table({}, 20))).toContain("2 parallel rows");
   });
   it("describes every choice, skips None, and never names the theme", () => {
-    const p = tablePrompt(table({ chairs: "gold_chiavari", chargers: "gold", partyHats: NONE }), frozen, "perspective");
-    expect(p).toContain("gold chiavari chairs");
-    expect(p).toContain("gold charger plate");
-    expect(p).not.toMatch(/party hat|crown/);
+    const p = tablePrompt(table({ chairs: "pastel_kids", partyHats: NONE }), frozen, "perspective");
+    expect(p).toContain("children's chairs painted in mixed pastel colours");
+    expect(p).not.toMatch(/a cone party hat|crown/);
     expect(p).not.toMatch(/frozen/i); // a character-free look: colours only
     expect(p).toMatch(/No people.*no cartoon characters/);
+  });
+  it("a kids' party: printed paper in the theme's pattern, disposable cutlery, nothing formal", () => {
+    const p = tablePrompt(table(), frozen, "perspective");
+    expect(p).toContain("paper placemat printed with snowflakes and little stars");
+    expect(p).toContain("disposable paper party plate printed with snowflakes and little stars");
+    expect(p).toContain("disposable pastel plastic cutlery");
+    expect(p).toContain("a cone party hat");
+    expect(p).toMatch(/children's birthday party.*no glassware, no china, no charger plates/);
+    expect(tablePrompt(table(), themeById("dinosaur")!, "perspective")).toContain("printed with dinosaur footprints and leaves");
   });
 });
 

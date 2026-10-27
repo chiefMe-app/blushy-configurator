@@ -38,7 +38,8 @@ describe("prices", () => {
     const lines = tablePriceLines(t);
     expect(lines.find((l) => l.label.startsWith("Long table"))).toEqual({ label: "Long table (2)", amount: 160 });
     expect(lines.find((l) => l.label.startsWith("White kids' chairs"))).toEqual({ label: "White kids' chairs (12)", amount: 60 });
-    expect(lines.some((l) => l.label.startsWith("Gold chargers"))).toBe(false); // chargers: None
+    expect(lines.some((l) => l.label.startsWith("Gold chargers"))).toBe(false); // the grown-ups' table's
+    expect(tablePriceLines({ ...t, choices: { ...t.choices, placemats: NONE } }).some((l) => l.label.startsWith("Printed placemat"))).toBe(false); // None
     expect(tableTotal(t)).toBe(lines.reduce((a, l) => a + l.amount, 0));
   });
   it("adds to the party total; a skipped table adds nothing", () => {
@@ -65,13 +66,17 @@ describe("kept on the device", () => {
     expect(fromDraft(JSON.stringify(toDraft({ ...config, table: undefined }, 2, 3)))!.config.table).toBeUndefined();
   });
   it("anything that does not read back is replaced, never trusted", () => {
-    const t = readTableSetup({ kids: "lots", choices: { table: "triangle", chairs: "gold_chiavari", runner: NONE, plates: NONE }, clothColor: "red;}" }, frozen)!;
+    const t = readTableSetup({ kids: "lots", choices: { table: "triangle", chairs: "pastel_kids", runner: NONE, plates: NONE }, clothColor: "red;}" }, frozen)!;
     expect(t.kids).toBe(MIN_KIDS);
     expect(t.choices.table).toBe("long");
-    expect(t.choices.chairs).toBe("gold_chiavari");
+    expect(t.choices.chairs).toBe("pastel_kids");
     expect(t.choices.runner).toBe(NONE); // optional: None is allowed
     expect(t.choices.plates).toBe("themed"); // not optional: None is not
     expect(t.clothColor).toBe("#FFFFFF");
     expect(readTableSetup(null, frozen)).toBeUndefined();
+  });
+  it("a kids' table kept before it turned into a kids' party reads back with kids' pieces", () => {
+    const t = readTableSetup({ choices: { chairs: "gold_chiavari", chargers: "gold", plates: "white_gold", napkins: "folded", runner: "greenery" } }, frozen)!;
+    expect(t.choices).toMatchObject({ chairs: "white_kids", chargers: NONE, plates: "themed", napkins: "printed", runner: "confetti" });
   });
 });
