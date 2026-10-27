@@ -3,6 +3,7 @@
 // Shared by the client UI and the server-side API routes so they never drift.
 // NEVER hardcode prices in components - derive everything from here.
 // ---------------------------------------------------------------------------
+import { tablePriceLines, type TableSetup } from "./studio/tableSetup";
 
 // =====================  STEP - EVENT TYPE  =================================
 
@@ -1266,6 +1267,8 @@ export interface BuilderConfig {
   /** User-selected service package - defines what they receive, not their design. */
   servicePackageId: ServicePackageId;
   decor: DecorConfig;
+  /** 2026-10-27 (F2): the kids' table, designed after the backdrop; absent until visited. */
+  table?: TableSetup;
   addOns: SelectedAddOn[];
   venue: VenueDetails;
   customer: CustomerDetails;
@@ -1333,7 +1336,7 @@ export interface PriceLine {
   label:   string;
   amount:  number;
   /** Groups lines for display in the pricing breakdown. */
-  section: "design" | "package" | "addons";
+  section: "design" | "table" | "package" | "addons";
 }
 
 /**
@@ -1457,6 +1460,9 @@ export function priceBreakdown(config: BuilderConfig): {
   if (d.cakeTable) {
     lines.push({ label: "Cake / dessert table", amount: CAKE_TABLE_PRICE, section: "design" });
   }
+
+  // -- The kids' table (2026-10-27, F2) ---------------------------------------
+  if (config.table) for (const l of tablePriceLines(config.table)) lines.push({ ...l, section: "table" });
 
   // -- Add-ons -------------------------------------------------------------
   // Available for all service packages - never cleared by package selection.

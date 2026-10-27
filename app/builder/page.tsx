@@ -36,6 +36,9 @@ import { useServerDraft } from "@/components/builder/useServerDraft";
 import AccountMenu from "@/components/account/AccountMenu";
 import SignInDialog from "@/components/account/SignInDialog";
 import { takeAfterSignIn } from "@/lib/account";
+import TableStep from "@/components/builder/table/TableStep";
+import TablePreview from "@/components/builder/table/TablePreview";
+import { TABLE_TABS } from "@/lib/studio/tableCatalog";
 
 import Sprinkles from "@/components/design/Sprinkles";
 
@@ -57,6 +60,18 @@ export default function ConfigurePage() {
   // 2026-10-24: the backdrop piece the Style tab is styling — kept here so the
   // live sketch in the preview can outline it.
   const [stylePieceId, setStylePieceId] = useState<string | null>(null);
+  // 2026-10-27 (F2): the Decor step in parts — the backdrop, then the kids'
+  // table (then, in turn, welcome board, giveaways and helium balloons).
+  const [decorPart, setDecorPart] = useState<"backdrop" | "table">("backdrop");
+  const [tableTab, setTableTab] = useState(0);
+  const shownPart = useRef(`${decorPart}:${tableTab}`);
+  useEffect(() => {
+    // Only when the part or tab changes — not on arrival (effects can run twice then).
+    if (shownPart.current === `${decorPart}:${tableTab}`) return;
+    shownPart.current = `${decorPart}:${tableTab}`;
+    document.querySelector<HTMLElement>(".bz-content")?.scrollTo({ top: 0 });
+    if (typeof window !== "undefined" && window.innerWidth < 1024) document.querySelector(".bz-right")?.scrollIntoView({ block: "start" });
+  }, [decorPart, tableTab]);
   // Which list the theme was picked from, so Space (in both) ticks only there.
   const [themeGroup, setThemeGroup] = useState<"girl" | "boy" | null>(null);
   // The landing page links straight to the Theme step (/builder?step=theme).
@@ -315,7 +330,10 @@ export default function ConfigurePage() {
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const copy = (step === 2 && DECOR_STEP_COPY[decorTab]) || STEP_COPY[step];
+  const onTable = step === 2 && decorPart === "table";
+  const copy = onTable
+    ? { eyebrow: "DECOR · PART 2 · TABLE SETUP", heading: ["Set the", "kids' table"] as [string, string], description: TABLE_TABS[tableTab]?.sub ?? "", progress: TABLE_TABS[tableTab]?.title ?? "" }
+    : (step === 2 && DECOR_STEP_COPY[decorTab]) || STEP_COPY[step];
   const total = priceBreakdown(config).total;
 
   let nextLabel: React.ReactNode = "Keep going →";
@@ -323,18 +341,36 @@ export default function ConfigurePage() {
   let nextDisabled = false;
   if (step === 0) nextLabel = "Let’s go! →";
   if (step === 1) { nextDisabled = !config.themeSelected; }
-  if (isDecorStep) {
+  if (isDecorStep && decorPart === "backdrop") {
     if (!onLastDecorTab) {
       nextLabel = `Next: ${DECOR_TABS[decorTab + 1].name} →`;
       onNext = () => setDecorTab(decorTab + 1);
     } else {
       // 2026-10-27: the render is optional ("extras'tan sonraki adıma geçebilmek
       // için illa generate render olmamalı") — it is offered beside this, in
-      // the Extras tab and on the preview card.
-      nextLabel = "Continue to Package →";
+      // the Extras tab and on the preview card. Next comes the kids' table.
+      nextLabel = "Next: Table setup →";
+      onNext = () => { setDecorPart("table"); setTableTab(0); };
       nextDisabled = archUnsized;
     }
   }
+  if (onTable) {
+    if (config.table?.enabled && tableTab < TABLE_TABS.length - 1) {
+      nextLabel = `Next: ${TABLE_TABS[tableTab + 1].name} →`;
+      onNext = () => setTableTab(tableTab + 1);
+    } else {
+      nextLabel = config.table ? "Continue to Package →" : "Skip to Package →";
+    }
+  }
+  // Back walks the parts and tabs of Decor before leaving it.
+  const onBack = () => {
+    if (onTable) {
+      if (config.table?.enabled && tableTab > 0) setTableTab(tableTab - 1);
+      else { setDecorPart("backdrop"); setDecorTab(DECOR_TABS.length - 1); }
+      return;
+    }
+    goToStep(step - 1);
+  };
   if (step === 5) nextLabel = "See my party →";
   if (isReview) { nextLabel = "Request Final Quote ✦"; onNext = submit; nextDisabled = !canSubmit; }
   // A render in progress does not hold the customer on Decor any more.
@@ -398,6 +434,9 @@ export default function ConfigurePage() {
             </div>
           ) : (
             <>
+              {onTable && <TablePreview config={config} />}
+              {/* The backdrop's preview stays mounted (its render is kept) while the table is on show. */}
+              <div hidden={onTable}>
               <SetupPreview
                 config={config}
                 status={preview.status}
@@ -422,12 +461,13 @@ export default function ConfigurePage() {
                 sketchActiveId={isDecorStep && decorTab === 1 && sketchItems.length > 1 ? sketchActiveId : null}
                 sketchCutouts={sketchCutouts}
               />
-              {isDecorStep && !finalRenderState.hasRender && (
+              {isDecorStep && !onTable && !finalRenderState.hasRender && (
                 <div className="bz-little-note">
                   <svg viewBox="0 0 35 28" aria-hidden="true"><path d="M3 4Q6 23 29 16M21 11L30 16L23 23" /></svg>
                   <span>Want to see it for real? Tap <b>Generate render</b> on the Extras tab — or carry on without one.</span>
                 </div>
               )}
+              </div>
             </>
           )}
         </section>
@@ -458,11 +498,26 @@ export default function ConfigurePage() {
             {step === 1 && <ThemeStep config={config} theme={theme} themeGroup={themeGroup} setTheme={setTheme} setThemeGroup={setThemeGroup} />}
 
             {step === 2 && (
+              <div className="bz-parts" role="tablist" aria-label="Decor parts">
+                {([["backdrop", "Backdrop"], ["table", "Table setup"]] as const).map(([id, name], i) => (
+                  <button key={id} type="button" role="tab" aria-selected={decorPart === id} className={decorPart === id ? "on" : ""}
+                    onClick={() => setDecorPart(id)}><span className="n">{i + 1}</span>{name}</button>
+                ))}
+                {["Welcome board", "Giveaways", "Helium balloons"].map((name) => (
+                  <span key={name} className="soon" aria-disabled="true">{name} <small>soon</small></span>
+                ))}
+              </div>
+            )}
+            {step === 2 && decorPart === "backdrop" && (
               <DecorStep config={config} patchDecor={patchDecor} decorTab={decorTab} setDecorTab={setDecorTab}
                 stylePieceId={stylePieceId} setStylePieceId={setStylePieceId}
                 onGenerate={triggerDecorGenerateRender} renderReady={decorRenderReady}
                 hasRender={finalRenderState.hasRender} generating={finalRenderState.generating}
-                onContinue={() => goToStep(3)} />
+                onContinue={() => { setDecorPart("table"); setTableTab(0); }} />
+            )}
+            {onTable && (
+              <TableStep config={config} tab={tableTab} setTab={setTableTab}
+                setTable={(table) => setConfig((c) => ({ ...c, table }))} />
             )}
 
             {step === 3 && <PackageStep config={config} setServicePackage={setServicePackage} />}
@@ -479,7 +534,7 @@ export default function ConfigurePage() {
       {/* Footer bar: Back · note · next action */}
       <footer className="bz-footer">
         <div className="bz-footer-inner">
-          <button type="button" className="bz-back" onClick={() => goToStep(step - 1)} disabled={step === 0}>← Back</button>
+          <button type="button" className="bz-back" onClick={onBack} disabled={step === 0}>← Back</button>
           {/* 2026-10-26: Save — the design goes to the database only when pressed. */}
           {serverDraft.available && config.themeSelected ? (
             <button type="button" className={`bz-save ${serverDraft.saved ? "done" : ""}`} data-testid="save-design"

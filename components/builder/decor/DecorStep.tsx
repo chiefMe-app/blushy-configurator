@@ -61,7 +61,7 @@ export default function DecorStep(props: DecorStepProps) {
            from the product data. == */}
       {decorTab === 3 && <ExtrasTab ctx={ctx} />}
 
-      {/* == Tab footer: next tab; after Extras, Package — and the render, which is optional (2026-10-27) == */}
+      {/* == Tab footer: next tab; after Extras, the table — and the render, which is optional (2026-10-27) == */}
       <div className="bz-decor-footer">
         <span>✓ Saved as you go</span>
         {decorTab < DECOR_TABS.length - 1 ? (
@@ -76,7 +76,7 @@ export default function DecorStep(props: DecorStepProps) {
                 {generating ? "Generating…" : hasRender ? "Regenerate render ✨" : "Generate render ✨"}
               </button>
             )}
-            <button type="button" className="bz-decor-cta" onClick={onContinue}>Continue to Package →</button>
+            <button type="button" className="bz-decor-cta" onClick={onContinue}>Next: Table setup →</button>
           </span>
         )}
       </div>

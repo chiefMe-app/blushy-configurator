@@ -2,13 +2,14 @@
 // reload or a return visit opens where they left off. Only design choices are
 // stored: never the customer's name, phone or venue. Anything that does not
 // read back as a sensible design is ignored, never trusted.
-import { defaultConfig, servicePackageById, themeById, type BuilderConfig } from "@/lib/config";
+import { THEMES, defaultConfig, servicePackageById, themeById, type BuilderConfig } from "@/lib/config";
+import { readTableSetup } from "@/lib/studio/tableSetup";
 
 export const DRAFT_KEY = "partymuse.builder.draft.v1";
 const LAST_STEP = 6;
 const LAST_DECOR_TAB = 3;
 
-type DesignFields = Pick<BuilderConfig, "eventType" | "theme" | "themeSelected" | "package" | "servicePackageId" | "decor" | "addOns">;
+type DesignFields = Pick<BuilderConfig, "eventType" | "theme" | "themeSelected" | "package" | "servicePackageId" | "decor" | "table" | "addOns">;
 
 export interface StoredDraft {
   v: 1;
@@ -30,13 +31,13 @@ export function isWorthSaving(config: BuilderConfig, step: number): boolean {
 }
 
 export function toDraft(config: BuilderConfig, step: number, decorTab: number, now = new Date()): StoredDraft {
-  const { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, addOns } = config;
+  const { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, table, addOns } = config;
   return {
     v: 1,
     savedAt: now.toISOString(),
     step,
     decorTab,
-    config: { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, addOns },
+    config: { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, ...(table ? { table } : {}), addOns },
   };
 }
 
@@ -64,6 +65,8 @@ export function fromDraft(raw: string | null): RestoredDraft | null {
     decor: { ...base.decor, ...(c.decor as Partial<BuilderConfig["decor"]>) },
     addOns: c.addOns as BuilderConfig["addOns"],
   };
+  const table = readTableSetup(c.table, themeById(config.theme) ?? THEMES[0]);
+  if (table) config.table = table;
   // Past the Theme step only with a theme chosen.
   const step = config.themeSelected ? clampInt(d.step, LAST_STEP) : Math.min(clampInt(d.step, LAST_STEP), 1);
   return { config, step, decorTab: clampInt(d.decorTab, LAST_DECOR_TAB) };

@@ -40,8 +40,8 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
     if ((page.viewportSize()?.width ?? 1000) >= 768) await expect(page.getByTestId("sketch-lettering").locator("path").first()).toBeAttached();
     await shot(page, `f1-04-decor-${tab.toLowerCase()}`);
   }
-  // The footer goes on to Package; the render is the Extras tab's own button.
-  await expect(next(page)).toHaveText(/Continue to Package/);
+  // The footer goes on to the kids' table; the render is the Extras tab's own button.
+  await expect(next(page)).toHaveText(/Next: Table setup/);
   // Generate render, signed out (2026-10-27: renders need an account): the
   // sign-in window, and no render asked for.
   await renderButton(page).click();
@@ -60,6 +60,9 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   const renders = renderCalls();
   expect(renders).toHaveLength(1);
   expect(renders[0].headers()["authorization"]).toMatch(/^Bearer \S+/);
+  await next(page).click(); // the kids' table: skipped here (tests/e2e/table-step.spec.ts)
+  await page.getByRole("button", { name: "No thanks, skip" }).click();
+  await expect(next(page)).toHaveText(/Continue to Package/);
   await next(page).click();
   await shot(page, "f1-05-package");
   await next(page).click();
@@ -256,7 +259,9 @@ test("F13 the Package step without a render: the render is optional", async ({ p
   await openDecor(page, "Frozen", "Single Round");
   await decorTab(page, "Extras");
   await expect(renderButton(page)).toBeVisible(); // offered, not required
-  await expect(next(page)).toHaveText(/Continue to Package/);
+  await expect(next(page)).toHaveText(/Next: Table setup/);
+  await next(page).click();
+  await expect(next(page)).toHaveText(/Skip to Package/); // the table is optional too
   await next(page).click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   expect(guard.blocked.some((r) => r.url().includes("/api/generate-controlled-render"))).toBe(false);
