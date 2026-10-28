@@ -121,12 +121,18 @@ describe("kept on the device", () => {
     expect(t.choices).toMatchObject({ chairs: "white_kids", chargers: NONE, plates: "iridescent", napkins: "striped", runner: NONE });
   });
   it("pieces no longer offered read back as None, and the placemat words are kept clean", () => {
+    // placematText: how the placemat words were kept on their first day.
     const t = readTableSetup({ choices: { runner: "tulle", nameCards: "tent", chairDecor: "balloon", tablecloth: "ruffle" }, placematText: "  Zahra <b>turns</b>   4  " }, frozen)!;
     expect(t.choices).toMatchObject({ runner: NONE, nameCards: NONE, chairDecor: NONE, tablecloth: NONE });
-    expect(t.placematText).toBe("Zahra bturnsb 4");
+    expect(t.words).toEqual({ placemats: "Zahra bturnsb 4" });
+    expect(readTableSetup({ words: { cutleryHolder: "Arya", bottleLabel: " Arya turns 6 ", other: "x" } }, frozen)!.words).toEqual({ cutleryHolder: "Arya", bottleLabel: "Arya turns 6" });
     expect(cleanPlacematText("x".repeat(80))).toHaveLength(MAX_PLACEMAT_TEXT);
     expect(cleanPlacematText("   ")).toBeUndefined();
-    expect(readTableSetup({ placematText: 42 }, frozen)!.placematText).toBeUndefined();
+    expect(readTableSetup({ placematText: 42, words: "x" }, frozen)!.words).toBeUndefined();
+  });
+  it("only the plain napkin takes a colour; the bottle labels wear the theme's placemat designs", () => {
+    expect(TABLE_ITEMS.find((i) => i.key === "napkins")!.options.filter((o) => o.coloured).map((o) => o.id)).toEqual(["plain"]);
+    expect(optionPhoto("bottleLabel", tableOption("bottleLabel", "sparkle"), "frozen")).toBe("/design/table/placemats/frozen/sparkle.webp");
   });
   it("tables and chairs from before the owner's own read back as hers", () => {
     const t = readTableSetup({ choices: { table: "long", chairs: "pastel_kids" } }, frozen)!;

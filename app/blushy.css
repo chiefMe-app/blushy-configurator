@@ -1199,8 +1199,11 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-floor { margin: 0; font-size: 13px; color: var(--bz-muted); }
 .bz-tb-section > h2 { margin: 18px 4px 9px; font: 800 11px var(--bz-sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bz-pink); }
 /* The customer's words, printed on the placemat pictures. */
-.bz-tb-option .art .words { position: absolute; inset: 0; display: grid; place-items: center; padding: 8%; text-align: center; font: 400 clamp(13px, 2.2vw, 19px)/1.1 var(--bz-hand); color: #5b6fa8; text-shadow: 0 1px 0 rgba(255,255,255,0.85); overflow-wrap: anywhere; pointer-events: none; }
-.bz-tb-option .art .words.sparkle { right: 38%; }
+/* The placemat words sit in the bottom-right corner, like the owner's reference ("Fakhra's 4th birthday"). */
+.bz-tb-option .art .words { position: absolute; right: 7%; bottom: 8%; max-width: 62%; text-align: right; font: 600 clamp(10px, 1.5vw, 14px)/1.1 Georgia, "Times New Roman", serif; letter-spacing: 0.04em; text-transform: uppercase; color: #7a86d1; text-shadow: 0 1px 0 rgba(255,255,255,0.8); overflow-wrap: anywhere; pointer-events: none; }
+.bz-tb-option .art .words.bottleLabel { inset: 0; max-width: none; display: grid; place-items: center; padding: 8%; text-align: center; font-size: clamp(11px, 1.8vw, 16px); }
+.bz-tb-label { position: relative; margin-top: 12px; aspect-ratio: 4.1 / 1; border-radius: 10px; background-size: cover; background-position: center; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06); display: grid; place-items: center; overflow: hidden; }
+.bz-tb-label span { font: 700 clamp(16px, 3vw, 28px)/1.1 Georgia, "Times New Roman", serif; letter-spacing: 0.05em; text-transform: uppercase; color: #7a86d1; text-shadow: 0 1px 0 #fff, 0 0 12px rgba(255,255,255,0.9); padding: 0 6%; text-align: center; }
 .bz-tb-words { display: grid; gap: 6px; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--bz-ink); }
 .bz-tb-words small { font-weight: 400; color: var(--bz-muted); }
 .bz-tb-words input { font: 400 15px var(--bz-sans); padding: 10px 12px; border: 1.5px solid #f2dde6; border-radius: 12px; outline: none; }

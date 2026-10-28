@@ -13,8 +13,8 @@ export interface TableSetup {
   clothColor: string;
   runnerColor: string;
   napkinColor: string;
-  /** The customer's words printed on the placemats ("Zahra turns 4"), if any. */
-  placematText?: string;
+  /** The customer's own words printed on the placemats ("Arya turns 6"), the cutlery holders and the bottle labels. */
+  words?: TableWords;
   /** Where the render is set (2026-10-27: "outdoorda bakalım"); a garden unless chosen. */
   scene?: TableScene;
   /** The last close-up render of this table (F3), if one was made. */
@@ -61,7 +61,18 @@ const DEFAULT_CHOICES: Record<TableItemKey, string> = {
   runner: NONE, chargers: NONE, chairDecor: NONE, nameCards: NONE,
 };
 
-/** Placemat words: no markup or control characters, single spaces, at most 40. */
+/** The items that carry the customer's words. */
+export type WordsKey = "placemats" | "cutleryHolder" | "bottleLabel";
+export type TableWords = Partial<Record<WordsKey, string>>;
+export const WORDS_ITEMS: { key: WordsKey; label: string; placeholder: string }[] = [
+  { key: "placemats", label: "Words on the placemats", placeholder: "e.g. Arya turns 6" },
+  { key: "cutleryHolder", label: "Name on the cutlery holders", placeholder: "e.g. Arya" },
+  { key: "bottleLabel", label: "Words on the bottle labels", placeholder: "e.g. Arya turns 6" },
+];
+/** The words on an item, when the item is chosen. */
+export const wordsOn = (t: Pick<TableSetup, "choices" | "words">, key: WordsKey) => (t.choices[key] !== NONE ? t.words?.[key]?.trim() || undefined : undefined);
+
+/** Words: no markup or control characters, single spaces, at most 40. */
 export const MAX_PLACEMAT_TEXT = 40;
 export function cleanPlacematText(v: unknown): string | undefined {
   if (typeof v !== "string") return undefined;
@@ -138,8 +149,19 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     clothColor: colour(r.clothColor, base.clothColor),
     runnerColor: colour(r.runnerColor, base.runnerColor),
     napkinColor: colour(r.napkinColor, base.napkinColor),
-    ...(cleanPlacematText(r.placematText) ? { placematText: cleanPlacematText(r.placematText)!.trim() } : {}),
+    ...(readWords(r) ? { words: readWords(r) } : {}),
     ...(r.scene === "garden" || r.scene === "indoor" ? { scene: r.scene } : {}),
     ...(readTableRender(r.render) ? { render: readTableRender(r.render) } : {}),
   };
+}
+
+/** Stored words, cleaned; placematText is how the placemat words were kept on the first day (2026-10-28). */
+function readWords(r: Record<string, unknown>): TableWords | undefined {
+  const stored = (r.words && typeof r.words === "object" ? r.words : {}) as Record<string, unknown>;
+  const out: TableWords = {};
+  for (const { key } of WORDS_ITEMS) {
+    const v = cleanPlacematText(stored[key] ?? (key === "placemats" ? r.placematText : undefined))?.trim();
+    if (v) out[key] = v;
+  }
+  return Object.keys(out).length ? out : undefined;
 }

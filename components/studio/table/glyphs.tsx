@@ -120,7 +120,7 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
       if (id === "tag") return <g><path d="M-6,0h12" stroke="#FFFFFF" strokeWidth={0.8} /><path d={scallop(3, 10)} fill="#FFFFFF" stroke={INK} strokeWidth={0.4} /><path d={star(0, 0, 1.8)} fill="#C9CED6" /></g>;
       return null;
     case "bottleLabel":
-      return <g><circle r={3.2} fill={id === "iridescent" ? "#E9DDF7" : "#EAF4FB"} stroke="#8C99A6" strokeWidth={0.6} /><circle r={1.5} fill="#93C5FD" stroke={INK} strokeWidth={0.3} /></g>;
+      return <g><circle r={3.2} fill={id === "sparkle" ? "#E9DDF7" : "#EAF4FB"} stroke="#8C99A6" strokeWidth={0.6} /><circle r={1.5} fill="#93C5FD" stroke={INK} strokeWidth={0.3} /></g>;
     case "nameCards":
       if (id === "tent") return <g><rect x={-6} y={-2} width={12} height={4} rx={0.8} fill="#fff" stroke={INK} strokeWidth={0.6} /><path d="M-6,0h12" stroke={INK} strokeWidth={0.3} /></g>;
       if (id === "tag") return <g><circle r={2.6} fill="#fff" stroke={INK} strokeWidth={0.6} /><path d="M2.6,0h3" stroke={c.accent} strokeWidth={0.6} /></g>;

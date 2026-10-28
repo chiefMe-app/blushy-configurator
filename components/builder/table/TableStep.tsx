@@ -5,23 +5,23 @@
 // cloth's colour and the words on the placemats. Prices add to the party total.
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { NONE, TABLE_SECTIONS, onFloor, optionPhoto, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
-import { MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup } from "@/lib/studio/tableSetup";
+import { MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, WORDS_ITEMS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup, type WordsKey } from "@/lib/studio/tableSetup";
 import { GlyphDefs, glyph, type GlyphColours } from "@/components/studio/table/glyphs";
 
-const COLOUR_OF: Partial<Record<TableItemKey, keyof Pick<TableSetup, "clothColor" | "runnerColor" | "napkinColor">>> = {
-  tablecloth: "clothColor", runner: "runnerColor", napkins: "napkinColor",
+const COLOUR_OF: Partial<Record<TableItemKey, keyof Pick<TableSetup, "clothColor" | "napkinColor">>> = {
+  tablecloth: "clothColor", napkins: "napkinColor",
 };
 
 function OptionArt({ item, option, colours, themeId, words }: { item: TableItem; option: TableOption | null; colours: GlyphColours; themeId: string; words?: string }) {
   const photo = optionPhoto(item.key, option ?? undefined, themeId);
   if (option && photo) {
-    // A coloured item shows the chosen colour on its picture; a placemat, the customer's words.
-    const swatch = item.key === "tablecloth" ? colours.cloth : null;
+    // A coloured option shows the chosen colour on its picture; a placemat or label, the customer's words.
+    const swatch = item.key === "tablecloth" ? colours.cloth : option.coloured ? colours.napkin : null;
     return <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="photo" src={photo} alt="" loading="lazy" />
       {swatch && <i className="swatch" style={{ background: swatch }} aria-hidden="true" />}
-      {words && <span className={`words ${option.id}`} aria-hidden="true">{words}</span>}
+      {words && <span className={`words ${item.key} ${option.id}`} aria-hidden="true">{words}</span>}
     </>;
   }
   if (!option) return <svg viewBox="-24 -24 48 48" aria-hidden="true"><circle r={14} fill="none" stroke="#d9c9cf" strokeWidth={2} strokeDasharray="4 3" /><path d="M-8,8L8,-8" stroke="#d9c9cf" strokeWidth={2} /></svg>;
@@ -76,7 +76,9 @@ export default function TableStep({ config, setTable }: {
 
   const item = (key: TableItemKey) => {
     const it = tableItem(key);
-    const colourKey = COLOUR_OF[key];
+    // The cloth always takes a colour; of the napkins, only the plain one.
+    const chosen = it.options.find((o) => o.id === table.choices[key]);
+    const colourKey = it.coloured || chosen?.coloured ? COLOUR_OF[key] : undefined;
     if (key === "chairs" && onFloor(table.choices)) {
       return (
         <div key={key} className="bz-tb-item" data-testid="floor-cushions">
@@ -85,7 +87,9 @@ export default function TableStep({ config, setTable }: {
         </div>
       );
     }
-    const words = key === "placemats" ? table.placematText : undefined;
+    const wordsItem = WORDS_ITEMS.find((w) => w.key === key);
+    // The words show on the placemat and label pictures; the holders' photos have no room for them.
+    const words = key === "placemats" || key === "bottleLabel" ? table.words?.[key as WordsKey] : undefined;
     return (
       <div key={key} className="bz-tb-item">
         <h3>{it.label}</h3>
@@ -114,12 +118,18 @@ export default function TableStep({ config, setTable }: {
             ))}
           </div>
         )}
-        {key === "placemats" && table.choices.placemats !== NONE && (
+        {wordsItem && table.choices[key] !== NONE && (
           <label className="bz-tb-words">
-            <span>Words on the placemats <small>(optional)</small></span>
-            <input type="text" value={table.placematText ?? ""} maxLength={MAX_PLACEMAT_TEXT} placeholder="e.g. Zahra turns 4"
-              onChange={(e) => set({ placematText: cleanPlacematText(e.target.value) })} />
+            <span>{wordsItem.label} <small>(optional)</small></span>
+            <input type="text" value={table.words?.[wordsItem.key] ?? ""} maxLength={MAX_PLACEMAT_TEXT} placeholder={wordsItem.placeholder}
+              onChange={(e) => set({ words: { ...table.words, [wordsItem.key]: cleanPlacematText(e.target.value) } })} />
           </label>
+        )}
+        {key === "bottleLabel" && chosen && (
+          // The finished label, flat, as it is printed (20.5 × 5 cm).
+          <div className="bz-tb-label" data-testid="bottle-label-preview" style={{ backgroundImage: `url(${optionPhoto("bottleLabel", chosen, theme.id)})` }}>
+            <span>{table.words?.bottleLabel || "Your words here"}</span>
+          </div>
         )}
       </div>
     );

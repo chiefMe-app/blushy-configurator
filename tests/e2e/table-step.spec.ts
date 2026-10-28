@@ -53,6 +53,16 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await expect(placemats.getByRole("radio", { name: /Watercolour placemat/ }).locator("img")).toHaveAttribute("src", "/design/table/placemats/frozen/watercolour.webp");
   await page.getByRole("textbox", { name: /Words on the placemats/ }).fill("Zahra turns 4");
   await expect(placemats.locator(".words").first()).toHaveText("Zahra turns 4");
+  // Only the plain napkin takes a colour.
+  await expect(page.getByRole("radiogroup", { name: "Napkins colour" })).toHaveCount(0);
+  await page.getByRole("radiogroup", { name: "Napkins", exact: true }).getByRole("radio", { name: /Plain napkins/ }).click();
+  await expect(page.getByRole("radiogroup", { name: "Napkins colour" })).toBeVisible();
+  // The bottle label: a name, and the finished label to see.
+  await page.getByRole("radiogroup", { name: "Water bottle label" }).getByRole("radio", { name: /Sparkle label/ }).click();
+  await page.getByRole("textbox", { name: /Words on the bottle labels/ }).fill("Arya turns 6");
+  await expect(page.getByTestId("bottle-label-preview")).toHaveText("Arya turns 6");
+  await page.getByRole("radiogroup", { name: "Cutlery holder" }).getByRole("radio", { name: /Napkin band/ }).click();
+  await expect(page.getByRole("textbox", { name: /Name on the cutlery holders/ })).toBeVisible();
   await expect(next(page)).toHaveText(/Continue to Package/);
   await expect(page.getByRole("radiogroup", { name: "Party hats" }).getByRole("radio")).toHaveCount(4); // None + 3
   await page.getByRole("radiogroup", { name: "Party hats" }).getByRole("radio", { name: /Crown/ }).click();

@@ -40,6 +40,10 @@ export interface TableOption {
   floor?: boolean;
   /** The picture is the theme's own (see optionPhoto). */
   themed?: boolean;
+  /** A themed picture borrowed from another item's designs (the bottle labels wear the placemats'). */
+  themedArt?: TableItemKey;
+  /** This option takes a colour (the plain napkin). */
+  coloured?: boolean;
 }
 
 export interface TableItem {
@@ -47,7 +51,7 @@ export interface TableItem {
   label: string;
   /** Optional items have a "None" choice before the options. */
   optional: boolean;
-  /** The item takes a colour (the cloth). */
+  /** Every option of the item takes a colour (the cloth). */
   coloured?: boolean;
   options: TableOption[];
 }
@@ -72,7 +76,9 @@ export const TABLE_ITEMS: TableItem[] = [
   { key: "tablecloth", label: "Tablecloth", optional: true, coloured: true, options: [
     { id: "classic", name: "Plain cloth", note: "Floor-length, in a colour", price: 40, unit: "per_table", photo: "/design/table/tablecloth-classic.webp" },
   ] },
+  // Only the plain napkin takes a colour (2026-10-28: "renk koymaya gerek yok, plain peçete seçeneği koy, onda renk olsun").
   { key: "napkins", label: "Napkins", optional: false, options: [
+    { id: "plain", name: "Plain napkins", note: "In a colour you pick", price: 1, unit: "per_child", coloured: true, photo: "/design/table/napkins-plain.webp" },
     { id: "striped", name: "Striped napkins", note: "Soft pastel stripes", price: 1, unit: "per_child", photo: "/design/table/napkins-striped.webp" },
     { id: "printed", name: "Printed napkins", note: "In the theme's pattern", price: 2, unit: "per_child", photo: "/design/table/napkins-printed.webp" },
     { id: "foil", name: "Silver foil napkins", note: "Pale blue with a silver foil print", price: 2, unit: "per_child", photo: "/design/table/napkins-foil.webp" },
@@ -100,8 +106,8 @@ export const TABLE_ITEMS: TableItem[] = [
     { id: "glitter", name: "Glitter-dipped wooden", note: "Handles dipped in silver glitter", price: 3, unit: "per_child", photo: "/design/table/cutlery-glitter.webp" },
   ] },
   { key: "cutleryHolder", label: "Cutlery holder", optional: true, options: [
-    { id: "pocket", name: "Printed pocket", note: "A card pocket in the theme, with the name", price: 5, unit: "per_child", photo: "/design/table/cutleryHolder-pocket.webp" },
-    { id: "band", name: "Napkin band", note: "Wrapped, with a little name tag", price: 4, unit: "per_child", photo: "/design/table/cutleryHolder-band.webp" },
+    { id: "pocket", name: "Printed pocket", note: "A card pocket in the theme, with a name", price: 5, unit: "per_child", photo: "/design/table/cutleryHolder-pocket.webp" },
+    { id: "band", name: "Napkin band", note: "Wraps the napkin, with a name tag", price: 4, unit: "per_child", photo: "/design/table/cutleryHolder-band.webp" },
     { id: "tag", name: "Ribbon & tag", note: "Tied with a ribbon and a scalloped tag", price: 3, unit: "per_child", photo: "/design/table/cutleryHolder-tag.webp" },
   ] },
   { key: "centrepiece", label: "Centrepiece", optional: true, options: [
@@ -110,10 +116,12 @@ export const TABLE_ITEMS: TableItem[] = [
     { id: "florals", name: "Fresh florals", note: "Low arrangement", price: 90, unit: "per_table", photo: "/design/table/centrepiece-florals.webp" },
     { id: "toppers", name: "Theme toppers", note: "Stars and theme shapes on sticks", price: 40, unit: "per_table", photo: "/design/table/centrepiece-toppers.webp" },
   ] },
+  // A small water bottle wrapped in a 20.5 × 5 cm label in the placemats' designs, with
+  // the customer's words — they see the finished label (2026-10-28: "tasarımın son halini görsün").
   { key: "bottleLabel", label: "Water bottle label", optional: true, options: [
-    { id: "printed", name: "Printed label", note: "A small water bottle in the theme", price: 4, unit: "per_child", photo: "/design/table/bottleLabel-printed.webp" },
-    { id: "name", name: "Name label", note: "Each guest's own name", price: 5, unit: "per_child", photo: "/design/table/bottleLabel-name.webp" },
-    { id: "iridescent", name: "Iridescent label", note: "Shimmering, with the birthday name", price: 5, unit: "per_child", photo: "/design/table/bottleLabel-iridescent.webp" },
+    { id: "pattern", name: "Pattern label", note: "The theme's shapes all over", price: 5, unit: "per_child", themed: true, themedArt: "placemats" },
+    { id: "watercolour", name: "Watercolour label", note: "A soft wash with big shapes", price: 5, unit: "per_child", themed: true, themedArt: "placemats" },
+    { id: "sparkle", name: "Sparkle label", note: "Glittering and dreamy", price: 5, unit: "per_child", themed: true, themedArt: "placemats" },
   ] },
   { key: "partyHats", label: "Party hats", optional: true, options: [
     { id: "cone", name: "Cone hat", note: "The classic", price: 4, unit: "per_child", photo: "/design/table/partyHats-cone.webp" },
@@ -135,6 +143,6 @@ export const tableItem = (key: TableItemKey) => TABLE_ITEMS.find((i) => i.key ==
 export const tableOption = (key: TableItemKey, id: string) => TABLE_ITEMS.find((i) => i.key === key)?.options.find((o) => o.id === id);
 /** An option's picture; a themed one is the theme's own. */
 export const optionPhoto = (key: TableItemKey, o: TableOption | undefined, themeId: string) =>
-  o?.themed ? `/design/table/${key}/${themeId}/${o.id}.webp` : o?.photo;
+  o?.themed ? `/design/table/${o.themedArt ?? key}/${themeId}/${o.id}.webp` : o?.photo;
 /** The chosen table sits the children on floor cushions: no chairs to choose or pay for. */
 export const onFloor = (choices: Record<TableItemKey, string>) => !!tableOption("table", choices.table)?.floor;
