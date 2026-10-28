@@ -125,10 +125,12 @@ export default function TableStep({ config, setTable }: {
               onChange={(e) => set({ words: { ...table.words, [wordsItem.key]: cleanPlacematText(e.target.value) } })} />
           </label>
         )}
-        {key === "bottleLabel" && chosen && (
-          // The finished label, flat, as it is printed (20.5 × 5 cm).
-          <div className="bz-tb-label" data-testid="bottle-label-preview" style={{ backgroundImage: `url(${optionPhoto("bottleLabel", chosen, theme.id)})` }}>
-            <span>{table.words?.bottleLabel || "Your words here"}</span>
+        {(key === "bottleLabel" || key === "placemats") && chosen && (
+          // The finished design, flat, as it is printed: the label (20.5 × 5 cm), or the
+          // A3 placemat with the words bottom-right, like the owner's reference.
+          <div className={key === "bottleLabel" ? "bz-tb-label" : "bz-tb-label placemat"} data-testid={key === "bottleLabel" ? "bottle-label-preview" : "placemat-preview"}
+            style={{ backgroundImage: `url(${optionPhoto(key, chosen, theme.id)})` }}>
+            <span>{table.words?.[key] || "Your words here"}</span>
           </div>
         )}
       </div>
