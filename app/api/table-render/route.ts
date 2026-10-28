@@ -83,22 +83,33 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         const send = (o: unknown) => controller.enqueue(ndjsonLine(o));
         try {
+          // Where the time goes, in the function's log (2026-10-28: "render aşırı uzun sürüyor").
+          const t0 = Date.now(), times: Record<string, number> = {};
+          const lap = (k: string) => { times[k] = Date.now() - t0; };
           const refs = referencePictures(table, theme.id);
           // Image 1: the drawing of the exact scene, the placemats wearing their own
-          // design (2026-10-28 tests); then the chosen pieces' pictures.
+          // design (2026-10-28 tests); then the chosen pieces' pictures — all made at once.
           const matPhoto = optionPhoto("placemats", tableOption("placemats", table.choices.placemats), theme.id);
-          const placemat = matPhoto ? await optionPicture(matPhoto, req.nextUrl.origin) : undefined;
-          const guide = await sharp(Buffer.from(tableCloseGuideSvg(table, theme, { placemat }))).png().toBuffer();
-          const pictures = [`data:image/png;base64,${guide.toString("base64")}`, ...await Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin)))];
+          const [placemat, photos] = await Promise.all([
+            matPhoto ? optionPicture(matPhoto, req.nextUrl.origin) : undefined,
+            Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin))),
+          ]);
+          // A JPEG, not a PNG: the drawing with its placemat photos is a fraction of the upload.
+          const guide = await sharp(Buffer.from(tableCloseGuideSvg(table, theme, { placemat }))).jpeg({ quality: 90 }).toBuffer();
+          const pictures = [`data:image/jpeg;base64,${guide.toString("base64")}`, ...photos];
+          lap("prepared");
           const result = await fal.subscribe(MODEL, {
             input: engineInput(MODEL, tablePrompt(table, theme, refs.map((r) => r.key)), pictures) as never,
             abortSignal: AbortSignal.timeout(130_000),
+            onQueueUpdate: (u) => { if (u.status === "IN_PROGRESS" && times.started === undefined) lap("started"); },
           });
+          lap("made");
           const url = (result.data as { images?: { url?: string }[] })?.images?.[0]?.url;
           if (!url) throw new Error("no close-up image");
           const jpeg = await renderJpeg(url);
           if (!jpeg) throw new Error("the close-up could not be read");
           send({ view: "close", url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
+          lap("sent");
           const key = tableRenderKey(table);
           // Without a database (local development) nothing is kept.
           let render: TableRender | undefined;
@@ -107,6 +118,9 @@ export async function POST(req: NextRequest) {
             render = kept ? { key, close: kept.path } : undefined;
             if (!render) console.warn("[table-render] not kept; shown only");
           }
+          lap("kept");
+          // prepared: pictures ready; started: fal began (the rest was its queue); made: picture done; sent: downloaded and on its way.
+          console.info("[table-render] ms", JSON.stringify({ ...times, upload: pictures.reduce((n, p) => n + p.length, 0) }));
           send({ done: true, ...(render ? { render } : {}), left: taken.left });
         } catch (err) {
           console.error("[table-render]", err);

@@ -220,7 +220,7 @@ describe("the route", () => {
     expect(calls[0].image_size).toBe("landscape_4_3");
     // The layout drawing first, then the option pictures.
     expect(calls[0].image_urls).toHaveLength(referencePictures(table(), "frozen").length + 1);
-    expect(calls[0].image_urls[0]).toMatch(/^data:image\/png;base64,/);
+    expect(calls[0].image_urls[0]).toMatch(/^data:image\/jpeg;base64,/);
     for (const u of calls[0].image_urls.slice(1)) expect(u).toMatch(/^data:image\/jpeg;base64,/);
     expect(calls[0].prompt).toContain("TWO place settings facing each other");
     expect(calls[0].prompt).not.toMatch(/frozen/i);

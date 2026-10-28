@@ -38,7 +38,7 @@ import SignInDialog from "@/components/account/SignInDialog";
 import { takeAfterSignIn } from "@/lib/account";
 import TableStep from "@/components/builder/table/TableStep";
 import BackdropIntro from "@/components/builder/decor/BackdropIntro";
-import TablePreview from "@/components/builder/table/TablePreview";
+import TablePreview, { type TableRenderJob } from "@/components/builder/table/TablePreview";
 
 import Sprinkles from "@/components/design/Sprinkles";
 
@@ -236,6 +236,14 @@ export default function ConfigurePage() {
     }
   }, [decorTab]);
 
+  // 2026-10-28 ("render aşırı uzun sürüyor"): the table's close-up renders in
+  // the background; on any other step a note says how it is going, and once
+  // the customer is back on the table it has been seen. (Above the success
+  // screen's early return, like every hook.)
+  const [tableJob, setTableJob] = useState<TableRenderJob | null>(null);
+  const onTableNow = step === 2 && decorPart === "table";
+  useEffect(() => { if (onTableNow && tableJob !== "loading") setTableJob(null); }, [onTableNow, tableJob]);
+
   // =========================================================================
   // SUCCESS SCREEN
   // =========================================================================
@@ -332,6 +340,7 @@ export default function ConfigurePage() {
   };
 
   const onTable = step === 2 && decorPart === "table";
+  const openTable = () => { goToStep(2); setDecorPart("table"); };
   // The backdrop is a choice too: asked first, and skippable.
   const backdropAsked = config.decor.backdropChoice === "yes";
   const onBackdropQuestion = step === 2 && decorPart === "backdrop" && !backdropAsked;
@@ -423,6 +432,12 @@ export default function ConfigurePage() {
       <main className="bz-main">
         {/* Left: the balloon dog during Event and Theme, then the real AI render card */}
         <section className="bz-left" aria-label="Party concept preview">
+          {/* The table's preview stays mounted, so a close-up keeps rendering on the other steps. */}
+          <div hidden={!onTable}>
+            <TablePreview config={config} setTable={(table) => setConfig((c) => ({ ...c, table }))}
+              onSignInNeeded={() => askSignIn("table-render")}
+              startNow={tableRenderOnArrival} onStarted={() => setTableRenderOnArrival(false)} onJob={setTableJob} />
+          </div>
           {step < 2 ? (
             <div className="bz-cake">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -435,9 +450,6 @@ export default function ConfigurePage() {
             </div>
           ) : (
             <>
-              {onTable && <TablePreview config={config} setTable={(table) => setConfig((c) => ({ ...c, table }))}
-                onSignInNeeded={() => askSignIn("table-render")}
-                startNow={tableRenderOnArrival} onStarted={() => setTableRenderOnArrival(false)} />}
               {!onTable && config.decor.backdropChoice === "skip" && (
                 <div className="bz-tb-preview"><div className="empty">No backdrop in this party — add one any time.</div></div>
               )}
@@ -497,6 +509,22 @@ export default function ConfigurePage() {
                 <span className="icon" aria-hidden="true">✓</span>
                 <span><b>Welcome back!</b> We kept your design on this device.</span>
                 <button type="button" className="bz-restart" onClick={startOver}>Start over</button>
+              </div>
+            )}
+            {!onTable && tableJob && (
+              <div className={`bz-tip bz-tb-job ${tableJob}`} role="status" data-testid="table-render-job">
+                {tableJob === "loading" ? (
+                  <><span className="dots" aria-hidden="true"><i /><i /><i /></span>
+                    <span><b>Your table close-up is on its way.</b> Carry on — we&apos;ll tell you here when it&apos;s ready.</span></>
+                ) : tableJob === "ready" ? (
+                  <><span className="icon" aria-hidden="true">✦</span>
+                    <span><b>Your table close-up is ready.</b></span>
+                    <button type="button" className="bz-restart" onClick={openTable}>See it</button></>
+                ) : (
+                  <><span className="icon" aria-hidden="true">!</span>
+                    <span><b>Your table close-up didn&apos;t come out.</b> You can try again on the table.</span>
+                    <button type="button" className="bz-restart" onClick={openTable}>Back to the table</button></>
+                )}
               </div>
             )}
             {step === 0 && <EventStep config={config} setEventType={setEventType} />}

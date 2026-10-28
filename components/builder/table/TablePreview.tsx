@@ -4,7 +4,9 @@
 // of a place setting (2026-10-28, F3, /api/table-render; it needs an account,
 // like the backdrop render). The picture is kept in the customer's own storage
 // and shown through a signed link. While it is made (about a minute), the
-// drawing shows under three moving dots.
+// drawing shows under three moving dots. 2026-10-28 ("render aşırı uzun
+// sürüyor"): the builder keeps this mounted on every step, so the customer can
+// carry on while it renders; onJob tells the builder how it is going.
 import { useEffect, useRef, useState } from "react";
 import { themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { tableCounts, type TableSetup } from "@/lib/studio/tableSetup";
@@ -18,14 +20,17 @@ import { readNdjson } from "@/lib/ndjson";
 type View = "perspective" | "top" | "close";
 /** The close-up that can be shown now, and the table (tableRenderKey) it shows. */
 interface Shown { key: string; close: string }
+/** How a close-up asked for in this visit is going. */
+export type TableRenderJob = "loading" | "ready" | "error";
 
-export default function TablePreview({ config, setTable, onSignInNeeded, startNow, onStarted }: {
+export default function TablePreview({ config, setTable, onSignInNeeded, startNow, onStarted, onJob }: {
   config: BuilderConfig;
   setTable: (t: TableSetup) => void;
   onSignInNeeded: () => void;
   /** Back from signing in to see the render: start it. */
   startNow?: boolean;
   onStarted?: () => void;
+  onJob?: (job: TableRenderJob) => void;
 }) {
   const [view, setView] = useState<View>("perspective");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -69,7 +74,7 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
     if (status === "loading" || !latest.current?.enabled) return;
     const token = await accountToken();
     if (token === null) { onSignInNeeded(); return; }
-    setStatus("loading"); setError(null); setView("close");
+    setStatus("loading"); setError(null); setView("close"); onJob?.("loading");
     const key = tableRenderKey(latest.current);
     const failed = "The render didn't come out — please try again.";
     try {
@@ -96,9 +101,9 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
       setAttempt(0);
       // Kept with the design when it was stored (signed in, with a database).
       if (latest.current && result.render) setTable({ ...latest.current, render: result.render });
-      setStatus("idle");
+      setStatus("idle"); onJob?.("ready");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e)); setStatus("error");
+      setError(e instanceof Error ? e.message : String(e)); setStatus("error"); onJob?.("error");
     }
   }
 
@@ -143,7 +148,7 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
                 <div className="veil" role="status" data-testid="table-render-wait">
                   <span className="dots" aria-hidden="true"><i /><i /><i /></span>
                   <b>Rendering one seat up close</b>
-                  <span>From the pictures you chose — about a minute.</span>
+                  <span>From the pictures you chose — about a minute. Carry on with your party meanwhile: we&apos;ll tell you when it&apos;s ready.</span>
                 </div>
               )}
             </div>
@@ -164,7 +169,7 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
             {loading ? (
               <p className="busy">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>
-                Rendering one seat up close — about a minute.
+                Rendering one seat up close — about a minute. You can carry on meanwhile.
               </p>
             ) : current ? null : (
               <>

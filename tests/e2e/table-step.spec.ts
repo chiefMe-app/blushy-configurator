@@ -171,6 +171,30 @@ test("K7 the render is kept: back on the page it comes from the customer's stora
   expect(tableRenders(guard.blocked)).toBe(1);
 });
 
+test("K8 the close-up renders in the background: carry on to Package, a note says when it is ready, See it opens it", async ({ page, guard }) => {
+  guard.fakeRender = true;
+  await signIn(page);
+  await toTable(page);
+  await page.getByRole("button", { name: /Yes, design the table/ }).click();
+  let answer!: () => void;
+  guard.holdTableRender = new Promise((r) => { answer = r; });
+  await page.getByRole("button", { name: "Render a close-up ✦" }).click();
+  await expect(page.getByTestId("table-render-wait")).toContainText("Carry on with your party meanwhile");
+  // On to Package while it renders.
+  await next(page).click();
+  const note = page.getByTestId("table-render-job");
+  await expect(note).toContainText("Your table close-up is on its way");
+  answer();
+  await expect(note).toContainText("Your table close-up is ready");
+  await note.getByRole("button", { name: "See it" }).click();
+  await expect(page.getByTestId("table-render")).toHaveAttribute("src", FAKE_TABLE_RENDER.close);
+  await expect(note).toHaveCount(0);
+  // Seen: the note does not come back on the other steps.
+  await next(page).click();
+  await expect(page.getByTestId("table-render-job")).toHaveCount(0);
+  expect(tableRenders(guard.blocked)).toBe(1);
+});
+
 test("K6 the table render needs an account: not signed in, it asks first and renders nothing", async ({ page, guard }) => {
   guard.fakeRender = true;
   await toTable(page);
