@@ -2,7 +2,7 @@
 // (BuilderConfig.table), chosen in the Decor step after the backdrop, item by
 // item from lib/studio/tableCatalog.ts. Pure data and sums — no UI, no config
 // import (lib/config.ts uses the price lines).
-import { NONE, TABLE_ITEMS, tableOption, type TableItemKey } from "./tableCatalog";
+import { NONE, TABLE_ITEMS, onFloor, tableOption, type TableItemKey } from "./tableCatalog";
 
 export interface TableSetup {
   /** false: the customer skipped the table. */
@@ -15,20 +15,20 @@ export interface TableSetup {
   napkinColor: string;
   /** Where the render is set (2026-10-27: "outdoorda bakalım"); a garden unless chosen. */
   scene?: TableScene;
-  /** The last real render of this table (F3), if one was made. */
+  /** The last close-up render of this table (F3), if one was made. */
   render?: TableRender;
 }
 
 export type TableScene = "garden" | "indoor";
 
+// One close-up of a place setting (2026-10-28: "3 render çok fazla zaman
+// alıyor ve pahalıya geliyor … sadece illüstrasyon olsun masa düzeni ve bir
+// tane close up render"): the layout is only ever the drawings.
 export interface TableRender {
   /** tableRenderKey of the table this was made from. */
   key: string;
-  /** Where each view is kept: the customer's folder of the private renders bucket (lib/renderStore.ts). */
-  perspective: string;
-  top: string;
-  /** One place setting up close (renders made before it have none). */
-  close?: string;
+  /** Where it is kept: the customer's folder of the private renders bucket (lib/renderStore.ts). */
+  close: string;
 }
 
 // A stored render is only ever a file in the customer's own folder — never a
@@ -40,19 +40,17 @@ export function readTableRender(raw: unknown): TableRender | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const r = raw as Record<string, unknown>;
   const ok = (v: unknown): v is string => typeof v === "string" && RENDER_PATH.test(v);
-  return typeof r.key === "string" && /^[a-z0-9]{1,13}$/.test(r.key) && ok(r.perspective) && ok(r.top)
-    && r.perspective.split("/")[0] === r.top.split("/")[0]
-    ? { key: r.key, perspective: r.perspective, top: r.top, ...(ok(r.close) && r.close.split("/")[0] === r.top.split("/")[0] ? { close: r.close } : {}) } : undefined;
+  // Three-view renders kept before 2026-10-28 read back by their close-up.
+  return typeof r.key === "string" && /^[a-z0-9]{1,13}$/.test(r.key) && ok(r.close) ? { key: r.key, close: r.close } : undefined;
 }
 
 export const MIN_KIDS = 4;
 export const MAX_KIDS = 40;
-export const SEATS_PER_TABLE = 8;
 
 export const clampKids = (n: number) => Math.max(MIN_KIDS, Math.min(MAX_KIDS, Math.round(Number.isFinite(n) ? n : MIN_KIDS)));
 
 const DEFAULT_CHOICES: Record<TableItemKey, string> = {
-  table: "long", chairs: "white_kids",
+  table: "standard", chairs: "white_kids",
   tablecloth: "classic", runner: "confetti", napkins: "printed",
   // Charger plates are not offered at the kids' table (the grown-ups' table has them).
   placemats: "printed", plates: "themed", cups: "straw", cutlery: "pastel", chargers: NONE,
@@ -78,11 +76,14 @@ export interface TableCounts {
   perTable: number[];
 }
 
-export function tableCounts(t: Pick<TableSetup, "kids">): TableCounts {
-  const kids = clampKids(t.kids);
-  const tables = Math.ceil(kids / SEATS_PER_TABLE);
+/** Children at one table of the chosen kind (the catalog's `seats`). */
+export const seatsPerTable = (t: Pick<TableSetup, "choices">) => tableOption("table", t.choices.table)?.seats ?? 10;
+
+export function tableCounts(t: Pick<TableSetup, "kids" | "choices">): TableCounts {
+  const kids = clampKids(t.kids), per = seatsPerTable(t);
+  const tables = Math.ceil(kids / per);
   const base = Math.floor(kids / tables), extra = kids % tables;
-  return { tables, seats: tables * SEATS_PER_TABLE, perTable: Array.from({ length: tables }, (_, i) => base + (i < extra ? 1 : 0)) };
+  return { tables, seats: tables * per, perTable: Array.from({ length: tables }, (_, i) => base + (i < extra ? 1 : 0)) };
 }
 
 export interface TableLine { label: string; amount: number }
@@ -95,6 +96,7 @@ export function tablePriceLines(t: TableSetup): TableLine[] {
   for (const item of TABLE_ITEMS) {
     const o = tableOption(item.key, t.choices[item.key]);
     if (!o) continue; // "none"
+    if (item.key === "chairs" && onFloor(t.choices)) continue; // floor cushions come with the low table
     const n = o.unit === "per_table" ? tables : kids;
     lines.push({ label: `${o.name} (${n})`, amount: n * o.price });
   }

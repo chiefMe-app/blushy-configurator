@@ -19,15 +19,23 @@ test("K1 design the kids' table: picture options, the total grows, every tab, th
   const before = aed(await total(page).textContent());
   await page.getByRole("button", { name: /Yes, design the table/ }).click();
   // The preview opens in perspective; the top view is one tab away.
-  await expect(page.getByTestId("table-perspective-sketch")).toHaveAttribute("aria-label", "Perspective: 2 long tables for 10 children");
+  await expect(page.getByTestId("table-perspective-sketch")).toHaveAttribute("aria-label", "Perspective: 1 standard table for 10 children");
   await page.getByRole("tab", { name: "Top view" }).click();
-  await expect(page.getByTestId("table-sketch")).toHaveAttribute("aria-label", "Top view: 2 long tables for 10 children");
+  await expect(page.getByTestId("table-sketch")).toHaveAttribute("aria-label", "Top view: 1 standard table for 10 children");
   const tableSum = aed(await page.getByTestId("table-total").locator("b").textContent());
   expect(aed(await total(page).textContent())).toBe(before + tableSum);
-  // Every item: three picture options (plus None where optional).
+  // The owner's six tables and three chairs, with her photos and prices.
+  await expect(page.getByRole("radiogroup", { name: "Table" }).getByRole("radio")).toHaveCount(6);
   await expect(page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio")).toHaveCount(3);
-  await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Pastel kids' chairs/ }).click();
-  expect(aed(await total(page).textContent())).toBe(before + tableSum + 10 * 2); // pastel is AED 2 a child more
+  await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Bow chair for kids/ }).click();
+  expect(aed(await total(page).textContent())).toBe(before + tableSum); // every chair is AED 25
+  // The low table: floor cushions instead of chairs.
+  await page.getByRole("radiogroup", { name: "Table" }).getByRole("radio", { name: /Low table/ }).click();
+  await expect(page.getByTestId("floor-cushions")).toBeVisible();
+  await expect(page.getByRole("radiogroup", { name: "Chairs" })).toHaveCount(0);
+  expect(aed(await total(page).textContent())).toBe(before + tableSum + (749 - 399) - 10 * 25);
+  await page.getByRole("radiogroup", { name: "Table" }).getByRole("radio", { name: /Flower table/ }).click();
+  await expect(page.getByTestId("table-sketch")).toHaveAttribute("aria-label", "Top view: 2 flower tables for 10 children");
   await settle(page);
   await expect.soft(page).toHaveScreenshot("k1-table-chairs.png");
   for (const tab of ["Linens", "Tableware", "Decor & extras"]) {
@@ -62,9 +70,9 @@ test("K3 the table is kept on the device", async ({ page }) => {
   await page.reload();
   await page.getByRole("tab", { name: /Table setup/ }).click();
   await expect(page.getByTestId("kids-count")).toHaveText("11");
-  await expect(page.getByTestId("table-perspective-sketch")).toHaveAttribute("aria-label", "Perspective: 2 round tables for 11 children");
+  await expect(page.getByTestId("table-perspective-sketch")).toHaveAttribute("aria-label", "Perspective: 1 round table for 11 children");
   await page.getByRole("tab", { name: "Top view" }).click();
-  await expect(page.getByTestId("table-sketch")).toHaveAttribute("aria-label", "Top view: 2 round tables for 11 children");
+  await expect(page.getByTestId("table-sketch")).toHaveAttribute("aria-label", "Top view: 1 round table for 11 children");
 });
 
 test("K4 the backdrop is a choice too: skipping it leaves it out of the total", async ({ page }) => {
@@ -85,44 +93,43 @@ test("K4 the backdrop is a choice too: skipping it leaves it out of the total", 
 
 const tableRenders = (blocked: { url(): string }[]) => blocked.filter((r) => r.url().includes("/api/table-render")).length;
 
-test("K5 the real render: every view, and it says when the table has changed since", async ({ page, guard }) => {
+test("K5 the close-up render: one picture, the layout stays the drawing, and it says when the table has changed since", async ({ page, guard }) => {
   guard.fakeRender = true;
   await signIn(page);
   await toTable(page);
   await page.getByRole("button", { name: /Yes, design the table/ }).click();
   let answer!: () => void;
   guard.holdTableRender = new Promise((r) => { answer = r; });
-  await page.getByRole("button", { name: "Generate table render ✦" }).click();
+  await page.getByRole("button", { name: "Render a close-up ✦" }).click();
   // While it renders: the drawing, faded, under three moving dots.
   const wait = page.getByTestId("table-render-wait");
-  await expect(wait).toContainText("Rendering your table");
+  await expect(wait).toContainText("Rendering one seat up close");
   await expect(wait.locator(".dots i")).toHaveCount(3);
-  await expect(page.getByTestId("table-render-box")).toContainText("Three views, one by one");
+  await expect(page.getByTestId("table-render-box")).toContainText("about a minute");
   answer();
   const photo = page.getByTestId("table-render");
-  await expect(photo).toHaveAttribute("src", FAKE_TABLE_RENDER.perspective);
+  await expect(photo).toHaveAttribute("src", FAKE_TABLE_RENDER.close);
   await expect(wait).toHaveCount(0);
+  expect(tableRenders(guard.blocked)).toBe(1);
+  // The layout is the drawing: perspective and top view are never photos.
+  await page.getByRole("tab", { name: "Perspective" }).click();
+  await expect(photo).toHaveCount(0);
+  await expect(page.getByTestId("table-perspective-sketch")).toBeVisible();
   await page.getByRole("tab", { name: "Top view" }).click();
-  await expect(photo).toHaveAttribute("src", FAKE_TABLE_RENDER.top);
+  await expect(page.getByTestId("table-sketch")).toBeVisible();
   await page.getByRole("tab", { name: "Close-up" }).click();
   await expect(photo).toHaveAttribute("src", FAKE_TABLE_RENDER.close);
-  await page.getByRole("tab", { name: "Top view" }).click();
-  expect(tableRenders(guard.blocked)).toBe(1); // one request, every view
-  // The sketch is a click away.
-  await page.getByRole("button", { name: "Show the sketch" }).click();
-  await expect(page.getByTestId("table-sketch")).toBeVisible();
-  await page.getByRole("button", { name: "Show the render" }).click();
   // A change: the drawing comes back, with an offer to update.
-  await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Pastel kids' chairs/ }).click();
+  await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Blue chair for kids/ }).click();
   await expect(photo).toHaveCount(0);
-  await expect(page.getByTestId("table-render-box")).toContainText("You changed the table since your render");
-  await page.getByRole("button", { name: "Update the render ✦" }).click();
+  await expect(page.getByTestId("table-render-box")).toContainText("You changed the table since your close-up");
+  await page.getByRole("button", { name: "Update the close-up ✦" }).click();
   await expect(photo).toBeVisible();
   expect(tableRenders(guard.blocked)).toBe(2);
   // Indoors instead of the garden is a change too.
   await page.getByRole("radio", { name: "Indoors" }).click();
-  await expect(page.getByTestId("table-render-box")).toContainText("You changed the table since your render");
-  await page.getByRole("button", { name: "Update the render ✦" }).click();
+  await expect(page.getByTestId("table-render-box")).toContainText("You changed the table since your close-up");
+  await page.getByRole("button", { name: "Update the close-up ✦" }).click();
   await expect(photo).toBeVisible();
   expect(tableRenders(guard.blocked)).toBe(3);
 });
@@ -132,13 +139,13 @@ test("K7 the render is kept: back on the page it comes from the customer's stora
   await signIn(page);
   await toTable(page);
   await page.getByRole("button", { name: /Yes, design the table/ }).click();
-  await page.getByRole("button", { name: "Generate table render ✦" }).click();
-  await expect(page.getByTestId("table-render")).toHaveAttribute("src", FAKE_TABLE_RENDER.perspective);
+  await page.getByRole("button", { name: "Render a close-up ✦" }).click();
+  await expect(page.getByTestId("table-render")).toHaveAttribute("src", FAKE_TABLE_RENDER.close);
   await page.waitForTimeout(800); // the device copy
   await page.reload();
   await page.getByRole("tab", { name: /Table setup/ }).click();
   const photo = page.getByTestId("table-render");
-  await expect(photo).toHaveAttribute("src", /supabase\.test\/storage\/v1\/object\/sign\/renders\/00000000-0000-4000-8000-0000000000a1\/p[0-9a-z]+\.jpg\?token=/);
+  await expect(photo).toHaveAttribute("src", /supabase\.test\/storage\/v1\/object\/sign\/renders\/00000000-0000-4000-8000-0000000000a1\/c[0-9a-z]+\.jpg\?token=/);
   await expect.poll(() => photo.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBeGreaterThan(0);
   expect(tableRenders(guard.blocked)).toBe(1);
 });
@@ -147,7 +154,7 @@ test("K6 the table render needs an account: not signed in, it asks first and ren
   guard.fakeRender = true;
   await toTable(page);
   await page.getByRole("button", { name: /Yes, design the table/ }).click();
-  await page.getByRole("button", { name: "Generate table render ✦" }).click();
+  await page.getByRole("button", { name: "Render a close-up ✦" }).click();
   await expect(page.getByRole("dialog").getByRole("heading", { name: "Sign in to see your table" })).toBeVisible();
   expect(tableRenders(guard.blocked)).toBe(0);
 });

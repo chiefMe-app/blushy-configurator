@@ -1,9 +1,9 @@
 // The Decor step's second part (2026-10-27, F2): the kids' table. First a
-// yes / skip; then four tabs of items, each with three picture options (plus
+// yes / skip; then four tabs of items, each with picture options (plus
 // "None" for the optional ones) from lib/studio/tableCatalog.ts, and the
 // colours of the cloth, runner and napkins. Prices add to the party total.
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
-import { NONE, TABLE_TABS, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
+import { NONE, TABLE_TABS, onFloor, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
 import { MAX_KIDS, MIN_KIDS, clampKids, defaultTableSetup, tableCounts, tableTotal, type TableSetup } from "@/lib/studio/tableSetup";
 import { GlyphDefs, glyph, type GlyphColours } from "@/components/studio/table/glyphs";
 
@@ -101,6 +101,14 @@ export default function TableStep({ config, setTable, tab, setTab }: {
       {current.items.map((key) => {
         const item = tableItem(key);
         const colourKey = COLOUR_OF[key];
+        if (key === "chairs" && onFloor(table.choices)) {
+          return (
+            <div key={key} className="bz-tb-item" data-testid="floor-cushions">
+              <h3>{item.label}</h3>
+              <p className="bz-tb-floor">The low table comes with soft floor cushions, so there are no chairs to choose.</p>
+            </div>
+          );
+        }
         return (
           <div key={key} className="bz-tb-item">
             <h3>{item.label}</h3>

@@ -1,10 +1,10 @@
 // The left-hand preview during the table part of Decor (2026-10-27): a front
 // perspective and the to-scale top view, both live drawings of every choice —
-// and, on request, the real render of both views (F3, /api/table-render; it
-// needs an account, like the backdrop render). The pictures are kept in the
-// customer's own storage and shown through signed links. A render comes in
-// picture by picture (the front view after about a minute); until then, and
-// for each view still on its way, the drawing shows under three moving dots.
+// the layout is only ever these drawings — and, on request, one real close-up
+// of a place setting (2026-10-28, F3, /api/table-render; it needs an account,
+// like the backdrop render). The picture is kept in the customer's own storage
+// and shown through a signed link. While it is made (about a minute), the
+// drawing shows under three moving dots.
 import { useEffect, useRef, useState } from "react";
 import { themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { tableCounts, type TableSetup } from "@/lib/studio/tableSetup";
@@ -16,8 +16,8 @@ import { RENDER_BUCKET } from "@/lib/renderKey";
 import { readNdjson } from "@/lib/ndjson";
 
 type View = "perspective" | "top" | "close";
-/** Pictures that can be shown now, and the table (tableRenderKey) they show. */
-interface Shown { key: string; perspective: string; top?: string; close?: string }
+/** The close-up that can be shown now, and the table (tableRenderKey) it shows. */
+interface Shown { key: string; close: string }
 
 export default function TablePreview({ config, setTable, onSignInNeeded, startNow, onStarted }: {
   config: BuilderConfig;
@@ -28,7 +28,6 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
   onStarted?: () => void;
 }) {
   const [view, setView] = useState<View>("perspective");
-  const [showSketch, setShowSketch] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [expired, setExpired] = useState(false);
@@ -54,21 +53,23 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
     let cancelled = false;
     void (async () => {
       const sb = await loadClient();
-      const paths = [render.perspective, render.top, ...(render.close ? [render.close] : [])];
-      const { data } = (await sb?.storage.from(RENDER_BUCKET).createSignedUrls(paths, 3600).catch(() => null)) ?? { data: null };
-      const [p, t, c] = [data?.[0]?.signedUrl, data?.[1]?.signedUrl, data?.[2]?.signedUrl];
+      const { data } = (await sb?.storage.from(RENDER_BUCKET).createSignedUrls([render.close], 3600).catch(() => null)) ?? { data: null };
+      const c = data?.[0]?.signedUrl;
       if (cancelled) return;
-      if (p && t) { setShown({ key: render.key, perspective: p, top: t, ...(c ? { close: c } : {}) }); setExpired(false); } else retry();
+      if (!c) { retry(); return; }
+      setShown({ key: render.key, close: c }); setExpired(false);
+      // Back on the page with the close-up of this very table: show it.
+      if (latest.current && render.key === tableRenderKey(latest.current)) setView("close");
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [render?.key, render?.perspective, render?.top, render?.close, attempt]);
+  }, [render?.key, render?.close, attempt]);
 
   async function makeRender() {
     if (status === "loading" || !latest.current?.enabled) return;
     const token = await accountToken();
     if (token === null) { onSignInNeeded(); return; }
-    setStatus("loading"); setError(null);
+    setStatus("loading"); setError(null); setView("close");
     const key = tableRenderKey(latest.current);
     const failed = "The render didn't come out — please try again.";
     try {
@@ -82,16 +83,13 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
         if (data?.signin) { setStatus("idle"); onSignInNeeded(); return; }
         throw new Error(data?.error ?? failed);
       }
-      // One picture per line as each is made, then a line saying it is done.
+      // The picture's line, then a line saying it is done.
       type End = { done?: boolean; error?: string; render?: TableSetup["render"] };
       let end: End | null = null;
       await readNdjson(res.body, (line) => {
         const l = line as { view?: View; url?: string; done?: boolean; error?: string };
-        if (l.view && typeof l.url === "string") {
-          const { view: v, url } = l;
-          setShown((s) => (v === "perspective" ? { key, perspective: url } : s && s.key === key ? { ...s, [v]: url } : s));
-          if (v === "perspective") { setExpired(false); setShowSketch(false); }
-        } else if (l.done || l.error) end = l;
+        if (l.view === "close" && typeof l.url === "string") { setShown({ key, close: l.url }); setExpired(false); }
+        else if (l.done || l.error) end = l;
       });
       const result = end as End | null; // set inside the callback
       if (!result?.done) throw new Error(result?.error ?? failed);
@@ -113,22 +111,20 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
   }, [startNow, table?.enabled]);
 
   const loading = status === "loading";
-  const photo = current && !showSketch;
-  // The close-up exists only as a photo (or one on its way); without one, the front view shows.
-  const shownView: View = view === "close" && !(photo && (shown?.close || loading)) ? "perspective" : view;
-  const src = photo ? shown![shownView] : undefined;
-  // All three pictures are in: nothing more to render for this table.
-  const complete = current && !!shown?.top;
+  // The close-up tab shows the photo, or the drawing under the dots while it is made.
+  const shownView: View = view === "close" && !(current || loading) ? "perspective" : view;
+  const src = shownView === "close" && current ? shown!.close : undefined;
   // A render of an earlier version of the table.
   const stale = !expired && !current && !!table && ((!!shown && shown.key !== tableRenderKey(table)) || (!!render && render.key !== tableRenderKey(table)));
+  const tab = (v: View, name: string) => <button type="button" role="tab" aria-selected={shownView === v} className={shownView === v ? "on" : ""} onClick={() => setView(v)}>{name}</button>;
   return (
     <div className="bz-tb-preview" id="table-preview-card">
       <div className="head">
         <span className="title">✦ Your kids&apos; table</span>
         <div className="views" role="tablist" aria-label="Table view">
-          <button type="button" role="tab" aria-selected={view === "perspective"} className={view === "perspective" ? "on" : ""} onClick={() => setView("perspective")}>Perspective</button>
-          <button type="button" role="tab" aria-selected={view === "top"} className={view === "top" ? "on" : ""} onClick={() => setView("top")}>Top view</button>
-          {photo && (shown?.close || loading) && <button type="button" role="tab" aria-selected={view === "close"} className={view === "close" ? "on" : ""} onClick={() => setView("close")}>Close-up</button>}
+          {tab("perspective", "Perspective")}
+          {tab("top", "Top view")}
+          {(current || loading) && tab("close", "Close-up")}
         </div>
       </div>
       {!table?.enabled ? (
@@ -138,26 +134,25 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
           {src ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img className="bz-tb-photo" data-testid="table-render" src={src}
-              alt={`Your kids' table, ${shownView === "top" ? "from above" : shownView === "close" ? "one seat up close" : "from the front"}`} onError={() => (shown?.perspective.startsWith("data:") ? setExpired(true) : retry())} />
+              alt="Your kids' table, one seat up close" onError={() => (src.startsWith("data:") ? setExpired(true) : retry())} />
           ) : (
-            <div className={loading ? "bz-tb-wait on" : "bz-tb-wait"}>
+            <div className={loading && shownView === "close" ? "bz-tb-wait on" : "bz-tb-wait"}>
               {shownView === "top" ? <TableSketch table={table} palette={theme.balloonColors} accent={theme.accent} className="bz-tb-sketch" />
                 : <TablePerspective table={table} palette={theme.balloonColors} accent={theme.accent} className="bz-tb-sketch" />}
-              {loading && (
+              {loading && shownView === "close" && (
                 <div className="veil" role="status" data-testid="table-render-wait">
                   <span className="dots" aria-hidden="true"><i /><i /><i /></span>
-                  <b>{shown?.key === tableRenderKey(table) ? (shownView === "top" ? "Photographing it from above" : "Taking the close-up") : "Rendering your table"}</b>
-                  <span>{shown?.key === tableRenderKey(table) ? "Almost there — about a minute more." : "The front view comes first, in about a minute."}</span>
+                  <b>Rendering one seat up close</b>
+                  <span>From the pictures you chose — about a minute.</span>
                 </div>
               )}
             </div>
           )}
           <p className="note">
-            {photo && src ? "Your render — the real look of your choices."
-              : photo ? (loading ? "Your render — this view is on its way." : "This view didn't come out — the drawing shows instead.")
-              : shownView === "top" ? <>From above, to scale · {tableCounts(table).tables} table{tableCounts(table).tables > 1 ? "s" : ""} · {table.kids} kids — a sketch, not a photo.</>
-                : <>From the front · {table.kids} kids — a sketch, not a photo.</>}
-            {current && <> <button type="button" className="bz-tb-link" onClick={() => setShowSketch(!showSketch)}>{showSketch ? "Show the render" : "Show the sketch"}</button></>}
+            {src ? "Your close-up — one seat, made from the pictures you chose."
+              : shownView === "close" ? "Your close-up is on its way."
+              : shownView === "top" ? <>From above, to scale · {tableCounts(table).tables} table{tableCounts(table).tables > 1 ? "s" : ""} · {table.kids} kids — a drawing, not a photo.</>
+                : <>From the front · {table.kids} kids — a drawing, not a photo.</>}
           </p>
           <div className="bz-tb-render" data-testid="table-render-box">
             <div className="scene" role="radiogroup" aria-label="Where the party is">
@@ -169,14 +164,14 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
             {loading ? (
               <p className="busy">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>
-                {shown?.key === tableRenderKey(table) ? "Your front view is in — the view from above and the close-up are on their way." : "Three views, one by one: the front, from above, then one seat up close."}
+                Rendering one seat up close — about a minute.
               </p>
-            ) : complete ? null : (
+            ) : current ? null : (
               <>
                 <button type="button" className="bz-next" onClick={() => void makeRender()}>
-                  {stale ? "Update the render ✦" : current ? "Try the render again ✦" : "Generate table render ✦"}
+                  {stale ? "Update the close-up ✦" : "Render a close-up ✦"}
                 </button>
-                <p className="hint">{stale ? "You changed the table since your render." : expired ? "Your last render is no longer available." : "A photo-real look at every choice — from the front, from above and one seat up close."} Needs a free account.</p>
+                <p className="hint">{stale ? "You changed the table since your close-up." : expired ? "Your last close-up is no longer available." : "A photo-real close-up of one seat, made from the pictures you chose."} Needs a free account.</p>
               </>
             )}
             {status === "error" && error && <p className="error" role="alert">{error}</p>}

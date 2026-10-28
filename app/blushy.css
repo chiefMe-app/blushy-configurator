@@ -1196,6 +1196,7 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-option small { font-size: 10.5px; color: var(--bz-muted); line-height: 1.3; }
 .bz-tb-option em { font-style: normal; font-size: 10.5px; font-weight: 800; color: var(--bz-pink); margin-top: 2px; }
 .bz-tb-item .bz-ts-swatches { margin-top: 10px; }
+.bz-tb-floor { margin: 0; font-size: 13px; color: var(--bz-muted); }
 .bz-tb-sum { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 16px; background: #fbf4f7; font-size: 13px; }
 .bz-tb-sum b { font: 400 22px var(--bz-hand); color: var(--bz-pink); margin-right: auto; }
 .bz-tb-preview { border: 1px solid var(--bz-border); border-radius: 22px; padding: 14px; background: #fff; box-shadow: 0 10px 30px rgba(103,44,71,.06); }

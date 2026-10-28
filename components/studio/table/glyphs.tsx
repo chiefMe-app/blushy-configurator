@@ -23,7 +23,11 @@ export interface GlyphColours {
 
 const pick = (c: GlyphColours, k: number) => c.palette[((c.seat ?? 0) + k) % c.palette.length];
 
-export const CHAIR_COLOUR: Record<string, string> = { white_kids: "#FFFFFF", pastel_kids: "#DDD6FE", gold_chiavari: GOLD, clear_ghost: "#E6EEF5" };
+// The owner's kids' chairs (2026-10-28); gold chiavari is the grown-ups'.
+export const CHAIR_COLOUR: Record<string, string> = { white_kids: "#FFFFFF", blue_kids: "#38BDF8", bow_kids: "#F9D3DF", gold_chiavari: GOLD };
+
+/** The low table's floor cushion, from above. */
+export const cushion = () => <rect x={-20} y={-20} width={40} height={40} rx={11} fill="#FFFFFF" stroke={INK} strokeWidth={1.2} />;
 
 /** A paper plate cut with a wavy edge, radius r. */
 export function scallop(r: number, bumps = 14) {
@@ -38,9 +42,11 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
   switch (key) {
     case "chairs":
       return <g>
-        <rect x={-19} y={-17} width={38} height={34} rx={9} fill={CHAIR_COLOUR[id] ?? "#fff"} fillOpacity={id === "clear_ghost" ? 0.55 : 1} stroke={INK} strokeWidth={1.2} />
+        <rect x={-19} y={-17} width={38} height={34} rx={id === "bow_kids" ? 17 : 9} fill={CHAIR_COLOUR[id] ?? "#fff"} stroke={INK} strokeWidth={1.2} />
         {id === "gold_chiavari" && <path d="M-13,-11h26M-13,-4h26" stroke="#B8932B" strokeWidth={1.2} />}
-        {id === "clear_ghost" && <path d="M-13,-12q13,-6 26,0" fill="none" stroke="#9FB4C8" strokeWidth={1.2} />}
+        {id === "white_kids" && <path d="M-13,-12q13,-7 26,0M-19,-2h-3v14h3M19,-2h3v14h-3" fill="none" stroke={INK} strokeWidth={1} />}
+        {id === "blue_kids" && <path d="M-12,-17v-3h24v3M-6,-20v3M0,-20v3M6,-20v3" fill="none" stroke={INK} strokeWidth={1} />}
+        {id === "bow_kids" && <g fill="none" stroke={INK} strokeWidth={1}><ellipse cx={-7} cy={-21} rx={6} ry={4} /><ellipse cx={7} cy={-21} rx={6} ry={4} /></g>}
       </g>;
     case "chairDecor":
       if (id === "tulle_bow") return <g fill={pick(c, 1)} stroke={INK} strokeWidth={0.7}><path d="M0,0L-9,-5L-9,5Z" /><path d="M0,0L9,-5L9,5Z" /><circle r={2.2} /></g>;

@@ -14,7 +14,7 @@ const BLOCKED_API = /\/api\/(orders|generate|generate-cutouts|generate-controlle
 /** A stand-in render: any local picture, so the flow can move past Decor. */
 export const FAKE_RENDER = "/design/balloon-dog-outline.webp";
 /** Stand-ins for the table render's two views. */
-export const FAKE_TABLE_RENDER = { perspective: "/design/table/table-long.webp", top: "/design/table/table-round.webp", close: "/design/table/plates-themed.webp" };
+export const FAKE_TABLE_RENDER = { close: "/design/table/plates-themed.webp" };
 
 export interface Guard {
   blocked: Request[];
@@ -187,9 +187,9 @@ export async function lockNetwork(page: Page): Promise<Guard> {
         const sub = tokenSubject(req.headers()["authorization"]);
         const key = tableRenderKey(table);
         await guard.holdTableRender;
-        // As the route streams it: one picture per line, then the end.
-        const lines = [...(["perspective", "top", "close"] as const).map((view) => ({ view, url: FAKE_TABLE_RENDER[view] })),
-          { done: true, ...(sub ? { render: { key, perspective: `${sub}/p${key}.jpg`, top: `${sub}/t${key}.jpg`, close: `${sub}/c${key}.jpg` } } : {}) }];
+        // As the route streams it: the close-up's line, then the end.
+        const lines = [{ view: "close", url: FAKE_TABLE_RENDER.close },
+          { done: true, ...(sub ? { render: { key, close: `${sub}/c${key}.jpg` } } : {}) }];
         return route.fulfill({ contentType: "application/x-ndjson", body: lines.map((l) => `${JSON.stringify(l)}\n`).join("") });
       }
       if (guard.fakeOrder && url.pathname.startsWith("/api/orders")) {

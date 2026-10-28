@@ -1,4 +1,4 @@
-// The kids' table: every item the customer chooses, three options each (plus
+// The kids' table: every item the customer chooses, a few options each (plus
 // "None" where an item is optional). Party favours are not here: they are
 // Giveaways, a Decor part of their own (2026-10-27). It is a kids' party
 // table (2026-10-27, the owner: "çocuk doğum günü olduğu belli olsun … şu an
@@ -8,10 +8,11 @@
 // options — replace a name, price or picture here and the step follows:
 //   - name / note: what the card says;
 //   - price, unit: AED per table, per child or once (placeholder prices for now);
-//   - photo: a picture in /public/design/table. The pictures there now are
-//     AI-made stand-ins inspired by the owner's Frozen references (2026-10-27,
-//     no characters or logos) — swap in real product photos at 4:3; without a
-//     photo, the card shows a drawn placeholder.
+//   - photo: a picture in /public/design/table. The tables and chairs are the
+//     owner's own photos and prices (2026-10-28: "her opsiyonun görselini
+//     vereceğim"); the other pictures are still AI-made stand-ins until hers
+//     come (no characters or logos). Without a photo, the card shows a drawing.
+//     The close-up render is made from these pictures (lib/studio/tableRender.ts).
 export type TableItemKey =
   | "table" | "chairs"
   | "tablecloth" | "runner" | "napkins"
@@ -27,30 +28,37 @@ export interface TableOption {
   price: number;
   unit: PriceUnit;
   photo?: string;
+  /** A table: how many children sit at one. */
+  seats?: number;
+  /** A table the children sit at on floor cushions (no chairs). */
+  floor?: boolean;
 }
 
 export interface TableItem {
   key: TableItemKey;
   label: string;
-  /** Optional items have a "None" choice before the three options. */
+  /** Optional items have a "None" choice before the options. */
   optional: boolean;
   /** The item takes a colour (the cloth, the runner, the napkins). */
   coloured?: boolean;
-  options: [TableOption, TableOption, TableOption];
+  options: TableOption[];
 }
 
 export const NONE = "none";
 
 export const TABLE_ITEMS: TableItem[] = [
   { key: "table", label: "Table", optional: false, options: [
-    { id: "long", name: "Long table", note: "180 × 60 cm · 8 kids · joined into rows", price: 80, unit: "per_table", photo: "/design/table/table-long.webp" },
-    { id: "round", name: "Round table", note: "⌀ 120 cm · 8 kids", price: 80, unit: "per_table", photo: "/design/table/table-round.webp" },
-    { id: "square", name: "Square table", note: "100 × 100 cm · 8 kids", price: 80, unit: "per_table", photo: "/design/table/table-square.webp" },
+    { id: "standard", name: "Standard table", note: "Long and white · 10 kids", price: 399, unit: "per_table", seats: 10, photo: "/design/table/table-standard.webp" },
+    { id: "half_wave", name: "Half wave table", note: "A gentle S-curve · 8 kids", price: 499, unit: "per_table", seats: 8, photo: "/design/table/table-half_wave.webp" },
+    { id: "flower", name: "Flower table", note: "Six petals · 6 kids", price: 399, unit: "per_table", seats: 6, photo: "/design/table/table-flower.webp" },
+    { id: "round", name: "Round table", note: "One big circle · 16 kids", price: 999, unit: "per_table", seats: 16, photo: "/design/table/table-round.webp" },
+    { id: "low", name: "Low table", note: "Floor cushions, no chairs · 10 kids", price: 749, unit: "per_table", seats: 10, floor: true, photo: "/design/table/table-low.webp" },
+    { id: "cloud", name: "Cloud table", note: "Soft wavy edges · 10 kids", price: 499, unit: "per_table", seats: 10, photo: "/design/table/table-cloud.webp" },
   ] },
   { key: "chairs", label: "Chairs", optional: false, options: [
-    { id: "white_kids", name: "White kids' chairs", note: "Classic and light", price: 5, unit: "per_child", photo: "/design/table/chairs-white_kids.webp" },
-    { id: "pastel_kids", name: "Pastel kids' chairs", note: "Soft colours to match", price: 7, unit: "per_child", photo: "/design/table/chairs-pastel_kids.webp" },
-    { id: "clear_ghost", name: "Clear ghost chairs", note: "See-through acrylic", price: 13, unit: "per_child", photo: "/design/table/chairs-clear_ghost.webp" },
+    { id: "white_kids", name: "White chair for kids", note: "Oval back, with arms", price: 25, unit: "per_child", photo: "/design/table/chairs-white_kids.webp" },
+    { id: "blue_kids", name: "Blue chair for kids", note: "Bright blue, slatted back", price: 25, unit: "per_child", photo: "/design/table/chairs-blue_kids.webp" },
+    { id: "bow_kids", name: "Bow chair for kids", note: "Pink, with a bow back", price: 25, unit: "per_child", photo: "/design/table/chairs-bow_kids.webp" },
   ] },
   { key: "tablecloth", label: "Tablecloth", optional: false, coloured: true, options: [
     { id: "printed", name: "Printed party cover", note: "In the theme's pattern", price: 25, unit: "per_table", photo: "/design/table/tablecloth-printed.webp" },
@@ -118,4 +126,7 @@ export const TABLE_TABS: { name: string; title: string; sub: string; items: Tabl
 ];
 
 export const tableItem = (key: TableItemKey) => TABLE_ITEMS.find((i) => i.key === key)!;
-export const tableOption = (key: TableItemKey, id: string) => tableItem(key).options.find((o) => o.id === id);
+// An item may not be offered at the kids' table (charger plates): it has no options then.
+export const tableOption = (key: TableItemKey, id: string) => TABLE_ITEMS.find((i) => i.key === key)?.options.find((o) => o.id === id);
+/** The chosen table sits the children on floor cushions: no chairs to choose or pay for. */
+export const onFloor = (choices: Record<TableItemKey, string>) => !!tableOption("table", choices.table)?.floor;

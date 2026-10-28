@@ -1,16 +1,17 @@
-// The real render of the kids' table (2026-10-27, F3): a down-the-table photo,
-// a top-down photo and a close-up of one place setting, made from the live
-// drawings as layout guides
-// (lib/studio/tableGuide.ts) and every choice in words (lib/studio/tableRender.ts).
-// Like the backdrop render it costs money, so it needs a signed-in account and
-// counts as one of the day's renders (lib/renderAccount.ts), behind the
-// per-IP guard (lib/renderGuard.ts). The two pictures are kept in the
-// customer's folder of the private renders bucket (lib/renderStore.ts), and
-// come back in the answer itself, as pictures: the browser needs no other
-// address to show them (2026-10-27: the owner's network kept failing to look
-// up fal's and Supabase's picture hosts). The answer is a stream, one picture
-// per line as each is made (lib/ndjson.ts).
+// The real render of the kids' table (F3): since 2026-10-28 one close-up of a
+// place setting, made from the pictures of the options the customer chose
+// (lib/studio/tableRender.ts) — the layout stays the live drawings. Like the
+// backdrop render it costs money, so it needs a signed-in account and counts
+// as one of the day's renders (lib/renderAccount.ts), behind the per-IP guard
+// (lib/renderGuard.ts). The picture is kept in the customer's folder of the
+// private renders bucket (lib/renderStore.ts), and comes back in the answer
+// itself (2026-10-27: the owner's network kept failing to look up fal's and
+// Supabase's picture hosts). The answer is a stream (lib/ndjson.ts): the
+// picture's line, then a line saying it is done.
 import { NextResponse, type NextRequest } from "next/server";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import sharp from "sharp";
 import { fal } from "@fal-ai/client";
 import { themeById } from "@/lib/config";
 import { acquireRender, clientIp } from "@/lib/renderGuard";
@@ -18,28 +19,40 @@ import { renderUser, takeAccountRender } from "@/lib/renderAccount";
 import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
 import { readTableSetup } from "@/lib/studio/tableSetup";
-import { tablePrompt, tableRenderKey, type TableRender, type TableView } from "@/lib/studio/tableRender";
-import { GUIDE_SIZE, tableGuide } from "@/lib/studio/tableGuide";
+import { referencePictures, tablePrompt, tableRenderKey, type TableRender } from "@/lib/studio/tableRender";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300; // two rounds of Seedream pictures (60–90 s each), one after the other
+export const maxDuration = 150; // one Seedream picture (60–90 s)
 
 // Seedream 5 Lite: in the 2026-10-27 comparison with flux-2-pro and
-// nano-banana (same guide and prompt) it came closest to the owner's reference
-// photos, and is the cheapest ($0.035 a picture) — "A olsun": its front view
-// is free to make a magazine shot, the top view keeps the exact layout.
-// TABLE_RENDER_MODEL switches the engine; each takes its picture size in its own way.
+// nano-banana it came closest to the owner's reference photos, and is the
+// cheapest ($0.035 a picture). TABLE_RENDER_MODEL switches the engine.
 const MODEL = process.env.TABLE_RENDER_MODEL || "fal-ai/bytedance/seedream/v5/lite/edit";
 const SEED = 777;
 
-function engineInput(model: string, prompt: string, imageUrls: string[], size: { width: number; height: number }) {
+function engineInput(model: string, prompt: string, imageUrls: string[]) {
   const base = { prompt, image_urls: imageUrls, num_images: 1, output_format: "jpeg" };
-  const upright = size.width < size.height, wide = size.width > size.height;
-  if (model.includes("nano-banana")) return { ...base, aspect_ratio: wide ? "4:3" : upright ? "3:4" : "1:1" };
+  if (model.includes("nano-banana")) return { ...base, aspect_ratio: "4:3" };
   // Seedream has no seed, and wants at least 2560×1440 pixels: a named size it scales itself.
-  if (model.includes("seedream")) return { ...base, image_size: wide ? "landscape_4_3" : upright ? "portrait_4_3" : "square_hd" };
-  return { ...base, image_size: size, seed: SEED };
+  if (model.includes("seedream")) return { ...base, image_size: "landscape_4_3" };
+  return { ...base, image_size: { width: 1152, height: 864 }, seed: SEED };
+}
+
+/**
+ * An option picture (/design/table/…) as a small JPEG data URI: from the
+ * site's own files, or — where those are not bundled with the function — from
+ * the site itself.
+ */
+async function optionPicture(photo: string, origin: string): Promise<string> {
+  if (!/^\/design\/table\/[\w-]+\.(webp|png|jpe?g)$/.test(photo)) throw new Error(`not an option picture: ${photo}`);
+  const bytes = await readFile(path.join(process.cwd(), "public", photo)).catch(async () => {
+    const res = await fetch(new URL(photo, origin), { signal: AbortSignal.timeout(15_000) });
+    if (!res.ok) throw new Error(`option picture ${photo}: ${res.status}`);
+    return Buffer.from(await res.arrayBuffer());
+  });
+  const jpeg = await sharp(bytes).resize({ width: 768, height: 768, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 88 }).toBuffer();
+  return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -63,48 +76,27 @@ export async function POST(req: NextRequest) {
     const taken = await takeAccountRender(user);
     if (!taken.ok) return NextResponse.json({ error: taken.error, signin: taken.signin, limited: taken.limited }, { status: taken.status });
     fal.config({ credentials: falKey });
-    const edit = async (view: TableView, imageUrls: string[]) => {
-      const result = await fal.subscribe(MODEL, {
-        input: engineInput(MODEL, tablePrompt(table, theme, view), imageUrls, GUIDE_SIZE[view]) as never,
-        abortSignal: AbortSignal.timeout(130_000),
-      });
-      const url = (result.data as { images?: { url?: string }[] })?.images?.[0]?.url;
-      if (!url) throw new Error(`no ${view} image`);
-      return url;
-    };
-    const dataUri = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
-    const picture = (j: Buffer) => `data:image/jpeg;base64,${j.toString("base64")}`;
-    // Each picture goes out the moment it is made (one JSON line each), so
-    // the front view shows after about a minute; the last line says it is
-    // done (with where the pictures are kept) or what went wrong.
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const send = (o: unknown) => controller.enqueue(ndjsonLine(o));
         try {
-          const jpegs: Partial<Record<TableView, Buffer>> = {};
-          const made = async (view: TableView, url: string) => {
-            const jpeg = await renderJpeg(url);
-            if (!jpeg) throw new Error(`the ${view} picture could not be read`);
-            jpegs[view] = jpeg;
-            send({ view, url: picture(jpeg) });
-          };
-          const [perspectiveGuide, topGuide] = await Promise.all([tableGuide(table, theme, "perspective"), tableGuide(table, theme, "top")]);
-          // The front view first, from the drawing; then the top view (the drawing
-          // for the layout, the front photo for the look) and the close-up (from
-          // the front photo), so all three show the same things.
-          const perspective = await edit("perspective", [dataUri(perspectiveGuide)]);
-          await Promise.all([
-            made("perspective", perspective),
-            edit("top", [dataUri(topGuide), perspective]).then((u) => made("top", u)),
-            edit("close", [perspective]).then((u) => made("close", u)),
-          ]);
+          const refs = referencePictures(table);
+          const pictures = await Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin)));
+          const result = await fal.subscribe(MODEL, {
+            input: engineInput(MODEL, tablePrompt(table, theme, refs.map((r) => r.key)), pictures) as never,
+            abortSignal: AbortSignal.timeout(130_000),
+          });
+          const url = (result.data as { images?: { url?: string }[] })?.images?.[0]?.url;
+          if (!url) throw new Error("no close-up image");
+          const jpeg = await renderJpeg(url);
+          if (!jpeg) throw new Error("the close-up could not be read");
+          send({ view: "close", url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
           const key = tableRenderKey(table);
           // Without a database (local development) nothing is kept.
           let render: TableRender | undefined;
           if (user.client && user.userId) {
-            const [p, t, c] = await Promise.all((["perspective", "top", "close"] as const).map((v) =>
-              storeRenderJpeg(user.client!, user.userId!, jpegs[v]!, `table:${v}:${key}`)));
-            render = p && t && c ? { key, perspective: p.path, top: t.path, close: c.path } : undefined;
+            const kept = await storeRenderJpeg(user.client, user.userId, jpeg, `table:close:${key}`);
+            render = kept ? { key, close: kept.path } : undefined;
             if (!render) console.warn("[table-render] not kept; shown only");
           }
           send({ done: true, ...(render ? { render } : {}), left: taken.left });

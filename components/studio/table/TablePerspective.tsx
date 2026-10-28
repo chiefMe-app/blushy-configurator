@@ -5,14 +5,15 @@
 // this drawing as its layout guide. Seen from a front corner (TURN: the floor
 // plan is turned before it is projected) so the table reads in depth
 // ("perspective çok uzak … daha cool"); the frame fits the drawing.
-import { NONE } from "@/lib/studio/tableCatalog";
+import { NONE, onFloor } from "@/lib/studio/tableCatalog";
 import type { TableSetup } from "@/lib/studio/tableSetup";
-import { arrangeTables } from "./TableSketch";
+import { arrangeTables, type Pt } from "@/lib/studio/tableShapes";
 import { CHAIR_COLOUR, GOLD, INK, PASTELS, PartyPatterns, star } from "./glyphs";
 
 // Projection: floor depth (y) is squeezed and lifted, height rises, and the far
 // side shrinks towards the middle (FAR) so the room reads in perspective.
-const TABLE_H = 50, CHAIR_SEAT = 28, CHAIR_BACK = 58;
+// Each table has its own height (the low table is 35 cm).
+const CHAIR_SEAT = 28, CHAIR_BACK = 58;
 
 /**
  * Where the drawing is seen from: the floor plan's turn (radians), how much the
@@ -59,21 +60,38 @@ export default function TablePerspective({ table, palette, accent, className, ca
   const pieces: Piece[] = [];
   let seatNo = 0;
 
+  const floorSeats = onFloor(ch);
   const chair = (x: number, y: number, facing: number, key: string, n: number, tableDepth: number) => {
+    const k = K(x, y);
+    const facingUs = Math.sin(facing + turn) < 0; // a seat on the near side faces away from us: its back is in front
+    if (floorSeats) {
+      // The low table: a white cushion on the floor at every place.
+      const [fx, fy] = P(x, y), [tx, ty] = P(x, y, 11);
+      pieces.push({ depth: tableDepth + (facingUs ? 0.5 : -0.5), node: <g key={key}>
+        <path d={`M${fx - 20 * k},${fy}V${ty}H${tx + 20 * k}V${fy}Z`} fill="#F1ECE8" stroke={INK} strokeWidth={1} />
+        <ellipse cx={fx} cy={fy} rx={20 * k} ry={8 * k} fill="#F1ECE8" stroke={INK} strokeWidth={1} />
+        <ellipse cx={tx} cy={ty} rx={20 * k} ry={8 * k} fill="#FFFFFF" stroke={INK} strokeWidth={1.1} />
+      </g> });
+      return;
+    }
     const c = CHAIR_COLOUR[ch.chairs] ?? "#fff";
-    const clear = ch.chairs === "clear_ghost";
     // The back is on the side away from the table.
     const bx = x - Math.cos(facing) * 15, by = y - Math.sin(facing) * 15;
     const [sx, sy] = P(x, y, CHAIR_SEAT), [bxp, byp] = P(bx, by, CHAIR_BACK);
-    const facingUs = Math.sin(facing + turn) < 0; // a chair on the near side faces away from us: its back is in front
-    const k = K(x, y);
-    ceil = Math.min(ceil, byp - (ch.chairDecor === "balloon" ? 30 * k : 4));
+    ceil = Math.min(ceil, byp - (ch.chairDecor === "balloon" ? 30 * k : ch.chairs === "bow_kids" ? 14 * k : 4));
     minX = Math.min(minX, bxp - 20 * k); maxX = Math.max(maxX, bxp + 20 * k);
     // A near chair's back is see-through, so the table behind it still shows.
-    const op = clear ? 0.45 : facingUs ? 0.72 : 1;
-    const back = <rect x={bxp - 15 * k} y={byp} width={30 * k} height={(CHAIR_BACK - CHAIR_SEAT + 6) * k} rx={6 * k} fill={c} fillOpacity={op} stroke={INK} strokeWidth={1.1} />;
-    const seat = <ellipse cx={sx} cy={sy} rx={17 * k} ry={7 * k} fill={c} fillOpacity={clear ? 0.45 : 1} stroke={INK} strokeWidth={1.1} />;
-    const legs = <path d={`M${sx - 13 * k},${sy}V${P(x, y)[1]}M${sx + 13 * k},${sy}V${P(x, y)[1]}`} stroke={ch.chairs === "gold_chiavari" ? "#B8932B" : INK} strokeWidth={1.4} />;
+    const op = facingUs ? 0.72 : 1;
+    const bh = (CHAIR_BACK - CHAIR_SEAT + 6) * k;
+    const back = ch.chairs === "bow_kids"
+      // Two loops of a bow for a back.
+      ? <g fill={c} fillOpacity={0.35} stroke="#D9A3B5" strokeWidth={2}><ellipse cx={bxp - 8 * k} cy={byp} rx={8 * k} ry={10 * k} /><ellipse cx={bxp + 8 * k} cy={byp} rx={8 * k} ry={10 * k} /><path d={`M${bxp},${byp + 8 * k}V${byp + bh}`} /></g>
+      : ch.chairs === "white_kids"
+        ? <ellipse cx={bxp} cy={byp + bh / 2} rx={15 * k} ry={bh / 2 + 2 * k} fill={c} fillOpacity={op} stroke={INK} strokeWidth={1.1} />
+        : <g><rect x={bxp - 15 * k} y={byp} width={30 * k} height={bh} rx={4 * k} fill={c} fillOpacity={op} stroke={INK} strokeWidth={1.1} />
+          {ch.chairs === "blue_kids" && <path d={[-8, -3, 3, 8].map((dx) => `M${bxp + dx * k},${byp + 4 * k}V${byp + bh - 3 * k}`).join("")} stroke="#0E7490" strokeWidth={1} />}</g>;
+    const seat = <ellipse cx={sx} cy={sy} rx={17 * k} ry={7 * k} fill={c} stroke={ch.chairs === "bow_kids" ? "#D9A3B5" : INK} strokeWidth={1.1} />;
+    const legs = <path d={`M${sx - 13 * k},${sy}V${P(x, y)[1]}M${sx + 13 * k},${sy}V${P(x, y)[1]}`} stroke={ch.chairs === "gold_chiavari" ? "#B8932B" : ch.chairs === "bow_kids" ? "#D9A3B5" : INK} strokeWidth={1.4} />;
     const decor = ch.chairDecor === NONE ? null : ch.chairDecor === "tulle_bow"
       ? <g fill={pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.7} transform={`translate(${bxp} ${byp + 10 * k}) scale(${k})`}><path d="M0,0L-11,-6L-11,6Z" /><path d="M0,0L11,-6L11,6Z" /><circle r={2.6} /></g>
       : ch.chairDecor === "balloon"
@@ -84,55 +102,45 @@ export default function TablePerspective({ table, palette, accent, className, ca
   };
 
   tables.forEach((t, ti) => {
-    const round = t.kind === "round";
+    const TABLE_H = t.height;
     const cx = t.x + t.w / 2, cy = t.y + t.h / 2;
-    const near = t.y + t.h; // the front edge
     const depth = R(cx, cy)[1];
     t.seats.forEach((s, k) => chair(s.x + (s.ex - s.x) * tuck, s.y + (s.ey - s.y) * tuck, s.facing, `ch-${ti}-${k}`, k, depth));
 
     const cloth = table.clothColor;
     const ruffle = ch.tablecloth === "ruffle", sequin = ch.tablecloth === "sequin", printed = ch.tablecloth === "printed";
+    const top = (pl: Pt[]) => pts(pl.map(([x, y]) => P(x, y, TABLE_H)));
     const items: JSX.Element[] = [];
     items.push(<ellipse key="shadow" cx={P(cx, cy)[0]} cy={P(cx, cy)[1] + 6} rx={(t.w / 2 + 8) * K(cx, cy)} ry={14} fill="#000" opacity={0.06} />);
-    // The tabletop and the cloth hanging to the floor in front.
-    if (round) {
-      const [ex, ey] = P(cx, cy, TABLE_H), rx = (t.w / 2) * K(cx, cy), ry = (t.h / 2) * DEPTH * K(cx, cy);
-      minX = Math.min(minX, ex - rx); maxX = Math.max(maxX, ex + rx); floor = Math.max(floor, P(cx, cy)[1] + ry);
-      items.push(<path key="drape" d={`M${ex - rx},${ey}V${P(cx, cy)[1]}A${rx},${ry} 0 0 0 ${ex + rx},${P(cx, cy)[1]}V${ey}Z`} fill={cloth} stroke={INK} strokeWidth={1.2} />);
-      if (ruffle) items.push(<path key="ruf" d={`M${ex - rx},${P(cx, cy)[1] - 10}A${rx},${ry} 0 0 0 ${ex + rx},${P(cx, cy)[1] - 10}`} fill="none" stroke={INK} strokeWidth={0.9} strokeDasharray="4 3" />);
-      items.push(<ellipse key="top" cx={ex} cy={ey} rx={rx} ry={ry} fill={cloth} stroke={INK} strokeWidth={1.3} />);
-      if (sequin || printed) items.push(<ellipse key="seq" cx={ex} cy={ey} rx={rx} ry={ry} fill={sequin ? "url(#sequin)" : "url(#cloth-print)"} />);
-      if (ch.runner !== NONE) items.push(<ellipse key="run" cx={ex} cy={ey} rx={30 * K(cx, cy)} ry={30 * DEPTH * K(cx, cy)} fill={ch.runner === "tulle" ? `${table.runnerColor}99` : ch.runner === "confetti" ? "url(#confetti)" : table.runnerColor} />);
-    } else {
-      const a = P(t.x, t.y, TABLE_H), b = P(t.x + t.w, t.y, TABLE_H), c = P(t.x + t.w, near, TABLE_H), d = P(t.x, near, TABLE_H);
-      // The cloth hangs to the floor on every side that faces us.
-      const corners: [number, number][] = [[t.x, t.y], [t.x + t.w, t.y], [t.x + t.w, near], [t.x, near]];
-      const normals: [number, number][] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
-      corners.forEach(([x1, y1], i) => {
-        const [nx, ny] = normals[i];
-        if (nx * sin + ny * cos <= 0.02) return; // turned away
-        const [x2, y2] = corners[(i + 1) % 4];
-        items.push(<polygon key={`side-${i}`} points={pts([P(x1, y1, TABLE_H), P(x2, y2, TABLE_H), P(x2, y2), P(x1, y1)])} fill={cloth} stroke={INK} strokeWidth={1.2} />);
-        if (printed) items.push(<polygon key={`print-${i}`} points={pts([P(x1, y1, TABLE_H), P(x2, y2, TABLE_H), P(x2, y2), P(x1, y1)])} fill="url(#cloth-print)" />);
-        if (ruffle) items.push(<path key={`ruf-${i}`} d={`M${P(x1, y1, 10).join(",")}L${P(x2, y2, 10).join(",")}`} stroke={INK} strokeWidth={0.9} strokeDasharray="4 3" />);
-      });
-      items.push(<polygon key="top" points={pts([a, b, c, d])} fill={cloth} stroke={INK} strokeWidth={1.3} />);
-      if (sequin || printed) items.push(<polygon key="seq" points={pts([a, b, c, d])} fill={sequin ? "url(#sequin)" : "url(#cloth-print)"} />);
-      if (ch.runner !== NONE) {
-        const fill = ch.runner === "tulle" ? `${table.runnerColor}99` : ch.runner === "confetti" ? "url(#confetti)" : table.runnerColor;
-        const r = t.kind === "long"
-          ? [P(t.x, cy - 9, TABLE_H), P(t.x + t.w, cy - 9, TABLE_H), P(t.x + t.w, cy + 9, TABLE_H), P(t.x, cy + 9, TABLE_H)]
-          : [P(cx - 9, t.y, TABLE_H), P(cx + 9, t.y, TABLE_H), P(cx + 9, near, TABLE_H), P(cx - 9, near, TABLE_H)];
-        items.push(<polygon key="run" points={pts(r)} fill={fill} />);
-        if (ch.runner === "greenery") items.push(<polygon key="leaf" points={pts(r)} fill="url(#leaves)" />);
-        if (ch.runner === "sequin") items.push(<polygon key="rseq" points={pts(r)} fill="url(#sequin)" />);
-      }
+    // The cloth hangs to the floor on every edge that faces us, the far ones first.
+    const o = t.outline;
+    const turning = Math.sign(o.reduce((a, [x1, y1], i) => { const [x2, y2] = o[(i + 1) % o.length]; return a + x1 * y2 - x2 * y1; }, 0)) || 1;
+    o.map((p1, i) => {
+      const p2 = o[(i + 1) % o.length];
+      const dx = p2[0] - p1[0], dy = p2[1] - p1[1], len = Math.hypot(dx, dy) || 1;
+      const nx = (turning * dy) / len, ny = (-turning * dx) / len; // outward
+      return { p1, p2, toUs: nx * sin + ny * cos, depth: R((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)[1], i };
+    }).filter((e) => e.toUs > 0.02).sort((a, b) => a.depth - b.depth).forEach(({ p1: [x1, y1], p2: [x2, y2], i }) => {
+      const side = pts([P(x1, y1, TABLE_H), P(x2, y2, TABLE_H), P(x2, y2), P(x1, y1)]);
+      // Neighbouring edges of a curve share a colour, so no seam shows between them.
+      items.push(<polygon key={`side-${i}`} points={side} fill={cloth} stroke={cloth} strokeWidth={0.6} />);
+      if (printed) items.push(<polygon key={`print-${i}`} points={side} fill="url(#cloth-print)" />);
+      items.push(<path key={`hem-${i}`} d={`M${P(x1, y1).join(",")}L${P(x2, y2).join(",")}`} stroke={INK} strokeWidth={1.2} />);
+      if (ruffle) items.push(<path key={`ruf-${i}`} d={`M${P(x1, y1, 10).join(",")}L${P(x2, y2, 10).join(",")}`} stroke={INK} strokeWidth={0.9} strokeDasharray="4 3" />);
+    });
+    items.push(<polygon key="top" points={top(o)} fill={cloth} stroke={INK} strokeWidth={1.3} strokeLinejoin="round" />);
+    if (sequin || printed) items.push(<polygon key="seq" points={top(o)} fill={sequin ? "url(#sequin)" : "url(#cloth-print)"} />);
+    if (ch.runner !== NONE) {
+      const fill = ch.runner === "tulle" ? `${table.runnerColor}99` : ch.runner === "confetti" ? "url(#confetti)" : table.runnerColor;
+      items.push(<polygon key="run" points={top(t.runner)} fill={fill} />);
+      if (ch.runner === "greenery") items.push(<polygon key="leaf" points={top(t.runner)} fill="url(#leaves)" />);
+      if (ch.runner === "sequin") items.push(<polygon key="rseq" points={top(t.runner)} fill="url(#sequin)" />);
     }
 
     // Place settings, back to front.
     const settings = [...t.seats].sort((p, q) => R(p.x, p.y)[1] - R(q.x, q.y)[1]).map((s) => {
       const n = seatNo++;
-      const inward = round ? 16 : 13;
+      const inward = t.kind === "round" || t.kind === "flower" ? 16 : 13;
       const px = s.ex + Math.cos(s.facing) * inward, py = s.ey + Math.sin(s.facing) * inward;
       const [x, y] = P(px, py, TABLE_H);
       const plateFill = ch.plates === "white_gold" ? "#fff" : ch.plates === "pastel" || ch.plates === "scalloped" ? PASTELS[n % PASTELS.length] : pal[n % pal.length];
@@ -159,11 +167,9 @@ export default function TablePerspective({ table, palette, accent, className, ca
     });
 
     // Centrepieces stand up from the middle.
-    const centres = ch.centrepiece === NONE ? [] : (t.kind === "long"
-      ? (() => { const xs = Array.from(new Set(t.seats.filter((s) => s.facing > 0).map((s) => s.x))).sort((p, q) => p - q); return xs.length > 1 ? xs.slice(1).map((x, i) => (x + xs[i]) / 2) : [t.x + t.w * 0.18, t.x + t.w * 0.82]; })()
-      : [cx]).map((x, i) => {
-        const [px, py] = P(x, cy, TABLE_H);
-        const k = (t.kind === "long" ? 0.62 : 0.85) * K(x, cy);
+    const centres = ch.centrepiece === NONE ? [] : t.centres.map(([x, y], i) => {
+        const [px, py] = P(x, y, TABLE_H);
+        const k = (t.centres.length > 1 ? 0.62 : t.kind === "round" ? 1.1 : 0.85) * K(x, y);
         ceil = Math.min(ceil, py - 72 * k);
         if (ch.centrepiece === "balloons") return <g key={`cp-${i}`} transform={`translate(${px} ${py}) scale(${k})`}>
           <path d="M0,0V-40" stroke={INK} strokeWidth={0.8} />{[[0, -48, 11], [-11, -40, 9], [11, -41, 9], [-5, -60, 8], [7, -59, 8]].map(([dx, dy, r], j) => <circle key={j} cx={dx} cy={dy} r={r} fill={pal[j % pal.length]} stroke={INK} strokeWidth={0.8} />)}</g>;
@@ -181,7 +187,7 @@ export default function TablePerspective({ table, palette, accent, className, ca
   const y0 = (Number.isFinite(ceil) ? ceil : top) - 16, H = floor + 18 - y0;
   return (
     <svg className={className} viewBox={`${x0.toFixed(0)} ${y0.toFixed(0)} ${W.toFixed(0)} ${H.toFixed(0)}`} role="img" data-testid="table-perspective-sketch"
-      aria-label={`Perspective: ${tables.length} ${tables[0]?.kind ?? "long"} table${tables.length > 1 ? "s" : ""} for ${table.kids} children`}>
+      aria-label={`Perspective: ${tables.length} ${(tables[0]?.kind ?? "standard").replace("_", " ")} table${tables.length > 1 ? "s" : ""} for ${table.kids} children`}>
       <defs>
         <pattern id="sequin" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.4" fill="#FFFFFF" opacity="0.65" /></pattern>
         <pattern id="leaves" width="14" height="10" patternUnits="userSpaceOnUse"><ellipse cx="7" cy="5" rx="5" ry="2.2" fill="#5E8C5A" opacity="0.8" transform="rotate(-25 7 5)" /></pattern>
