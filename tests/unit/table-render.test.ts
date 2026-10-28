@@ -30,10 +30,10 @@ const P = `${USER}/1abc.jpg`, T = `${USER}/2def.jpg`, C = `${USER}/3ghi.jpg`;
 describe("is the render current?", () => {
   it("the key follows every choice, colour and child — not the render itself", () => {
     const t = table();
-    expect(tableRenderKey({ ...t, render: { key: "x", close: C } })).toBe(tableRenderKey(t));
-    expect(tableRenderKey(table({ chairs: "bow_kids" }))).not.toBe(tableRenderKey(t));
-    expect(tableRenderKey({ ...t, napkinColor: "#000000" })).not.toBe(tableRenderKey(t));
-    expect(tableRenderKey(table({}, 11))).not.toBe(tableRenderKey(t));
+    expect(tableRenderKey({ ...t, render: { key: "x", close: C } }, "frozen")).toBe(tableRenderKey(t, "frozen"));
+    expect(tableRenderKey(table({ chairs: "bow_kids" }), "frozen")).not.toBe(tableRenderKey(t, "frozen"));
+    expect(tableRenderKey({ ...t, napkinColor: "#000000" }, "frozen")).not.toBe(tableRenderKey(t, "frozen"));
+    expect(tableRenderKey(table({}, 11), "frozen")).not.toBe(tableRenderKey(t, "frozen"));
   });
 });
 
@@ -59,8 +59,8 @@ describe("where and how it is photographed", () => {
   it("a garden unless indoors is chosen; the choice is part of the render's key and reads back", () => {
     expect(tablePrompt(table(), frozen, [])).toContain("outdoors in a sunny garden");
     expect(tablePrompt({ ...table(), scene: "indoor" }, frozen, [])).toContain("bright, airy party room");
-    expect(tableRenderKey({ ...table(), scene: "indoor" })).not.toBe(tableRenderKey(table()));
-    expect(tableRenderKey({ ...table(), scene: "garden" })).toBe(tableRenderKey(table()));
+    expect(tableRenderKey({ ...table(), scene: "indoor" }, "frozen")).not.toBe(tableRenderKey(table(), "frozen"));
+    expect(tableRenderKey({ ...table(), scene: "garden" }, "frozen")).toBe(tableRenderKey(table(), "frozen"));
     expect(readTableSetup({ ...table(), scene: "indoor" }, frozen)!.scene).toBe("indoor");
     expect(readTableSetup({ ...table(), scene: "moon" }, frozen)!.scene).toBeUndefined();
   });
@@ -85,7 +85,7 @@ describe("the pictures and the prompt", () => {
     expect(p).toContain("ignore everything around it");
     // The placemats are drawn into the layout with their design; the cloth, cutlery, hat and centrepiece go in words.
     expect(p).toContain("The placemats in image 1 already carry their exact printed design");
-    const all = referencePictures(table({ tablecloth: "classic", cutleryHolder: "pocket", bottleLabel: "pattern" }), "frozen");
+    const all = referencePictures(table({ tablecloth: "classic", cutleryHolder: "band", bottleLabel: "pattern" }), "frozen");
     expect(all.length).toBeLessThanOrEqual(MAX_REFERENCES);
     for (const k of ["placemats", "partyHats", "tablecloth", "cutlery", "centrepiece"]) expect(all.map((r) => r.key)).not.toContain(k);
   });
@@ -100,10 +100,10 @@ describe("the pictures and the prompt", () => {
     const p = tablePrompt({ ...table(), words: { placemats: "Arya turns 6" } }, frozen, []);
     // In the bottom-right corner, like the owner's reference — never on the plate (her first render).
     // Bottom-right, one word a line, like the owner's reference — never on the plate (her first render).
-    expect(p).toContain('with the words printed straight onto the placemat paper in its bottom-right corner in elegant periwinkle-blue serif capitals, stacked one word per line ("Arya" above "turns" above "6") — no sticker, no label, never on the plate');
+    expect(p).toContain('with the words printed straight onto the placemat paper in its bottom-right corner in elegant sky blue serif capitals, stacked one word per line ("Arya" above "turns" above "6") — no sticker, no label, never on the plate');
     expect(p).toContain('The only words anywhere are "Arya turns 6"');
     expect(tablePrompt(table(), frozen, [])).toContain("No text and no letters anywhere.");
-    expect(tableRenderKey({ ...table(), words: { placemats: "Arya turns 6" } })).not.toBe(tableRenderKey(table()));
+    expect(tableRenderKey({ ...table(), words: { placemats: "Arya turns 6" } }, "frozen")).not.toBe(tableRenderKey(table(), "frozen"));
     // No placemat: no words.
     expect(tablePrompt({ ...table({ placemats: NONE }), words: { placemats: "Arya" } }, frozen, [])).not.toContain("Arya");
   });
@@ -116,11 +116,11 @@ describe("the pictures and the prompt", () => {
     expect(p).toContain("TWO place settings facing each other");
     expect(p).toContain("Two chairs face each other on the two sides of the table");
     // The cutlery only on the left, rolled up in the chosen napkin with the band, as in the holder's picture.
-    expect(p).toContain(`on the left of the placemat: a folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 2} folded into a pocket with the cutlery (a disposable fork, knife and spoon made of natural light wood, not metal) standing up out of it, wrapped round the middle by a paper napkin band with a little name tag with the name "Arya" on it, arranged exactly like the cutlery holder in image ${refs.indexOf("cutleryHolder") + 2}`);
+    expect(p).toContain(`on the left of the placemat: a folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 2} folded into a pocket with the cutlery (a disposable fork, knife and spoon made of natural light wood, not metal) standing up out of it, wrapped round the middle by a plain pastel baby blue paper napkin band with a little tag with the name "Arya" on it, arranged exactly like the cutlery holder in image ${refs.indexOf("cutleryHolder") + 2} — the band is pastel baby blue, whatever colour its photo shows`);
     expect(p).toContain("all standing upright in its napkin pocket on the left, never laid flat across the napkin. No other cutlery anywhere");
     expect(p).toContain("this is the place's only bottle");
     expect(p).toContain("on the top-right corner of the placemat; just beside the cup, a small clear water bottle");
-    expect(p).toContain('with "Arya turns 6" printed on the label — the cup and the bottle are both there');
+    expect(p).toContain('with "Arya turns 6" printed on the label in sky blue letters — the cup and the bottle are both there');
     expect(p).toContain("a cone party hat standing on the top-left corner of the placemat");
     expect(p).toMatch(/Between the two settings, in the middle of the table: a small, low, compact arrangement of a few pastel flowers/);
     expect(p).toContain('The only words anywhere are "Arya" and "Arya turns 6"');
@@ -161,7 +161,7 @@ describe("the pictures and the prompt", () => {
   it("a kids' party: printed paper in the theme's pattern, disposable cutlery, nothing formal", () => {
     const p = tablePrompt(table(), frozen, []);
     expect(p).toContain("A3 paper placemat printed all over with snowflakes and little stars");
-    expect(p).toContain("disposable paper plate with a shimmering iridescent");
+    expect(p).toContain("disposable paper plates with a shimmering iridescent");
     expect(p).toContain("a disposable fork, knife and spoon made of natural light wood, not metal");
     expect(p).toContain("a cone party hat");
     expect(p).toMatch(/children's birthday party.*no glassware, no china, no charger plates/);
@@ -184,8 +184,8 @@ describe("the layout drawing", () => {
     expect(svg).not.toContain("<text"); // Vercel has no fonts: letters are paths
     expect(svg).toContain('<image id="mat-art" href="data:image/jpeg;base64,AAAA"');
     expect((svg.match(/<use href="#mat-art"/g) ?? []).length).toBe(10); // a placemat at every place
-    expect((svg.match(/fill="#6F7FD0"/g) ?? []).length).toBe(30); // ARYA / TURNS / 6 at ten places
-    expect(tableCloseGuideSvg({ ...t, choices: { ...t.choices, placemats: NONE } }, frozen)).not.toContain("#6F7FD0");
+    expect((svg.match(new RegExp(`fill="${frozen.accent}"`, "g")) ?? []).length).toBe(30); // ARYA / TURNS / 6 at ten places
+    expect(tableCloseGuideSvg({ ...t, choices: { ...t.choices, placemats: NONE } }, frozen)).not.toContain(`fill="${frozen.accent}"`);
   });
 });
 
@@ -277,7 +277,7 @@ describe("the route", () => {
     const { POST } = await import("@/app/api/table-render/route");
     const got = await lines(await POST(post({ table: table(), theme: "frozen" }, { authorization: "Bearer tok" })));
     expect(got[0]).toEqual({ view: "close", url: PICTURE });
-    expect(got[1]).toMatchObject({ done: true, render: { key: tableRenderKey(table()), close: C } });
-    expect(storeRenderJpeg.mock.calls.map((c) => [c[1], c[2], c[3]])).toEqual([[USER, JPEG, `table:close:${tableRenderKey(table())}`]]);
+    expect(got[1]).toMatchObject({ done: true, render: { key: tableRenderKey(table(), "frozen"), close: C } });
+    expect(storeRenderJpeg.mock.calls.map((c) => [c[1], c[2], c[3]])).toEqual([[USER, JPEG, `table:close:${tableRenderKey(table(), "frozen")}`]]);
   }, 30_000);
 });

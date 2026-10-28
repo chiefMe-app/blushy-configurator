@@ -40,7 +40,7 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
   const table = config.table;
   const render = table?.render;
   const [shown, setShown] = useState<Shown | null>(null);
-  const current = !!shown && !!table && shown.key === tableRenderKey(table) && !expired;
+  const current = !!shown && !!table && shown.key === tableRenderKey(table, config.theme) && !expired;
   const latest = useRef(table);
   latest.current = table;
 
@@ -64,7 +64,7 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
       if (!c) { retry(); return; }
       setShown({ key: render.key, close: c }); setExpired(false);
       // Back on the page with the close-up of this very table: show it.
-      if (latest.current && render.key === tableRenderKey(latest.current)) setView("close");
+      if (latest.current && render.key === tableRenderKey(latest.current, config.theme)) setView("close");
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,7 +75,7 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
     const token = await accountToken();
     if (token === null) { onSignInNeeded(); return; }
     setStatus("loading"); setError(null); setView("close"); onJob?.("loading");
-    const key = tableRenderKey(latest.current);
+    const key = tableRenderKey(latest.current, config.theme);
     const failed = "The render didn't come out — please try again.";
     try {
       const res = await fetch("/api/table-render", {
@@ -120,7 +120,7 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
   const shownView: View = view === "close" && !(current || loading) ? "perspective" : view;
   const src = shownView === "close" && current ? shown!.close : undefined;
   // A render of an earlier version of the table.
-  const stale = !expired && !current && !!table && ((!!shown && shown.key !== tableRenderKey(table)) || (!!render && render.key !== tableRenderKey(table)));
+  const stale = !expired && !current && !!table && ((!!shown && shown.key !== tableRenderKey(table, config.theme)) || (!!render && render.key !== tableRenderKey(table, config.theme)));
   const tab = (v: View, name: string) => <button type="button" role="tab" aria-selected={shownView === v} className={shownView === v ? "on" : ""} onClick={() => setView(v)}>{name}</button>;
   return (
     <div className="bz-tb-preview" id="table-preview-card">

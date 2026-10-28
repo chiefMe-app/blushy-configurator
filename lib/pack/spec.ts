@@ -17,6 +17,8 @@ import { fontById } from "@/lib/typography/registry";
 import { assessFinish } from "@/lib/typography/check";
 import type { FinishId } from "@/lib/typography/production";
 import type { LetteringLayout } from "@/lib/typography/layout";
+import { readTableSetup } from "@/lib/studio/tableSetup";
+import { tableProductionList, type TableProductionRow } from "@/lib/studio/tableProduction";
 
 export const TO_CONFIRM = "TO CONFIRM";
 
@@ -84,6 +86,8 @@ export interface PackSpec {
   plinths: { label: string; diameterMm: number; heightMm: number }[];
   standees: { label: string; large: number; medium: number; small: number }[];
   extras: string[];
+  /** The kids' table's production list (empty without a table). */
+  kidsTable: TableProductionRow[];
   /** The design's estimated price lines (AED) — what the design includes. */
   items: { label: string; amount: number }[];
   estimatedTotal: number;
@@ -197,9 +201,17 @@ export function buildPackSpec(config: BuilderConfig): PackSpec {
     plinths: scene.plinths.map((p) => ({ label: PLINTH_SIZES.find((s) => s.id === p.size)?.label ?? p.size, diameterMm: p.diameterCm * 10, heightMm: p.heightCm * 10 })),
     standees: (d.cutouts.selectedAssets ?? []).map((a) => ({ label: a.label, ...a.quantities })),
     extras,
+    kidsTable: kidsTable(config),
     items: breakdown.lines.map((l) => ({ label: l.label, amount: l.amount })),
     estimatedTotal: breakdown.total,
   };
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/** The kids' table, read back over today's defaults (a table saved before a field existed still lists). */
+function kidsTable(config: BuilderConfig): TableProductionRow[] {
+  const theme = themeById(config.theme);
+  const table = theme && config.table ? readTableSetup(config.table, theme) : undefined;
+  return table?.enabled ? tableProductionList(table, theme!) : [];
+}

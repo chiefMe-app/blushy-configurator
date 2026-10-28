@@ -156,10 +156,17 @@ export async function specificationPdf(spec: PackSpec, o: PdfOptions): Promise<U
     ]);
   }
 
-  w.sub("A5. What the design includes (estimate)");
+  if (spec.kidsTable.length) {
+    w.sub("A5. Kids' table");
+    w.rows(spec.kidsTable.map((r): [string, string, string?] => [r.item, `${r.detail} — ${r.quantity}${r.print
+      ? ` · print ${r.print.round ? `round, diameter ${r.print.widthMm} mm` : `${r.print.widthMm} x ${r.print.heightMm} mm`}${r.print.words ? `, words "${r.print.words}" in ${r.print.wordsColour}` : ""}${r.print.art ? ", print file in 5_PRINT_FILES; final artwork resolution " + TO_CONFIRM : ""}`
+      : ""}`, r.colour]));
+  }
+
+  w.sub(`A${spec.kidsTable.length ? 6 : 5}. What the design includes (estimate)`);
   w.rows([...spec.items.map((i): [string, string] => [i.label, `AED ${i.amount.toLocaleString("en")}`]), ["Estimated total", `AED ${spec.estimatedTotal.toLocaleString("en")} — an estimate, not a quote`]]);
 
-  w.sub("A6. Setting up");
+  w.sub(`A${spec.kidsTable.length ? 7 : 6}. Setting up`);
   w.text("Set the boards on a level floor, against a wall or on their stands. Fix the lettering to the board at the centre given in A2. "
     + "Hang or tie the balloon garland after the boards are in place. Stands, fixings and weights: " + TO_CONFIRM + ".", { gap: 6 });
 

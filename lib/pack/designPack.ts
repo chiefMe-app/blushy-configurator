@@ -5,11 +5,15 @@
 //     1_SPECIFICATION/Design_Specification.pdf
 //     2_CUT_FILES/   board outlines, lettering, calibration
 //     3_VISUAL_REFERENCE_NOT_FOR_PRINT/visual_reference.jpg
-//     4_LISTS/balloons.csv, props.csv
+//     4_LISTS/balloons.csv, props.csv (and kids_table.csv)
+//     5_PRINT_FILES/kids_table/   the kids' table's plate card (2026-10-28)
 //
 // Production files (1, 2, 4) come from the design; the AI picture (3) is only
 // ever a labelled visual reference. A sample pack has no cut files.
 import { zipSync, strToU8 } from "fflate";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import sharp from "sharp";
 import type { BuilderConfig } from "@/lib/config";
 import { buildPackSpec, TO_CONFIRM, type PackSpec } from "./spec";
 import { CUT_DIR, boardOutlineSvg, calibrationSvg, letteringCutSvg, placementSvg } from "./cutFiles";
@@ -18,6 +22,20 @@ import { specificationPdf } from "./pdf";
 import { labelledReference } from "./visualRef";
 
 export const VISUAL_DIR = "3_VISUAL_REFERENCE_NOT_FOR_PRINT";
+export const PRINT_DIR = "5_PRINT_FILES";
+
+/**
+ * The plate card as a print file: the design cut round, at 300 dpi for its
+ * size, transparent outside the circle. Undefined if the design's picture is
+ * not with the server.
+ */
+export async function plateCardPng(art: string, diameterMm: number): Promise<Uint8Array | undefined> {
+  const bytes = await readFile(path.join(process.cwd(), "public", art)).catch(() => undefined);
+  if (!bytes) return undefined;
+  const px = Math.round((diameterMm / 25.4) * 300);
+  const circle = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}"><circle cx="${px / 2}" cy="${px / 2}" r="${px / 2}" fill="#fff"/></svg>`);
+  return new Uint8Array(await sharp(bytes).resize(px, px, { fit: "cover" }).ensureAlpha().composite([{ input: circle, blend: "dest-in" }]).png().withMetadata({ density: 300 }).toBuffer());
+}
 
 export interface DesignPackInput {
   config: BuilderConfig;
@@ -48,7 +66,8 @@ function readme(spec: PackSpec, packId: string, sample: boolean) {
       : "  2_CUT_FILES      1:1 SVG files in millimetres: board outlines, lettering (merged outlines), where the lettering goes,",
     sample ? "" : "                   and CALIBRATION_100mm.svg.",
     "  3_VISUAL_REFERENCE_NOT_FOR_PRINT  The AI picture of the design. Indicative only — not artwork, not to scale.",
-    "  4_LISTS          balloons.csv and props.csv.",
+    `  4_LISTS          balloons.csv and props.csv${spec.kidsTable.length ? ", and kids_table.csv: every piece of the kids' table" : ""}.`,
+    spec.kidsTable.length && !sample ? `  ${PRINT_DIR}    The kids' table's plate card, cut round at its size (300 dpi). Final artwork resolution: ${TO_CONFIRM}.` : "",
     "",
     "Before anything is made",
     "  - Open CALIBRATION_100mm.svg in the cutting software at 100 %: the red square must measure 100 x 100 mm.",
@@ -118,6 +137,17 @@ export async function buildDesignPack(input: DesignPackInput): Promise<DesignPac
     ...spec.standees.flatMap((s) => (["large", "medium", "small"] as const).filter((k) => s[k] > 0).map((k) => [`Standee: ${s.label}`, k, s[k]])),
     ...spec.extras.map((e) => [e, "", 1]),
   ]));
+  if (spec.kidsTable.length) {
+    put("4_LISTS/kids_table.csv", csv([
+      ["item", "details", "colour", "quantity", "print size (mm)", "words", "words colour"],
+      ...spec.kidsTable.map((r) => [r.item, r.detail, r.colour?.toUpperCase() ?? "", r.quantity,
+        r.print ? (r.print.round ? `diameter ${r.print.widthMm}` : `${r.print.widthMm} x ${r.print.heightMm}`) : "", r.print?.words ?? "", r.print?.wordsColour?.toUpperCase() ?? ""]),
+    ]));
+    // 5. Print files (not in a sample): the plate card.
+    const card = spec.kidsTable.find((r) => r.print?.round && r.print.art);
+    const png = !sample && card ? await plateCardPng(card.print!.art!, card.print!.widthMm) : undefined;
+    if (png) put(`${PRINT_DIR}/kids_table/plate_card_diameter_${card!.print!.widthMm}mm_x${card!.quantity}.png`, png, true);
+  }
   put("README.txt", readme(spec, input.packId, sample));
 
   const zip = zipSync(files, { level: 6, mtime: createdAt });

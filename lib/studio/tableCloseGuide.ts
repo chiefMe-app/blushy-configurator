@@ -10,7 +10,7 @@
 // server can rasterise it with sharp; no React.
 import { NONE, onFloor } from "./tableCatalog";
 import { arrangeTables, CHAIR, CUSHION, type Placed, type Seat } from "./tableShapes";
-import { wordsOn, type TableSetup } from "./tableSetup";
+import { wordsColour, wordsOn, type TableSetup } from "./tableSetup";
 import { textCommands } from "@/lib/guideFonts";
 
 export const CLOSE_GUIDE = { width: 1152, height: 864 };
@@ -43,8 +43,9 @@ function hull(points: V2[]): V2[] {
 const PLATE: Record<string, { fill: string; rim: string }> = {
   iridescent: { fill: "#EBDDF7", rim: "#A78BC9" }, holo_square: { fill: "#E2E7ED", rim: "#8C99A6" }, silver: { fill: "#E5E8EC", rim: "#8C99A6" },
 };
-const CUP: Record<string, string> = { white_straw: "#FFFFFF", iridescent: "#E4DDF5", pastel: "#E9D5FF" };
-const CHAIR_FILL: Record<string, string> = { white_kids: "#FFFFFF", blue_kids: "#38BDF8", bow_kids: "#F5C9D7" };
+const CUP: Record<string, string> = { white_straw: "#FFFFFF", iridescent: "#E4DDF5" };
+// The kids' chair (blue_kids) is the customer's colour.
+const CHAIR_FILL: Record<string, string> = { white_kids: "#FFFFFF", bow_kids: "#F5C9D7" };
 const WOOD = "#D9B98C";
 
 /**
@@ -52,7 +53,7 @@ const WOOD = "#D9B98C";
  * measure is in centimetres; the plan (arrangeTables) is turned into a world
  * with z up (the plan's y is flipped so nothing comes out mirrored).
  */
-export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string[]; accent: string }, art: { placemat?: string } = {}): string {
+export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string[]; accent: string }, art: { placemat?: string; card?: string } = {}): string {
   const { width: W, height: H } = CLOSE_GUIDE;
   const ch = t.choices;
   const floor = onFloor(ch);
@@ -100,6 +101,8 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
   const F = W / 2 / Math.tan((27 * Math.PI) / 180);
   const P = (p: V3): V2 => { const v = sub(p, eye); const z = Math.max(1, dot(v, fw)); return [W / 2 + (F * dot(v, rt)) / z, H / 2 - (F * dot(v, up)) / z]; };
   const depth = (p: V3) => Math.hypot(...sub(p, eye));
+  /** In front of the camera: a place under or behind it would be drawn inside out. */
+  const seen = (p: V3) => dot(sub(p, eye), fw) > 40;
   const poly = (pts: V3[], fill: string, stroke = "#8A7F86", sw = 1.2, extra = "") =>
     `<polygon points="${pts.map(P).map(([x, y]) => `${f1(x)},${f1(y)}`).join(" ")}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"${extra}/>`;
   const poly2 = (pts: V2[], fill: string, stroke = "#8A7F86", sw = 1.2) =>
@@ -119,13 +122,14 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
     const fwd: V3 = [Math.cos(s.facing), -Math.sin(s.facing), 0];
     const right: V3 = [fwd[1], -fwd[0], 0];
     const c = world(s.x, s.y);
+    if (!seen(c)) continue;
     const q = (u: number, v: number, z: number): V3 => [c[0] + right[0] * u + fwd[0] * v, c[1] + right[1] * u + fwd[1] * v, z];
     let svg: string;
     if (floor) {
       const r = CUSHION.d / 2;
       svg = poly([q(-r, -r, 10), q(r, -r, 10), q(r, r, 10), q(-r, r, 10)], "#FFFFFF") + poly([q(-r, -r, 0), q(r, -r, 0), q(r, -r, 10), q(-r, -r, 10)], "#F1ECE8");
     } else {
-      const r = CHAIR.d / 2, fill = CHAIR_FILL[ch.chairs] ?? "#FFFFFF";
+      const r = CHAIR.d / 2, fill = ch.chairs === "blue_kids" ? t.chairColor : CHAIR_FILL[ch.chairs] ?? "#FFFFFF";
       const legs = [[-r + 2, -r + 2], [r - 2, -r + 2], [r - 2, r - 2], [-r + 2, r - 2]].map(([u, v]) => { const [x1, y1] = P(q(u, v, 0)), [x2, y2] = P(q(u, v, 30)); return `<path d="M${f1(x1)},${f1(y1)}L${f1(x2)},${f1(y2)}" stroke="#8A7F86" stroke-width="2"/>`; }).join("");
       const seat = poly([q(-r, -r, 30), q(r, -r, 30), q(r, r, 30), q(-r, r, 30)], fill);
       // The back stands on the side away from the table.
@@ -170,10 +174,14 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
   const pal = theme.balloonColors.filter((c) => !/^#F[0-9A-F]F[0-9A-F]F[0-9A-F]$/i.test(c));
   const mat1 = light(pal[0] ?? theme.accent, 0.62), mat2 = light(pal[1] ?? pal[0] ?? theme.accent, 0.7);
   const matWords = wordsOn(t, "placemats");
-  const plate = PLATE[ch.plates] ?? { fill: "#FFFFFF", rim: "#8A7F86" };
+  const plate = ch.plates === "plain" ? { fill: t.plateColor, rim: "#8A7F86" } : PLATE[ch.plates] ?? { fill: "#FFFFFF", rim: "#8A7F86" };
+  // The plate card's design: the placemats' own picture when it is the same one.
+  const cardArt = art.card ? (art.card === art.placemat ? "mat-art" : "card-art") : "";
+  let cards = 0;
   const napkin = ch.napkins === "plain" ? t.napkinColor : ch.napkins === "striped" ? "#FBD5E5" : ch.napkins === "foil" ? "#D5E6F5" : light(pal[0] ?? theme.accent, 0.55);
   for (const seat of seats) {
     const S = settingAt(seat);
+    if (!seen(S.centre)) continue;
     const { at } = S;
     const parts: { d: number; svg: string }[] = [];
     const add = (anchor: V3, svg: string) => parts.push({ d: depth(anchor), svg });
@@ -189,7 +197,17 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
     // The plate in the middle.
     const plateShape = ch.plates === "holo_square" ? [at(-11, -11, 0.4), at(11, -11, 0.4), at(11, 11, 0.4), at(-11, 11, 0.4)]
       : ((n) => Array.from({ length: n }, (_, i) => { const a2 = Math.PI / n + (i * 2 * Math.PI) / n; return at(Math.cos(a2) * 11.5, Math.sin(a2) * 11.5, 0.4); }))(ch.plates === "iridescent" ? 8 : 28);
-    flat += poly(plateShape, plate.fill, plate.rim, 1.4) + poly(plateShape.map((p) => [S.centre[0] + (p[0] - S.centre[0]) * 0.72, S.centre[1] + (p[1] - S.centre[1]) * 0.72, p[2]] as V3), "none", plate.rim, 0.8);
+    const shrink = (k: number, z: number) => plateShape.map((p) => [S.centre[0] + (p[0] - S.centre[0]) * k, S.centre[1] + (p[1] - S.centre[1]) * k, TH + z] as V3);
+    flat += poly(plateShape, plate.fill, plate.rim, 1.4) + poly(shrink(0.82, 0.4), "none", plate.rim, 0.8);
+    // 2026-10-28 (owner): a small plate on the big one, and in it a round card in the theme's design.
+    flat += poly(shrink(0.68, 1), plate.fill, plate.rim, 1.8);
+    const card = circle3(at(0, 0, 1.3), 6, TH + 1.3, 28); // PLATE_CARD_MM across
+    if (cardArt) {
+      const id = `card-${cards++}`, [o, x, y] = [P(at(-6, 6, 1.3)), P(at(6, 6, 1.3)), P(at(-6, -6, 1.3))];
+      flat += `<clipPath id="${id}"><polygon points="${card.map(P).map(([a, b]) => `${f1(a)},${f1(b)}`).join(" ")}"/></clipPath>`
+        + `<g clip-path="url(#${id})"><use href="#${cardArt}" xlink:href="#${cardArt}" transform="matrix(${[x[0] - o[0], x[1] - o[1], y[0] - o[0], y[1] - o[1], o[0], o[1]].map(f1).join(" ")})"/></g>`
+        + poly(card, "none", "#8A7F86", 0.8);
+    } else flat += poly(card, light(pal[0] ?? theme.accent, 0.35), "#8A7F86", 0.8);
     if (ch.placemats !== NONE && matWords) {
       // In the bottom-right corner beside the plate, one word a line, right-aligned (the owner's reference).
       const lines = matWords.toUpperCase().split(/\s+/), size = 3, gap = 3.3;
@@ -204,26 +222,24 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
           if (cmd.type === "Q") { const c1 = pt(cmd.x1, cmd.y1); return `Q${f1(c1[0])},${f1(c1[1])} ${f1(end[0])},${f1(end[1])}`; }
           return `${cmd.type}${f1(end[0])},${f1(end[1])}`;
         }).join("");
-        flat += `<path d="${d}" fill="#6F7FD0"/>`;
+        flat += `<path d="${d}" fill="${wordsColour(t, theme)}"/>`;
       });
     }
     // On the left: the napkin and the cutlery, in the holder if one is chosen.
     if (ch.cutleryHolder === "band") {
       flat += poly([at(-19.5, -10, 2.5), at(-13.5, -10, 2.5), at(-13.5, 10, 2.5), at(-19.5, 10, 2.5)], napkin, "#8A7F86", 1);
-      flat += poly([at(-19.8, -2.5, 2.8), at(-13.2, -2.5, 2.8), at(-13.2, 2.5, 2.8), at(-19.8, 2.5, 2.8)], "#BFE3F5", "#8A7F86", 0.8);
+      flat += poly([at(-19.8, -2.5, 2.8), at(-13.2, -2.5, 2.8), at(-13.2, 2.5, 2.8), at(-19.8, 2.5, 2.8)], t.holderColor, "#8A7F86", 0.8);
       flat += [-18, -16.5, -15].map((u) => poly([at(u - 0.5, 10, 2.5), at(u + 0.5, 10, 2.5), at(u + 0.5, 14, 2.5), at(u - 0.5, 14, 2.5)], WOOD, "#8A7F86", 0.6)).join("");
     } else {
       flat += poly([at(-20, -11, 0.3), at(-12, -11, 0.3), at(-12, 11, 0.3), at(-20, 11, 0.3)], napkin, "#8A7F86", 1);
-      if (ch.cutleryHolder === "pocket") flat += poly([at(-19.5, -10, 0.6), at(-12.5, -10, 0.6), at(-12.5, 2, 0.6), at(-19.5, 2, 0.6)], light(pal[0] ?? theme.accent, 0.45), "#8A7F86", 1);
       const tip = ch.cutlery === "dipped" ? "#F9A8D4" : ch.cutlery === "glitter" ? "#C9CED6" : WOOD;
       flat += [-18, -16, -14].map((u) => poly([at(u - 0.6, -9, 0.8), at(u + 0.6, -9, 0.8), at(u + 0.6, 10, 0.8), at(u - 0.6, 10, 0.8)], WOOD, "#8A7F86", 0.6) + poly([at(u - 0.6, -9, 0.9), at(u + 0.6, -9, 0.9), at(u + 0.6, -4, 0.9), at(u - 0.6, -4, 0.9)], tip, "#8A7F86", 0.4)).join("");
-      if (ch.cutleryHolder === "tag") flat += poly(circle3(at(-16, 0, 1.2), 2.6, TH + 1.2, 12), "#FFFFFF", "#8A7F86", 0.8);
     }
     add(S.centre, flat);
     // Standing pieces: the cup on the top-right corner, the bottle beside it, the hat top-left.
     if (ch.cups !== NONE) {
       const base = at(17, 12, 0);
-      add(base, solid(base, 3.4, 4, 9, CUP[ch.cups] ?? "#FFFFFF", "#FFFFFF") + (ch.cups !== "pastel" ? `<path d="M${P(at(17, 12, 6)).map(f1).join(",")}L${P(at(18.5, 13.5, 16)).map(f1).join(",")}" stroke="#9AA6B2" stroke-width="2.4"/>` : ""));
+      add(base, solid(base, 3.4, 4, 9, ch.cups === "plain" ? t.cupColor : CUP[ch.cups] ?? "#FFFFFF", ch.cups === "plain" ? t.cupColor : "#FFFFFF") + (ch.cups !== "plain" ? `<path d="M${P(at(17, 12, 6)).map(f1).join(",")}L${P(at(18.5, 13.5, 16)).map(f1).join(",")}" stroke="#9AA6B2" stroke-width="2.4"/>` : ""));
     }
     if (ch.bottleLabel !== NONE) {
       const base = at(25, 12, 0);
@@ -240,6 +256,7 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
   if (ch.centrepiece !== NONE) {
     for (const [x, y] of table.centres) {
       const c = world(x, y, TH);
+      if (!seen(c)) continue;
       const flowers = ch.centrepiece === "florals" ? ["#C4B5FD", "#FBCFE8", "#FDF2E9", "#BFDBFE", "#FBCFE8", "#DDD6FE", "#FFFFFF"]
         : ch.centrepiece === "balloons" ? (theme.balloonColors.length ? theme.balloonColors : ["#BFDBFE"]) : [theme.accent];
       const tall = ch.centrepiece === "balloons" ? 30 : 12;
@@ -256,7 +273,7 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
 
   const sortFar = (l: { d: number; svg: string }[]) => [...l].sort((p, q) => q.d - p.d).map((x) => x.svg).join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`
-    + `<defs>${art.placemat ? `<image id="mat-art" href="${art.placemat}" xlink:href="${art.placemat}" x="0" y="0" width="1" height="1" preserveAspectRatio="none"/>` : ""}<linearGradient id="mat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${mat1}"/><stop offset="1" stop-color="${mat2}"/></linearGradient></defs>`
+    + `<defs>${art.placemat ? `<image id="mat-art" href="${art.placemat}" xlink:href="${art.placemat}" x="0" y="0" width="1" height="1" preserveAspectRatio="none"/>` : ""}${cardArt === "card-art" ? `<image id="card-art" href="${art.card}" xlink:href="${art.card}" x="0" y="0" width="1" height="1" preserveAspectRatio="xMidYMid slice"/>` : ""}<linearGradient id="mat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${mat1}"/><stop offset="1" stop-color="${mat2}"/></linearGradient></defs>`
     + `<rect width="${W}" height="${H}" fill="#EEF0EA"/>`
     + sortFar(behind) + tableSvg + sortFar(items) + sortFar(before)
     + "</svg>";

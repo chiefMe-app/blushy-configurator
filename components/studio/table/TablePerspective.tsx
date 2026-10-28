@@ -74,7 +74,7 @@ export default function TablePerspective({ table, palette, accent, className, ca
       </g> });
       return;
     }
-    const c = CHAIR_COLOUR[ch.chairs] ?? "#fff";
+    const c = ch.chairs === "blue_kids" ? table.chairColor : CHAIR_COLOUR[ch.chairs] ?? "#fff";
     // The back is on the side away from the table.
     const bx = x - Math.cos(facing) * 15, by = y - Math.sin(facing) * 15;
     const [sx, sy] = P(x, y, CHAIR_SEAT), [bxp, byp] = P(bx, by, CHAIR_BACK);
@@ -143,7 +143,7 @@ export default function TablePerspective({ table, palette, accent, className, ca
       const inward = 16;
       const px = s.ex + Math.cos(s.facing) * inward, py = s.ey + Math.sin(s.facing) * inward;
       const [x, y] = P(px, py, TABLE_H);
-      const plateFill = ch.plates === "white_gold" ? "#fff" : ch.plates === "iridescent" ? "#EBDDF7" : ch.plates === "holo_square" ? "#E2E7ED" : ch.plates === "silver" ? "#E5E8EC" : ch.plates === "pastel" || ch.plates === "scalloped" ? PASTELS[n % PASTELS.length] : pal[n % pal.length];
+      const plateFill = ch.plates === "plain" ? table.plateColor : ch.plates === "white_gold" ? "#fff" : ch.plates === "iridescent" ? "#EBDDF7" : ch.plates === "holo_square" ? "#E2E7ED" : ch.plates === "silver" ? "#E5E8EC" : ch.plates === "pastel" || ch.plates === "scalloped" ? PASTELS[n % PASTELS.length] : pal[n % pal.length];
       const foil = ch.plates === "iridescent" || ch.plates === "holo_square" || ch.plates === "silver";
       const cupX = x + Math.cos(s.facing + turn - Math.PI / 2) * 11;
       return <g key={`s-${n}`} transform={at(x, y, K(px, py) * SET)}>
@@ -156,12 +156,15 @@ export default function TablePerspective({ table, palette, accent, className, ca
           ? <rect x={x - 9} y={y - 3.8} width={18} height={7.6} rx={1.5} fill={plateFill} stroke="#8C99A6" strokeWidth={0.8} />
           : <ellipse cx={x} cy={y} rx={9} ry={3.8} fill={plateFill} stroke={ch.plates === "white_gold" ? GOLD : foil ? "#8C99A6" : INK} strokeWidth={ch.plates === "white_gold" ? 1.4 : 0.8} strokeDasharray={ch.plates === "scalloped" || ch.plates === "shaped" || ch.plates === "silver" ? "2.2 1" : undefined} />}
         {ch.plates === "themed" && <ellipse cx={x} cy={y} rx={9} ry={3.8} fill="url(#cloth-print)" />}
+        {/* The small plate on the big one, with the theme's round card in it (2026-10-28). */}
+        <ellipse cx={x} cy={y} rx={5.6} ry={2.4} fill={plateFill} stroke={foil ? "#8C99A6" : INK} strokeWidth={0.6} />
+        <ellipse cx={x} cy={y} rx={3.4} ry={1.45} fill={pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.4} />
         <rect x={x - 17} y={y - 3} width={6} height={5} rx={1} fill={ch.napkins === "striped" ? "#FCE7F3" : ch.napkins === "foil" ? "#DCEBF7" : table.napkinColor} stroke={INK} strokeWidth={0.5} />
-        {ch.cutleryHolder !== NONE && <rect x={x - 16.5} y={y - 6} width={5} height={7} rx={0.8} fill={ch.cutleryHolder === "band" ? "#BAE6FD" : pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.5} />}
+        {ch.cutleryHolder !== NONE && <rect x={x - 16.5} y={y - 6} width={5} height={7} rx={0.8} fill={ch.cutleryHolder === "band" ? table.holderColor : pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.5} />}
         {ch.bottleLabel !== NONE && <g><rect x={cupX + 6} y={y - 14} width={4} height={12} rx={1.5} fill="#EAF4FB" stroke="#8C99A6" strokeWidth={0.6} /><rect x={cupX + 6} y={y - 9} width={4} height={4} fill={ch.bottleLabel === "sparkle" ? "#E9DDF7" : pal[(n + 2) % pal.length]} /><rect x={cupX + 6.8} y={y - 16} width={2.4} height={2} fill="#93C5FD" /></g>}
         {ch.cups === "pouch"
           ? <rect x={cupX - 3} y={y - 10} width={6} height={9} rx={1.5} fill={pal[(n + 2) % pal.length]} stroke={INK} strokeWidth={0.7} />
-          : <path d={`M${cupX - 3},${y - 10}L${cupX - 2.4},${y - 1}H${cupX + 2.4}L${cupX + 3},${y - 10}Z`} fill={ch.cups === "gold_rim" ? "#F3F7FA" : ch.cups === "white_straw" ? "#FFFFFF" : ch.cups === "iridescent" ? "#E9DDF7" : ch.cups === "pastel" ? PASTELS[(n + 2) % PASTELS.length] : pal[(n + 2) % pal.length]} stroke={ch.cups === "gold_rim" ? GOLD : INK} strokeWidth={0.7} />}
+          : <path d={`M${cupX - 3},${y - 10}L${cupX - 2.4},${y - 1}H${cupX + 2.4}L${cupX + 3},${y - 10}Z`} fill={ch.cups === "gold_rim" ? "#F3F7FA" : ch.cups === "white_straw" ? "#FFFFFF" : ch.cups === "iridescent" ? "#E9DDF7" : ch.cups === "plain" ? table.cupColor : ch.cups === "pastel" ? PASTELS[(n + 2) % PASTELS.length] : pal[(n + 2) % pal.length]} stroke={ch.cups === "gold_rim" ? GOLD : INK} strokeWidth={0.7} />}
         {(ch.cups === "white_straw" || ch.cups === "iridescent") && <path d={`M${cupX},${y - 10}L${cupX + 3},${y - 17}`} stroke={ch.cups === "white_straw" ? "#9AA6B2" : "#FFFFFF"} strokeWidth={1} />}
         {ch.cups === "pouch" && <path d={`M${cupX},${y - 10}L${cupX + 2},${y - 14}`} stroke={accent} strokeWidth={1} />}
         {ch.cups === "straw" && <path d={`M${cupX},${y - 10}L${cupX + 3},${y - 17}`} stroke={accent} strokeWidth={1} />}

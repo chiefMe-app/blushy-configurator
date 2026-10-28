@@ -4,25 +4,37 @@
 // (plus "None" for the optional ones) from lib/studio/tableCatalog.ts, the
 // cloth's colour and the words on the placemats. Prices add to the party total.
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
-import { NONE, TABLE_SECTIONS, onFloor, optionPhoto, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
-import { MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, WORDS_ITEMS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup, type WordsKey } from "@/lib/studio/tableSetup";
+import { NONE, PLAIN_COLOURS, TABLE_SECTIONS, onFloor, optionPhoto, plateCardArt, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
+import { COLOUR_OF, wordsColour, MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, WORDS_ITEMS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup, type WordsKey } from "@/lib/studio/tableSetup";
 import { GlyphDefs, glyph, type GlyphColours } from "@/components/studio/table/glyphs";
 
-const COLOUR_OF: Partial<Record<TableItemKey, keyof Pick<TableSetup, "clothColor" | "napkinColor">>> = {
-  tablecloth: "clothColor", napkins: "napkinColor",
-};
+/** The printed words in their colour, with a shadow that keeps light words readable on the design. */
+export function wordsStyle(hex: string) {
+  const n = parseInt(hex.slice(1), 16), lum = (0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255)) / 255;
+  return { color: hex, textShadow: lum > 0.75 ? "0 1px 2px rgba(60,40,50,0.55)" : undefined };
+}
 
-function OptionArt({ item, option, colours, themeId, words }: { item: TableItem; option: TableOption | null; colours: GlyphColours; themeId: string; words?: string }) {
-  const photo = optionPhoto(item.key, option ?? undefined, themeId);
+function OptionArt({ item, option, colours, themeId, words, colour, textColor }: { item: TableItem; option: TableOption | null; colours: GlyphColours; themeId: string; words?: string; colour?: string; textColor?: string }) {
+  const photo = optionPhoto(item.key, option ?? undefined, themeId, colour);
   if (option && photo) {
-    // A coloured option shows the chosen colour on its picture; a placemat or label, the customer's words.
-    const swatch = item.key === "tablecloth" ? colours.cloth : option.coloured ? colours.napkin : null;
+    // A coloured option shows the chosen colour on its picture (the chair's picture is in it); a placemat or label, the customer's words.
+    const swatch = colour && !option.colouredPhotos ? colour : null;
     return <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="photo" src={photo} alt="" loading="lazy" />
+      <img className={option.colouredPhotos ? "photo cutout" : "photo"} src={photo} alt="" loading="lazy" />
       {swatch && <i className="swatch" style={{ background: swatch }} aria-hidden="true" />}
-      {words && <span className={`words ${item.key} ${option.id}`} aria-hidden="true">{item.key === "placemats" ? stacked(words) : words}</span>}
+      {words && <span className={`words ${item.key} ${option.id}`} style={textColor ? wordsStyle(textColor) : undefined} aria-hidden="true">{item.key === "placemats" ? stacked(words) : words}</span>}
     </>;
+  }
+  // The plain plates: a big and a small plate in the colour, the theme's card in the small one.
+  if (option && item.key === "plates" && option.id === "plain") {
+    return <svg viewBox="-24 -24 48 48" aria-hidden="true">
+      <defs><clipPath id="plate-card"><circle r={7.5} /></clipPath></defs>
+      <circle r={21} fill={colour ?? "#fff"} stroke="#5a4950" strokeWidth={0.8} /><circle r={16.5} fill="none" stroke="#5a4950" strokeWidth={0.4} opacity={0.5} />
+      <circle r={12.5} fill={colour ?? "#fff"} stroke="#5a4950" strokeWidth={0.7} />
+      {colours.card && <image href={colours.card} x={-7.5} y={-7.5} width={15} height={15} preserveAspectRatio="xMidYMid slice" clipPath="url(#plate-card)" />}
+      <circle r={7.5} fill="none" stroke="#5a4950" strokeWidth={0.4} />
+    </svg>;
   }
   if (!option) return <svg viewBox="-24 -24 48 48" aria-hidden="true"><circle r={14} fill="none" stroke="#d9c9cf" strokeWidth={2} strokeDasharray="4 3" /><path d="M-8,8L8,-8" stroke="#d9c9cf" strokeWidth={2} /></svg>;
   // Big items are drawn smaller; small ones (cups, cards, hats) larger.
@@ -56,7 +68,8 @@ export default function TableStep({ config, setTable }: {
 }) {
   const theme = themeById(config.theme) ?? THEMES[0];
   const table = config.table;
-  const swatches = Array.from(new Set(["#FFFFFF", ...theme.backdropColors, ...theme.balloonColors].map((h) => h.toUpperCase())));
+  // The theme's colours first, then every plain colour (2026-10-28: "her renk olsun, pastel ve ana renkler").
+  const swatches = Array.from(new Set(["#FFFFFF", ...theme.backdropColors, ...theme.balloonColors, ...PLAIN_COLOURS.map((c) => c.hex)].map((h) => h.toUpperCase())));
 
   if (!table || !table.enabled) {
     return (
@@ -75,13 +88,27 @@ export default function TableStep({ config, setTable }: {
   const set = (patch: Partial<TableSetup>) => setTable({ ...table, ...patch });
   const choose = (key: TableItemKey, id: string) => set({ choices: { ...table.choices, [key]: id } });
   const counts = tableCounts(table);
-  const colours: GlyphColours = { palette: theme.balloonColors, accent: theme.accent, cloth: table.clothColor, runner: table.runnerColor, napkin: table.napkinColor };
+  const textColor = wordsColour(table, theme);
+  const card = plateCardArt(table.choices, theme.id);
+  const colours: GlyphColours = { palette: theme.balloonColors, accent: theme.accent, cloth: table.clothColor, runner: table.runnerColor, napkin: table.napkinColor,
+    plate: table.plateColor, cup: table.cupColor, holder: table.holderColor, card };
+  const swatchRow = (label: string, value: string, options: string[], pick: (hex: string) => void, testId?: string) => (
+    <div className="bz-ts-swatches" role="radiogroup" aria-label={label} data-testid={testId}>
+      {options.map((hex) => (
+        <button key={hex} type="button" role="radio" aria-checked={hex === value.toUpperCase()} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
+          className={hex === value.toUpperCase() ? "on" : ""} style={{ background: hex }} onClick={() => pick(hex)} />
+      ))}
+    </div>
+  );
 
   const item = (key: TableItemKey) => {
     const it = tableItem(key);
-    // The cloth always takes a colour; of the napkins, only the plain one.
+    // The cloth always takes a colour; of the others, only the plain options.
     const chosen = it.options.find((o) => o.id === table.choices[key]);
     const colourKey = it.coloured || chosen?.coloured ? COLOUR_OF[key] : undefined;
+    // The colour an option card shows: its item's colour, on the options that take one.
+    const field = COLOUR_OF[key];
+    const colourOf = (o: TableOption) => ((it.coloured || o.coloured) && field ? table[field] : undefined);
     if (key === "chairs" && onFloor(table.choices)) {
       return (
         <div key={key} className="bz-tb-item" data-testid="floor-cushions">
@@ -106,19 +133,20 @@ export default function TableStep({ config, setTable }: {
           {it.options.map((o) => (
             <button key={o.id} type="button" role="radio" aria-checked={table.choices[key] === o.id} className={`bz-tb-option ${table.choices[key] === o.id ? "on" : ""}`} onClick={() => choose(key, o.id)}>
               {table.choices[key] === o.id && <span className="tick">✓</span>}
-              <span className="art"><OptionArt item={it} option={o} colours={colours} themeId={theme.id} words={words} /></span>
+              <span className="art"><OptionArt item={it} option={o} colours={colours} themeId={theme.id} words={words} colour={colourOf(o)} textColor={textColor} /></span>
               <b>{o.name}</b>
               <small>{o.note}</small>
               <em>{unitLabel(o)}</em>
             </button>
           ))}
         </div>
-        {colourKey && table.choices[key] !== NONE && (
-          <div className="bz-ts-swatches" role="radiogroup" aria-label={`${it.label} colour`}>
-            {swatches.map((hex) => (
-              <button key={hex} type="button" role="radio" aria-checked={hex === table[colourKey].toUpperCase()} aria-label={hex}
-                className={hex === table[colourKey].toUpperCase() ? "on" : ""} style={{ background: hex }} onClick={() => set({ [colourKey]: hex })} />
-            ))}
+        {/* The chair's pictures come only in the plain colours. */}
+        {colourKey && table.choices[key] !== NONE && swatchRow(`${it.label} colour`, table[colourKey], key === "chairs" ? PLAIN_COLOURS.map((c) => c.hex) : swatches, (hex) => set({ [colourKey]: hex }), `${key}-colour`)}
+        {key === "plates" && (
+          // 2026-10-28 (owner): a round card in the theme's design in every small plate.
+          <div className="bz-tb-card" data-testid="plate-card-preview">
+            <i style={{ backgroundImage: `url(${card})` }} aria-hidden="true" />
+            <span><b>A round card in every small plate</b> In your {theme.name} design, printed for each child.</span>
           </div>
         )}
         {wordsItem && table.choices[key] !== NONE && (
@@ -129,11 +157,18 @@ export default function TableStep({ config, setTable }: {
           </label>
         )}
         {(key === "bottleLabel" || key === "placemats") && chosen && (
+          // One colour for the words on the placemats and the labels: the theme's, unless changed (2026-10-28).
+          <div className="bz-tb-words-colour">
+            <span>Words colour</span>
+            {swatchRow("Words colour", textColor, Array.from(new Set([theme.accent.toUpperCase(), ...swatches])), (hex) => set({ textColor: hex }), `${key}-words-colour`)}
+          </div>
+        )}
+        {(key === "bottleLabel" || key === "placemats") && chosen && (
           // The finished design, flat, as it is printed: the label (20.5 × 5 cm), or the
           // A3 placemat with the words bottom-right, like the owner's reference.
           <div className={key === "bottleLabel" ? "bz-tb-label" : "bz-tb-label placemat"} data-testid={key === "bottleLabel" ? "bottle-label-preview" : "placemat-preview"}
             style={{ backgroundImage: `url(${optionPhoto(key, chosen, theme.id)})` }}>
-            <span>{key === "placemats" ? stacked(table.words?.placemats || "Your words here") : table.words?.bottleLabel || "Your words here"}</span>
+            <span style={wordsStyle(textColor)}>{key === "placemats" ? stacked(table.words?.placemats || "Your words here") : table.words?.bottleLabel || "Your words here"}</span>
           </div>
         )}
       </div>

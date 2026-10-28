@@ -2,7 +2,7 @@
 // (BuilderConfig.table), chosen in the Decor step after the backdrop, item by
 // item from lib/studio/tableCatalog.ts. Pure data and sums — no UI, no config
 // import (lib/config.ts uses the price lines).
-import { NONE, TABLE_ITEMS, onFloor, tableOption, type TableItemKey } from "./tableCatalog";
+import { NONE, TABLE_ITEMS, onFloor, plainColour, tableOption, type TableItemKey } from "./tableCatalog";
 
 export interface TableSetup {
   /** false: the customer skipped the table. */
@@ -13,6 +13,13 @@ export interface TableSetup {
   clothColor: string;
   runnerColor: string;
   napkinColor: string;
+  /** The plain pieces' colours (2026-10-28): plates, cups, the napkin band, the kids' chair (one of PLAIN_COLOURS). */
+  plateColor: string;
+  cupColor: string;
+  holderColor: string;
+  chairColor: string;
+  /** The colour of the printed words on the placemats and bottle labels, once the customer picks one (wordsColour). */
+  textColor?: string;
   /** The customer's own words printed on the placemats ("Arya turns 6"), the cutlery holders and the bottle labels. */
   words?: TableWords;
   /** Where the render is set (2026-10-27: "outdoorda bakalım"); a garden unless chosen. */
@@ -80,6 +87,26 @@ export function cleanPlacematText(v: unknown): string | undefined {
   return t.trim() ? t : undefined;
 }
 
+/** Which colour each coloured item takes. */
+export type ColourField = "clothColor" | "napkinColor" | "plateColor" | "cupColor" | "holderColor" | "chairColor";
+export const COLOUR_OF: Partial<Record<TableItemKey, ColourField>> = {
+  tablecloth: "clothColor", napkins: "napkinColor", plates: "plateColor", cups: "cupColor", cutleryHolder: "holderColor", chairs: "chairColor",
+};
+/** The colour an item's chosen option takes, if it takes one (the cloth always; of the others, the plain options). */
+export function itemColour(t: TableSetup, key: TableItemKey): string | undefined {
+  const field = COLOUR_OF[key], item = TABLE_ITEMS.find((i) => i.key === key);
+  return field && (item?.coloured || tableOption(key, t.choices[key])?.coloured) ? t[field] : undefined;
+}
+/** The kids' chair's first colour: the owner's own blue chair. */
+export const DEFAULT_CHAIR_COLOR = "#38BDF8";
+
+/**
+ * The printed words' colour: the customer's, or the theme's accent (chosen to
+ * read well on white, lib/config.ts) — so it follows a change of theme until
+ * the customer picks one (2026-10-28: "her temaya uygun text rengi değişmeli").
+ */
+export const wordsColour = (t: Pick<TableSetup, "textColor">, theme: { accent: string }) => t.textColor ?? theme.accent;
+
 /** A new table, in the theme's colours. */
 export function defaultTableSetup(theme: { balloonColors: string[]; accent: string }): TableSetup {
   return {
@@ -89,6 +116,10 @@ export function defaultTableSetup(theme: { balloonColors: string[]; accent: stri
     clothColor: "#FFFFFF",
     runnerColor: theme.balloonColors[1] ?? theme.accent,
     napkinColor: theme.balloonColors[2] ?? theme.accent,
+    plateColor: theme.balloonColors[1] ?? theme.accent,
+    cupColor: theme.balloonColors[2] ?? theme.accent,
+    holderColor: theme.balloonColors[1] ?? theme.accent,
+    chairColor: DEFAULT_CHAIR_COLOR,
   };
 }
 
@@ -149,6 +180,12 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     clothColor: colour(r.clothColor, base.clothColor),
     runnerColor: colour(r.runnerColor, base.runnerColor),
     napkinColor: colour(r.napkinColor, base.napkinColor),
+    plateColor: colour(r.plateColor, base.plateColor),
+    cupColor: colour(r.cupColor, base.cupColor),
+    holderColor: colour(r.holderColor, base.holderColor),
+    // The chair's pictures come only in the plain colours.
+    chairColor: typeof r.chairColor === "string" && plainColour(r.chairColor) ? plainColour(r.chairColor)!.hex : base.chairColor,
+    ...(typeof r.textColor === "string" && HEX.test(r.textColor) ? { textColor: r.textColor } : {}),
     ...(readWords(r) ? { words: readWords(r) } : {}),
     ...(r.scene === "garden" || r.scene === "indoor" ? { scene: r.scene } : {}),
     ...(readTableRender(r.render) ? { render: readTableRender(r.render) } : {}),

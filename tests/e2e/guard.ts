@@ -181,11 +181,12 @@ export async function lockNetwork(page: Page): Promise<Guard> {
       }
       if (guard.fakeRender && url.pathname.startsWith("/api/table-render")) {
         // Local pictures stand in for the two views (F3).
-        const table = (() => { try { return JSON.parse(req.postData() ?? "{}").table as TableSetup; } catch { return null; } })();
+        const body = (() => { try { return JSON.parse(req.postData() ?? "{}") as { table?: TableSetup; theme?: string }; } catch { return {}; } })();
+        const table = body.table ?? null;
         // As the server does for a signed-in customer: both views kept in their folder, shown by link.
         if (!table) return route.fulfill({ status: 400, json: { error: "Missing table" } });
         const sub = tokenSubject(req.headers()["authorization"]);
-        const key = tableRenderKey(table);
+        const key = tableRenderKey(table, body.theme ?? "");
         await guard.holdTableRender;
         // As the route streams it: the close-up's line, then the end.
         const lines = [{ view: "close", url: FAKE_TABLE_RENDER.close },

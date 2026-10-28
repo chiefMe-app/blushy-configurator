@@ -17,6 +17,13 @@ export interface GlyphColours {
   cloth: string;
   runner: string;
   napkin: string;
+  /** The plain plates', cups' and napkin band's colours, and the plate card's picture. */
+  plate?: string;
+  cup?: string;
+  holder?: string;
+  card?: string;
+  /** The kids' chair's colour (it comes in every plain colour). */
+  chair?: string;
   /** Which seat (varies the colours round the table). */
   seat?: number;
 }
@@ -42,7 +49,7 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
   switch (key) {
     case "chairs":
       return <g>
-        <rect x={-19} y={-17} width={38} height={34} rx={id === "bow_kids" ? 17 : 9} fill={CHAIR_COLOUR[id] ?? "#fff"} stroke={INK} strokeWidth={1.2} />
+        <rect x={-19} y={-17} width={38} height={34} rx={id === "bow_kids" ? 17 : 9} fill={(id === "blue_kids" && c.chair) || (CHAIR_COLOUR[id] ?? "#fff")} stroke={INK} strokeWidth={1.2} />
         {id === "gold_chiavari" && <path d="M-13,-11h26M-13,-4h26" stroke="#B8932B" strokeWidth={1.2} />}
         {id === "white_kids" && <path d="M-13,-12q13,-7 26,0M-19,-2h-3v14h3M19,-2h3v14h-3" fill="none" stroke={INK} strokeWidth={1} />}
         {id === "blue_kids" && <path d="M-12,-17v-3h24v3M-6,-20v3M0,-20v3M6,-20v3" fill="none" stroke={INK} strokeWidth={1} />}
@@ -94,6 +101,7 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
       return null;
     case "plates": {
       // The kids' table's paper plates; white & gold and pastel melamine are the grown-ups'.
+      if (id === "plain") return <g><circle r={10} fill={c.plate ?? pick(c, 0)} stroke={INK} strokeWidth={0.8} /><circle r={6.2} fill={c.plate ?? pick(c, 0)} stroke={INK} strokeWidth={0.6} /><circle r={3.6} fill={c.accent} opacity={0.35} /></g>;
       if (id === "iridescent") return <path d={Array.from({ length: 8 }, (_, i) => { const a = Math.PI / 8 + (i * Math.PI) / 4; return `${i ? "L" : "M"}${(Math.cos(a) * 10).toFixed(1)},${(Math.sin(a) * 10).toFixed(1)}`; }).join("") + "Z"} fill="#EBDDF7" stroke="#A78BC9" strokeWidth={0.9} />;
       if (id === "holo_square") return <g><rect x={-9.5} y={-9.5} width={19} height={19} rx={2.5} fill="#E2E7ED" stroke="#8C99A6" strokeWidth={0.9} /><rect x={-6.5} y={-6.5} width={13} height={13} rx={1.5} fill="none" stroke="#B9C3CD" strokeWidth={0.5} /></g>;
       if (id === "silver") return <g><circle r={9.5} fill="#E5E8EC" stroke="#8C99A6" strokeWidth={0.9} /><circle r={7} fill="none" stroke="#B9C3CD" strokeWidth={0.6} strokeDasharray="1 0.8" /></g>;
@@ -107,6 +115,7 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
     case "cups":
       if (id === "white_straw") return <g><circle r={3.4} fill="#FFFFFF" stroke={INK} strokeWidth={0.7} /><path d="M0,0L4,-5" stroke="#B9C3CD" strokeWidth={0.9} /></g>;
       if (id === "iridescent") return <g><circle r={3.4} fill="#E9DDF7" stroke="#8C99A6" strokeWidth={0.7} /><path d="M0,0L4,-5" stroke="#FFFFFF" strokeWidth={0.9} /></g>;
+      if (id === "plain") return <circle r={3.4} fill={c.cup ?? pick(c, 2)} stroke={INK} strokeWidth={0.7} />;
       if (id === "pastel") return <circle r={3.4} fill={PASTELS[((c.seat ?? 0) + 2) % PASTELS.length]} stroke={INK} strokeWidth={0.7} />;
       if (id === "straw") return <g><circle r={3.4} fill={pick(c, 2)} stroke={INK} strokeWidth={0.7} /><path d="M0,0L4,-5" stroke="#fff" strokeWidth={1.4} /><path d="M0,0L4,-5" stroke={c.accent} strokeWidth={0.6} strokeDasharray="1 1" /></g>;
       if (id === "printed") return <g><circle r={3.4} fill={pick(c, 2)} stroke={INK} strokeWidth={0.7} /><circle r={3.4} fill="url(#napkin-print)" /></g>;
@@ -116,7 +125,7 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
       return null;
     case "cutleryHolder":
       if (id === "pocket") return <g><rect x={-6} y={-2} width={12} height={11} rx={1} fill={pick(c, 1)} stroke={INK} strokeWidth={0.5} /><rect x={-6} y={-2} width={12} height={11} rx={1} fill="url(#napkin-print)" /><rect x={-4} y={2} width={8} height={4} rx={0.6} fill="#fff" /></g>;
-      if (id === "band") return <rect x={-6} y={-1} width={12} height={4} rx={0.8} fill="#BAE6FD" stroke={INK} strokeWidth={0.5} />;
+      if (id === "band") return <rect x={-6} y={-1} width={12} height={4} rx={0.8} fill={c.holder ?? "#BAE6FD"} stroke={INK} strokeWidth={0.5} />;
       if (id === "tag") return <g><path d="M-6,0h12" stroke="#FFFFFF" strokeWidth={0.8} /><path d={scallop(3, 10)} fill="#FFFFFF" stroke={INK} strokeWidth={0.4} /><path d={star(0, 0, 1.8)} fill="#C9CED6" /></g>;
       return null;
     case "bottleLabel":

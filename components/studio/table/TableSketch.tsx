@@ -13,7 +13,8 @@ const deg = (rad: number) => (rad * 180) / Math.PI;
 export default function TableSketch({ table, palette, accent, className }: { table: TableSetup; palette: string[]; accent: string; className?: string }) {
   const ch = table.choices;
   const { tables, width, height } = arrangeTables(table);
-  const colours: GlyphColours = { palette: palette.length ? palette : ["#FBCFE8"], accent, cloth: table.clothColor, runner: table.runnerColor, napkin: table.napkinColor };
+  const colours: GlyphColours = { palette: palette.length ? palette : ["#FBCFE8"], accent, cloth: table.clothColor, runner: table.runnerColor, napkin: table.napkinColor,
+    plate: table.plateColor, cup: table.cupColor, holder: table.holderColor, chair: table.chairColor };
   let seatNo = 0;
 
   const floor = onFloor(ch);

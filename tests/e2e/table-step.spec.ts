@@ -46,7 +46,7 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await expect(cloth).toHaveCount(2);
   await expect(cloth.first()).toHaveAttribute("aria-checked", "true");
   for (const gone of ["Runner", "Name cards", "Chair decoration"]) await expect(page.getByRole("radiogroup", { name: gone })).toHaveCount(0);
-  await expect(page.getByRole("radiogroup", { name: "Cutlery holder" }).getByRole("radio")).toHaveCount(4);
+  await expect(page.getByRole("radiogroup", { name: "Cutlery holder" }).getByRole("radio")).toHaveCount(2); // None + the band
   await expect(page.getByRole("radiogroup", { name: "Water bottle label" }).getByRole("radio")).toHaveCount(4);
   // The placemats: the theme's own, with the customer's words on them.
   const placemats = page.getByRole("radiogroup", { name: "Placemats" });
@@ -63,6 +63,25 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await expect(page.getByTestId("bottle-label-preview")).toHaveText("Arya turns 6");
   await page.getByRole("radiogroup", { name: "Cutlery holder" }).getByRole("radio", { name: /Napkin band/ }).click();
   await expect(page.getByRole("textbox", { name: /Name on the cutlery holders/ })).toBeVisible();
+  await expect(page.getByTestId("cutleryHolder-colour")).toBeVisible();
+  // The words in the theme's colour, unless another is picked — on the placemats and the labels alike.
+  await page.getByTestId("bottleLabel-words-colour").getByRole("radio", { name: "purple" }).click();
+  await expect(page.getByTestId("bottle-label-preview").locator("span")).toHaveCSS("color", "rgb(142, 36, 170)");
+  await expect(page.getByTestId("placemat-preview").locator("span")).toHaveCSS("color", "rgb(142, 36, 170)");
+  // Plain plates and cups in a colour; a big and a small plate, with the theme's card in the small one.
+  await expect(page.getByTestId("plate-card-preview")).toBeVisible();
+  await expect(page.getByTestId("plates-colour")).toHaveCount(0);
+  await page.getByRole("radiogroup", { name: "Plates", exact: true }).getByRole("radio", { name: /Plain plates/ }).click();
+  await page.getByTestId("plates-colour").getByRole("radio", { name: "bright red" }).click();
+  await expect(page.getByTestId("plates-colour").getByRole("radio", { name: "bright red" })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("radiogroup", { name: "Cups", exact: true }).getByRole("radio", { name: /Plain cup/ }).click();
+  await expect(page.getByTestId("cups-colour")).toBeVisible();
+  // The kids' chair in any plain colour: its picture follows.
+  const chairs = page.getByRole("radiogroup", { name: "Chairs" });
+  await page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio", { name: /Standard table/ }).click();
+  await chairs.getByRole("radio", { name: /Colour chair for kids/ }).click();
+  await page.getByTestId("chairs-colour").getByRole("radio", { name: "hot pink" }).click();
+  await expect(chairs.getByRole("radio", { name: /Colour chair for kids/ }).locator("img")).toHaveAttribute("src", "/design/table/chairs/blue_kids/ec407a.webp");
   await expect(next(page)).toHaveText(/Continue to Package/);
   await expect(page.getByRole("radiogroup", { name: "Party hats" }).getByRole("radio")).toHaveCount(4); // None + 3
   await page.getByRole("radiogroup", { name: "Party hats" }).getByRole("radio", { name: /Crown/ }).click();
@@ -141,7 +160,7 @@ test("K5 the close-up render: one picture, the layout stays the drawing, and it 
   await page.getByRole("tab", { name: "Close-up" }).click();
   await expect(photo).toHaveAttribute("src", FAKE_TABLE_RENDER.close);
   // A change: the drawing comes back, with an offer to update.
-  await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Blue chair for kids/ }).click();
+  await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Colour chair for kids/ }).click();
   await expect(photo).toHaveCount(0);
   await expect(page.getByTestId("table-render-box")).toContainText("You changed the table since your close-up");
   await page.getByRole("button", { name: "Update the close-up ✦" }).click();

@@ -44,6 +44,8 @@ export interface TableOption {
   themedArt?: TableItemKey;
   /** This option takes a colour (the plain napkin). */
   coloured?: boolean;
+  /** Its picture comes in every colour of PLAIN_COLOURS (the kids' chair): /design/table/<item>/<id>/<hex>.webp. */
+  colouredPhotos?: boolean;
 }
 
 export interface TableItem {
@@ -69,7 +71,8 @@ export const TABLE_ITEMS: TableItem[] = [
   ] },
   { key: "chairs", label: "Chairs", optional: false, options: [
     { id: "white_kids", name: "White chair for kids", note: "Oval back, with arms", price: 25, unit: "per_child", photo: "/design/table/chairs-white_kids.webp" },
-    { id: "blue_kids", name: "Blue chair for kids", note: "Bright blue, slatted back", price: 25, unit: "per_child", photo: "/design/table/chairs-blue_kids.webp" },
+    // 2026-10-28: "blue chair for kids'in her renk seçeneği olabilsin" — the id stays for saved tables.
+    { id: "blue_kids", name: "Colour chair for kids", note: "Slatted back, in a colour you pick", price: 25, unit: "per_child", photo: "/design/table/chairs-blue_kids.webp", coloured: true, colouredPhotos: true },
     { id: "bow_kids", name: "Bow chair for kids", note: "Pink, with a bow back", price: 25, unit: "per_child", photo: "/design/table/chairs-bow_kids.webp" },
   ] },
   // "Plain cloth ve none olsun, none seçili gelsin" (2026-10-28): the owner's tables show bare.
@@ -90,15 +93,19 @@ export const TABLE_ITEMS: TableItem[] = [
     { id: "watercolour", name: "Watercolour placemat", note: "A3 · a soft wash, big shapes in the corners", price: 6, unit: "per_child", themed: true },
     { id: "sparkle", name: "Sparkle placemat", note: "A3 · glittering, room for a name", price: 6, unit: "per_child", themed: true },
   ] },
+  // 2026-10-28 (owner): every place has a big plate with a small one on it, and
+  // in the small plate a round card in the theme's design (plateCardArt) —
+  // printed for each child, so it is in the production list.
   { key: "plates", label: "Plates", optional: false, options: [
-    { id: "iridescent", name: "Iridescent foil plate", note: "Shimmering foil, with corners", price: 4, unit: "per_child", photo: "/design/table/plates-iridescent.webp" },
-    { id: "holo_square", name: "Holographic square plate", note: "Silver holographic foil", price: 4, unit: "per_child", photo: "/design/table/plates-holo_square.webp" },
-    { id: "silver", name: "Silver foil plate", note: "Round, with a fluted rim", price: 3, unit: "per_child", photo: "/design/table/plates-silver.webp" },
+    { id: "plain", name: "Plain plates", note: "Big + small, in a colour you pick", price: 3, unit: "per_child", coloured: true },
+    { id: "iridescent", name: "Iridescent foil plates", note: "Big + small, shimmering foil", price: 4, unit: "per_child", photo: "/design/table/plates-iridescent.webp" },
+    { id: "holo_square", name: "Holographic square plates", note: "Big + small, silver holographic foil", price: 4, unit: "per_child", photo: "/design/table/plates-holo_square.webp" },
+    { id: "silver", name: "Silver foil plates", note: "Big + small, round with a fluted rim", price: 3, unit: "per_child", photo: "/design/table/plates-silver.webp" },
   ] },
   { key: "cups", label: "Cups", optional: false, options: [
     { id: "white_straw", name: "White cup, silver straw", note: "Paper cup with a paper straw", price: 2, unit: "per_child", photo: "/design/table/cups-white_straw.webp" },
     { id: "iridescent", name: "Iridescent cup", note: "Shimmering foil finish", price: 3, unit: "per_child", photo: "/design/table/cups-iridescent.webp" },
-    { id: "pastel", name: "Pastel cup", note: "Soft matte colour", price: 2, unit: "per_child", photo: "/design/table/cups-pastel.webp" },
+    { id: "plain", name: "Plain cup", note: "In a colour you pick", price: 2, unit: "per_child", coloured: true },
   ] },
   { key: "cutlery", label: "Cutlery", optional: false, options: [
     { id: "dipped", name: "Colour-dipped wooden", note: "Handles dipped in pastel", price: 3, unit: "per_child", photo: "/design/table/cutlery-dipped.webp" },
@@ -106,9 +113,8 @@ export const TABLE_ITEMS: TableItem[] = [
     { id: "glitter", name: "Glitter-dipped wooden", note: "Handles dipped in silver glitter", price: 3, unit: "per_child", photo: "/design/table/cutlery-glitter.webp" },
   ] },
   { key: "cutleryHolder", label: "Cutlery holder", optional: true, options: [
-    { id: "pocket", name: "Printed pocket", note: "A card pocket in the theme, with a name", price: 5, unit: "per_child", photo: "/design/table/cutleryHolder-pocket.webp" },
-    { id: "band", name: "Napkin band", note: "Wraps the napkin, with a name tag", price: 4, unit: "per_child", photo: "/design/table/cutleryHolder-band.webp" },
-    { id: "tag", name: "Ribbon & tag", note: "Tied with a ribbon and a scalloped tag", price: 3, unit: "per_child", photo: "/design/table/cutleryHolder-tag.webp" },
+    // One kind since 2026-10-28 (owner): a plain band in a colour, with a name or without.
+    { id: "band", name: "Napkin band", note: "In a colour you pick · a name if you like", price: 4, unit: "per_child", photo: "/design/table/cutleryHolder-band.webp", coloured: true },
   ] },
   { key: "centrepiece", label: "Centrepiece", optional: true, options: [
     // Stand-ins: the owner sends her own centrepieces (2026-10-28).
@@ -141,8 +147,34 @@ export const TABLE_SECTIONS: { name: string; items: TableItemKey[] }[] = [
 export const tableItem = (key: TableItemKey) => TABLE_ITEMS.find((i) => i.key === key)!;
 // An item may not be offered at the kids' table (charger plates): it has no options then.
 export const tableOption = (key: TableItemKey, id: string) => TABLE_ITEMS.find((i) => i.key === key)?.options.find((o) => o.id === id);
-/** An option's picture; a themed one is the theme's own. */
-export const optionPhoto = (key: TableItemKey, o: TableOption | undefined, themeId: string) =>
-  o?.themed ? `/design/table/${o.themedArt ?? key}/${themeId}/${o.id}.webp` : o?.photo;
+/**
+ * An option's picture; a themed one is the theme's own, and one that comes in
+ * every colour (the kids' chair) is the chosen colour's.
+ */
+export const optionPhoto = (key: TableItemKey, o: TableOption | undefined, themeId: string, colour?: string) =>
+  o?.themed ? `/design/table/${o.themedArt ?? key}/${themeId}/${o.id}.webp`
+    : o?.colouredPhotos && colour && plainColour(colour) ? `/design/table/${key}/${o.id}/${colour.slice(1).toLowerCase()}.webp` : o?.photo;
+
+/**
+ * The colours a plain piece comes in (2026-10-28, owner: "her renk olsun,
+ * pastel ve ana renkler genelde"): the pastels, then the main colours. The
+ * names go into the render's words.
+ */
+export const PLAIN_COLOURS: { hex: string; name: string }[] = [
+  { hex: "#FFFFFF", name: "white" }, { hex: "#F8BBD0", name: "pastel pink" }, { hex: "#FFD1A4", name: "pastel peach" },
+  { hex: "#FEF08A", name: "pastel lemon yellow" }, { hex: "#BBF7D0", name: "pastel mint green" }, { hex: "#BAE6FD", name: "pastel baby blue" },
+  { hex: "#DDD6FE", name: "pastel lilac" }, { hex: "#F5EDD6", name: "cream" },
+  { hex: "#E53935", name: "bright red" }, { hex: "#EC407A", name: "hot pink" }, { hex: "#FB8C00", name: "bright orange" },
+  { hex: "#FDD835", name: "sunny yellow" }, { hex: "#43A047", name: "bright green" }, { hex: "#38BDF8", name: "bright sky blue" },
+  { hex: "#1E88E5", name: "royal blue" }, { hex: "#1E3A8A", name: "navy blue" }, { hex: "#8E24AA", name: "purple" },
+  { hex: "#D4AF37", name: "gold" }, { hex: "#C0C4C8", name: "silver" }, { hex: "#1F2937", name: "black" },
+];
+export const plainColour = (hex: string) => PLAIN_COLOURS.find((c) => c.hex.toUpperCase() === hex.toUpperCase());
 /** The chosen table sits the children on floor cushions: no chairs to choose or pay for. */
 export const onFloor = (choices: Record<TableItemKey, string>) => !!tableOption("table", choices.table)?.floor;
+
+/** The round card in each small plate: the chosen placemats' design (the pattern one without placemats), cut round. */
+export const plateCardArt = (choices: Record<TableItemKey, string>, themeId: string) =>
+  `/design/table/placemats/${themeId}/${choices.placemats !== NONE && tableOption("placemats", choices.placemats) ? choices.placemats : "pattern"}.webp`;
+/** The plate card's size: it sits inside a small (18 cm) plate. */
+export const PLATE_CARD_MM = 120;
