@@ -1204,7 +1204,8 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-option .art .words.bottleLabel { inset: 0; max-width: none; display: grid; place-items: center; padding: 8%; text-align: center; font-size: clamp(11px, 1.8vw, 16px); }
 .bz-tb-label { position: relative; margin-top: 12px; aspect-ratio: 4.1 / 1; border-radius: 10px; background-size: cover; background-position: center; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06); display: grid; place-items: center; overflow: hidden; }
 .bz-tb-label.placemat { aspect-ratio: 1.414 / 1; max-width: 420px; place-items: end; }
-.bz-tb-label.placemat span { font-size: clamp(14px, 2.2vw, 22px); text-align: right; padding: 0 6% 6% 30%; }
+.bz-tb-label.placemat span { font-size: clamp(14px, 2.2vw, 22px); line-height: 1.05; text-align: right; white-space: pre-line; padding: 0 6% 6% 30%; }
+.bz-tb-option .art .words.placemats { white-space: pre-line; line-height: 1.05; }
 .bz-tb-label span { font: 700 clamp(16px, 3vw, 28px)/1.1 Georgia, "Times New Roman", serif; letter-spacing: 0.05em; text-transform: uppercase; color: #7a86d1; text-shadow: 0 1px 0 #fff, 0 0 12px rgba(255,255,255,0.9); padding: 0 6%; text-align: center; }
 .bz-tb-words { display: grid; gap: 6px; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--bz-ink); }
 .bz-tb-words small { font-weight: 400; color: var(--bz-muted); }

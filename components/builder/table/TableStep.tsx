@@ -21,7 +21,7 @@ function OptionArt({ item, option, colours, themeId, words }: { item: TableItem;
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="photo" src={photo} alt="" loading="lazy" />
       {swatch && <i className="swatch" style={{ background: swatch }} aria-hidden="true" />}
-      {words && <span className={`words ${item.key} ${option.id}`} aria-hidden="true">{words}</span>}
+      {words && <span className={`words ${item.key} ${option.id}`} aria-hidden="true">{item.key === "placemats" ? stacked(words) : words}</span>}
     </>;
   }
   if (!option) return <svg viewBox="-24 -24 48 48" aria-hidden="true"><circle r={14} fill="none" stroke="#d9c9cf" strokeWidth={2} strokeDasharray="4 3" /><path d="M-8,8L8,-8" stroke="#d9c9cf" strokeWidth={2} /></svg>;
@@ -44,6 +44,9 @@ function OptionArt({ item, option, colours, themeId, words }: { item: TableItem;
   }
   return <svg viewBox="-24 -24 48 48" aria-hidden="true"><defs><GlyphDefs /></defs><g transform={`scale(${scale[item.key] ?? 1})`}>{glyph(item.key, option.id, colours)}</g></svg>;
 }
+
+/** Placemat words stack one word a line, like the owner's reference (2026-10-28: "her kelime alt alta olsun"). */
+const stacked = (words: string) => words.trim().split(/\s+/).join("\n");
 
 const unitLabel = (o: TableOption) => `AED ${formatAED(o.price)} ${o.unit === "per_child" ? "each" : "a table"}`;
 
@@ -130,7 +133,7 @@ export default function TableStep({ config, setTable }: {
           // A3 placemat with the words bottom-right, like the owner's reference.
           <div className={key === "bottleLabel" ? "bz-tb-label" : "bz-tb-label placemat"} data-testid={key === "bottleLabel" ? "bottle-label-preview" : "placemat-preview"}
             style={{ backgroundImage: `url(${optionPhoto(key, chosen, theme.id)})` }}>
-            <span>{table.words?.[key] || "Your words here"}</span>
+            <span>{key === "placemats" ? stacked(table.words?.placemats || "Your words here") : table.words?.bottleLabel || "Your words here"}</span>
           </div>
         )}
       </div>

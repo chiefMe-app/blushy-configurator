@@ -64,7 +64,7 @@ describe("where and how it is photographed", () => {
     expect(readTableSetup({ ...table(), scene: "moon" }, frozen)!.scene).toBeUndefined();
   });
   it("one place setting up close", () => {
-    expect(tablePrompt(table(), frozen, [])).toMatch(/35mm lens .* looking across both place settings/);
+    expect(tablePrompt(table(), frozen, [])).toContain("about 50 degrees down, not straight down");
   });
 });
 
@@ -97,27 +97,38 @@ describe("the pictures and the prompt", () => {
   it("the customer's words go on the placemat, and are the only words", () => {
     const p = tablePrompt({ ...table(), words: { placemats: "Arya turns 6" } }, frozen, []);
     // In the bottom-right corner, like the owner's reference — never on the plate (her first render).
-    expect(p).toContain('with the words "Arya turns 6" printed small in elegant letters in its bottom-right corner — beside the plate, never on the plate');
+    // Bottom-right, one word a line, like the owner's reference — never on the plate (her first render).
+    expect(p).toContain('with the words printed in its bottom-right corner in elegant letters, stacked one word per line ("Arya" above "turns" above "6") — never on the plate');
     expect(p).toContain('The only words anywhere are "Arya turns 6"');
     expect(tablePrompt(table(), frozen, [])).toContain("No text and no letters anywhere.");
     expect(tableRenderKey({ ...table(), words: { placemats: "Arya turns 6" } })).not.toBe(tableRenderKey(table()));
     // No placemat: no words.
     expect(tablePrompt({ ...table({ placemats: NONE }), words: { placemats: "Arya" } }, frozen, [])).not.toContain("Arya");
   });
-  it("two children facing each other, each with the whole setting, the centrepiece between them", () => {
+  it("two children facing each other at one part of a big table, each with the whole setting set out as the owner wants", () => {
     const t = { ...table({ cutleryHolder: "band", bottleLabel: "watercolour", napkins: "printed", centrepiece: "florals" }), words: { cutleryHolder: "Arya", bottleLabel: "Arya turns 6" } };
     const refs = referencePictures(t, "frozen").map((r) => r.key);
     const p = tablePrompt(t, frozen, refs);
+    expect(p).toContain("one part of a big, fully set children's party table");
+    expect(p).toContain("clearly a table for many children, not a table for two");
     expect(p).toContain("TWO place settings facing each other");
     expect(p).toContain("Two chairs face each other on the two sides of the table");
-    expect(p).toContain(`folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 1} — this very napkin and no other`);
-    expect(p).toContain('take only the band from that photo, not its napkin, and the name "Arya" on the tag');
-    expect(p).toContain("at the top of the placemat; next to the cup, a small clear water bottle");
-    expect(p).toContain('with "Arya turns 6" printed large on the label — the cup and the bottle are both there');
+    // The cutlery only on the left, rolled up in the chosen napkin with the band, as in the holder's picture.
+    expect(p).toContain(`on the left of the placemat: a disposable natural wooden fork, knife and spoon — exactly as in image ${refs.indexOf("cutlery") + 1}, rolled up in a folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 1} and held by a paper napkin band with a little name tag with the name "Arya" on it, arranged exactly like the cutlery holder in image ${refs.indexOf("cutleryHolder") + 1}`);
+    expect(p).toContain("The only cutlery anywhere is the one set on the left of each placemat");
+    expect(p).toContain("on the top-right corner of the placemat; just beside the cup, a small clear water bottle");
+    expect(p).toContain('with "Arya turns 6" printed on the label — the cup and the bottle are both there');
     expect(p).toContain("a cone party hat standing on the top-left corner of the placemat");
-    expect(p).toMatch(/Between the two settings, in the middle of the table: a lush low arrangement of pastel flowers/);
+    expect(p).toMatch(/Between the two settings, in the middle of the table: a small, low, compact arrangement of a few pastel flowers/);
     expect(p).toContain('The only words anywhere are "Arya" and "Arya turns 6"');
     expect(refs).toContain("centrepiece");
+  });
+  it("a plain napkin is its chosen colour, in words: its picture (another colour) is not sent", () => {
+    const t = table({ napkins: "plain" });
+    expect(referencePictures(t, "frozen").map((r) => r.key)).not.toContain("napkins");
+    expect(tablePrompt(t, frozen, [])).toMatch(/a plain [a-z ]+ paper napkin/);
+    // A bottle without words says so: no made-up words on it.
+    expect(tablePrompt(table({ bottleLabel: "pattern" }), frozen, ["bottleLabel"])).toContain("its label with no words");
   });
   it("None has no picture; the low table has cushions, not chairs", () => {
     expect(referencePictures(table({ placemats: NONE }), "frozen").some((r) => r.key === "placemats")).toBe(false);
@@ -194,7 +205,7 @@ describe("the route", () => {
     expect(calls[0].image_size).toBe("landscape_4_3");
     expect(calls[0].image_urls).toHaveLength(referencePictures(table(), "frozen").length);
     for (const u of calls[0].image_urls) expect(u).toMatch(/^data:image\/jpeg;base64,/);
-    expect(calls[0].prompt).toContain("close-up photograph of TWO place settings");
+    expect(calls[0].prompt).toContain("TWO place settings facing each other");
     expect(calls[0].prompt).not.toMatch(/frozen/i);
   }, 30_000);
 

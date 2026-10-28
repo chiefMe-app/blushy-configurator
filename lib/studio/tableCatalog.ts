@@ -113,7 +113,7 @@ export const TABLE_ITEMS: TableItem[] = [
   { key: "centrepiece", label: "Centrepiece", optional: true, options: [
     // Stand-ins: the owner sends her own centrepieces (2026-10-28).
     { id: "balloons", name: "Balloon bunch", note: "Mini balloons in the theme", price: 60, unit: "per_table", photo: "/design/table/centrepiece-balloons.webp" },
-    { id: "florals", name: "Fresh florals", note: "Low arrangement", price: 90, unit: "per_table", photo: "/design/table/centrepiece-florals.webp" },
+    { id: "florals", name: "Fresh florals", note: "A small, low arrangement", price: 90, unit: "per_table", photo: "/design/table/centrepiece-florals.webp" },
     { id: "toppers", name: "Theme toppers", note: "Stars and theme shapes on sticks", price: 40, unit: "per_table", photo: "/design/table/centrepiece-toppers.webp" },
   ] },
   // A small water bottle wrapped in a 20.5 × 5 cm label in the placemats' designs, with
