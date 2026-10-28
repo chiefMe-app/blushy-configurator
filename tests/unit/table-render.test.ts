@@ -117,13 +117,23 @@ describe("the pictures and the prompt", () => {
     expect(p).toContain("Two chairs face each other on the two sides of the table");
     // The cutlery only on the left, rolled up in the chosen napkin with the band, as in the holder's picture.
     expect(p).toContain(`on the left of the placemat: a folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 2} folded into a pocket with the cutlery (a disposable fork, knife and spoon made of natural light wood, not metal) standing up out of it, wrapped round the middle by a paper napkin band with a little name tag with the name "Arya" on it, arranged exactly like the cutlery holder in image ${refs.indexOf("cutleryHolder") + 2}`);
-    expect(p).toContain("all standing in its napkin pocket on the left. No other cutlery anywhere");
+    expect(p).toContain("all standing upright in its napkin pocket on the left, never laid flat across the napkin. No other cutlery anywhere");
+    expect(p).toContain("this is the place's only bottle");
     expect(p).toContain("on the top-right corner of the placemat; just beside the cup, a small clear water bottle");
     expect(p).toContain('with "Arya turns 6" printed on the label — the cup and the bottle are both there');
     expect(p).toContain("a cone party hat standing on the top-left corner of the placemat");
     expect(p).toMatch(/Between the two settings, in the middle of the table: a small, low, compact arrangement of a few pastel flowers/);
     expect(p).toContain('The only words anywhere are "Arya" and "Arya turns 6"');
     expect(refs).not.toContain("centrepiece"); // in words
+  });
+  it("round and flower tables: two places side by side, facing us, with their chairs behind", () => {
+    for (const kind of ["round", "flower"]) {
+      const p = tablePrompt(table({ table: kind }), frozen, []);
+      expect(p).toContain("TWO place settings side by side at the far edge of the table, facing us");
+      expect(p).not.toContain("facing each other");
+      expect(p).toContain("one part of a big children's party table");
+    }
+    expect(tablePrompt(table(), frozen, [])).toContain("one part of a long children's party table");
   });
   it("a plain napkin is its chosen colour, in words: its picture (another colour) is not sent", () => {
     const t = table({ napkins: "plain" });

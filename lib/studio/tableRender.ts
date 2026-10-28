@@ -103,6 +103,7 @@ export function referencePictures(t: TableSetup, themeId: string): { key: TableI
 export function tablePrompt(t: TableSetup, theme: { id: string; name: string; balloonColors: string[] }, pictures: TableItemKey[]): string {
   const c = t.choices;
   const floor = onFloor(c);
+  const round = c.table === "round" || c.table === "flower";
   const word = (k: TableItemKey) => (c[k] === NONE || (floor && k === "chairs") ? "" : (WORDS[k]?.[c[k]] ?? "")
     .replace("{cloth}", hexToColorName(t.clothColor)).replace("{napkin}", hexToColorName(t.napkinColor)).replace("{motif}", motifOf(theme.id)));
   // Image 1 is the layout drawing; the option pictures follow it.
@@ -132,14 +133,14 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
     : c.cutleryHolder === "tag" ? `on the left of the placemat: ${napkin} folded, with ${cutlery} laid on it and tied with ${word("cutleryHolder")}${name}${like}`
     : `on the left of the placemat: ${napkin} folded, with ${cutlery} laid on it`);
   if (word("cups")) seat.push(`${word("cups")}${exactly("cups")} on the top-right corner of the placemat`);
-  if (word("bottleLabel")) seat.push(`just beside the cup, ${word("bottleLabel")} (image ${pic("bottleLabel")})${bottleWords ? ` with "${bottleWords}" printed on the label` : ", its label with no words"} — the cup and the bottle are both there`);
+  if (word("bottleLabel")) seat.push(`just beside the cup, ${word("bottleLabel")} (image ${pic("bottleLabel")})${bottleWords ? ` with "${bottleWords}" printed on the label` : ", its label with no words"} — the cup and the bottle are both there, and this is the place's only bottle`);
   if (word("partyHats")) seat.push(`${word("partyHats")} standing on the top-left corner of the placemat`);
   const words = [placematWords, holderWords, bottleWords].filter(Boolean) as string[];
 
   const lines = [
     // 2026-10-28 ("saçmaladı render"): words alone did not hold the layout, so
     // a drawing of the exact scene leads, and the photos give each piece its look.
-    "Image 1 is a simple drawing of the exact scene: one part of a long children's party table seen from about 50 degrees above, with every chair and every piece of every place setting in its exact place.",
+    `Image 1 is a simple drawing of the exact scene: one part of a ${round ? "big" : "long"} children's party table seen from about 50 degrees above, with every chair and every piece of every place setting in its exact place.`,
     pictures.length ? `Images 2 to ${pictures.length + 1} are product photos of the exact pieces chosen: ${pictures.map((k, i) => `image ${i + 2} is ${LABEL[k]}`).join(", ")}.` : "",
     "Turn image 1 into a real photograph. Keep its camera angle and framing, and keep the table, every chair and every placemat, plate, napkin, cutlery, cup, bottle, hat and centrepiece exactly where image 1 has them — the same number of each, nothing added, moved or left out. Each simple shape in the drawing becomes the real piece; nothing of the drawing itself may remain — no outlines, no flat colours.",
     pictures.length ? "From each product photo take only the piece itself and ignore everything around it — the grass, walls, backdrops, other furniture, napkins, flowers and other tableware in those photos." : "",
@@ -147,12 +148,14 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
     words.length && placematWords ? "The words on the placemats are already lettered in image 1: keep them exactly, letter for letter, in the same place, as real print on the paper." : "",
     // "Uzun bir masanın bir bölümü gözüksün, masa 2 kişilik gibi durmasın" (2026-10-28).
     `Make a photograph of one part of a big, fully set children's party table: ${word("table")}${pic("table") ? " — exactly the table in its photo, with the same shape, edges, colour and legs" : ""}. The table carries on beyond the edges of the picture, with more chairs and identical place settings continuing softly out of focus, so it is clearly a table for many children, not a table for two.`,
-    `In focus, in the middle of the picture: TWO place settings facing each other across the table. ${floor ? "Two white floor cushions face each other on the two sides of the low table." : `Two chairs face each other on the two sides of the table, each pulled up to it: ${word("chairs")}${exactly("chairs")}.`}`,
+    // Round the round and flower tables the two places sit side by side, seen from across the table (lib/studio/tableCloseGuide.ts).
+    round ? `In focus, in the middle of the picture: TWO place settings side by side at the far edge of the table, facing us, each with its chair pulled up behind it: ${word("chairs")}${exactly("chairs")}.`
+      : `In focus, in the middle of the picture: TWO place settings facing each other across the table. ${floor ? "Two white floor cushions face each other on the two sides of the low table." : `Two chairs face each other on the two sides of the table, each pulled up to it: ${word("chairs")}${exactly("chairs")}.`}`,
     word("tablecloth") ? `The table is covered with ${word("tablecloth")}.` : "The table has no tablecloth: its own bare top and edges show.",
     `In front of each chair, on the table, is the same setting: ${seat.join("; ")}.`,
     word("centrepiece") ? `Between the two settings, in the middle of the table: ${word("centrepiece")}${exactly("centrepiece")}.` : "",
     // 2026-10-28 (owner): an extra metal fork and knife kept appearing to the right of the plate.
-    c.cutleryHolder === "band" ? "Each place has exactly one fork, one knife and one spoon, all standing in its napkin pocket on the left. No other cutlery anywhere: nothing lies on the placemats, beside or on the plates, or on the table, and there is no metal cutlery at all." : "The only cutlery anywhere is the one set on the left of each placemat: no other forks, knives or spoons on the placemats, beside the plates or on the table.",
+    c.cutleryHolder === "band" ? "Each place has exactly one fork, one knife and one spoon, all standing upright in its napkin pocket on the left, never laid flat across the napkin. No other cutlery anywhere: nothing lies on the placemats, beside or on the plates, or on the table, and there is no metal cutlery at all." : "The only cutlery anywhere is the one set on the left of each placemat: no other forks, knives or spoons on the placemats, beside the plates or on the table.",
     "Nothing that is not listed: no confetti, no curling ribbon, no extra plates, cups or hats, no name cards, no chair decorations, no balloons unless listed.",
     pictures.length ? "Every piece must look exactly like its photo: the same shape, colour, finish and material, and the printed designs exactly as in their pictures." : "",
     `Colour palette: ${colours}.`,

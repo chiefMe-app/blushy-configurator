@@ -87,9 +87,13 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
 
   // The camera: about 50° down, from behind B's chair and a little to one side,
   // looking across the table at both places; the next places carry on to the sides.
-  const across = norm([B.centre[0] - A.centre[0], B.centre[1] - A.centre[1], 0]);
+  // Round the round and flower tables the two places sit side by side, so the
+  // camera stands across the table from them (2026-10-28: looking along the
+  // edge it left the chairs floating off the table and the render made its own scene).
+  const mid = world(table.x + table.w / 2, table.y + table.h / 2, TH);
+  const across = round ? norm([mid[0] - target[0], mid[1] - target[1], 0]) : norm([B.centre[0] - A.centre[0], B.centre[1] - A.centre[1], 0]);
   const along: V3 = [-across[1], across[0], 0];
-  const az = (22 * Math.PI) / 180, el = (52 * Math.PI) / 180, dist = 165;
+  const az = ((round ? 0 : 22) * Math.PI) / 180, el = (52 * Math.PI) / 180, dist = round ? 140 : 165;
   const horiz = norm([across[0] * Math.cos(az) + along[0] * Math.sin(az), across[1] * Math.cos(az) + along[1] * Math.sin(az), 0]);
   const eye: V3 = [target[0] + horiz[0] * dist * Math.cos(el), target[1] + horiz[1] * dist * Math.cos(el), target[2] + dist * Math.sin(el)];
   const fw = norm(sub(target, eye)), rt = norm(cross(fw, [0, 0, 1])), up = cross(rt, fw);
@@ -125,8 +129,11 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
       const legs = [[-r + 2, -r + 2], [r - 2, -r + 2], [r - 2, r - 2], [-r + 2, r - 2]].map(([u, v]) => { const [x1, y1] = P(q(u, v, 0)), [x2, y2] = P(q(u, v, 30)); return `<path d="M${f1(x1)},${f1(y1)}L${f1(x2)},${f1(y2)}" stroke="#8A7F86" stroke-width="2"/>`; }).join("");
       const seat = poly([q(-r, -r, 30), q(r, -r, 30), q(r, r, 30), q(-r, r, 30)], fill);
       // The back stands on the side away from the table.
+      // The bow's loops sit on a knot and two tails down to the seat (2026-10-28: loops alone floated off the chair).
       const back = ch.chairs === "bow_kids"
-        ? [-8, 8].map((u) => poly(Array.from({ length: 16 }, (_, i) => { const a2 = (i * 2 * Math.PI) / 16; return q(u + Math.cos(a2) * 7, -r, 58 + Math.sin(a2) * 9); }), "none", "#D9A3B5", 3)).join("")
+        ? [-3.5, 3.5].map((u) => poly([q(u, -r, 30), q(u * 0.3, -r, 55)], "none", "#D9A3B5", 3)).join("")
+          + [-8, 8].map((u) => poly(Array.from({ length: 16 }, (_, i) => { const a2 = (i * 2 * Math.PI) / 16; return q(u + Math.cos(a2) * 7, -r, 58 + Math.sin(a2) * 9); }), "none", "#D9A3B5", 3)).join("")
+          + poly(Array.from({ length: 12 }, (_, i) => { const a2 = (i * 2 * Math.PI) / 12; return q(Math.cos(a2) * 2.5, -r, 57 + Math.sin(a2) * 3); }), fill, "#D9A3B5", 2)
         : ch.chairs === "white_kids"
           ? poly(Array.from({ length: 20 }, (_, i) => { const a2 = (i * 2 * Math.PI) / 20; return q(Math.cos(a2) * 13, -r, 50 + Math.sin(a2) * 17); }), fill)
           // 2026-10-28: a solid panel came out as a solid back. The owner's blue
