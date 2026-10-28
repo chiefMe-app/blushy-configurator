@@ -1,6 +1,7 @@
-// The real render of the kids' table (F3): since 2026-10-28 one close-up of a
-// place setting, made from the pictures of the options the customer chose
-// (lib/studio/tableRender.ts) — the layout stays the live drawings. Like the
+// The real render of the kids' table (F3): since 2026-10-28 one close-up of
+// part of the table, made from a drawing of the exact scene
+// (lib/studio/tableCloseGuide.ts) and the pictures of the options the customer
+// chose (lib/studio/tableRender.ts). Like the
 // backdrop render it costs money, so it needs a signed-in account and counts
 // as one of the day's renders (lib/renderAccount.ts), behind the per-IP guard
 // (lib/renderGuard.ts). The picture is kept in the customer's folder of the
@@ -19,7 +20,9 @@ import { renderUser, takeAccountRender } from "@/lib/renderAccount";
 import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
 import { readTableSetup } from "@/lib/studio/tableSetup";
+import { optionPhoto, tableOption } from "@/lib/studio/tableCatalog";
 import { referencePictures, tablePrompt, tableRenderKey, type TableRender } from "@/lib/studio/tableRender";
+import { tableCloseGuideSvg } from "@/lib/studio/tableCloseGuide";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,7 +84,12 @@ export async function POST(req: NextRequest) {
         const send = (o: unknown) => controller.enqueue(ndjsonLine(o));
         try {
           const refs = referencePictures(table, theme.id);
-          const pictures = await Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin)));
+          // Image 1: the drawing of the exact scene, the placemats wearing their own
+          // design (2026-10-28 tests); then the chosen pieces' pictures.
+          const matPhoto = optionPhoto("placemats", tableOption("placemats", table.choices.placemats), theme.id);
+          const placemat = matPhoto ? await optionPicture(matPhoto, req.nextUrl.origin) : undefined;
+          const guide = await sharp(Buffer.from(tableCloseGuideSvg(table, theme, { placemat }))).png().toBuffer();
+          const pictures = [`data:image/png;base64,${guide.toString("base64")}`, ...await Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin)))];
           const result = await fal.subscribe(MODEL, {
             input: engineInput(MODEL, tablePrompt(table, theme, refs.map((r) => r.key)), pictures) as never,
             abortSignal: AbortSignal.timeout(130_000),

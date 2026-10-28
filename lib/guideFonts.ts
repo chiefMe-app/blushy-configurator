@@ -43,6 +43,12 @@ export function textPathD(
   return f.getPath(text, left, y, size).toPathData(2);
 }
 
+/** One line's outline as path commands from its left end on the baseline (0, 0), and its width — for drawing it in perspective. */
+export function textCommands(text: string, style: string, size: number) {
+  const f = fontFor(style, text);
+  return { commands: f.getPath(text, 0, 0, size).commands, width: f.getAdvanceWidth(text, size) };
+}
+
 /** Advance width of one line of text at the given size. */
 export function textAdvance(text: string, style: string, size: number): number {
   return fontFor(style, text).getAdvanceWidth(text, size);

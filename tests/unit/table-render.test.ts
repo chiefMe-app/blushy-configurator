@@ -7,6 +7,7 @@ import { themeById } from "@/lib/config";
 import { NONE } from "@/lib/studio/tableCatalog";
 import { defaultTableSetup, readTableRender, readTableSetup } from "@/lib/studio/tableSetup";
 import { MAX_REFERENCES, referencePictures, tablePrompt, tableRenderKey } from "@/lib/studio/tableRender";
+import { tableCloseGuideSvg } from "@/lib/studio/tableCloseGuide";
 import { resetRenderGuard } from "@/lib/renderGuard";
 import { readNdjson } from "@/lib/ndjson";
 
@@ -69,23 +70,24 @@ describe("where and how it is photographed", () => {
 });
 
 describe("the pictures and the prompt", () => {
-  it("the chosen options' pictures, at most ten, named in the prompt in the same order", () => {
+  it("the layout drawing first, then a few option pictures, named in the prompt in the same order", () => {
     const refs = referencePictures(table(), "frozen");
-    expect(refs.slice(0, 4)).toEqual([
+    expect(refs.slice(0, 3)).toEqual([
       { key: "table", photo: "/design/table/table-standard.webp" },
       { key: "chairs", photo: "/design/table/chairs-white_kids.webp" },
-      { key: "placemats", photo: "/design/table/placemats/frozen/pattern.webp" },
       { key: "plates", photo: "/design/table/plates-iridescent.webp" },
     ]);
     const p = tablePrompt(table(), frozen, refs.map((r) => r.key));
-    expect(p).toContain(`Images 1 to ${refs.length} are product photos`);
-    expect(p).toContain("image 1 is the table, image 2 is the chair, image 3 is the placemat's printed design, image 4 is the plate");
+    expect(p).toContain("Image 1 is a simple drawing of the exact scene");
+    expect(p).toContain(`Images 2 to ${refs.length + 1} are product photos`);
+    expect(p).toContain("image 2 is the table, image 3 is the chair, image 4 is the plate");
+    expect(p).toContain("Turn image 1 into a real photograph");
     expect(p).toContain("ignore everything around it");
-    // Every piece chosen: ten pictures at most; the cloth and the hat go in words only.
+    // The placemats are drawn into the layout with their design; the cloth, cutlery, hat and centrepiece go in words.
+    expect(p).toContain("The placemats in image 1 already carry their exact printed design");
     const all = referencePictures(table({ tablecloth: "classic", cutleryHolder: "pocket", bottleLabel: "pattern" }), "frozen");
-    expect(all).toHaveLength(MAX_REFERENCES);
-    expect(all.map((r) => r.key)).not.toContain("partyHats");
-    expect(all.map((r) => r.key)).not.toContain("tablecloth");
+    expect(all.length).toBeLessThanOrEqual(MAX_REFERENCES);
+    for (const k of ["placemats", "partyHats", "tablecloth", "cutlery", "centrepiece"]) expect(all.map((r) => r.key)).not.toContain(k);
   });
   it("exactly the chosen setup: the table's shape, a bare top unless a cloth is chosen, nothing extra", () => {
     const p = tablePrompt(table({ table: "cloud" }), frozen, ["table"]);
@@ -98,7 +100,7 @@ describe("the pictures and the prompt", () => {
     const p = tablePrompt({ ...table(), words: { placemats: "Arya turns 6" } }, frozen, []);
     // In the bottom-right corner, like the owner's reference — never on the plate (her first render).
     // Bottom-right, one word a line, like the owner's reference — never on the plate (her first render).
-    expect(p).toContain('with the words printed in its bottom-right corner in elegant letters, stacked one word per line ("Arya" above "turns" above "6") — never on the plate');
+    expect(p).toContain('with the words printed straight onto the placemat paper in its bottom-right corner in elegant periwinkle-blue serif capitals, stacked one word per line ("Arya" above "turns" above "6") — no sticker, no label, never on the plate');
     expect(p).toContain('The only words anywhere are "Arya turns 6"');
     expect(tablePrompt(table(), frozen, [])).toContain("No text and no letters anywhere.");
     expect(tableRenderKey({ ...table(), words: { placemats: "Arya turns 6" } })).not.toBe(tableRenderKey(table()));
@@ -114,14 +116,14 @@ describe("the pictures and the prompt", () => {
     expect(p).toContain("TWO place settings facing each other");
     expect(p).toContain("Two chairs face each other on the two sides of the table");
     // The cutlery only on the left, rolled up in the chosen napkin with the band, as in the holder's picture.
-    expect(p).toContain(`on the left of the placemat: a disposable natural wooden fork, knife and spoon — exactly as in image ${refs.indexOf("cutlery") + 1}, rolled up in a folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 1} and held by a paper napkin band with a little name tag with the name "Arya" on it, arranged exactly like the cutlery holder in image ${refs.indexOf("cutleryHolder") + 1}`);
-    expect(p).toContain("The only cutlery anywhere is the one set on the left of each placemat");
+    expect(p).toContain(`on the left of the placemat: a folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 2} folded into a pocket with the cutlery (a disposable fork, knife and spoon made of natural light wood, not metal) standing up out of it, wrapped round the middle by a paper napkin band with a little name tag with the name "Arya" on it, arranged exactly like the cutlery holder in image ${refs.indexOf("cutleryHolder") + 2}`);
+    expect(p).toContain("all the cutlery stands in the napkin pockets");
     expect(p).toContain("on the top-right corner of the placemat; just beside the cup, a small clear water bottle");
     expect(p).toContain('with "Arya turns 6" printed on the label — the cup and the bottle are both there');
     expect(p).toContain("a cone party hat standing on the top-left corner of the placemat");
     expect(p).toMatch(/Between the two settings, in the middle of the table: a small, low, compact arrangement of a few pastel flowers/);
     expect(p).toContain('The only words anywhere are "Arya" and "Arya turns 6"');
-    expect(refs).toContain("centrepiece");
+    expect(refs).not.toContain("centrepiece"); // in words
   });
   it("a plain napkin is its chosen colour, in words: its picture (another colour) is not sent", () => {
     const t = table({ napkins: "plain" });
@@ -150,7 +152,7 @@ describe("the pictures and the prompt", () => {
     const p = tablePrompt(table(), frozen, []);
     expect(p).toContain("A3 paper placemat printed all over with snowflakes and little stars");
     expect(p).toContain("disposable paper plate with a shimmering iridescent");
-    expect(p).toContain("disposable natural wooden fork, knife and spoon");
+    expect(p).toContain("a disposable fork, knife and spoon made of natural light wood, not metal");
     expect(p).toContain("a cone party hat");
     expect(p).toMatch(/children's birthday party.*no glassware, no china, no charger plates/);
     expect(tablePrompt(table(), themeById("dinosaur")!, [])).toContain("printed all over with dinosaur footprints and leaves");
@@ -163,6 +165,19 @@ async function lines(res: Response) {
   await readNdjson(res.body!, (l) => out.push(l as Record<string, unknown>));
   return out;
 }
+
+describe("the layout drawing", () => {
+  it("one part of the table: every place set out, the placemat words lettered as paths, the placemat design laid on", () => {
+    const t = { ...table({ cutleryHolder: "band", placemats: "watercolour" }), words: { placemats: "Arya turns 6" } };
+    const svg = tableCloseGuideSvg(t, frozen, { placemat: "data:image/jpeg;base64,AAAA" });
+    expect(svg).toMatch(/^<svg [^>]*width="1152" height="864"/);
+    expect(svg).not.toContain("<text"); // Vercel has no fonts: letters are paths
+    expect(svg).toContain('<image id="mat-art" href="data:image/jpeg;base64,AAAA"');
+    expect((svg.match(/<use href="#mat-art"/g) ?? []).length).toBe(10); // a placemat at every place
+    expect((svg.match(/fill="#6F7FD0"/g) ?? []).length).toBe(30); // ARYA / TURNS / 6 at ten places
+    expect(tableCloseGuideSvg({ ...t, choices: { ...t.choices, placemats: NONE } }, frozen)).not.toContain("#6F7FD0");
+  });
+});
 
 describe("reading the stream", () => {
   it("lines split anywhere across chunks, and the last one without a newline", async () => {
@@ -203,8 +218,10 @@ describe("the route", () => {
     expect(calls).toHaveLength(1);
     expect(calls[0].model).toBe("fal-ai/bytedance/seedream/v5/lite/edit");
     expect(calls[0].image_size).toBe("landscape_4_3");
-    expect(calls[0].image_urls).toHaveLength(referencePictures(table(), "frozen").length);
-    for (const u of calls[0].image_urls) expect(u).toMatch(/^data:image\/jpeg;base64,/);
+    // The layout drawing first, then the option pictures.
+    expect(calls[0].image_urls).toHaveLength(referencePictures(table(), "frozen").length + 1);
+    expect(calls[0].image_urls[0]).toMatch(/^data:image\/png;base64,/);
+    for (const u of calls[0].image_urls.slice(1)) expect(u).toMatch(/^data:image\/jpeg;base64,/);
     expect(calls[0].prompt).toContain("TWO place settings facing each other");
     expect(calls[0].prompt).not.toMatch(/frozen/i);
   }, 30_000);
