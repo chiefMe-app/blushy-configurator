@@ -70,42 +70,62 @@ describe("where and how it is photographed", () => {
 
 describe("the pictures and the prompt", () => {
   it("the chosen options' pictures, at most ten, named in the prompt in the same order", () => {
-    const refs = referencePictures(table());
-    expect(refs).toHaveLength(MAX_REFERENCES);
-    expect(refs.slice(0, 3)).toEqual([
-      { key: "chairs", photo: "/design/table/chairs-white_kids.webp" },
+    const refs = referencePictures(table(), "frozen");
+    expect(refs.slice(0, 4)).toEqual([
       { key: "table", photo: "/design/table/table-standard.webp" },
-      { key: "plates", photo: "/design/table/plates-themed.webp" },
+      { key: "chairs", photo: "/design/table/chairs-white_kids.webp" },
+      { key: "placemats", photo: "/design/table/placemats/frozen/pattern.webp" },
+      { key: "plates", photo: "/design/table/plates-iridescent.webp" },
     ]);
     const p = tablePrompt(table(), frozen, refs.map((r) => r.key));
-    expect(p).toContain("Images 1 to 10 are product photos");
-    expect(p).toContain("image 1 is the chair, image 2 is the table, image 3 is the plate");
+    expect(p).toContain(`Images 1 to ${refs.length} are product photos`);
+    expect(p).toContain("image 1 is the table, image 2 is the chair, image 3 is the placemat's printed design, image 4 is the plate");
     expect(p).toContain("ignore everything around it");
+    // Every piece chosen: more than ten pictures, so the last ones go.
+    const all = referencePictures(table({ tablecloth: "classic", cutleryHolder: "pocket", bottleLabel: "name" }), "frozen");
+    expect(all).toHaveLength(MAX_REFERENCES);
+    expect(all.map((r) => r.key)).not.toContain("partyHats");
+  });
+  it("exactly the chosen setup: the table's shape, a bare top unless a cloth is chosen, nothing extra", () => {
+    const p = tablePrompt(table({ table: "cloud" }), frozen, ["table"]);
+    expect(p).toContain("whose edges are soft rounded scallops like a cloud — exactly the table in its photo");
+    expect(p).toContain("no tablecloth: its own bare top and edges show");
+    expect(p).toMatch(/Nothing that is not listed: no confetti/);
+    expect(tablePrompt(table({ tablecloth: "classic" }), frozen, [])).toContain("covered with a smooth floor-length white tablecloth");
+  });
+  it("the customer's words go on the placemat, and are the only words", () => {
+    const p = tablePrompt({ ...table(), placematText: "Zahra turns 4" }, frozen, []);
+    expect(p).toContain('with the words "Zahra turns 4" printed on it');
+    expect(p).toContain('The only words anywhere are "Zahra turns 4"');
+    expect(tablePrompt(table(), frozen, [])).toContain("No text and no letters anywhere.");
+    expect(tableRenderKey({ ...table(), placematText: "Zahra turns 4" })).not.toBe(tableRenderKey(table()));
+    // No placemat: no words.
+    expect(tablePrompt({ ...table({ placemats: NONE }), placematText: "Zahra" }, frozen, [])).not.toContain("Zahra");
   });
   it("None has no picture; the low table has cushions, not chairs", () => {
-    expect(referencePictures(table({ placemats: NONE })).some((r) => r.key === "placemats")).toBe(false);
-    const low = table({ table: "low", chairDecor: "tulle_bow" });
-    expect(referencePictures(low).some((r) => r.key === "chairs" || r.key === "chairDecor")).toBe(false);
-    const p = tablePrompt(low, frozen, referencePictures(low).map((r) => r.key));
-    expect(p).toContain("a white floor cushion in front of the low table");
+    expect(referencePictures(table({ placemats: NONE }), "frozen").some((r) => r.key === "placemats")).toBe(false);
+    const low = table({ table: "low" });
+    expect(referencePictures(low, "frozen").some((r) => r.key === "chairs")).toBe(false);
+    const p = tablePrompt(low, frozen, referencePictures(low, "frozen").map((r) => r.key));
+    expect(p).toContain("In front of the seat is a white floor cushion.");
     expect(p).not.toMatch(/The chair is/);
   });
   it("describes every choice, skips None, and never names the theme", () => {
     const p = tablePrompt(table({ chairs: "bow_kids", table: "flower", partyHats: NONE }), frozen, []);
     expect(p).toContain("a pink metal children's chair with a round mesh seat and a back shaped like a bow");
-    expect(p).toContain("shaped like a flower with six round petals");
+    expect(p).toContain("shaped like a flower with six big round petals");
     expect(p).not.toMatch(/a cone party hat|crown/);
     expect(p).not.toMatch(/frozen/i); // a character-free look: colours only
     expect(p).toMatch(/No people.*no cartoon characters/);
   });
   it("a kids' party: printed paper in the theme's pattern, disposable cutlery, nothing formal", () => {
     const p = tablePrompt(table(), frozen, []);
-    expect(p).toContain("paper placemat printed with snowflakes and little stars");
-    expect(p).toContain("disposable paper party plate printed with snowflakes and little stars");
-    expect(p).toContain("disposable pastel plastic cutlery");
+    expect(p).toContain("A3 paper placemat printed all over with snowflakes and little stars");
+    expect(p).toContain("disposable paper plate with a shimmering iridescent");
+    expect(p).toContain("disposable natural wooden fork, knife and spoon");
     expect(p).toContain("a cone party hat");
     expect(p).toMatch(/children's birthday party.*no glassware, no china, no charger plates/);
-    expect(tablePrompt(table(), themeById("dinosaur")!, [])).toContain("printed with dinosaur footprints and leaves");
+    expect(tablePrompt(table(), themeById("dinosaur")!, [])).toContain("printed all over with dinosaur footprints and leaves");
   });
 });
 
@@ -155,7 +175,7 @@ describe("the route", () => {
     expect(calls).toHaveLength(1);
     expect(calls[0].model).toBe("fal-ai/bytedance/seedream/v5/lite/edit");
     expect(calls[0].image_size).toBe("landscape_4_3");
-    expect(calls[0].image_urls).toHaveLength(MAX_REFERENCES);
+    expect(calls[0].image_urls).toHaveLength(referencePictures(table(), "frozen").length);
     for (const u of calls[0].image_urls) expect(u).toMatch(/^data:image\/jpeg;base64,/);
     expect(calls[0].prompt).toContain("close-up photograph of ONE place setting");
     expect(calls[0].prompt).not.toMatch(/frozen/i);

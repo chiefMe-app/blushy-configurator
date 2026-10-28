@@ -39,7 +39,6 @@ import { takeAfterSignIn } from "@/lib/account";
 import TableStep from "@/components/builder/table/TableStep";
 import BackdropIntro from "@/components/builder/decor/BackdropIntro";
 import TablePreview from "@/components/builder/table/TablePreview";
-import { TABLE_TABS } from "@/lib/studio/tableCatalog";
 
 import Sprinkles from "@/components/design/Sprinkles";
 
@@ -64,15 +63,14 @@ export default function ConfigurePage() {
   // 2026-10-27 (F2): the Decor step in parts — the backdrop, then the kids'
   // table (then, in turn, welcome board, giveaways and helium balloons).
   const [decorPart, setDecorPart] = useState<"backdrop" | "table">("backdrop");
-  const [tableTab, setTableTab] = useState(0);
-  const shownPart = useRef(`${decorPart}:${tableTab}`);
+  const shownPart = useRef(decorPart);
   useEffect(() => {
-    // Only when the part or tab changes — not on arrival (effects can run twice then).
-    if (shownPart.current === `${decorPart}:${tableTab}`) return;
-    shownPart.current = `${decorPart}:${tableTab}`;
+    // Only when the part changes — not on arrival (effects can run twice then).
+    if (shownPart.current === decorPart) return;
+    shownPart.current = decorPart;
     document.querySelector<HTMLElement>(".bz-content")?.scrollTo({ top: 0 });
     if (typeof window !== "undefined" && window.innerWidth < 1024) document.querySelector(".bz-right")?.scrollIntoView({ block: "start" });
-  }, [decorPart, tableTab]);
+  }, [decorPart]);
   // Which list the theme was picked from, so Space (in both) ticks only there.
   const [themeGroup, setThemeGroup] = useState<"girl" | "boy" | null>(null);
   // The landing page links straight to the Theme step (/builder?step=theme).
@@ -338,7 +336,7 @@ export default function ConfigurePage() {
   const backdropAsked = config.decor.backdropChoice === "yes";
   const onBackdropQuestion = step === 2 && decorPart === "backdrop" && !backdropAsked;
   const copy = onTable
-    ? { eyebrow: "DECOR · PART 2 · TABLE SETUP", heading: ["Set the", "kids' table"] as [string, string], description: TABLE_TABS[tableTab]?.sub ?? "", progress: TABLE_TABS[tableTab]?.title ?? "" }
+    ? { eyebrow: "DECOR · PART 2 · TABLE SETUP", heading: ["Set the", "kids' table"] as [string, string], description: "Every piece on one page — we work out how many.", progress: "Table, linens, tableware and extras" }
     : (step === 2 && DECOR_STEP_COPY[decorTab]) || STEP_COPY[step];
   const total = priceBreakdown(config).total;
 
@@ -349,7 +347,7 @@ export default function ConfigurePage() {
   if (step === 1) { nextDisabled = !config.themeSelected; }
   if (onBackdropQuestion) {
     nextLabel = "Next: Table setup →";
-    onNext = () => { setDecorPart("table"); setTableTab(0); };
+    onNext = () => setDecorPart("table");
   } else if (isDecorStep && decorPart === "backdrop") {
     if (!onLastDecorTab) {
       nextLabel = `Next: ${DECOR_TABS[decorTab + 1].name} →`;
@@ -359,23 +357,17 @@ export default function ConfigurePage() {
       // için illa generate render olmamalı") — it is offered beside this, in
       // the Extras tab and on the preview card. Next comes the kids' table.
       nextLabel = "Next: Table setup →";
-      onNext = () => { setDecorPart("table"); setTableTab(0); };
+      onNext = () => setDecorPart("table");
       nextDisabled = archUnsized;
     }
   }
   if (onTable) {
-    if (config.table?.enabled && tableTab < TABLE_TABS.length - 1) {
-      nextLabel = `Next: ${TABLE_TABS[tableTab + 1].name} →`;
-      onNext = () => setTableTab(tableTab + 1);
-    } else {
-      nextLabel = config.table ? "Continue to Package →" : "Skip to Package →";
-    }
+    nextLabel = config.table ? "Continue to Package →" : "Skip to Package →";
   }
   // Back walks the parts and tabs of Decor before leaving it.
   const onBack = () => {
     if (onTable) {
-      if (config.table?.enabled && tableTab > 0) setTableTab(tableTab - 1);
-      else { setDecorPart("backdrop"); setDecorTab(DECOR_TABS.length - 1); }
+      setDecorPart("backdrop"); setDecorTab(DECOR_TABS.length - 1);
       return;
     }
     goToStep(step - 1);
@@ -537,10 +529,10 @@ export default function ConfigurePage() {
                 stylePieceId={stylePieceId} setStylePieceId={setStylePieceId}
                 onGenerate={triggerDecorGenerateRender} renderReady={decorRenderReady}
                 hasRender={finalRenderState.hasRender} generating={finalRenderState.generating}
-                onContinue={() => { setDecorPart("table"); setTableTab(0); }} />
+                onContinue={() => setDecorPart("table")} />
             )}
             {onTable && (
-              <TableStep config={config} tab={tableTab} setTab={setTableTab}
+              <TableStep config={config}
                 setTable={(table) => setConfig((c) => ({ ...c, table }))} />
             )}
 

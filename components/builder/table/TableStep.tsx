@@ -1,24 +1,27 @@
 // The Decor step's second part (2026-10-27, F2): the kids' table. First a
-// yes / skip; then four tabs of items, each with picture options (plus
-// "None" for the optional ones) from lib/studio/tableCatalog.ts, and the
-// colours of the cloth, runner and napkins. Prices add to the party total.
+// yes / skip; then every item on one page (2026-10-28: "aynı sayfada olsun,
+// next next diye geçmeyelim"), in four sections, each with picture options
+// (plus "None" for the optional ones) from lib/studio/tableCatalog.ts, the
+// cloth's colour and the words on the placemats. Prices add to the party total.
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
-import { NONE, TABLE_TABS, onFloor, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
-import { MAX_KIDS, MIN_KIDS, clampKids, defaultTableSetup, tableCounts, tableTotal, type TableSetup } from "@/lib/studio/tableSetup";
+import { NONE, TABLE_SECTIONS, onFloor, optionPhoto, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
+import { MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup } from "@/lib/studio/tableSetup";
 import { GlyphDefs, glyph, type GlyphColours } from "@/components/studio/table/glyphs";
 
 const COLOUR_OF: Partial<Record<TableItemKey, keyof Pick<TableSetup, "clothColor" | "runnerColor" | "napkinColor">>> = {
   tablecloth: "clothColor", runner: "runnerColor", napkins: "napkinColor",
 };
 
-function OptionArt({ item, option, colours }: { item: TableItem; option: TableOption | null; colours: GlyphColours }) {
-  if (option?.photo) {
-    // A coloured item shows the chosen colour on its picture.
-    const swatch = item.key === "tablecloth" ? colours.cloth : item.key === "runner" ? colours.runner : item.key === "napkins" ? colours.napkin : null;
+function OptionArt({ item, option, colours, themeId, words }: { item: TableItem; option: TableOption | null; colours: GlyphColours; themeId: string; words?: string }) {
+  const photo = optionPhoto(item.key, option ?? undefined, themeId);
+  if (option && photo) {
+    // A coloured item shows the chosen colour on its picture; a placemat, the customer's words.
+    const swatch = item.key === "tablecloth" ? colours.cloth : null;
     return <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="photo" src={option.photo} alt="" loading="lazy" />
-      {swatch && !(item.key === "runner" && option.id === "greenery") && <i className="swatch" style={{ background: swatch }} aria-hidden="true" />}
+      <img className="photo" src={photo} alt="" loading="lazy" />
+      {swatch && <i className="swatch" style={{ background: swatch }} aria-hidden="true" />}
+      {words && <span className={`words ${option.id}`} aria-hidden="true">{words}</span>}
     </>;
   }
   if (!option) return <svg viewBox="-24 -24 48 48" aria-hidden="true"><circle r={14} fill="none" stroke="#d9c9cf" strokeWidth={2} strokeDasharray="4 3" /><path d="M-8,8L8,-8" stroke="#d9c9cf" strokeWidth={2} /></svg>;
@@ -44,11 +47,9 @@ function OptionArt({ item, option, colours }: { item: TableItem; option: TableOp
 
 const unitLabel = (o: TableOption) => `AED ${formatAED(o.price)} ${o.unit === "per_child" ? "each" : "a table"}`;
 
-export default function TableStep({ config, setTable, tab, setTab }: {
+export default function TableStep({ config, setTable }: {
   config: BuilderConfig;
   setTable: (t: TableSetup) => void;
-  tab: number;
-  setTab: (n: number) => void;
 }) {
   const theme = themeById(config.theme) ?? THEMES[0];
   const table = config.table;
@@ -72,74 +73,78 @@ export default function TableStep({ config, setTable, tab, setTab }: {
   const choose = (key: TableItemKey, id: string) => set({ choices: { ...table.choices, [key]: id } });
   const counts = tableCounts(table);
   const colours: GlyphColours = { palette: theme.balloonColors, accent: theme.accent, cloth: table.clothColor, runner: table.runnerColor, napkin: table.napkinColor };
-  const current = TABLE_TABS[Math.min(tab, TABLE_TABS.length - 1)];
+
+  const item = (key: TableItemKey) => {
+    const it = tableItem(key);
+    const colourKey = COLOUR_OF[key];
+    if (key === "chairs" && onFloor(table.choices)) {
+      return (
+        <div key={key} className="bz-tb-item" data-testid="floor-cushions">
+          <h3>{it.label}</h3>
+          <p className="bz-tb-floor">The low table comes with soft floor cushions, so there are no chairs to choose.</p>
+        </div>
+      );
+    }
+    const words = key === "placemats" ? table.placematText : undefined;
+    return (
+      <div key={key} className="bz-tb-item">
+        <h3>{it.label}</h3>
+        <div className="bz-tb-options" role="radiogroup" aria-label={it.label}>
+          {it.optional && (
+            <button type="button" role="radio" aria-checked={table.choices[key] === NONE} className={`bz-tb-option ${table.choices[key] === NONE ? "on" : ""}`} onClick={() => choose(key, NONE)}>
+              <span className="art"><OptionArt item={it} option={null} colours={colours} themeId={theme.id} /></span>
+              <b>None</b>
+            </button>
+          )}
+          {it.options.map((o) => (
+            <button key={o.id} type="button" role="radio" aria-checked={table.choices[key] === o.id} className={`bz-tb-option ${table.choices[key] === o.id ? "on" : ""}`} onClick={() => choose(key, o.id)}>
+              {table.choices[key] === o.id && <span className="tick">✓</span>}
+              <span className="art"><OptionArt item={it} option={o} colours={colours} themeId={theme.id} words={words} /></span>
+              <b>{o.name}</b>
+              <small>{o.note}</small>
+              <em>{unitLabel(o)}</em>
+            </button>
+          ))}
+        </div>
+        {colourKey && table.choices[key] !== NONE && (
+          <div className="bz-ts-swatches" role="radiogroup" aria-label={`${it.label} colour`}>
+            {swatches.map((hex) => (
+              <button key={hex} type="button" role="radio" aria-checked={hex === table[colourKey].toUpperCase()} aria-label={hex}
+                className={hex === table[colourKey].toUpperCase() ? "on" : ""} style={{ background: hex }} onClick={() => set({ [colourKey]: hex })} />
+            ))}
+          </div>
+        )}
+        {key === "placemats" && table.choices.placemats !== NONE && (
+          <label className="bz-tb-words">
+            <span>Words on the placemats <small>(optional)</small></span>
+            <input type="text" value={table.placematText ?? ""} maxLength={MAX_PLACEMAT_TEXT} placeholder="e.g. Zahra turns 4"
+              onChange={(e) => set({ placematText: cleanPlacematText(e.target.value) })} />
+          </label>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="bz-tb">
-      <div className="bz-decor-tabbar bz-tb-tabs" role="tablist" aria-label="Table setup">
-        {TABLE_TABS.map((t, i) => (
-          <button key={t.name} type="button" role="tab" aria-selected={i === tab} className={`bz-decor-tab ${i === tab ? "on" : ""}`} onClick={() => setTab(i)}>
-            <span className="n">{String(i + 1).padStart(2, "0")}</span>{t.name}
-          </button>
-        ))}
+      <div className="bz-tb-item">
+        <h3>How many kids?</h3>
+        <div className="bz-ts-row">
+          <div className="bz-stepper" role="group" aria-label="Number of kids">
+            <button type="button" aria-label="One fewer child" disabled={table.kids <= MIN_KIDS} onClick={() => set({ kids: clampKids(table.kids - 1) })}>−</button>
+            <span data-testid="kids-count">{table.kids}</span>
+            <button type="button" aria-label="One more child" className="plus" disabled={table.kids >= MAX_KIDS} onClick={() => set({ kids: clampKids(table.kids + 1) })}>+</button>
+          </div>
+          <span className="hint">{counts.tables} table{counts.tables > 1 ? "s" : ""} · {MIN_KIDS}–{MAX_KIDS} kids</span>
+        </div>
       </div>
 
-      {tab === 0 && (
-        <div className="bz-tb-item">
-          <h3>How many kids?</h3>
-          <div className="bz-ts-row">
-            <div className="bz-stepper" role="group" aria-label="Number of kids">
-              <button type="button" aria-label="One fewer child" disabled={table.kids <= MIN_KIDS} onClick={() => set({ kids: clampKids(table.kids - 1) })}>−</button>
-              <span data-testid="kids-count">{table.kids}</span>
-              <button type="button" aria-label="One more child" className="plus" disabled={table.kids >= MAX_KIDS} onClick={() => set({ kids: clampKids(table.kids + 1) })}>+</button>
-            </div>
-            <span className="hint">{counts.tables} table{counts.tables > 1 ? "s" : ""} · {MIN_KIDS}–{MAX_KIDS} kids</span>
-          </div>
-        </div>
-      )}
-
-      {current.items.map((key) => {
-        const item = tableItem(key);
-        const colourKey = COLOUR_OF[key];
-        if (key === "chairs" && onFloor(table.choices)) {
-          return (
-            <div key={key} className="bz-tb-item" data-testid="floor-cushions">
-              <h3>{item.label}</h3>
-              <p className="bz-tb-floor">The low table comes with soft floor cushions, so there are no chairs to choose.</p>
-            </div>
-          );
-        }
-        return (
-          <div key={key} className="bz-tb-item">
-            <h3>{item.label}</h3>
-            <div className="bz-tb-options" role="radiogroup" aria-label={item.label}>
-              {item.optional && (
-                <button type="button" role="radio" aria-checked={table.choices[key] === NONE} className={`bz-tb-option ${table.choices[key] === NONE ? "on" : ""}`} onClick={() => choose(key, NONE)}>
-                  <span className="art"><OptionArt item={item} option={null} colours={colours} /></span>
-                  <b>None</b>
-                </button>
-              )}
-              {item.options.map((o) => (
-                <button key={o.id} type="button" role="radio" aria-checked={table.choices[key] === o.id} className={`bz-tb-option ${table.choices[key] === o.id ? "on" : ""}`} onClick={() => choose(key, o.id)}>
-                  {table.choices[key] === o.id && <span className="tick">✓</span>}
-                  <span className="art"><OptionArt item={item} option={o} colours={colours} /></span>
-                  <b>{o.name}</b>
-                  <small>{o.note}</small>
-                  <em>{unitLabel(o)}</em>
-                </button>
-              ))}
-            </div>
-            {colourKey && table.choices[key] !== NONE && (
-              <div className="bz-ts-swatches" role="radiogroup" aria-label={`${item.label} colour`}>
-                {swatches.map((hex) => (
-                  <button key={hex} type="button" role="radio" aria-checked={hex === table[colourKey].toUpperCase()} aria-label={hex}
-                    className={hex === table[colourKey].toUpperCase() ? "on" : ""} style={{ background: hex }} onClick={() => set({ [colourKey]: hex })} />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {TABLE_SECTIONS.map((section) => (
+        <section key={section.name} className="bz-tb-section" aria-label={section.name}>
+          <h2>{section.name}</h2>
+          {section.items.map(item)}
+        </section>
+      ))}
 
       <div className="bz-tb-sum" data-testid="table-total">
         <span>Kids&apos; table · {table.kids} kids</span>

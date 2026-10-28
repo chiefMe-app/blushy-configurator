@@ -3,18 +3,31 @@
 import { describe, expect, it } from "vitest";
 import { defaultConfig, priceBreakdown, themeById } from "@/lib/config";
 import { fromDraft, toDraft } from "@/lib/draft";
-import { NONE, TABLE_ITEMS, TABLE_TABS } from "@/lib/studio/tableCatalog";
-import { MIN_KIDS, defaultTableSetup, readTableSetup, tableCounts, tablePriceLines, tableTotal } from "@/lib/studio/tableSetup";
+import { NONE, TABLE_ITEMS, TABLE_SECTIONS, optionPhoto, tableOption } from "@/lib/studio/tableCatalog";
+import { MAX_PLACEMAT_TEXT, MIN_KIDS, cleanPlacematText, defaultTableSetup, readTableSetup, tableCounts, tablePriceLines, tableTotal } from "@/lib/studio/tableSetup";
 import { arrangeTables } from "@/components/studio/table/TableSketch";
 
 const frozen = themeById("frozen")!;
 
 describe("the catalog", () => {
-  it("every item has options, and every item is on a tab", () => {
-    for (const item of TABLE_ITEMS) expect(item.options.length).toBeGreaterThanOrEqual(3);
+  it("every item has options, and every item is in a section of the one page", () => {
+    for (const item of TABLE_ITEMS) expect(item.options.length).toBeGreaterThanOrEqual(item.optional ? 1 : 3);
     expect(TABLE_ITEMS.find((i) => i.key === "table")!.options.map((o) => o.id)).toEqual(["standard", "half_wave", "flower", "round", "low", "cloud"]);
     for (const o of TABLE_ITEMS.find((i) => i.key === "table")!.options) expect(o.seats).toBeGreaterThan(0);
-    expect(TABLE_TABS.flatMap((t) => t.items).sort()).toEqual(TABLE_ITEMS.map((i) => i.key).sort());
+    expect(TABLE_SECTIONS.flatMap((t) => t.items).sort()).toEqual(TABLE_ITEMS.map((i) => i.key).sort());
+  });
+  it("the owner's list (2026-10-28): no runner, name cards or chair decorations; a plain cloth or none; holders and bottle labels", () => {
+    const keys = TABLE_ITEMS.map((i) => i.key);
+    for (const gone of ["runner", "nameCards", "chairDecor", "chargers"]) expect(keys).not.toContain(gone);
+    expect(keys).toEqual(expect.arrayContaining(["cutleryHolder", "bottleLabel", "centrepiece", "placemats"]));
+    expect(TABLE_ITEMS.find((i) => i.key === "tablecloth")!.options.map((o) => o.name)).toEqual(["Plain cloth"]);
+    expect(defaultTableSetup(frozen).choices.tablecloth).toBe(NONE); // None comes chosen
+  });
+  it("placemats are the theme's own: one picture per theme", () => {
+    const o = tableOption("placemats", "watercolour");
+    expect(optionPhoto("placemats", o, "frozen")).toBe("/design/table/placemats/frozen/watercolour.webp");
+    expect(optionPhoto("placemats", o, "dinosaur")).toBe("/design/table/placemats/dinosaur/watercolour.webp");
+    expect(optionPhoto("plates", tableOption("plates", "silver"), "frozen")).toBe("/design/table/plates-silver.webp");
   });
 });
 
@@ -60,8 +73,9 @@ describe("prices", () => {
     // The owner's prices (2026-10-28): AED 399 a standard table, 25 a chair.
     expect(lines.find((l) => l.label.startsWith("Standard table"))).toEqual({ label: "Standard table (2)", amount: 798 });
     expect(lines.find((l) => l.label.startsWith("White chair for kids"))).toEqual({ label: "White chair for kids (12)", amount: 300 });
-    expect(lines.some((l) => l.label.startsWith("Gold chargers"))).toBe(false); // the grown-ups' table's
-    expect(tablePriceLines({ ...t, choices: { ...t.choices, placemats: NONE } }).some((l) => l.label.startsWith("Printed placemat"))).toBe(false); // None
+    expect(lines.some((l) => l.label.startsWith("Plain cloth"))).toBe(false); // None, unless chosen
+    expect(lines.find((l) => l.label.startsWith("Pattern placemat"))).toEqual({ label: "Pattern placemat (12)", amount: 72 });
+    expect(tablePriceLines({ ...t, choices: { ...t.choices, placemats: NONE } }).some((l) => l.label.startsWith("Pattern placemat"))).toBe(false); // None
     expect(tableTotal(t)).toBe(lines.reduce((a, l) => a + l.amount, 0));
   });
   it("the low table comes with floor cushions: no chairs to pay for", () => {
@@ -98,13 +112,21 @@ describe("kept on the device", () => {
     expect(t.choices.table).toBe("standard");
     expect(t.choices.chairs).toBe("bow_kids");
     expect(t.choices.runner).toBe(NONE); // optional: None is allowed
-    expect(t.choices.plates).toBe("themed"); // not optional: None is not
+    expect(t.choices.plates).toBe("iridescent"); // not optional: None is not
     expect(t.clothColor).toBe("#FFFFFF");
     expect(readTableSetup(null, frozen)).toBeUndefined();
   });
   it("a kids' table kept before it turned into a kids' party reads back with kids' pieces", () => {
     const t = readTableSetup({ choices: { chairs: "gold_chiavari", chargers: "gold", plates: "white_gold", napkins: "folded", runner: "greenery" } }, frozen)!;
-    expect(t.choices).toMatchObject({ chairs: "white_kids", chargers: NONE, plates: "themed", napkins: "printed", runner: "confetti" });
+    expect(t.choices).toMatchObject({ chairs: "white_kids", chargers: NONE, plates: "iridescent", napkins: "striped", runner: NONE });
+  });
+  it("pieces no longer offered read back as None, and the placemat words are kept clean", () => {
+    const t = readTableSetup({ choices: { runner: "tulle", nameCards: "tent", chairDecor: "balloon", tablecloth: "ruffle" }, placematText: "  Zahra <b>turns</b>   4  " }, frozen)!;
+    expect(t.choices).toMatchObject({ runner: NONE, nameCards: NONE, chairDecor: NONE, tablecloth: NONE });
+    expect(t.placematText).toBe("Zahra bturnsb 4");
+    expect(cleanPlacematText("x".repeat(80))).toHaveLength(MAX_PLACEMAT_TEXT);
+    expect(cleanPlacematText("   ")).toBeUndefined();
+    expect(readTableSetup({ placematText: 42 }, frozen)!.placematText).toBeUndefined();
   });
   it("tables and chairs from before the owner's own read back as hers", () => {
     const t = readTableSetup({ choices: { table: "long", chairs: "pastel_kids" } }, frozen)!;

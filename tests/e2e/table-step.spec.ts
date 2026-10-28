@@ -1,6 +1,6 @@
 // The kids' table, part 2 of Decor (2026-10-27, F2): after the backdrop's
-// Extras, a yes or skip; then four tabs of picture options; the price adds to
-// the party total; Back walks back through it; the table is kept on the device.
+// Extras, a yes or skip; then every item on one page (2026-10-28); the price
+// adds to the party total; Back walks back; the table is kept on the device.
 import { test, expect, openDecor, decorTab, next, total, settle, signIn, FAKE_TABLE_RENDER } from "./guard";
 import type { Page } from "@playwright/test";
 
@@ -14,7 +14,7 @@ async function toTable(page: Page) {
   await expect(page.getByTestId("table-intro")).toBeVisible();
 }
 
-test("K1 design the kids' table: picture options, the total grows, every tab, then Package", async ({ page, guard }) => {
+test("K1 design the kids' table: picture options on one page, the total grows, then Package", async ({ page, guard }) => {
   await toTable(page);
   const before = aed(await total(page).textContent());
   await page.getByRole("button", { name: /Yes, design the table/ }).click();
@@ -25,24 +25,35 @@ test("K1 design the kids' table: picture options, the total grows, every tab, th
   const tableSum = aed(await page.getByTestId("table-total").locator("b").textContent());
   expect(aed(await total(page).textContent())).toBe(before + tableSum);
   // The owner's six tables and three chairs, with her photos and prices.
-  await expect(page.getByRole("radiogroup", { name: "Table" }).getByRole("radio")).toHaveCount(6);
+  await expect(page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio")).toHaveCount(6);
   await expect(page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio")).toHaveCount(3);
   await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Bow chair for kids/ }).click();
   expect(aed(await total(page).textContent())).toBe(before + tableSum); // every chair is AED 25
   // The low table: floor cushions instead of chairs.
-  await page.getByRole("radiogroup", { name: "Table" }).getByRole("radio", { name: /Low table/ }).click();
+  await page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio", { name: /Low table/ }).click();
   await expect(page.getByTestId("floor-cushions")).toBeVisible();
   await expect(page.getByRole("radiogroup", { name: "Chairs" })).toHaveCount(0);
   expect(aed(await total(page).textContent())).toBe(before + tableSum + (749 - 399) - 10 * 25);
-  await page.getByRole("radiogroup", { name: "Table" }).getByRole("radio", { name: /Flower table/ }).click();
+  await page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio", { name: /Flower table/ }).click();
   await expect(page.getByTestId("table-sketch")).toHaveAttribute("aria-label", "Top view: 2 flower tables for 10 children");
   await settle(page);
   await expect.soft(page).toHaveScreenshot("k1-table-chairs.png");
-  for (const tab of ["Linens", "Tableware", "Decor & extras"]) {
-    await expect(next(page)).toHaveText(new RegExp(`Next: ${tab.replace("&", "&")}`));
-    await next(page).click();
-    await expect(page.getByRole("tab", { name: new RegExp(tab) })).toHaveAttribute("aria-selected", "true");
-  }
+  // Every section on the same page: no tabs to walk through.
+  for (const section of ["Table & chairs", "Linens", "Tableware", "Decor & extras"]) await expect(page.getByRole("region", { name: section })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /Linens/ })).toHaveCount(0);
+  // A plain cloth or none, none chosen; no runner, name cards or chair decorations.
+  const cloth = page.getByRole("radiogroup", { name: "Tablecloth" }).getByRole("radio");
+  await expect(cloth).toHaveCount(2);
+  await expect(cloth.first()).toHaveAttribute("aria-checked", "true");
+  for (const gone of ["Runner", "Name cards", "Chair decoration"]) await expect(page.getByRole("radiogroup", { name: gone })).toHaveCount(0);
+  await expect(page.getByRole("radiogroup", { name: "Cutlery holder" }).getByRole("radio")).toHaveCount(4);
+  await expect(page.getByRole("radiogroup", { name: "Water bottle label" }).getByRole("radio")).toHaveCount(4);
+  // The placemats: the theme's own, with the customer's words on them.
+  const placemats = page.getByRole("radiogroup", { name: "Placemats" });
+  await expect(placemats.getByRole("radio", { name: /Watercolour placemat/ }).locator("img")).toHaveAttribute("src", "/design/table/placemats/frozen/watercolour.webp");
+  await page.getByRole("textbox", { name: /Words on the placemats/ }).fill("Zahra turns 4");
+  await expect(placemats.locator(".words").first()).toHaveText("Zahra turns 4");
+  await expect(next(page)).toHaveText(/Continue to Package/);
   await expect(page.getByRole("radiogroup", { name: "Party hats" }).getByRole("radio")).toHaveCount(4); // None + 3
   await page.getByRole("radiogroup", { name: "Party hats" }).getByRole("radio", { name: /Crown/ }).click();
   await expect(next(page)).toHaveText(/Continue to Package/);
@@ -65,7 +76,7 @@ test("K3 the table is kept on the device", async ({ page }) => {
   await toTable(page);
   await page.getByRole("button", { name: /Yes, design the table/ }).click();
   await page.getByRole("button", { name: "One more child" }).click();
-  await page.getByRole("radiogroup", { name: "Table" }).getByRole("radio", { name: /Round table/ }).click();
+  await page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio", { name: /Round table/ }).click();
   await page.waitForTimeout(800);
   await page.reload();
   await page.getByRole("tab", { name: /Table setup/ }).click();

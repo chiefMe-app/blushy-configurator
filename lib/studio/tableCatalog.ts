@@ -1,14 +1,19 @@
 // The kids' table: every item the customer chooses, a few options each (plus
 // "None" where an item is optional). Party favours are not here: they are
 // Giveaways, a Decor part of their own (2026-10-27). It is a kids' party
-// table (2026-10-27, the owner: "çocuk doğum günü olduğu belli olsun … şu an
-// çok adult gibi"): printed paper, disposable plastic, confetti and hats.
-// Charger plates, gold chairs and cotton napkins belong to the grown-ups'
-// table; their drawings stay in glyphs.tsx for it. The owner picks the real
-// options — replace a name, price or picture here and the step follows:
+// table (2026-10-27, the owner: "çocuk doğum günü olduğu belli olsun").
+// 2026-10-28 the owner reshaped it from her favourite references: a plain
+// cloth or none (none first), no runner, name cards or chair decorations;
+// themed A3 placemats with the customer's own words on them; iridescent and
+// foil plates, wooden cutlery, cutlery holders and water bottle labels. The
+// runner, chair decorations, name cards and charger plates keep their keys
+// and drawings (glyphs.tsx) for the grown-ups' table, but are not offered
+// here. The owner picks the real options — replace a name, price or picture
+// here and the step follows:
 //   - name / note: what the card says;
 //   - price, unit: AED per table, per child or once (placeholder prices for now);
-//   - photo: a picture in /public/design/table. The tables and chairs are the
+//   - photo: a picture in /public/design/table (`themed`: one per theme, in
+//     /public/design/table/<item>/<theme>/<id>.webp). The tables and chairs are the
 //     owner's own photos and prices (2026-10-28: "her opsiyonun görselini
 //     vereceğim"); the other pictures are still AI-made stand-ins until hers
 //     come (no characters or logos). Without a photo, the card shows a drawing.
@@ -17,6 +22,7 @@ export type TableItemKey =
   | "table" | "chairs"
   | "tablecloth" | "runner" | "napkins"
   | "placemats" | "plates" | "cups" | "cutlery" | "chargers"
+  | "cutleryHolder" | "bottleLabel"
   | "centrepiece" | "chairDecor" | "nameCards" | "partyHats";
 
 export type PriceUnit = "per_table" | "per_child";
@@ -32,6 +38,8 @@ export interface TableOption {
   seats?: number;
   /** A table the children sit at on floor cushions (no chairs). */
   floor?: boolean;
+  /** The picture is the theme's own (see optionPhoto). */
+  themed?: boolean;
 }
 
 export interface TableItem {
@@ -39,7 +47,7 @@ export interface TableItem {
   label: string;
   /** Optional items have a "None" choice before the options. */
   optional: boolean;
-  /** The item takes a colour (the cloth, the runner, the napkins). */
+  /** The item takes a colour (the cloth). */
   coloured?: boolean;
   options: TableOption[];
 }
@@ -60,55 +68,52 @@ export const TABLE_ITEMS: TableItem[] = [
     { id: "blue_kids", name: "Blue chair for kids", note: "Bright blue, slatted back", price: 25, unit: "per_child", photo: "/design/table/chairs-blue_kids.webp" },
     { id: "bow_kids", name: "Bow chair for kids", note: "Pink, with a bow back", price: 25, unit: "per_child", photo: "/design/table/chairs-bow_kids.webp" },
   ] },
-  { key: "tablecloth", label: "Tablecloth", optional: false, coloured: true, options: [
-    { id: "printed", name: "Printed party cover", note: "In the theme's pattern", price: 25, unit: "per_table", photo: "/design/table/tablecloth-printed.webp" },
+  // "Plain cloth ve none olsun, none seçili gelsin" (2026-10-28): the owner's tables show bare.
+  { key: "tablecloth", label: "Tablecloth", optional: true, coloured: true, options: [
     { id: "classic", name: "Plain cloth", note: "Floor-length, in a colour", price: 40, unit: "per_table", photo: "/design/table/tablecloth-classic.webp" },
-    { id: "ruffle", name: "Ruffled skirt", note: "Frilled all the way round", price: 70, unit: "per_table", photo: "/design/table/tablecloth-ruffle.webp" },
   ] },
-  { key: "runner", label: "Runner", optional: true, coloured: true, options: [
-    { id: "tulle", name: "Tulle runner", note: "Soft and airy", price: 30, unit: "per_table", photo: "/design/table/runner-tulle.webp" },
-    { id: "sequin", name: "Sequin runner", note: "Shimmering stripe", price: 45, unit: "per_table", photo: "/design/table/runner-sequin.webp" },
-    { id: "confetti", name: "Confetti & curls", note: "Scattered down the middle", price: 20, unit: "per_table", photo: "/design/table/runner-confetti.webp" },
+  { key: "napkins", label: "Napkins", optional: false, options: [
+    { id: "striped", name: "Striped napkins", note: "Soft pastel stripes", price: 1, unit: "per_child", photo: "/design/table/napkins-striped.webp" },
+    { id: "printed", name: "Printed napkins", note: "In the theme's pattern", price: 2, unit: "per_child", photo: "/design/table/napkins-printed.webp" },
+    { id: "foil", name: "Silver foil napkins", note: "Pale blue with a silver foil print", price: 2, unit: "per_child", photo: "/design/table/napkins-foil.webp" },
   ] },
-  { key: "napkins", label: "Napkins", optional: false, coloured: true, options: [
-    { id: "printed", name: "Printed paper", note: "In the theme's pattern", price: 2, unit: "per_child", photo: "/design/table/napkins-printed.webp" },
-    { id: "plain", name: "Coloured paper", note: "Folded into triangles", price: 1, unit: "per_child", photo: "/design/table/napkins-plain.webp" },
-    { id: "bow", name: "Bow-tied", note: "Tied with a ribbon bow", price: 6, unit: "per_child", photo: "/design/table/napkins-bow.webp" },
-  ] },
+  // A3 (42 × 29.7 cm), under the plate: the theme's design in three looks, like
+  // the owner's references, with the customer's own words printed on it.
   { key: "placemats", label: "Placemats", optional: true, options: [
-    { id: "printed", name: "Printed placemat", note: "In the theme's pattern", price: 3, unit: "per_child", photo: "/design/table/placemats-printed.webp" },
-    { id: "shaped", name: "Shaped placemat", note: "Cut in a theme shape", price: 5, unit: "per_child", photo: "/design/table/placemats-shaped.webp" },
-    { id: "name", name: "Name placemat", note: "A space for each child's name", price: 5, unit: "per_child", photo: "/design/table/placemats-name.webp" },
+    { id: "pattern", name: "Pattern placemat", note: "A3 · the theme's shapes all over", price: 6, unit: "per_child", themed: true },
+    { id: "watercolour", name: "Watercolour placemat", note: "A3 · a soft wash, big shapes in the corners", price: 6, unit: "per_child", themed: true },
+    { id: "sparkle", name: "Sparkle placemat", note: "A3 · glittering, room for a name", price: 6, unit: "per_child", themed: true },
   ] },
   { key: "plates", label: "Plates", optional: false, options: [
-    { id: "themed", name: "Printed paper plates", note: "In the theme's pattern", price: 3, unit: "per_child", photo: "/design/table/plates-themed.webp" },
-    { id: "scalloped", name: "Scalloped plates", note: "Wavy edge, pastel paper", price: 3, unit: "per_child", photo: "/design/table/plates-scalloped.webp" },
-    { id: "shaped", name: "Shaped plates", note: "Cut in a theme shape", price: 4, unit: "per_child", photo: "/design/table/plates-shaped.webp" },
+    { id: "iridescent", name: "Iridescent foil plate", note: "Shimmering foil, with corners", price: 4, unit: "per_child", photo: "/design/table/plates-iridescent.webp" },
+    { id: "holo_square", name: "Holographic square plate", note: "Silver holographic foil", price: 4, unit: "per_child", photo: "/design/table/plates-holo_square.webp" },
+    { id: "silver", name: "Silver foil plate", note: "Round, with a fluted rim", price: 3, unit: "per_child", photo: "/design/table/plates-silver.webp" },
   ] },
   { key: "cups", label: "Cups", optional: false, options: [
-    { id: "straw", name: "Cups with straws", note: "Paper cup, striped straw", price: 3, unit: "per_child", photo: "/design/table/cups-straw.webp" },
-    { id: "printed", name: "Printed paper cups", note: "In the theme's pattern", price: 2, unit: "per_child", photo: "/design/table/cups-printed.webp" },
-    { id: "pouch", name: "Juice pouches", note: "A little drink at every seat", price: 4, unit: "per_child", photo: "/design/table/cups-pouch.webp" },
+    { id: "white_straw", name: "White cup, silver straw", note: "Paper cup with a paper straw", price: 2, unit: "per_child", photo: "/design/table/cups-white_straw.webp" },
+    { id: "iridescent", name: "Iridescent cup", note: "Shimmering foil finish", price: 3, unit: "per_child", photo: "/design/table/cups-iridescent.webp" },
+    { id: "pastel", name: "Pastel cup", note: "Soft matte colour", price: 2, unit: "per_child", photo: "/design/table/cups-pastel.webp" },
   ] },
   { key: "cutlery", label: "Cutlery", optional: false, options: [
-    { id: "pastel", name: "Pastel plastic", note: "Disposable, in a soft colour", price: 1, unit: "per_child", photo: "/design/table/cutlery-pastel.webp" },
-    { id: "wooden", name: "Wooden", note: "Disposable, natural and light", price: 2, unit: "per_child", photo: "/design/table/cutlery-wooden.webp" },
-    { id: "silver", name: "Silver-look plastic", note: "Disposable, with a shine", price: 2, unit: "per_child", photo: "/design/table/cutlery-silver.webp" },
+    { id: "dipped", name: "Colour-dipped wooden", note: "Handles dipped in pastel", price: 3, unit: "per_child", photo: "/design/table/cutlery-dipped.webp" },
+    { id: "wooden", name: "Wooden", note: "Natural and disposable", price: 2, unit: "per_child", photo: "/design/table/cutlery-wooden.webp" },
+    { id: "glitter", name: "Glitter-dipped wooden", note: "Handles dipped in silver glitter", price: 3, unit: "per_child", photo: "/design/table/cutlery-glitter.webp" },
+  ] },
+  { key: "cutleryHolder", label: "Cutlery holder", optional: true, options: [
+    { id: "pocket", name: "Printed pocket", note: "A card pocket in the theme, with the name", price: 5, unit: "per_child", photo: "/design/table/cutleryHolder-pocket.webp" },
+    { id: "band", name: "Napkin band", note: "Wrapped, with a little name tag", price: 4, unit: "per_child", photo: "/design/table/cutleryHolder-band.webp" },
+    { id: "tag", name: "Ribbon & tag", note: "Tied with a ribbon and a scalloped tag", price: 3, unit: "per_child", photo: "/design/table/cutleryHolder-tag.webp" },
   ] },
   { key: "centrepiece", label: "Centrepiece", optional: true, options: [
+    // Stand-ins: the owner sends her own centrepieces (2026-10-28).
     { id: "balloons", name: "Balloon bunch", note: "Mini balloons in the theme", price: 60, unit: "per_table", photo: "/design/table/centrepiece-balloons.webp" },
     { id: "florals", name: "Fresh florals", note: "Low arrangement", price: 90, unit: "per_table", photo: "/design/table/centrepiece-florals.webp" },
     { id: "toppers", name: "Theme toppers", note: "Stars and theme shapes on sticks", price: 40, unit: "per_table", photo: "/design/table/centrepiece-toppers.webp" },
   ] },
-  { key: "chairDecor", label: "Chair decoration", optional: true, options: [
-    { id: "tulle_bow", name: "Tulle bow", note: "On every chair back", price: 6, unit: "per_child", photo: "/design/table/chairDecor-tulle_bow.webp" },
-    { id: "balloon", name: "Balloon tie", note: "A balloon on every chair", price: 5, unit: "per_child", photo: "/design/table/chairDecor-balloon.webp" },
-    { id: "name_flag", name: "Name flag", note: "A little flag with the name", price: 7, unit: "per_child", photo: "/design/table/chairDecor-name_flag.webp" },
-  ] },
-  { key: "nameCards", label: "Name cards", optional: true, options: [
-    { id: "tent", name: "Tent card", note: "Folded card at each plate", price: 4, unit: "per_child", photo: "/design/table/nameCards-tent.webp" },
-    { id: "tag", name: "Round tag", note: "Tied to the napkin", price: 4, unit: "per_child", photo: "/design/table/nameCards-tag.webp" },
-    { id: "acrylic", name: "Acrylic name", note: "Clear acrylic with the name", price: 9, unit: "per_child", photo: "/design/table/nameCards-acrylic.webp" },
+  { key: "bottleLabel", label: "Water bottle label", optional: true, options: [
+    { id: "printed", name: "Printed label", note: "A small water bottle in the theme", price: 4, unit: "per_child", photo: "/design/table/bottleLabel-printed.webp" },
+    { id: "name", name: "Name label", note: "Each guest's own name", price: 5, unit: "per_child", photo: "/design/table/bottleLabel-name.webp" },
+    { id: "iridescent", name: "Iridescent label", note: "Shimmering, with the birthday name", price: 5, unit: "per_child", photo: "/design/table/bottleLabel-iridescent.webp" },
   ] },
   { key: "partyHats", label: "Party hats", optional: true, options: [
     { id: "cone", name: "Cone hat", note: "The classic", price: 4, unit: "per_child", photo: "/design/table/partyHats-cone.webp" },
@@ -117,16 +122,19 @@ export const TABLE_ITEMS: TableItem[] = [
   ] },
 ];
 
-/** The step's tabs, and the items in each. */
-export const TABLE_TABS: { name: string; title: string; sub: string; items: TableItemKey[] }[] = [
-  { name: "Table & chairs", title: "How many, and where they sit", sub: "Pick the table and the chairs — we work out how many.", items: ["table", "chairs"] },
-  { name: "Linens", title: "Cloth, runner and napkins", sub: "Soft layers in your theme's colours.", items: ["tablecloth", "runner", "napkins"] },
-  { name: "Tableware", title: "Placemats, plates, cups and cutlery", sub: "Party paper and plastic for every little guest.", items: ["placemats", "plates", "cups", "cutlery"] },
-  { name: "Decor & extras", title: "The finishing touches", sub: "Centrepieces, chair touches, name cards and hats.", items: ["centrepiece", "chairDecor", "nameCards", "partyHats"] },
+/** The step's sections, all on one page (2026-10-28: "aynı sayfada olsun, next next diye geçmeyelim"). */
+export const TABLE_SECTIONS: { name: string; items: TableItemKey[] }[] = [
+  { name: "Table & chairs", items: ["table", "chairs"] },
+  { name: "Linens", items: ["tablecloth", "napkins"] },
+  { name: "Tableware", items: ["placemats", "plates", "cups", "cutlery", "cutleryHolder"] },
+  { name: "Decor & extras", items: ["centrepiece", "bottleLabel", "partyHats"] },
 ];
 
 export const tableItem = (key: TableItemKey) => TABLE_ITEMS.find((i) => i.key === key)!;
 // An item may not be offered at the kids' table (charger plates): it has no options then.
 export const tableOption = (key: TableItemKey, id: string) => TABLE_ITEMS.find((i) => i.key === key)?.options.find((o) => o.id === id);
+/** An option's picture; a themed one is the theme's own. */
+export const optionPhoto = (key: TableItemKey, o: TableOption | undefined, themeId: string) =>
+  o?.themed ? `/design/table/${key}/${themeId}/${o.id}.webp` : o?.photo;
 /** The chosen table sits the children on floor cushions: no chairs to choose or pay for. */
 export const onFloor = (choices: Record<TableItemKey, string>) => !!tableOption("table", choices.table)?.floor;

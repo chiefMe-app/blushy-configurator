@@ -140,22 +140,29 @@ export default function TablePerspective({ table, palette, accent, className, ca
     // Place settings, back to front.
     const settings = [...t.seats].sort((p, q) => R(p.x, p.y)[1] - R(q.x, q.y)[1]).map((s) => {
       const n = seatNo++;
-      const inward = t.kind === "round" || t.kind === "flower" ? 16 : 13;
+      const inward = 16;
       const px = s.ex + Math.cos(s.facing) * inward, py = s.ey + Math.sin(s.facing) * inward;
       const [x, y] = P(px, py, TABLE_H);
-      const plateFill = ch.plates === "white_gold" ? "#fff" : ch.plates === "pastel" || ch.plates === "scalloped" ? PASTELS[n % PASTELS.length] : pal[n % pal.length];
+      const plateFill = ch.plates === "white_gold" ? "#fff" : ch.plates === "iridescent" ? "#EBDDF7" : ch.plates === "holo_square" ? "#E2E7ED" : ch.plates === "silver" ? "#E5E8EC" : ch.plates === "pastel" || ch.plates === "scalloped" ? PASTELS[n % PASTELS.length] : pal[n % pal.length];
+      const foil = ch.plates === "iridescent" || ch.plates === "holo_square" || ch.plates === "silver";
       const cupX = x + Math.cos(s.facing + turn - Math.PI / 2) * 11;
       return <g key={`s-${n}`} transform={at(x, y, K(px, py) * SET)}>
-        {ch.placemats !== NONE && <rect x={x - 16} y={y - 5.5} width={30} height={11} rx={ch.placemats === "shaped" ? 5.5 : 1.2} fill={pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.5} />}
-        {ch.placemats === "printed" && <rect x={x - 16} y={y - 5.5} width={30} height={11} rx={1.2} fill="url(#cloth-print)" />}
-        {ch.placemats === "name" && <rect x={x - 13} y={y - 3.5} width={24} height={7} rx={0.8} fill="#fff" />}
+        {ch.placemats !== NONE && <rect x={x - 21} y={y - 7.5} width={42} height={15} rx={1.2} fill={pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.5} />}
+        {ch.placemats === "pattern" && <rect x={x - 21} y={y - 7.5} width={42} height={15} rx={1.2} fill="url(#cloth-print)" />}
+        {ch.placemats === "watercolour" && <rect x={x - 16} y={y - 5} width={32} height={10} rx={4} fill="#fff" opacity={0.55} />}
+        {ch.placemats === "sparkle" && <rect x={x - 21} y={y - 7.5} width={42} height={15} rx={1.2} fill="url(#sequin)" />}
         {ch.chargers !== NONE && <ellipse cx={x} cy={y} rx={12.5} ry={5.3} fill={ch.chargers === "gold" ? GOLD : ch.chargers === "rattan" ? "#D9B98C" : "#EEF5FA"} stroke={INK} strokeWidth={0.6} />}
-        <ellipse cx={x} cy={y} rx={9} ry={3.8} fill={plateFill} stroke={ch.plates === "white_gold" ? GOLD : INK} strokeWidth={ch.plates === "white_gold" ? 1.4 : 0.8} strokeDasharray={ch.plates === "scalloped" || ch.plates === "shaped" ? "2.2 1" : undefined} />
+        {ch.plates === "holo_square"
+          ? <rect x={x - 9} y={y - 3.8} width={18} height={7.6} rx={1.5} fill={plateFill} stroke="#8C99A6" strokeWidth={0.8} />
+          : <ellipse cx={x} cy={y} rx={9} ry={3.8} fill={plateFill} stroke={ch.plates === "white_gold" ? GOLD : foil ? "#8C99A6" : INK} strokeWidth={ch.plates === "white_gold" ? 1.4 : 0.8} strokeDasharray={ch.plates === "scalloped" || ch.plates === "shaped" || ch.plates === "silver" ? "2.2 1" : undefined} />}
         {ch.plates === "themed" && <ellipse cx={x} cy={y} rx={9} ry={3.8} fill="url(#cloth-print)" />}
-        <rect x={x - 17} y={y - 3} width={6} height={5} rx={1} fill={table.napkinColor} stroke={INK} strokeWidth={0.5} />
+        <rect x={x - 17} y={y - 3} width={6} height={5} rx={1} fill={ch.napkins === "striped" ? "#FCE7F3" : ch.napkins === "foil" ? "#DCEBF7" : table.napkinColor} stroke={INK} strokeWidth={0.5} />
+        {ch.cutleryHolder !== NONE && <rect x={x - 16.5} y={y - 6} width={5} height={7} rx={0.8} fill={ch.cutleryHolder === "band" ? "#BAE6FD" : pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.5} />}
+        {ch.bottleLabel !== NONE && <g><rect x={cupX + 6} y={y - 14} width={4} height={12} rx={1.5} fill="#EAF4FB" stroke="#8C99A6" strokeWidth={0.6} /><rect x={cupX + 6} y={y - 9} width={4} height={4} fill={ch.bottleLabel === "iridescent" ? "#E9DDF7" : pal[(n + 2) % pal.length]} /><rect x={cupX + 6.8} y={y - 16} width={2.4} height={2} fill="#93C5FD" /></g>}
         {ch.cups === "pouch"
           ? <rect x={cupX - 3} y={y - 10} width={6} height={9} rx={1.5} fill={pal[(n + 2) % pal.length]} stroke={INK} strokeWidth={0.7} />
-          : <path d={`M${cupX - 3},${y - 10}L${cupX - 2.4},${y - 1}H${cupX + 2.4}L${cupX + 3},${y - 10}Z`} fill={ch.cups === "gold_rim" ? "#F3F7FA" : pal[(n + 2) % pal.length]} stroke={ch.cups === "gold_rim" ? GOLD : INK} strokeWidth={0.7} />}
+          : <path d={`M${cupX - 3},${y - 10}L${cupX - 2.4},${y - 1}H${cupX + 2.4}L${cupX + 3},${y - 10}Z`} fill={ch.cups === "gold_rim" ? "#F3F7FA" : ch.cups === "white_straw" ? "#FFFFFF" : ch.cups === "iridescent" ? "#E9DDF7" : ch.cups === "pastel" ? PASTELS[(n + 2) % PASTELS.length] : pal[(n + 2) % pal.length]} stroke={ch.cups === "gold_rim" ? GOLD : INK} strokeWidth={0.7} />}
+        {(ch.cups === "white_straw" || ch.cups === "iridescent") && <path d={`M${cupX},${y - 10}L${cupX + 3},${y - 17}`} stroke={ch.cups === "white_straw" ? "#9AA6B2" : "#FFFFFF"} strokeWidth={1} />}
         {ch.cups === "pouch" && <path d={`M${cupX},${y - 10}L${cupX + 2},${y - 14}`} stroke={accent} strokeWidth={1} />}
         {ch.cups === "straw" && <path d={`M${cupX},${y - 10}L${cupX + 3},${y - 17}`} stroke={accent} strokeWidth={1} />}
         {ch.cups === "lidded" && <ellipse cx={cupX} cy={y - 10} rx={3.2} ry={1.2} fill="#fff" stroke={INK} strokeWidth={0.5} />}

@@ -6,7 +6,7 @@
 // drawings. Every choice is also described in words. Shared by the API route
 // (the pictures and the prompt) and the builder (is the render still current?).
 import { hexToColorName } from "@/lib/generatePrompt";
-import { NONE, onFloor, tableOption, type TableItemKey } from "./tableCatalog";
+import { NONE, onFloor, optionPhoto, tableOption, type TableItemKey } from "./tableCatalog";
 import type { TableScene, TableSetup } from "./tableSetup";
 import { clampKids } from "./tableSetup";
 
@@ -14,7 +14,7 @@ export type { TableRender } from "./tableSetup";
 
 /** Changes whenever anything that shows in the picture changes. */
 export function tableRenderKey(t: TableSetup): string {
-  const s = JSON.stringify([clampKids(t.kids), Object.entries(t.choices).sort(), t.clothColor, t.runnerColor, t.napkinColor, t.scene ?? "garden"].flat(2));
+  const s = JSON.stringify([clampKids(t.kids), Object.entries(t.choices).sort(), t.clothColor, t.runnerColor, t.napkinColor, t.scene ?? "garden", t.placematText ?? ""].flat(2));
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
   return (h >>> 0).toString(36);
@@ -28,27 +28,26 @@ const MOTIF: Record<string, string> = {
   frozen: "snowflakes and little stars", unicorn: "rainbows, clouds and stars", dinosaur: "dinosaur footprints and leaves", safari: "palm leaves and animal-print spots",
   princess: "crowns, hearts and stars", superhero: "comic bursts, stars and lightning bolts", barbie: "hearts, stars and bows", bluey: "clouds and paw prints",
   pokemon: "lightning bolts and stars", stitch: "hibiscus flowers and palm leaves", mermaid: "seashells, scales and bubbles", space: "planets, rockets and stars",
-  football: "footballs and stars", lego: "colourful building blocks and dots", kpop: "hearts, stars and music notes", encanto: "flowers and butterflies",
+  football: "soccer balls and stars", lego: "colourful building blocks and dots", kpop: "hearts, stars and music notes", encanto: "flowers and butterflies",
   cocomelon: "watermelons and little fruits", teddy_bear: "hearts and paw prints", pineapple_tropical: "pineapples and palm leaves", blush_garden: "little flowers",
   minecraft: "pixel squares", star_wars: "stars and planets", luxury_neutral: "gold dots and stars",
 };
 export const motifOf = (themeId: string) => MOTIF[themeId] ?? "confetti dots and stars";
 
 // What each option looks like, in words. {motif} is the theme's printed pattern.
+// The kids' pieces follow the owner's favourite references (2026-10-28).
 const WORDS: Partial<Record<TableItemKey, Record<string, string>>> = {
-  table: { standard: "a long white rectangular kids' table", half_wave: "a white kids' table curved like a gentle S-shaped wave", flower: "a white kids' table shaped like a flower with six round petals", round: "a big white round kids' table", low: "a low white floor table, with white floor cushions instead of chairs", cloud: "a white kids' table with soft wavy cloud-shaped edges" },
+  table: { standard: "a long white rectangular kids' table with straight edges", half_wave: "a long white kids' table curved like a gentle S-shaped wave", flower: "a white kids' table shaped like a flower with six big round petals", round: "a big white round kids' table", low: "a low white floor table, with white floor cushions instead of chairs", cloud: "a long white kids' table whose edges are soft rounded scallops like a cloud" },
   chairs: { white_kids: "a white children's chair with an oval back and arms", blue_kids: "a bright blue children's chair with a slatted back", bow_kids: "a pink metal children's chair with a round mesh seat and a back shaped like a bow" },
-  tablecloth: { printed: "a disposable party table cover printed all over with {motif} in the palette colours, hanging over the edges", classic: "a smooth floor-length {cloth} tablecloth", ruffle: "a {cloth} tablecloth with layered ruffled frills all the way round to the floor" },
-  runner: { tulle: "a soft airy {runner} tulle runner down the middle", sequin: "a shimmering {runner} sequin runner down the middle", confetti: "colourful confetti, little paper stars and shiny curly ribbons scattered down the middle" },
-  placemats: { printed: "a rectangular paper placemat printed with {motif}", shaped: "a paper placemat cut in the shape of one of the {motif}", name: "a printed paper placemat with a border of {motif} and a blank panel for a name" },
-  napkins: { printed: "a paper napkin printed with {motif}", plain: "a {napkin} paper napkin folded into a triangle", bow: "a {napkin} napkin tied with a ribbon bow" },
-  plates: { themed: "a disposable paper party plate printed with {motif}", scalloped: "a pastel paper party plate with a wavy scalloped edge", shaped: "a paper party plate cut in the shape of one of the {motif}" },
-  cups: { straw: "a paper party cup with a striped paper straw", printed: "a paper party cup printed with {motif}", pouch: "a little juice pouch with a straw and a blank label" },
-  cutlery: { pastel: "disposable pastel plastic cutlery (plastic, not metal)", wooden: "disposable wooden cutlery", silver: "disposable silver-coloured plastic cutlery" },
-  chargers: { gold: "a gold charger plate under the plate", rattan: "a woven rattan charger under the plate", beaded: "a clear beaded glass charger under the plate" },
-  centrepiece: { balloons: "a small bunch of mini balloons in the theme colours", florals: "a low arrangement of fresh flowers", toppers: "glittery star and snowflake toppers on sticks in a little pot" },
-  chairDecor: { tulle_bow: "a big tulle bow on every chair back", balloon: "a balloon tied to every chair back", name_flag: "a little blank fabric flag on every chair back" },
-  nameCards: { tent: "a blank folded tent name card", tag: "a blank round name tag on the napkin", acrylic: "a blank clear acrylic name card" },
+  tablecloth: { classic: "a smooth floor-length {cloth} tablecloth" },
+  napkins: { striped: "a folded paper napkin with soft pastel pink and white stripes", printed: "a folded paper napkin printed with {motif}", foil: "a folded pale blue paper napkin with a shiny silver foil print" },
+  placemats: { pattern: "an A3 paper placemat printed all over with {motif} on a soft background", watercolour: "an A3 paper placemat with a soft watercolour wash and big {motif} in its corners", sparkle: "an A3 paper placemat with a sparkling glittery background and one elegant emblem" },
+  plates: { iridescent: "a many-sided disposable paper plate with a shimmering iridescent pink, lilac and blue foil finish and a white rim", holo_square: "a square disposable plate in shiny silver holographic foil", silver: "a round disposable silver foil plate with a fluted rim" },
+  cups: { white_straw: "a plain white paper cup with a slim silver paper straw", iridescent: "a paper cup with a shimmering iridescent foil finish and a white straw", pastel: "a matte pastel paper cup" },
+  cutlery: { dipped: "a disposable wooden fork, knife and spoon with handles dipped in pastel pink", wooden: "a disposable natural wooden fork, knife and spoon", glitter: "a disposable wooden fork, knife and spoon with handles dipped in silver glitter" },
+  cutleryHolder: { pocket: "standing in a printed paper pocket with a blank name panel", band: "wrapped in a napkin held by a paper band with a little blank name tag", tag: "tied with a thin ribbon and a scalloped paper tag" },
+  bottleLabel: { printed: "a small water bottle with a label printed with {motif}", name: "a small water bottle with a pale label with a blank name panel", iridescent: "a small water bottle with a shimmering iridescent label" },
+  centrepiece: { balloons: "a small bunch of mini balloons in the theme colours", florals: "a low arrangement of fresh flowers", toppers: "glittery star toppers on sticks in a little pot" },
   partyHats: { cone: "a cone party hat", crown: "a little party crown", headband: "a party headband" },
 };
 
@@ -56,49 +55,62 @@ const WORDS: Partial<Record<TableItemKey, Record<string, string>>> = {
 // kaliteli" — and the owner's reference shots: long lenses, soft background
 // blur, outdoors in sunlight). Then (same day): "çocuk doğum günü olduğu
 // belli olsun … daha cıvıl cıvıl": a kids' party, not a dinner.
-const STYLE = "Bright, cheerful photograph of a real children's birthday party table, styled by a party planner: playful and colourful, everything at the seats is fun disposable kids' party tableware — printed paper and plastic, party hats and confetti — nothing formal, no glassware, no china, no charger plates. Crisp fine detail, shot on a full-frame camera with a shallow depth of field. No people, no children, no cartoon characters, no faces, no text, no letters, no logos.";
+const STYLE = "Bright, cheerful photograph of a real children's birthday party table, styled by a party planner: everything at the seat is pretty disposable kids' party tableware — printed paper, foil and wood — nothing formal, no glassware, no china, no charger plates. Crisp fine detail, shot on a full-frame camera with a shallow depth of field. No people, no children, no cartoon characters, no faces, no logos.";
 const SETTING: Record<TableScene, string> = {
   garden: "The party is outdoors in a sunny garden: the table stands on a pale stone terrace, with a green lawn and trees softly blurred behind, in warm late-afternoon sunlight with soft dappled shadows.",
   indoor: "The party is in a bright, airy party room with tall windows and soft daylight, the room softly decorated in the same colours and out of focus.",
 };
-const LENS = "Shot with a 50mm lens at f/1.8 from a high three-quarter angle just above one place setting: that seat is sharp and fills most of the picture, the rest of the table and the setting fall into soft blur behind.";
+const LENS = "Shot with a 50mm lens at f/2 from a high three-quarter angle above one place setting: that seat is sharp and fills about half of the picture, with the table's edge and the chair around it in view, and the rest of the table falls into soft blur behind.";
 
-// What each picture shows, in the prompt ("image 2 is the table").
+// What each picture shows, in the prompt ("image 1 is the table").
 const LABEL: Record<TableItemKey, string> = {
   table: "the table", chairs: "the chair", tablecloth: "the tablecloth", runner: "the runner", napkins: "the napkin",
-  placemats: "the placemat", plates: "the plate", cups: "the cup", cutlery: "the cutlery", chargers: "the charger plate",
+  placemats: "the placemat's printed design", plates: "the plate", cups: "the cup", cutlery: "the cutlery", chargers: "the charger plate",
+  cutleryHolder: "the cutlery holder", bottleLabel: "the water bottle",
   centrepiece: "the centrepiece", chairDecor: "the chair decoration", nameCards: "the name card", partyHats: "the party hat",
 };
-// The pictures sent with the prompt, most telling first: Seedream takes ten.
-const REFERENCE_ORDER: TableItemKey[] = ["chairs", "table", "plates", "cups", "placemats", "cutlery", "napkins", "tablecloth", "partyHats", "centrepiece", "nameCards", "runner", "chairDecor"];
+// The pictures sent with the prompt, the table first (2026-10-28: a close-up of
+// the cloud table came out on a small round one): Seedream takes ten.
+const REFERENCE_ORDER: TableItemKey[] = ["table", "chairs", "placemats", "plates", "cups", "cutlery", "napkins", "cutleryHolder", "bottleLabel", "tablecloth", "centrepiece", "partyHats"];
 export const MAX_REFERENCES = 10;
 
 /** The chosen options' pictures for the render, in the order the prompt names them. */
-export function referencePictures(t: TableSetup): { key: TableItemKey; photo: string }[] {
+export function referencePictures(t: TableSetup, themeId: string): { key: TableItemKey; photo: string }[] {
   const floor = onFloor(t.choices); // the low table: cushions, no chair to show
-  return REFERENCE_ORDER.filter((k) => !(floor && (k === "chairs" || k === "chairDecor")))
-    .flatMap((k) => { const photo = tableOption(k, t.choices[k])?.photo; return photo ? [{ key: k, photo }] : []; })
+  return REFERENCE_ORDER.filter((k) => !(floor && k === "chairs"))
+    .flatMap((k) => { const photo = optionPhoto(k, tableOption(k, t.choices[k]), themeId); return photo ? [{ key: k, photo }] : []; })
     .slice(0, MAX_REFERENCES);
 }
 
-/** The words for the close-up; `pictures` are the items whose pictures go with it, in order (referencePictures). */
+/**
+ * The words for the close-up; `pictures` are the items whose pictures go with
+ * it, in order (referencePictures). 2026-10-28, the owner: "birebir aynı
+ * setup'ın close-up'ı olması lazım" — exactly the chosen pieces, on exactly
+ * the chosen table, and nothing else.
+ */
 export function tablePrompt(t: TableSetup, theme: { id: string; name: string; balloonColors: string[] }, pictures: TableItemKey[]): string {
   const c = t.choices;
   const floor = onFloor(c);
-  const word = (k: TableItemKey) => (c[k] === NONE || (floor && (k === "chairs" || k === "chairDecor")) ? "" : (WORDS[k]?.[c[k]] ?? "")
-    .replace("{cloth}", hexToColorName(t.clothColor)).replace("{runner}", hexToColorName(t.runnerColor)).replace("{napkin}", hexToColorName(t.napkinColor))
-    .replace("{motif}", motifOf(theme.id)));
+  const word = (k: TableItemKey) => (c[k] === NONE || (floor && k === "chairs") ? "" : (WORDS[k]?.[c[k]] ?? "")
+    .replace("{cloth}", hexToColorName(t.clothColor)).replace("{motif}", motifOf(theme.id)));
   const colours = Array.from(new Set(theme.balloonColors.map(hexToColorName).filter(Boolean))).join(", ");
-  // One paper plate a seat: Seedream stacks plates like china otherwise (2026-10-27).
-  const seat = ["placemats", "plates", "chargers", "napkins", "cups", "cutlery", "nameCards", "partyHats"].map((k) => word(k as TableItemKey)).filter(Boolean).join(", ");
+  const text = c.placemats !== NONE ? t.placematText?.trim() : undefined;
+  const placemat = word("placemats") && `${word("placemats")}, lying flat under the plate${text ? `, with the words "${text}" printed on it in large, neat, correctly spelled letters` : ""}`;
+  const cutlery = word("cutlery") && `${word("cutlery")}${word("cutleryHolder") ? ` ${word("cutleryHolder")}` : ""}`;
+  // One plate a seat: Seedream stacks plates like china otherwise (2026-10-27).
+  const seat = [placemat, word("plates") && `${word("plates")} (one single plate, not a stack)`, word("napkins"), cutlery, word("cups"), word("bottleLabel"), word("partyHats")].filter(Boolean);
   const lines = [
     pictures.length ? `Images 1 to ${pictures.length} are product photos of the exact pieces chosen for this children's party table: ${pictures.map((k, i) => `image ${i + 1} is ${LABEL[k]}`).join(", ")}.` : "",
-    pictures.length ? "Take only the piece itself from each photo and ignore everything around it — the grass, walls, backdrops, other furniture and other tableware in those photos." : "",
-    `Make a close-up photograph of ONE place setting at this table: ${floor ? "a white floor cushion in front of the low table" : "the chair pulled up to the table"}, and on the table in front of it ${seat} — one single plate, not a stack — with ${word("centrepiece") || "the rest of the table"} softly out of focus behind.`,
-    pictures.length ? `Every piece must look exactly like its photo: the same shape, colour and material. Printed paper pieces are printed with ${motifOf(theme.id)} in the palette colours.` : "",
-    `The table is ${word("table")}, with ${word("tablecloth")}${word("runner") ? ` and ${word("runner")}` : ""}.`,
-    floor ? "" : `The chair is ${word("chairs")}${word("chairDecor") ? `, with ${word("chairDecor")}` : ""}.`,
-    `Colour palette: ${colours}. ${clampKids(t.kids)} children's places in all; this picture shows one of them.`,
+    pictures.length ? "Take only the piece itself from each photo and ignore everything around it — the grass, walls, backdrops, other furniture, flowers and other tableware in those photos." : "",
+    `Make a close-up photograph of ONE place setting at this very table: ${word("table")}${pictures.includes("table") ? " — exactly the table in its photo, with the same shape, edges, colour and legs" : ""}. The part of the table around this seat shows clearly, so its shape can be recognised.`,
+    floor ? "In front of the seat is a white floor cushion." : `The chair is ${word("chairs")}${pictures.includes("chairs") ? ", exactly as in its photo" : ""}, pulled up to the table.`,
+    word("tablecloth") ? `The table is covered with ${word("tablecloth")}.` : "The table has no tablecloth: its own bare top and edges show.",
+    `On the table in front of the chair, and nothing else: ${seat.join("; ")}.`,
+    word("centrepiece") ? `Further along the table, softly out of focus: ${word("centrepiece")}.` : "",
+    "Nothing that is not listed: no confetti, no curling ribbon, no extra plates, cups or hats, no name cards, no chair decorations, no balloons unless listed.",
+    pictures.length ? `Every piece must look exactly like its photo: the same shape, colour, finish and material.${c.placemats !== NONE ? " The placemat carries exactly the printed design of its picture." : ""}` : "",
+    `Colour palette: ${colours}.`,
+    text ? `The only words anywhere are "${text}" on the placemat.` : "No text and no letters anywhere.",
   ];
   return [...lines, LENS, SETTING[t.scene ?? "garden"], STYLE].filter(Boolean).join(" ");
 }

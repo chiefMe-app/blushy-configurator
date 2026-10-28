@@ -13,6 +13,8 @@ export interface TableSetup {
   clothColor: string;
   runnerColor: string;
   napkinColor: string;
+  /** The customer's words printed on the placemats ("Zahra turns 4"), if any. */
+  placematText?: string;
   /** Where the render is set (2026-10-27: "outdoorda bakalım"); a garden unless chosen. */
   scene?: TableScene;
   /** The last close-up render of this table (F3), if one was made. */
@@ -51,11 +53,21 @@ export const clampKids = (n: number) => Math.max(MIN_KIDS, Math.min(MAX_KIDS, Ma
 
 const DEFAULT_CHOICES: Record<TableItemKey, string> = {
   table: "standard", chairs: "white_kids",
-  tablecloth: "classic", runner: "confetti", napkins: "printed",
-  // Charger plates are not offered at the kids' table (the grown-ups' table has them).
-  placemats: "printed", plates: "themed", cups: "straw", cutlery: "pastel", chargers: NONE,
-  centrepiece: "balloons", chairDecor: NONE, nameCards: "tent", partyHats: "cone",
+  // The owner's tables show bare unless a cloth is chosen (2026-10-28).
+  tablecloth: NONE, napkins: "striped",
+  placemats: "pattern", plates: "iridescent", cups: "white_straw", cutlery: "wooden", cutleryHolder: NONE,
+  centrepiece: "balloons", bottleLabel: NONE, partyHats: "cone",
+  // Not offered at the kids' table (the grown-ups' table will have them).
+  runner: NONE, chargers: NONE, chairDecor: NONE, nameCards: NONE,
 };
+
+/** Placemat words: no markup or control characters, single spaces, at most 40. */
+export const MAX_PLACEMAT_TEXT = 40;
+export function cleanPlacematText(v: unknown): string | undefined {
+  if (typeof v !== "string") return undefined;
+  const t = v.replace(/[\u0000-\u001f<>{}[\]\\/"`$^*=|~#%@+;:_]/g, "").replace(/\s+/g, " ").slice(0, MAX_PLACEMAT_TEXT);
+  return t.trim() ? t : undefined;
+}
 
 /** A new table, in the theme's colours. */
 export function defaultTableSetup(theme: { balloonColors: string[]; accent: string }): TableSetup {
@@ -126,6 +138,7 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     clothColor: colour(r.clothColor, base.clothColor),
     runnerColor: colour(r.runnerColor, base.runnerColor),
     napkinColor: colour(r.napkinColor, base.napkinColor),
+    ...(cleanPlacematText(r.placematText) ? { placematText: cleanPlacematText(r.placematText)!.trim() } : {}),
     ...(r.scene === "garden" || r.scene === "indoor" ? { scene: r.scene } : {}),
     ...(readTableRender(r.render) ? { render: readTableRender(r.render) } : {}),
   };

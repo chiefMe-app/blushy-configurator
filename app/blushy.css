@@ -1197,6 +1197,14 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-option em { font-style: normal; font-size: 10.5px; font-weight: 800; color: var(--bz-pink); margin-top: 2px; }
 .bz-tb-item .bz-ts-swatches { margin-top: 10px; }
 .bz-tb-floor { margin: 0; font-size: 13px; color: var(--bz-muted); }
+.bz-tb-section > h2 { margin: 18px 4px 9px; font: 800 11px var(--bz-sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bz-pink); }
+/* The customer's words, printed on the placemat pictures. */
+.bz-tb-option .art .words { position: absolute; inset: 0; display: grid; place-items: center; padding: 8%; text-align: center; font: 400 clamp(13px, 2.2vw, 19px)/1.1 var(--bz-hand); color: #5b6fa8; text-shadow: 0 1px 0 rgba(255,255,255,0.85); overflow-wrap: anywhere; pointer-events: none; }
+.bz-tb-option .art .words.sparkle { right: 38%; }
+.bz-tb-words { display: grid; gap: 6px; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--bz-ink); }
+.bz-tb-words small { font-weight: 400; color: var(--bz-muted); }
+.bz-tb-words input { font: 400 15px var(--bz-sans); padding: 10px 12px; border: 1.5px solid #f2dde6; border-radius: 12px; outline: none; }
+.bz-tb-words input:focus { border-color: var(--bz-pink); }
 .bz-tb-sum { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 16px; background: #fbf4f7; font-size: 13px; }
 .bz-tb-sum b { font: 400 22px var(--bz-hand); color: var(--bz-pink); margin-right: auto; }
 .bz-tb-preview { border: 1px solid var(--bz-border); border-radius: 22px; padding: 14px; background: #fff; box-shadow: 0 10px 30px rgba(103,44,71,.06); }

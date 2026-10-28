@@ -45,7 +45,7 @@ function engineInput(model: string, prompt: string, imageUrls: string[]) {
  * the site itself.
  */
 async function optionPicture(photo: string, origin: string): Promise<string> {
-  if (!/^\/design\/table\/[\w-]+\.(webp|png|jpe?g)$/.test(photo)) throw new Error(`not an option picture: ${photo}`);
+  if (!/^\/design\/table\/(?:[\w-]+\/){0,2}[\w-]+\.(webp|png|jpe?g)$/.test(photo)) throw new Error(`not an option picture: ${photo}`);
   const bytes = await readFile(path.join(process.cwd(), "public", photo)).catch(async () => {
     const res = await fetch(new URL(photo, origin), { signal: AbortSignal.timeout(15_000) });
     if (!res.ok) throw new Error(`option picture ${photo}: ${res.status}`);
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         const send = (o: unknown) => controller.enqueue(ndjsonLine(o));
         try {
-          const refs = referencePictures(table);
+          const refs = referencePictures(table, theme.id);
           const pictures = await Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin)));
           const result = await fal.subscribe(MODEL, {
             input: engineInput(MODEL, tablePrompt(table, theme, refs.map((r) => r.key)), pictures) as never,

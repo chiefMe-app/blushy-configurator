@@ -45,7 +45,8 @@ export default function TableSketch({ table, palette, accent, className }: { tab
 
   const setting = (s: Seat, t: Placed) => {
     const c = { ...colours, seat: seatNo++ };
-    const inward = t.kind === "round" || t.kind === "flower" ? 16 : 13;
+    // An A3 placemat is 30 cm deep: the setting starts at the edge.
+    const inward = 16;
     const px = s.ex + Math.cos(s.facing) * inward, py = s.ey + Math.sin(s.facing) * inward;
     const at = (x: number, y: number, key: Parameters<typeof glyph>[0]) => ch[key] !== NONE && <g transform={`translate(${x} ${y})`}>{glyph(key, ch[key], c)}</g>;
     return (
@@ -55,6 +56,8 @@ export default function TableSketch({ table, palette, accent, className }: { tab
         {at(0, 0, "plates")}
         {at(-15, 0, "napkins")}
         {at(-15, 0, "cutlery")}
+        {at(-15, 0, "cutleryHolder")}
+        {at(16, -9, "bottleLabel")}
         {at(11.5, -5, "cups")}
         {at(0, 12.5, "nameCards")}
         {at(0, 0, "partyHats")}
