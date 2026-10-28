@@ -117,7 +117,7 @@ describe("the pictures and the prompt", () => {
     expect(p).toContain("Two chairs face each other on the two sides of the table");
     // The cutlery only on the left, rolled up in the chosen napkin with the band, as in the holder's picture.
     expect(p).toContain(`on the left of the placemat: a folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 2} folded into a pocket with the cutlery (a disposable fork, knife and spoon made of natural light wood, not metal) standing up out of it, wrapped round the middle by a paper napkin band with a little name tag with the name "Arya" on it, arranged exactly like the cutlery holder in image ${refs.indexOf("cutleryHolder") + 2}`);
-    expect(p).toContain("all the cutlery stands in the napkin pockets");
+    expect(p).toContain("all standing in its napkin pocket on the left. No other cutlery anywhere");
     expect(p).toContain("on the top-right corner of the placemat; just beside the cup, a small clear water bottle");
     expect(p).toContain('with "Arya turns 6" printed on the label — the cup and the bottle are both there');
     expect(p).toContain("a cone party hat standing on the top-left corner of the placemat");

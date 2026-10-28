@@ -38,7 +38,7 @@ export const motifOf = (themeId: string) => MOTIF[themeId] ?? "confetti dots and
 // The kids' pieces follow the owner's favourite references (2026-10-28).
 const WORDS: Partial<Record<TableItemKey, Record<string, string>>> = {
   table: { standard: "a long white rectangular kids' table with straight edges", half_wave: "a long white kids' table curved like a gentle S-shaped wave", flower: "a white kids' table shaped like a flower with six big round petals", round: "a big white round kids' table", low: "a low white floor table, with white floor cushions instead of chairs", cloud: "a long white kids' table whose edges are soft rounded scallops like a cloud" },
-  chairs: { white_kids: "a white children's chair with an oval back and arms", blue_kids: "a bright blue children's chair with a slatted back", bow_kids: "a pink metal children's chair with a round mesh seat and a back shaped like a bow" },
+  chairs: { white_kids: "a white children's chair with an oval back and arms", blue_kids: "a bright blue children's chair whose back is a curved top rail over a row of thin upright spindles with open gaps between them, so you see through the back", bow_kids: "a pink metal children's chair with a round mesh seat and a back shaped like a bow" },
   tablecloth: { classic: "a smooth floor-length {cloth} tablecloth" },
   napkins: { plain: "a plain {napkin} paper napkin", striped: "a folded paper napkin with soft pastel pink and white stripes", printed: "a folded paper napkin printed with {motif}", foil: "a folded pale blue paper napkin with a shiny silver foil print" },
   placemats: { pattern: "an A3 paper placemat printed all over with {motif} on a soft background", watercolour: "an A3 paper placemat with a soft watercolour wash and big {motif} in its corners", sparkle: "an A3 paper placemat with a sparkling glittery background and one elegant emblem" },
@@ -121,7 +121,7 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
     const stack = placematWords ? placematWords.split(/\s+/).map((w) => `"${w}"`).join(" above ") : "";
     seat.push(`${word("placemats")}${exactly("placemats")}, lying flat on the table in front of the chair${stack ? `, with the words printed straight onto the placemat paper in its bottom-right corner in elegant periwinkle-blue serif capitals, stacked one word per line (${stack}) — no sticker, no label, never on the plate` : ""}`);
   }
-  if (word("plates")) seat.push(`${word("plates")}${exactly("plates")} in the middle of the placemat — exactly one plate on each placemat, never two, not a stack, nothing on it or written on it, its inside clearly visible`);
+  if (word("plates")) seat.push(`${word("plates")}${exactly("plates")} in the middle of the placemat — exactly one plate on each placemat, never two, not a stack, nothing on it or written on it, its inside clearly visible, and nothing lying beside it: to its right is bare printed placemat`);
   const napkin = `${word("napkins")}${exactly("napkins")}`, cutlery = `${word("cutlery")}${exactly("cutlery")}`;
   const name = holderWords ? ` with the name "${holderWords}" on it` : "";
   const like = pic("cutleryHolder") ? `, arranged exactly like the cutlery holder in image ${pic("cutleryHolder")}` : "";
@@ -151,7 +151,8 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
     word("tablecloth") ? `The table is covered with ${word("tablecloth")}.` : "The table has no tablecloth: its own bare top and edges show.",
     `In front of each chair, on the table, is the same setting: ${seat.join("; ")}.`,
     word("centrepiece") ? `Between the two settings, in the middle of the table: ${word("centrepiece")}${exactly("centrepiece")}.` : "",
-    c.cutleryHolder === "band" ? "No forks, knives or spoons lie on the placemats or the table: all the cutlery stands in the napkin pockets." : "The only cutlery anywhere is the one set on the left of each placemat: no other forks, knives or spoons on the table.",
+    // 2026-10-28 (owner): an extra metal fork and knife kept appearing to the right of the plate.
+    c.cutleryHolder === "band" ? "Each place has exactly one fork, one knife and one spoon, all standing in its napkin pocket on the left. No other cutlery anywhere: nothing lies on the placemats, beside or on the plates, or on the table, and there is no metal cutlery at all." : "The only cutlery anywhere is the one set on the left of each placemat: no other forks, knives or spoons on the placemats, beside the plates or on the table.",
     "Nothing that is not listed: no confetti, no curling ribbon, no extra plates, cups or hats, no name cards, no chair decorations, no balloons unless listed.",
     pictures.length ? "Every piece must look exactly like its photo: the same shape, colour, finish and material, and the printed designs exactly as in their pictures." : "",
     `Colour palette: ${colours}.`,

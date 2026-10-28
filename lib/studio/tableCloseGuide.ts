@@ -129,7 +129,15 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
         ? [-8, 8].map((u) => poly(Array.from({ length: 16 }, (_, i) => { const a2 = (i * 2 * Math.PI) / 16; return q(u + Math.cos(a2) * 7, -r, 58 + Math.sin(a2) * 9); }), "none", "#D9A3B5", 3)).join("")
         : ch.chairs === "white_kids"
           ? poly(Array.from({ length: 20 }, (_, i) => { const a2 = (i * 2 * Math.PI) / 20; return q(Math.cos(a2) * 13, -r, 50 + Math.sin(a2) * 17); }), fill)
-          : poly([q(-r + 2, -r, 32), q(r - 2, -r, 32), q(r - 2, -r, 64), q(-r + 2, -r, 64)], fill) + [-8, -3, 3, 8].map((u) => { const [x1, y1] = P(q(u, -r, 34)), [x2, y2] = P(q(u, -r, 62)); return `<path d="M${f1(x1)},${f1(y1)}L${f1(x2)},${f1(y2)}" stroke="#0E7490" stroke-width="1.4"/>`; }).join("");
+          // 2026-10-28: a solid panel came out as a solid back. The owner's blue
+          // chair has open spindles under a curved top rail, with gaps between them.
+          : (() => {
+            const bar = (u1: number, u2: number, z1: number, z2: number) => poly([q(u1, -r, z1), q(u2, -r, z1), q(u2, -r, z2), q(u1, -r, z2)], fill, "#0E7490", 0.8);
+            const rail = poly([...Array.from({ length: 9 }, (_, i) => { const u = -r + 1 + (i * (2 * r - 2)) / 8; return q(u, -r, 60 + 3 * Math.cos((u / r) * 1.3)); }),
+              ...Array.from({ length: 9 }, (_, i) => { const u = r - 1 - (i * (2 * r - 2)) / 8; return q(u, -r, 66 + 3 * Math.cos((u / r) * 1.3)); })], fill, "#0E7490", 0.8);
+            return bar(-r + 1, -r + 3, 30, 64) + bar(r - 3, r - 1, 30, 64) + bar(-r + 3, r - 3, 41, 43.5)
+              + [-9, -4.5, 0, 4.5, 9].map((u) => bar(u - 0.8, u + 0.8, 43.5, 61)).join("") + rail;
+          })();
       svg = legs + seat + back;
     }
     const d = depth(c);
