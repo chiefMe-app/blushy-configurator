@@ -12,10 +12,11 @@
 // 2026-10-29 (owner): "asıl bir tane top view render lazım" — the same drawing
 // can also look straight down on one child's place, framed like the top view's
 // place in the builder (view "top"): the camera is simply moved overhead.
-import { NONE, PLATE_CARD_MM, onFloor } from "./tableCatalog";
-import { arrangeTables, CHAIR, CUSHION, type Placed, type Seat } from "./tableShapes";
+import { NONE, onFloor } from "./tableCatalog";
+import { arrangeTables, CHAIR, CUSHION, focusSeats, type Placed, type Seat } from "./tableShapes";
 import { wordsColour, wordsOn, type TableSetup } from "./tableSetup";
 import { textCommands } from "@/lib/guideFonts";
+import { fitPlacematWords } from "./placematWords";
 
 export const CLOSE_GUIDE = { width: 1152, height: 864 };
 export type TableView = "close" | "top";
@@ -55,30 +56,15 @@ const CUP: Record<string, string> = { iridescent: "#E4DDF5" };
 const CHAIR_FILL: Record<string, string> = { white_kids: "#FFFFFF", bow_kids: "#F5C9D7" };
 const WOOD = "#D9B98C";
 
-/**
- * The placemat words' size (cm): as big as fits in the bottom-right corner
- * without touching the plate (radius 11.5 cm) — 2026-10-29: at 3 cm the render
- * misspelled them. Lines stack upwards from the bottom, one word a line.
- */
-export function placematWordsSize(lines: string[]): number {
-  for (let size = 4.4; size > 2.4; size -= 0.2) {
-    const gap = size * 1.12;
-    const clear = lines.every((line, i) => {
-      const left = 20 - textCommands(line, "elegant", size).width, base = -14 + (lines.length - 1 - i) * gap, cap = base + size * 0.72;
-      // The line's corner nearest the plate's centre.
-      return left >= 0 && Math.hypot(left, cap < 0 ? cap : base > 0 ? base : 0) > 12.5;
-    });
-    if (clear) return size;
-  }
-  return 2.4;
-}
+/** The placemat words' size (cm), measured in the guide's own fonts (./placematWords). */
+export const placematWordsSize = (lines: string[]) => fitPlacematWords(lines, (line, size) => textCommands(line, "elegant", size).width);
 
 /**
  * The guide as an SVG string: `theme` gives the placemat colours. Every
  * measure is in centimetres; the plan (arrangeTables) is turned into a world
  * with z up (the plan's y is flipped so nothing comes out mirrored).
  */
-export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string[]; accent: string }, art: { placemat?: string; card?: string } = {}, view: TableView = "close"): string {
+export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string[]; accent: string }, art: { placemat?: string } = {}, view: TableView = "close"): string {
   const { width: W, height: H } = CLOSE_GUIDE;
   const ch = t.choices;
   const floor = onFloor(ch);
@@ -100,14 +86,7 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
   // The two places in focus: across the table for a long one, side by side round a round one.
   const seats = table.seats;
   const round = table.kind === "round" || table.kind === "flower";
-  const cx = table.x + table.w / 2;
-  let a: Seat, b: Seat;
-  if (round) { a = seats[0]; b = seats[1] ?? seats[0]; }
-  else {
-    const far = seats.filter((s) => Math.sin(s.facing) > 0), near = seats.filter((s) => Math.sin(s.facing) <= 0);
-    a = [...far].sort((p, q) => Math.abs(p.ex - cx) - Math.abs(q.ex - cx))[0] ?? seats[0];
-    b = [...near].sort((p, q) => Math.abs(p.ex - a.ex) - Math.abs(q.ex - a.ex))[0] ?? seats[1] ?? a;
-  }
+  const [a, b] = focusSeats(table);
   const A = settingAt(a), B = settingAt(b);
   const target: V3 = [(A.centre[0] + B.centre[0]) / 2, (A.centre[1] + B.centre[1]) / 2, TH];
 
@@ -209,9 +188,6 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
   const mat1 = light(pal[0] ?? theme.accent, 0.62), mat2 = light(pal[1] ?? pal[0] ?? theme.accent, 0.7);
   const matWords = wordsOn(t, "placemats");
   const plate = ch.plates === "plain" ? { fill: t.plateColor, rim: "#8A7F86" } : PLATE[ch.plates] ?? { fill: "#FFFFFF", rim: "#8A7F86" };
-  // The plate card's design: the placemats' own picture when it is the same one.
-  const cardArt = art.card ? (art.card === art.placemat ? "mat-art" : "card-art") : "";
-  let cards = 0;
   const napkin = ch.napkins === "plain" ? t.napkinColor : light(pal[0] ?? theme.accent, 0.55);
   for (const seat of seats) {
     const S = settingAt(seat);
@@ -235,17 +211,8 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
       : ((n) => Array.from({ length: n }, (_, i) => { const a2 = Math.PI / n + (i * 2 * Math.PI) / n, r = shape === "scalloped" && i % 2 ? 10.6 : 11.5; return at(Math.cos(a2) * r, Math.sin(a2) * r, 0.4); }))(ch.plates === "iridescent" ? 8 : shape === "scalloped" ? 32 : 28);
     const shrink = (k: number, z: number) => plateShape.map((p) => [S.centre[0] + (p[0] - S.centre[0]) * k, S.centre[1] + (p[1] - S.centre[1]) * k, TH + z] as V3);
     flat += poly(plateShape, plate.fill, plate.rim, 1.4) + poly(shrink(0.87, 0.4), "none", plate.rim, 0.8);
-    // 2026-10-28 (owner): a small plate on the big one, and in it a round card in the theme's design;
-    // 2026-10-29: the card smaller, with a wide rim of the small plate round it.
+    // 2026-10-28 (owner): a small plate on the big one.
     flat += poly(shrink(0.75, 1), plate.fill, plate.rim, 1.8);
-    const cr = PLATE_CARD_MM / 20;
-    const card = circle3(at(0, 0, 1.3), cr, TH + 1.3, 28);
-    if (cardArt) {
-      const id = `card-${cards++}`, [o, x, y] = [P(at(-cr, cr, 1.3)), P(at(cr, cr, 1.3)), P(at(-cr, -cr, 1.3))];
-      flat += `<clipPath id="${id}"><polygon points="${card.map(P).map(([a, b]) => `${f1(a)},${f1(b)}`).join(" ")}"/></clipPath>`
-        + `<g clip-path="url(#${id})"><use href="#${cardArt}" xlink:href="#${cardArt}" transform="matrix(${[x[0] - o[0], x[1] - o[1], y[0] - o[0], y[1] - o[1], o[0], o[1]].map(f1).join(" ")})"/></g>`
-        + poly(card, "none", "#8A7F86", 0.8);
-    } else flat += poly(card, light(pal[0] ?? theme.accent, 0.35), "#8A7F86", 0.8);
     if (ch.placemats !== NONE && matWords) {
       // In the bottom-right corner beside the plate, one word a line, right-aligned (the owner's reference).
       const lines = matWords.toUpperCase().split(/\s+/), size = placematWordsSize(lines), gap = size * 1.12;
@@ -314,7 +281,7 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
 
   const sortFar = (l: { d: number; svg: string }[]) => [...l].sort((p, q) => q.d - p.d).map((x) => x.svg).join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`
-    + `<defs>${art.placemat ? `<image id="mat-art" href="${art.placemat}" xlink:href="${art.placemat}" x="0" y="0" width="1" height="1" preserveAspectRatio="none"/>` : ""}${cardArt === "card-art" ? `<image id="card-art" href="${art.card}" xlink:href="${art.card}" x="0" y="0" width="1" height="1" preserveAspectRatio="xMidYMid slice"/>` : ""}<linearGradient id="mat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${mat1}"/><stop offset="1" stop-color="${mat2}"/></linearGradient></defs>`
+    + `<defs>${art.placemat ? `<image id="mat-art" href="${art.placemat}" xlink:href="${art.placemat}" x="0" y="0" width="1" height="1" preserveAspectRatio="none"/>` : ""}<linearGradient id="mat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${mat1}"/><stop offset="1" stop-color="${mat2}"/></linearGradient></defs>`
     + `<rect width="${W}" height="${H}" fill="#EEF0EA"/>`
     + sortFar(behind) + tableSvg + sortFar(items) + sortFar(before)
     + "</svg>";

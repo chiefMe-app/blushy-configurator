@@ -1214,9 +1214,6 @@ div.bz-stale-banner { cursor: default; }
 /* The kids' chair cut out of its photo, in the chosen colour (2026-10-28). */
 .bz-tb-option .art .photo.cutout { object-fit: contain; padding: 6%; background: #fbf6f8; }
 .bz-tb-words-colour { display: grid; gap: 2px; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--bz-ink); }
-.bz-tb-card { display: flex; align-items: center; gap: 12px; margin-top: 12px; font-size: 13px; color: var(--bz-muted); }
-.bz-tb-card i { flex: none; width: 64px; height: 64px; border-radius: 50%; background-size: cover; background-position: center; box-shadow: 0 0 0 4px #fff, 0 0 0 5px #e7d6dd; }
-.bz-tb-card b { display: block; color: var(--bz-ink); }
 .bz-tb-sum { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 16px; background: #fbf4f7; font-size: 13px; }
 .bz-tb-sum b { font: 400 22px var(--bz-hand); color: var(--bz-pink); margin-right: auto; }
 .bz-tb-preview { border: 1px solid var(--bz-border); border-radius: 22px; padding: 14px; background: #fff; box-shadow: 0 10px 30px rgba(103,44,71,.06); }
@@ -1259,3 +1256,7 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-shapes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .bz-tb-shapes button { font: 700 12.5px var(--bz-sans); color: var(--bz-ink); background: #fff; border: 1.5px solid #f2dde6; border-radius: 999px; padding: 7px 14px; cursor: pointer; }
 .bz-tb-shapes button.on { border-color: var(--bz-pink); color: var(--bz-pink); background: #fff5f9; }
+/* The top view of one place (2026-10-29): photos of each piece, stacked. */
+.bz-tb-place { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; }
+.bz-tb-back { display: block; margin: 10px auto 0; border: 1.5px solid #f2dde6; background: #fff; color: var(--bz-pink); font: 700 13px var(--bz-sans); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+@media (min-width: 861px) { .bz-tb-back { display: none; } }

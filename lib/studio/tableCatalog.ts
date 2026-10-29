@@ -95,9 +95,8 @@ export const TABLE_ITEMS: TableItem[] = [
     { id: "watercolour", name: "Watercolour placemat", note: "A3 · a soft wash, big shapes in the corners", price: 6, unit: "per_child", themed: true },
     { id: "sparkle", name: "Sparkle placemat", note: "A3 · glittering, room for a name", price: 6, unit: "per_child", themed: true },
   ] },
-  // 2026-10-28 (owner): every place has a big plate with a small one on it, and
-  // in the small plate a round card in the theme's design (plateCardArt) —
-  // printed for each child, so it is in the production list.
+  // 2026-10-28 (owner): every place has a big plate with a small one on it
+  // (2026-10-29: without the round card in the small one — "iyi durmuyor").
   { key: "plates", label: "Plates", optional: false, options: [
     { id: "plain", name: "Plain plates", note: "Big + small, in a colour and shape you pick", price: 3, unit: "per_child", coloured: true },
     { id: "iridescent", name: "Iridescent foil plates", note: "Big + small, shimmering foil", price: 4, unit: "per_child", photo: "/design/table/plates-iridescent.webp" },
@@ -171,9 +170,6 @@ export const plainColour = (hex: string) => PLAIN_COLOURS.find((c) => c.hex.toUp
 /** The chosen table sits the children on floor cushions: no chairs to choose or pay for. */
 export const onFloor = (choices: Record<TableItemKey, string>) => !!tableOption("table", choices.table)?.floor;
 
-/** The round card in each small plate: the chosen placemats' design (the theme's pattern design with plain placemats or none), cut round. */
-export const plateCardArt = (choices: Record<TableItemKey, string>, themeId: string) =>
-  `/design/table/placemats/${themeId}/${tableOption("placemats", choices.placemats)?.themed ? choices.placemats : "pattern"}.webp`;
 
 /** The colour chair's colours (2026-10-29, the owner: "sadece beyaz, pembe, açık mavi olsun"); its own blue is the light blue. */
 export const CHAIR_COLOURS = ["#FFFFFF", "#F8BBD0", "#38BDF8"];
@@ -184,5 +180,3 @@ export const PLATE_SHAPES: { id: PlateShape; name: string; words: string }[] = [
   { id: "scalloped", name: "Scalloped", words: "round with a wavy scalloped edge" },
   { id: "square", name: "Square", words: "square with softly rounded corners" },
 ];
-/** The plate card's size: it sits inside a small (18 cm) plate with a wide rim round it (2026-10-29: 120 mm was too big). */
-export const PLATE_CARD_MM = 100;

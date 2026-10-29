@@ -7,17 +7,25 @@
 // drawing shows under three moving dots. 2026-10-28 ("render aşırı uzun
 // sürüyor"): the builder keeps this mounted on every step, so the customer can
 // carry on while it renders; onJob tells the builder how it is going.
+// 2026-10-29 (owner): first comes the top view of one place, stacked from
+// photos of each piece (TablePlace), which follows every change at once; on a
+// phone, where the preview sits under the choices, each change brings it into
+// view ("her değişimden sonra mobilde bu view'a otomatik yönlendir"), with a
+// way back to the choices.
 import { useEffect, useRef, useState } from "react";
 import { themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { tableCounts, type TableSetup } from "@/lib/studio/tableSetup";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import TableSketch from "@/components/studio/table/TableSketch";
 import TablePerspective from "@/components/studio/table/TablePerspective";
+import TablePlace from "@/components/studio/table/TablePlace";
 import { accountToken, loadClient } from "@/components/account/useAccount";
 import { RENDER_BUCKET } from "@/lib/renderKey";
 import { readNdjson } from "@/lib/ndjson";
 
-type View = "perspective" | "top" | "close";
+type View = "place" | "perspective" | "top" | "close";
+/** The builder's phone layout (app/blushy.css): the preview comes after the choices. */
+const PHONE = "(max-width: 860px)";
 /** The close-up that can be shown now, and the table (tableRenderKey) it shows. */
 interface Shown { key: string; close: string }
 /** How a close-up asked for in this visit is going. */
@@ -32,7 +40,7 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
   onStarted?: () => void;
   onJob?: (job: TableRenderJob) => void;
 }) {
-  const [view, setView] = useState<View>("perspective");
+  const [view, setView] = useState<View>("place");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [expired, setExpired] = useState(false);
@@ -115,9 +123,39 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startNow, table?.enabled]);
 
+  // On a phone, every change brings the top view into sight (typing: once the
+  // field is left), and "Back to your choices" returns to where the change was made.
+  const [backTo, setBackTo] = useState<number | null>(null);
+  const changeKey = table?.enabled ? tableRenderKey(table, config.theme) : "";
+  const lastKey = useRef(changeKey);
+  useEffect(() => {
+    // Not when the table is first added (the customer is about to choose), only on a change to it.
+    const before = lastKey.current;
+    lastKey.current = changeKey;
+    if (!changeKey || !before || changeKey === before || typeof window === "undefined" || !window.matchMedia?.(PHONE).matches) return;
+    const jump = () => {
+      const card = document.getElementById("table-preview-card");
+      if (!card) return;
+      setView("place");
+      setBackTo((b) => b ?? window.scrollY);
+      card.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    const field = document.activeElement;
+    if (field instanceof HTMLInputElement && field.type === "text") {
+      // Words: once the customer leaves the field (or presses Enter), not on every letter.
+      const left = (e: Event) => { if (e.type === "focusout" || (e as KeyboardEvent).key === "Enter") { stop(); jump(); } };
+      const stop = () => { document.removeEventListener("focusout", left, true); document.removeEventListener("keydown", left, true); };
+      document.addEventListener("focusout", left, true);
+      document.addEventListener("keydown", left, true);
+      return stop;
+    }
+    const t = setTimeout(jump, 350);
+    return () => clearTimeout(t);
+  }, [changeKey]);
+
   const loading = status === "loading";
   // The close-up tab shows the photo, or the drawing under the dots while it is made.
-  const shownView: View = view === "close" && !(current || loading) ? "perspective" : view;
+  const shownView: View = view === "close" && !(current || loading) ? "place" : view;
   const src = shownView === "close" && current ? shown!.close : undefined;
   // A render of an earlier version of the table.
   const stale = !expired && !current && !!table && ((!!shown && shown.key !== tableRenderKey(table, config.theme)) || (!!render && render.key !== tableRenderKey(table, config.theme)));
@@ -127,8 +165,9 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
       <div className="head">
         <span className="title">✦ Your kids&apos; table</span>
         <div className="views" role="tablist" aria-label="Table view">
+          {tab("place", "Top view")}
+          {tab("top", "Whole table")}
           {tab("perspective", "Perspective")}
-          {tab("top", "Top view")}
           {(current || loading) && tab("close", "Close-up")}
         </div>
       </div>
@@ -142,7 +181,8 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
               alt="Your kids' table, one seat up close" onError={() => (src.startsWith("data:") ? setExpired(true) : retry())} />
           ) : (
             <div className={loading && shownView === "close" ? "bz-tb-wait on" : "bz-tb-wait"}>
-              {shownView === "top" ? <TableSketch table={table} palette={theme.balloonColors} accent={theme.accent} className="bz-tb-sketch" />
+              {shownView === "place" ? <TablePlace table={table} theme={theme} className="bz-tb-place" />
+                : shownView === "top" ? <TableSketch table={table} palette={theme.balloonColors} accent={theme.accent} className="bz-tb-sketch" />
                 : <TablePerspective table={table} palette={theme.balloonColors} accent={theme.accent} className="bz-tb-sketch" />}
               {loading && shownView === "close" && (
                 <div className="veil" role="status" data-testid="table-render-wait">
@@ -156,9 +196,14 @@ export default function TablePreview({ config, setTable, onSignInNeeded, startNo
           <p className="note">
             {src ? "Your close-up — one seat, made from the pictures you chose."
               : shownView === "close" ? "Your close-up is on its way."
+              : shownView === "place" ? <>One place from above, made from photos of each piece — your colours and words show straight away.</>
               : shownView === "top" ? <>From above, to scale · {tableCounts(table).tables} table{tableCounts(table).tables > 1 ? "s" : ""} · {table.kids} kids — a drawing, not a photo.</>
                 : <>From the front · {table.kids} kids — a drawing, not a photo.</>}
           </p>
+          {backTo !== null && (
+            <button type="button" className="bz-tb-back" data-testid="table-back-to-choices"
+              onClick={() => { window.scrollTo({ top: backTo, behavior: "smooth" }); setBackTo(null); }}>↑ Back to your choices</button>
+          )}
           <div className="bz-tb-render" data-testid="table-render-box">
             <div className="scene" role="radiogroup" aria-label="Where the party is">
               {(["garden", "indoor"] as const).map((sc) => (

@@ -1,21 +1,20 @@
-// The kids' table's plain colours, plate card and words colour (2026-10-28):
-// plain plates (a big and a small one, with the theme's round card in the
-// small one) and plain cups in any colour, one napkin band in a colour with
+// The kids' table's plain colours and words colour (2026-10-28): plain plates
+// (a big and a small one; the round card in it went on 2026-10-29) and plain cups in any colour, one napkin band in a colour with
 // or without a name, the kids' chair in every plain colour, the printed words
 // in the theme's colour unless the customer picks one — and the production
-// list that comes out of it, plate cards included.
+// list that comes out of it.
 import fs from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 import { strFromU8, unzipSync } from "fflate";
 import sharp from "sharp";
 import { themeById } from "@/lib/config";
-import { CHAIR_COLOURS, NONE, PLAIN_COLOURS, PLATE_CARD_MM, optionPhoto, plateCardArt, tableItem, tableOption } from "@/lib/studio/tableCatalog";
+import { CHAIR_COLOURS, NONE, PLAIN_COLOURS, optionPhoto, tableItem, tableOption } from "@/lib/studio/tableCatalog";
 import { DEFAULT_CHAIR_COLOR, defaultTableSetup, itemColour, readTableSetup, wordsColour } from "@/lib/studio/tableSetup";
 import { colourWords, referencePictures, tablePrompt, tableRenderKey } from "@/lib/studio/tableRender";
 import { tableCloseGuideSvg } from "@/lib/studio/tableCloseGuide";
 import { productionLine, tableProductionList } from "@/lib/studio/tableProduction";
-import { buildDesignPack, plateCardPng } from "@/lib/pack/designPack";
+import { buildDesignPack } from "@/lib/pack/designPack";
 import { buildPackSpec } from "@/lib/pack/spec";
 import { fixtureById } from "../fixtures/configs";
 
@@ -49,11 +48,6 @@ describe("the options", () => {
     }
     // A colour that is not a plain one keeps the owner's photo.
     expect(optionPhoto("chairs", chair, "frozen", "#123456")).toBe(chair.photo);
-  });
-  it("the plate card wears the chosen placemats' design, or the pattern one", () => {
-    expect(plateCardArt(table({ placemats: "sparkle" }).choices, "unicorn")).toBe("/design/table/placemats/unicorn/sparkle.webp");
-    expect(plateCardArt(table({ placemats: NONE }).choices, "unicorn")).toBe("/design/table/placemats/unicorn/pattern.webp");
-    expect(fs.existsSync(path.join(process.cwd(), "public", plateCardArt(table().choices, "frozen")))).toBe(true);
   });
 });
 
@@ -106,10 +100,10 @@ describe("in the render", () => {
     expect(p).toContain("a pastel pink children's chair whose back is a curved top rail");
     expect(p).toContain("a plain matte pastel lemon yellow paper cup (no straw)");
   });
-  it("a big plate with a small one in it, and the round card in the small one", () => {
-    expect(p).toContain("two plain matte pastel baby blue paper plates, round: a big plate with a smaller plate of the same kind sitting in it, and lying in the small plate a round printed paper card in the same printed design as the placemats");
-    expect(p).toContain("one big plate, one small plate and one card on each placemat");
-    expect(tablePrompt(table({ placemats: NONE }), frozen, [])).toContain("a round printed paper card in a design printed with snowflakes and little stars");
+  it("a big plate with a small one in it, and nothing in the small one (2026-10-29: no card)", () => {
+    expect(p).toContain("two plain matte pastel baby blue paper plates, round: a big plate with a smaller plate of the same kind sitting in it");
+    expect(p).toContain("one big plate and one small plate on each placemat, both empty");
+    expect(p).not.toMatch(/printed paper card|plate card/i);
   });
   it("the band in its colour, with no tag without a name", () => {
     expect(p).toContain("a plain pastel lilac paper napkin band, with no tag and no words");
@@ -119,17 +113,14 @@ describe("in the render", () => {
     expect(p).toContain(`in elegant ${colourWords("#8E24AA")} serif capitals`);
     expect(p).toContain('with "Arya" printed on the label in purple letters');
   });
-  it("the drawing: the chair, the plates, the card and the words in their colours", () => {
-    const svg = tableCloseGuideSvg(t, frozen, { placemat: "data:image/jpeg;base64,AAAA", card: "data:image/jpeg;base64,AAAA" });
+  it("the drawing: the chair, the plates and the words in their colours", () => {
+    const svg = tableCloseGuideSvg(t, frozen, { placemat: "data:image/jpeg;base64,AAAA" });
     expect(svg).toContain('fill="#F8BBD0"'); // the chairs
     expect(svg).toContain('fill="#BAE6FD"'); // the plates
     expect(svg).toContain('fill="#FEF08A"'); // the cups
     expect(svg).toContain('fill="#DDD6FE"'); // the bands
     expect(svg).toContain('fill="#8E24AA"'); // the words
-    expect(svg).not.toContain('id="card-art"'); // the same picture as the placemats: sent once
-    expect((svg.match(/clip-path="url\(#card-\d+\)"><use href="#mat-art"/g) ?? []).length).toBeGreaterThan(0);
-    const own = tableCloseGuideSvg({ ...t, choices: { ...t.choices, placemats: NONE } }, frozen, { card: "data:image/jpeg;base64,BBBB" });
-    expect(own).toContain('<image id="card-art" href="data:image/jpeg;base64,BBBB"');
+    expect(svg).not.toMatch(/card/);
   });
 });
 
@@ -138,10 +129,10 @@ describe("the production list", () => {
     { kids: 12, chairColor: "#F8BBD0", plateColor: "#BAE6FD", textColor: "#8E24AA", words: { placemats: "Arya turns 6", cutleryHolder: "Arya", bottleLabel: "Arya" } });
   const rows = tableProductionList(t, unicorn);
   const row = (item: string) => rows.find((r) => r.item === item)!;
-  it("a big and a small plate for every child, and a round card for every small plate", () => {
+  it("a big and a small plate for every child, and no plate card", () => {
     expect(row("Big plates")).toMatchObject({ quantity: 12, colour: "#BAE6FD" });
     expect(row("Small plates")).toMatchObject({ quantity: 12, colour: "#BAE6FD" });
-    expect(row("Plate cards")).toMatchObject({ quantity: 12, print: { widthMm: PLATE_CARD_MM, heightMm: PLATE_CARD_MM, round: true, art: "/design/table/placemats/unicorn/watercolour.webp" } });
+    expect(rows.some((r) => /card/i.test(r.item))).toBe(false);
   });
   it("the printed pieces with their words and words colour; the chair in its colour", () => {
     expect(row("Placemats").print).toMatchObject({ widthMm: 420, heightMm: 297, words: "Arya turns 6", wordsColour: "#8E24AA" });
@@ -150,7 +141,7 @@ describe("the production list", () => {
     expect(row("Name tags").print).toMatchObject({ words: "Arya" });
     expect(row("Chairs")).toMatchObject({ quantity: 12, colour: "#F8BBD0" });
     expect(row("Chairs").detail).toContain("pastel pink");
-    expect(productionLine(row("Plate cards"))).toContain(`print Ø ${PLATE_CARD_MM} mm`);
+    expect(productionLine(row("Placemats"))).toContain("print 420 × 297 mm");
     expect(row("Table").quantity).toBe(2); // 12 kids at 10-seat tables
   });
   it("no name, no tags; the low table has no chairs; no table, no list", () => {
@@ -158,24 +149,17 @@ describe("the production list", () => {
     expect(tableProductionList({ ...t, choices: { ...t.choices, table: "low" } }, unicorn).some((r) => r.item === "Chairs")).toBe(false);
     expect(tableProductionList({ ...t, enabled: false }, unicorn)).toEqual([]);
   });
-  it("in the Design Pack: the list, kids_table.csv and the plate card cut round at 300 dpi", async () => {
+  it("in the Design Pack: the list and kids_table.csv, no print folder", async () => {
     const config = { ...fixtureById("N01-soft-signature-round").config, theme: "unicorn" as const, table: t };
     expect(buildPackSpec(config).kidsTable.length).toBeGreaterThan(5);
     const pack = await buildDesignPack({ config, packId: "KT1" });
-    const card = pack.files.find((f) => f.startsWith("5_PRINT_FILES/kids_table/plate_card"))!;
-    expect(card).toBe(`5_PRINT_FILES/kids_table/plate_card_diameter_${PLATE_CARD_MM}mm_x12.png`);
+    expect(pack.files.some((f) => f.startsWith("5_PRINT_FILES"))).toBe(false);
     const entries = unzipSync(pack.zip);
-    const png = await sharp(Buffer.from(entries[`PartyMuse_DesignPack_KT1/${card}`])).metadata();
-    expect(png.width).toBe(Math.round((PLATE_CARD_MM / 25.4) * 300));
-    expect(png.hasAlpha).toBe(true);
     const csv = strFromU8(entries["PartyMuse_DesignPack_KT1/4_LISTS/kids_table.csv"]);
-    expect(csv).toContain(`Plate cards,`);
-    expect(csv).toContain(`diameter ${PLATE_CARD_MM}`);
+    expect(csv).toContain("Big plates,");
+    expect(csv).toContain("420 x 297");
     // A design without a table: none of it.
     expect((await buildDesignPack({ config: fixtureById("N01-soft-signature-round").config, packId: "KT2" })).files.some((f) => f.includes("kids_table"))).toBe(false);
-    // A sample: the list, but no print file.
-    expect((await buildDesignPack({ config, packId: "KT3", sample: true })).files.some((f) => f.startsWith("5_PRINT_FILES"))).toBe(false);
-    expect(await plateCardPng("/design/table/nothing.webp", 120)).toBeUndefined();
   }, 60_000);
 });
 
@@ -193,16 +177,14 @@ describe("the trimmed options (2026-10-29)", () => {
     const old = readTableSetup({ enabled: true, choices: { napkins: "striped", placemats: "pattern", plates: "holo_square", cups: "white_straw", bottleLabel: "pattern", partyHats: "crown" } }, frozen)!;
     expect(old.choices).toMatchObject({ napkins: "printed", placemats: "watercolour", plates: "iridescent", cups: "plain", bottleLabel: NONE, partyHats: "cone" });
   });
-  it("the plain placemat and label in their colours, with the words; the card in the theme's pattern design", () => {
+  it("the plain placemat and label in their colours, with the words", () => {
     const t = table({ placemats: "plain", bottleLabel: "plain" }, { placematColor: "#BBF7D0", labelColor: "#FFD1A4", words: { placemats: "Arya turns 6", bottleLabel: "Arya" } });
     expect(readTableSetup(t, frozen)).toMatchObject({ placematColor: "#BBF7D0", labelColor: "#FFD1A4" });
-    expect(plateCardArt(t.choices, "frozen")).toBe("/design/table/placemats/frozen/pattern.webp");
     const p = tablePrompt(t, frozen, []);
     expect(p).toContain("a plain matte pastel mint green A3 paper placemat");
     expect(p).toContain("The placemats are plain pastel mint green paper, with nothing printed on them but the words.");
     expect(p).toContain("a small clear water bottle wrapped in a plain matte pastel peach paper label with \"Arya\" printed");
     expect(p).not.toContain("(image 0)");
-    expect(p).toContain("a round printed paper card in a design printed with snowflakes");
     const svg = tableCloseGuideSvg(t, frozen);
     expect(svg).toContain('fill="#BBF7D0"');
     expect(svg).toContain('fill="#FFD1A4"');

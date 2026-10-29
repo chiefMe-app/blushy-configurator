@@ -4,7 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { themeById } from "@/lib/config";
-import { NONE, PLATE_CARD_MM } from "@/lib/studio/tableCatalog";
+import { NONE } from "@/lib/studio/tableCatalog";
 import { defaultTableSetup, readTableRender, readTableSetup } from "@/lib/studio/tableSetup";
 import { MAX_REFERENCES, referencePictures, tablePrompt, tableRenderKey } from "@/lib/studio/tableRender";
 import { placematWordsSize, tableCloseGuideSvg } from "@/lib/studio/tableCloseGuide";
@@ -193,9 +193,6 @@ describe("the layout drawing", () => {
     expect(placematWordsSize(["ARYA", "TURNS", "6"])).toBeGreaterThan(3); // 3 cm before
     // A long word is set smaller, never into the plate.
     expect(placematWordsSize(["ALEXANDRA"])).toBeLessThan(placematWordsSize(["ARYA"]));
-  });
-  it("the plate card is drawn smaller, inside the small plate (2026-10-29)", () => {
-    expect(PLATE_CARD_MM).toBe(100);
   });
   it("the top view: one place straight down, the child at the bottom, the standing pieces over the flat ones", () => {
     const t = { ...table({ cutleryHolder: "band", placemats: "watercolour", cups: "plain", partyHats: "cone" }), words: { placemats: "Arya turns 6" } };

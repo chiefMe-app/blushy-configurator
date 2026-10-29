@@ -149,3 +149,18 @@ export function arrangeTables(t: Pick<TableSetup, "kids" | "choices">): { tables
 
 /** An outline as an SVG path. */
 export const outlinePath = (pts: Pt[]) => pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join("") + "Z";
+
+/**
+ * The two places a close-up looks at: across the table from each other at a
+ * long one, side by side round a round or flower one. The second is the place
+ * the top view looks down on at a long table (the first at a round one).
+ */
+export function focusSeats(table: Placed): [Seat, Seat] {
+  const seats = table.seats;
+  if (table.kind === "round" || table.kind === "flower") return [seats[0], seats[1] ?? seats[0]];
+  const cx = table.x + table.w / 2;
+  const far = seats.filter((s) => Math.sin(s.facing) > 0), near = seats.filter((s) => Math.sin(s.facing) <= 0);
+  const a = [...far].sort((p, q) => Math.abs(p.ex - cx) - Math.abs(q.ex - cx))[0] ?? seats[0];
+  const b = [...near].sort((p, q) => Math.abs(p.ex - a.ex) - Math.abs(q.ex - a.ex))[0] ?? seats[1] ?? a;
+  return [a, b];
+}

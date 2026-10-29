@@ -156,9 +156,8 @@ export default function TablePerspective({ table, palette, accent, className, ca
           ? <rect x={x - 9} y={y - 3.8} width={18} height={7.6} rx={1.5} fill={plateFill} stroke="#8C99A6" strokeWidth={0.8} />
           : <ellipse cx={x} cy={y} rx={9} ry={3.8} fill={plateFill} stroke={ch.plates === "white_gold" ? GOLD : foil ? "#8C99A6" : INK} strokeWidth={ch.plates === "white_gold" ? 1.4 : 0.8} strokeDasharray={(ch.plates === "plain" && table.plateShape === "scalloped") || ch.plates === "silver" ? "2.2 1" : undefined} />}
         {ch.plates === "themed" && <ellipse cx={x} cy={y} rx={9} ry={3.8} fill="url(#cloth-print)" />}
-        {/* The small plate on the big one, with the theme's round card in it (2026-10-28). */}
+        {/* The small plate on the big one (2026-10-28). */}
         <ellipse cx={x} cy={y} rx={5.6} ry={2.4} fill={plateFill} stroke={foil ? "#8C99A6" : INK} strokeWidth={0.6} />
-        <ellipse cx={x} cy={y} rx={3.4} ry={1.45} fill={pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.4} />
         <rect x={x - 17} y={y - 3} width={6} height={5} rx={1} fill={ch.napkins === "striped" ? "#FCE7F3" : ch.napkins === "foil" ? "#DCEBF7" : table.napkinColor} stroke={INK} strokeWidth={0.5} />
         {ch.cutleryHolder !== NONE && <rect x={x - 16.5} y={y - 6} width={5} height={7} rx={0.8} fill={ch.cutleryHolder === "band" ? table.holderColor : pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.5} />}
         {ch.bottleLabel !== NONE && <g><rect x={cupX + 6} y={y - 14} width={4} height={12} rx={1.5} fill="#EAF4FB" stroke="#8C99A6" strokeWidth={0.6} /><rect x={cupX + 6} y={y - 9} width={4} height={4} fill={ch.bottleLabel === "sparkle" ? "#E9DDF7" : pal[(n + 2) % pal.length]} /><rect x={cupX + 6.8} y={y - 16} width={2.4} height={2} fill="#93C5FD" /></g>}

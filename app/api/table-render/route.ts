@@ -20,7 +20,7 @@ import { renderUser, takeAccountRender } from "@/lib/renderAccount";
 import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
 import { readTableSetup } from "@/lib/studio/tableSetup";
-import { optionPhoto, plateCardArt, tableOption } from "@/lib/studio/tableCatalog";
+import { optionPhoto, tableOption } from "@/lib/studio/tableCatalog";
 import { referencePictures, tablePrompt, tableRenderKey, type TableRender } from "@/lib/studio/tableRender";
 import { tableCloseGuideSvg, type TableView } from "@/lib/studio/tableCloseGuide";
 
@@ -92,15 +92,12 @@ export async function POST(req: NextRequest) {
           // Image 1: the drawing of the exact scene, the placemats wearing their own
           // design (2026-10-28 tests); then the chosen pieces' pictures — all made at once.
           const matPhoto = optionPhoto("placemats", tableOption("placemats", table.choices.placemats), theme.id);
-          // The round card in each small plate wears the placemats' design (the pattern one without placemats).
-          const cardPhoto = plateCardArt(table.choices, theme.id);
-          const [placemat, ownCard, photos] = await Promise.all([
+          const [placemat, photos] = await Promise.all([
             matPhoto ? optionPicture(matPhoto, req.nextUrl.origin) : undefined,
-            cardPhoto !== matPhoto ? optionPicture(cardPhoto, req.nextUrl.origin) : undefined,
             Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin))),
           ]);
           // A JPEG, not a PNG: the drawing with its placemat photos is a fraction of the upload.
-          const guide = await sharp(Buffer.from(tableCloseGuideSvg(table, theme, { placemat, card: ownCard ?? placemat }, view))).jpeg({ quality: 90 }).toBuffer();
+          const guide = await sharp(Buffer.from(tableCloseGuideSvg(table, theme, { placemat }, view))).jpeg({ quality: 90 }).toBuffer();
           const pictures = [`data:image/jpeg;base64,${guide.toString("base64")}`, ...photos];
           lap("prepared");
           const result = await fal.subscribe(MODEL, {

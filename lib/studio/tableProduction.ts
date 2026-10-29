@@ -1,10 +1,9 @@
 // The kids' table's production list (2026-10-28): every piece to buy or make,
 // how many, in which colour, and what has to be printed — the placemats, the
-// bottle labels, the name tags and, in every small plate, the round card in
-// the theme's design (the owner: "o da production list'te çıktı olarak
-// listede yer alacak"). Read from the table itself, like the Design Pack's
+// bottle labels and the name tags (the plate card of 2026-10-28 was taken out
+// the next day). Read from the table itself, like the Design Pack's
 // specification (lib/pack/spec.ts).
-import { PLATE_CARD_MM, PLATE_SHAPES, TABLE_ITEMS, onFloor, plateCardArt, tableOption } from "./tableCatalog";
+import { PLATE_SHAPES, TABLE_ITEMS, onFloor, tableOption } from "./tableCatalog";
 import { colourWords } from "./tableRender";
 import { clampKids, itemColour, tableCounts, wordsColour, wordsOn, type TableSetup } from "./tableSetup";
 
@@ -45,10 +44,6 @@ export function tableProductionList(t: TableSetup, theme: { id: string; accent: 
     if (item.key === "plates") {
       const shape = o.id === "plain" ? `, ${PLATE_SHAPES.find((p) => p.id === t.plateShape)?.name.toLowerCase() ?? "round"}` : "";
       rows.push({ ...base, item: "Big plates", detail: base.detail + shape }, { ...base, item: "Small plates", detail: base.detail + shape });
-      rows.push({
-        item: "Plate cards", detail: `Round card in each small plate, printed in the theme's design, diameter ${PLATE_CARD_MM} mm`, quantity: kids,
-        print: { widthMm: PLATE_CARD_MM, heightMm: PLATE_CARD_MM, round: true, art: plateCardArt(t.choices, themeId) },
-      });
     } else if (item.key === "placemats") {
       const w = wordsOn(t, "placemats");
       rows.push({ ...base, detail: `${base.detail}, A3`, print: { widthMm: 420, heightMm: 297, ...(art ? { art } : {}), ...(w ? { words: w, wordsColour: wordsColor } : {}) } });

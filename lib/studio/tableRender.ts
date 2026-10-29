@@ -134,10 +134,9 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
     const stack = placematWords ? placematWords.toUpperCase().split(/\s+/).map((w) => `"${w}"${w.length > 1 ? ` (${Array.from(w).join("-")})` : ""}`).join(" above ") : "";
     seat.push(`${word("placemats")}${exactly("placemats")}, lying flat on the table in front of the chair${stack ? `, with the words printed straight onto the placemat paper in its bottom-right corner in elegant ${colourWords(wordsColour(t, theme))} serif capitals, stacked one word per line (${stack}) — no sticker, no label, never on the plate` : ""}`);
   }
-  // 2026-10-28 (owner): a big plate with a small one on it, and the theme's round card in the small one.
+  // 2026-10-28 (owner): a big plate with a small one on it (2026-10-29: nothing in the small one).
   const themedMats = !!tableOption("placemats", c.placemats)?.themed;
-  const cardDesign = themedMats ? "the same printed design as the placemats" : `a design printed with ${motifOf(theme.id)}`;
-  if (word("plates")) seat.push(`in the middle of the placemat, two ${word("plates")}${exactly("plates")}: a big plate with a smaller plate of the same kind sitting in it, and lying in the small plate a round printed paper card in ${cardDesign}, exactly as image 1 shows — one big plate, one small plate and one card${top ? "" : " on each placemat"}, the card small with a wide rim of the small plate showing all round it, nothing else on them and nothing written on them, and nothing lying beside the plates: to their right is bare printed placemat`);
+  if (word("plates")) seat.push(`in the middle of the placemat, two ${word("plates")}${exactly("plates")}: a big plate with a smaller plate of the same kind sitting in it, exactly as image 1 shows — one big plate and one small plate${top ? "" : " on each placemat"}, both empty, nothing on them and nothing written on them, and nothing lying beside the plates: to their right is bare placemat`);
   const napkin = `${word("napkins")}${exactly("napkins")}`, cutlery = `${word("cutlery")}${exactly("cutlery")}`;
   const name = holderWords ? ` with a little tag with the name "${holderWords}" on it` : ", with no tag and no words";
   const like = pic("cutleryHolder") ? `, arranged exactly like the cutlery holder in image ${pic("cutleryHolder")}` : "";

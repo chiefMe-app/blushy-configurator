@@ -1,0 +1,124 @@
+{
+ "bottle": {
+  "w": 231,
+  "h": 720,
+  "label": [
+   0.0082,
+   0.3506,
+   0.9877,
+   0.3761
+  ]
+ },
+ "bottle-label": {
+  "w": 231,
+  "h": 720
+ },
+ "centrepiece-balloons": {
+  "w": 720,
+  "h": 627
+ },
+ "centrepiece-florals": {
+  "w": 635,
+  "h": 720
+ },
+ "centrepiece-toppers": {
+  "w": 667,
+  "h": 720
+ },
+ "chair-blue_kids": {
+  "w": 582,
+  "h": 720
+ },
+ "chair-bow_kids": {
+  "w": 546,
+  "h": 720
+ },
+ "chair-white_kids": {
+  "w": 720,
+  "h": 689
+ },
+ "cup-iridescent": {
+  "w": 611,
+  "h": 720
+ },
+ "cup-plain-in": {
+  "w": 609,
+  "h": 720
+ },
+ "cup-plain-out": {
+  "w": 609,
+  "h": 720
+ },
+ "cushion": {
+  "w": 720,
+  "h": 682
+ },
+ "cutlery-dipped-0": {
+  "w": 154,
+  "h": 720
+ },
+ "cutlery-dipped-1": {
+  "w": 117,
+  "h": 720
+ },
+ "cutlery-dipped-2": {
+  "w": 189,
+  "h": 720
+ },
+ "cutlery-glitter-0": {
+  "w": 144,
+  "h": 720
+ },
+ "cutlery-glitter-1": {
+  "w": 103,
+  "h": 720
+ },
+ "cutlery-glitter-2": {
+  "w": 188,
+  "h": 720
+ },
+ "cutlery-wooden-0": {
+  "w": 139,
+  "h": 720
+ },
+ "cutlery-wooden-1": {
+  "w": 98,
+  "h": 720
+ },
+ "cutlery-wooden-2": {
+  "w": 177,
+  "h": 720
+ },
+ "hat-cone": {
+  "w": 540,
+  "h": 720
+ },
+ "plates-iridescent": {
+  "w": 720,
+  "h": 692
+ },
+ "plates-plain-round": {
+  "w": 720,
+  "h": 716
+ },
+ "plates-plain-scalloped": {
+  "w": 714,
+  "h": 720
+ },
+ "plates-plain-square": {
+  "w": 685,
+  "h": 720
+ },
+ "plates-silver": {
+  "w": 720,
+  "h": 704
+ },
+ "pocket": {
+  "w": 320,
+  "h": 720
+ },
+ "tag": {
+  "w": 720,
+  "h": 430
+ }
+}
