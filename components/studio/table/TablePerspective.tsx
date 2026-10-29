@@ -143,18 +143,18 @@ export default function TablePerspective({ table, palette, accent, className, ca
       const inward = 16;
       const px = s.ex + Math.cos(s.facing) * inward, py = s.ey + Math.sin(s.facing) * inward;
       const [x, y] = P(px, py, TABLE_H);
-      const plateFill = ch.plates === "plain" ? table.plateColor : ch.plates === "white_gold" ? "#fff" : ch.plates === "iridescent" ? "#EBDDF7" : ch.plates === "holo_square" ? "#E2E7ED" : ch.plates === "silver" ? "#E5E8EC" : ch.plates === "pastel" || ch.plates === "scalloped" ? PASTELS[n % PASTELS.length] : pal[n % pal.length];
-      const foil = ch.plates === "iridescent" || ch.plates === "holo_square" || ch.plates === "silver";
+      const plateFill = ch.plates === "plain" ? table.plateColor : ch.plates === "white_gold" ? "#fff" : ch.plates === "iridescent" ? "#EBDDF7" : ch.plates === "silver" ? "#E5E8EC" : ch.plates === "pastel" || ch.plates === "scalloped" ? PASTELS[n % PASTELS.length] : pal[n % pal.length];
+      const foil = ch.plates === "iridescent" || ch.plates === "silver";
+      const square = ch.plates === "plain" && table.plateShape === "square";
       const cupX = x + Math.cos(s.facing + turn - Math.PI / 2) * 11;
       return <g key={`s-${n}`} transform={at(x, y, K(px, py) * SET)}>
-        {ch.placemats !== NONE && <rect x={x - 21} y={y - 7.5} width={42} height={15} rx={1.2} fill={pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.5} />}
-        {ch.placemats === "pattern" && <rect x={x - 21} y={y - 7.5} width={42} height={15} rx={1.2} fill="url(#cloth-print)" />}
+        {ch.placemats !== NONE && <rect x={x - 21} y={y - 7.5} width={42} height={15} rx={1.2} fill={ch.placemats === "plain" ? table.placematColor : pal[(n + 1) % pal.length]} stroke={INK} strokeWidth={0.5} />}
         {ch.placemats === "watercolour" && <rect x={x - 16} y={y - 5} width={32} height={10} rx={4} fill="#fff" opacity={0.55} />}
         {ch.placemats === "sparkle" && <rect x={x - 21} y={y - 7.5} width={42} height={15} rx={1.2} fill="url(#sequin)" />}
         {ch.chargers !== NONE && <ellipse cx={x} cy={y} rx={12.5} ry={5.3} fill={ch.chargers === "gold" ? GOLD : ch.chargers === "rattan" ? "#D9B98C" : "#EEF5FA"} stroke={INK} strokeWidth={0.6} />}
-        {ch.plates === "holo_square"
+        {square
           ? <rect x={x - 9} y={y - 3.8} width={18} height={7.6} rx={1.5} fill={plateFill} stroke="#8C99A6" strokeWidth={0.8} />
-          : <ellipse cx={x} cy={y} rx={9} ry={3.8} fill={plateFill} stroke={ch.plates === "white_gold" ? GOLD : foil ? "#8C99A6" : INK} strokeWidth={ch.plates === "white_gold" ? 1.4 : 0.8} strokeDasharray={ch.plates === "scalloped" || ch.plates === "shaped" || ch.plates === "silver" ? "2.2 1" : undefined} />}
+          : <ellipse cx={x} cy={y} rx={9} ry={3.8} fill={plateFill} stroke={ch.plates === "white_gold" ? GOLD : foil ? "#8C99A6" : INK} strokeWidth={ch.plates === "white_gold" ? 1.4 : 0.8} strokeDasharray={(ch.plates === "plain" && table.plateShape === "scalloped") || ch.plates === "silver" ? "2.2 1" : undefined} />}
         {ch.plates === "themed" && <ellipse cx={x} cy={y} rx={9} ry={3.8} fill="url(#cloth-print)" />}
         {/* The small plate on the big one, with the theme's round card in it (2026-10-28). */}
         <ellipse cx={x} cy={y} rx={5.6} ry={2.4} fill={plateFill} stroke={foil ? "#8C99A6" : INK} strokeWidth={0.6} />

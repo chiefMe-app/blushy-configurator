@@ -2,7 +2,7 @@
 // (BuilderConfig.table), chosen in the Decor step after the backdrop, item by
 // item from lib/studio/tableCatalog.ts. Pure data and sums — no UI, no config
 // import (lib/config.ts uses the price lines).
-import { NONE, TABLE_ITEMS, onFloor, plainColour, tableOption, type TableItemKey } from "./tableCatalog";
+import { CHAIR_COLOURS, NONE, PLATE_SHAPES, TABLE_ITEMS, onFloor, tableOption, type PlateShape, type TableItemKey } from "./tableCatalog";
 
 export interface TableSetup {
   /** false: the customer skipped the table. */
@@ -18,6 +18,11 @@ export interface TableSetup {
   cupColor: string;
   holderColor: string;
   chairColor: string;
+  /** The plain placemats' and plain bottle labels' colours (2026-10-29). */
+  placematColor: string;
+  labelColor: string;
+  /** The plain plates' shape. */
+  plateShape: PlateShape;
   /** The colour of the printed words on the placemats and bottle labels, once the customer picks one (wordsColour). */
   textColor?: string;
   /** The customer's own words printed on the placemats ("Arya turns 6"), the cutlery holders and the bottle labels. */
@@ -61,8 +66,8 @@ export const clampKids = (n: number) => Math.max(MIN_KIDS, Math.min(MAX_KIDS, Ma
 const DEFAULT_CHOICES: Record<TableItemKey, string> = {
   table: "standard", chairs: "white_kids",
   // The owner's tables show bare unless a cloth is chosen (2026-10-28).
-  tablecloth: NONE, napkins: "striped",
-  placemats: "pattern", plates: "iridescent", cups: "white_straw", cutlery: "wooden", cutleryHolder: NONE,
+  tablecloth: NONE, napkins: "printed",
+  placemats: "watercolour", plates: "iridescent", cups: "plain", cutlery: "wooden", cutleryHolder: NONE,
   centrepiece: "balloons", bottleLabel: NONE, partyHats: "cone",
   // Not offered at the kids' table (the grown-ups' table will have them).
   runner: NONE, chargers: NONE, chairDecor: NONE, nameCards: NONE,
@@ -88,9 +93,10 @@ export function cleanPlacematText(v: unknown): string | undefined {
 }
 
 /** Which colour each coloured item takes. */
-export type ColourField = "clothColor" | "napkinColor" | "plateColor" | "cupColor" | "holderColor" | "chairColor";
+export type ColourField = "clothColor" | "napkinColor" | "plateColor" | "cupColor" | "holderColor" | "chairColor" | "placematColor" | "labelColor";
 export const COLOUR_OF: Partial<Record<TableItemKey, ColourField>> = {
   tablecloth: "clothColor", napkins: "napkinColor", plates: "plateColor", cups: "cupColor", cutleryHolder: "holderColor", chairs: "chairColor",
+  placemats: "placematColor", bottleLabel: "labelColor",
 };
 /** The colour an item's chosen option takes, if it takes one (the cloth always; of the others, the plain options). */
 export function itemColour(t: TableSetup, key: TableItemKey): string | undefined {
@@ -120,6 +126,9 @@ export function defaultTableSetup(theme: { balloonColors: string[]; accent: stri
     cupColor: theme.balloonColors[2] ?? theme.accent,
     holderColor: theme.balloonColors[1] ?? theme.accent,
     chairColor: DEFAULT_CHAIR_COLOR,
+    placematColor: theme.balloonColors[1] ?? theme.accent,
+    labelColor: theme.balloonColors[1] ?? theme.accent,
+    plateShape: "round",
   };
 }
 
@@ -183,8 +192,11 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     plateColor: colour(r.plateColor, base.plateColor),
     cupColor: colour(r.cupColor, base.cupColor),
     holderColor: colour(r.holderColor, base.holderColor),
-    // The chair's pictures come only in the plain colours.
-    chairColor: typeof r.chairColor === "string" && plainColour(r.chairColor) ? plainColour(r.chairColor)!.hex : base.chairColor,
+    // The chair's pictures come only in its own colours.
+    chairColor: CHAIR_COLOURS.find((c) => typeof r.chairColor === "string" && c === r.chairColor.toUpperCase()) ?? base.chairColor,
+    placematColor: colour(r.placematColor, base.placematColor),
+    labelColor: colour(r.labelColor, base.labelColor),
+    plateShape: PLATE_SHAPES.find((p) => p.id === r.plateShape)?.id ?? base.plateShape,
     ...(typeof r.textColor === "string" && HEX.test(r.textColor) ? { textColor: r.textColor } : {}),
     ...(readWords(r) ? { words: readWords(r) } : {}),
     ...(r.scene === "garden" || r.scene === "indoor" ? { scene: r.scene } : {}),

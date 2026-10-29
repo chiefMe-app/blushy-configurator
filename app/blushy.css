@@ -1255,3 +1255,7 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-render .busy .dots i { width: 8px; height: 8px; }
 @keyframes bz-dot { 0%, 80%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-9px); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .bz-tb-preview .dots i, .bz-tb-job .dots i { animation-duration: 2.4s; } }
+/* The plain plates' shape (2026-10-29). */
+.bz-tb-shapes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.bz-tb-shapes button { font: 700 12.5px var(--bz-sans); color: var(--bz-ink); background: #fff; border: 1.5px solid #f2dde6; border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+.bz-tb-shapes button.on { border-color: var(--bz-pink); color: var(--bz-pink); background: #fff5f9; }

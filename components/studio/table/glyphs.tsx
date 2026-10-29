@@ -22,8 +22,12 @@ export interface GlyphColours {
   cup?: string;
   holder?: string;
   card?: string;
-  /** The kids' chair's colour (it comes in every plain colour). */
+  /** The kids' chair's colour (white, pink or light blue). */
   chair?: string;
+  /** The plain placemats', plain bottle labels' colours and the plain plates' shape (2026-10-29). */
+  placemat?: string;
+  label?: string;
+  plateShape?: string;
   /** Which seat (varies the colours round the table). */
   seat?: number;
 }
@@ -89,6 +93,7 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
       return null;
     case "placemats":
       // The kids' A3 placemats (42 × 29.7 cm), in the theme's design.
+      if (id === "plain") return <rect x={-21} y={-15} width={42} height={30} rx={1.5} fill={c.placemat ?? pick(c, 1)} stroke={INK} strokeWidth={0.6} />;
       if (id === "pattern" || id === "watercolour" || id === "sparkle") return <g>
         <rect x={-21} y={-15} width={42} height={30} rx={1.5} fill={pick(c, 1)} stroke={INK} strokeWidth={0.6} />
         {id === "pattern" && <rect x={-21} y={-15} width={42} height={30} rx={1.5} fill="url(#napkin-print)" />}
@@ -101,7 +106,12 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
       return null;
     case "plates": {
       // The kids' table's paper plates; white & gold and pastel melamine are the grown-ups'.
-      if (id === "plain") return <g><circle r={10} fill={c.plate ?? pick(c, 0)} stroke={INK} strokeWidth={0.8} /><circle r={7.5} fill={c.plate ?? pick(c, 0)} stroke={INK} strokeWidth={0.6} /><circle r={4.3} fill={c.accent} opacity={0.35} /></g>;
+      if (id === "plain") {
+        const fill = c.plate ?? pick(c, 0);
+        const shape = (r: number, w: number) => c.plateShape === "square" ? <rect x={-r * 0.92} y={-r * 0.92} width={r * 1.84} height={r * 1.84} rx={r * 0.2} fill={fill} stroke={INK} strokeWidth={w} />
+          : c.plateShape === "scalloped" ? <path d={scallop(r, 16)} fill={fill} stroke={INK} strokeWidth={w} /> : <circle r={r} fill={fill} stroke={INK} strokeWidth={w} />;
+        return <g>{shape(10, 0.8)}{shape(7.5, 0.6)}<circle r={4.3} fill={c.accent} opacity={0.35} /></g>;
+      }
       if (id === "iridescent") return <path d={Array.from({ length: 8 }, (_, i) => { const a = Math.PI / 8 + (i * Math.PI) / 4; return `${i ? "L" : "M"}${(Math.cos(a) * 10).toFixed(1)},${(Math.sin(a) * 10).toFixed(1)}`; }).join("") + "Z"} fill="#EBDDF7" stroke="#A78BC9" strokeWidth={0.9} />;
       if (id === "holo_square") return <g><rect x={-9.5} y={-9.5} width={19} height={19} rx={2.5} fill="#E2E7ED" stroke="#8C99A6" strokeWidth={0.9} /><rect x={-6.5} y={-6.5} width={13} height={13} rx={1.5} fill="none" stroke="#B9C3CD" strokeWidth={0.5} /></g>;
       if (id === "silver") return <g><circle r={9.5} fill="#E5E8EC" stroke="#8C99A6" strokeWidth={0.9} /><circle r={7} fill="none" stroke="#B9C3CD" strokeWidth={0.6} strokeDasharray="1 0.8" /></g>;
@@ -129,7 +139,7 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
       if (id === "tag") return <g><path d="M-6,0h12" stroke="#FFFFFF" strokeWidth={0.8} /><path d={scallop(3, 10)} fill="#FFFFFF" stroke={INK} strokeWidth={0.4} /><path d={star(0, 0, 1.8)} fill="#C9CED6" /></g>;
       return null;
     case "bottleLabel":
-      return <g><circle r={3.2} fill={id === "sparkle" ? "#E9DDF7" : "#EAF4FB"} stroke="#8C99A6" strokeWidth={0.6} /><circle r={1.5} fill="#93C5FD" stroke={INK} strokeWidth={0.3} /></g>;
+      return <g><circle r={3.2} fill={id === "plain" ? c.label ?? "#EAF4FB" : id === "sparkle" ? "#E9DDF7" : "#EAF4FB"} stroke="#8C99A6" strokeWidth={0.6} /><circle r={1.5} fill="#93C5FD" stroke={INK} strokeWidth={0.3} /></g>;
     case "nameCards":
       if (id === "tent") return <g><rect x={-6} y={-2} width={12} height={4} rx={0.8} fill="#fff" stroke={INK} strokeWidth={0.6} /><path d="M-6,0h12" stroke={INK} strokeWidth={0.3} /></g>;
       if (id === "tag") return <g><circle r={2.6} fill="#fff" stroke={INK} strokeWidth={0.6} /><path d="M2.6,0h3" stroke={c.accent} strokeWidth={0.6} /></g>;

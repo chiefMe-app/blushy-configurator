@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { strFromU8, unzipSync } from "fflate";
 import sharp from "sharp";
 import { themeById } from "@/lib/config";
-import { NONE, PLAIN_COLOURS, PLATE_CARD_MM, optionPhoto, plateCardArt, tableItem, tableOption } from "@/lib/studio/tableCatalog";
+import { CHAIR_COLOURS, NONE, PLAIN_COLOURS, PLATE_CARD_MM, optionPhoto, plateCardArt, tableItem, tableOption } from "@/lib/studio/tableCatalog";
 import { DEFAULT_CHAIR_COLOR, defaultTableSetup, itemColour, readTableSetup, wordsColour } from "@/lib/studio/tableSetup";
 import { colourWords, referencePictures, tablePrompt, tableRenderKey } from "@/lib/studio/tableRender";
 import { tableCloseGuideSvg } from "@/lib/studio/tableCloseGuide";
@@ -36,10 +36,12 @@ describe("the options", () => {
     for (const c of PLAIN_COLOURS) { expect(c.hex).toMatch(/^#[0-9A-F]{6}$/); expect(c.name).toBeTruthy(); }
     expect(new Set(PLAIN_COLOURS.map((c) => c.hex)).size).toBe(PLAIN_COLOURS.length);
   });
-  it("the kids' chair has a cut-out picture in every plain colour", async () => {
+  it("the kids' chair has a cut-out picture in white, pink and light blue (2026-10-29)", async () => {
     const chair = tableOption("chairs", "blue_kids")!;
     expect(chair).toMatchObject({ coloured: true, colouredPhotos: true });
-    for (const { hex } of PLAIN_COLOURS) {
+    expect(CHAIR_COLOURS).toEqual(["#FFFFFF", "#F8BBD0", "#38BDF8"]);
+    expect(fs.readdirSync(path.join(process.cwd(), "public/design/table/chairs/blue_kids")).sort()).toEqual(["38bdf8.webp", "f8bbd0.webp", "ffffff.webp"]);
+    for (const hex of CHAIR_COLOURS) {
       const photo = optionPhoto("chairs", chair, "frozen", hex)!;
       expect(photo).toBe(`/design/table/chairs/blue_kids/${hex.slice(1).toLowerCase()}.webp`);
       const meta = await sharp(path.join(process.cwd(), "public", photo)).metadata();
@@ -65,26 +67,28 @@ describe("the colours on the table", () => {
     expect(wordsColour({ textColor: "#1F2937" }, unicorn)).toBe("#1F2937");
     expect([t.plateColor, t.cupColor, t.holderColor].every((c) => /^#[0-9A-F]{6}$/i.test(c))).toBe(true);
   });
-  it("they read back; a table saved before them gets them; a chair colour must be a plain one", () => {
-    const back = readTableSetup({ ...table(), plateColor: "#E53935", cupColor: "#1E88E5", holderColor: "#43A047", chairColor: "#EC407A", textColor: "#1F2937" }, frozen)!;
-    expect(back).toMatchObject({ plateColor: "#E53935", cupColor: "#1E88E5", holderColor: "#43A047", chairColor: "#EC407A", textColor: "#1F2937" });
+  it("they read back; a table saved before them gets them; a chair colour must be one of its own", () => {
+    const back = readTableSetup({ ...table(), plateColor: "#E53935", cupColor: "#1E88E5", holderColor: "#43A047", chairColor: "#F8BBD0", textColor: "#1F2937" }, frozen)!;
+    expect(back).toMatchObject({ plateColor: "#E53935", cupColor: "#1E88E5", holderColor: "#43A047", chairColor: "#F8BBD0", textColor: "#1F2937" });
     const old = readTableSetup({ enabled: true, kids: 10, choices: { cutleryHolder: "pocket", cups: "pastel" } }, frozen)!;
     expect(old.textColor).toBeUndefined();
     expect(old.choices.cutleryHolder).toBe(NONE); // the pocket is gone: no holder
     expect(old.choices.cups).toBe(defaultTableSetup(frozen).choices.cups);
     expect(readTableSetup({ ...table(), chairColor: "#123456" }, frozen)!.chairColor).toBe(DEFAULT_CHAIR_COLOR);
+    // Hot pink was a chair colour on 2026-10-28 only.
+    expect(readTableSetup({ ...table(), chairColor: "#EC407A" }, frozen)!.chairColor).toBe(DEFAULT_CHAIR_COLOR);
     expect(readTableSetup({ ...table(), textColor: "red" }, frozen)!.textColor).toBeUndefined();
   });
   it("an item's colour only when its option takes one", () => {
     expect(itemColour(table({ plates: "plain" }, { plateColor: "#E53935" }), "plates")).toBe("#E53935");
     expect(itemColour(table({ plates: "silver" }, { plateColor: "#E53935" }), "plates")).toBeUndefined();
-    expect(itemColour(table({ chairs: "blue_kids" }, { chairColor: "#EC407A" }), "chairs")).toBe("#EC407A");
+    expect(itemColour(table({ chairs: "blue_kids" }, { chairColor: "#F8BBD0" }), "chairs")).toBe("#F8BBD0");
     expect(itemColour(table({ chairs: "bow_kids" }), "chairs")).toBeUndefined();
   });
   it("every colour is part of the render's key, and so is the theme", () => {
     const t = table();
     expect(tableRenderKey(t, "unicorn")).not.toBe(tableRenderKey(t, "frozen"));
-    for (const k of ["plateColor", "cupColor", "holderColor", "chairColor", "textColor"]) {
+    for (const k of ["plateColor", "cupColor", "holderColor", "chairColor", "placematColor", "labelColor", "textColor"]) {
       expect(tableRenderKey({ ...t, [k]: "#010203" }, "frozen")).not.toBe(tableRenderKey(t, "frozen"));
     }
   });
@@ -92,18 +96,18 @@ describe("the colours on the table", () => {
 
 describe("in the render", () => {
   const t = table({ chairs: "blue_kids", plates: "plain", cups: "plain", cutleryHolder: "band", placemats: "sparkle", bottleLabel: "sparkle" },
-    { chairColor: "#EC407A", plateColor: "#BAE6FD", cupColor: "#FEF08A", holderColor: "#DDD6FE", textColor: "#8E24AA", words: { placemats: "Arya turns 6", bottleLabel: "Arya" } });
+    { chairColor: "#F8BBD0", plateColor: "#BAE6FD", cupColor: "#FEF08A", holderColor: "#DDD6FE", textColor: "#8E24AA", words: { placemats: "Arya turns 6", bottleLabel: "Arya" } });
   const refs = referencePictures(t, "frozen");
   const p = tablePrompt(t, frozen, refs.map((r) => r.key));
   it("the chair's picture is its colour's; plain plates and cups have no picture, their colour is in words", () => {
-    expect(refs.find((r) => r.key === "chairs")!.photo).toBe("/design/table/chairs/blue_kids/ec407a.webp");
+    expect(refs.find((r) => r.key === "chairs")!.photo).toBe("/design/table/chairs/blue_kids/f8bbd0.webp");
     expect(refs.map((r) => r.key)).not.toContain("plates");
     expect(refs.map((r) => r.key)).not.toContain("cups");
-    expect(p).toContain("a hot pink children's chair whose back is a curved top rail");
+    expect(p).toContain("a pastel pink children's chair whose back is a curved top rail");
     expect(p).toContain("a plain matte pastel lemon yellow paper cup (no straw)");
   });
   it("a big plate with a small one in it, and the round card in the small one", () => {
-    expect(p).toContain("two plain matte pastel baby blue round paper plates: a big plate with a smaller plate of the same kind sitting in it, and lying in the small plate a round printed paper card in the same printed design as the placemats");
+    expect(p).toContain("two plain matte pastel baby blue paper plates, round: a big plate with a smaller plate of the same kind sitting in it, and lying in the small plate a round printed paper card in the same printed design as the placemats");
     expect(p).toContain("one big plate, one small plate and one card on each placemat");
     expect(tablePrompt(table({ placemats: NONE }), frozen, [])).toContain("a round printed paper card in a design printed with snowflakes and little stars");
   });
@@ -117,7 +121,7 @@ describe("in the render", () => {
   });
   it("the drawing: the chair, the plates, the card and the words in their colours", () => {
     const svg = tableCloseGuideSvg(t, frozen, { placemat: "data:image/jpeg;base64,AAAA", card: "data:image/jpeg;base64,AAAA" });
-    expect(svg).toContain('fill="#EC407A"'); // the chairs
+    expect(svg).toContain('fill="#F8BBD0"'); // the chairs
     expect(svg).toContain('fill="#BAE6FD"'); // the plates
     expect(svg).toContain('fill="#FEF08A"'); // the cups
     expect(svg).toContain('fill="#DDD6FE"'); // the bands
@@ -131,7 +135,7 @@ describe("in the render", () => {
 
 describe("the production list", () => {
   const t = table({ chairs: "blue_kids", plates: "plain", cups: "plain", cutleryHolder: "band", placemats: "watercolour", bottleLabel: "watercolour" },
-    { kids: 12, chairColor: "#EC407A", plateColor: "#BAE6FD", textColor: "#8E24AA", words: { placemats: "Arya turns 6", cutleryHolder: "Arya", bottleLabel: "Arya" } });
+    { kids: 12, chairColor: "#F8BBD0", plateColor: "#BAE6FD", textColor: "#8E24AA", words: { placemats: "Arya turns 6", cutleryHolder: "Arya", bottleLabel: "Arya" } });
   const rows = tableProductionList(t, unicorn);
   const row = (item: string) => rows.find((r) => r.item === item)!;
   it("a big and a small plate for every child, and a round card for every small plate", () => {
@@ -144,8 +148,8 @@ describe("the production list", () => {
     expect(row("Water bottle label").print).toMatchObject({ widthMm: 205, heightMm: 50, words: "Arya", wordsColour: "#8E24AA" });
     expect(row("Water bottles").quantity).toBe(12);
     expect(row("Name tags").print).toMatchObject({ words: "Arya" });
-    expect(row("Chairs")).toMatchObject({ quantity: 12, colour: "#EC407A" });
-    expect(row("Chairs").detail).toContain("hot pink");
+    expect(row("Chairs")).toMatchObject({ quantity: 12, colour: "#F8BBD0" });
+    expect(row("Chairs").detail).toContain("pastel pink");
     expect(productionLine(row("Plate cards"))).toContain(`print Ø ${PLATE_CARD_MM} mm`);
     expect(row("Table").quantity).toBe(2); // 12 kids at 10-seat tables
   });
@@ -173,4 +177,48 @@ describe("the production list", () => {
     expect((await buildDesignPack({ config, packId: "KT3", sample: true })).files.some((f) => f.startsWith("5_PRINT_FILES"))).toBe(false);
     expect(await plateCardPng("/design/table/nothing.webp", 120)).toBeUndefined();
   }, 60_000);
+});
+
+
+describe("the trimmed options (2026-10-29)", () => {
+  const ids = (k: Parameters<typeof tableItem>[0]) => tableItem(k).options.map((o) => o.id);
+  it("only what the owner kept", () => {
+    expect(ids("napkins")).toEqual(["plain", "printed"]);
+    expect(ids("placemats")).toEqual(["plain", "watercolour", "sparkle"]);
+    expect(ids("plates")).toEqual(["plain", "iridescent", "silver"]);
+    expect(ids("cups")).toEqual(["plain", "iridescent"]);
+    expect(ids("bottleLabel")).toEqual(["plain", "watercolour", "sparkle"]);
+    expect(ids("partyHats")).toEqual(["cone"]);
+    // A table saved with a removed option gets today's choice.
+    const old = readTableSetup({ enabled: true, choices: { napkins: "striped", placemats: "pattern", plates: "holo_square", cups: "white_straw", bottleLabel: "pattern", partyHats: "crown" } }, frozen)!;
+    expect(old.choices).toMatchObject({ napkins: "printed", placemats: "watercolour", plates: "iridescent", cups: "plain", bottleLabel: NONE, partyHats: "cone" });
+  });
+  it("the plain placemat and label in their colours, with the words; the card in the theme's pattern design", () => {
+    const t = table({ placemats: "plain", bottleLabel: "plain" }, { placematColor: "#BBF7D0", labelColor: "#FFD1A4", words: { placemats: "Arya turns 6", bottleLabel: "Arya" } });
+    expect(readTableSetup(t, frozen)).toMatchObject({ placematColor: "#BBF7D0", labelColor: "#FFD1A4" });
+    expect(plateCardArt(t.choices, "frozen")).toBe("/design/table/placemats/frozen/pattern.webp");
+    const p = tablePrompt(t, frozen, []);
+    expect(p).toContain("a plain matte pastel mint green A3 paper placemat");
+    expect(p).toContain("The placemats are plain pastel mint green paper, with nothing printed on them but the words.");
+    expect(p).toContain("a small clear water bottle wrapped in a plain matte pastel peach paper label with \"Arya\" printed");
+    expect(p).not.toContain("(image 0)");
+    expect(p).toContain("a round printed paper card in a design printed with snowflakes");
+    const svg = tableCloseGuideSvg(t, frozen);
+    expect(svg).toContain('fill="#BBF7D0"');
+    expect(svg).toContain('fill="#FFD1A4"');
+    const rows = tableProductionList(t, frozen);
+    expect(rows.find((r) => r.item === "Placemats")).toMatchObject({ colour: "#BBF7D0", print: { widthMm: 420, words: "Arya turns 6" } });
+    expect(rows.find((r) => r.item === "Placemats")!.print!.art).toBeUndefined();
+    expect(rows.find((r) => r.item === "Water bottle label")!.print!.art).toBeUndefined();
+  });
+  it("the plain plates in a shape: in the words, the drawing, the production list and the render's key", () => {
+    const t = table({ plates: "plain" }, { plateShape: "scalloped" });
+    expect(readTableSetup(t, frozen)!.plateShape).toBe("scalloped");
+    expect(readTableSetup({ ...t, plateShape: "star" }, frozen)!.plateShape).toBe("round");
+    expect(tablePrompt(t, frozen, [])).toContain("paper plates, round with a wavy scalloped edge");
+    expect(tablePrompt({ ...t, plateShape: "square" }, frozen, [])).toContain("paper plates, square with softly rounded corners");
+    expect(tableCloseGuideSvg(t, frozen)).not.toBe(tableCloseGuideSvg({ ...t, plateShape: "round" }, frozen));
+    expect(tableRenderKey(t, "frozen")).not.toBe(tableRenderKey({ ...t, plateShape: "square" }, "frozen"));
+    expect(tableProductionList(t, frozen).find((r) => r.item === "Big plates")!.detail).toContain("scalloped");
+  });
 });

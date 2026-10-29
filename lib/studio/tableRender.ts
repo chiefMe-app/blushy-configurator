@@ -6,7 +6,7 @@
 // drawings. Every choice is also described in words. Shared by the API route
 // (the pictures and the prompt) and the builder (is the render still current?).
 import { hexToColorName } from "@/lib/generatePrompt";
-import { NONE, onFloor, optionPhoto, plainColour, tableOption, type TableItemKey } from "./tableCatalog";
+import { NONE, PLATE_SHAPES, onFloor, optionPhoto, plainColour, tableOption, type TableItemKey } from "./tableCatalog";
 import type { TableScene, TableSetup } from "./tableSetup";
 import type { TableView } from "./tableCloseGuide";
 import { WORDS_ITEMS, clampKids, itemColour, wordsColour, wordsOn } from "./tableSetup";
@@ -15,7 +15,7 @@ export type { TableRender } from "./tableSetup";
 
 /** Changes whenever anything that shows in the picture changes — the theme too (its designs and colours). */
 export function tableRenderKey(t: TableSetup, themeId: string): string {
-  const s = JSON.stringify([themeId, clampKids(t.kids), Object.entries(t.choices).sort(), t.clothColor, t.runnerColor, t.napkinColor, t.plateColor, t.cupColor, t.holderColor, t.chairColor, t.textColor, t.scene ?? "garden", WORDS_ITEMS.map((w) => wordsOn(t, w.key) ?? "")].flat(2));
+  const s = JSON.stringify([themeId, clampKids(t.kids), Object.entries(t.choices).sort(), t.clothColor, t.runnerColor, t.napkinColor, t.plateColor, t.cupColor, t.holderColor, t.chairColor, t.placematColor, t.labelColor, t.plateShape, t.textColor, t.scene ?? "garden", WORDS_ITEMS.map((w) => wordsOn(t, w.key) ?? "")].flat(2));
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
   return (h >>> 0).toString(36);
@@ -43,17 +43,17 @@ const WORDS: Partial<Record<TableItemKey, Record<string, string>>> = {
   table: { standard: "a long white rectangular kids' table with straight edges", half_wave: "a long white kids' table curved like a gentle S-shaped wave", flower: "a white kids' table shaped like a flower with six big round petals", round: "a big white round kids' table", low: "a low white floor table, with white floor cushions instead of chairs", cloud: "a long white kids' table whose edges are soft rounded scallops like a cloud" },
   chairs: { white_kids: "a white children's chair with an oval back and arms", blue_kids: "a {chair} children's chair whose back is a curved top rail over a row of thin upright spindles with open gaps between them, so you see through the back", bow_kids: "a pink metal children's chair with a round mesh seat and a back shaped like a bow" },
   tablecloth: { classic: "a smooth floor-length {cloth} tablecloth" },
-  napkins: { plain: "a plain {napkin} paper napkin", striped: "a folded paper napkin with soft pastel pink and white stripes", printed: "a folded paper napkin printed with {motif}", foil: "a folded pale blue paper napkin with a shiny silver foil print" },
-  placemats: { pattern: "an A3 paper placemat printed all over with {motif} on a soft background", watercolour: "an A3 paper placemat with a soft watercolour wash and big {motif} in its corners", sparkle: "an A3 paper placemat with a sparkling glittery background and one elegant emblem" },
+  napkins: { plain: "a plain {napkin} paper napkin", printed: "a folded paper napkin printed with {motif}" },
+  placemats: { plain: "a plain matte {placemat} A3 paper placemat", watercolour: "an A3 paper placemat with a soft watercolour wash and big {motif} in its corners", sparkle: "an A3 paper placemat with a sparkling glittery background and one elegant emblem" },
   // Two of each, a big one and a small one (2026-10-28).
-  plates: { plain: "plain matte {plate} round paper plates", iridescent: "many-sided disposable paper plates with a shimmering iridescent pink, lilac and blue foil finish and a white rim", holo_square: "square disposable plates in shiny silver holographic foil", silver: "round disposable silver foil plates with a fluted rim" },
-  cups: { white_straw: "a plain white paper cup with a slim silver paper straw", iridescent: "a paper cup with a shimmering iridescent foil finish and a white straw", plain: "a plain matte {cup} paper cup (no straw)" },
+  plates: { plain: "plain matte {plate} paper plates, {plateShape}", iridescent: "many-sided disposable paper plates with a shimmering iridescent pink, lilac and blue foil finish and a white rim", silver: "round disposable silver foil plates with a fluted rim" },
+  cups: { iridescent: "a paper cup with a shimmering iridescent foil finish and a white straw", plain: "a plain matte {cup} paper cup (no straw)" },
   cutlery: { dipped: "a disposable wooden fork, knife and spoon with handles dipped in pastel pink", wooden: "a disposable fork, knife and spoon made of natural light wood, not metal", glitter: "a disposable wooden fork, knife and spoon with handles dipped in silver glitter" },
   cutleryHolder: { band: "a plain {holder} paper napkin band" },
-  bottleLabel: { pattern: "a small clear water bottle wrapped in a paper label printed with the design of its picture", watercolour: "a small clear water bottle wrapped in a paper label printed with the design of its picture", sparkle: "a small clear water bottle wrapped in a paper label printed with the design of its picture" },
+  bottleLabel: { plain: "a small clear water bottle wrapped in a plain matte {label} paper label", watercolour: "a small clear water bottle wrapped in a paper label printed with the design of its picture", sparkle: "a small clear water bottle wrapped in a paper label printed with the design of its picture" },
   // 2026-10-28, the owner's flower references: lush, pastel, garden-style.
   centrepiece: { balloons: "a small bunch of mini balloons in the theme colours", florals: "a small, low, compact arrangement of a few pastel flowers — lilac delphinium tips, pink and cream roses, sweet peas and tiny white blooms — set in a hidden block of floral foam covered by leaves — no visible foam, box or vase — low enough to see across the table", toppers: "glittery star toppers on sticks in a little pot" },
-  partyHats: { cone: "a cone party hat", crown: "a little party crown", headband: "a party headband" },
+  partyHats: { cone: "a cone party hat" },
 };
 
 // The look every view shares (2026-10-27: "daha cool, daha eğlenceli, daha
@@ -116,7 +116,8 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
   const round = c.table === "round" || c.table === "flower";
   const word = (k: TableItemKey) => (c[k] === NONE || (floor && k === "chairs") ? "" : (WORDS[k]?.[c[k]] ?? "")
     .replace("{cloth}", colourWords(t.clothColor)).replace("{napkin}", colourWords(t.napkinColor)).replace("{motif}", motifOf(theme.id))
-    .replace("{plate}", colourWords(t.plateColor)).replace("{cup}", colourWords(t.cupColor)).replace("{holder}", colourWords(t.holderColor)).replace("{chair}", colourWords(t.chairColor)));
+    .replace("{plate}", colourWords(t.plateColor)).replace("{cup}", colourWords(t.cupColor)).replace("{holder}", colourWords(t.holderColor)).replace("{chair}", colourWords(t.chairColor))
+    .replace("{placemat}", colourWords(t.placematColor)).replace("{label}", colourWords(t.labelColor)).replace("{plateShape}", PLATE_SHAPES.find((p) => p.id === t.plateShape)?.words ?? "round"));
   // Image 1 is the layout drawing; the option pictures follow it.
   const pic = (k: TableItemKey) => (pictures.includes(k) ? pictures.indexOf(k) + 2 : 0); // 0: no picture
   const exactly = (k: TableItemKey) => (pic(k) ? ` — exactly as in image ${pic(k)}` : "");
@@ -134,7 +135,8 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
     seat.push(`${word("placemats")}${exactly("placemats")}, lying flat on the table in front of the chair${stack ? `, with the words printed straight onto the placemat paper in its bottom-right corner in elegant ${colourWords(wordsColour(t, theme))} serif capitals, stacked one word per line (${stack}) — no sticker, no label, never on the plate` : ""}`);
   }
   // 2026-10-28 (owner): a big plate with a small one on it, and the theme's round card in the small one.
-  const cardDesign = c.placemats !== NONE ? "the same printed design as the placemats" : `a design printed with ${motifOf(theme.id)}`;
+  const themedMats = !!tableOption("placemats", c.placemats)?.themed;
+  const cardDesign = themedMats ? "the same printed design as the placemats" : `a design printed with ${motifOf(theme.id)}`;
   if (word("plates")) seat.push(`in the middle of the placemat, two ${word("plates")}${exactly("plates")}: a big plate with a smaller plate of the same kind sitting in it, and lying in the small plate a round printed paper card in ${cardDesign}, exactly as image 1 shows — one big plate, one small plate and one card${top ? "" : " on each placemat"}, the card small with a wide rim of the small plate showing all round it, nothing else on them and nothing written on them, and nothing lying beside the plates: to their right is bare printed placemat`);
   const napkin = `${word("napkins")}${exactly("napkins")}`, cutlery = `${word("cutlery")}${exactly("cutlery")}`;
   const name = holderWords ? ` with a little tag with the name "${holderWords}" on it` : ", with no tag and no words";
@@ -144,7 +146,7 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
   seat.push(c.cutleryHolder === "band" ? `on the left of the placemat: ${napkin} folded into a pocket with the cutlery (${word("cutlery")}) standing up out of it, wrapped round the middle by ${word("cutleryHolder")}${name}${like} — the band is ${colourWords(t.holderColor)}, whatever colour its photo shows`
     : `on the left of the placemat: ${napkin} folded, with ${cutlery} laid on it`);
   if (word("cups")) seat.push(`${word("cups")}${exactly("cups")} on the top-right corner of the placemat`);
-  if (word("bottleLabel")) seat.push(`just beside the cup, ${word("bottleLabel")} (image ${pic("bottleLabel")})${bottleWords ? ` with "${bottleWords}" printed on the label in ${colourWords(wordsColour(t, theme))} letters` : ", its label with no words"} — the cup and the bottle are both there, and this is the place's only bottle`);
+  if (word("bottleLabel")) seat.push(`just beside the cup, ${word("bottleLabel")}${pic("bottleLabel") ? ` (image ${pic("bottleLabel")})` : ""}${bottleWords ? ` with "${bottleWords}" printed on the label in ${colourWords(wordsColour(t, theme))} letters` : ", its label with no words"} — the cup and the bottle are both there, and this is the place's only bottle`);
   if (word("partyHats")) seat.push(`${word("partyHats")} standing on the top-left corner of the placemat`);
   const words = Array.from(new Set([placematWords, holderWords, bottleWords].filter(Boolean) as string[]));
 
@@ -153,10 +155,11 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
     // a drawing of the exact scene leads, and the photos give each piece its look.
     top ? `Image 1 is a simple drawing, seen from straight above, of one child's place at a ${round ? "big" : "long"} children's party table, with every piece of the place setting in its exact place and the child's ${floor ? "floor cushion" : "chair"} at the bottom.`
       : `Image 1 is a simple drawing of the exact scene: one part of a ${round ? "big" : "long"} children's party table seen from about 50 degrees above, with every chair and every piece of every place setting in its exact place.`,
-    pictures.length ? `Images 2 to ${pictures.length + 1} are product photos of the exact pieces chosen: ${pictures.map((k, i) => `image ${i + 2} is ${LABEL[k]}`).join(", ")}.` : "",
+    pictures.length > 1 ? `Images 2 to ${pictures.length + 1} are product photos of the exact pieces chosen: ${pictures.map((k, i) => `image ${i + 2} is ${LABEL[k]}`).join(", ")}.`
+      : pictures.length ? `Image 2 is a product photo of the exact piece chosen: ${LABEL[pictures[0]]}.` : "",
     "Turn image 1 into a real photograph. Keep its camera angle and framing, and keep the table, every chair and every placemat, plate, napkin, cutlery, cup, bottle, hat and centrepiece exactly where image 1 has them — the same number of each, nothing added, moved or left out. Each simple shape in the drawing becomes the real piece; nothing of the drawing itself may remain — no outlines, no flat colours.",
     pictures.length ? "From each product photo take only the piece itself and ignore everything around it — the grass, walls, backdrops, other furniture, napkins, flowers and other tableware in those photos." : "",
-    c.placemats !== NONE ? "The placemats in image 1 already carry their exact printed design: keep it exactly, as real printed paper." : "",
+    themedMats ? "The placemats in image 1 already carry their exact printed design: keep it exactly, as real printed paper." : c.placemats !== NONE ? `The placemats are plain ${colourWords(t.placematColor)} paper, with nothing printed on them but the words.` : "",
     words.length && placematWords ? "The words on the placemats are already lettered in image 1: keep them exactly, letter for letter, in the same capitals, the same size and the same place, as real print on the paper — every letter there, none added." : "",
     // "Uzun bir masanın bir bölümü gözüksün, masa 2 kişilik gibi durmasın" (2026-10-28).
     top ? `Make a photograph of one child's place at a big, fully set children's party table: ${word("table")}${pic("table") ? " — exactly the table in its photo" : ""}. This one place fills the picture; the table top carries on beyond its edges, where the next places just begin at the sides, cut off by the frame, exactly as in image 1.`

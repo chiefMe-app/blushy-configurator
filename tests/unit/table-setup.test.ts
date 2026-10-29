@@ -11,7 +11,7 @@ const frozen = themeById("frozen")!;
 
 describe("the catalog", () => {
   it("every item has options, and every item is in a section of the one page", () => {
-    for (const item of TABLE_ITEMS) expect(item.options.length).toBeGreaterThanOrEqual(item.optional ? 1 : 3);
+    for (const item of TABLE_ITEMS) expect(item.options.length).toBeGreaterThanOrEqual(item.optional ? 1 : 2);
     expect(TABLE_ITEMS.find((i) => i.key === "table")!.options.map((o) => o.id)).toEqual(["standard", "half_wave", "flower", "round", "low", "cloud"]);
     for (const o of TABLE_ITEMS.find((i) => i.key === "table")!.options) expect(o.seats).toBeGreaterThan(0);
     expect(TABLE_SECTIONS.flatMap((t) => t.items).sort()).toEqual(TABLE_ITEMS.map((i) => i.key).sort());
@@ -74,8 +74,8 @@ describe("prices", () => {
     expect(lines.find((l) => l.label.startsWith("Standard table"))).toEqual({ label: "Standard table (2)", amount: 798 });
     expect(lines.find((l) => l.label.startsWith("White chair for kids"))).toEqual({ label: "White chair for kids (12)", amount: 300 });
     expect(lines.some((l) => l.label.startsWith("Plain cloth"))).toBe(false); // None, unless chosen
-    expect(lines.find((l) => l.label.startsWith("Pattern placemat"))).toEqual({ label: "Pattern placemat (12)", amount: 72 });
-    expect(tablePriceLines({ ...t, choices: { ...t.choices, placemats: NONE } }).some((l) => l.label.startsWith("Pattern placemat"))).toBe(false); // None
+    expect(lines.find((l) => l.label.startsWith("Watercolour placemat"))).toEqual({ label: "Watercolour placemat (12)", amount: 72 });
+    expect(tablePriceLines({ ...t, choices: { ...t.choices, placemats: NONE } }).some((l) => l.label.startsWith("Watercolour placemat"))).toBe(false); // None
     expect(tableTotal(t)).toBe(lines.reduce((a, l) => a + l.amount, 0));
   });
   it("the low table comes with floor cushions: no chairs to pay for", () => {
@@ -118,7 +118,7 @@ describe("kept on the device", () => {
   });
   it("a kids' table kept before it turned into a kids' party reads back with kids' pieces", () => {
     const t = readTableSetup({ choices: { chairs: "gold_chiavari", chargers: "gold", plates: "white_gold", napkins: "folded", runner: "greenery" } }, frozen)!;
-    expect(t.choices).toMatchObject({ chairs: "white_kids", chargers: NONE, plates: "iridescent", napkins: "striped", runner: NONE });
+    expect(t.choices).toMatchObject({ chairs: "white_kids", chargers: NONE, plates: "iridescent", napkins: "printed", runner: NONE });
   });
   it("pieces no longer offered read back as None, and the placemat words are kept clean", () => {
     // placematText: how the placemat words were kept on their first day.

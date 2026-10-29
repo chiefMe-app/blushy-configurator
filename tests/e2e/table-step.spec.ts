@@ -74,17 +74,21 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await page.getByRole("radiogroup", { name: "Plates", exact: true }).getByRole("radio", { name: /Plain plates/ }).click();
   await page.getByTestId("plates-colour").getByRole("radio", { name: "bright red" }).click();
   await expect(page.getByTestId("plates-colour").getByRole("radio", { name: "bright red" })).toHaveAttribute("aria-checked", "true");
+  // …and in a shape (2026-10-29).
+  await page.getByTestId("plate-shape").getByRole("radio", { name: "Scalloped" }).click();
+  await expect(page.getByTestId("plate-shape").getByRole("radio", { name: "Scalloped" })).toHaveAttribute("aria-checked", "true");
   await page.getByRole("radiogroup", { name: "Cups", exact: true }).getByRole("radio", { name: /Plain cup/ }).click();
   await expect(page.getByTestId("cups-colour")).toBeVisible();
   // The kids' chair in any plain colour: its picture follows.
   const chairs = page.getByRole("radiogroup", { name: "Chairs" });
   await page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio", { name: /Standard table/ }).click();
   await chairs.getByRole("radio", { name: /Colour chair for kids/ }).click();
-  await page.getByTestId("chairs-colour").getByRole("radio", { name: "hot pink" }).click();
-  await expect(chairs.getByRole("radio", { name: /Colour chair for kids/ }).locator("img")).toHaveAttribute("src", "/design/table/chairs/blue_kids/ec407a.webp");
+  await expect(page.getByTestId("chairs-colour").getByRole("radio")).toHaveCount(3); // white, pink, light blue
+  await page.getByTestId("chairs-colour").getByRole("radio", { name: "pastel pink" }).click();
+  await expect(chairs.getByRole("radio", { name: /Colour chair for kids/ }).locator("img")).toHaveAttribute("src", "/design/table/chairs/blue_kids/f8bbd0.webp");
   await expect(next(page)).toHaveText(/Continue to Package/);
-  await expect(page.getByRole("radiogroup", { name: "Party hats" }).getByRole("radio")).toHaveCount(4); // None + 3
-  await page.getByRole("radiogroup", { name: "Party hats" }).getByRole("radio", { name: /Crown/ }).click();
+  await expect(page.getByRole("radiogroup", { name: "Party hats" }).getByRole("radio")).toHaveCount(2); // None + the cone hat (2026-10-29)
+  await page.getByRole("radiogroup", { name: "Party hats" }).getByRole("radio", { name: /None/ }).click();
   await expect(next(page)).toHaveText(/Continue to Package/);
   await next(page).click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();

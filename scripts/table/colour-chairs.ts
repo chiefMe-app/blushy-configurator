@@ -2,12 +2,13 @@
 // kids'in her renk seçeneği olabilsin, ordaki görselin backgroundunu remove
 // edelim"): from the owner's photo of her blue chair, the chair is cut out by
 // its colour (the grass, the wall and the shadow are not blue) and repainted
-// in each colour of PLAIN_COLOURS, keeping its light and shade, on a
+// in each of its colours (CHAIR_COLOURS: white, pink and light blue since
+// 2026-10-29), keeping its light and shade, on a
 // transparent background. Run: npx tsx scripts/table/colour-chairs.ts
 import sharp from "sharp";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
+import { CHAIR_COLOURS } from "@/lib/studio/tableCatalog";
 
 const SRC = "public/design/table/chairs-blue_kids.webp";
 const OUT = "public/design/table/chairs/blue_kids";
@@ -52,7 +53,7 @@ async function main() {
   ls.sort((a, b) => a - b);
   const mid = ls[(ls.length / 2) | 0];
   mkdirSync(OUT, { recursive: true });
-  for (const { hex } of PLAIN_COLOURS) {
+  for (const hex of CHAIR_COLOURS) {
     const t = [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16));
     const out = Buffer.alloc(n * 4);
     for (let i = 0; i < n; i++) {
@@ -66,6 +67,6 @@ async function main() {
     const file = path.join(OUT, `${hex.slice(1).toLowerCase()}.webp`);
     await sharp(out, { raw: { width: W, height: H, channels: 4 } }).trim({ threshold: 0 }).webp({ quality: 90, alphaQuality: 100 }).toFile(file);
   }
-  console.log(`${PLAIN_COLOURS.length} chairs, ${bestSize} chair pixels of ${n}`);
+  console.log(`${CHAIR_COLOURS.length} chairs, ${bestSize} chair pixels of ${n}`);
 }
 main();

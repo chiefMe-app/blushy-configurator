@@ -4,9 +4,9 @@
 // (plus "None" for the optional ones) from lib/studio/tableCatalog.ts, the
 // cloth's colour and the words on the placemats. Prices add to the party total.
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
-import { NONE, PLAIN_COLOURS, TABLE_SECTIONS, onFloor, optionPhoto, plateCardArt, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
+import { CHAIR_COLOURS, NONE, PLAIN_COLOURS, PLATE_SHAPES, TABLE_SECTIONS, onFloor, optionPhoto, plateCardArt, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
 import { COLOUR_OF, wordsColour, MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, WORDS_ITEMS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup, type WordsKey } from "@/lib/studio/tableSetup";
-import { GlyphDefs, glyph, type GlyphColours } from "@/components/studio/table/glyphs";
+import { GlyphDefs, glyph, scallop, type GlyphColours } from "@/components/studio/table/glyphs";
 
 /** The printed words in their colour, with a shadow that keeps light words readable on the design. */
 export function wordsStyle(hex: string) {
@@ -28,10 +28,13 @@ function OptionArt({ item, option, colours, themeId, words, colour, textColor }:
   }
   // The plain plates: a big and a small plate in the colour, the theme's card in the small one.
   if (option && item.key === "plates" && option.id === "plain") {
+    // In the chosen shape (2026-10-29): round, scalloped or square.
+    const plate = (r: number, w: number, fill: string, extra = {}) => colours.plateShape === "square" ? <rect x={-r * 0.9} y={-r * 0.9} width={r * 1.8} height={r * 1.8} rx={r * 0.2} fill={fill} stroke="#5a4950" strokeWidth={w} {...extra} />
+      : colours.plateShape === "scalloped" ? <path d={scallop(r, 18)} fill={fill} stroke="#5a4950" strokeWidth={w} {...extra} /> : <circle r={r} fill={fill} stroke="#5a4950" strokeWidth={w} {...extra} />;
     return <svg viewBox="-24 -24 48 48" aria-hidden="true">
       <defs><clipPath id="plate-card"><circle r={9} /></clipPath></defs>
-      <circle r={21} fill={colour ?? "#fff"} stroke="#5a4950" strokeWidth={0.8} /><circle r={16.5} fill="none" stroke="#5a4950" strokeWidth={0.4} opacity={0.5} />
-      <circle r={15.5} fill={colour ?? "#fff"} stroke="#5a4950" strokeWidth={0.7} />
+      {plate(21, 0.8, colour ?? "#fff")}{plate(16.5, 0.4, "none", { opacity: 0.5 })}
+      {plate(15.5, 0.7, colour ?? "#fff")}
       {colours.card && <image href={colours.card} x={-9} y={-9} width={18} height={18} preserveAspectRatio="xMidYMid slice" clipPath="url(#plate-card)" />}
       <circle r={9} fill="none" stroke="#5a4950" strokeWidth={0.4} />
     </svg>;
@@ -91,7 +94,7 @@ export default function TableStep({ config, setTable }: {
   const textColor = wordsColour(table, theme);
   const card = plateCardArt(table.choices, theme.id);
   const colours: GlyphColours = { palette: theme.balloonColors, accent: theme.accent, cloth: table.clothColor, runner: table.runnerColor, napkin: table.napkinColor,
-    plate: table.plateColor, cup: table.cupColor, holder: table.holderColor, card };
+    plate: table.plateColor, cup: table.cupColor, holder: table.holderColor, card, placemat: table.placematColor, label: table.labelColor, plateShape: table.plateShape };
   const swatchRow = (label: string, value: string, options: string[], pick: (hex: string) => void, testId?: string) => (
     <div className="bz-ts-swatches" role="radiogroup" aria-label={label} data-testid={testId}>
       {options.map((hex) => (
@@ -140,8 +143,15 @@ export default function TableStep({ config, setTable }: {
             </button>
           ))}
         </div>
-        {/* The chair's pictures come only in the plain colours. */}
-        {colourKey && table.choices[key] !== NONE && swatchRow(`${it.label} colour`, table[colourKey], key === "chairs" ? PLAIN_COLOURS.map((c) => c.hex) : swatches, (hex) => set({ [colourKey]: hex }), `${key}-colour`)}
+        {/* The chair comes in white, pink or light blue only. */}
+        {colourKey && table.choices[key] !== NONE && swatchRow(`${it.label} colour`, table[colourKey], key === "chairs" ? CHAIR_COLOURS : swatches, (hex) => set({ [colourKey]: hex }), `${key}-colour`)}
+        {key === "plates" && table.choices.plates === "plain" && (
+          <div className="bz-tb-shapes" role="radiogroup" aria-label="Plate shape" data-testid="plate-shape">
+            {PLATE_SHAPES.map((p) => (
+              <button key={p.id} type="button" role="radio" aria-checked={table.plateShape === p.id} className={table.plateShape === p.id ? "on" : ""} onClick={() => set({ plateShape: p.id })}>{p.name}</button>
+            ))}
+          </div>
+        )}
         {key === "plates" && (
           // 2026-10-28 (owner): a round card in the theme's design in every small plate.
           <div className="bz-tb-card" data-testid="plate-card-preview">
@@ -167,7 +177,7 @@ export default function TableStep({ config, setTable }: {
           // The finished design, flat, as it is printed: the label (20.5 × 5 cm), or the
           // A3 placemat with the words bottom-right, like the owner's reference.
           <div className={key === "bottleLabel" ? "bz-tb-label" : "bz-tb-label placemat"} data-testid={key === "bottleLabel" ? "bottle-label-preview" : "placemat-preview"}
-            style={{ backgroundImage: `url(${optionPhoto(key, chosen, theme.id)})` }}>
+            style={chosen.themed ? { backgroundImage: `url(${optionPhoto(key, chosen, theme.id)})` } : { background: key === "placemats" ? table.placematColor : table.labelColor }}>
             <span style={wordsStyle(textColor)}>{key === "placemats" ? stacked(table.words?.placemats || "Your words here") : table.words?.bottleLabel || "Your words here"}</span>
           </div>
         )}

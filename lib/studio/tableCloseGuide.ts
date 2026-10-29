@@ -48,9 +48,9 @@ function hull(points: V2[]): V2[] {
 }
 
 const PLATE: Record<string, { fill: string; rim: string }> = {
-  iridescent: { fill: "#EBDDF7", rim: "#A78BC9" }, holo_square: { fill: "#E2E7ED", rim: "#8C99A6" }, silver: { fill: "#E5E8EC", rim: "#8C99A6" },
+  iridescent: { fill: "#EBDDF7", rim: "#A78BC9" }, silver: { fill: "#E5E8EC", rim: "#8C99A6" },
 };
-const CUP: Record<string, string> = { white_straw: "#FFFFFF", iridescent: "#E4DDF5" };
+const CUP: Record<string, string> = { iridescent: "#E4DDF5" };
 // The kids' chair (blue_kids) is the customer's colour.
 const CHAIR_FILL: Record<string, string> = { white_kids: "#FFFFFF", bow_kids: "#F5C9D7" };
 const WOOD = "#D9B98C";
@@ -212,7 +212,7 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
   // The plate card's design: the placemats' own picture when it is the same one.
   const cardArt = art.card ? (art.card === art.placemat ? "mat-art" : "card-art") : "";
   let cards = 0;
-  const napkin = ch.napkins === "plain" ? t.napkinColor : ch.napkins === "striped" ? "#FBD5E5" : ch.napkins === "foil" ? "#D5E6F5" : light(pal[0] ?? theme.accent, 0.55);
+  const napkin = ch.napkins === "plain" ? t.napkinColor : light(pal[0] ?? theme.accent, 0.55);
   for (const seat of seats) {
     const S = settingAt(seat);
     if (!seen(S.centre)) continue;
@@ -221,7 +221,7 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
     const add = (anchor: V3, svg: string) => parts.push({ d: depth(anchor), svg });
     let flat = "";
     if (ch.placemats !== NONE) {
-      flat += poly([at(-21, -15, 0.1), at(21, -15, 0.1), at(21, 15, 0.1), at(-21, 15, 0.1)], "url(#mat)", "#9AA3C7", 1);
+      flat += poly([at(-21, -15, 0.1), at(21, -15, 0.1), at(21, 15, 0.1), at(-21, 15, 0.1)], ch.placemats === "plain" ? t.placematColor : "url(#mat)", "#9AA3C7", 1);
       if (art.placemat) {
         // The placemat's own design laid on it: its top away from the child, its left on the child's left.
         const [o, x, y] = [P(at(-21, 15, 0.1)), P(at(21, 15, 0.1)), P(at(-21, -15, 0.1))];
@@ -229,8 +229,10 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
       }
     }
     // The plate in the middle.
-    const plateShape = ch.plates === "holo_square" ? [at(-11, -11, 0.4), at(11, -11, 0.4), at(11, 11, 0.4), at(-11, 11, 0.4)]
-      : ((n) => Array.from({ length: n }, (_, i) => { const a2 = Math.PI / n + (i * 2 * Math.PI) / n; return at(Math.cos(a2) * 11.5, Math.sin(a2) * 11.5, 0.4); }))(ch.plates === "iridescent" ? 8 : 28);
+    // The plain plates come round, scalloped or square (2026-10-29).
+    const shape = ch.plates === "plain" ? t.plateShape : "round";
+    const plateShape = shape === "square" ? [at(-10.5, -10.5, 0.4), at(10.5, -10.5, 0.4), at(10.5, 10.5, 0.4), at(-10.5, 10.5, 0.4)]
+      : ((n) => Array.from({ length: n }, (_, i) => { const a2 = Math.PI / n + (i * 2 * Math.PI) / n, r = shape === "scalloped" && i % 2 ? 10.6 : 11.5; return at(Math.cos(a2) * r, Math.sin(a2) * r, 0.4); }))(ch.plates === "iridescent" ? 8 : shape === "scalloped" ? 32 : 28);
     const shrink = (k: number, z: number) => plateShape.map((p) => [S.centre[0] + (p[0] - S.centre[0]) * k, S.centre[1] + (p[1] - S.centre[1]) * k, TH + z] as V3);
     flat += poly(plateShape, plate.fill, plate.rim, 1.4) + poly(shrink(0.87, 0.4), "none", plate.rim, 0.8);
     // 2026-10-28 (owner): a small plate on the big one, and in it a round card in the theme's design;
@@ -276,11 +278,11 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
     // Standing pieces: the cup on the top-right corner, the bottle beside it, the hat top-left.
     if (ch.cups !== NONE) {
       const base = at(17, 12, 0);
-      add(base, solid(base, 3.4, 4, 9, ch.cups === "plain" ? t.cupColor : CUP[ch.cups] ?? "#FFFFFF", ch.cups === "plain" ? t.cupColor : "#FFFFFF") + (ch.cups !== "plain" ? `<path d="M${P(at(17, 12, 6)).map(f1).join(",")}L${P(at(18.5, 13.5, 16)).map(f1).join(",")}" stroke="#9AA6B2" stroke-width="2.4"/>` : ""));
+      add(base, solid(base, 3.4, 4, 9, ch.cups === "plain" ? t.cupColor : CUP[ch.cups] ?? "#FFFFFF", ch.cups === "plain" ? t.cupColor : "#FFFFFF") + (ch.cups === "iridescent" ? `<path d="M${P(at(17, 12, 6)).map(f1).join(",")}L${P(at(18.5, 13.5, 16)).map(f1).join(",")}" stroke="#9AA6B2" stroke-width="2.4"/>` : ""));
     }
     if (ch.bottleLabel !== NONE) {
       const base = at(25, 12, 0);
-      add(base, solid(base, 3.2, 3.2, 14, "#E8F2F9") + solid(at(25, 12, 5), 3.3, 3.3, 5, mat1) + solid(at(25, 12, 14), 3.2, 1.4, 4, "#E8F2F9") + solid(at(25, 12, 18), 1.4, 1.4, 2, "#93C5FD"));
+      add(base, solid(base, 3.2, 3.2, 14, "#E8F2F9") + solid(at(25, 12, 5), 3.3, 3.3, 5, ch.bottleLabel === "plain" ? t.labelColor : mat1) + solid(at(25, 12, 14), 3.2, 1.4, 4, "#E8F2F9") + solid(at(25, 12, 18), 1.4, 1.4, 2, "#93C5FD"));
     }
     if (ch.partyHats !== NONE) {
       const base = at(-17, 12, 0);

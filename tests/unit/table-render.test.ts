@@ -142,7 +142,7 @@ describe("the pictures and the prompt", () => {
     expect(referencePictures(t, "frozen").map((r) => r.key)).not.toContain("napkins");
     expect(tablePrompt(t, frozen, [])).toMatch(/a plain [a-z ]+ paper napkin/);
     // A bottle without words says so: no made-up words on it.
-    expect(tablePrompt(table({ bottleLabel: "pattern" }), frozen, ["bottleLabel"])).toContain("its label with no words");
+    expect(tablePrompt(table({ bottleLabel: "watercolour" }), frozen, ["bottleLabel"])).toContain("its label with no words");
   });
   it("None has no picture; the low table has cushions, not chairs", () => {
     expect(referencePictures(table({ placemats: NONE }), "frozen").some((r) => r.key === "placemats")).toBe(false);
@@ -162,12 +162,12 @@ describe("the pictures and the prompt", () => {
   });
   it("a kids' party: printed paper in the theme's pattern, disposable cutlery, nothing formal", () => {
     const p = tablePrompt(table(), frozen, []);
-    expect(p).toContain("A3 paper placemat printed all over with snowflakes and little stars");
+    expect(p).toContain("A3 paper placemat with a soft watercolour wash and big snowflakes and little stars in its corners");
     expect(p).toContain("disposable paper plates with a shimmering iridescent");
     expect(p).toContain("a disposable fork, knife and spoon made of natural light wood, not metal");
     expect(p).toContain("a cone party hat");
     expect(p).toMatch(/children's birthday party.*no glassware, no china, no charger plates/);
-    expect(tablePrompt(table(), themeById("dinosaur")!, [])).toContain("printed all over with dinosaur footprints and leaves");
+    expect(tablePrompt(table(), themeById("dinosaur")!, [])).toContain("big dinosaur footprints and leaves in its corners");
   });
 });
 

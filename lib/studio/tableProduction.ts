@@ -4,7 +4,7 @@
 // the theme's design (the owner: "o da production list'te çıktı olarak
 // listede yer alacak"). Read from the table itself, like the Design Pack's
 // specification (lib/pack/spec.ts).
-import { PLATE_CARD_MM, TABLE_ITEMS, onFloor, plateCardArt, tableOption } from "./tableCatalog";
+import { PLATE_CARD_MM, PLATE_SHAPES, TABLE_ITEMS, onFloor, plateCardArt, tableOption } from "./tableCatalog";
 import { colourWords } from "./tableRender";
 import { clampKids, itemColour, tableCounts, wordsColour, wordsOn, type TableSetup } from "./tableSetup";
 
@@ -40,19 +40,22 @@ export function tableProductionList(t: TableSetup, theme: { id: string; accent: 
     const quantity = o.unit === "per_table" ? tables : kids;
     const colour = itemColour(t, item.key);
     const base = { item: item.label, detail: o.name + (colour ? `, ${words(colour)}` : ""), quantity, ...(colour ? { colour } : {}) };
+    // A plain piece's design: its colour only; the others print the theme's design.
+    const art = o.themed ? `/design/table/placemats/${themeId}/${o.id}.webp` : undefined;
     if (item.key === "plates") {
-      rows.push({ ...base, item: "Big plates" }, { ...base, item: "Small plates" });
+      const shape = o.id === "plain" ? `, ${PLATE_SHAPES.find((p) => p.id === t.plateShape)?.name.toLowerCase() ?? "round"}` : "";
+      rows.push({ ...base, item: "Big plates", detail: base.detail + shape }, { ...base, item: "Small plates", detail: base.detail + shape });
       rows.push({
         item: "Plate cards", detail: `Round card in each small plate, printed in the theme's design, diameter ${PLATE_CARD_MM} mm`, quantity: kids,
         print: { widthMm: PLATE_CARD_MM, heightMm: PLATE_CARD_MM, round: true, art: plateCardArt(t.choices, themeId) },
       });
     } else if (item.key === "placemats") {
       const w = wordsOn(t, "placemats");
-      rows.push({ ...base, detail: `${o.name}, A3`, print: { widthMm: 420, heightMm: 297, art: `/design/table/placemats/${themeId}/${o.id}.webp`, ...(w ? { words: w, wordsColour: wordsColor } : {}) } });
+      rows.push({ ...base, detail: `${base.detail}, A3`, print: { widthMm: 420, heightMm: 297, ...(art ? { art } : {}), ...(w ? { words: w, wordsColour: wordsColor } : {}) } });
     } else if (item.key === "bottleLabel") {
       const w = wordsOn(t, "bottleLabel");
       rows.push({ item: "Water bottles", detail: "Small water bottle", quantity });
-      rows.push({ ...base, print: { widthMm: 205, heightMm: 50, art: `/design/table/placemats/${themeId}/${o.id}.webp`, ...(w ? { words: w, wordsColour: wordsColor } : {}) } });
+      rows.push({ ...base, print: { widthMm: 205, heightMm: 50, ...(art ? { art } : {}), ...(w ? { words: w, wordsColour: wordsColor } : {}) } });
     } else if (item.key === "cutleryHolder") {
       rows.push(base);
       const w = wordsOn(t, "cutleryHolder");

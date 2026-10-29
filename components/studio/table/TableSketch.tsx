@@ -14,7 +14,8 @@ export default function TableSketch({ table, palette, accent, className }: { tab
   const ch = table.choices;
   const { tables, width, height } = arrangeTables(table);
   const colours: GlyphColours = { palette: palette.length ? palette : ["#FBCFE8"], accent, cloth: table.clothColor, runner: table.runnerColor, napkin: table.napkinColor,
-    plate: table.plateColor, cup: table.cupColor, holder: table.holderColor, chair: table.chairColor };
+    plate: table.plateColor, cup: table.cupColor, holder: table.holderColor, chair: table.chairColor,
+    placemat: table.placematColor, label: table.labelColor, plateShape: table.plateShape };
   let seatNo = 0;
 
   const floor = onFloor(ch);
