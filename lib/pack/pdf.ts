@@ -159,7 +159,7 @@ export async function specificationPdf(spec: PackSpec, o: PdfOptions): Promise<U
   if (spec.kidsTable.length) {
     w.sub("A5. Kids' table");
     w.rows(spec.kidsTable.map((r): [string, string, string?] => [r.item, `${r.detail} — ${r.quantity}${r.print
-      ? ` · print ${r.print.round ? `round, diameter ${r.print.widthMm} mm` : `${r.print.widthMm} x ${r.print.heightMm} mm`}${r.print.words ? `, words "${r.print.words}" in ${r.print.wordsColour}` : ""}${r.print.art ? ", in the theme's design; final artwork resolution " + TO_CONFIRM : ""}`
+      ? ` · print ${r.print.round ? `round, diameter ${r.print.widthMm} mm` : `${r.print.widthMm} x ${r.print.heightMm} mm`}${r.print.words ? `, words "${r.print.words}" in ${r.print.wordsColour}${r.print.wordsFont ? `, ${r.print.wordsFont} lettering` : ""}` : ""}${r.print.art ? ", in the theme's design; final artwork resolution " + TO_CONFIRM : ""}`
       : ""}`, r.colour]));
   }
 

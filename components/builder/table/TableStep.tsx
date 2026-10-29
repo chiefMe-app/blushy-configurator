@@ -5,16 +5,20 @@
 // cloth's colour and the words on the placemats. Prices add to the party total.
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { CHAIR_COLOURS, NONE, PLAIN_COLOURS, PLATE_SHAPES, TABLE_SECTIONS, onFloor, optionPhoto, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
-import { COLOUR_OF, wordsColour, MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, WORDS_ITEMS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup, type WordsKey } from "@/lib/studio/tableSetup";
+import { TABLE_FONTS, fontCss, tableFont, type TableFont } from "@/lib/studio/tableFonts";
+import { COLOUR_OF, FONT_OF, wordsColour, MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, WORDS_ITEMS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup, type WordsKey } from "@/lib/studio/tableSetup";
 import { GlyphDefs, glyph, scallop, type GlyphColours } from "@/components/studio/table/glyphs";
 
 /** The printed words in their colour, with a shadow that keeps light words readable on the design. */
-export function wordsStyle(hex: string) {
+export function wordsStyle(hex: string, font?: TableFont) {
   const n = parseInt(hex.slice(1), 16), lum = (0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255)) / 255;
-  return { color: hex, textShadow: lum > 0.75 ? "0 1px 2px rgba(60,40,50,0.55)" : undefined };
+  return { color: hex, textShadow: lum > 0.75 ? "0 1px 2px rgba(60,40,50,0.55)" : undefined, ...(font ? fontStyle(font) : {}) };
 }
 
-function OptionArt({ item, option, colours, themeId, words, colour, textColor }: { item: TableItem; option: TableOption | null; colours: GlyphColours; themeId: string; words?: string; colour?: string; textColor?: string }) {
+/** Words in a lettering face (2026-10-29): print faces in capitals, handwritten ones as typed and a little bigger. */
+const fontStyle = (font: TableFont) => ({ fontFamily: `${fontCss(font)}, Georgia, serif`, fontWeight: font.weight, textTransform: font.hand ? ("none" as const) : ("uppercase" as const), letterSpacing: font.hand ? 0 : undefined, "--fscale": font.scale } as React.CSSProperties);
+
+function OptionArt({ item, option, colours, themeId, words, colour, textColor, font }: { item: TableItem; option: TableOption | null; colours: GlyphColours; themeId: string; words?: string; colour?: string; textColor?: string; font?: TableFont }) {
   const photo = optionPhoto(item.key, option ?? undefined, themeId, colour);
   if (option && photo) {
     // A coloured option shows the chosen colour on its picture (the chair's picture is in it); a placemat or label, the customer's words.
@@ -23,7 +27,7 @@ function OptionArt({ item, option, colours, themeId, words, colour, textColor }:
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className={option.colouredPhotos ? "photo cutout" : "photo"} src={photo} alt="" loading="lazy" />
       {swatch && <i className="swatch" style={{ background: swatch }} aria-hidden="true" />}
-      {words && <span className={`words ${item.key} ${option.id}`} style={textColor ? wordsStyle(textColor) : undefined} aria-hidden="true">{item.key === "placemats" ? stacked(words) : words}</span>}
+      {words && <span className={`words ${item.key} ${option.id}`} style={textColor ? wordsStyle(textColor, font) : undefined} aria-hidden="true">{item.key === "placemats" ? stacked(words) : words}</span>}
     </>;
   }
   // The plain plates: a big and a small plate in the colour.
@@ -119,6 +123,8 @@ export default function TableStep({ config, setTable }: {
     const wordsItem = WORDS_ITEMS.find((w) => w.key === key);
     // The words show on the placemat and label pictures; the holders' photos have no room for them.
     const words = key === "placemats" || key === "bottleLabel" ? table.words?.[key as WordsKey] : undefined;
+    const fontField = key === "placemats" || key === "bottleLabel" ? FONT_OF[key] : undefined;
+    const font = fontField ? tableFont(table[fontField]) : undefined;
     return (
       <div key={key} className="bz-tb-item">
         <h3>{it.label}</h3>
@@ -132,7 +138,7 @@ export default function TableStep({ config, setTable }: {
           {it.options.map((o) => (
             <button key={o.id} type="button" role="radio" aria-checked={table.choices[key] === o.id} className={`bz-tb-option ${table.choices[key] === o.id ? "on" : ""}`} onClick={() => choose(key, o.id)}>
               {table.choices[key] === o.id && <span className="tick">✓</span>}
-              <span className="art"><OptionArt item={it} option={o} colours={colours} themeId={theme.id} words={words} colour={colourOf(o)} textColor={textColor} /></span>
+              <span className="art"><OptionArt item={it} option={o} colours={colours} themeId={theme.id} words={words} colour={colourOf(o)} textColor={textColor} font={font} /></span>
               <b>{o.name}</b>
               <small>{o.note}</small>
               <em>{unitLabel(o)}</em>
@@ -155,6 +161,17 @@ export default function TableStep({ config, setTable }: {
               onChange={(e) => set({ words: { ...table.words, [wordsItem.key]: cleanPlacematText(e.target.value) } })} />
           </label>
         )}
+        {fontField && font && chosen && (
+          // The words' lettering (2026-10-29): a few print faces and a few handwritten ones.
+          <div className="bz-tb-fonts" role="radiogroup" aria-label={`${it.label} lettering`} data-testid={`${key}-font`}>
+            {TABLE_FONTS.map((f) => (
+              <button key={f.id} type="button" role="radio" aria-checked={font.id === f.id} className={font.id === f.id ? "on" : ""} onClick={() => set({ [fontField]: f.id })}>
+                <span style={fontStyle(f)}>{words || "Arya"}</span>
+                <small>{f.name}</small>
+              </button>
+            ))}
+          </div>
+        )}
         {(key === "bottleLabel" || key === "placemats") && chosen && (
           // One colour for the words on the placemats and the labels: the theme's, unless changed (2026-10-28).
           <div className="bz-tb-words-colour">
@@ -167,7 +184,7 @@ export default function TableStep({ config, setTable }: {
           // A3 placemat with the words bottom-right, like the owner's reference.
           <div className={key === "bottleLabel" ? "bz-tb-label" : "bz-tb-label placemat"} data-testid={key === "bottleLabel" ? "bottle-label-preview" : "placemat-preview"}
             style={chosen.themed ? { backgroundImage: `url(${optionPhoto(key, chosen, theme.id)})` } : { background: key === "placemats" ? table.placematColor : table.labelColor }}>
-            <span style={wordsStyle(textColor)}>{key === "placemats" ? stacked(table.words?.placemats || "Your words here") : table.words?.bottleLabel || "Your words here"}</span>
+            <span style={wordsStyle(textColor, font)}>{key === "placemats" ? stacked(table.words?.placemats || "Your words here") : table.words?.bottleLabel || "Your words here"}</span>
           </div>
         )}
       </div>
@@ -176,6 +193,8 @@ export default function TableStep({ config, setTable }: {
 
   return (
     <div className="bz-tb">
+      {/* The lettering fonts (the words' choices are shown in them). */}
+      <link rel="stylesheet" href="/fonts/typography/fonts.css" />
       <div className="bz-tb-item">
         <h3>How many kids?</h3>
         <div className="bz-ts-row">

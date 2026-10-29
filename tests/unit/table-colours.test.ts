@@ -110,8 +110,8 @@ describe("in the render", () => {
     expect(p).toContain("the band is pastel lilac, whatever colour its photo shows");
   });
   it("the words in their colour", () => {
-    expect(p).toContain(`in elegant ${colourWords("#8E24AA")} serif capitals`);
-    expect(p).toContain('with "Arya" printed on the label in purple letters');
+    expect(p).toContain(`in small ${colourWords("#8E24AA")} letters set in an elegant classic serif, all capitals`);
+    expect(p).toContain('with "ARYA" printed on the label in purple letters set in an elegant classic serif, all capitals');
   });
   it("the drawing: the chair, the plates and the words in their colours", () => {
     const svg = tableCloseGuideSvg(t, frozen, { placemat: "data:image/jpeg;base64,AAAA" });
@@ -135,8 +135,8 @@ describe("the production list", () => {
     expect(rows.some((r) => /card/i.test(r.item))).toBe(false);
   });
   it("the printed pieces with their words and words colour; the chair in its colour", () => {
-    expect(row("Placemats").print).toMatchObject({ widthMm: 420, heightMm: 297, words: "Arya turns 6", wordsColour: "#8E24AA" });
-    expect(row("Water bottle label").print).toMatchObject({ widthMm: 205, heightMm: 50, words: "Arya", wordsColour: "#8E24AA" });
+    expect(row("Placemats").print).toMatchObject({ widthMm: 420, heightMm: 297, words: "ARYA TURNS 6", wordsColour: "#8E24AA", wordsFont: "Classic (Playfair Display)" });
+    expect(row("Water bottle label").print).toMatchObject({ widthMm: 205, heightMm: 50, words: "ARYA", wordsColour: "#8E24AA" });
     expect(row("Water bottles").quantity).toBe(12);
     expect(row("Name tags").print).toMatchObject({ words: "Arya" });
     expect(row("Chairs")).toMatchObject({ quantity: 12, colour: "#F8BBD0" });
@@ -183,13 +183,13 @@ describe("the trimmed options (2026-10-29)", () => {
     const p = tablePrompt(t, frozen, []);
     expect(p).toContain("a plain matte pastel mint green A3 paper placemat");
     expect(p).toContain("The placemats are plain pastel mint green paper, with nothing printed on them but the words.");
-    expect(p).toContain("a small clear water bottle wrapped in a plain matte pastel peach paper label with \"Arya\" printed");
+    expect(p).toContain("a small clear water bottle wrapped in a plain matte pastel peach paper label with \"ARYA\" printed on the label");
     expect(p).not.toContain("(image 0)");
     const svg = tableCloseGuideSvg(t, frozen);
     expect(svg).toContain('fill="#BBF7D0"');
     expect(svg).toContain('fill="#FFD1A4"');
     const rows = tableProductionList(t, frozen);
-    expect(rows.find((r) => r.item === "Placemats")).toMatchObject({ colour: "#BBF7D0", print: { widthMm: 420, words: "Arya turns 6" } });
+    expect(rows.find((r) => r.item === "Placemats")).toMatchObject({ colour: "#BBF7D0", print: { widthMm: 420, words: "ARYA TURNS 6" } });
     expect(rows.find((r) => r.item === "Placemats")!.print!.art).toBeUndefined();
     expect(rows.find((r) => r.item === "Water bottle label")!.print!.art).toBeUndefined();
   });

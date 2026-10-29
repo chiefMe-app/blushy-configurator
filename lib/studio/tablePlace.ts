@@ -11,6 +11,7 @@
 import { NONE, onFloor, tableOption } from "./tableCatalog";
 import { arrangeTables, focusSeats, type Pt, type Seat } from "./tableShapes";
 import { itemColour, wordsColour, wordsOn, type TableSetup } from "./tableSetup";
+import { asPrinted, tableFont } from "./tableFonts";
 import PIECES from "./tableTopPieces.json";
 
 /** The picture: 80 × 60 cm round the place, a little more of the near side (the chair). */
@@ -34,12 +35,12 @@ export type PlaceNode =
   | { k: "sheet"; x: number; y: number; w: number; h: number; art?: string; fill?: string; lift: Lift; id: string }
   /** The napkin band, a strip in its colour. */
   | { k: "band"; x: number; y: number; w: number; h: number; fill: string; id: string }
-  /** Words in the elegant face, stacked one word a line in the placemat's bottom-right corner. */
-  | { k: "matWords"; lines: string[]; colour: string; id: string }
+  /** Words in their face (./tableFonts), stacked one word a line in the placemat's bottom-right corner. */
+  | { k: "matWords"; lines: string[]; font: string; colour: string; id: string }
   /** Words fitted into a box (the name on its tag), in a face. */
   | { k: "words"; lines: string[]; face: "elegant" | "script"; colour: string; x: number; y: number; w: number; h: number; id: string }
   /** The water bottle and its label: the design or a colour, with the words. */
-  | { k: "bottle"; x: number; y: number; w: number; h: number; label: [number, number, number, number]; art?: string; fill?: string; words?: string; colour: string; id: string }
+  | { k: "bottle"; x: number; y: number; w: number; h: number; label: [number, number, number, number]; art?: string; fill?: string; words?: string; font: string; colour: string; id: string }
   /** A place, turned to its seat. */
   | { k: "group"; x: number; y: number; rot: number; nodes: PlaceNode[]; id: string; focus: boolean };
 
@@ -57,19 +58,20 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
   if (mat) {
     nodes.push({ k: "sheet", x: 0, y: 0, w: 42, h: 29.7, ...(mat.themed ? { art: `/design/table/placemats/${theme.id}/${mat.id}.webp` } : { fill: colour("placemats") ?? "#FFFFFF" }), lift: 0.05, id: `${id}-mat` });
     const w = wordsOn(t, "placemats");
-    if (w) nodes.push({ k: "matWords", lines: w.toUpperCase().split(/\s+/), colour: words, id: `${id}-matwords` });
+    if (w) nodes.push({ k: "matWords", lines: asPrinted(w, tableFont(t.placematFont)).split(/\s+/), font: tableFont(t.placematFont).id, colour: words, id: `${id}-matwords` });
   }
   // The big plate with the small one in it (2026-10-29: nothing in the small one).
   const plates: PieceName = ch.plates === "plain" ? (`plates-plain-${t.plateShape}` as PieceName) : (`plates-${ch.plates}` as PieceName);
   if (PIECES[plates]) nodes.push({ k: "img", src: piece(plates), x: 0, y: 0, w: 23, h: tall(plates, 23), tint: colour("plates"), lift: 0.4, id: `${id}-plates` });
-  // On the left: the cutlery standing up out of the napkin's pocket, the band round it.
+  // On the left: the folded napkin, the cutlery lying on it (2026-10-29, the
+  // owner: "peçete her zaman cutlery'nin altında olmalı"), the band round both.
+  const printed = ch.napkins === "printed" ? `/design/table/placemats/${theme.id}/pattern.webp` : undefined;
+  nodes.push({ k: "img", src: piece("pocket"), x: -16.6, y: 1.5, w: 8.6, h: tall("pocket", 8.6), ...(printed ? { print: printed } : { tint: colour("napkins") ?? "#FFFFFF" }), lift: 0.2, id: `${id}-napkin` });
   const cutlery = `cutlery-${ch.cutlery}` as const;
   [0, 1, 2].forEach((k) => {
     const name = `${cutlery}-${k}` as PieceName;
-    if (PIECES[name]) nodes.push({ k: "img", src: piece(name), x: -18.3 + k * 1.9, y: -3.5, w: (16.5 * PIECES[name].w) / PIECES[name].h, h: 16.5, rot: (k - 1) * 4, lift: 0.3, id: `${id}-cutlery-${k}` });
+    if (PIECES[name]) nodes.push({ k: "img", src: piece(name), x: -18.5 + k * 1.9, y: 1.5, w: (16.5 * PIECES[name].w) / PIECES[name].h, h: 16.5, rot: (k - 1) * 2, lift: 0.4, id: `${id}-cutlery-${k}` });
   });
-  const printed = ch.napkins === "printed" ? `/design/table/placemats/${theme.id}/pattern.webp` : undefined;
-  nodes.push({ k: "img", src: piece("pocket"), x: -16.6, y: 2, w: 7.6, h: tall("pocket", 7.6), ...(printed ? { print: printed } : { tint: colour("napkins") ?? "#FFFFFF" }), lift: 0.5, id: `${id}-napkin` });
   if (ch.cutleryHolder !== NONE) {
     nodes.push({ k: "band", x: -16.6, y: 1.5, w: 8.4, h: 4.2, fill: colour("cutleryHolder") ?? "#FFFFFF", id: `${id}-band` });
     const name = wordsOn(t, "cutleryHolder");
@@ -90,7 +92,7 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
   if (label) {
     const w = wordsOn(t, "bottleLabel");
     nodes.push({ k: "bottle", x: 23.4, y: -4, w: 6.4, h: tall("bottle", 6.4), label: PIECES.bottle.label as [number, number, number, number],
-      ...(label.themed ? { art: `/design/table/placemats/${theme.id}/${label.id}.webp` } : { fill: colour("bottleLabel") ?? "#FFFFFF" }), ...(w ? { words: w } : {}), colour: words, id: `${id}-bottle` });
+      ...(label.themed ? { art: `/design/table/placemats/${theme.id}/${label.id}.webp` } : { fill: colour("bottleLabel") ?? "#FFFFFF" }), ...(w ? { words: asPrinted(w, tableFont(t.labelFont)) } : {}), font: tableFont(t.labelFont).id, colour: words, id: `${id}-bottle` });
   }
   // The cone hat on its side, top-left, in a soft colour of the theme.
   if (ch.partyHats === "cone") {

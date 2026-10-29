@@ -4,37 +4,58 @@
 // change of colour or words shows at once, with no render (2026-10-29).
 import { useEffect, useMemo, useState } from "react";
 import type { TableSetup } from "@/lib/studio/tableSetup";
-import { fitPlacematWords } from "@/lib/studio/placematWords";
+import { fitPlacematWords, placematWordsBottom, placematWordsGap } from "@/lib/studio/placematWords";
 import { PLACE_VIEW, placeLayout, type PlaceNode } from "@/lib/studio/tablePlace";
+import { fontCss, tableFont } from "@/lib/studio/tableFonts";
 
-type Face = "elegant" | "script";
-const FACE_VAR: Record<Face, string> = { elegant: "--bz-font-playfair", script: "--bz-font-signature" };
-const FACE_FALLBACK: Record<Face, string> = { elegant: "'Playfair Display', Georgia, serif", script: "Italianno, cursive" };
-// Before the fonts are measured: about how wide a letter is, for a size of 1.
-const GUESS: Record<Face, number> = { elegant: 0.68, script: 0.36 };
+/** A face: "script" (the name tags', the page's own Italianno), or a lettering font of lib/studio/tableFonts. */
+type Face = string;
+const SCRIPT_VAR = "--bz-font-signature";
 
-/** The faces' CSS families (next/font's own names), and a line's width at size 1, measured once the fonts have loaded. */
-function useMeasure() {
+/** The lettering fonts' stylesheet, added to the page once. */
+const FONTS_CSS = "/fonts/typography/fonts.css";
+let fontsCss: Promise<void> | null = null;
+export function loadFontsCss(): Promise<void> {
+  if (typeof document === "undefined") return Promise.resolve();
+  if (!fontsCss) {
+    fontsCss = new Promise((done) => {
+      if (document.querySelector(`link[href="${FONTS_CSS}"]`)) { done(); return; }
+      const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href: FONTS_CSS });
+      link.onload = link.onerror = () => done();
+      document.head.appendChild(link);
+    });
+  }
+  return fontsCss;
+}
+
+/** The faces' CSS (family and weight), and a line's width at size 1, measured once the fonts have loaded. */
+function useMeasure(faces: Face[]) {
   const [, setLoaded] = useState(0);
-  const families = useMemo(() => {
-    if (typeof window === "undefined") return FACE_FALLBACK;
-    const css = getComputedStyle(document.documentElement);
-    return { elegant: css.getPropertyValue(FACE_VAR.elegant).trim() || FACE_FALLBACK.elegant, script: css.getPropertyValue(FACE_VAR.script).trim() || FACE_FALLBACK.script };
-  }, []);
+  const script = useMemo(() => (typeof window === "undefined" ? "" : getComputedStyle(document.documentElement).getPropertyValue(SCRIPT_VAR).trim()) || "Italianno, cursive", []);
+  const family = (face: Face) => (face === "script" ? script : `${fontCss(tableFont(face))}, Georgia, serif`);
+  const weight = (face: Face) => (face === "script" ? 400 : tableFont(face).weight);
+  const key = Array.from(new Set(faces)).sort().join(",");
   useEffect(() => {
     if (typeof document === "undefined" || !document.fonts) return;
     let live = true;
-    void Promise.all((Object.keys(families) as Face[]).map((f) => document.fonts.load(`40px ${families[f]}`).catch(() => null))).then(() => { if (live) setLoaded((n) => n + 1); });
+    void loadFontsCss()
+      .then(() => Promise.all(key.split(",").filter(Boolean).map((f) => document.fonts.load(`${weight(f)} 40px ${family(f)}`).catch(() => null))))
+      .then(() => { if (live) setLoaded((n) => n + 1); });
     return () => { live = false; };
-  }, [families]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
   const ctx = useMemo(() => (typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d")), []);
   const width = (text: string, face: Face) => {
-    if (!ctx) return text.length * GUESS[face];
-    ctx.font = `100px ${families[face]}`;
+    // Before the fonts are measured: about how wide a letter is, for a size of 1.
+    if (!ctx) return text.length * (face === "script" ? 0.36 : 0.62);
+    ctx.font = `${weight(face)} 100px ${family(face)}`;
     return ctx.measureText(text).width / 100;
   };
-  return { families, width };
+  return { family, weight, width };
 }
+
+/** The faces a view letters in. */
+const facesOf = (nodes: PlaceNode[]): Face[] => nodes.flatMap((n) => (n.k === "group" ? facesOf(n.nodes) : n.k === "matWords" || n.k === "bottle" ? [n.font] : n.k === "words" ? [n.face] : []));
 
 /** Every tint and shadow the view uses, as filters: a white piece multiplied by its colour, then its shadow. */
 const filterId = (tint: string | undefined, lift: number) => `tp-${(tint ?? "none").replace("#", "")}-${Math.round(lift * 10)}`;
@@ -50,7 +71,7 @@ function Filter({ tint, lift }: { tint?: string; lift: number }) {
 
 export default function TablePlace({ table, theme, className }: { table: TableSetup; theme: { id: string; balloonColors: string[]; accent: string }; className?: string }) {
   const nodes = useMemo(() => placeLayout(table, theme), [table, theme]);
-  const { families, width } = useMeasure();
+  const { family, weight, width } = useMeasure(facesOf(nodes));
   const filters = new Map<string, { tint?: string; lift: number }>();
   const use = (tint: string | undefined, lift: number) => {
     if (!tint && lift <= 0) return undefined;
@@ -59,7 +80,7 @@ export default function TablePlace({ table, theme, className }: { table: TableSe
     return `url(#${id})`;
   };
   const text = (lines: string[], face: Face, size: number, colour: string, x: number, y0: number, anchor: "end" | "middle", gap: number) =>
-    lines.map((l, i) => <text key={i} x={x} y={y0 + i * gap} fontSize={size} fill={colour} textAnchor={anchor} style={{ fontFamily: families[face] }}>{l}</text>);
+    lines.map((l, i) => <text key={i} x={x} y={y0 + i * gap} fontSize={size} fill={colour} textAnchor={anchor} style={{ fontFamily: family(face), fontWeight: weight(face) }}>{l}</text>);
   const draw = (n: PlaceNode): React.ReactNode => {
     switch (n.k) {
       case "top":
@@ -88,9 +109,10 @@ export default function TablePlace({ table, theme, className }: { table: TableSe
           <rect x={n.x - n.w / 2} y={n.y - n.h / 2} width={n.w} height={n.h} fill="url(#tp-band)" />
         </g>;
       case "matWords": {
-        // Bottom-right of the placemat, right-aligned, one word a line, as big as the corner allows.
-        const size = fitPlacematWords(n.lines, (line, s) => width(line, "elegant") * s), gap = size * 1.12;
-        return <g key={n.id} data-part={n.id} data-size={size.toFixed(1)}>{text(n.lines, "elegant", size, n.colour, 20, 14 - (n.lines.length - 1) * gap, "end", gap)}</g>;
+        // Bottom-right of the placemat, right-aligned, one word a line, small (./placematWords).
+        const face = tableFont(n.font);
+        const size = fitPlacematWords(n.lines, (line, s) => width(line, n.font) * s, face), gap = placematWordsGap(size, face.scale);
+        return <g key={n.id} data-part={n.id} data-size={size.toFixed(1)} data-font={n.font}>{text(n.lines, n.font, size, n.colour, 20, placematWordsBottom(size, face) - (n.lines.length - 1) * gap, "end", gap)}</g>;
       }
       case "words": {
         const size = Math.min(n.h / (n.lines.length * 1.1), (n.w / Math.max(...n.lines.map((l) => width(l, n.face)))));
@@ -100,15 +122,16 @@ export default function TablePlace({ table, theme, className }: { table: TableSe
         const [lx, ly, lw, lh] = n.label;
         const x0 = n.x - n.w / 2, y0 = n.y - n.h / 2;
         const box = { x: x0 + lx * n.w, y: y0 + ly * n.h, w: lw * n.w, h: lh * n.h };
-        const lines = n.words?.toUpperCase().split(/\s+/) ?? [];
-        const size = lines.length ? Math.min(box.h / (lines.length * 1.25), (box.w * 0.85) / Math.max(...lines.map((l) => width(l, "elegant")))) : 0;
+        const lines = n.words?.split(/\s+/) ?? [];
+        const scale = tableFont(n.font).scale;
+        const size = lines.length ? Math.min((box.h * scale) / (lines.length * 1.25), (box.w * 0.85) / Math.max(...lines.map((l) => width(l, n.font)))) : 0;
         const all = { x: x0, y: y0, width: n.w, height: n.h, preserveAspectRatio: "none" as const };
-        return <g key={n.id} filter={use(undefined, 1.8)} data-part={n.id}>
+        return <g key={n.id} filter={use(undefined, 1.8)} data-part={n.id} data-font={n.font}>
           <image href="/design/table/top/bottle.webp" {...all} />
           <mask id={`${n.id}-m`}><image href="/design/table/top/bottle-label.webp" {...all} /></mask>
           <g mask={`url(#${n.id}-m)`}>
             {n.art ? <image href={n.art} x={box.x} y={box.y} width={box.w} height={box.h} preserveAspectRatio="xMidYMid slice" /> : <rect x={box.x} y={box.y} width={box.w} height={box.h} fill={n.fill} />}
-            {size > 0 && text(lines, "elegant", size, n.colour, n.x, box.y + box.h / 2 - ((lines.length - 1) * size * 1.12) / 2 + size * 0.35, "middle", size * 1.12)}
+            {size > 0 && text(lines, n.font, size, n.colour, n.x, box.y + box.h / 2 - ((lines.length - 1) * (size / scale) * 1.12) / 2 + (size / scale) * 0.35, "middle", (size / scale) * 1.12)}
           </g>
           <image href="/design/table/top/bottle-label.webp" {...all} style={{ mixBlendMode: "multiply" }} />
         </g>;

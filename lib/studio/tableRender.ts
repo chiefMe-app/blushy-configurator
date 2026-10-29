@@ -10,12 +10,13 @@ import { NONE, PLATE_SHAPES, onFloor, optionPhoto, plainColour, tableOption, typ
 import type { TableScene, TableSetup } from "./tableSetup";
 import type { TableView } from "./tableCloseGuide";
 import { WORDS_ITEMS, clampKids, itemColour, wordsColour, wordsOn } from "./tableSetup";
+import { asPrinted, fontWords, tableFont } from "./tableFonts";
 
 export type { TableRender } from "./tableSetup";
 
 /** Changes whenever anything that shows in the picture changes — the theme too (its designs and colours). */
 export function tableRenderKey(t: TableSetup, themeId: string): string {
-  const s = JSON.stringify([themeId, clampKids(t.kids), Object.entries(t.choices).sort(), t.clothColor, t.runnerColor, t.napkinColor, t.plateColor, t.cupColor, t.holderColor, t.chairColor, t.placematColor, t.labelColor, t.plateShape, t.textColor, t.scene ?? "garden", WORDS_ITEMS.map((w) => wordsOn(t, w.key) ?? "")].flat(2));
+  const s = JSON.stringify([themeId, clampKids(t.kids), Object.entries(t.choices).sort(), t.clothColor, t.runnerColor, t.napkinColor, t.plateColor, t.cupColor, t.holderColor, t.chairColor, t.placematColor, t.labelColor, t.plateShape, t.placematFont, t.labelFont, t.textColor, t.scene ?? "garden", WORDS_ITEMS.map((w) => wordsOn(t, w.key) ?? "")].flat(2));
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
   return (h >>> 0).toString(36);
@@ -124,6 +125,7 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
   const colours = Array.from(new Set(theme.balloonColors.map(hexToColorName).filter(Boolean))).join(", ");
   const said = (k: "placemats" | "cutleryHolder" | "bottleLabel") => wordsOn(t, k);
   const placematWords = said("placemats"), holderWords = said("cutleryHolder"), bottleWords = said("bottleLabel");
+  const matFont = tableFont(t.placematFont), labelFont = tableFont(t.labelFont);
 
   // Where everything sits at a place, as the owner set it out (2026-10-28): the
   // cutlery only on the left, in its holder with the napkin; the cup on the
@@ -131,21 +133,20 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
   // corner; the words stacked one word a line in the bottom-right corner.
   const seat: string[] = [];
   if (word("placemats")) {
-    const stack = placematWords ? placematWords.toUpperCase().split(/\s+/).map((w) => `"${w}"${w.length > 1 ? ` (${Array.from(w).join("-")})` : ""}`).join(" above ") : "";
-    seat.push(`${word("placemats")}${exactly("placemats")}, lying flat on the table in front of the chair${stack ? `, with the words printed straight onto the placemat paper in its bottom-right corner in elegant ${colourWords(wordsColour(t, theme))} serif capitals, stacked one word per line (${stack}) — no sticker, no label, never on the plate` : ""}`);
+    const stack = placematWords ? asPrinted(placematWords, matFont).split(/\s+/).map((w) => `"${w}"${w.length > 1 ? ` (${Array.from(w).join("-")})` : ""}`).join(" above ") : "";
+    seat.push(`${word("placemats")}${exactly("placemats")}, lying flat on the table in front of the chair${stack ? `, with the words printed straight onto the placemat paper in its bottom-right corner in small ${colourWords(wordsColour(t, theme))} letters ${fontWords(matFont)}, stacked one word per line (${stack}) — no sticker, no label, never on the plate` : ""}`);
   }
   // 2026-10-28 (owner): a big plate with a small one on it (2026-10-29: nothing in the small one).
   const themedMats = !!tableOption("placemats", c.placemats)?.themed;
   if (word("plates")) seat.push(`in the middle of the placemat, two ${word("plates")}${exactly("plates")}: a big plate with a smaller plate of the same kind sitting in it, exactly as image 1 shows — one big plate and one small plate${top ? "" : " on each placemat"}, both empty, nothing on them and nothing written on them, and nothing lying beside the plates: to their right is bare placemat`);
   const napkin = `${word("napkins")}${exactly("napkins")}`, cutlery = `${word("cutlery")}${exactly("cutlery")}`;
   const name = holderWords ? ` with a little tag with the name "${holderWords}" on it` : ", with no tag and no words";
-  const like = pic("cutleryHolder") ? `, arranged exactly like the cutlery holder in image ${pic("cutleryHolder")}` : "";
-  // Tests 2026-10-28: "with the cutlery" read as loose cutlery beside the plate;
-  // the best one put it in a napkin pocket, as the band's picture now shows.
-  seat.push(c.cutleryHolder === "band" ? `on the left of the placemat: ${napkin} folded into a pocket with the cutlery (${word("cutlery")}) standing up out of it, wrapped round the middle by ${word("cutleryHolder")}${name}${like} — the band is ${colourWords(t.holderColor)}, whatever colour its photo shows`
-    : `on the left of the placemat: ${napkin} folded, with ${cutlery} laid on it`);
+  // 2026-10-29 (owner): "peçete her zaman cutlery'nin altında olmalı" — the
+  // cutlery lies on the napkin, with the band round both.
+  seat.push(c.cutleryHolder === "band" ? `on the left of the placemat: ${napkin} folded flat, with ${cutlery} lying on top of it, the napkin and the cutlery wrapped round the middle together by ${word("cutleryHolder")}${name} — the band is ${colourWords(t.holderColor)}, whatever colour its photo shows`
+    : `on the left of the placemat: ${napkin} folded flat, with ${cutlery} lying on top of it`);
   if (word("cups")) seat.push(`${word("cups")}${exactly("cups")} on the top-right corner of the placemat`);
-  if (word("bottleLabel")) seat.push(`just beside the cup, ${word("bottleLabel")}${pic("bottleLabel") ? ` (image ${pic("bottleLabel")})` : ""}${bottleWords ? ` with "${bottleWords}" printed on the label in ${colourWords(wordsColour(t, theme))} letters` : ", its label with no words"} — the cup and the bottle are both there, and this is the place's only bottle`);
+  if (word("bottleLabel")) seat.push(`just beside the cup, ${word("bottleLabel")}${pic("bottleLabel") ? ` (image ${pic("bottleLabel")})` : ""}${bottleWords ? ` with "${asPrinted(bottleWords, labelFont)}" printed on the label in ${colourWords(wordsColour(t, theme))} letters ${fontWords(labelFont)}` : ", its label with no words"} — the cup and the bottle are both there, and this is the place's only bottle`);
   if (word("partyHats")) seat.push(`${word("partyHats")} standing on the top-left corner of the placemat`);
   const words = Array.from(new Set([placematWords, holderWords, bottleWords].filter(Boolean) as string[]));
 
@@ -159,7 +160,7 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
     "Turn image 1 into a real photograph. Keep its camera angle and framing, and keep the table, every chair and every placemat, plate, napkin, cutlery, cup, bottle, hat and centrepiece exactly where image 1 has them — the same number of each, nothing added, moved or left out. Each simple shape in the drawing becomes the real piece; nothing of the drawing itself may remain — no outlines, no flat colours.",
     pictures.length ? "From each product photo take only the piece itself and ignore everything around it — the grass, walls, backdrops, other furniture, napkins, flowers and other tableware in those photos." : "",
     themedMats ? "The placemats in image 1 already carry their exact printed design: keep it exactly, as real printed paper." : c.placemats !== NONE ? `The placemats are plain ${colourWords(t.placematColor)} paper, with nothing printed on them but the words.` : "",
-    words.length && placematWords ? "The words on the placemats are already lettered in image 1: keep them exactly, letter for letter, in the same capitals, the same size and the same place, as real print on the paper — every letter there, none added." : "",
+    words.length && placematWords ? "The words on the placemats are already lettered in image 1: keep them exactly, letter for letter, in the same lettering, the same size and the same place, as real print on the paper — every letter there, none added." : "",
     // "Uzun bir masanın bir bölümü gözüksün, masa 2 kişilik gibi durmasın" (2026-10-28).
     top ? `Make a photograph of one child's place at a big, fully set children's party table: ${word("table")}${pic("table") ? " — exactly the table in its photo" : ""}. This one place fills the picture; the table top carries on beyond its edges, where the next places just begin at the sides, cut off by the frame, exactly as in image 1.`
       : `Make a photograph of one part of a big, fully set children's party table: ${word("table")}${pic("table") ? " — exactly the table in its photo, with the same shape, edges, colour and legs" : ""}. The table carries on beyond the edges of the picture, with more chairs and identical place settings continuing softly out of focus, so it is clearly a table for many children, not a table for two.`,
@@ -171,7 +172,7 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
     `${top ? "On the table in front of the chair is the place setting" : "In front of each chair, on the table, is the same setting"}: ${seat.join("; ")}.`,
     word("centrepiece") ? (top ? `At most the edge of the centrepiece (${word("centrepiece")}) shows at the top of the picture, only where image 1 has it.` : `Between the two settings, in the middle of the table: ${word("centrepiece")}${exactly("centrepiece")}.`) : "",
     // 2026-10-28 (owner): an extra metal fork and knife kept appearing to the right of the plate.
-    c.cutleryHolder === "band" ? "Each place has exactly one fork, one knife and one spoon, all standing upright in its napkin pocket on the left, never laid flat across the napkin. No other cutlery anywhere: nothing lies on the placemats, beside or on the plates, or on the table, and there is no metal cutlery at all." : "The only cutlery anywhere is the one set on the left of each placemat: no other forks, knives or spoons on the placemats, beside the plates or on the table.",
+    c.cutleryHolder === "band" ? "Each place has exactly one fork, one knife and one spoon, lying side by side on top of its folded napkin on the left, under the band — the napkin is always under the cutlery. No other cutlery anywhere: nothing lies on the placemats, beside or on the plates, or on the table, and there is no metal cutlery at all." : "The only cutlery anywhere is the one set lying on top of the napkin on the left of each placemat — the napkin is always under the cutlery: no other forks, knives or spoons on the placemats, beside the plates or on the table.",
     "Nothing that is not listed: no confetti, no curling ribbon, no extra plates, cups or hats, no name cards, no chair decorations, no balloons unless listed.",
     pictures.length ? "Every piece must look exactly like its photo: the same shape, colour, finish and material, and the printed designs exactly as in their pictures." : "",
     `Colour palette: ${colours}.`,

@@ -5,6 +5,8 @@
 // specification (lib/pack/spec.ts).
 import { PLATE_SHAPES, TABLE_ITEMS, onFloor, tableOption } from "./tableCatalog";
 import { colourWords } from "./tableRender";
+import { asPrinted, tableFont } from "./tableFonts";
+import { fontById } from "@/lib/typography/registry";
 import { clampKids, itemColour, tableCounts, wordsColour, wordsOn, type TableSetup } from "./tableSetup";
 
 export interface TablePrint {
@@ -14,8 +16,11 @@ export interface TablePrint {
   round?: boolean;
   /** The design it is printed with (a picture in /public). */
   art?: string;
+  /** As printed: in capitals for a print face (./tableFonts). */
   words?: string;
   wordsColour?: string;
+  /** The lettering: "Bouncy (Birthstone Bounce)". */
+  wordsFont?: string;
 }
 
 export interface TableProductionRow {
@@ -30,6 +35,10 @@ export interface TableProductionRow {
 export function tableProductionList(t: TableSetup, theme: { id: string; accent: string }): TableProductionRow[] {
   if (!t.enabled) return [];
   const themeId = theme.id, wordsColor = wordsColour(t, theme);
+  const lettering = (w: string, fontId: string) => {
+    const font = tableFont(fontId);
+    return { words: asPrinted(w, font), wordsColour: wordsColor, wordsFont: `${font.name} (${fontById(font.id)?.family ?? font.id})` };
+  };
   const kids = clampKids(t.kids), { tables } = tableCounts(t);
   const rows: TableProductionRow[] = [];
   const words = (hex: string) => `${colourWords(hex)} (${hex.toUpperCase()})`;
@@ -46,11 +55,11 @@ export function tableProductionList(t: TableSetup, theme: { id: string; accent: 
       rows.push({ ...base, item: "Big plates", detail: base.detail + shape }, { ...base, item: "Small plates", detail: base.detail + shape });
     } else if (item.key === "placemats") {
       const w = wordsOn(t, "placemats");
-      rows.push({ ...base, detail: `${base.detail}, A3`, print: { widthMm: 420, heightMm: 297, ...(art ? { art } : {}), ...(w ? { words: w, wordsColour: wordsColor } : {}) } });
+      rows.push({ ...base, detail: `${base.detail}, A3`, print: { widthMm: 420, heightMm: 297, ...(art ? { art } : {}), ...(w ? lettering(w, t.placematFont) : {}) } });
     } else if (item.key === "bottleLabel") {
       const w = wordsOn(t, "bottleLabel");
       rows.push({ item: "Water bottles", detail: "Small water bottle", quantity });
-      rows.push({ ...base, print: { widthMm: 205, heightMm: 50, ...(art ? { art } : {}), ...(w ? { words: w, wordsColour: wordsColor } : {}) } });
+      rows.push({ ...base, print: { widthMm: 205, heightMm: 50, ...(art ? { art } : {}), ...(w ? lettering(w, t.labelFont) : {}) } });
     } else if (item.key === "cutleryHolder") {
       rows.push(base);
       const w = wordsOn(t, "cutleryHolder");
@@ -62,5 +71,5 @@ export function tableProductionList(t: TableSetup, theme: { id: string; accent: 
 
 /** A row in one line, for lists and the order. */
 export const productionLine = (r: TableProductionRow) =>
-  `${r.item}: ${r.detail}${r.print ? ` — print ${r.print.round ? `Ø ${r.print.widthMm} mm` : `${r.print.widthMm} × ${r.print.heightMm} mm`}${r.print.words ? `, words "${r.print.words}" in ${colourWords(r.print.wordsColour ?? "#000000")}` : ""}` : ""} × ${r.quantity}`;
+  `${r.item}: ${r.detail}${r.print ? ` — print ${r.print.round ? `Ø ${r.print.widthMm} mm` : `${r.print.widthMm} × ${r.print.heightMm} mm`}${r.print.words ? `, words "${r.print.words}" in ${colourWords(r.print.wordsColour ?? "#000000")}${r.print.wordsFont ? `, ${r.print.wordsFont} lettering` : ""}` : ""}` : ""} × ${r.quantity}`;
 

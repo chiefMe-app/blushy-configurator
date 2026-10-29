@@ -285,8 +285,10 @@ export async function captureRenderBody(page: Page, guard: Guard): Promise<Recor
 export async function settle(page: Page) {
   await page.evaluate(async () => {
     await document.fonts.ready;
-    // Lazy pictures below the fold never load until scrolled to: only the ones in view.
-    const inView = (i: HTMLImageElement) => i.loading !== "lazy" || i.getBoundingClientRect().top < window.innerHeight;
+    // Lazy pictures off screen never load until scrolled to — below the fold, or
+    // above it when the page jumped past them (the phone's jump to the table's
+    // top view): only the ones in view.
+    const inView = (i: HTMLImageElement) => { const r = i.getBoundingClientRect(); return i.loading !== "lazy" || (r.top < window.innerHeight && r.bottom > 0); };
     await Promise.all(Array.from(document.images).filter((i) => !i.complete && inView(i)).map((i) => new Promise((r) => { i.onload = i.onerror = r; })));
     const frame = () => new Promise((r) => requestAnimationFrame(() => r(null)));
     const marks = () => Array.from(document.querySelectorAll("h1,h2,h3,button")).slice(0, 80).reduce((s, el) => s + Math.round(el.getBoundingClientRect().top), 0);

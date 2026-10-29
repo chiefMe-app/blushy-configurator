@@ -1200,13 +1200,13 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-section > h2 { margin: 18px 4px 9px; font: 800 11px var(--bz-sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bz-pink); }
 /* The customer's words, printed on the placemat pictures. */
 /* The placemat words sit in the bottom-right corner, like the owner's reference ("Fakhra's 4th birthday"). */
-.bz-tb-option .art .words { position: absolute; right: 6%; bottom: 7%; max-width: 80%; text-align: right; font: 600 clamp(7px, 0.75vw, 11px)/1.1 Georgia, "Times New Roman", serif; letter-spacing: 0.04em; text-transform: uppercase; color: #7a86d1; text-shadow: 0 1px 0 rgba(255,255,255,0.8); overflow-wrap: anywhere; pointer-events: none; }
-.bz-tb-option .art .words.bottleLabel { inset: 0; max-width: none; display: grid; place-items: center; padding: 8%; text-align: center; font-size: clamp(11px, 1.8vw, 16px); }
+.bz-tb-option .art .words { position: absolute; right: 6%; bottom: 7%; max-width: 80%; text-align: right; font: 600 calc(clamp(7px, 0.75vw, 11px) * var(--fscale, 1))/1.1 Georgia, "Times New Roman", serif; letter-spacing: 0.04em; text-transform: uppercase; color: #7a86d1; text-shadow: 0 1px 0 rgba(255,255,255,0.8); overflow-wrap: anywhere; pointer-events: none; }
+.bz-tb-option .art .words.bottleLabel { inset: 0; max-width: none; display: grid; place-items: center; padding: 8%; text-align: center; font-size: calc(clamp(11px, 1.8vw, 16px) * var(--fscale, 1)); }
 .bz-tb-label { position: relative; margin-top: 12px; aspect-ratio: 4.1 / 1; border-radius: 10px; background-size: cover; background-position: center; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06); display: grid; place-items: center; overflow: hidden; }
 .bz-tb-label.placemat { aspect-ratio: 1.414 / 1; max-width: 420px; place-items: end; }
-.bz-tb-label.placemat span { font-size: clamp(14px, 2.2vw, 22px); line-height: 1.05; text-align: right; white-space: pre-line; padding: 0 6% 6% 30%; }
+.bz-tb-label.placemat span { font-size: calc(clamp(14px, 2.2vw, 22px) * var(--fscale, 1)); line-height: 1.05; text-align: right; white-space: pre-line; padding: 0 6% 6% 30%; }
 .bz-tb-option .art .words.placemats { white-space: pre-line; line-height: 1.05; }
-.bz-tb-label span { font: 700 clamp(16px, 3vw, 28px)/1.1 Georgia, "Times New Roman", serif; letter-spacing: 0.05em; text-transform: uppercase; color: #7a86d1; text-shadow: 0 1px 0 #fff, 0 0 12px rgba(255,255,255,0.9); padding: 0 6%; text-align: center; }
+.bz-tb-label span { font: 700 calc(clamp(16px, 3vw, 28px) * var(--fscale, 1))/1.1 Georgia, "Times New Roman", serif; letter-spacing: 0.05em; text-transform: uppercase; color: #7a86d1; text-shadow: 0 1px 0 #fff, 0 0 12px rgba(255,255,255,0.9); padding: 0 6%; text-align: center; }
 .bz-tb-words { display: grid; gap: 6px; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--bz-ink); }
 .bz-tb-words small { font-weight: 400; color: var(--bz-muted); }
 .bz-tb-words input { font: 400 15px var(--bz-sans); padding: 10px 12px; border: 1.5px solid #f2dde6; border-radius: 12px; outline: none; }
@@ -1260,3 +1260,10 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-place { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; }
 .bz-tb-back { display: block; margin: 10px auto 0; border: 1.5px solid #f2dde6; background: #fff; color: var(--bz-pink); font: 700 13px var(--bz-sans); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
 @media (min-width: 861px) { .bz-tb-back { display: none; } }
+/* The placemat and bottle-label words' lettering (2026-10-29). */
+.bz-tb-fonts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.bz-tb-fonts button { display: grid; justify-items: center; gap: 2px; min-width: 76px; background: #fff; border: 1.5px solid #f2dde6; border-radius: 12px; padding: 6px 10px 5px; cursor: pointer; color: var(--bz-ink); }
+.bz-tb-fonts button span { font-size: calc(17px * var(--fscale, 1)); line-height: 1.25; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bz-tb-fonts button small { font: 600 10.5px var(--bz-sans); color: #8a7680; }
+.bz-tb-fonts button.on { border-color: var(--bz-pink); background: #fff5f9; }
+.bz-tb-fonts button.on small { color: var(--bz-pink); }

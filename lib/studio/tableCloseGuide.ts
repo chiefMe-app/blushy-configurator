@@ -15,8 +15,10 @@
 import { NONE, onFloor } from "./tableCatalog";
 import { arrangeTables, CHAIR, CUSHION, focusSeats, type Placed, type Seat } from "./tableShapes";
 import { wordsColour, wordsOn, type TableSetup } from "./tableSetup";
-import { textCommands } from "@/lib/guideFonts";
-import { fitPlacematWords } from "./placematWords";
+import { loadFont } from "@/lib/typography/fontLoader";
+import { shapeLine } from "@/lib/typography/shape";
+import { fitPlacematWords, placematWordsBottom, placematWordsGap } from "./placematWords";
+import { asPrinted, tableFont, type TableFont } from "./tableFonts";
 
 export const CLOSE_GUIDE = { width: 1152, height: 864 };
 export type TableView = "close" | "top";
@@ -56,8 +58,15 @@ const CUP: Record<string, string> = { iridescent: "#E4DDF5" };
 const CHAIR_FILL: Record<string, string> = { white_kids: "#FFFFFF", bow_kids: "#F5C9D7" };
 const WOOD = "#D9B98C";
 
-/** The placemat words' size (cm), measured in the guide's own fonts (./placematWords). */
-export const placematWordsSize = (lines: string[]) => fitPlacematWords(lines, (line, size) => textCommands(line, "elegant", size).width);
+/** One line in a lettering face at a size (cm), from the font file (Vercel has no fonts): its outline (y down, baseline 0) and width. */
+function letterLine(font: TableFont, text: string, size: number) {
+  const s = shapeLine(loadFont(font.id, font.weight), text, size);
+  return { d: s.glyphs.join(""), width: s.advanceMm };
+}
+
+/** The placemat words' size (cm), measured in the chosen face (./placematWords). */
+export const placematWordsSize = (lines: string[], font: TableFont = tableFont(undefined)) =>
+  fitPlacematWords(lines, (line, size) => letterLine(font, line, size).width, font);
 
 /**
  * The guide as an SVG string: `theme` gives the placemat colours. Every
@@ -215,31 +224,22 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
     flat += poly(shrink(0.75, 1), plate.fill, plate.rim, 1.8);
     if (ch.placemats !== NONE && matWords) {
       // In the bottom-right corner beside the plate, one word a line, right-aligned (the owner's reference).
-      const lines = matWords.toUpperCase().split(/\s+/), size = placematWordsSize(lines), gap = size * 1.12;
+      const font = tableFont(t.placematFont);
+      const lines = asPrinted(matWords, font).split(/\s+/), size = placematWordsSize(lines, font), gap = placematWordsGap(size, font.scale);
       lines.forEach((line, i) => {
-        const { commands, width } = textCommands(line, "elegant", size);
-        const u0 = 20 - width, v0 = -14 + (lines.length - 1 - i) * gap;
-        const pt = (x: number, y: number) => P(at(u0 + x, v0 - y, 0.5));
-        const d = commands.map((cmd) => {
-          if (cmd.type === "Z") return "Z";
-          const end = pt(cmd.x, cmd.y);
-          if (cmd.type === "C") { const c1 = pt(cmd.x1, cmd.y1), c2 = pt(cmd.x2, cmd.y2); return `C${f1(c1[0])},${f1(c1[1])} ${f1(c2[0])},${f1(c2[1])} ${f1(end[0])},${f1(end[1])}`; }
-          if (cmd.type === "Q") { const c1 = pt(cmd.x1, cmd.y1); return `Q${f1(c1[0])},${f1(c1[1])} ${f1(end[0])},${f1(end[1])}`; }
-          return `${cmd.type}${f1(end[0])},${f1(end[1])}`;
-        }).join("");
-        flat += `<path d="${d}" fill="${wordsColour(t, theme)}"/>`;
+        const { d, width } = letterLine(font, line, size);
+        const u0 = 20 - width, v0 = -placematWordsBottom(size, font) + (lines.length - 1 - i) * gap;
+        // Every point of the outline, onto the placemat in perspective.
+        const onMat = d.replace(/(-?[\d.]+),(-?[\d.]+)/g, (_, x: string, y: string) => P(at(u0 + Number(x), v0 - Number(y), 0.5)).map(f1).join(","));
+        flat += `<path d="${onMat}" fill="${wordsColour(t, theme)}"/>`;
       });
     }
-    // On the left: the napkin and the cutlery, in the holder if one is chosen.
-    if (ch.cutleryHolder === "band") {
-      flat += poly([at(-19.5, -10, 2.5), at(-13.5, -10, 2.5), at(-13.5, 10, 2.5), at(-19.5, 10, 2.5)], napkin, "#8A7F86", 1);
-      flat += poly([at(-19.8, -2.5, 2.8), at(-13.2, -2.5, 2.8), at(-13.2, 2.5, 2.8), at(-19.8, 2.5, 2.8)], t.holderColor, "#8A7F86", 0.8);
-      flat += [-18, -16.5, -15].map((u) => poly([at(u - 0.5, 10, 2.5), at(u + 0.5, 10, 2.5), at(u + 0.5, 14, 2.5), at(u - 0.5, 14, 2.5)], WOOD, "#8A7F86", 0.6)).join("");
-    } else {
-      flat += poly([at(-20, -11, 0.3), at(-12, -11, 0.3), at(-12, 11, 0.3), at(-20, 11, 0.3)], napkin, "#8A7F86", 1);
-      const tip = ch.cutlery === "dipped" ? "#F9A8D4" : ch.cutlery === "glitter" ? "#C9CED6" : WOOD;
-      flat += [-18, -16, -14].map((u) => poly([at(u - 0.6, -9, 0.8), at(u + 0.6, -9, 0.8), at(u + 0.6, 10, 0.8), at(u - 0.6, 10, 0.8)], WOOD, "#8A7F86", 0.6) + poly([at(u - 0.6, -9, 0.9), at(u + 0.6, -9, 0.9), at(u + 0.6, -4, 0.9), at(u - 0.6, -4, 0.9)], tip, "#8A7F86", 0.4)).join("");
-    }
+    // On the left: the folded napkin, the cutlery lying on it (2026-10-29, the
+    // owner: "peçete her zaman cutlery'nin altında olmalı"), the band round both.
+    flat += poly([at(-20, -11, 0.3), at(-12, -11, 0.3), at(-12, 11, 0.3), at(-20, 11, 0.3)], napkin, "#8A7F86", 1);
+    const tip = ch.cutlery === "dipped" ? "#F9A8D4" : ch.cutlery === "glitter" ? "#C9CED6" : WOOD;
+    flat += [-18, -16, -14].map((u) => poly([at(u - 0.6, -9, 0.8), at(u + 0.6, -9, 0.8), at(u + 0.6, 10, 0.8), at(u - 0.6, 10, 0.8)], WOOD, "#8A7F86", 0.6) + poly([at(u - 0.6, -9, 0.9), at(u + 0.6, -9, 0.9), at(u + 0.6, -4, 0.9), at(u - 0.6, -4, 0.9)], tip, "#8A7F86", 0.4)).join("");
+    if (ch.cutleryHolder === "band") flat += poly([at(-20.3, -2.5, 1.2), at(-11.7, -2.5, 1.2), at(-11.7, 2.5, 1.2), at(-20.3, 2.5, 1.2)], t.holderColor, "#8A7F86", 0.8);
     // Straight down, every place's flat pieces go under every standing one.
     parts.push({ d: depth(S.centre) + (view === "top" ? 1e6 : 0), svg: flat });
     // Standing pieces: the cup on the top-right corner, the bottle beside it, the hat top-left.

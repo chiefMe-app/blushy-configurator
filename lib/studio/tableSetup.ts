@@ -3,6 +3,7 @@
 // item from lib/studio/tableCatalog.ts. Pure data and sums — no UI, no config
 // import (lib/config.ts uses the price lines).
 import { CHAIR_COLOURS, NONE, PLATE_SHAPES, TABLE_ITEMS, onFloor, tableOption, type PlateShape, type TableItemKey } from "./tableCatalog";
+import { DEFAULT_TABLE_FONT, TABLE_FONTS } from "./tableFonts";
 
 export interface TableSetup {
   /** false: the customer skipped the table. */
@@ -23,6 +24,9 @@ export interface TableSetup {
   labelColor: string;
   /** The plain plates' shape. */
   plateShape: PlateShape;
+  /** The lettering of the words on the placemats and on the bottle labels (2026-10-29, ./tableFonts). */
+  placematFont: string;
+  labelFont: string;
   /** The colour of the printed words on the placemats and bottle labels, once the customer picks one (wordsColour). */
   textColor?: string;
   /** The customer's own words printed on the placemats ("Arya turns 6"), the cutlery holders and the bottle labels. */
@@ -81,6 +85,8 @@ export const WORDS_ITEMS: { key: WordsKey; label: string; placeholder: string }[
   { key: "cutleryHolder", label: "Name on the cutlery holders", placeholder: "e.g. Arya" },
   { key: "bottleLabel", label: "Words on the bottle labels", placeholder: "e.g. Arya turns 6" },
 ];
+/** Which lettering each printed item's words take. */
+export const FONT_OF = { placemats: "placematFont", bottleLabel: "labelFont" } as const;
 /** The words on an item, when the item is chosen. */
 export const wordsOn = (t: Pick<TableSetup, "choices" | "words">, key: WordsKey) => (t.choices[key] !== NONE ? t.words?.[key]?.trim() || undefined : undefined);
 
@@ -129,6 +135,8 @@ export function defaultTableSetup(theme: { balloonColors: string[]; accent: stri
     placematColor: theme.balloonColors[1] ?? theme.accent,
     labelColor: theme.balloonColors[1] ?? theme.accent,
     plateShape: "round",
+    placematFont: DEFAULT_TABLE_FONT,
+    labelFont: DEFAULT_TABLE_FONT,
   };
 }
 
@@ -197,6 +205,8 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     placematColor: colour(r.placematColor, base.placematColor),
     labelColor: colour(r.labelColor, base.labelColor),
     plateShape: PLATE_SHAPES.find((p) => p.id === r.plateShape)?.id ?? base.plateShape,
+    placematFont: TABLE_FONTS.find((f) => f.id === r.placematFont)?.id ?? base.placematFont,
+    labelFont: TABLE_FONTS.find((f) => f.id === r.labelFont)?.id ?? base.labelFont,
     ...(typeof r.textColor === "string" && HEX.test(r.textColor) ? { textColor: r.textColor } : {}),
     ...(readWords(r) ? { words: readWords(r) } : {}),
     ...(r.scene === "garden" || r.scene === "indoor" ? { scene: r.scene } : {}),

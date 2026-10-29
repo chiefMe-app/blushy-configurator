@@ -39,14 +39,28 @@ describe("the top view of one place", () => {
   });
   it("the words on the placemat and the label, the name on its tag", () => {
     const f = focus(placeLayout(table({ cutleryHolder: "band", bottleLabel: "plain" }, { labelColor: "#BBF7D0", words: { placemats: "Arya turns 6", cutleryHolder: "Arya", bottleLabel: "Arya turns 6" } }), frozen));
-    expect(part(f, "matwords")).toMatchObject({ lines: ["ARYA", "TURNS", "6"], colour: frozen.accent });
+    expect(part(f, "matwords")).toMatchObject({ lines: ["ARYA", "TURNS", "6"], font: "playfair-display", colour: frozen.accent });
     expect(part(f, "name")).toMatchObject({ lines: ["Arya"], face: "script" });
-    expect(part(f, "bottle")).toMatchObject({ fill: "#BBF7D0", words: "Arya turns 6" });
+    expect(part(f, "bottle")).toMatchObject({ fill: "#BBF7D0", words: "ARYA TURNS 6", font: "playfair-display" });
+    // A handwritten lettering: as typed, in its face (2026-10-29).
+    const hand = focus(placeLayout(table({ bottleLabel: "plain" }, { placematFont: "birthstone-bounce", labelFont: "italianno", words: { placemats: "Arya turns 6", bottleLabel: "Arya turns 6" } }), frozen));
+    expect(part(hand, "matwords")).toMatchObject({ lines: ["Arya", "turns", "6"], font: "birthstone-bounce" });
+    expect(part(hand, "bottle")).toMatchObject({ words: "Arya turns 6", font: "italianno" });
     // No words: no lettering, no tag.
     const bare = focus(placeLayout(table({ cutleryHolder: "band" }), frozen));
     expect(part(bare, "matwords")).toBeUndefined();
     expect(part(bare, "tag")).toBeUndefined();
     expect(part(bare, "band")).toMatchObject({ k: "band" });
+  });
+  it("the napkin always under the cutlery, the band round both (2026-10-29)", () => {
+    const ids = focus(placeLayout(table({ cutleryHolder: "band" }, { words: { cutleryHolder: "Arya" } }), frozen)).map((n) => ("id" in n ? n.id.replace(/^place-\d+-/, "") : ""));
+    expect(ids.indexOf("napkin")).toBeLessThan(ids.indexOf("cutlery-0"));
+    expect(ids.indexOf("cutlery-2")).toBeLessThan(ids.indexOf("band"));
+    expect(ids.indexOf("band")).toBeLessThan(ids.indexOf("tag"));
+  });
+  it("the lettering read back: one of the offered faces, or the classic one", () => {
+    expect(table({}, { placematFont: "sacramento", labelFont: "fraunces" })).toMatchObject({ placematFont: "sacramento", labelFont: "fraunces" });
+    expect(table({}, { placematFont: "comic-sans", labelFont: 3 })).toMatchObject({ placematFont: "playfair-display", labelFont: "playfair-display" });
   });
   it("a plain placemat is its colour; a printed napkin wears the theme's pattern", () => {
     const f = focus(placeLayout(table({ placemats: "plain", napkins: "printed" }, { placematColor: "#FFD1A4" }), frozen));

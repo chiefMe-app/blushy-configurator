@@ -120,9 +120,9 @@ export async function buildDesignPack(input: DesignPackInput): Promise<DesignPac
   ]));
   if (spec.kidsTable.length) {
     put("4_LISTS/kids_table.csv", csv([
-      ["item", "details", "colour", "quantity", "print size (mm)", "words", "words colour"],
+      ["item", "details", "colour", "quantity", "print size (mm)", "words", "words colour", "lettering"],
       ...spec.kidsTable.map((r) => [r.item, r.detail, r.colour?.toUpperCase() ?? "", r.quantity,
-        r.print ? (r.print.round ? `diameter ${r.print.widthMm}` : `${r.print.widthMm} x ${r.print.heightMm}`) : "", r.print?.words ?? "", r.print?.wordsColour?.toUpperCase() ?? ""]),
+        r.print ? (r.print.round ? `diameter ${r.print.widthMm}` : `${r.print.widthMm} x ${r.print.heightMm}`) : "", r.print?.words ?? "", r.print?.wordsColour?.toUpperCase() ?? "", r.print?.wordsFont ?? ""]),
     ]));
   }
   put("README.txt", readme(spec, input.packId, sample));

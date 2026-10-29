@@ -8,6 +8,7 @@ import { NONE } from "@/lib/studio/tableCatalog";
 import { defaultTableSetup, readTableRender, readTableSetup } from "@/lib/studio/tableSetup";
 import { MAX_REFERENCES, referencePictures, tablePrompt, tableRenderKey } from "@/lib/studio/tableRender";
 import { placematWordsSize, tableCloseGuideSvg } from "@/lib/studio/tableCloseGuide";
+import { tableFont } from "@/lib/studio/tableFonts";
 import { resetRenderGuard } from "@/lib/renderGuard";
 import { readNdjson } from "@/lib/ndjson";
 
@@ -100,7 +101,7 @@ describe("the pictures and the prompt", () => {
     const p = tablePrompt({ ...table(), words: { placemats: "Arya turns 6" } }, frozen, []);
     // In the bottom-right corner, like the owner's reference — never on the plate (her first render).
     // Bottom-right, one word a line, like the owner's reference — never on the plate (her first render).
-    expect(p).toContain('with the words printed straight onto the placemat paper in its bottom-right corner in elegant sky blue serif capitals, stacked one word per line ("ARYA" (A-R-Y-A) above "TURNS" (T-U-R-N-S) above "6") — no sticker, no label, never on the plate');
+    expect(p).toContain('with the words printed straight onto the placemat paper in its bottom-right corner in small sky blue letters set in an elegant classic serif, all capitals, stacked one word per line ("ARYA" (A-R-Y-A) above "TURNS" (T-U-R-N-S) above "6") — no sticker, no label, never on the plate');
     // 2026-10-29: spelled out letter by letter ("Arya" came out "Aya"); each word named once.
     expect(tablePrompt({ ...table({ cutleryHolder: "band" }), words: { placemats: "Arya", cutleryHolder: "Arya" } }, frozen, [])).toContain('The only words anywhere are "Arya", spelled');
     expect(p).toContain('The only words anywhere are "Arya turns 6"');
@@ -118,11 +119,13 @@ describe("the pictures and the prompt", () => {
     expect(p).toContain("TWO place settings facing each other");
     expect(p).toContain("Two chairs face each other on the two sides of the table");
     // The cutlery only on the left, rolled up in the chosen napkin with the band, as in the holder's picture.
-    expect(p).toContain(`on the left of the placemat: a folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 2} folded into a pocket with the cutlery (a disposable fork, knife and spoon made of natural light wood, not metal) standing up out of it, wrapped round the middle by a plain pastel baby blue paper napkin band with a little tag with the name "Arya" on it, arranged exactly like the cutlery holder in image ${refs.indexOf("cutleryHolder") + 2} — the band is pastel baby blue, whatever colour its photo shows`);
-    expect(p).toContain("all standing upright in its napkin pocket on the left, never laid flat across the napkin. No other cutlery anywhere");
+    expect(p).toContain(`on the left of the placemat: a folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 2} folded flat, with a disposable fork, knife and spoon made of natural light wood, not metal lying on top of it, the napkin and the cutlery wrapped round the middle together by a plain pastel baby blue paper napkin band with a little tag with the name "Arya" on it — the band is pastel baby blue, whatever colour its photo shows`);
+    // 2026-10-29 (owner): the napkin always under the cutlery.
+    expect(p).toContain("lying side by side on top of its folded napkin on the left, under the band — the napkin is always under the cutlery. No other cutlery anywhere");
+    expect(p).not.toMatch(/pocket|standing up/);
     expect(p).toContain("this is the place's only bottle");
     expect(p).toContain("on the top-right corner of the placemat; just beside the cup, a small clear water bottle");
-    expect(p).toContain('with "Arya turns 6" printed on the label in sky blue letters — the cup and the bottle are both there');
+    expect(p).toContain('with "ARYA TURNS 6" printed on the label in sky blue letters set in an elegant classic serif, all capitals — the cup and the bottle are both there');
     expect(p).toContain("a cone party hat standing on the top-left corner of the placemat");
     expect(p).toMatch(/Between the two settings, in the middle of the table: a small, low, compact arrangement of a few pastel flowers/);
     expect(p).toContain('The only words anywhere are "Arya" and "Arya turns 6"');
@@ -189,10 +192,18 @@ describe("the layout drawing", () => {
     expect((svg.match(new RegExp(`fill="${frozen.accent}"`, "g")) ?? []).length).toBe(30); // ARYA / TURNS / 6 at ten places
     expect(tableCloseGuideSvg({ ...t, choices: { ...t.choices, placemats: NONE } }, frozen)).not.toContain(`fill="${frozen.accent}"`);
   });
-  it("the placemat words as big as the corner beside the plate allows (2026-10-29: at 3 cm they were misspelled)", () => {
-    expect(placematWordsSize(["ARYA", "TURNS", "6"])).toBeGreaterThan(3); // 3 cm before
+  it("the placemat words small, as they first were (2026-10-29: \"eskisi gibi\"), in the chosen lettering", () => {
+    expect(placematWordsSize(["ARYA", "TURNS", "6"])).toBe(3);
     // A long word is set smaller, never into the plate.
-    expect(placematWordsSize(["ALEXANDRA"])).toBeLessThan(placematWordsSize(["ARYA"]));
+    expect(placematWordsSize(["ALEXANDRAKATERINA"])).toBeLessThan(3);
+    // A handwritten face is set bigger, to look as big; as typed, not in capitals.
+    const hand = tableFont("sacramento");
+    expect(placematWordsSize(["Arya", "6"], hand)).toBeCloseTo(3 * hand.scale);
+    const t = { ...table({ placemats: "watercolour" }), words: { placemats: "Arya turns 6" }, placematFont: "sacramento" };
+    expect(tablePrompt(t, frozen, [])).toContain('in small sky blue letters set in a thin flowing handwritten script, stacked one word per line ("Arya" (A-r-y-a) above "turns" (t-u-r-n-s) above "6")');
+    const plain = tableCloseGuideSvg({ ...t, placematFont: "playfair-display" }, frozen), script = tableCloseGuideSvg(t, frozen);
+    expect(script).not.toBe(plain); // lettered in its own face
+    expect((script.match(new RegExp(`fill="${frozen.accent}"`, "g")) ?? []).length).toBe(30);
   });
   it("the top view: one place straight down, the child at the bottom, the standing pieces over the flat ones", () => {
     const t = { ...table({ cutleryHolder: "band", placemats: "watercolour", cups: "plain", partyHats: "cone" }), words: { placemats: "Arya turns 6" } };
