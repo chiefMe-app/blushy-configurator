@@ -19,6 +19,8 @@ export interface GlyphColours {
   napkin: string;
   /** The plain plates', cups' and napkin band's colours. */
   plate?: string;
+  /** The small plain plate's own colour (2026-10-29). */
+  smallPlate?: string;
   cup?: string;
   holder?: string;
   /** The kids' chair's colour (white, pink or light blue). */
@@ -106,10 +108,10 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
     case "plates": {
       // The kids' table's paper plates; white & gold and pastel melamine are the grown-ups'.
       if (id === "plain") {
-        const fill = c.plate ?? pick(c, 0);
-        const shape = (r: number, w: number) => c.plateShape === "square" ? <rect x={-r * 0.92} y={-r * 0.92} width={r * 1.84} height={r * 1.84} rx={r * 0.2} fill={fill} stroke={INK} strokeWidth={w} />
+        const big = c.plate ?? pick(c, 0);
+        const shape = (r: number, w: number, fill = big) => c.plateShape === "square" ? <rect x={-r * 0.92} y={-r * 0.92} width={r * 1.84} height={r * 1.84} rx={r * 0.2} fill={fill} stroke={INK} strokeWidth={w} />
           : c.plateShape === "scalloped" ? <path d={scallop(r, 16)} fill={fill} stroke={INK} strokeWidth={w} /> : <circle r={r} fill={fill} stroke={INK} strokeWidth={w} />;
-        return <g>{shape(10, 0.8)}{shape(7.5, 0.6)}</g>;
+        return <g>{shape(10, 0.8)}{shape(7.5, 0.6, c.smallPlate ?? big)}</g>;
       }
       if (id === "iridescent") return <path d={Array.from({ length: 8 }, (_, i) => { const a = Math.PI / 8 + (i * Math.PI) / 4; return `${i ? "L" : "M"}${(Math.cos(a) * 10).toFixed(1)},${(Math.sin(a) * 10).toFixed(1)}`; }).join("") + "Z"} fill="#EBDDF7" stroke="#A78BC9" strokeWidth={0.9} />;
       if (id === "holo_square") return <g><rect x={-9.5} y={-9.5} width={19} height={19} rx={2.5} fill="#E2E7ED" stroke="#8C99A6" strokeWidth={0.9} /><rect x={-6.5} y={-6.5} width={13} height={13} rx={1.5} fill="none" stroke="#B9C3CD" strokeWidth={0.5} /></g>;
@@ -158,6 +160,8 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
           <circle r={2.4} fill="#E8A33D" />
         </g>))}<path d="M-18,4q6,-6 12,0M6,-12q6,4 12,0" fill="none" stroke="#5E8C5A" strokeWidth={2} strokeLinecap="round" /></g>;
       if (id === "toppers") return <g>{[[0, 0, 10], [-14, 4, 6], [14, 4, 6]].map(([dx, dy, r], i) => <path key={i} d={star(dx, dy, r)} fill={c.accent} stroke={INK} strokeWidth={0.8} />)}</g>;
+      // The theme cutouts, standing on their bases.
+      if (id === "cutouts") return <g>{[[-12, 6], [0, 9], [12, 6]].map(([dx, h], i) => <g key={i}><rect x={dx - 4.5} y={-h} width={9} height={h + 2} rx={2} fill={pick(c, i)} stroke={INK} strokeWidth={0.7} /><ellipse cx={dx} cy={3} rx={5.5} ry={1.6} fill="#EEF5FA" stroke={INK} strokeWidth={0.5} /></g>)}</g>;
       return null;
     default:
       return null;

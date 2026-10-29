@@ -221,7 +221,7 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
     const shrink = (k: number, z: number) => plateShape.map((p) => [S.centre[0] + (p[0] - S.centre[0]) * k, S.centre[1] + (p[1] - S.centre[1]) * k, TH + z] as V3);
     flat += poly(plateShape, plate.fill, plate.rim, 1.4) + poly(shrink(0.87, 0.4), "none", plate.rim, 0.8);
     // 2026-10-28 (owner): a small plate on the big one.
-    flat += poly(shrink(0.75, 1), plate.fill, plate.rim, 1.8);
+    flat += poly(shrink(0.75, 1), ch.plates === "plain" ? t.smallPlateColor : plate.fill, plate.rim, 1.8);
     if (ch.placemats !== NONE && matWords) {
       // In the bottom-right corner beside the plate, one word a line, right-aligned (the owner's reference).
       const font = tableFont(t.placematFont);

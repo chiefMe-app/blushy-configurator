@@ -56,7 +56,17 @@ describe("the top view of one place", () => {
     const ids = focus(placeLayout(table({ cutleryHolder: "band" }, { words: { cutleryHolder: "Arya" } }), frozen)).map((n) => ("id" in n ? n.id.replace(/^place-\d+-/, "") : ""));
     expect(ids.indexOf("napkin")).toBeLessThan(ids.indexOf("cutlery-0"));
     expect(ids.indexOf("cutlery-2")).toBeLessThan(ids.indexOf("band"));
-    expect(ids.indexOf("band")).toBeLessThan(ids.indexOf("tag"));
+    // The name on the band itself, no tag (2026-10-29).
+    expect(ids.indexOf("band")).toBeLessThan(ids.indexOf("name"));
+    expect(ids).not.toContain("tag");
+  });
+  it("the small plain plate in its own colour, over the big one; the theme cutouts in Frozen", () => {
+    const f = focus(placeLayout(table({ plates: "plain" }, { plateColor: "#F8BBD0", smallPlateColor: "#BAE6FD" }), frozen));
+    expect(part(f, "-plates")).toMatchObject({ tint: "#F8BBD0", w: 23 });
+    expect(part(f, "small-plate")).toMatchObject({ tint: "#BAE6FD" });
+    expect(part(focus(placeLayout(table({ plates: "silver" }), frozen)), "small-plate")).toBeUndefined();
+    const all = placeLayout(table({ centrepiece: "cutouts" }), frozen);
+    expect(all.some((n) => n.k === "img" && n.src.endsWith("centrepiece-cutouts-frozen.webp"))).toBe(true);
   });
   it("the lettering read back: one of the offered faces, or the classic one", () => {
     expect(table({}, { placematFont: "sacramento", labelFont: "fraunces" })).toMatchObject({ placematFont: "sacramento", labelFont: "fraunces" });
@@ -75,7 +85,7 @@ describe("the top view of one place", () => {
   it("every picture it can ask for is there", () => {
     const all = new Set<string>();
     for (const plates of ["plain", "iridescent", "silver"]) for (const shape of ["round", "scalloped", "square"]) for (const cups of ["plain", "iridescent"])
-      for (const cutlery of ["wooden", "dipped", "glitter"]) for (const centrepiece of ["balloons", "florals", "toppers"]) for (const chairs of ["white_kids", "blue_kids", "bow_kids"])
+      for (const cutlery of ["wooden", "dipped", "glitter"]) for (const centrepiece of ["balloons", "florals", "toppers", "cutouts"]) for (const chairs of ["white_kids", "blue_kids", "bow_kids"])
         placePictures(placeLayout(table({ plates, cups, cutlery, centrepiece, chairs, napkins: "printed", bottleLabel: "watercolour", cutleryHolder: "band" }, { plateShape: shape, words: { cutleryHolder: "A" } }), frozen)).forEach((p) => all.add(p));
     placePictures(placeLayout(table({ table: "low" }), frozen)).forEach((p) => all.add(p));
     for (const p of Array.from(all)) expect(fs.existsSync(path.join(process.cwd(), "public", p)), p).toBe(true);

@@ -37,7 +37,7 @@ function OptionArt({ item, option, colours, themeId, words, colour, textColor, f
       : colours.plateShape === "scalloped" ? <path d={scallop(r, 18)} fill={fill} stroke="#5a4950" strokeWidth={w} {...extra} /> : <circle r={r} fill={fill} stroke="#5a4950" strokeWidth={w} {...extra} />;
     return <svg viewBox="-24 -24 48 48" aria-hidden="true">
       {plate(21, 0.8, colour ?? "#fff")}{plate(16.5, 0.4, "none", { opacity: 0.5 })}
-      {plate(15.5, 0.7, colour ?? "#fff")}
+      {plate(15.5, 0.7, colours.smallPlate ?? colour ?? "#fff")}
     </svg>;
   }
   if (!option) return <svg viewBox="-24 -24 48 48" aria-hidden="true"><circle r={14} fill="none" stroke="#d9c9cf" strokeWidth={2} strokeDasharray="4 3" /><path d="M-8,8L8,-8" stroke="#d9c9cf" strokeWidth={2} /></svg>;
@@ -94,7 +94,7 @@ export default function TableStep({ config, setTable }: {
   const counts = tableCounts(table);
   const textColor = wordsColour(table, theme);
   const colours: GlyphColours = { palette: theme.balloonColors, accent: theme.accent, cloth: table.clothColor, runner: table.runnerColor, napkin: table.napkinColor,
-    plate: table.plateColor, cup: table.cupColor, holder: table.holderColor, placemat: table.placematColor, label: table.labelColor, plateShape: table.plateShape };
+    plate: table.plateColor, smallPlate: table.smallPlateColor, cup: table.cupColor, holder: table.holderColor, placemat: table.placematColor, label: table.labelColor, plateShape: table.plateShape };
   const swatchRow = (label: string, value: string, options: string[], pick: (hex: string) => void, testId?: string) => (
     <div className="bz-ts-swatches" role="radiogroup" aria-label={label} data-testid={testId}>
       {options.map((hex) => (
@@ -135,7 +135,8 @@ export default function TableStep({ config, setTable }: {
               <b>None</b>
             </button>
           )}
-          {it.options.map((o) => (
+          {/* A themed piece is offered in the themes it has been made for (the theme cutouts: Frozen first). */}
+          {it.options.filter((o) => !o.themes || o.themes.includes(theme.id) || table.choices[key] === o.id).map((o) => (
             <button key={o.id} type="button" role="radio" aria-checked={table.choices[key] === o.id} className={`bz-tb-option ${table.choices[key] === o.id ? "on" : ""}`} onClick={() => choose(key, o.id)}>
               {table.choices[key] === o.id && <span className="tick">✓</span>}
               <span className="art"><OptionArt item={it} option={o} colours={colours} themeId={theme.id} words={words} colour={colourOf(o)} textColor={textColor} font={font} /></span>
@@ -146,7 +147,17 @@ export default function TableStep({ config, setTable }: {
           ))}
         </div>
         {/* The chair comes in white, pink or light blue only. */}
-        {colourKey && table.choices[key] !== NONE && swatchRow(`${it.label} colour`, table[colourKey], key === "chairs" ? CHAIR_COLOURS : swatches, (hex) => set({ [colourKey]: hex }), `${key}-colour`)}
+        {colourKey && table.choices[key] !== NONE && (key === "plates"
+          // The plain plates: the big one's colour, then the small one's (2026-10-29).
+          ? <div className="bz-tb-words-colour"><span>Big plate colour</span>{swatchRow("Big plate colour", table[colourKey], swatches, (hex) => set({ [colourKey]: hex }), `${key}-colour`)}</div>
+          : swatchRow(`${it.label} colour`, table[colourKey], key === "chairs" ? CHAIR_COLOURS : swatches, (hex) => set({ [colourKey]: hex }), `${key}-colour`))}
+        {key === "plates" && table.choices.plates === "plain" && (
+          // The small plate in its own colour (2026-10-29).
+          <div className="bz-tb-words-colour">
+            <span>Small plate colour</span>
+            {swatchRow("Small plate colour", table.smallPlateColor, swatches, (hex) => set({ smallPlateColor: hex }), "small-plate-colour")}
+          </div>
+        )}
         {key === "plates" && table.choices.plates === "plain" && (
           <div className="bz-tb-shapes" role="radiogroup" aria-label="Plate shape" data-testid="plate-shape">
             {PLATE_SHAPES.map((p) => (

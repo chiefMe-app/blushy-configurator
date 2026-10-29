@@ -31,5 +31,5 @@ const PRINT: Face = { scale: 1, hand: false };
 /** The last line's baseline (cm below the placemat's middle): a handwritten face's tails stay on the paper (it ends at 14.85). */
 export const placematWordsBottom = (size: number, face: Face = PRINT) => 14 - (face.hand ? size * 0.28 : 0);
 
-/** From one line's baseline to the next (cm): a script's tall letters need no more room than a print face's capitals. */
-export const placematWordsGap = (size: number, scale = 1) => (size / scale) * 1.12;
+/** From one line's baseline to the next (cm): a script's tall letters need no more room than a print face's capitals; 2026-10-29: more room between the lines ("satırlar arası boşluk"). */
+export const placematWordsGap = (size: number, scale = 1) => (size / scale) * 1.4;

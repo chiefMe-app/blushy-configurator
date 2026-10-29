@@ -52,7 +52,9 @@ export function tableProductionList(t: TableSetup, theme: { id: string; accent: 
     const art = o.themed ? `/design/table/placemats/${themeId}/${o.id}.webp` : undefined;
     if (item.key === "plates") {
       const shape = o.id === "plain" ? `, ${PLATE_SHAPES.find((p) => p.id === t.plateShape)?.name.toLowerCase() ?? "round"}` : "";
-      rows.push({ ...base, item: "Big plates", detail: base.detail + shape }, { ...base, item: "Small plates", detail: base.detail + shape });
+      // The small plain plate in its own colour (2026-10-29).
+      const small: { colour?: string; detail?: string } = o.id === "plain" ? { colour: t.smallPlateColor, detail: `${o.name}, ${words(t.smallPlateColor)}` } : {};
+      rows.push({ ...base, item: "Big plates", detail: base.detail + shape }, { ...base, ...small, item: "Small plates", detail: (small.detail ?? base.detail) + shape });
     } else if (item.key === "placemats") {
       const w = wordsOn(t, "placemats");
       rows.push({ ...base, detail: `${base.detail}, A3`, print: { widthMm: 420, heightMm: 297, ...(art ? { art } : {}), ...(w ? lettering(w, t.placematFont) : {}) } });
@@ -63,7 +65,8 @@ export function tableProductionList(t: TableSetup, theme: { id: string; accent: 
     } else if (item.key === "cutleryHolder") {
       rows.push(base);
       const w = wordsOn(t, "cutleryHolder");
-      if (w) rows.push({ item: "Name tags", detail: `Little tag on each napkin band`, quantity, print: { widthMm: 50, heightMm: 30, words: w, wordsColour: wordsColor } });
+      // The name printed on the band itself, no tag (2026-10-29, the owner: "bir bütün olsun, o minik beyaz kısmı olmasın").
+      if (w) rows[rows.length - 1] = { ...base, detail: `${base.detail}, the name printed on it`, print: { widthMm: 200, heightMm: 40, words: w, wordsColour: wordsColor } };
     } else rows.push(base);
   }
   return rows;

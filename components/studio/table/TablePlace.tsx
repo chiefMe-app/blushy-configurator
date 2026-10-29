@@ -122,9 +122,10 @@ export default function TablePlace({ table, theme, className }: { table: TableSe
         const [lx, ly, lw, lh] = n.label;
         const x0 = n.x - n.w / 2, y0 = n.y - n.h / 2;
         const box = { x: x0 + lx * n.w, y: y0 + ly * n.h, w: lw * n.w, h: lh * n.h };
-        const lines = n.words?.split(/\s+/) ?? [];
+        // One line, left to right round the bottle, like the flat label (2026-10-29: "dikdörtgendeki gibi soldan sağa").
+        const lines = n.words ? [n.words] : [];
         const scale = tableFont(n.font).scale;
-        const size = lines.length ? Math.min((box.h * scale) / (lines.length * 1.25), (box.w * 0.85) / Math.max(...lines.map((l) => width(l, n.font)))) : 0;
+        const size = lines.length ? Math.min((box.h * scale) / (lines.length * 1.25), (box.w * 0.74) / Math.max(...lines.map((l) => width(l, n.font)))) : 0;
         const all = { x: x0, y: y0, width: n.w, height: n.h, preserveAspectRatio: "none" as const };
         return <g key={n.id} filter={use(undefined, 1.8)} data-part={n.id} data-font={n.font}>
           <image href="/design/table/top/bottle.webp" {...all} />
@@ -148,7 +149,10 @@ export default function TablePlace({ table, theme, className }: { table: TableSe
         <linearGradient id="tp-band" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity={0.35} /><stop offset="0.5" stopColor="#fff" stopOpacity={0} /><stop offset="1" stopColor="#000" stopOpacity={0.12} /></linearGradient>
         {Array.from(filters, ([id, f]) => <Filter key={id} {...f} />)}
       </defs>
-      <rect x={PLACE_VIEW.x} y={PLACE_VIEW.y} width={PLACE_VIEW.w} height={PLACE_VIEW.h} fill="#CFC6BC" />
+      {/* The ground: a lawn in the garden (2026-10-29, the owner: "maybe we can do grass the floor"), a pale floor indoors. */}
+      {(table.scene ?? "garden") === "garden"
+        ? <image href="/design/table/top/floor-grass.webp" x={PLACE_VIEW.x} y={PLACE_VIEW.y} width={PLACE_VIEW.w} height={PLACE_VIEW.h} preserveAspectRatio="xMidYMid slice" data-part="floor-grass" />
+        : <rect x={PLACE_VIEW.x} y={PLACE_VIEW.y} width={PLACE_VIEW.w} height={PLACE_VIEW.h} fill="#CFC6BC" data-part="floor" />}
       {body}
     </svg>
   );

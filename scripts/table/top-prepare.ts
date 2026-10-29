@@ -10,7 +10,7 @@
 // becomes a separate outside layer (tinted) over its white inside.
 // Run: npx tsx scripts/table/top-prepare.ts <dir of the green renders>
 import sharp from "sharp";
-import { mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const RAW = process.argv[2];
@@ -77,7 +77,9 @@ function whiten(r: Raw): Raw {
   return { ...r, data: d };
 }
 
-const manifest: Record<string, { w: number; h: number; label?: [number, number, number, number] }> = {};
+// Added to the pieces already there (a run may prepare only some of them).
+const MANIFEST = "lib/studio/tableTopPieces.json";
+const manifest: Record<string, { w: number; h: number; label?: [number, number, number, number] }> = existsSync(MANIFEST) ? JSON.parse(readFileSync(MANIFEST, "utf8")) : {};
 async function write(name: string, r: Raw, rotate = 0) {
   let img = sharp(r.data, { raw: { width: r.width, height: r.height, channels: 4 } });
   if (rotate) img = sharp(await img.rotate(rotate).png().toBuffer());
@@ -166,5 +168,5 @@ const TURN: Record<string, number> = { "chair-white_kids": 180 };
     else await write(name, TINTED.includes(name) ? whiten(r) : r, TURN[name] ?? 0);
     console.log(name);
   }
-  writeFileSync("lib/studio/tableTopPieces.json", JSON.stringify(Object.fromEntries(Object.entries(manifest).sort()), null, 1) + "\n");
+  writeFileSync(MANIFEST, JSON.stringify(Object.fromEntries(Object.entries(manifest).sort()), null, 1) + "\n");
 })();

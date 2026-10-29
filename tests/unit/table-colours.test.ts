@@ -90,7 +90,7 @@ describe("the colours on the table", () => {
 
 describe("in the render", () => {
   const t = table({ chairs: "blue_kids", plates: "plain", cups: "plain", cutleryHolder: "band", placemats: "sparkle", bottleLabel: "sparkle" },
-    { chairColor: "#F8BBD0", plateColor: "#BAE6FD", cupColor: "#FEF08A", holderColor: "#DDD6FE", textColor: "#8E24AA", words: { placemats: "Arya turns 6", bottleLabel: "Arya" } });
+    { chairColor: "#F8BBD0", plateColor: "#BAE6FD", smallPlateColor: "#FFD1A4", cupColor: "#FEF08A", holderColor: "#DDD6FE", textColor: "#8E24AA", words: { placemats: "Arya turns 6", bottleLabel: "Arya" } });
   const refs = referencePictures(t, "frozen");
   const p = tablePrompt(t, frozen, refs.map((r) => r.key));
   it("the chair's picture is its colour's; plain plates and cups have no picture, their colour is in words", () => {
@@ -101,9 +101,11 @@ describe("in the render", () => {
     expect(p).toContain("a plain matte pastel lemon yellow paper cup (no straw)");
   });
   it("a big plate with a small one in it, and nothing in the small one (2026-10-29: no card)", () => {
-    expect(p).toContain("two plain matte pastel baby blue paper plates, round: a big plate with a smaller plate of the same kind sitting in it");
+    expect(p).toContain(`two plain matte paper plates, round: a big pastel baby blue plate with a smaller pastel peach plate of the same shape sitting in it, a plate in its own right with its own rim`);
     expect(p).toContain("one big plate and one small plate on each placemat, both empty");
     expect(p).not.toMatch(/printed paper card|plate card/i);
+    // The same colour for both: said once.
+    expect(tablePrompt({ ...t, smallPlateColor: "#BAE6FD" }, frozen, [])).toContain("a big plate with a smaller plate of the same kind sitting in it, both pastel baby blue");
   });
   it("the band in its colour, with no tag without a name", () => {
     expect(p).toContain("a plain pastel lilac paper napkin band, with no tag and no words");
@@ -126,26 +128,31 @@ describe("in the render", () => {
 
 describe("the production list", () => {
   const t = table({ chairs: "blue_kids", plates: "plain", cups: "plain", cutleryHolder: "band", placemats: "watercolour", bottleLabel: "watercolour" },
-    { kids: 12, chairColor: "#F8BBD0", plateColor: "#BAE6FD", textColor: "#8E24AA", words: { placemats: "Arya turns 6", cutleryHolder: "Arya", bottleLabel: "Arya" } });
+    { kids: 12, chairColor: "#F8BBD0", plateColor: "#BAE6FD", smallPlateColor: "#F8BBD0", textColor: "#8E24AA", words: { placemats: "Arya turns 6", cutleryHolder: "Arya", bottleLabel: "Arya" } });
   const rows = tableProductionList(t, unicorn);
   const row = (item: string) => rows.find((r) => r.item === item)!;
   it("a big and a small plate for every child, and no plate card", () => {
     expect(row("Big plates")).toMatchObject({ quantity: 12, colour: "#BAE6FD" });
-    expect(row("Small plates")).toMatchObject({ quantity: 12, colour: "#BAE6FD" });
+    // The small one in its own colour (2026-10-29).
+    expect(row("Small plates")).toMatchObject({ quantity: 12, colour: "#F8BBD0" });
+    expect(row("Small plates").detail).toContain("pastel pink");
     expect(rows.some((r) => /card/i.test(r.item))).toBe(false);
   });
   it("the printed pieces with their words and words colour; the chair in its colour", () => {
     expect(row("Placemats").print).toMatchObject({ widthMm: 420, heightMm: 297, words: "ARYA TURNS 6", wordsColour: "#8E24AA", wordsFont: "Classic (Playfair Display)" });
     expect(row("Water bottle label").print).toMatchObject({ widthMm: 205, heightMm: 50, words: "ARYA", wordsColour: "#8E24AA" });
     expect(row("Water bottles").quantity).toBe(12);
-    expect(row("Name tags").print).toMatchObject({ words: "Arya" });
+    // The name printed on the band itself: no tags (2026-10-29).
+    expect(row("Cutlery holder")).toMatchObject({ print: { words: "Arya" } });
+    expect(row("Cutlery holder").detail).toContain("the name printed on it");
+    expect(rows.some((r) => r.item === "Name tags")).toBe(false);
     expect(row("Chairs")).toMatchObject({ quantity: 12, colour: "#F8BBD0" });
     expect(row("Chairs").detail).toContain("pastel pink");
     expect(productionLine(row("Placemats"))).toContain("print 420 × 297 mm");
     expect(row("Table").quantity).toBe(2); // 12 kids at 10-seat tables
   });
   it("no name, no tags; the low table has no chairs; no table, no list", () => {
-    expect(tableProductionList({ ...t, words: {} }, unicorn).some((r) => r.item === "Name tags")).toBe(false);
+    expect(tableProductionList({ ...t, words: {} }, unicorn).find((r) => r.item === "Cutlery holder")?.print).toBeUndefined();
     expect(tableProductionList({ ...t, choices: { ...t.choices, table: "low" } }, unicorn).some((r) => r.item === "Chairs")).toBe(false);
     expect(tableProductionList({ ...t, enabled: false }, unicorn)).toEqual([]);
   });

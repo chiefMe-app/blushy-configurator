@@ -24,6 +24,8 @@ export interface TableSetup {
   labelColor: string;
   /** The plain plates' shape. */
   plateShape: PlateShape;
+  /** The small plain plate's own colour (2026-10-29, the owner: "içindeki tabağın rengi farklı seçilebilsin"); the big one is plateColor. */
+  smallPlateColor: string;
   /** The lettering of the words on the placemats and on the bottle labels (2026-10-29, ./tableFonts). */
   placematFont: string;
   labelFont: string;
@@ -135,6 +137,7 @@ export function defaultTableSetup(theme: { balloonColors: string[]; accent: stri
     placematColor: theme.balloonColors[1] ?? theme.accent,
     labelColor: theme.balloonColors[1] ?? theme.accent,
     plateShape: "round",
+    smallPlateColor: theme.balloonColors[2] ?? theme.accent,
     placematFont: DEFAULT_TABLE_FONT,
     labelFont: DEFAULT_TABLE_FONT,
   };
@@ -205,6 +208,7 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     placematColor: colour(r.placematColor, base.placematColor),
     labelColor: colour(r.labelColor, base.labelColor),
     plateShape: PLATE_SHAPES.find((p) => p.id === r.plateShape)?.id ?? base.plateShape,
+    smallPlateColor: colour(r.smallPlateColor, base.smallPlateColor),
     placematFont: TABLE_FONTS.find((f) => f.id === r.placematFont)?.id ?? base.placematFont,
     labelFont: TABLE_FONTS.find((f) => f.id === r.labelFont)?.id ?? base.labelFont,
     ...(typeof r.textColor === "string" && HEX.test(r.textColor) ? { textColor: r.textColor } : {}),

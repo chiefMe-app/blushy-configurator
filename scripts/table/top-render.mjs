@@ -33,11 +33,18 @@ const P = [
   ["chair-blue_kids", "chairs-blue_kids.webp", "The children's chair of image 2, but in plain matte white, seen from directly above: its slatted back at the bottom of the picture, the front edge of its seat at the top. Only the chair."],
   ["chair-bow_kids", "chairs-bow_kids.webp", "The pink children's chair with the bow-shaped back of image 2, seen from directly above: its back at the bottom of the picture, the front edge of its round seat at the top. Only the chair."],
   ["cushion", null, "One soft square white floor cushion for a child, about 40 cm across, with gently rounded corners and a soft linen cover, lying flat."],
+  // 2026-10-29 (owner): "themed centerpiece, standing themed cutouts … aralarda" — theme shapes only, never characters.
+  ["centrepiece-cutouts-frozen", "placemats/frozen/pattern.webp", "A little group of three small standing party cutouts for a children's table, in the wintry snowflake theme of image 2: thick white card shapes printed in soft icy blue, lilac and white with a touch of silver glitter — a big snowflake in the middle, a small ice-castle silhouette on one side and a star on the other — each standing upright on a small clear acrylic base, close together. Seen from above and a little in front, about 45 degrees down, so their printed faces show. No characters, no people, no faces, no words, no logos."],
 ];
+// The floor round the table (2026-10-29, the owner: "maybe we can do grass the floor"): a photo, not a cut-out piece.
+const FLOORS = {
+  "floor-grass": "Replace image 1 entirely with a photograph of a neat, healthy, freshly mown green garden lawn seen from straight above, filling the whole picture edge to edge: short even grass blades, natural slight variation of green, soft even daylight, no shadows of objects, no flowers, no paths, no objects, no edges. Photo-real, crisp fine detail, as seen from about one metre up.",
+};
 const pick = only ? P.filter((p) => only.split(",").includes(p[0])) : P;
-await Promise.all(pick.map(async ([name, ref, what]) => {
+for (const [name, what] of Object.entries(FLOORS)) if (only?.split(",").includes(name)) pick.push([name, null, what, true]);
+await Promise.all(pick.map(async ([name, ref, what, floor]) => {
   const images = [green, ...(ref ? [await photo(ref)] : [])];
-  const prompt = `${ref ? "Image 2 is a product photo of the exact piece. " : ""}Image 1 is only the green background to use. ${what} ${STAGE}`;
+  const prompt = floor ? what : `${ref ? "Image 2 is a product photo of the exact piece. " : ""}Image 1 is only the green background to use. ${what} ${STAGE}`;
   for (let a = 0; a < 3; a++) {
     try {
       const res = await fetch("https://fal.run/fal-ai/bytedance/seedream/v5/lite/edit", { method: "POST", headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },

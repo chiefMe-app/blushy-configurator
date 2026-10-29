@@ -14,8 +14,8 @@ import { itemColour, wordsColour, wordsOn, type TableSetup } from "./tableSetup"
 import { asPrinted, tableFont } from "./tableFonts";
 import PIECES from "./tableTopPieces.json";
 
-/** The picture: 80 × 60 cm round the place, a little more of the near side (the chair). */
-export const PLACE_VIEW = { x: -40, y: -24, w: 80, h: 60 };
+/** The picture: 84 × 63 cm round the place, a little more of the near side (the chair); 2026-10-29: a little more at the top, for the centrepiece ("trimi biraz genişletelim, çok az üste doğru"). */
+export const PLACE_VIEW = { x: -42, y: -27, w: 84, h: 63 };
 
 const DIR = "/design/table/top";
 type PieceName = keyof typeof PIECES;
@@ -63,6 +63,9 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
   // The big plate with the small one in it (2026-10-29: nothing in the small one).
   const plates: PieceName = ch.plates === "plain" ? (`plates-plain-${t.plateShape}` as PieceName) : (`plates-${ch.plates}` as PieceName);
   if (PIECES[plates]) nodes.push({ k: "img", src: piece(plates), x: 0, y: 0, w: 23, h: tall(plates, 23), tint: colour("plates"), lift: 0.4, id: `${id}-plates` });
+  // The small plain plate in its own colour (2026-10-29: "içindeki tabağın rengi farklı seçilebilsin, bir de tabak olduğu anlaşılsın"):
+  // the same plate, smaller, over the big one's middle, with its own rim and shadow.
+  if (PIECES[plates] && ch.plates === "plain") nodes.push({ k: "img", src: piece(plates), x: 0, y: 0, w: 23 * 0.76, h: tall(plates, 23 * 0.76), tint: t.smallPlateColor, lift: 0.6, id: `${id}-small-plate` });
   // On the left: the folded napkin, the cutlery lying on it (2026-10-29, the
   // owner: "peçete her zaman cutlery'nin altında olmalı"), the band round both.
   const printed = ch.napkins === "printed" ? `/design/table/placemats/${theme.id}/pattern.webp` : undefined;
@@ -74,11 +77,9 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
   });
   if (ch.cutleryHolder !== NONE) {
     nodes.push({ k: "band", x: -16.6, y: 1.5, w: 8.4, h: 4.2, fill: colour("cutleryHolder") ?? "#FFFFFF", id: `${id}-band` });
+    // The name printed on the band itself, no tag (2026-10-29: "bir bütün olsun, o minik beyaz kısmı olmasın").
     const name = wordsOn(t, "cutleryHolder");
-    if (name) {
-      nodes.push({ k: "img", src: piece("tag"), x: -16.6, y: 1.5, w: 5.2, h: tall("tag", 5.2), lift: 0.2, id: `${id}-tag` });
-      nodes.push({ k: "words", lines: [name], face: "script", colour: words, x: -16.6, y: 1.5, w: 4.4, h: 2.4, id: `${id}-name` });
-    }
+    if (name) nodes.push({ k: "words", lines: [name], face: "script", colour: words, x: -16.6, y: 1.5, w: 7.4, h: 3.4, id: `${id}-name` });
   }
   // The cup on the top-right corner, white inside; the bottle beside it.
   if (ch.cups === "plain") {
@@ -143,8 +144,10 @@ export function placeLayout(t: TableSetup, theme: { id: string; balloonColors: s
     nodes.push({ k: "group", x: c[0], y: c[1], rot: turn(s), nodes: setting(t, theme, `place-${i}`), id: `place-${i}`, focus: s === focus });
   }
   const cp = t.choices.centrepiece;
-  if (cp !== NONE && PIECES[`centrepiece-${cp}` as PieceName]) {
-    const name = `centrepiece-${cp}` as PieceName, w = cp === "toppers" ? 16 : cp === "balloons" ? 22 : 20;
+  // The theme cutouts are the theme's own piece (2026-10-29: Frozen first).
+  const cpName = (cp === "cutouts" ? `centrepiece-cutouts-${theme.id}` : `centrepiece-${cp}`) as PieceName;
+  if (cp !== NONE && PIECES[cpName]) {
+    const name = cpName, w = cp === "toppers" ? 16 : cp === "balloons" ? 22 : cp === "cutouts" ? 24 : 20;
     table.centres.map(at).filter((p) => inView(p, 12)).forEach(([x, y], k) => nodes.push({ k: "img", src: piece(name), x, y, w, h: tall(name, w), lift: 4, id: `centre-${k}` }));
   }
   return nodes;

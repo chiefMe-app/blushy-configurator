@@ -119,7 +119,7 @@ describe("the pictures and the prompt", () => {
     expect(p).toContain("TWO place settings facing each other");
     expect(p).toContain("Two chairs face each other on the two sides of the table");
     // The cutlery only on the left, rolled up in the chosen napkin with the band, as in the holder's picture.
-    expect(p).toContain(`on the left of the placemat: a folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 2} folded flat, with a disposable fork, knife and spoon made of natural light wood, not metal lying on top of it, the napkin and the cutlery wrapped round the middle together by a plain pastel baby blue paper napkin band with a little tag with the name "Arya" on it — the band is pastel baby blue, whatever colour its photo shows`);
+    expect(p).toContain(`on the left of the placemat: a folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 2} folded flat, with a disposable fork, knife and spoon made of natural light wood, not metal lying on top of it, the napkin and the cutlery wrapped round the middle together by a plain pastel baby blue paper napkin band with the name "Arya" printed straight onto the band in sky blue script letters — no tag, no label — the band is pastel baby blue, whatever colour its photo shows`);
     // 2026-10-29 (owner): the napkin always under the cutlery.
     expect(p).toContain("lying side by side on top of its folded napkin on the left, under the band — the napkin is always under the cutlery. No other cutlery anywhere");
     expect(p).not.toMatch(/pocket|standing up/);
