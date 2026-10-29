@@ -22,7 +22,7 @@ import { ndjsonLine } from "@/lib/ndjson";
 import { readTableSetup } from "@/lib/studio/tableSetup";
 import { optionPhoto, plateCardArt, tableOption } from "@/lib/studio/tableCatalog";
 import { referencePictures, tablePrompt, tableRenderKey, type TableRender } from "@/lib/studio/tableRender";
-import { tableCloseGuideSvg } from "@/lib/studio/tableCloseGuide";
+import { tableCloseGuideSvg, type TableView } from "@/lib/studio/tableCloseGuide";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,11 +59,13 @@ async function optionPicture(photo: string, origin: string): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { table?: unknown; theme?: unknown };
+  let body: { table?: unknown; theme?: unknown; view?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
   const theme = typeof body?.theme === "string" ? themeById(body.theme) : undefined;
   const table = theme ? readTableSetup(body.table, theme) : undefined;
   if (!theme || !table?.enabled) return NextResponse.json({ error: "Missing table or theme." }, { status: 400 });
+  // 2026-10-29: the close-up, or one place seen straight down.
+  const view: TableView = body.view === "top" ? "top" : "close";
   const falKey = process.env.FAL_KEY;
   if (!falKey) return NextResponse.json({ error: "Renders are not available right now." }, { status: 503 });
 
@@ -98,11 +100,11 @@ export async function POST(req: NextRequest) {
             Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin))),
           ]);
           // A JPEG, not a PNG: the drawing with its placemat photos is a fraction of the upload.
-          const guide = await sharp(Buffer.from(tableCloseGuideSvg(table, theme, { placemat, card: ownCard ?? placemat }))).jpeg({ quality: 90 }).toBuffer();
+          const guide = await sharp(Buffer.from(tableCloseGuideSvg(table, theme, { placemat, card: ownCard ?? placemat }, view))).jpeg({ quality: 90 }).toBuffer();
           const pictures = [`data:image/jpeg;base64,${guide.toString("base64")}`, ...photos];
           lap("prepared");
           const result = await fal.subscribe(MODEL, {
-            input: engineInput(MODEL, tablePrompt(table, theme, refs.map((r) => r.key)), pictures) as never,
+            input: engineInput(MODEL, tablePrompt(table, theme, refs.map((r) => r.key), view), pictures) as never,
             abortSignal: AbortSignal.timeout(130_000),
             onQueueUpdate: (u) => { if (u.status === "IN_PROGRESS" && times.started === undefined) lap("started"); },
           });
@@ -111,12 +113,12 @@ export async function POST(req: NextRequest) {
           if (!url) throw new Error("no close-up image");
           const jpeg = await renderJpeg(url);
           if (!jpeg) throw new Error("the close-up could not be read");
-          send({ view: "close", url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
+          send({ view, url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
           lap("sent");
           const key = tableRenderKey(table, theme.id);
           // Without a database (local development) nothing is kept.
           let render: TableRender | undefined;
-          if (user.client && user.userId) {
+          if (user.client && user.userId && view === "close") {
             const kept = await storeRenderJpeg(user.client, user.userId, jpeg, `table:close:${key}`);
             render = kept ? { key, close: kept.path } : undefined;
             if (!render) console.warn("[table-render] not kept; shown only");

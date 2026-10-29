@@ -29,11 +29,11 @@ function OptionArt({ item, option, colours, themeId, words, colour, textColor }:
   // The plain plates: a big and a small plate in the colour, the theme's card in the small one.
   if (option && item.key === "plates" && option.id === "plain") {
     return <svg viewBox="-24 -24 48 48" aria-hidden="true">
-      <defs><clipPath id="plate-card"><circle r={7.5} /></clipPath></defs>
+      <defs><clipPath id="plate-card"><circle r={9} /></clipPath></defs>
       <circle r={21} fill={colour ?? "#fff"} stroke="#5a4950" strokeWidth={0.8} /><circle r={16.5} fill="none" stroke="#5a4950" strokeWidth={0.4} opacity={0.5} />
-      <circle r={12.5} fill={colour ?? "#fff"} stroke="#5a4950" strokeWidth={0.7} />
-      {colours.card && <image href={colours.card} x={-7.5} y={-7.5} width={15} height={15} preserveAspectRatio="xMidYMid slice" clipPath="url(#plate-card)" />}
-      <circle r={7.5} fill="none" stroke="#5a4950" strokeWidth={0.4} />
+      <circle r={15.5} fill={colour ?? "#fff"} stroke="#5a4950" strokeWidth={0.7} />
+      {colours.card && <image href={colours.card} x={-9} y={-9} width={18} height={18} preserveAspectRatio="xMidYMid slice" clipPath="url(#plate-card)" />}
+      <circle r={9} fill="none" stroke="#5a4950" strokeWidth={0.4} />
     </svg>;
   }
   if (!option) return <svg viewBox="-24 -24 48 48" aria-hidden="true"><circle r={14} fill="none" stroke="#d9c9cf" strokeWidth={2} strokeDasharray="4 3" /><path d="M-8,8L8,-8" stroke="#d9c9cf" strokeWidth={2} /></svg>;

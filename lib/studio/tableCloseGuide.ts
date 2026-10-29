@@ -8,12 +8,19 @@
 // lettered (as paths: Vercel has no fonts). The render only makes it real,
 // taking each piece's look from its option picture. A plain SVG string, so the
 // server can rasterise it with sharp; no React.
-import { NONE, onFloor } from "./tableCatalog";
+//
+// 2026-10-29 (owner): "asıl bir tane top view render lazım" — the same drawing
+// can also look straight down on one child's place, framed like the top view's
+// place in the builder (view "top"): the camera is simply moved overhead.
+import { NONE, PLATE_CARD_MM, onFloor } from "./tableCatalog";
 import { arrangeTables, CHAIR, CUSHION, type Placed, type Seat } from "./tableShapes";
 import { wordsColour, wordsOn, type TableSetup } from "./tableSetup";
 import { textCommands } from "@/lib/guideFonts";
 
 export const CLOSE_GUIDE = { width: 1152, height: 864 };
+export type TableView = "close" | "top";
+/** The top view's frame: one place, from the chair's front edge to beyond the cup (cm across). */
+const TOP_FRAME = 64;
 
 type V3 = readonly [number, number, number];
 type V2 = readonly [number, number];
@@ -49,11 +56,29 @@ const CHAIR_FILL: Record<string, string> = { white_kids: "#FFFFFF", bow_kids: "#
 const WOOD = "#D9B98C";
 
 /**
+ * The placemat words' size (cm): as big as fits in the bottom-right corner
+ * without touching the plate (radius 11.5 cm) — 2026-10-29: at 3 cm the render
+ * misspelled them. Lines stack upwards from the bottom, one word a line.
+ */
+export function placematWordsSize(lines: string[]): number {
+  for (let size = 4.4; size > 2.4; size -= 0.2) {
+    const gap = size * 1.12;
+    const clear = lines.every((line, i) => {
+      const left = 20 - textCommands(line, "elegant", size).width, base = -14 + (lines.length - 1 - i) * gap, cap = base + size * 0.72;
+      // The line's corner nearest the plate's centre.
+      return left >= 0 && Math.hypot(left, cap < 0 ? cap : base > 0 ? base : 0) > 12.5;
+    });
+    if (clear) return size;
+  }
+  return 2.4;
+}
+
+/**
  * The guide as an SVG string: `theme` gives the placemat colours. Every
  * measure is in centimetres; the plan (arrangeTables) is turned into a world
  * with z up (the plan's y is flipped so nothing comes out mirrored).
  */
-export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string[]; accent: string }, art: { placemat?: string; card?: string } = {}): string {
+export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string[]; accent: string }, art: { placemat?: string; card?: string } = {}, view: TableView = "close"): string {
   const { width: W, height: H } = CLOSE_GUIDE;
   const ch = t.choices;
   const floor = onFloor(ch);
@@ -96,9 +121,18 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
   const along: V3 = [-across[1], across[0], 0];
   const az = ((round ? 0 : 22) * Math.PI) / 180, el = (52 * Math.PI) / 180, dist = round ? 140 : 165;
   const horiz = norm([across[0] * Math.cos(az) + along[0] * Math.sin(az), across[1] * Math.cos(az) + along[1] * Math.sin(az), 0]);
-  const eye: V3 = [target[0] + horiz[0] * dist * Math.cos(el), target[1] + horiz[1] * dist * Math.cos(el), target[2] + dist * Math.sin(el)];
-  const fw = norm(sub(target, eye)), rt = norm(cross(fw, [0, 0, 1])), up = cross(rt, fw);
-  const F = W / 2 / Math.tan((27 * Math.PI) / 180);
+  let eye: V3 = [target[0] + horiz[0] * dist * Math.cos(el), target[1] + horiz[1] * dist * Math.cos(el), target[2] + dist * Math.sin(el)];
+  let fw = norm(sub(target, eye)), rt = norm(cross(fw, [0, 0, 1])), up = cross(rt, fw);
+  let F = W / 2 / Math.tan((27 * Math.PI) / 180);
+  if (view === "top") {
+    // Straight down on one place (the near one), the child at the bottom of the
+    // picture: high up with a long lens, so the cup and bottle barely lean.
+    const S = round ? A : B, high = 400;
+    const c = S.at(0, -6);
+    eye = [c[0], c[1], TH + high];
+    fw = [0, 0, -1]; rt = S.right; up = S.fwd;
+    F = (W / 2) * (high / (TOP_FRAME / 2));
+  }
   const P = (p: V3): V2 => { const v = sub(p, eye); const z = Math.max(1, dot(v, fw)); return [W / 2 + (F * dot(v, rt)) / z, H / 2 - (F * dot(v, up)) / z]; };
   const depth = (p: V3) => Math.hypot(...sub(p, eye));
   /** In front of the camera: a place under or behind it would be drawn inside out. */
@@ -198,19 +232,21 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
     const plateShape = ch.plates === "holo_square" ? [at(-11, -11, 0.4), at(11, -11, 0.4), at(11, 11, 0.4), at(-11, 11, 0.4)]
       : ((n) => Array.from({ length: n }, (_, i) => { const a2 = Math.PI / n + (i * 2 * Math.PI) / n; return at(Math.cos(a2) * 11.5, Math.sin(a2) * 11.5, 0.4); }))(ch.plates === "iridescent" ? 8 : 28);
     const shrink = (k: number, z: number) => plateShape.map((p) => [S.centre[0] + (p[0] - S.centre[0]) * k, S.centre[1] + (p[1] - S.centre[1]) * k, TH + z] as V3);
-    flat += poly(plateShape, plate.fill, plate.rim, 1.4) + poly(shrink(0.82, 0.4), "none", plate.rim, 0.8);
-    // 2026-10-28 (owner): a small plate on the big one, and in it a round card in the theme's design.
-    flat += poly(shrink(0.68, 1), plate.fill, plate.rim, 1.8);
-    const card = circle3(at(0, 0, 1.3), 6, TH + 1.3, 28); // PLATE_CARD_MM across
+    flat += poly(plateShape, plate.fill, plate.rim, 1.4) + poly(shrink(0.87, 0.4), "none", plate.rim, 0.8);
+    // 2026-10-28 (owner): a small plate on the big one, and in it a round card in the theme's design;
+    // 2026-10-29: the card smaller, with a wide rim of the small plate round it.
+    flat += poly(shrink(0.75, 1), plate.fill, plate.rim, 1.8);
+    const cr = PLATE_CARD_MM / 20;
+    const card = circle3(at(0, 0, 1.3), cr, TH + 1.3, 28);
     if (cardArt) {
-      const id = `card-${cards++}`, [o, x, y] = [P(at(-6, 6, 1.3)), P(at(6, 6, 1.3)), P(at(-6, -6, 1.3))];
+      const id = `card-${cards++}`, [o, x, y] = [P(at(-cr, cr, 1.3)), P(at(cr, cr, 1.3)), P(at(-cr, -cr, 1.3))];
       flat += `<clipPath id="${id}"><polygon points="${card.map(P).map(([a, b]) => `${f1(a)},${f1(b)}`).join(" ")}"/></clipPath>`
         + `<g clip-path="url(#${id})"><use href="#${cardArt}" xlink:href="#${cardArt}" transform="matrix(${[x[0] - o[0], x[1] - o[1], y[0] - o[0], y[1] - o[1], o[0], o[1]].map(f1).join(" ")})"/></g>`
         + poly(card, "none", "#8A7F86", 0.8);
     } else flat += poly(card, light(pal[0] ?? theme.accent, 0.35), "#8A7F86", 0.8);
     if (ch.placemats !== NONE && matWords) {
       // In the bottom-right corner beside the plate, one word a line, right-aligned (the owner's reference).
-      const lines = matWords.toUpperCase().split(/\s+/), size = 3, gap = 3.3;
+      const lines = matWords.toUpperCase().split(/\s+/), size = placematWordsSize(lines), gap = size * 1.12;
       lines.forEach((line, i) => {
         const { commands, width } = textCommands(line, "elegant", size);
         const u0 = 20 - width, v0 = -14 + (lines.length - 1 - i) * gap;
@@ -235,7 +271,8 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
       const tip = ch.cutlery === "dipped" ? "#F9A8D4" : ch.cutlery === "glitter" ? "#C9CED6" : WOOD;
       flat += [-18, -16, -14].map((u) => poly([at(u - 0.6, -9, 0.8), at(u + 0.6, -9, 0.8), at(u + 0.6, 10, 0.8), at(u - 0.6, 10, 0.8)], WOOD, "#8A7F86", 0.6) + poly([at(u - 0.6, -9, 0.9), at(u + 0.6, -9, 0.9), at(u + 0.6, -4, 0.9), at(u - 0.6, -4, 0.9)], tip, "#8A7F86", 0.4)).join("");
     }
-    add(S.centre, flat);
+    // Straight down, every place's flat pieces go under every standing one.
+    parts.push({ d: depth(S.centre) + (view === "top" ? 1e6 : 0), svg: flat });
     // Standing pieces: the cup on the top-right corner, the bottle beside it, the hat top-left.
     if (ch.cups !== NONE) {
       const base = at(17, 12, 0);
@@ -247,7 +284,9 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
     }
     if (ch.partyHats !== NONE) {
       const base = at(-17, 12, 0);
-      add(base, ch.partyHats === "cone" ? solid(base, 5.5, 0, 15, "#D8DEF5") : solid(base, 5, 5, 4, ch.partyHats === "crown" ? "#E8D27A" : light(pal[0] ?? theme.accent, 0.4)));
+      // The cone's pom-pom on its tip: from straight above a bare cone is only a disc.
+      const pom = P(at(-17, 12, 15)), pr = (1.6 * F) / depth(at(-17, 12, 15));
+      add(base, ch.partyHats === "cone" ? solid(base, 5.5, 0, 15, "#D8DEF5") + `<circle cx="${f1(pom[0])}" cy="${f1(pom[1])}" r="${f1(pr)}" fill="#FFFFFF" stroke="#8A7F86" stroke-width="1"/>` : solid(base, 5, 5, 4, ch.partyHats === "crown" ? "#E8D27A" : light(pal[0] ?? theme.accent, 0.4)));
     }
     items.push(...parts);
   }

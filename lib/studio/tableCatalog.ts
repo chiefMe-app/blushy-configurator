@@ -176,5 +176,5 @@ export const onFloor = (choices: Record<TableItemKey, string>) => !!tableOption(
 /** The round card in each small plate: the chosen placemats' design (the pattern one without placemats), cut round. */
 export const plateCardArt = (choices: Record<TableItemKey, string>, themeId: string) =>
   `/design/table/placemats/${themeId}/${choices.placemats !== NONE && tableOption("placemats", choices.placemats) ? choices.placemats : "pattern"}.webp`;
-/** The plate card's size: it sits inside a small (18 cm) plate. */
-export const PLATE_CARD_MM = 120;
+/** The plate card's size: it sits inside a small (18 cm) plate with a wide rim round it (2026-10-29: 120 mm was too big). */
+export const PLATE_CARD_MM = 100;

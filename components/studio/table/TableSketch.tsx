@@ -50,18 +50,22 @@ export default function TableSketch({ table, palette, accent, className }: { tab
     const inward = 16;
     const px = s.ex + Math.cos(s.facing) * inward, py = s.ey + Math.sin(s.facing) * inward;
     const at = (x: number, y: number, key: Parameters<typeof glyph>[0]) => ch[key] !== NONE && <g transform={`translate(${x} ${y})`}>{glyph(key, ch[key], c)}</g>;
+    // Turned so the child sits at the bottom and looks up the page: x is the
+    // child's right, -y away from the child (towards the middle of the table).
+    // 2026-10-29: the places were drawn the other way round (the napkin on the
+    // child's right, the cup by the child), unlike the owner's layout and the render.
     return (
-      <g key={`set-${c.seat}`} transform={`translate(${px} ${py}) rotate(${deg(s.facing) - 90})`}>
-        {at(-2, 0, "placemats")}
+      <g key={`set-${c.seat}`} transform={`translate(${px} ${py}) rotate(${deg(s.facing) + 90})`}>
+        {at(0, 0, "placemats")}
         {at(0, 0, "chargers")}
         {at(0, 0, "plates")}
-        {at(-15, 0, "napkins")}
-        {at(-15, 0, "cutlery")}
-        {at(-15, 0, "cutleryHolder")}
-        {at(16, -9, "bottleLabel")}
-        {at(11.5, -5, "cups")}
+        {at(-16, 0, "napkins")}
+        {at(-16, 0, "cutlery")}
+        {at(-16, 0, "cutleryHolder")}
+        {at(16, -11, "cups")}
+        {at(23, -11, "bottleLabel")}
         {at(0, 12.5, "nameCards")}
-        {at(0, 0, "partyHats")}
+        {at(-17, -11, "partyHats")}
       </g>
     );
   };

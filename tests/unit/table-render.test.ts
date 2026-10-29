@@ -4,10 +4,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { themeById } from "@/lib/config";
-import { NONE } from "@/lib/studio/tableCatalog";
+import { NONE, PLATE_CARD_MM } from "@/lib/studio/tableCatalog";
 import { defaultTableSetup, readTableRender, readTableSetup } from "@/lib/studio/tableSetup";
 import { MAX_REFERENCES, referencePictures, tablePrompt, tableRenderKey } from "@/lib/studio/tableRender";
-import { tableCloseGuideSvg } from "@/lib/studio/tableCloseGuide";
+import { placematWordsSize, tableCloseGuideSvg } from "@/lib/studio/tableCloseGuide";
 import { resetRenderGuard } from "@/lib/renderGuard";
 import { readNdjson } from "@/lib/ndjson";
 
@@ -100,7 +100,9 @@ describe("the pictures and the prompt", () => {
     const p = tablePrompt({ ...table(), words: { placemats: "Arya turns 6" } }, frozen, []);
     // In the bottom-right corner, like the owner's reference — never on the plate (her first render).
     // Bottom-right, one word a line, like the owner's reference — never on the plate (her first render).
-    expect(p).toContain('with the words printed straight onto the placemat paper in its bottom-right corner in elegant sky blue serif capitals, stacked one word per line ("Arya" above "turns" above "6") — no sticker, no label, never on the plate');
+    expect(p).toContain('with the words printed straight onto the placemat paper in its bottom-right corner in elegant sky blue serif capitals, stacked one word per line ("ARYA" (A-R-Y-A) above "TURNS" (T-U-R-N-S) above "6") — no sticker, no label, never on the plate');
+    // 2026-10-29: spelled out letter by letter ("Arya" came out "Aya"); each word named once.
+    expect(tablePrompt({ ...table({ cutleryHolder: "band" }), words: { placemats: "Arya", cutleryHolder: "Arya" } }, frozen, [])).toContain('The only words anywhere are "Arya", spelled');
     expect(p).toContain('The only words anywhere are "Arya turns 6"');
     expect(tablePrompt(table(), frozen, [])).toContain("No text and no letters anywhere.");
     expect(tableRenderKey({ ...table(), words: { placemats: "Arya turns 6" } }, "frozen")).not.toBe(tableRenderKey(table(), "frozen"));
@@ -187,6 +189,31 @@ describe("the layout drawing", () => {
     expect((svg.match(new RegExp(`fill="${frozen.accent}"`, "g")) ?? []).length).toBe(30); // ARYA / TURNS / 6 at ten places
     expect(tableCloseGuideSvg({ ...t, choices: { ...t.choices, placemats: NONE } }, frozen)).not.toContain(`fill="${frozen.accent}"`);
   });
+  it("the placemat words as big as the corner beside the plate allows (2026-10-29: at 3 cm they were misspelled)", () => {
+    expect(placematWordsSize(["ARYA", "TURNS", "6"])).toBeGreaterThan(3); // 3 cm before
+    // A long word is set smaller, never into the plate.
+    expect(placematWordsSize(["ALEXANDRA"])).toBeLessThan(placematWordsSize(["ARYA"]));
+  });
+  it("the plate card is drawn smaller, inside the small plate (2026-10-29)", () => {
+    expect(PLATE_CARD_MM).toBe(100);
+  });
+  it("the top view: one place straight down, the child at the bottom, the standing pieces over the flat ones", () => {
+    const t = { ...table({ cutleryHolder: "band", placemats: "watercolour", cups: "plain", partyHats: "cone" }), words: { placemats: "Arya turns 6" } };
+    const svg = tableCloseGuideSvg(t, frozen, { placemat: "data:image/jpeg;base64,AAAA" }, "top");
+    expect(svg).toMatch(/^<svg [^>]*width="1152" height="864"/);
+    expect(svg).not.toBe(tableCloseGuideSvg(t, frozen, { placemat: "data:image/jpeg;base64,AAAA" }));
+    // The cup (plain, the customer's colour) is drawn after the placemat it stands on.
+    expect(svg.lastIndexOf(`fill="${t.cupColor}"`)).toBeGreaterThan(svg.indexOf('<use href="#mat-art"'));
+    // The placemat in focus lies square: its design's corners line up with the picture.
+    const m = Array.from(svg.matchAll(/<use href="#mat-art"[^>]*transform="matrix\(([^)]*)\)"/g)).map((x) => x[1].split(" ").map(Number));
+    expect(m.some(([a, b, c, d]) => Math.abs(b) < 0.5 && Math.abs(c) < 0.5 && a > 600 && d > 400)).toBe(true);
+    const p = tablePrompt(t, frozen, [], "top");
+    expect(p).toContain("seen from straight above, of one child's place");
+    expect(p).toContain("A flat lay: shot looking straight down");
+    expect(p).not.toContain("TWO place settings");
+    expect(p).not.toContain("shallow depth of field");
+    expect(p).not.toContain("sunny garden");
+  });
 });
 
 describe("reading the stream", () => {
@@ -234,6 +261,15 @@ describe("the route", () => {
     for (const u of calls[0].image_urls.slice(1)) expect(u).toMatch(/^data:image\/jpeg;base64,/);
     expect(calls[0].prompt).toContain("TWO place settings facing each other");
     expect(calls[0].prompt).not.toMatch(/frozen/i);
+  }, 30_000);
+
+  it("the top view when asked for: the straight-down drawing and words, shown but not kept as the close-up", async () => {
+    subscribe.mockImplementation(async () => ({ data: { images: [{ url: FAL }] } }));
+    const { POST } = await import("@/app/api/table-render/route");
+    const got = await lines(await POST(post({ table: table(), theme: "frozen", view: "top" })));
+    expect(got[0]).toEqual({ view: "top", url: PICTURE });
+    const [, { input }] = subscribe.mock.calls[0] as [string, { input: { prompt: string } }];
+    expect(input.prompt).toContain("A flat lay");
   }, 30_000);
 
   it("refuses a missing or skipped table without calling fal", async () => {

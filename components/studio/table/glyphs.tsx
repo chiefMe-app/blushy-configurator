@@ -101,7 +101,7 @@ export function glyph(key: TableItemKey, id: string, c: GlyphColours): ReactNode
       return null;
     case "plates": {
       // The kids' table's paper plates; white & gold and pastel melamine are the grown-ups'.
-      if (id === "plain") return <g><circle r={10} fill={c.plate ?? pick(c, 0)} stroke={INK} strokeWidth={0.8} /><circle r={6.2} fill={c.plate ?? pick(c, 0)} stroke={INK} strokeWidth={0.6} /><circle r={3.6} fill={c.accent} opacity={0.35} /></g>;
+      if (id === "plain") return <g><circle r={10} fill={c.plate ?? pick(c, 0)} stroke={INK} strokeWidth={0.8} /><circle r={7.5} fill={c.plate ?? pick(c, 0)} stroke={INK} strokeWidth={0.6} /><circle r={4.3} fill={c.accent} opacity={0.35} /></g>;
       if (id === "iridescent") return <path d={Array.from({ length: 8 }, (_, i) => { const a = Math.PI / 8 + (i * Math.PI) / 4; return `${i ? "L" : "M"}${(Math.cos(a) * 10).toFixed(1)},${(Math.sin(a) * 10).toFixed(1)}`; }).join("") + "Z"} fill="#EBDDF7" stroke="#A78BC9" strokeWidth={0.9} />;
       if (id === "holo_square") return <g><rect x={-9.5} y={-9.5} width={19} height={19} rx={2.5} fill="#E2E7ED" stroke="#8C99A6" strokeWidth={0.9} /><rect x={-6.5} y={-6.5} width={13} height={13} rx={1.5} fill="none" stroke="#B9C3CD" strokeWidth={0.5} /></g>;
       if (id === "silver") return <g><circle r={9.5} fill="#E5E8EC" stroke="#8C99A6" strokeWidth={0.9} /><circle r={7} fill="none" stroke="#B9C3CD" strokeWidth={0.6} strokeDasharray="1 0.8" /></g>;
