@@ -12,7 +12,7 @@
 // 2026-10-29 (owner): "asıl bir tane top view render lazım" — the same drawing
 // can also look straight down on one child's place, framed like the top view's
 // place in the builder (view "top"): the camera is simply moved overhead.
-import { NONE, onFloor } from "./tableCatalog";
+import { NONE, drawColour, onFloor } from "./tableCatalog";
 import { arrangeTables, CHAIR, CUSHION, focusSeats, type Placed, type Seat } from "./tableShapes";
 import { wordsColour, wordsOn, type TableSetup } from "./tableSetup";
 import { loadFont } from "@/lib/typography/fontLoader";
@@ -50,10 +50,7 @@ function hull(points: V2[]): V2[] {
   return [...lower.slice(0, -1), ...upper.slice(0, -1)];
 }
 
-const PLATE: Record<string, { fill: string; rim: string }> = {
-  iridescent: { fill: "#EBDDF7", rim: "#A78BC9" }, silver: { fill: "#E5E8EC", rim: "#8C99A6" },
-};
-const CUP: Record<string, string> = { iridescent: "#E4DDF5" };
+
 // The kids' chair (blue_kids) is the customer's colour.
 const CHAIR_FILL: Record<string, string> = { white_kids: "#FFFFFF", bow_kids: "#F5C9D7" };
 const WOOD = "#D9B98C";
@@ -196,7 +193,8 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
   const pal = theme.balloonColors.filter((c) => !/^#F[0-9A-F]F[0-9A-F]F[0-9A-F]$/i.test(c));
   const mat1 = light(pal[0] ?? theme.accent, 0.62), mat2 = light(pal[1] ?? pal[0] ?? theme.accent, 0.7);
   const matWords = wordsOn(t, "placemats");
-  const plate = ch.plates === "plain" ? { fill: t.plateColor, rim: "#8A7F86" } : PLATE[ch.plates] ?? { fill: "#FFFFFF", rim: "#8A7F86" };
+  // A foil is drawn in its own colour (lib/studio/tableCatalog FOILS).
+  const plate = { fill: drawColour(t.plateColor), rim: "#8A7F86" };
   const napkin = ch.napkins === "plain" ? t.napkinColor : light(pal[0] ?? theme.accent, 0.55);
   for (const seat of seats) {
     const S = settingAt(seat);
@@ -215,13 +213,13 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
     }
     // The plate in the middle.
     // The plain plates come round, scalloped or square (2026-10-29).
-    const shape = ch.plates === "plain" ? t.plateShape : "round";
+    const shape = t.plateShape;
     const plateShape = shape === "square" ? [at(-10.5, -10.5, 0.4), at(10.5, -10.5, 0.4), at(10.5, 10.5, 0.4), at(-10.5, 10.5, 0.4)]
-      : ((n) => Array.from({ length: n }, (_, i) => { const a2 = Math.PI / n + (i * 2 * Math.PI) / n, r = shape === "scalloped" && i % 2 ? 10.6 : 11.5; return at(Math.cos(a2) * r, Math.sin(a2) * r, 0.4); }))(ch.plates === "iridescent" ? 8 : shape === "scalloped" ? 32 : 28);
+      : ((n) => Array.from({ length: n }, (_, i) => { const a2 = Math.PI / n + (i * 2 * Math.PI) / n, r = shape === "scalloped" && i % 2 ? 10.6 : 11.5; return at(Math.cos(a2) * r, Math.sin(a2) * r, 0.4); }))(shape === "scalloped" ? 32 : 28);
     const shrink = (k: number, z: number) => plateShape.map((p) => [S.centre[0] + (p[0] - S.centre[0]) * k, S.centre[1] + (p[1] - S.centre[1]) * k, TH + z] as V3);
     flat += poly(plateShape, plate.fill, plate.rim, 1.4) + poly(shrink(0.87, 0.4), "none", plate.rim, 0.8);
     // 2026-10-28 (owner): a small plate on the big one.
-    flat += poly(shrink(0.75, 1), ch.plates === "plain" ? t.smallPlateColor : plate.fill, plate.rim, 1.8);
+    flat += poly(shrink(0.75, 1), drawColour(t.smallPlateColor), plate.rim, 1.8);
     if (ch.placemats !== NONE && matWords) {
       // In the bottom-right corner beside the plate, one word a line, right-aligned (the owner's reference).
       const font = tableFont(t.placematFont);
@@ -245,7 +243,7 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
     // Standing pieces: the cup on the top-right corner, the bottle beside it, the hat top-left.
     if (ch.cups !== NONE) {
       const base = at(17, 12, 0);
-      add(base, solid(base, 3.4, 4, 9, ch.cups === "plain" ? t.cupColor : CUP[ch.cups] ?? "#FFFFFF", ch.cups === "plain" ? t.cupColor : "#FFFFFF") + (ch.cups === "iridescent" ? `<path d="M${P(at(17, 12, 6)).map(f1).join(",")}L${P(at(18.5, 13.5, 16)).map(f1).join(",")}" stroke="#9AA6B2" stroke-width="2.4"/>` : ""));
+      add(base, solid(base, 3.4, 4, 9, drawColour(t.cupColor), drawColour(t.cupColor)));
     }
     if (ch.bottleLabel !== NONE) {
       const base = at(25, 12, 0);
@@ -255,7 +253,7 @@ export function tableCloseGuideSvg(t: TableSetup, theme: { balloonColors: string
       const base = at(-17, 12, 0);
       // The cone's pom-pom on its tip: from straight above a bare cone is only a disc.
       const pom = P(at(-17, 12, 15)), pr = (1.6 * F) / depth(at(-17, 12, 15));
-      add(base, ch.partyHats === "cone" ? solid(base, 5.5, 0, 15, "#D8DEF5") + `<circle cx="${f1(pom[0])}" cy="${f1(pom[1])}" r="${f1(pr)}" fill="#FFFFFF" stroke="#8A7F86" stroke-width="1"/>` : solid(base, 5, 5, 4, ch.partyHats === "crown" ? "#E8D27A" : light(pal[0] ?? theme.accent, 0.4)));
+      add(base, ch.partyHats === "cone" ? solid(base, 5.5, 0, 15, t.hatColor) + `<circle cx="${f1(pom[0])}" cy="${f1(pom[1])}" r="${f1(pr)}" fill="#FFFFFF" stroke="#8A7F86" stroke-width="1"/>` : solid(base, 5, 5, 4, ch.partyHats === "crown" ? "#E8D27A" : light(pal[0] ?? theme.accent, 0.4)));
     }
     items.push(...parts);
   }

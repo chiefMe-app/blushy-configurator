@@ -99,14 +99,13 @@ export const TABLE_ITEMS: TableItem[] = [
   ] },
   // 2026-10-28 (owner): every place has a big plate with a small one on it
   // (2026-10-29: without the round card in the small one — "iyi durmuyor").
+  // 2026-10-29 (owner): "iridescent, silver, gold metallic renk olarak girsin … başlık olmasın" — one kind
+  // of plate and of cup, in a colour or a foil (FOILS), with no option cards.
   { key: "plates", label: "Plates", optional: false, options: [
-    { id: "plain", name: "Plain plates", note: "Big + small, in a colour and shape you pick", price: 3, unit: "per_child", coloured: true },
-    { id: "iridescent", name: "Iridescent foil plates", note: "Big + small, shimmering foil", price: 4, unit: "per_child", photo: "/design/table/plates-iridescent.webp" },
-    { id: "silver", name: "Silver foil plates", note: "Big + small, round with a fluted rim", price: 3, unit: "per_child", photo: "/design/table/plates-silver.webp" },
+    { id: "plain", name: "Paper plates", note: "Big + small, in a colour or foil and a shape you pick", price: 3, unit: "per_child", coloured: true },
   ] },
   { key: "cups", label: "Cups", optional: false, options: [
-    { id: "plain", name: "Plain cup", note: "In a colour you pick", price: 2, unit: "per_child", coloured: true },
-    { id: "iridescent", name: "Iridescent cup", note: "Shimmering foil finish", price: 3, unit: "per_child", photo: "/design/table/cups-iridescent.webp" },
+    { id: "plain", name: "Paper cups", note: "In a colour or foil you pick", price: 2, unit: "per_child", coloured: true },
   ] },
   { key: "cutlery", label: "Cutlery", optional: false, options: [
     { id: "dipped", name: "Colour-dipped wooden", note: "Handles dipped in pastel", price: 3, unit: "per_child", photo: "/design/table/cutlery-dipped.webp" },
@@ -133,7 +132,8 @@ export const TABLE_ITEMS: TableItem[] = [
     { id: "sparkle", name: "Sparkle label", note: "Glittering and dreamy", price: 5, unit: "per_child", themed: true, themedArt: "placemats" },
   ] },
   { key: "partyHats", label: "Party hats", optional: true, options: [
-    { id: "cone", name: "Cone hat", note: "The classic", price: 4, unit: "per_child", photo: "/design/table/partyHats-cone.webp" },
+    // In a colour you pick (2026-10-29).
+    { id: "cone", name: "Cone hat", note: "The classic, in a colour you pick", price: 4, unit: "per_child", photo: "/design/table/partyHats-cone.webp", coloured: true },
   ] },
 ];
 
@@ -170,6 +170,26 @@ export const PLAIN_COLOURS: { hex: string; name: string }[] = [
   { hex: "#1E88E5", name: "royal blue" }, { hex: "#1E3A8A", name: "navy blue" }, { hex: "#8E24AA", name: "purple" },
   { hex: "#D4AF37", name: "gold" }, { hex: "#C0C4C8", name: "silver" }, { hex: "#1F2937", name: "black" },
 ];
+/**
+ * The foils the plates and cups also come in (2026-10-29, the owner:
+ * "iridescent, silver, gold metallic renk olarak girsin"), kept in the colour
+ * field by name. hex: a colour to draw them with where a drawing has no foil;
+ * extra: what a foil adds to the piece's price, per child.
+ */
+export const FOILS = [
+  { id: "iridescent", name: "iridescent foil", hex: "#E4D8F3", extra: 1, stops: ["#F7C6E3", "#DCC9F6", "#BFE0FA", "#C8F1E3", "#F2D0F1", "#CBD6FB"] },
+  { id: "silver", name: "silver foil", hex: "#D5DAE0", extra: 0, stops: ["#F5F6F8", "#B6BCC5", "#EEF0F3", "#A7AEB8", "#F7F8FA", "#C3C8CF"] },
+  { id: "gold", name: "gold foil", hex: "#D6B25A", extra: 1, stops: ["#FBE6A0", "#C99A2E", "#F6DB88", "#B7852A", "#FCEAAE", "#D2A646"] },
+] as const;
+export type Foil = (typeof FOILS)[number];
+/** The items that come in foils too. */
+export const FOIL_ITEMS: TableItemKey[] = ["plates", "cups"];
+export const foilOf = (c: string | undefined) => FOILS.find((f) => f.id === c);
+/** A colour to draw with: a foil's own, or the colour itself. */
+export const drawColour = (c: string) => foilOf(c)?.hex ?? c;
+/** A swatch's background: a foil's shimmer, or the colour. */
+export const swatchBackground = (c: string) => { const f = foilOf(c); return f ? `linear-gradient(135deg, ${f.stops.join(", ")})` : c; };
+
 export const plainColour = (hex: string) => PLAIN_COLOURS.find((c) => c.hex.toUpperCase() === hex.toUpperCase());
 /** The chosen table sits the children on floor cushions: no chairs to choose or pay for. */
 export const onFloor = (choices: Record<TableItemKey, string>) => !!tableOption("table", choices.table)?.floor;

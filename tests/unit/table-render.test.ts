@@ -73,15 +73,16 @@ describe("where and how it is photographed", () => {
 describe("the pictures and the prompt", () => {
   it("the layout drawing first, then a few option pictures, named in the prompt in the same order", () => {
     const refs = referencePictures(table(), "frozen");
-    expect(refs.slice(0, 3)).toEqual([
+    // The plates are a colour or a foil, in words: no picture (2026-10-29).
+    expect(refs.slice(0, 2)).toEqual([
       { key: "table", photo: "/design/table/table-standard.webp" },
       { key: "chairs", photo: "/design/table/chairs-white_kids.webp" },
-      { key: "plates", photo: "/design/table/plates-iridescent.webp" },
     ]);
+    expect(refs.map((r) => r.key)).not.toContain("plates");
     const p = tablePrompt(table(), frozen, refs.map((r) => r.key));
     expect(p).toContain("Image 1 is a simple drawing of the exact scene");
     expect(p).toContain(`Images 2 to ${refs.length + 1} are product photos`);
-    expect(p).toContain("image 2 is the table, image 3 is the chair, image 4 is the plate");
+    expect(p).toContain("image 2 is the table, image 3 is the chair");
     expect(p).toContain("Turn image 1 into a real photograph");
     expect(p).toContain("ignore everything around it");
     // The placemats are drawn into the layout with their design; the cloth, cutlery, hat and centrepiece go in words.
@@ -126,7 +127,7 @@ describe("the pictures and the prompt", () => {
     expect(p).toContain("this is the place's only bottle");
     expect(p).toContain("on the top-right corner of the placemat; just beside the cup, a small clear water bottle");
     expect(p).toContain('with "ARYA TURNS 6" printed on the label in sky blue letters set in an elegant classic serif, all capitals — the cup and the bottle are both there');
-    expect(p).toContain("a cone party hat standing on the top-left corner of the placemat");
+    expect(p).toMatch(/a plain [a-z ]+ cone party hat standing on the top-left corner of the placemat/);
     expect(p).toMatch(/Between the two settings, in the middle of the table: a small, low, compact arrangement of a few pastel flowers/);
     expect(p).toContain('The only words anywhere are "Arya" and "Arya turns 6"');
     expect(refs).not.toContain("centrepiece"); // in words
@@ -166,9 +167,9 @@ describe("the pictures and the prompt", () => {
   it("a kids' party: printed paper in the theme's pattern, disposable cutlery, nothing formal", () => {
     const p = tablePrompt(table(), frozen, []);
     expect(p).toContain("A3 paper placemat with a soft watercolour wash and big snowflakes and little stars in its corners");
-    expect(p).toContain("disposable paper plates with a shimmering iridescent");
+    expect(p).toContain("disposable paper plates, round: a big plate with a smaller plate of the same kind sitting in it, both shimmering iridescent foil");
     expect(p).toContain("a disposable fork, knife and spoon made of natural light wood, not metal");
-    expect(p).toContain("a cone party hat");
+    expect(p).toContain("cone party hat");
     expect(p).toMatch(/children's birthday party.*no glassware, no china, no charger plates/);
     expect(tablePrompt(table(), themeById("dinosaur")!, [])).toContain("big dinosaur footprints and leaves in its corners");
   });

@@ -1,7 +1,7 @@
 // The kids' table seen from above, to scale (1 unit = 1 cm): every table,
 // chair and place setting as chosen (lib/studio/tableCatalog.ts), drawn with
 // the same pictures as the option cards (./glyphs). Not a render.
-import { NONE, onFloor } from "@/lib/studio/tableCatalog";
+import { NONE, drawColour, onFloor } from "@/lib/studio/tableCatalog";
 import type { TableSetup } from "@/lib/studio/tableSetup";
 import { arrangeTables, outlinePath, type Placed, type Seat } from "@/lib/studio/tableShapes";
 import { GlyphDefs, INK, cushion, glyph, type GlyphColours } from "./glyphs";
@@ -14,7 +14,7 @@ export default function TableSketch({ table, palette, accent, className }: { tab
   const ch = table.choices;
   const { tables, width, height } = arrangeTables(table);
   const colours: GlyphColours = { palette: palette.length ? palette : ["#FBCFE8"], accent, cloth: table.clothColor, runner: table.runnerColor, napkin: table.napkinColor,
-    plate: table.plateColor, smallPlate: table.smallPlateColor, cup: table.cupColor, holder: table.holderColor, chair: table.chairColor,
+    plate: drawColour(table.plateColor), smallPlate: drawColour(table.smallPlateColor), cup: drawColour(table.cupColor), holder: table.holderColor, chair: table.chairColor,
     placemat: table.placematColor, label: table.labelColor, plateShape: table.plateShape };
   let seatNo = 0;
 

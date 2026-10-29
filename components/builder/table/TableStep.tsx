@@ -4,9 +4,9 @@
 // (plus "None" for the optional ones) from lib/studio/tableCatalog.ts, the
 // cloth's colour and the words on the placemats. Prices add to the party total.
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
-import { CHAIR_COLOURS, NONE, PLAIN_COLOURS, PLATE_SHAPES, TABLE_SECTIONS, onFloor, optionPhoto, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
+import { CHAIR_COLOURS, FOILS, FOIL_ITEMS, NONE, PLAIN_COLOURS, PLATE_SHAPES, drawColour, foilOf, swatchBackground, TABLE_SECTIONS, onFloor, optionPhoto, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
 import { TABLE_FONTS, fontCss, tableFont, type TableFont } from "@/lib/studio/tableFonts";
-import { COLOUR_OF, FONT_OF, wordsColour, MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, WORDS_ITEMS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup, type WordsKey } from "@/lib/studio/tableSetup";
+import { COLOUR_OF, FONT_OF, nameColour, wordsColour, MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, WORDS_ITEMS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup, type WordsKey } from "@/lib/studio/tableSetup";
 import { GlyphDefs, glyph, scallop, type GlyphColours } from "@/components/studio/table/glyphs";
 
 /** The printed words in their colour, with a shadow that keeps light words readable on the design. */
@@ -94,13 +94,15 @@ export default function TableStep({ config, setTable }: {
   const counts = tableCounts(table);
   const textColor = wordsColour(table, theme);
   const colours: GlyphColours = { palette: theme.balloonColors, accent: theme.accent, cloth: table.clothColor, runner: table.runnerColor, napkin: table.napkinColor,
-    plate: table.plateColor, smallPlate: table.smallPlateColor, cup: table.cupColor, holder: table.holderColor, placemat: table.placematColor, label: table.labelColor, plateShape: table.plateShape };
+    plate: drawColour(table.plateColor), smallPlate: drawColour(table.smallPlateColor), cup: drawColour(table.cupColor), holder: table.holderColor, placemat: table.placematColor, label: table.labelColor, plateShape: table.plateShape };
   const swatchRow = (label: string, value: string, options: string[], pick: (hex: string) => void, testId?: string) => (
     <div className="bz-ts-swatches" role="radiogroup" aria-label={label} data-testid={testId}>
-      {options.map((hex) => (
-        <button key={hex} type="button" role="radio" aria-checked={hex === value.toUpperCase()} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
-          className={hex === value.toUpperCase() ? "on" : ""} style={{ background: hex }} onClick={() => pick(hex)} />
-      ))}
+      {options.map((hex) => {
+        // A colour, or a foil (the plates and cups, 2026-10-29) shown as its shimmer.
+        const on = hex.toUpperCase() === value.toUpperCase();
+        return <button key={hex} type="button" role="radio" aria-checked={on} aria-label={foilOf(hex)?.name ?? PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
+          className={on ? "on" : ""} style={{ background: swatchBackground(hex) }} onClick={() => pick(hex)} />;
+      })}
     </div>
   );
 
@@ -125,9 +127,13 @@ export default function TableStep({ config, setTable }: {
     const words = key === "placemats" || key === "bottleLabel" ? table.words?.[key as WordsKey] : undefined;
     const fontField = key === "placemats" || key === "bottleLabel" ? FONT_OF[key] : undefined;
     const font = fontField ? tableFont(table[fontField]) : undefined;
+    // The plates and cups come in one kind, in a colour or a foil: no option cards (2026-10-29: "başlık olmasın").
+    const single = FOIL_ITEMS.includes(key) && it.options.length === 1 ? it.options[0] : undefined;
+    const finishes = [...FOILS.map((f) => f.id), ...swatches];
     return (
       <div key={key} className="bz-tb-item">
         <h3>{it.label}</h3>
+        {single ? <p className="bz-tb-single" data-testid={`${key}-single`}><b>{single.name}</b> · {single.note} · <em>{unitLabel(single)}</em></p> : (
         <div className="bz-tb-options" role="radiogroup" aria-label={it.label}>
           {it.optional && (
             <button type="button" role="radio" aria-checked={table.choices[key] === NONE} className={`bz-tb-option ${table.choices[key] === NONE ? "on" : ""}`} onClick={() => choose(key, NONE)}>
@@ -146,16 +152,17 @@ export default function TableStep({ config, setTable }: {
             </button>
           ))}
         </div>
+        )}
         {/* The chair comes in white, pink or light blue only. */}
         {colourKey && table.choices[key] !== NONE && (key === "plates"
           // The plain plates: the big one's colour, then the small one's (2026-10-29).
-          ? <div className="bz-tb-words-colour"><span>Big plate colour</span>{swatchRow("Big plate colour", table[colourKey], swatches, (hex) => set({ [colourKey]: hex }), `${key}-colour`)}</div>
-          : swatchRow(`${it.label} colour`, table[colourKey], key === "chairs" ? CHAIR_COLOURS : swatches, (hex) => set({ [colourKey]: hex }), `${key}-colour`))}
+          ? <div className="bz-tb-words-colour"><span>Big plate colour</span>{swatchRow("Big plate colour", table[colourKey], finishes, (hex) => set({ [colourKey]: hex }), `${key}-colour`)}</div>
+          : swatchRow(`${it.label} colour`, table[colourKey], key === "chairs" ? CHAIR_COLOURS : key === "cups" ? finishes : swatches, (hex) => set({ [colourKey]: hex }), `${key}-colour`))}
         {key === "plates" && table.choices.plates === "plain" && (
           // The small plate in its own colour (2026-10-29).
           <div className="bz-tb-words-colour">
             <span>Small plate colour</span>
-            {swatchRow("Small plate colour", table.smallPlateColor, swatches, (hex) => set({ smallPlateColor: hex }), "small-plate-colour")}
+            {swatchRow("Small plate colour", table.smallPlateColor, finishes, (hex) => set({ smallPlateColor: hex }), "small-plate-colour")}
           </div>
         )}
         {key === "plates" && table.choices.plates === "plain" && (
@@ -171,6 +178,13 @@ export default function TableStep({ config, setTable }: {
             <input type="text" value={table.words?.[wordsItem.key] ?? ""} maxLength={MAX_PLACEMAT_TEXT} placeholder={wordsItem.placeholder}
               onChange={(e) => set({ words: { ...table.words, [wordsItem.key]: cleanPlacematText(e.target.value) } })} />
           </label>
+        )}
+        {key === "cutleryHolder" && table.choices.cutleryHolder !== NONE && (
+          // The name's own colour (2026-10-29: "cutlery holder'daki textin rengi de seçilsin").
+          <div className="bz-tb-words-colour">
+            <span>Name colour</span>
+            {swatchRow("Name colour", nameColour(table, theme), Array.from(new Set([theme.accent.toUpperCase(), ...swatches])), (hex) => set({ nameColor: hex }), "cutleryHolder-name-colour")}
+          </div>
         )}
         {fontField && font && chosen && (
           // The words' lettering (2026-10-29): a few print faces and a few handwritten ones.

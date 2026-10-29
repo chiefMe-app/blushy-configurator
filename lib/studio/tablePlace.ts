@@ -7,15 +7,19 @@
 // the next places carrying on at the sides. This file only works out what goes
 // where; components/studio/table/TablePlace.tsx draws it. Every measure is in
 // centimetres; in the picture x runs to the child's right and y towards the
-// child (the child sits at the bottom).
-import { NONE, onFloor, tableOption } from "./tableCatalog";
+// child (the child sits at the bottom). 2026-10-29 (owner, with a flat-lay
+// photo): only the table top — no chairs, no floor — with the two places
+// facing each other across it (side by side round a round table).
+import { NONE, foilOf, tableOption } from "./tableCatalog";
 import { arrangeTables, focusSeats, type Pt, type Seat } from "./tableShapes";
-import { itemColour, wordsColour, wordsOn, type TableSetup } from "./tableSetup";
+import { itemColour, nameColour, wordsColour, wordsOn, type TableSetup } from "./tableSetup";
 import { asPrinted, tableFont } from "./tableFonts";
 import PIECES from "./tableTopPieces.json";
 
-/** The picture: 84 × 63 cm round the place, a little more of the near side (the chair); 2026-10-29: a little more at the top, for the centrepiece ("trimi biraz genişletelim, çok az üste doğru"). */
-export const PLACE_VIEW = { x: -42, y: -27, w: 84, h: 63 };
+/** The picture's frame (cm, 4:3), round the two places: placeView. */
+export interface PlaceView { x: number; y: number; w: number; h: number }
+/** What one place takes up round its middle, cup, bottle and hat included (cm, its own frame). */
+const PLACE_BOX = { x0: -24, x1: 28, y0: -23, y1: 15 };
 
 const DIR = "/design/table/top";
 type PieceName = keyof typeof PIECES;
@@ -29,8 +33,8 @@ export type Lift = number;
 export type PlaceNode =
   /** The table top (or its cloth), the floor round it. */
   | { k: "top"; pts: Pt[]; fill: string; cloth: boolean }
-  /** A piece's picture centred on (x, y), w wide, turned rot degrees; a white piece may be tinted, or printed with a design. */
-  | { k: "img"; src: string; x: number; y: number; w: number; h: number; rot?: number; tint?: string; print?: string; lift: Lift; id: string }
+  /** A piece's picture centred on (x, y), w wide, turned rot degrees; a white piece may be tinted, printed with a design, or in a foil (FOILS). */
+  | { k: "img"; src: string; x: number; y: number; w: number; h: number; rot?: number; tint?: string; print?: string; foil?: string; lift: Lift; id: string }
   /** A printed sheet: the placemat (the design, or a plain colour). */
   | { k: "sheet"; x: number; y: number; w: number; h: number; art?: string; fill?: string; lift: Lift; id: string }
   /** The napkin band, a strip in its colour. */
@@ -44,10 +48,6 @@ export type PlaceNode =
   /** A place, turned to its seat. */
   | { k: "group"; x: number; y: number; rot: number; nodes: PlaceNode[]; id: string; focus: boolean };
 
-const light = (hex: string, t: number) => {
-  const n = parseInt(hex.slice(1), 16);
-  return "#" + [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(v + (255 - v) * t).toString(16).padStart(2, "0")).join("");
-};
 
 /** One place's pieces, in its own frame (x to the child's right, y towards the child). */
 function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; accent: string }, id: string): PlaceNode[] {
@@ -61,11 +61,13 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
     if (w) nodes.push({ k: "matWords", lines: asPrinted(w, tableFont(t.placematFont)).split(/\s+/), font: tableFont(t.placematFont).id, colour: words, id: `${id}-matwords` });
   }
   // The big plate with the small one in it (2026-10-29: nothing in the small one).
-  const plates: PieceName = ch.plates === "plain" ? (`plates-plain-${t.plateShape}` as PieceName) : (`plates-${ch.plates}` as PieceName);
-  if (PIECES[plates]) nodes.push({ k: "img", src: piece(plates), x: 0, y: 0, w: 23, h: tall(plates, 23), tint: colour("plates"), lift: 0.4, id: `${id}-plates` });
-  // The small plain plate in its own colour (2026-10-29: "içindeki tabağın rengi farklı seçilebilsin, bir de tabak olduğu anlaşılsın"):
+  // Each in a colour or a foil (2026-10-29: "iridescent, silver, gold metallic renk olarak girsin").
+  const finish = (c: string) => (foilOf(c) ? { foil: c } : { tint: c });
+  const plates = `plates-plain-${t.plateShape}` as PieceName;
+  if (PIECES[plates]) nodes.push({ k: "img", src: piece(plates), x: 0, y: 0, w: 23, h: tall(plates, 23), ...finish(t.plateColor), lift: 0.4, id: `${id}-plates` });
+  // The small plate in its own colour (2026-10-29: "içindeki tabağın rengi farklı seçilebilsin, bir de tabak olduğu anlaşılsın"):
   // the same plate, smaller, over the big one's middle, with its own rim and shadow.
-  if (PIECES[plates] && ch.plates === "plain") nodes.push({ k: "img", src: piece(plates), x: 0, y: 0, w: 23 * 0.76, h: tall(plates, 23 * 0.76), tint: t.smallPlateColor, lift: 0.6, id: `${id}-small-plate` });
+  if (PIECES[plates]) nodes.push({ k: "img", src: piece(plates), x: 0, y: 0, w: 23 * 0.76, h: tall(plates, 23 * 0.76), ...finish(t.smallPlateColor), lift: 0.6, id: `${id}-small-plate` });
   // On the left: the folded napkin, the cutlery lying on it (2026-10-29, the
   // owner: "peçete her zaman cutlery'nin altında olmalı"), the band round both.
   const printed = ch.napkins === "printed" ? `/design/table/placemats/${theme.id}/pattern.webp` : undefined;
@@ -79,15 +81,13 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
     nodes.push({ k: "band", x: -16.6, y: 1.5, w: 8.4, h: 4.2, fill: colour("cutleryHolder") ?? "#FFFFFF", id: `${id}-band` });
     // The name printed on the band itself, no tag (2026-10-29: "bir bütün olsun, o minik beyaz kısmı olmasın").
     const name = wordsOn(t, "cutleryHolder");
-    if (name) nodes.push({ k: "words", lines: [name], face: "script", colour: words, x: -16.6, y: 1.5, w: 7.4, h: 3.4, id: `${id}-name` });
+    if (name) nodes.push({ k: "words", lines: [name], face: "script", colour: nameColour(t, theme), x: -16.6, y: 1.5, w: 7.4, h: 3.4, id: `${id}-name` });
   }
-  // The cup on the top-right corner, white inside; the bottle beside it.
-  if (ch.cups === "plain") {
-    nodes.push({ k: "img", src: piece("cup-plain-in"), x: 16.2, y: -10.2, w: 8.6, h: tall("cup-plain-in", 8.6), lift: 2.5, id: `${id}-cup-in` });
-    nodes.push({ k: "img", src: piece("cup-plain-out"), x: 16.2, y: -10.2, w: 8.6, h: tall("cup-plain-out", 8.6), tint: colour("cups") ?? "#FFFFFF", lift: 0, id: `${id}-cup-out` });
-  } else if (PIECES[`cup-${ch.cups}` as PieceName]) {
-    const name = `cup-${ch.cups}` as PieceName;
-    nodes.push({ k: "img", src: piece(name), x: 16.2, y: -10.2, w: 8.6, h: tall(name, 8.6), lift: 2.5, id: `${id}-cup` });
+  // The cup on the top-right corner, white inside, lying on its side (2026-10-29: "cup daha yatay"); the bottle beside it.
+  if (ch.cups !== NONE) {
+    const cup = { x: 15.2, y: -11, rot: CUP_TURN };
+    nodes.push({ k: "img", src: piece("cup-plain-in"), ...cup, w: 8.6, h: tall("cup-plain-in", 8.6), lift: 1.2, id: `${id}-cup-in` });
+    nodes.push({ k: "img", src: piece("cup-plain-out"), ...cup, w: 8.6, h: tall("cup-plain-out", 8.6), ...finish(t.cupColor), lift: 0, id: `${id}-cup-out` });
   }
   const label = tableOption("bottleLabel", ch.bottleLabel);
   if (label) {
@@ -95,28 +95,16 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
     nodes.push({ k: "bottle", x: 23.4, y: -4, w: 6.4, h: tall("bottle", 6.4), label: PIECES.bottle.label as [number, number, number, number],
       ...(label.themed ? { art: `/design/table/placemats/${theme.id}/${label.id}.webp` } : { fill: colour("bottleLabel") ?? "#FFFFFF" }), ...(w ? { words: asPrinted(w, tableFont(t.labelFont)) } : {}), font: tableFont(t.labelFont).id, colour: words, id: `${id}-bottle` });
   }
-  // The cone hat on its side, top-left, in a soft colour of the theme.
-  if (ch.partyHats === "cone") {
-    const pal = theme.balloonColors.filter((c) => !/^#F[0-9A-F]F[0-9A-F]F[0-9A-F]$/i.test(c));
-    nodes.push({ k: "img", src: piece("hat-cone"), x: -14.5, y: -17.5, w: (11 * PIECES["hat-cone"].w) / PIECES["hat-cone"].h, h: 11, tint: light(pal[0] ?? theme.accent, 0.35), lift: 2, id: `${id}-hat` });
-  }
+  // The cone hat on its side, top-left, in the customer's colour (2026-10-29).
+  if (ch.partyHats === "cone") nodes.push({ k: "img", src: piece("hat-cone"), x: -14.5, y: -17.5, w: (11 * PIECES["hat-cone"].w) / PIECES["hat-cone"].h, h: 11, tint: colour("partyHats") ?? t.hatColor, lift: 2, id: `${id}-hat` });
   return nodes;
 }
 
-/** The chair (or the low table's cushion) at a place, pulled in under the edge, in the place's own frame. */
-function seatPiece(t: TableSetup, id: string): PlaceNode | undefined {
-  if (onFloor(t.choices)) return { k: "img", src: piece("cushion"), x: 0, y: 17 + 3 + 20, w: 40, h: tall("cushion", 40), lift: 1.5, id };
-  const name = `chair-${t.choices.chairs}` as PieceName;
-  if (!PIECES[name]) return undefined;
-  const w = t.choices.chairs === "white_kids" ? 40 : 36, h = tall(name, w);
-  return { k: "img", src: piece(name), x: 0, y: 19 + h / 2, w, h, tint: t.choices.chairs === "blue_kids" ? t.chairColor : undefined, lift: 3, id };
-}
+/** How the standing cup's photo is turned to lie on its side, its mouth to the upper left (degrees). */
+const CUP_TURN = 115;
 
-/**
- * Everything in the top view, back to front: the chairs, the table top over
- * their fronts, every place in sight (the middle one last), the centrepieces.
- */
-export function placeLayout(t: TableSetup, theme: { id: string; balloonColors: string[]; accent: string }): PlaceNode[] {
+/** The focus place and the plan in the picture's frame. */
+function frame(t: TableSetup) {
   const { tables } = arrangeTables(t);
   const table = tables[0];
   const [a, b] = focusSeats(table);
@@ -130,14 +118,35 @@ export function placeLayout(t: TableSetup, theme: { id: string; balloonColors: s
   const at = ([px, py]: Pt): Pt => { const dx = px - C[0], dy = py - C[1]; return [dx * R[0] + dy * R[1], -(dx * F[0] + dy * F[1])]; };
   /** How far a seat's frame is turned in the picture, degrees. */
   const turn = (s: Seat) => { const r = right(s); return (Math.atan2(-(r[0] * F[0] + r[1] * F[1]), r[0] * R[0] + r[1] * R[1]) * 180) / Math.PI; };
-  const inView = ([x, y]: Pt, margin: number) => x > PLACE_VIEW.x - margin && x < PLACE_VIEW.x + PLACE_VIEW.w + margin && y > PLACE_VIEW.y - margin && y < PLACE_VIEW.y + PLACE_VIEW.h + margin;
+  // The other place in the picture: across the table, or beside it round a round one.
+  const other = focus === a ? b : a;
+  return { table, focus, other, at, turn, centre };
+}
 
+/** The picture's frame: the two places and a little round them, 4:3. */
+export function placeView(t: TableSetup): PlaceView {
+  const { focus, other, at, turn, centre } = frame(t);
+  const pts = [focus, other].flatMap((s) => {
+    const [cx, cy] = at(centre(s)), r = (turn(s) * Math.PI) / 180;
+    return [[PLACE_BOX.x0, PLACE_BOX.y0], [PLACE_BOX.x1, PLACE_BOX.y0], [PLACE_BOX.x0, PLACE_BOX.y1], [PLACE_BOX.x1, PLACE_BOX.y1]]
+      .map(([x, y]) => [cx + x * Math.cos(r) - y * Math.sin(r), cy + x * Math.sin(r) + y * Math.cos(r)]);
+  });
+  const x0 = Math.min(...pts.map((p) => p[0])), x1 = Math.max(...pts.map((p) => p[0])), y0 = Math.min(...pts.map((p) => p[1])), y1 = Math.max(...pts.map((p) => p[1]));
+  let w = x1 - x0 + 4, h = y1 - y0 + 2;
+  if (w / h > 4 / 3) h = (w * 3) / 4; else w = (h * 4) / 3;
+  return { x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h / 2, w, h };
+}
+
+/**
+ * Everything in the top view, back to front: the table top (filling the
+ * picture), every place in sight (the middle one last), the centrepieces.
+ */
+export function placeLayout(t: TableSetup, theme: { id: string; balloonColors: string[]; accent: string }): PlaceNode[] {
+  const { table, focus, at, turn, centre } = frame(t);
+  const view = placeView(t);
+  const inView = ([x, y]: Pt, margin: number) => x > view.x - margin && x < view.x + view.w + margin && y > view.y - margin && y < view.y + view.h + margin;
   const seats = table.seats.map((s, i) => ({ s, i, c: at(centre(s)) })).filter(({ c }) => inView(c, 30));
   const nodes: PlaceNode[] = [];
-  for (const { s, i, c } of seats) {
-    const chair = seatPiece(t, `chair-${i}`);
-    if (chair) nodes.push({ k: "group", x: c[0], y: c[1], rot: turn(s), nodes: [chair], id: `seat-${i}`, focus: false });
-  }
   const cloth = t.choices.tablecloth !== NONE;
   nodes.push({ k: "top", pts: table.outline.map(at), fill: cloth ? t.clothColor : "#F7F5F2", cloth });
   for (const { s, i, c } of [...seats].sort((p, q) => Number(p.s === focus) - Number(q.s === focus))) {

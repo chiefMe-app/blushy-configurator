@@ -11,7 +11,8 @@ const frozen = themeById("frozen")!;
 
 describe("the catalog", () => {
   it("every item has options, and every item is in a section of the one page", () => {
-    for (const item of TABLE_ITEMS) expect(item.options.length).toBeGreaterThanOrEqual(item.optional ? 1 : 2);
+    // The plates and cups are one kind each, in a colour or a foil (2026-10-29).
+    for (const item of TABLE_ITEMS) expect(item.options.length).toBeGreaterThanOrEqual(item.optional || item.key === "plates" || item.key === "cups" ? 1 : 2);
     expect(TABLE_ITEMS.find((i) => i.key === "table")!.options.map((o) => o.id)).toEqual(["standard", "half_wave", "flower", "round", "low", "cloud"]);
     for (const o of TABLE_ITEMS.find((i) => i.key === "table")!.options) expect(o.seats).toBeGreaterThan(0);
     expect(TABLE_SECTIONS.flatMap((t) => t.items).sort()).toEqual(TABLE_ITEMS.map((i) => i.key).sort());
@@ -27,7 +28,7 @@ describe("the catalog", () => {
     const o = tableOption("placemats", "watercolour");
     expect(optionPhoto("placemats", o, "frozen")).toBe("/design/table/placemats/frozen/watercolour.webp");
     expect(optionPhoto("placemats", o, "dinosaur")).toBe("/design/table/placemats/dinosaur/watercolour.webp");
-    expect(optionPhoto("plates", tableOption("plates", "silver"), "frozen")).toBe("/design/table/plates-silver.webp");
+    expect(optionPhoto("centrepiece", tableOption("centrepiece", "cutouts"), "frozen")).toBe("/design/table/centrepiece/frozen/cutouts.webp");
   });
 });
 
@@ -112,13 +113,20 @@ describe("kept on the device", () => {
     expect(t.choices.table).toBe("standard");
     expect(t.choices.chairs).toBe("bow_kids");
     expect(t.choices.runner).toBe(NONE); // optional: None is allowed
-    expect(t.choices.plates).toBe("iridescent"); // not optional: None is not
+    expect(t.choices.plates).toBe("plain"); // not optional: None is not
     expect(t.clothColor).toBe("#FFFFFF");
     expect(readTableSetup(null, frozen)).toBeUndefined();
   });
   it("a kids' table kept before it turned into a kids' party reads back with kids' pieces", () => {
     const t = readTableSetup({ choices: { chairs: "gold_chiavari", chargers: "gold", plates: "white_gold", napkins: "folded", runner: "greenery" } }, frozen)!;
-    expect(t.choices).toMatchObject({ chairs: "white_kids", chargers: NONE, plates: "iridescent", napkins: "printed", runner: NONE });
+    expect(t.choices).toMatchObject({ chairs: "white_kids", chargers: NONE, plates: "plain", napkins: "printed", runner: NONE });
+    expect(t.plateColor).toBe("iridescent");
+  });
+  it("the foil plates and cups kept before 2026-10-29 read back as plain ones in that foil", () => {
+    const t = readTableSetup({ choices: { plates: "silver", cups: "iridescent" }, plateColor: "#F8BBD0" }, frozen)!;
+    expect(t.choices).toMatchObject({ plates: "plain", cups: "plain" });
+    expect(t).toMatchObject({ plateColor: "silver", smallPlateColor: "silver", cupColor: "iridescent" });
+    expect(readTableSetup({ plateColor: "gold", cupColor: "chrome" }, frozen)).toMatchObject({ plateColor: "gold", cupColor: defaultTableSetup(frozen).cupColor });
   });
   it("pieces no longer offered read back as None, and the placemat words are kept clean", () => {
     // placematText: how the placemat words were kept on their first day.

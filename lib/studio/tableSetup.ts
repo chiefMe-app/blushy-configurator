@@ -2,7 +2,7 @@
 // (BuilderConfig.table), chosen in the Decor step after the backdrop, item by
 // item from lib/studio/tableCatalog.ts. Pure data and sums — no UI, no config
 // import (lib/config.ts uses the price lines).
-import { CHAIR_COLOURS, NONE, PLATE_SHAPES, TABLE_ITEMS, onFloor, tableOption, type PlateShape, type TableItemKey } from "./tableCatalog";
+import { CHAIR_COLOURS, FOIL_ITEMS, NONE, PLATE_SHAPES, TABLE_ITEMS, foilOf, onFloor, tableOption, type PlateShape, type TableItemKey } from "./tableCatalog";
 import { DEFAULT_TABLE_FONT, TABLE_FONTS } from "./tableFonts";
 
 export interface TableSetup {
@@ -24,6 +24,10 @@ export interface TableSetup {
   labelColor: string;
   /** The plain plates' shape. */
   plateShape: PlateShape;
+  /** The cone hats' colour (2026-10-29). */
+  hatColor: string;
+  /** The name on the napkin bands' colour, once the customer picks one (2026-10-29); the words colour until then. */
+  nameColor?: string;
   /** The small plain plate's own colour (2026-10-29, the owner: "içindeki tabağın rengi farklı seçilebilsin"); the big one is plateColor. */
   smallPlateColor: string;
   /** The lettering of the words on the placemats and on the bottle labels (2026-10-29, ./tableFonts). */
@@ -73,7 +77,7 @@ const DEFAULT_CHOICES: Record<TableItemKey, string> = {
   table: "standard", chairs: "white_kids",
   // The owner's tables show bare unless a cloth is chosen (2026-10-28).
   tablecloth: NONE, napkins: "printed",
-  placemats: "watercolour", plates: "iridescent", cups: "plain", cutlery: "wooden", cutleryHolder: NONE,
+  placemats: "watercolour", plates: "plain", cups: "plain", cutlery: "wooden", cutleryHolder: NONE,
   centrepiece: "balloons", bottleLabel: NONE, partyHats: "cone",
   // Not offered at the kids' table (the grown-ups' table will have them).
   runner: NONE, chargers: NONE, chairDecor: NONE, nameCards: NONE,
@@ -101,10 +105,10 @@ export function cleanPlacematText(v: unknown): string | undefined {
 }
 
 /** Which colour each coloured item takes. */
-export type ColourField = "clothColor" | "napkinColor" | "plateColor" | "cupColor" | "holderColor" | "chairColor" | "placematColor" | "labelColor";
+export type ColourField = "clothColor" | "napkinColor" | "plateColor" | "cupColor" | "holderColor" | "chairColor" | "placematColor" | "labelColor" | "hatColor";
 export const COLOUR_OF: Partial<Record<TableItemKey, ColourField>> = {
   tablecloth: "clothColor", napkins: "napkinColor", plates: "plateColor", cups: "cupColor", cutleryHolder: "holderColor", chairs: "chairColor",
-  placemats: "placematColor", bottleLabel: "labelColor",
+  placemats: "placematColor", bottleLabel: "labelColor", partyHats: "hatColor",
 };
 /** The colour an item's chosen option takes, if it takes one (the cloth always; of the others, the plain options). */
 export function itemColour(t: TableSetup, key: TableItemKey): string | undefined {
@@ -120,6 +124,8 @@ export const DEFAULT_CHAIR_COLOR = "#38BDF8";
  * the customer picks one (2026-10-28: "her temaya uygun text rengi değişmeli").
  */
 export const wordsColour = (t: Pick<TableSetup, "textColor">, theme: { accent: string }) => t.textColor ?? theme.accent;
+/** The name on the bands: its own colour, or the words colour. */
+export const nameColour = (t: Pick<TableSetup, "textColor" | "nameColor">, theme: { accent: string }) => t.nameColor ?? wordsColour(t, theme);
 
 /** A new table, in the theme's colours. */
 export function defaultTableSetup(theme: { balloonColors: string[]; accent: string }): TableSetup {
@@ -130,14 +136,16 @@ export function defaultTableSetup(theme: { balloonColors: string[]; accent: stri
     clothColor: "#FFFFFF",
     runnerColor: theme.balloonColors[1] ?? theme.accent,
     napkinColor: theme.balloonColors[2] ?? theme.accent,
-    plateColor: theme.balloonColors[1] ?? theme.accent,
     cupColor: theme.balloonColors[2] ?? theme.accent,
     holderColor: theme.balloonColors[1] ?? theme.accent,
     chairColor: DEFAULT_CHAIR_COLOR,
     placematColor: theme.balloonColors[1] ?? theme.accent,
     labelColor: theme.balloonColors[1] ?? theme.accent,
     plateShape: "round",
-    smallPlateColor: theme.balloonColors[2] ?? theme.accent,
+    // The owner's first look: iridescent foil plates (2026-10-29: a foil is a colour now).
+    plateColor: "iridescent",
+    smallPlateColor: "iridescent",
+    hatColor: theme.balloonColors[2] ?? theme.accent,
     placematFont: DEFAULT_TABLE_FONT,
     labelFont: DEFAULT_TABLE_FONT,
   };
@@ -172,7 +180,9 @@ export function tablePriceLines(t: TableSetup): TableLine[] {
     if (!o) continue; // "none"
     if (item.key === "chairs" && onFloor(t.choices)) continue; // floor cushions come with the low table
     const n = o.unit === "per_table" ? tables : kids;
-    lines.push({ label: `${o.name} (${n})`, amount: n * o.price });
+    // A foil finish costs a little more (2026-10-29: it was its own option before).
+    const foil = FOIL_ITEMS.includes(item.key) ? foilOf(itemColour(t, item.key)) : undefined;
+    lines.push({ label: `${o.name}${foil ? `, ${foil.name}` : ""} (${n})`, amount: n * (o.price + (foil?.extra ?? 0)) });
   }
   return lines;
 }
@@ -193,6 +203,11 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     if (typeof v === "string" && (item.options.some((o) => o.id === v) || (item.optional && v === NONE))) choices[item.key] = v;
   }
   const colour = (v: unknown, d: string) => (typeof v === "string" && HEX.test(v) ? v : d);
+  // A plate or cup colour may be a foil (FOILS).
+  const finish = (v: unknown, d: string) => (typeof v === "string" && foilOf(v) ? v : colour(v, d));
+  // The foil plates and cups were their own options before 2026-10-29: now plain, in that foil.
+  const was = (k: "plates" | "cups") => (typeof stored[k] === "string" && foilOf(stored[k] as string) ? (stored[k] as string) : undefined);
+  const plateFoil = was("plates"), cupFoil = was("cups");
   return {
     enabled: r.enabled !== false,
     kids: clampKids(Number(r.kids)),
@@ -200,18 +215,20 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     clothColor: colour(r.clothColor, base.clothColor),
     runnerColor: colour(r.runnerColor, base.runnerColor),
     napkinColor: colour(r.napkinColor, base.napkinColor),
-    plateColor: colour(r.plateColor, base.plateColor),
-    cupColor: colour(r.cupColor, base.cupColor),
+    plateColor: plateFoil ?? finish(r.plateColor, base.plateColor),
+    cupColor: cupFoil ?? finish(r.cupColor, base.cupColor),
     holderColor: colour(r.holderColor, base.holderColor),
     // The chair's pictures come only in its own colours.
     chairColor: CHAIR_COLOURS.find((c) => typeof r.chairColor === "string" && c === r.chairColor.toUpperCase()) ?? base.chairColor,
     placematColor: colour(r.placematColor, base.placematColor),
     labelColor: colour(r.labelColor, base.labelColor),
     plateShape: PLATE_SHAPES.find((p) => p.id === r.plateShape)?.id ?? base.plateShape,
-    smallPlateColor: colour(r.smallPlateColor, base.smallPlateColor),
+    smallPlateColor: plateFoil ?? finish(r.smallPlateColor, base.smallPlateColor),
+    hatColor: colour(r.hatColor, base.hatColor),
     placematFont: TABLE_FONTS.find((f) => f.id === r.placematFont)?.id ?? base.placematFont,
     labelFont: TABLE_FONTS.find((f) => f.id === r.labelFont)?.id ?? base.labelFont,
     ...(typeof r.textColor === "string" && HEX.test(r.textColor) ? { textColor: r.textColor } : {}),
+    ...(typeof r.nameColor === "string" && HEX.test(r.nameColor) ? { nameColor: r.nameColor } : {}),
     ...(readWords(r) ? { words: readWords(r) } : {}),
     ...(r.scene === "garden" || r.scene === "indoor" ? { scene: r.scene } : {}),
     ...(readTableRender(r.render) ? { render: readTableRender(r.render) } : {}),

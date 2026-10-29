@@ -5,7 +5,7 @@
 // this drawing as its layout guide. Seen from a front corner (TURN: the floor
 // plan is turned before it is projected) so the table reads in depth
 // ("perspective çok uzak … daha cool"); the frame fits the drawing.
-import { NONE, onFloor } from "@/lib/studio/tableCatalog";
+import { NONE, drawColour, onFloor } from "@/lib/studio/tableCatalog";
 import type { TableSetup } from "@/lib/studio/tableSetup";
 import { arrangeTables, type Pt } from "@/lib/studio/tableShapes";
 import { CHAIR_COLOUR, GOLD, INK, PASTELS, PartyPatterns, star } from "./glyphs";
@@ -143,7 +143,7 @@ export default function TablePerspective({ table, palette, accent, className, ca
       const inward = 16;
       const px = s.ex + Math.cos(s.facing) * inward, py = s.ey + Math.sin(s.facing) * inward;
       const [x, y] = P(px, py, TABLE_H);
-      const plateFill = ch.plates === "plain" ? table.plateColor : ch.plates === "white_gold" ? "#fff" : ch.plates === "iridescent" ? "#EBDDF7" : ch.plates === "silver" ? "#E5E8EC" : ch.plates === "pastel" || ch.plates === "scalloped" ? PASTELS[n % PASTELS.length] : pal[n % pal.length];
+      const plateFill = ch.plates === "plain" ? drawColour(table.plateColor) : ch.plates === "white_gold" ? "#fff" : ch.plates === "iridescent" ? "#EBDDF7" : ch.plates === "silver" ? "#E5E8EC" : ch.plates === "pastel" || ch.plates === "scalloped" ? PASTELS[n % PASTELS.length] : pal[n % pal.length];
       const foil = ch.plates === "iridescent" || ch.plates === "silver";
       const square = ch.plates === "plain" && table.plateShape === "square";
       const cupX = x + Math.cos(s.facing + turn - Math.PI / 2) * 11;
@@ -163,7 +163,7 @@ export default function TablePerspective({ table, palette, accent, className, ca
         {ch.bottleLabel !== NONE && <g><rect x={cupX + 6} y={y - 14} width={4} height={12} rx={1.5} fill="#EAF4FB" stroke="#8C99A6" strokeWidth={0.6} /><rect x={cupX + 6} y={y - 9} width={4} height={4} fill={ch.bottleLabel === "sparkle" ? "#E9DDF7" : pal[(n + 2) % pal.length]} /><rect x={cupX + 6.8} y={y - 16} width={2.4} height={2} fill="#93C5FD" /></g>}
         {ch.cups === "pouch"
           ? <rect x={cupX - 3} y={y - 10} width={6} height={9} rx={1.5} fill={pal[(n + 2) % pal.length]} stroke={INK} strokeWidth={0.7} />
-          : <path d={`M${cupX - 3},${y - 10}L${cupX - 2.4},${y - 1}H${cupX + 2.4}L${cupX + 3},${y - 10}Z`} fill={ch.cups === "gold_rim" ? "#F3F7FA" : ch.cups === "white_straw" ? "#FFFFFF" : ch.cups === "iridescent" ? "#E9DDF7" : ch.cups === "plain" ? table.cupColor : ch.cups === "pastel" ? PASTELS[(n + 2) % PASTELS.length] : pal[(n + 2) % pal.length]} stroke={ch.cups === "gold_rim" ? GOLD : INK} strokeWidth={0.7} />}
+          : <path d={`M${cupX - 3},${y - 10}L${cupX - 2.4},${y - 1}H${cupX + 2.4}L${cupX + 3},${y - 10}Z`} fill={ch.cups === "gold_rim" ? "#F3F7FA" : ch.cups === "white_straw" ? "#FFFFFF" : ch.cups === "iridescent" ? "#E9DDF7" : ch.cups === "plain" ? drawColour(table.cupColor) : ch.cups === "pastel" ? PASTELS[(n + 2) % PASTELS.length] : pal[(n + 2) % pal.length]} stroke={ch.cups === "gold_rim" ? GOLD : INK} strokeWidth={0.7} />}
         {(ch.cups === "white_straw" || ch.cups === "iridescent") && <path d={`M${cupX},${y - 10}L${cupX + 3},${y - 17}`} stroke={ch.cups === "white_straw" ? "#9AA6B2" : "#FFFFFF"} strokeWidth={1} />}
         {ch.cups === "pouch" && <path d={`M${cupX},${y - 10}L${cupX + 2},${y - 14}`} stroke={accent} strokeWidth={1} />}
         {ch.cups === "straw" && <path d={`M${cupX},${y - 10}L${cupX + 3},${y - 17}`} stroke={accent} strokeWidth={1} />}

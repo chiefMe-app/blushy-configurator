@@ -5,7 +5,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { TableSetup } from "@/lib/studio/tableSetup";
 import { fitPlacematWords, placematWordsBottom, placematWordsGap } from "@/lib/studio/placematWords";
-import { PLACE_VIEW, placeLayout, type PlaceNode } from "@/lib/studio/tablePlace";
+import { placeLayout, placeView, type PlaceNode } from "@/lib/studio/tablePlace";
+import { FOILS } from "@/lib/studio/tableCatalog";
 import { fontCss, tableFont } from "@/lib/studio/tableFonts";
 
 /** A face: "script" (the name tags', the page's own Italianno), or a lettering font of lib/studio/tableFonts. */
@@ -71,6 +72,8 @@ function Filter({ tint, lift }: { tint?: string; lift: number }) {
 
 export default function TablePlace({ table, theme, className }: { table: TableSetup; theme: { id: string; balloonColors: string[]; accent: string }; className?: string }) {
   const nodes = useMemo(() => placeLayout(table, theme), [table, theme]);
+  const view = useMemo(() => placeView(table), [table]);
+  const top = nodes.find((n): n is Extract<PlaceNode, { k: "top" }> => n.k === "top");
   const { family, weight, width } = useMeasure(facesOf(nodes));
   const filters = new Map<string, { tint?: string; lift: number }>();
   const use = (tint: string | undefined, lift: number) => {
@@ -84,10 +87,19 @@ export default function TablePlace({ table, theme, className }: { table: TableSe
   const draw = (n: PlaceNode): React.ReactNode => {
     switch (n.k) {
       case "top":
-        return <polygon key="top" points={n.pts.map((p) => p.join(",")).join(" ")} fill={n.fill} filter={use(undefined, 1.2)} data-part="table-top" />;
+        // The table top fills the picture (2026-10-29: no chairs, no floor): drawn under everything, below.
+        return null;
       case "img": {
         const box = { x: n.x - n.w / 2, y: n.y - n.h / 2, width: n.w, height: n.h, preserveAspectRatio: "none" as const };
         const turn = n.rot ? `rotate(${n.rot} ${n.x} ${n.y})` : undefined;
+        if (n.foil) {
+          // A foil: its shimmer inside the piece's shape, under the piece's own light and shade.
+          return <g key={n.id} transform={turn} filter={use(undefined, n.lift)} data-part={n.id} data-foil={n.foil}>
+            <mask id={`${n.id}-m`}><image href={n.src} {...box} /></mask>
+            <rect x={box.x} y={box.y} width={box.width} height={box.height} fill={`url(#tp-foil-${n.foil})`} mask={`url(#${n.id}-m)`} />
+            <image href={n.src} {...box} style={{ mixBlendMode: "multiply" }} />
+          </g>;
+        }
         if (n.print) {
           // A printed piece: the design inside its shape, under the piece's own light and shade.
           return <g key={n.id} transform={turn} filter={use(undefined, n.lift)} data-part={n.id}>
@@ -122,10 +134,11 @@ export default function TablePlace({ table, theme, className }: { table: TableSe
         const [lx, ly, lw, lh] = n.label;
         const x0 = n.x - n.w / 2, y0 = n.y - n.h / 2;
         const box = { x: x0 + lx * n.w, y: y0 + ly * n.h, w: lw * n.w, h: lh * n.h };
-        // One line, left to right round the bottle, like the flat label (2026-10-29: "dikdörtgendeki gibi soldan sağa").
+        // One line, left to right round the bottle, at the size it is printed on the 20.5 × 5 cm label:
+        // only the front of it shows (2026-10-29: "olması gerektiği büyüklükte olsun, bütün yazıyı görmek zorunda değiliz").
         const lines = n.words ? [n.words] : [];
         const scale = tableFont(n.font).scale;
-        const size = lines.length ? Math.min((box.h * scale) / (lines.length * 1.25), (box.w * 0.74) / Math.max(...lines.map((l) => width(l, n.font)))) : 0;
+        const size = lines.length ? Math.min(1.5, box.h * 0.4) * scale : 0;
         const all = { x: x0, y: y0, width: n.w, height: n.h, preserveAspectRatio: "none" as const };
         return <g key={n.id} filter={use(undefined, 1.8)} data-part={n.id} data-font={n.font}>
           <image href="/design/table/top/bottle.webp" {...all} />
@@ -143,16 +156,19 @@ export default function TablePlace({ table, theme, className }: { table: TableSe
   };
   const body = nodes.map(draw);
   return (
-    <svg className={className} viewBox={`${PLACE_VIEW.x} ${PLACE_VIEW.y} ${PLACE_VIEW.w} ${PLACE_VIEW.h}`} role="img" data-testid="table-place"
+    <svg className={className} viewBox={`${view.x.toFixed(2)} ${view.y.toFixed(2)} ${view.w.toFixed(2)} ${view.h.toFixed(2)}`} role="img" data-testid="table-place"
       aria-label="One place at your kids' table, from above">
       <defs>
         <linearGradient id="tp-band" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity={0.35} /><stop offset="0.5" stopColor="#fff" stopOpacity={0} /><stop offset="1" stopColor="#000" stopOpacity={0.12} /></linearGradient>
         {Array.from(filters, ([id, f]) => <Filter key={id} {...f} />)}
+        {FOILS.map((f) => (
+          <linearGradient key={f.id} id={`tp-foil-${f.id}`} x1="0" y1="0" x2="1" y2="1">
+            {f.stops.map((c, i) => <stop key={i} offset={i / (f.stops.length - 1)} stopColor={c} />)}
+          </linearGradient>
+        ))}
       </defs>
-      {/* The ground: a lawn in the garden (2026-10-29, the owner: "maybe we can do grass the floor"), a pale floor indoors. */}
-      {(table.scene ?? "garden") === "garden"
-        ? <image href="/design/table/top/floor-grass.webp" x={PLACE_VIEW.x} y={PLACE_VIEW.y} width={PLACE_VIEW.w} height={PLACE_VIEW.h} preserveAspectRatio="xMidYMid slice" data-part="floor-grass" />
-        : <rect x={PLACE_VIEW.x} y={PLACE_VIEW.y} width={PLACE_VIEW.w} height={PLACE_VIEW.h} fill="#CFC6BC" data-part="floor" />}
+      {/* Only the table top, edge to edge, like a flat lay (2026-10-29): its bare top or its cloth. */}
+      <rect x={view.x} y={view.y} width={view.w} height={view.h} fill={top?.fill ?? "#F7F5F2"} data-part="table-top" />
       {body}
     </svg>
   );

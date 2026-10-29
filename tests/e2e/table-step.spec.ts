@@ -1,7 +1,7 @@
 // The kids' table, part 2 of Decor (2026-10-27, F2): after the backdrop's
 // Extras, a yes or skip; then every item on one page (2026-10-28); the price
 // adds to the party total; Back walks back; the table is kept on the device.
-import { test, expect, openDecor, decorTab, next, total, settle, signIn, FAKE_TABLE_RENDER } from "./guard";
+import { test, expect, openDecor, decorTab, next, total, settle } from "./guard";
 import type { Page } from "@playwright/test";
 
 const aed = (s: string | null) => Number((s ?? "").replace(/[^0-9]/g, ""));
@@ -71,17 +71,21 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await page.getByTestId("bottleLabel-words-colour").getByRole("radio", { name: "purple" }).click();
   await expect(page.getByTestId("bottle-label-preview").locator("span")).toHaveCSS("color", "rgb(142, 36, 170)");
   await expect(page.getByTestId("placemat-preview").locator("span")).toHaveCSS("color", "rgb(142, 36, 170)");
-  // Plain plates and cups in a colour; a big and a small plate (2026-10-29: no card in it).
+  // One kind of plate and of cup, no option cards, in a colour or a foil (2026-10-29); a big and a small plate, no card in it.
   await expect(page.getByTestId("plate-card-preview")).toHaveCount(0);
-  await expect(page.getByTestId("plates-colour")).toHaveCount(0);
-  await page.getByRole("radiogroup", { name: "Plates", exact: true }).getByRole("radio", { name: /Plain plates/ }).click();
+  await expect(page.getByRole("radiogroup", { name: "Plates", exact: true })).toHaveCount(0);
+  await expect(page.getByTestId("plates-single")).toContainText("AED 3 each");
+  await expect(page.getByTestId("plates-colour").getByRole("radio", { name: "iridescent foil" })).toHaveAttribute("aria-checked", "true");
   await page.getByTestId("plates-colour").getByRole("radio", { name: "bright red" }).click();
   await expect(page.getByTestId("plates-colour").getByRole("radio", { name: "bright red" })).toHaveAttribute("aria-checked", "true");
   // …and in a shape (2026-10-29).
   await page.getByTestId("plate-shape").getByRole("radio", { name: "Scalloped" }).click();
   await expect(page.getByTestId("plate-shape").getByRole("radio", { name: "Scalloped" })).toHaveAttribute("aria-checked", "true");
-  await page.getByRole("radiogroup", { name: "Cups", exact: true }).getByRole("radio", { name: /Plain cup/ }).click();
-  await expect(page.getByTestId("cups-colour")).toBeVisible();
+  await expect(page.getByRole("radiogroup", { name: "Cups", exact: true })).toHaveCount(0);
+  await expect(page.getByTestId("cups-colour").getByRole("radio", { name: "gold foil" })).toBeVisible();
+  // The small plate in its own colour; the hat and the name on the band in theirs.
+  await expect(page.getByTestId("small-plate-colour")).toBeVisible();
+  await expect(page.getByTestId("partyHats-colour")).toBeVisible();
   // The kids' chair in any plain colour: its picture follows.
   const chairs = page.getByRole("radiogroup", { name: "Chairs" });
   await page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio", { name: /Standard table/ }).click();
@@ -90,8 +94,8 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await page.getByTestId("chairs-colour").getByRole("radio", { name: "pastel pink" }).click();
   await expect(chairs.getByRole("radio", { name: /Colour chair for kids/ }).locator("img")).toHaveAttribute("src", "/design/table/chairs/blue_kids/f8bbd0.webp");
   await expect(next(page)).toHaveText(/Continue to Package/);
-  await expect(page.getByRole("radiogroup", { name: "Party hats" }).getByRole("radio")).toHaveCount(2); // None + the cone hat (2026-10-29)
-  await page.getByRole("radiogroup", { name: "Party hats" }).getByRole("radio", { name: /None/ }).click();
+  await expect(page.getByRole("radiogroup", { name: "Party hats", exact: true }).getByRole("radio")).toHaveCount(2); // None + the cone hat (2026-10-29)
+  await page.getByRole("radiogroup", { name: "Party hats", exact: true }).getByRole("radio", { name: /None/ }).click();
   await expect(next(page)).toHaveText(/Continue to Package/);
   await next(page).click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
@@ -139,99 +143,9 @@ test("K4 the backdrop is a choice too: skipping it leaves it out of the total", 
   await expect(page.getByTestId("table-intro")).toBeVisible();
 });
 
-const tableRenders = (blocked: { url(): string }[]) => blocked.filter((r) => r.url().includes("/api/table-render")).length;
-
-test("K5 the close-up render: one picture, the layout stays the drawing, and it says when the table has changed since", async ({ page, guard }) => {
-  guard.fakeRender = true;
-  await signIn(page);
-  await toTable(page);
-  await page.getByRole("button", { name: /Yes, design the table/ }).click();
-  let answer!: () => void;
-  guard.holdTableRender = new Promise((r) => { answer = r; });
-  await page.getByRole("button", { name: "Render a close-up ✦" }).click();
-  // While it renders: the drawing, faded, under three moving dots.
-  const wait = page.getByTestId("table-render-wait");
-  await expect(wait).toContainText("Rendering one seat up close");
-  await expect(wait.locator(".dots i")).toHaveCount(3);
-  await expect(page.getByTestId("table-render-box")).toContainText("about a minute");
-  answer();
-  const photo = page.getByTestId("table-render");
-  await expect(photo).toHaveAttribute("src", FAKE_TABLE_RENDER.close);
-  await expect(wait).toHaveCount(0);
-  expect(tableRenders(guard.blocked)).toBe(1);
-  // The layout is the drawing: perspective and top view are never photos.
-  await page.getByRole("tab", { name: "Perspective" }).click();
-  await expect(photo).toHaveCount(0);
-  await expect(page.getByTestId("table-perspective-sketch")).toBeVisible();
-  await page.getByRole("tab", { name: "Whole table" }).click();
-  await expect(page.getByTestId("table-sketch")).toBeVisible();
-  await page.getByRole("tab", { name: "Top view" }).click();
-  await expect(page.getByTestId("table-place")).toBeVisible();
-  await page.getByRole("tab", { name: "Close-up" }).click();
-  await expect(photo).toHaveAttribute("src", FAKE_TABLE_RENDER.close);
-  // A change: the drawing comes back, with an offer to update.
-  await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Colour chair for kids/ }).click();
-  await expect(photo).toHaveCount(0);
-  await expect(page.getByTestId("table-render-box")).toContainText("You changed the table since your close-up");
-  await page.getByRole("button", { name: "Update the close-up ✦" }).click();
-  await expect(photo).toBeVisible();
-  expect(tableRenders(guard.blocked)).toBe(2);
-  // Indoors instead of the garden is a change too.
-  await page.getByRole("radio", { name: "Indoors" }).click();
-  await expect(page.getByTestId("table-render-box")).toContainText("You changed the table since your close-up");
-  await page.getByRole("button", { name: "Update the close-up ✦" }).click();
-  await expect(photo).toBeVisible();
-  expect(tableRenders(guard.blocked)).toBe(3);
-});
-
-test("K7 the render is kept: back on the page it comes from the customer's storage, with no new render", async ({ page, guard }) => {
-  guard.fakeRender = true;
-  await signIn(page);
-  await toTable(page);
-  await page.getByRole("button", { name: /Yes, design the table/ }).click();
-  await page.getByRole("button", { name: "Render a close-up ✦" }).click();
-  await expect(page.getByTestId("table-render")).toHaveAttribute("src", FAKE_TABLE_RENDER.close);
-  await page.waitForTimeout(800); // the device copy
-  await page.reload();
-  await page.getByRole("tab", { name: /Table setup/ }).click();
-  const photo = page.getByTestId("table-render");
-  await expect(photo).toHaveAttribute("src", /supabase\.test\/storage\/v1\/object\/sign\/renders\/00000000-0000-4000-8000-0000000000a1\/c[0-9a-z]+\.jpg\?token=/);
-  await expect.poll(() => photo.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBeGreaterThan(0);
-  expect(tableRenders(guard.blocked)).toBe(1);
-});
-
-test("K8 the close-up renders in the background: carry on to Package, a note says when it is ready, See it opens it", async ({ page, guard }) => {
-  guard.fakeRender = true;
-  await signIn(page);
-  await toTable(page);
-  await page.getByRole("button", { name: /Yes, design the table/ }).click();
-  let answer!: () => void;
-  guard.holdTableRender = new Promise((r) => { answer = r; });
-  await page.getByRole("button", { name: "Render a close-up ✦" }).click();
-  await expect(page.getByTestId("table-render-wait")).toContainText("Carry on with your party meanwhile");
-  // On to Package while it renders.
-  await next(page).click();
-  const note = page.getByTestId("table-render-job");
-  await expect(note).toContainText("Your table close-up is on its way");
-  answer();
-  await expect(note).toContainText("Your table close-up is ready");
-  await note.getByRole("button", { name: "See it" }).click();
-  await expect(page.getByTestId("table-render")).toHaveAttribute("src", FAKE_TABLE_RENDER.close);
-  await expect(note).toHaveCount(0);
-  // Seen: the note does not come back on the other steps.
-  await next(page).click();
-  await expect(page.getByTestId("table-render-job")).toHaveCount(0);
-  expect(tableRenders(guard.blocked)).toBe(1);
-});
-
-test("K6 the table render needs an account: not signed in, it asks first and renders nothing", async ({ page, guard }) => {
-  guard.fakeRender = true;
-  await toTable(page);
-  await page.getByRole("button", { name: /Yes, design the table/ }).click();
-  await page.getByRole("button", { name: "Render a close-up ✦" }).click();
-  await expect(page.getByRole("dialog").getByRole("heading", { name: "Sign in to see your table" })).toBeVisible();
-  expect(tableRenders(guard.blocked)).toBe(0);
-});
+// K5–K8 and K6 (the table's own close-up render) went on 2026-10-29: the owner
+// took the render off this step ("bu aşamada render seçeneği olmasın") — one
+// combined render of the backdrop and the table comes at the end instead.
 
 test("K9 the top view of one place follows every colour and word at once, with no render", async ({ page, guard }) => {
   await toTable(page);
@@ -239,16 +153,16 @@ test("K9 the top view of one place follows every colour and word at once, with n
   const place = page.getByTestId("table-place");
   const focus = place.locator("[data-place=focus]");
   await expect(focus).toBeVisible();
+  // The plates in iridescent foil to begin with (2026-10-29: a foil is a colour).
+  await expect(focus.locator("[data-part$=-plates]")).toHaveAttribute("data-foil", "iridescent");
   // The plain cup: white inside, its outside in the chosen colour.
-  await page.getByRole("radiogroup", { name: "Cups", exact: true }).getByRole("radio", { name: /Plain cup/ }).click();
   await page.getByTestId("cups-colour").getByRole("radio", { name: "hot pink" }).click();
   await expect(focus.locator("[data-part$=cup-out]")).toHaveAttribute("data-tint", "#EC407A");
   await expect(focus.locator("[data-part$=cup-in]")).not.toHaveAttribute("data-tint", /.+/);
-  // Plain plates in a colour and a shape; nothing in the small plate.
-  await page.getByRole("radiogroup", { name: "Plates", exact: true }).getByRole("radio", { name: /Plain plates/ }).click();
+  // Plates in a colour and a shape; nothing in the small plate.
   await page.getByTestId("plates-colour").getByRole("radio", { name: "pastel pink" }).click();
   await page.getByTestId("plate-shape").getByRole("radio", { name: "Square" }).click();
-  const plates = focus.locator("[data-part$=plates]");
+  const plates = focus.locator("[data-part$=-plates]");
   await expect(plates).toHaveAttribute("data-tint", "#F8BBD0");
   await expect(plates).toHaveAttribute("href", "/design/table/top/plates-plain-square.webp");
   // The words, in the placemat's corner and on the bottle's label.
@@ -272,13 +186,13 @@ test("K10 on a phone, a change brings the top view into sight, and Back returns 
   await page.waitForTimeout(800);
   await expect(page.getByTestId("table-back-to-choices")).toHaveCount(0);
   await page.getByRole("tab", { name: "Perspective" }).click();
-  await page.getByRole("radiogroup", { name: "Cups", exact: true }).getByRole("radio", { name: /Iridescent cup/ }).click();
+  await page.getByTestId("cups-colour").getByRole("radio", { name: "gold foil" }).click();
   // The preview comes up, on the top view.
   await expect(page.getByTestId("table-place")).toBeInViewport();
   await expect(page.getByRole("tab", { name: "Top view" })).toHaveAttribute("aria-selected", "true");
   const back = page.getByTestId("table-back-to-choices");
   await back.click();
-  await expect(page.getByRole("radiogroup", { name: "Cups", exact: true })).toBeInViewport();
+  await expect(page.getByTestId("cups-colour")).toBeInViewport();
   await expect(back).toHaveCount(0);
   // Typing: not on every letter, once the field is left.
   const words = page.getByPlaceholder("e.g. Arya turns 6").first();

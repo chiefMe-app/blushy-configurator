@@ -59,7 +59,9 @@ describe("the colours on the table", () => {
     // Until one is picked, the words follow the theme.
     expect(wordsColour(defaultTableSetup(frozen), unicorn)).toBe(unicorn.accent);
     expect(wordsColour({ textColor: "#1F2937" }, unicorn)).toBe("#1F2937");
-    expect([t.plateColor, t.cupColor, t.holderColor].every((c) => /^#[0-9A-F]{6}$/i.test(c))).toBe(true);
+    expect([t.cupColor, t.holderColor, t.hatColor].every((c) => /^#[0-9A-F]{6}$/i.test(c))).toBe(true);
+    // The owner's first look: iridescent foil plates, a foil being a colour now (2026-10-29).
+    expect([t.plateColor, t.smallPlateColor]).toEqual(["iridescent", "iridescent"]);
   });
   it("they read back; a table saved before them gets them; a chair colour must be one of its own", () => {
     const back = readTableSetup({ ...table(), plateColor: "#E53935", cupColor: "#1E88E5", holderColor: "#43A047", chairColor: "#F8BBD0", textColor: "#1F2937" }, frozen)!;
@@ -101,11 +103,13 @@ describe("in the render", () => {
     expect(p).toContain("a plain matte pastel lemon yellow paper cup (no straw)");
   });
   it("a big plate with a small one in it, and nothing in the small one (2026-10-29: no card)", () => {
-    expect(p).toContain(`two plain matte paper plates, round: a big pastel baby blue plate with a smaller pastel peach plate of the same shape sitting in it, a plate in its own right with its own rim`);
+    expect(p).toContain(`two disposable paper plates, round: a big plain matte pastel baby blue plate with a smaller plain matte pastel peach plate of the same shape sitting in it, a plate in its own right with its own rim`);
+    // A foil is a colour too (2026-10-29).
+    expect(tablePrompt({ ...t, plateColor: "gold", cupColor: "iridescent" }, frozen, [])).toMatch(/a big shimmering gold foil plate with a smaller plain matte pastel peach plate[\s\S]*a shimmering iridescent foil paper cup/);
     expect(p).toContain("one big plate and one small plate on each placemat, both empty");
     expect(p).not.toMatch(/printed paper card|plate card/i);
     // The same colour for both: said once.
-    expect(tablePrompt({ ...t, smallPlateColor: "#BAE6FD" }, frozen, [])).toContain("a big plate with a smaller plate of the same kind sitting in it, both pastel baby blue");
+    expect(tablePrompt({ ...t, smallPlateColor: "#BAE6FD" }, frozen, [])).toContain("a big plate with a smaller plate of the same kind sitting in it, both plain matte pastel baby blue");
   });
   it("the band in its colour, with no tag without a name", () => {
     expect(p).toContain("a plain pastel lilac paper napkin band, with no tag and no words");
@@ -176,13 +180,14 @@ describe("the trimmed options (2026-10-29)", () => {
   it("only what the owner kept", () => {
     expect(ids("napkins")).toEqual(["plain", "printed"]);
     expect(ids("placemats")).toEqual(["plain", "watercolour", "sparkle"]);
-    expect(ids("plates")).toEqual(["plain", "iridescent", "silver"]);
-    expect(ids("cups")).toEqual(["plain", "iridescent"]);
+    // 2026-10-29: one kind of plate and of cup, in a colour or a foil.
+    expect(ids("plates")).toEqual(["plain"]);
+    expect(ids("cups")).toEqual(["plain"]);
     expect(ids("bottleLabel")).toEqual(["plain", "watercolour", "sparkle"]);
     expect(ids("partyHats")).toEqual(["cone"]);
     // A table saved with a removed option gets today's choice.
     const old = readTableSetup({ enabled: true, choices: { napkins: "striped", placemats: "pattern", plates: "holo_square", cups: "white_straw", bottleLabel: "pattern", partyHats: "crown" } }, frozen)!;
-    expect(old.choices).toMatchObject({ napkins: "printed", placemats: "watercolour", plates: "iridescent", cups: "plain", bottleLabel: NONE, partyHats: "cone" });
+    expect(old.choices).toMatchObject({ napkins: "printed", placemats: "watercolour", plates: "plain", cups: "plain", bottleLabel: NONE, partyHats: "cone" });
   });
   it("the plain placemat and label in their colours, with the words", () => {
     const t = table({ placemats: "plain", bottleLabel: "plain" }, { placematColor: "#BBF7D0", labelColor: "#FFD1A4", words: { placemats: "Arya turns 6", bottleLabel: "Arya" } });
