@@ -1275,3 +1275,6 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-themed { margin-top: 12px; }
 .bz-tb-themed > span { display: block; margin-bottom: 6px; font: 700 12px var(--bz-sans); letter-spacing: 0.04em; text-transform: uppercase; color: #8a7680; }
 .bz-tb-single.on b { color: var(--bz-pink); }
+/* My designs: the backdrop and the kids' table, each its own card (2026-10-30). */
+.bz-md-card .body .kind { font: 700 11px var(--bz-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--bz-pink); }
+.bz-md-card.table .sketch > svg { width: 100%; height: 100%; display: block; }

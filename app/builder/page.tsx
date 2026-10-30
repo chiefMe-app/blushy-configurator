@@ -87,8 +87,11 @@ export default function ConfigurePage() {
     config, step, decorTab, enabled: view === "configure",
     onRestore: (d) => {
       setConfig(d.config);
-      const toTheme = new URLSearchParams(window.location.search).get("step") === "theme";
-      setStep(toTheme ? 1 : d.step);
+      const query = new URLSearchParams(window.location.search);
+      const toTheme = query.get("step") === "theme";
+      setStep(toTheme ? 1 : query.get("part") === "table" ? 2 : d.step);
+      // A saved kids' table, opened from My designs (2026-10-30).
+      if (!toTheme && query.get("part") === "table") setDecorPart("table");
       // The restored tab is not a tab change: no scroll.
       if (d.decorTab !== decorTab) firstDecorTab.current = true;
       setDecorTab(d.decorTab);

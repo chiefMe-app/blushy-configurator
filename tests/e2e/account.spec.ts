@@ -117,3 +117,34 @@ test("A8 Sign out", async ({ page }) => {
   await expect(page).toHaveURL(/\/builder$/);
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
 });
+
+// 2026-10-30: the backdrop and the kids' table are two designs in My designs.
+test("A9 the backdrop and the kids' table saved: two designs; the table opens on the table", async ({ page, guard }) => {
+  await openDecor(page, "Ice Princess", "Single Round");
+  await decorTab(page, "Extras");
+  await page.locator(".bz-footer .bz-next").click(); // Next: Table setup
+  await page.getByRole("button", { name: /Yes, design the table/ }).click();
+  await page.getByRole("button", { name: "One more child" }).click();
+  await page.getByTestId("save-design").click();
+  await signInByEmail(page);
+  await expect(saveLabel(page)).toHaveText("✓ Saved");
+  expect(guard.supabase.items.map((i) => i.ref_id)).toEqual(["studio.backdrop", "studio.table"]);
+  await page.goto("/my-designs");
+  const cards = page.getByTestId("saved-design");
+  await expect(cards).toHaveCount(2);
+  await expect(cards.nth(0)).toContainText("Ice Princess · Single Round");
+  await expect(cards.nth(1)).toContainText("Ice Princess · Kids' table");
+  await expect(cards.nth(1)).toContainText("11 children");
+  await expect(cards.nth(1).getByTestId("table-place")).toBeVisible();
+  await cards.nth(1).getByRole("button", { name: "Open" }).click();
+  await expect(page).toHaveURL(/\/builder\?part=table$/);
+  await expect(page.getByTestId("kids-count")).toHaveText("11");
+  await expect(saveLabel(page)).toHaveText("✓ Saved");
+  // Deleting the table keeps the backdrop.
+  await page.goto("/my-designs");
+  page.once("dialog", (d) => d.accept());
+  await page.getByTestId("saved-design").nth(1).getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByTestId("saved-design")).toHaveCount(1);
+  await expect(page.getByTestId("saved-design")).toHaveAttribute("data-kind", "backdrop");
+  expect(guard.supabase.items.map((i) => i.ref_id)).toEqual(["studio.backdrop"]);
+});

@@ -142,9 +142,10 @@ export async function importGuestDesigns(sb: SupabaseClient): Promise<number> {
   if (itemsError) { putBack(); throw new Error(itemsError.message); }
   // The design open in the Builder now lives in the account: Save updates its copy.
   const ref = readRef();
-  const i = stash.items.findIndex((it) => it.id === ref.itemId);
   const newIds = (inserted ?? []) as { id: string }[];
-  if (i >= 0 && newIds[i]) writeRef({ ...ref, userId: account.userId, partyId, itemId: newIds[i].id });
+  const moved = (id?: string) => newIds[stash.items.findIndex((it) => it.id === id)]?.id;
+  const itemId = moved(ref.itemId), tableItemId = moved(ref.tableItemId); // the backdrop and the table (2026-10-30)
+  if (itemId || tableItemId) writeRef({ ...ref, userId: account.userId, partyId, itemId, tableItemId });
   else if (ref.userId === stash.fromUserId) {
     try { window.localStorage.removeItem(SERVER_DRAFT_KEY); } catch { /* storage blocked */ }
   }

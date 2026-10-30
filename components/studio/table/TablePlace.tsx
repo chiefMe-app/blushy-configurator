@@ -70,7 +70,8 @@ function Filter({ tint, lift }: { tint?: string; lift: number }) {
   );
 }
 
-export default function TablePlace({ table, theme, className }: { table: TableSetup; theme: { id: string; balloonColors: string[]; accent: string }; className?: string }) {
+/** `fill`: covers its box, cropping the sides (a card in My designs, 2026-10-30). */
+export default function TablePlace({ table, theme, className, fill }: { table: TableSetup; theme: { id: string; balloonColors: string[]; accent: string }; className?: string; fill?: boolean }) {
   const nodes = useMemo(() => placeLayout(table, theme), [table, theme]);
   const view = useMemo(() => placeView(table), [table]);
   const top = nodes.find((n): n is Extract<PlaceNode, { k: "top" }> => n.k === "top");
@@ -157,6 +158,7 @@ export default function TablePlace({ table, theme, className }: { table: TableSe
   const body = nodes.map(draw);
   return (
     <svg className={className} viewBox={`${view.x.toFixed(2)} ${view.y.toFixed(2)} ${view.w.toFixed(2)} ${view.h.toFixed(2)}`} role="img" data-testid="table-place"
+      {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}
       aria-label="One place at your kids' table, from above">
       <defs>
         <linearGradient id="tp-band" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity={0.35} /><stop offset="0.5" stopColor="#fff" stopOpacity={0} /><stop offset="1" stopColor="#000" stopOpacity={0.12} /></linearGradient>

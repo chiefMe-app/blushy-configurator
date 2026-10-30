@@ -3,28 +3,24 @@
 // this device, or in their account on any device — with a sketch, Open (back
 // into the Builder, where Save updates it) and Delete. 0.5c: a design saved
 // with its render shows the render (from the account's private Storage, by a
-// short-lived signed link) instead of the sketch.
+// short-lived signed link) instead of the sketch. 2026-10-30: the backdrop and
+// the kids' table are separate designs, each its own card (lib/savedDesigns.ts).
 import { useEffect, useState } from "react";
 import LiveSketch from "@/components/design/LiveSketch";
 import AccountMenu from "@/components/account/AccountMenu";
 import SignInDialog from "@/components/account/SignInDialog";
 import { loadClient } from "@/components/account/useAccount";
 import { fingerprint } from "@/components/builder/useServerDraft";
-import { formatAED, themeById, type BuilderConfig } from "@/lib/config";
-import { DRAFT_KEY, fromDraft } from "@/lib/draft";
+import { THEMES, formatAED, priceBreakdown, themeById } from "@/lib/config";
+import { DRAFT_KEY, fromDraft, toDraft } from "@/lib/draft";
+import TablePlace from "@/components/studio/table/TablePlace";
+import { TABLE_ITEM, designCards, joinParty, splitDesign, type DesignCard, type SavedItem } from "@/lib/savedDesigns";
 import { SERVER_DRAFT_KEY } from "@/lib/serverDraft";
 import { SETUP_LAYOUT_TEMPLATES, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 import { RENDER_BUCKET, renderKeyOf } from "@/lib/renderKey";
 import type { AccountState } from "@/lib/account";
 
-interface Saved {
-  id: string;
-  party_id: string;
-  updated_at: string;
-  config: unknown;
-  price_snapshot: { total?: number } | null;
-  parties: { title: string } | null;
-}
+type Saved = SavedItem;
 
 export default function MyDesigns() {
   const [account, setAccount] = useState<AccountState | null>(null);
@@ -42,7 +38,7 @@ export default function MyDesigns() {
     setAccount(who);
     if (who.kind === "none") { setItems([]); return; }
     const { data, error } = await sb.from("party_items")
-      .select("id, party_id, updated_at, config, price_snapshot, parties(title)")
+      .select("id, party_id, ref_id, updated_at, config, price_snapshot, parties(title)")
       .eq("owner_id", who.userId)
       .order("updated_at", { ascending: false });
     if (error) { setProblem("Your designs could not be loaded. Please try again."); setItems([]); return; }
@@ -58,28 +54,54 @@ export default function MyDesigns() {
     void load();
   }, []);
 
-  function open(item: Saved, config: BuilderConfig, userId: string) {
-    // Into the Builder as the device copy, linked to this saved design, so
-    // Save updates it rather than making a new one.
+  function open(card: DesignCard, userId: string) {
+    // Into the Builder as the device copy (the party's backdrop and table
+    // together), linked to the saved items, so Save updates them rather than
+    // making new ones. A table opens on the table.
+    const joined = joinParty(items ?? [], card.partyId);
+    if (!joined) return;
+    const config = fromDraft(JSON.stringify(joined.draft))!.config;
     try {
-      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(item.config));
-      window.localStorage.setItem(SERVER_DRAFT_KEY, JSON.stringify({ userId, partyId: item.party_id, itemId: item.id, savedPrint: fingerprint(config) }));
+      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(joined.draft));
+      window.localStorage.setItem(SERVER_DRAFT_KEY, JSON.stringify({ userId, partyId: card.partyId, itemId: joined.itemId, tableItemId: joined.tableItemId, savedPrint: fingerprint(config) }));
     } catch { /* storage blocked: the Builder opens empty */ }
-    window.location.href = "/builder";
+    window.location.href = card.kind === "table" ? "/builder?part=table" : "/builder";
   }
 
-  async function remove(item: Saved) {
-    if (!window.confirm("Delete this design? This cannot be undone.")) return;
+  async function remove(card: DesignCard) {
+    if (!window.confirm(`Delete this ${card.kind === "table" ? "kids' table" : "backdrop"} design? This cannot be undone.`)) return;
     const sb = await loadClient();
     if (!sb) return;
-    const { error } = await sb.from("party_items").delete().eq("id", item.id);
-    if (error) { setProblem("That design could not be deleted. Please try again."); return; }
-    // Its render goes too, unless another saved design shows the same one.
-    const path = renderPath(item);
-    if (path && !(items ?? []).some((i) => i.id !== item.id && renderPath(i) === path)) {
-      void sb.storage.from(RENDER_BUCKET).remove([path]);
+    const item = card.item;
+    const fail = () => setProblem("That design could not be deleted. Please try again.");
+    if (item.ref_id === TABLE_ITEM) {
+      const { error } = await sb.from("party_items").delete().eq("id", item.id);
+      if (error) return fail();
+    } else {
+      // A design saved before 2026-10-30 holds its table inside the backdrop item.
+      const restored = fromDraft(JSON.stringify(item.config));
+      const tableInside = designCards(items ?? []).some((c) => c.kind === "table" && c.item.id === item.id);
+      if (card.kind === "table") {
+        const c = { ...restored!.config, table: undefined };
+        const { error } = await sb.from("party_items").update({ config: toDraft(c, restored!.step, restored!.decorTab), price_snapshot: { total: priceBreakdown(c).total, currency: "AED", confidence: "estimate" } }).eq("id", item.id);
+        if (error) return fail();
+      } else {
+        if (tableInside) {
+          // The table stays: into its own item first.
+          const { table } = splitDesign(restored!.config, restored!.step, restored!.decorTab);
+          const { error } = await sb.from("party_items").insert({ party_id: item.party_id, kind: "product", ref_id: TABLE_ITEM, ...table! });
+          if (error) return fail();
+        }
+        const { error } = await sb.from("party_items").delete().eq("id", item.id);
+        if (error) return fail();
+        // Its render goes too, unless another saved design shows the same one.
+        const path = renderPath(item);
+        if (path && !(items ?? []).some((i) => i.id !== item.id && renderPath(i) === path)) {
+          void sb.storage.from(RENDER_BUCKET).remove([path]);
+        }
+      }
     }
-    setItems((list) => (list ?? []).filter((i) => i.id !== item.id));
+    await load();
   }
 
   return (
@@ -130,32 +152,37 @@ export default function MyDesigns() {
           </div>
         ) : (
           <ul className="bz-md-grid">
-            {items.map((item) => {
-              const restored = fromDraft(JSON.stringify(item.config));
-              if (!restored) return null;
-              const c = restored.config;
+            {designCards(items).map((card) => {
+              const c = card.config;
+              const theme = themeById(c.theme) ?? THEMES[0];
+              const isTable = card.kind === "table";
               const setupId = inferSetupLayoutTemplateIdFromBackdropItems(c.decor.backdropItems);
-              const setup = SETUP_LAYOUT_TEMPLATES.find((t) => t.id === setupId)?.name ?? "Backdrop";
-              const words = c.decor.backdropItems.find((i) => i.text?.enabled && i.text.value.trim())?.text.value.trim();
+              const setup = isTable ? "Kids' table" : SETUP_LAYOUT_TEMPLATES.find((t) => t.id === setupId)?.name ?? "Backdrop";
+              const words = isTable ? undefined : c.decor.backdropItems.find((i) => i.text?.enabled && i.text.value.trim())?.text.value.trim();
+              const render = isTable ? undefined : renders[renderPath(card.item) ?? ""];
               return (
-                <li key={item.id} className="bz-md-card" data-testid="saved-design">
+                <li key={card.key} className={`bz-md-card ${isTable ? "table" : ""}`} data-testid="saved-design" data-kind={card.kind}>
                   <div className="sketch">
-                    {renders[renderPath(item) ?? ""]
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img className="render" src={renders[renderPath(item)!]} alt="Your render of this design" data-testid="saved-render" />
-                      : <LiveSketch config={c} />}
+                    {isTable
+                      ? <TablePlace table={c.table!} theme={theme} fill />
+                      : render
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img className="render" src={render} alt="Your render of this design" data-testid="saved-render" />
+                        : <LiveSketch config={c} />}
                   </div>
                   <div className="body">
-                    <strong>{themeById(c.theme)?.name ?? "Party"} · {setup}</strong>
+                    <span className="kind">{isTable ? "Table setup" : "Backdrop"}</span>
+                    <strong>{theme.name} · {setup}</strong>
                     {words && <span className="words">“{words}”</span>}
+                    {isTable && <span className="words">{c.table!.kids} children</span>}
                     <span className="meta">
-                      {item.price_snapshot?.total ? `AED ${formatAED(item.price_snapshot.total)} · ` : ""}
-                      Saved {new Date(item.updated_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
-                      {item.parties?.title && item.parties.title !== "My party" ? ` · ${item.parties.title}` : ""}
+                      {card.total ? `AED ${formatAED(card.total)} · ` : ""}
+                      Saved {new Date(card.updatedAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
+                      {card.item.parties?.title && card.item.parties.title !== "My party" ? ` · ${card.item.parties.title}` : ""}
                     </span>
                     <div className="actions">
-                      <button type="button" className="bz-next" onClick={() => account && "userId" in account && open(item, c, account.userId)}>Open</button>
-                      <button type="button" className="bz-back" onClick={() => { void remove(item); }}>Delete</button>
+                      <button type="button" className="bz-next" onClick={() => account && "userId" in account && open(card, account.userId)}>Open</button>
+                      <button type="button" className="bz-back" onClick={() => { void remove(card); }}>Delete</button>
                     </div>
                   </div>
                 </li>
