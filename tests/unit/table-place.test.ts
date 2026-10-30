@@ -85,10 +85,26 @@ describe("the top view of one place", () => {
     expect(table({}, { placematFont: "sacramento", labelFont: "fraunces" })).toMatchObject({ placematFont: "sacramento", labelFont: "fraunces" });
     expect(table({}, { placematFont: "comic-sans", labelFont: 3 })).toMatchObject({ placematFont: "playfair-display", labelFont: "playfair-display" });
   });
-  it("a plain placemat is its colour; a printed napkin wears the theme's pattern", () => {
-    const f = focus(placeLayout(table({ placemats: "plain", napkins: "printed" }, { placematColor: "#FFD1A4" }), frozen));
+  it("a plain placemat is its colour; the themed pieces are their own pictures", () => {
+    const f = focus(placeLayout(table({ placemats: "plain" }, { placematColor: "#FFD1A4" }), frozen));
     expect(part(f, "mat")).toMatchObject({ fill: "#FFD1A4" });
-    expect(part(f, "napkin")).toMatchObject({ print: "/design/table/placemats/frozen/pattern.webp" });
+    expect(part(f, "napkin")).toMatchObject({ src: "/design/table/top/pocket.webp", tint: "#FFFFFF" });
+    // 2026-10-30: a themed cup, plate and napkin (football).
+    const football = themeById("football")!;
+    const th = focus(placeLayout(table({ cups: "football_ball", plates: "football_pitch", napkins: "football_check" }), football));
+    expect(part(th, "-cup")).toMatchObject({ src: "/design/table/top/themed-cups-football_ball.webp" });
+    expect(part(th, "-plates")).toMatchObject({ src: "/design/table/top/themed-plates-football_pitch.webp" });
+    expect((part(th, "-plates") as { tint?: string }).tint).toBeUndefined();
+    expect(part(th, "small-plate")).toBeUndefined();
+    expect(part(th, "napkin")).toMatchObject({ src: "/design/table/top/themed-napkins-football_check.webp" });
+  });
+  it("the hat clear of the centrepieces between the places (2026-10-30)", () => {
+    const nodes = placeLayout(table({ partyHats: "cone", centrepiece: "cutouts" }), frozen);
+    const hat = part(focus(nodes), "hat") as { x: number; y: number; w: number; h: number };
+    for (const c of nodes.filter((n): n is Extract<PlaceNode, { k: "img" }> => n.k === "img" && n.id.startsWith("centre"))) {
+      const apart = Math.abs(c.x - hat.x) > (c.w + hat.w) / 2 || Math.abs(c.y - hat.y) > (c.h + hat.h) / 2;
+      expect(apart, c.id).toBe(true);
+    }
   });
   it("round a round table, the two places side by side, both in the picture", () => {
     const t = table({ table: "round" });
@@ -99,7 +115,7 @@ describe("the top view of one place", () => {
   });
   it("every picture it can ask for is there", () => {
     const all = new Set<string>();
-    for (const plates of ["plain", "iridescent", "silver"]) for (const shape of ["round", "scalloped", "square"]) for (const cups of ["plain", "iridescent"])
+    for (const plates of ["plain"]) for (const shape of ["round", "scalloped", "square"]) for (const cups of ["plain", "iridescent"])
       for (const cutlery of ["wooden", "dipped", "glitter"]) for (const centrepiece of ["balloons", "florals", "toppers", "cutouts"]) for (const chairs of ["white_kids"])
         placePictures(placeLayout(table({ plates, cups, cutlery, centrepiece, chairs, napkins: "printed", bottleLabel: "watercolour", cutleryHolder: "band" }, { plateShape: shape, words: { cutleryHolder: "A" } }), frozen)).forEach((p) => all.add(p));
     placePictures(placeLayout(table({ table: "low" }), frozen)).forEach((p) => all.add(p));

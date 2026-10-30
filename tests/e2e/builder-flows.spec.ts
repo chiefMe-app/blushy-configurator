@@ -28,7 +28,7 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   await next(page).click();
   await expect(next(page)).toBeDisabled(); // no theme yet
   await shot(page, "f1-02-theme");
-  await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: /^Frozen$/ }) }).first().click();
+  await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: /^Ice Princess$/ }) }).first().click();
   await next(page).click();
   await expect(page.getByTestId("backdrop-intro")).toBeVisible(); // the backdrop is a choice
   await page.getByRole("button", { name: /Yes, design the backdrop/ }).click();
@@ -113,7 +113,7 @@ test("F2 every setup opens with its price and sketch", async ({ page }) => {
 });
 
 test("F3 lettering: presets, each line's font and size change only themselves", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Style");
   await page.getByLabel("Name text").fill("Arya");
   const before = await total(page).textContent();
@@ -150,7 +150,7 @@ test("F3 lettering: presets, each line's font and size change only themselves", 
 });
 
 test("F4 text off and on again keeps the message", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Style");
   await page.getByLabel("Name text").fill("Arya");
   await page.getByRole("button", { name: /No, keep it clean/ }).click();
@@ -166,7 +166,7 @@ test("F4 text off and on again keeps the message", async ({ page }) => {
 });
 
 test("F5 standees: none by default, at most two", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Extras");
   await expect(page.locator(".bz-ex-squad")).toContainText("No characters yet");
   const chars = page.locator(".bz-ex-char:not(.more)");
@@ -178,7 +178,7 @@ test("F5 standees: none by default, at most two", async ({ page }) => {
 });
 
 test("F6 plinths 0–3, three is XXL · XL · XL", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Extras");
   const fewer = page.getByRole("button", { name: "One fewer plinth" });
   const more = page.getByRole("button", { name: "One more plinth" });
@@ -195,7 +195,7 @@ test("F6 plinths 0–3, three is XXL · XL · XL", async ({ page }) => {
 });
 
 test("F7 foil number: AED 150, colour of the customer's choice", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Extras");
   const base = fixtureById("A-single_round").config;
   await page.getByRole("switch", { name: "Add a number" }).click();
@@ -207,7 +207,7 @@ test("F7 foil number: AED 150, colour of the customer's choice", async ({ page }
 });
 
 test("F8 neon swap and back", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Style");
   await page.getByLabel("Name text").fill("Arya");
   await decorTab(page, "Extras");
@@ -220,7 +220,7 @@ test("F8 neon swap and back", async ({ page }) => {
 });
 
 test("F9 show sizes", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Style");
   const toggle = page.getByRole("button", { name: /Show sizes/ });
   await toggle.click();
@@ -229,7 +229,7 @@ test("F9 show sizes", async ({ page }) => {
 });
 
 test("F10 nothing paid or stored is reached while browsing every step", async ({ page, guard }) => {
-  await openDecor(page, "Frozen", "Double Arch");
+  await openDecor(page, "Ice Princess", "Double Arch");
   for (const tab of ["Style", "Balloons", "Extras"] as const) await decorTab(page, tab);
   // Browsing alone sends no render and no order.
   expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual([]);
@@ -238,7 +238,7 @@ test("F10 nothing paid or stored is reached while browsing every step", async ({
 test("F11 a render limit says so in the render card, with no Retry", async ({ page, guard }) => {
   guard.limitRender = { status: 429, error: "You've reached your render limit — you can render again in 7 min." };
   await signIn(page); // renders need an account
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Extras");
   await renderButton(page).click(); // refused by the limit
   const card = page.getByTestId("render-error");
@@ -250,7 +250,7 @@ test("F11 a render limit says so in the render card, with no Retry", async ({ pa
 test("F12 renders still running from the same connection: says so, and Retry stays", async ({ page, guard }) => {
   guard.limitRender = { status: 429, busy: true, error: "A render from this connection is still being made — please try again in a few seconds." };
   await signIn(page); // renders need an account
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Extras");
   await renderButton(page).click();
   await expect(page.getByTestId("render-error")).toHaveText(/still being made/);
@@ -258,7 +258,7 @@ test("F12 renders still running from the same connection: says so, and Retry sta
 });
 
 test("F13 the Package step without a render: the render is optional", async ({ page, guard }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Extras");
   await expect(renderButton(page)).toBeVisible(); // offered, not required
   await expect(next(page)).toHaveText(/Next: Table setup/);

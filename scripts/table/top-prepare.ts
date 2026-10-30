@@ -19,16 +19,18 @@ const MAX = 720; // px along the longest side: plenty for a 23 cm plate in a 80 
 
 type Raw = { data: Buffer; width: number; height: number };
 
-/** The green away, with a soft edge, the green spill out, and only the piece's own blobs kept. */
-async function cutOut(file: string): Promise<Raw> {
+/** The green (or magenta: a piece with green in it, 2026-10-30) away, with a soft edge, its spill out, and only the piece's own blobs kept. */
+async function cutOut(file: string, magenta = false): Promise<Raw> {
   const { data, info } = await sharp(file).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   const W = info.width, H = info.height, n = W * H, o = Buffer.alloc(n * 4);
   for (let i = 0; i < n; i++) {
-    const r = data[i * 3]; let g = data[i * 3 + 1]; const b = data[i * 3 + 2];
-    const green = g - Math.max(r, b);
-    // ≤25: opaque, ≥70: gone; a dark greenish pixel is the background's own shading.
-    const a = green > 8 && g < 120 ? 0 : Math.max(0, Math.min(1, (70 - green) / 45));
-    if (green > 0) g = Math.max(r, b) + Math.min(green, 6);
+    let r = data[i * 3], g = data[i * 3 + 1], b = data[i * 3 + 2];
+    // How much of the background's colour a pixel has: green over red and blue, or red and blue over green.
+    const key = magenta ? Math.min(r, b) - g : g - Math.max(r, b), bright = magenta ? Math.min(r, b) : g;
+    // ≤25: opaque, ≥70: gone; a dark keyed pixel is the background's own shading.
+    const a = key > 8 && bright < 120 ? 0 : Math.max(0, Math.min(1, (70 - key) / 45));
+    // The spill: only at the soft edge for magenta, where a pink piece would lose its own pink.
+    if (magenta ? key > 25 : key > 0) { if (magenta) { r = Math.min(r, g + 6); b = Math.min(b, g + 6); } else g = Math.max(r, b) + Math.min(key, 6); }
     o[i * 4] = r; o[i * 4 + 1] = g; o[i * 4 + 2] = b; o[i * 4 + 3] = a < 0.24 ? 0 : Math.round(a * 255);
   }
   // Blobs of solid pixels on an 8× smaller grid; those at least a twentieth of
@@ -160,8 +162,9 @@ const TURN: Record<string, number> = { "chair-white_kids": 180 };
 (async () => {
   mkdirSync(OUT, { recursive: true });
   for (const f of readdirSync(RAW).filter((f) => f.endsWith(".png")).sort()) {
-    const name = f.replace(/\.png$/, "");
-    const r = await cutOut(path.join(RAW, f));
+    const magenta = f.includes("__magenta");
+    const name = f.replace(/\.png$/, "").replace("__magenta", "");
+    const r = await cutOut(path.join(RAW, f), magenta);
     if (name === "cup-plain") await plainCup(r);
     else if (name.startsWith("cutlery-")) await cutlery(name, r);
     else if (name === "bottle") await bottle(r);

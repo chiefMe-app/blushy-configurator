@@ -58,7 +58,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   {
     id: "frozen",
     coverImageUrl: "/theme-covers/frozen.svg",
-    name: "Frozen",
+    name: "Ice Princess",
     icon: "❄️",
     price: 50,
     description: "Icy blues, silver, snowflakes",
@@ -74,14 +74,14 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     renderDescription: "Frozen winter wonderland theme with icy blues, white, and silver; snowflake and ice crystal motifs",
     graphicPresets: [
       { id: "frozen_castle",    assetId: "frozen-01", label: "Frozen Castle",    desc: "Arendelle castle with snowflakes" },
-      { id: "frozen_elsa",      assetId: "frozen-02", label: "Elsa & Anna",      desc: "Silhouettes of Elsa and Anna" },
+      { id: "frozen_elsa",      assetId: "frozen-02", label: "Ice Sisters",      desc: "Silhouettes of two ice princesses" },
       { id: "frozen_snowflake", assetId: "frozen-03", label: "Snowflake Pattern", desc: "Repeating ice crystal pattern" },
     ],
     cutoutPresets: [
-      { id: "frozen-01", assetId: "frozen-01", label: "Elsa & Anna Duo",     desc: "Two-character feature standee", previewUrl: "/cutouts/frozen/frozen-01.png" },
-      { id: "frozen-02", assetId: "frozen-02", label: "Elsa & Anna Classic", desc: "Main character duo standee",     previewUrl: "/cutouts/frozen/frozen-02.png" },
-      { id: "frozen-03", assetId: "frozen-03", label: "Elsa Solo",           desc: "Single Elsa feature standee",    previewUrl: "/cutouts/frozen/frozen-03.png" },
-      { id: "frozen-04", assetId: "frozen-04", label: "Anna Solo",           desc: "Single Anna feature standee",    previewUrl: "/cutouts/frozen/frozen-04.png" },
+      { id: "frozen-01", assetId: "frozen-01", label: "Ice Sisters Duo",     desc: "Two-princess feature standee", previewUrl: "/cutouts/frozen/frozen-01.png" },
+      { id: "frozen-02", assetId: "frozen-02", label: "Ice Sisters Classic", desc: "Princess duo standee",     previewUrl: "/cutouts/frozen/frozen-02.png" },
+      { id: "frozen-03", assetId: "frozen-03", label: "Ice Princess Solo",   desc: "Single ice princess standee",    previewUrl: "/cutouts/frozen/frozen-03.png" },
+      { id: "frozen-04", assetId: "frozen-04", label: "Snow Princess Solo",  desc: "Single snow princess standee",    previewUrl: "/cutouts/frozen/frozen-04.png" },
     ],
   },
   {
@@ -167,7 +167,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   {
     id: "barbie",
     coverImageUrl: "/theme-covers/barbie.svg",
-    name: "Barbie",
+    name: "Pretty in Pink",
     icon: "💗",
     price: 60,
     description: "Hot pink, fuchsia, glam",
@@ -183,7 +183,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   {
     id: "bluey",
     coverImageUrl: "/theme-covers/bluey.svg",
-    name: "Bluey",
+    name: "Blue Puppy Fun",
     icon: "🐾",
     price: 40,
     description: "Blue heeler, family fun, playful",
@@ -199,7 +199,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   {
     id: "pokemon",
     coverImageUrl: "/theme-covers/pokemon.svg",
-    name: "Pokémon",
+    name: "Monster Catcher",
     icon: "⚡",
     price: 50,
     description: "Yellow, red Pokéball, adventure",
@@ -215,7 +215,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   {
     id: "stitch",
     coverImageUrl: "/theme-covers/stitch.svg",
-    name: "Stitch",
+    name: "Aloha Alien",
     icon: "🌺",
     price: 40,
     description: "Blue, tropical, Hawaiian",
@@ -279,7 +279,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   {
     id: "lego",
     coverImageUrl: "/theme-covers/lego.svg",
-    name: "Lego",
+    name: "Building Bricks",
     icon: "🧱",
     price: 40,
     description: "Bright primary colors, brick fun",
@@ -311,7 +311,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   {
     id: "encanto",
     coverImageUrl: "/theme-covers/encanto.svg",
-    name: "Encanto",
+    name: "Magical Casita",
     icon: "🌺",
     price: 50,
     description: "Vibrant Colombian colors, magical",
@@ -327,7 +327,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
   {
     id: "cocomelon",
     coverImageUrl: "/theme-covers/cocomelon.svg",
-    name: "Cocomelon",
+    name: "Nursery Rhymes",
     icon: "🍉",
     price: 30,
     description: "Bright primaries, watermelon, fun",
@@ -412,7 +412,7 @@ THEME_CATALOG.push(
   {
     id: "minecraft",
     coverImageUrl: "/design/themes-v2/minecraft.webp",
-    name: "Minecraft",
+    name: "Pixel Blocks",
     icon: "🟩",
     price: 40,
     description: "Pixel greens, grass and earth blocks",
@@ -428,7 +428,7 @@ THEME_CATALOG.push(
   {
     id: "star_wars",
     coverImageUrl: "/design/themes-v2/star-wars.webp",
-    name: "Star Wars",
+    name: "Galaxy Knights",
     icon: "⚔️",
     price: 40,
     description: "Galactic black, chrome and lightsaber glow",
@@ -497,3 +497,103 @@ export function getThemeGraphicPresets(themeId: string): ThemeGraphicPreset[] {
 },
   ];
 }
+
+// 2026-10-30 (owner): new themes from the party shops' best-sellers, each with its own crayon icon.
+THEME_CATALOG.push(
+  {
+    id: "butterfly_fairy",
+    coverImageUrl: "/design/themes-v2/butterfly-fairy.webp",
+    name: "Butterfly & Fairy",
+    icon: "*",
+    price: 40,
+    description: "Pastel wings, flower-garden whimsy",
+    swatchHexes: ["#F8BBD0", "#DDD6FE", "#A7F3D0"],
+    sempertexPaletteIds: ["pastel-matte-174-pink", "pastel-matte-650-lilac", "silk-826-cool-mint", "pastel-matte-620-yellow", "fashion-005-white"],
+    renderDescription: "Whimsical butterfly and fairy garden theme in soft pastel pink, lilac, mint and lemon, with butterflies, daisies and little flowers",
+    graphicPresets: [
+      { id: "butterfly_wings", assetId: "butterfly-fairy-01", label: "Butterflies", desc: "Pastel butterflies in flight" },
+      { id: "fairy_flowers", assetId: "butterfly-fairy-02", label: "Fairy Flowers", desc: "Daisies and little garden flowers" },
+      { id: "fairy_toadstool", assetId: "butterfly-fairy-03", label: "Toadstool House", desc: "A tiny fairy toadstool house" },
+    ],
+  },
+  {
+    id: "vehicles",
+    coverImageUrl: "/design/themes-v2/vehicles.webp",
+    name: "Vehicles",
+    icon: "*",
+    price: 40,
+    description: "Racing red, sunny yellow, road-trip fun",
+    swatchHexes: ["#EF4444", "#FFC200", "#2563EB"],
+    sempertexPaletteIds: ["fashion-015-red", "fashion-021-honey-yellow", "fashion-041-royal-blue", "fashion-080-black", "fashion-005-white"],
+    renderDescription: "Playful vehicles theme in bright red, yellow, blue and black, with race cars, fire trucks, diggers, trains and planes",
+    graphicPresets: [
+      { id: "vehicles_racecar", assetId: "vehicles-01", label: "Race Car", desc: "A bright red race car" },
+      { id: "vehicles_firetruck", assetId: "vehicles-02", label: "Fire Truck", desc: "A friendly fire truck" },
+      { id: "vehicles_digger", assetId: "vehicles-03", label: "Digger", desc: "A yellow construction digger" },
+    ],
+  },
+  {
+    id: "under_the_sea",
+    coverImageUrl: "/design/themes-v2/under-the-sea.webp",
+    name: "Under the Sea",
+    icon: "*",
+    price: 40,
+    description: "Ocean blues, sandy shores",
+    swatchHexes: ["#1E3A8A", "#0EA5E9", "#00CED1"],
+    sempertexPaletteIds: ["fashion-044-navy-blue", "fashion-038-caribbean-blue", "fashion-037-aquamarine", "fashion-071-white-sand", "fashion-005-white"],
+    renderDescription: "Under the sea theme in navy, ocean blue, aqua and sand, with friendly sharks, whales, fish, bubbles and seaweed",
+    graphicPresets: [
+      { id: "sea_shark", assetId: "under-the-sea-01", label: "Friendly Shark", desc: "A smiling cartoon shark" },
+      { id: "sea_whale", assetId: "under-the-sea-02", label: "Whale & Bubbles", desc: "A blue whale with bubbles" },
+      { id: "sea_reef", assetId: "under-the-sea-03", label: "Coral Reef", desc: "Coral, seaweed and little fish" },
+    ],
+  },
+  {
+    id: "circus",
+    coverImageUrl: "/design/themes-v2/circus.webp",
+    name: "Circus & Carnival",
+    icon: "*",
+    price: 40,
+    description: "Big-top stripes, popcorn brights",
+    swatchHexes: ["#EF4444", "#FFC200", "#00CED1"],
+    sempertexPaletteIds: ["fashion-015-red", "fashion-005-white", "fashion-021-honey-yellow", "fashion-037-aquamarine", "fashion-044-navy-blue"],
+    renderDescription: "Circus and carnival theme in red, white, yellow and teal, with big-top stripes, stars, popcorn and bunting",
+    graphicPresets: [
+      { id: "circus_tent", assetId: "circus-01", label: "Big Top", desc: "A striped circus tent" },
+      { id: "circus_popcorn", assetId: "circus-02", label: "Popcorn", desc: "A striped popcorn box" },
+      { id: "circus_stars", assetId: "circus-03", label: "Carnival Stars", desc: "Stars and bunting" },
+    ],
+  },
+  {
+    id: "ballerina",
+    coverImageUrl: "/design/themes-v2/ballerina.webp",
+    name: "Ballerina & Swan",
+    icon: "*",
+    price: 40,
+    description: "Tutu blush, pearl and champagne",
+    swatchHexes: ["#F8BBD0", "#FBCFE8", "#F5F0EE"],
+    sempertexPaletteIds: ["pastel-matte-174-pink", "silk-809-pink-blossom", "satin-406-pearl", "reflex-971-champagne", "pastel-dusk-150-lavender"],
+    renderDescription: "Ballerina and swan theme in blush pink, pearl, champagne and soft lavender, with tutus, ballet slippers, swans and bows",
+    graphicPresets: [
+      { id: "ballet_slippers", assetId: "ballerina-01", label: "Ballet Slippers", desc: "Satin slippers with ribbons" },
+      { id: "ballet_swan", assetId: "ballerina-02", label: "Swan", desc: "An elegant white swan" },
+      { id: "ballet_tutu", assetId: "ballerina-03", label: "Tutu", desc: "A blush tulle tutu" },
+    ],
+  },
+  {
+    id: "pirates",
+    coverImageUrl: "/design/themes-v2/pirates.webp",
+    name: "Pirates",
+    icon: "*",
+    price: 40,
+    description: "Navy seas, treasure gold, sailcloth",
+    swatchHexes: ["#1E3A8A", "#EF4444", "#1F2937"],
+    sempertexPaletteIds: ["fashion-044-navy-blue", "fashion-015-red", "fashion-080-black", "reflex-970-gold", "fashion-071-white-sand"],
+    renderDescription: "Pirate adventure theme in navy, red, black, gold and sailcloth cream, with pirate ships, treasure chests, maps and anchors",
+    graphicPresets: [
+      { id: "pirate_ship", assetId: "pirates-01", label: "Pirate Ship", desc: "A pirate ship on the waves" },
+      { id: "pirate_treasure", assetId: "pirates-02", label: "Treasure Chest", desc: "An open chest of gold coins" },
+      { id: "pirate_map", assetId: "pirates-03", label: "Treasure Map", desc: "An old map with an X" },
+    ],
+  },
+);

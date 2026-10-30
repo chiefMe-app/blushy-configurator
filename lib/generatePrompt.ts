@@ -63,6 +63,12 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
 
 const THEME_MOOD: Record<string, string> = {
   minecraft: "grass green, forest green, lime and earthy brown color palette, playful blocky pixel atmosphere",
+  butterfly_fairy: "soft pastel pink, lilac, mint and lemon color palette, whimsical flower-garden atmosphere",
+  vehicles: "bright red, sunny yellow, royal blue and black color palette, playful road-trip atmosphere",
+  under_the_sea: "navy, ocean blue, aqua and sand color palette, playful underwater atmosphere",
+  circus: "red, white, yellow and teal color palette, festive big-top carnival atmosphere",
+  ballerina: "blush pink, pearl, champagne and soft lavender color palette, graceful ballet atmosphere",
+  pirates: "navy, red, black, gold and cream color palette, adventurous pirate atmosphere",
   star_wars: "black, chrome silver and white color palette with red and blue lightsaber accents, cinematic galactic atmosphere",
   frozen:    "icy pale blue, silver and white color palette, cool crisp atmosphere",
   unicorn:   "soft pink, pastel mint, pastel yellow, pastel blue and white color palette, delicate pastel tones, light airy atmosphere",
@@ -89,6 +95,12 @@ const THEME_MOOD: Record<string, string> = {
 
 const THEME_PRINT: Record<string, string> = {
   minecraft: "pixel grass blocks and blocky landscape printed on backdrop",
+  butterfly_fairy: "pastel butterflies and little flowers printed on backdrop",
+  vehicles: "cartoon race cars, fire trucks and road signs printed on backdrop",
+  under_the_sea: "friendly sea creatures, bubbles and seaweed printed on backdrop",
+  circus: "big-top stripes, stars and bunting printed on backdrop",
+  ballerina: "ballet slippers, swans and soft tulle printed on backdrop",
+  pirates: "pirate ships, treasure maps and anchors printed on backdrop",
   star_wars: "starfield with crossed lightsabers printed on backdrop",
   frozen:    "snowflake and ice crystal pattern printed on backdrop",
   unicorn:   "unicorn face with gold horn flower crown and lashes printed on backdrop surface",
@@ -117,6 +129,12 @@ const SHAPE_LOCKED_THEMES = new Set<ThemeId>();
 
 const THEME_PRINT_DESC: Record<string, string> = {
   minecraft: "Pixel grass blocks, creeper face, blocky trees",
+  butterfly_fairy: "Pastel butterflies, daisies, fairy toadstools",
+  vehicles: "Race cars, fire trucks, diggers, trains",
+  under_the_sea: "Friendly sharks, whales, fish, bubbles",
+  circus: "Striped big top, popcorn, stars, bunting",
+  ballerina: "Ballet slippers, tutus, swans, bows",
+  pirates: "Pirate ships, treasure chests, maps, anchors",
   star_wars: "Starfield, lightsabers and starships",
   frozen: "Frozen castle, snowflakes, icy character silhouettes",
   unicorn: "Unicorn face with gold horn, flower crown and lashes",

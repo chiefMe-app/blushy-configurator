@@ -9,7 +9,7 @@ const KEY = "partymuse.builder.draft.v1";
 const chips = (page: import("@playwright/test").Page) => page.locator(".bz-bl-chip").allTextContents();
 
 test("D1 custom balloon colours survive leaving the Decor step and coming back", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Balloons");
   const before = await chips(page);
   await page.locator(".bz-bl-chip").first().click(); // remove one colour
@@ -24,7 +24,7 @@ test("D1 custom balloon colours survive leaving the Decor step and coming back",
 });
 
 test("D2 a new theme still brings its own balloon colours", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Balloons");
   await page.locator(".bz-bl-chip").first().click();
   await page.locator("button.bz-back").click(); // to Theme
@@ -34,7 +34,7 @@ test("D2 a new theme still brings its own balloon colours", async ({ page }) => 
 });
 
 test("D3 a reload opens the design where the customer left off", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Style");
   await page.getByLabel("Name text").fill("Arya");
   await decorTab(page, "Balloons");
@@ -57,7 +57,7 @@ test("D3 a reload opens the design where the customer left off", async ({ page }
 });
 
 test("D4 Start over clears the saved design", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await page.waitForTimeout(800);
   await page.reload();
   await page.getByTestId("draft-restored").getByRole("button", { name: "Start over" }).click();
@@ -70,7 +70,7 @@ test("D4 Start over clears the saved design", async ({ page }) => {
 });
 
 test("D5 only design choices are stored: no venue, no customer details", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await page.waitForTimeout(800);
   const stored = await page.evaluate((k) => localStorage.getItem(k), KEY);
   expect(stored).not.toBeNull();
@@ -99,7 +99,7 @@ test("D8 the saved design is cleared once the request is sent", async ({ page, g
   guard.fakeRender = true;
   guard.fakeOrder = true;
   await signIn(page); // renders need an account
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   for (let i = 0; i < 3; i++) await next(page).click(); // Style, Balloons, Extras
   await renderButton(page).click(); // → stand-in
   await expect(renderButton(page)).toHaveCount(0); // the render is in

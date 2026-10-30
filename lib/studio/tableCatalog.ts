@@ -22,6 +22,7 @@
 //     vereceğim"); the other pictures are still AI-made stand-ins until hers
 //     come (no characters or logos). Without a photo, the card shows a drawing.
 //     The close-up render is made from these pictures (lib/studio/tableRender.ts).
+import THEMED from "./tableThemed.json";
 export type TableItemKey =
   | "table" | "chairs"
   | "tablecloth" | "runner" | "napkins"
@@ -52,6 +53,10 @@ export interface TableOption {
   colouredPhotos?: boolean;
   /** Offered only in these themes (a themed piece made for them so far). */
   themes?: string[];
+  /** Its picture is a cut-out piece on its own (shown whole on the card). */
+  cutout?: boolean;
+  /** A themed piece: how it looks, in words (lib/studio/tableThemed.json). */
+  look?: string;
 }
 
 export interface TableItem {
@@ -66,6 +71,20 @@ export interface TableItem {
 
 export const NONE = "none";
 
+/**
+ * The themed cups, plates and napkins (2026-10-30, the owner: "themed cup diye
+ * bir kategori"): each offered only in its theme, after the plain one, its
+ * picture the piece drawn for the top view (scripts/table/themed-render.mjs).
+ */
+type ThemedKind = "cups" | "plates" | "napkins";
+export const THEMED_ITEMS: TableItemKey[] = ["cups", "plates", "napkins"];
+const themedOptions = (item: ThemedKind): TableOption[] => THEMED.items.filter((i) => i.item === item).map((i) => ({
+  id: i.id, name: i.name, note: "In the theme's own design", price: THEMED.prices[item], unit: "per_child" as const,
+  photo: `/design/table/top/themed-${item}-${i.id}.webp`, themes: [i.theme], cutout: true, look: i.look,
+}));
+/** Whether an option is one of the themed pieces. */
+export const isThemed = (o: TableOption | undefined) => !!o?.look;
+
 export const TABLE_ITEMS: TableItem[] = [
   { key: "table", label: "Table", optional: false, options: [
     { id: "standard", name: "Standard table", note: "Long and white · 10 kids", price: 399, unit: "per_table", seats: 10, photo: "/design/table/table-standard.webp" },
@@ -76,7 +95,6 @@ export const TABLE_ITEMS: TableItem[] = [
     { id: "cloud", name: "Cloud table", note: "Soft wavy edges · 10 kids", price: 499, unit: "per_table", seats: 10, photo: "/design/table/table-cloud.webp" },
   ] },
   { key: "chairs", label: "Chairs", optional: false, options: [
-    { id: "white_kids", name: "White chair for kids", note: "Oval back, with arms", price: 25, unit: "per_child", photo: "/design/table/chairs-white_kids.webp" },
     // 2026-10-28: "blue chair for kids'in her renk seçeneği olabilsin" — the id stays for saved tables.
     { id: "blue_kids", name: "Colour chair for kids", note: "Slatted back · white, pink or light blue", price: 25, unit: "per_child", photo: "/design/table/chairs-blue_kids.webp", coloured: true, colouredPhotos: true },
     { id: "bow_kids", name: "Bow chair for kids", note: "Pink, with a bow back", price: 25, unit: "per_child", photo: "/design/table/chairs-bow_kids.webp" },
@@ -88,7 +106,7 @@ export const TABLE_ITEMS: TableItem[] = [
   // Only the plain napkin takes a colour (2026-10-28: "renk koymaya gerek yok, plain peçete seçeneği koy, onda renk olsun").
   { key: "napkins", label: "Napkins", optional: false, options: [
     { id: "plain", name: "Plain napkins", note: "In a colour you pick", price: 1, unit: "per_child", coloured: true, photo: "/design/table/napkins-plain.webp" },
-    { id: "printed", name: "Printed napkins", note: "In the theme's pattern", price: 2, unit: "per_child", photo: "/design/table/napkins-printed.webp" },
+    ...themedOptions("napkins"),
   ] },
   // A3 (42 × 29.7 cm), under the plate: the theme's design in three looks, like
   // the owner's references, with the customer's own words printed on it.
@@ -103,9 +121,11 @@ export const TABLE_ITEMS: TableItem[] = [
   // of plate and of cup, in a colour or a foil (FOILS), with no option cards.
   { key: "plates", label: "Plates", optional: false, options: [
     { id: "plain", name: "Paper plates", note: "Big + small, in a colour or foil and a shape you pick", price: 3, unit: "per_child", coloured: true },
+    ...themedOptions("plates"),
   ] },
   { key: "cups", label: "Cups", optional: false, options: [
     { id: "plain", name: "Paper cups", note: "In a colour or foil you pick", price: 2, unit: "per_child", coloured: true },
+    ...themedOptions("cups"),
   ] },
   { key: "cutlery", label: "Cutlery", optional: false, options: [
     { id: "dipped", name: "Colour-dipped wooden", note: "Handles dipped in pastel", price: 3, unit: "per_child", photo: "/design/table/cutlery-dipped.webp" },
@@ -189,6 +209,26 @@ export const foilOf = (c: string | undefined) => FOILS.find((f) => f.id === c);
 export const drawColour = (c: string) => foilOf(c)?.hex ?? c;
 /** A swatch's background: a foil's shimmer, or the colour. */
 export const swatchBackground = (c: string) => { const f = foilOf(c); return f ? `linear-gradient(135deg, ${f.stops.join(", ")})` : c; };
+
+/**
+ * The pastel of PLAIN_COLOURS nearest a theme colour (2026-10-30, the owner:
+ * "plate colors depends on the theme but make more pastel colors"): by hue,
+ * or cream for a colour with hardly any (white, silver, black, browns).
+ */
+export function pastelOf(hex: string): string {
+  const hsl = (h: string) => {
+    const n = parseInt(h.slice(1), 16), [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((v) => v / 255);
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+    const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+    const hue = d === 0 ? 0 : max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return { h: hue * 60, s, l };
+  };
+  const c = hsl(hex);
+  if (c.s < 0.2 || c.l < 0.15) return "#F5EDD6";
+  const pastels = PLAIN_COLOURS.slice(1, 7); // pink, peach, lemon, mint, baby blue, lilac
+  const away = (h: number) => { const d = Math.abs(h - c.h) % 360; return Math.min(d, 360 - d); };
+  return pastels.reduce((best, p) => (away(hsl(p.hex).h) < away(hsl(best.hex).h) ? p : best)).hex;
+}
 
 export const plainColour = (hex: string) => PLAIN_COLOURS.find((c) => c.hex.toUpperCase() === hex.toUpperCase());
 /** The chosen table sits the children on floor cushions: no chairs to choose or pay for. */

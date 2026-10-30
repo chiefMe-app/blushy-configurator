@@ -27,7 +27,7 @@ async function saveSigningIn(page: Page) {
 test("S1 nothing is saved to the database without pressing Save", async ({ page, guard }) => {
   await page.goto("/builder");
   await expect(save(page)).toHaveCount(0); // nothing chosen yet: the footer note
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   for (const tab of ["Style", "Balloons", "Extras"] as const) await decorTab(page, tab);
   await page.waitForTimeout(3000);
   expect(guard.supabase.requests).toEqual([]);
@@ -35,7 +35,7 @@ test("S1 nothing is saved to the database without pressing Save", async ({ page,
 });
 
 test("S2 signed out, Save asks to sign in — no guest; signed in, the design is saved, design only", async ({ page, guard }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await save(page).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("heading", { name: "Sign in to save your design" })).toBeVisible();
@@ -59,7 +59,7 @@ test("S2 signed out, Save asks to sign in — no guest; signed in, the design is
 });
 
 test("S3 a change after saving offers Save changes, which updates the same design", async ({ page, guard }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await saveSigningIn(page);
   await decorTab(page, "Balloons");
   await page.locator(".bz-bl-chip").first().click(); // a colour out
@@ -76,7 +76,7 @@ test("S3 a change after saving offers Save changes, which updates the same desig
 });
 
 test("S4 a saved design is still ✓ Saved after a reload, and is not saved again", async ({ page, guard }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await saveSigningIn(page);
   await page.waitForTimeout(800); // the device copy is written a moment after a change
   await page.reload();
@@ -86,7 +86,7 @@ test("S4 a saved design is still ✓ Saved after a reload, and is not saved agai
 });
 
 test("S5 Continue with Google from Save: back from Google, in the Builder, saved", async ({ page, guard }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await save(page).click();
   await page.getByRole("dialog").getByRole("button", { name: "Continue with Google" }).click();
   await expect(page).toHaveURL(/supabase\.test\/auth\/v1\/authorize\?provider=google/);
@@ -98,7 +98,7 @@ test("S5 Continue with Google from Save: back from Google, in the Builder, saved
 });
 
 test("S6 Start over: the next Save is a new design, not an overwrite", async ({ page, guard }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await saveSigningIn(page);
   await page.waitForTimeout(800);
   await page.reload();

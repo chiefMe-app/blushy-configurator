@@ -73,7 +73,7 @@ describe("prices", () => {
     const lines = tablePriceLines(t);
     // The owner's prices (2026-10-28): AED 399 a standard table, 25 a chair.
     expect(lines.find((l) => l.label.startsWith("Standard table"))).toEqual({ label: "Standard table (2)", amount: 798 });
-    expect(lines.find((l) => l.label.startsWith("White chair for kids"))).toEqual({ label: "White chair for kids (12)", amount: 300 });
+    expect(lines.find((l) => l.label.startsWith("Colour chair for kids"))).toEqual({ label: "Colour chair for kids (12)", amount: 300 });
     expect(lines.some((l) => l.label.startsWith("Plain cloth"))).toBe(false); // None, unless chosen
     expect(lines.find((l) => l.label.startsWith("Watercolour placemat"))).toEqual({ label: "Watercolour placemat (12)", amount: 72 });
     expect(tablePriceLines({ ...t, choices: { ...t.choices, placemats: NONE } }).some((l) => l.label.startsWith("Watercolour placemat"))).toBe(false); // None
@@ -119,8 +119,8 @@ describe("kept on the device", () => {
   });
   it("a kids' table kept before it turned into a kids' party reads back with kids' pieces", () => {
     const t = readTableSetup({ choices: { chairs: "gold_chiavari", chargers: "gold", plates: "white_gold", napkins: "folded", runner: "greenery" } }, frozen)!;
-    expect(t.choices).toMatchObject({ chairs: "white_kids", chargers: NONE, plates: "plain", napkins: "printed", runner: NONE });
-    expect(t.plateColor).toBe("iridescent");
+    expect(t.choices).toMatchObject({ chairs: "blue_kids", chargers: NONE, plates: "plain", napkins: "plain", runner: NONE });
+    expect(t.chairColor).toBe("#FFFFFF");
   });
   it("the foil plates and cups kept before 2026-10-29 read back as plain ones in that foil", () => {
     const t = readTableSetup({ choices: { plates: "silver", cups: "iridescent" }, plateColor: "#F8BBD0" }, frozen)!;
@@ -144,6 +144,8 @@ describe("kept on the device", () => {
   });
   it("tables and chairs from before the owner's own read back as hers", () => {
     const t = readTableSetup({ choices: { table: "long", chairs: "pastel_kids" } }, frozen)!;
-    expect(t.choices).toMatchObject({ table: "standard", chairs: "white_kids" });
+    expect(t.choices).toMatchObject({ table: "standard", chairs: "blue_kids" });
+    // The white chair of before: the colour chair in white (2026-10-30), whatever colour was kept with it.
+    expect(readTableSetup({ choices: { chairs: "white_kids" }, chairColor: "#38BDF8" }, frozen)).toMatchObject({ choices: { chairs: "blue_kids" }, chairColor: "#FFFFFF" });
   });
 });

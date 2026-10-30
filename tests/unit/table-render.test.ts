@@ -76,7 +76,7 @@ describe("the pictures and the prompt", () => {
     // The plates are a colour or a foil, in words: no picture (2026-10-29).
     expect(refs.slice(0, 2)).toEqual([
       { key: "table", photo: "/design/table/table-standard.webp" },
-      { key: "chairs", photo: "/design/table/chairs-white_kids.webp" },
+      { key: "chairs", photo: "/design/table/chairs/blue_kids/ffffff.webp" },
     ]);
     expect(refs.map((r) => r.key)).not.toContain("plates");
     const p = tablePrompt(table(), frozen, refs.map((r) => r.key));
@@ -112,7 +112,7 @@ describe("the pictures and the prompt", () => {
     expect(tablePrompt({ ...table({ placemats: NONE }), words: { placemats: "Arya" } }, frozen, [])).not.toContain("Arya");
   });
   it("two children facing each other at one part of a big table, each with the whole setting set out as the owner wants", () => {
-    const t = { ...table({ cutleryHolder: "band", bottleLabel: "watercolour", napkins: "printed", centrepiece: "florals" }), words: { cutleryHolder: "Arya", bottleLabel: "Arya turns 6" } };
+    const t = { ...table({ cutleryHolder: "band", bottleLabel: "watercolour", centrepiece: "florals" }), words: { cutleryHolder: "Arya", bottleLabel: "Arya turns 6" } };
     const refs = referencePictures(t, "frozen").map((r) => r.key);
     const p = tablePrompt(t, frozen, refs);
     expect(p).toContain("one part of a big, fully set children's party table");
@@ -120,7 +120,7 @@ describe("the pictures and the prompt", () => {
     expect(p).toContain("TWO place settings facing each other");
     expect(p).toContain("Two chairs face each other on the two sides of the table");
     // The cutlery only on the left, rolled up in the chosen napkin with the band, as in the holder's picture.
-    expect(p).toContain(`on the left of the placemat: a folded paper napkin printed with snowflakes and little stars — exactly as in image ${refs.indexOf("napkins") + 2} folded flat, with a disposable fork, knife and spoon made of natural light wood, not metal lying on top of it, the napkin and the cutlery wrapped round the middle together by a plain pastel baby blue paper napkin band with the name "Arya" printed straight onto the band in sky blue script letters — no tag, no label — the band is pastel baby blue, whatever colour its photo shows`);
+    expect(p).toContain(`on the left of the placemat: a plain white paper napkin folded flat, with a disposable fork, knife and spoon made of natural light wood, not metal lying on top of it, the napkin and the cutlery wrapped round the middle together by a plain pastel baby blue paper napkin band with the name "Arya" printed straight onto the band in sky blue script letters — no tag, no label — the band is pastel baby blue, whatever colour its photo shows`);
     // 2026-10-29 (owner): the napkin always under the cutlery.
     expect(p).toContain("lying side by side on top of its folded napkin on the left, under the band — the napkin is always under the cutlery. No other cutlery anywhere");
     expect(p).not.toMatch(/pocket|standing up/);
@@ -167,7 +167,7 @@ describe("the pictures and the prompt", () => {
   it("a kids' party: printed paper in the theme's pattern, disposable cutlery, nothing formal", () => {
     const p = tablePrompt(table(), frozen, []);
     expect(p).toContain("A3 paper placemat with a soft watercolour wash and big snowflakes and little stars in its corners");
-    expect(p).toContain("disposable paper plates, round: a big plate with a smaller plate of the same kind sitting in it, both shimmering iridescent foil");
+    expect(p).toContain("disposable paper plates, round: a big plain matte pastel baby blue plate with a smaller plain matte pastel lilac plate of the same shape sitting in it");
     expect(p).toContain("a disposable fork, knife and spoon made of natural light wood, not metal");
     expect(p).toContain("cone party hat");
     expect(p).toMatch(/children's birthday party.*no glassware, no china, no charger plates/);

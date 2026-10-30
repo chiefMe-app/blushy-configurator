@@ -3572,7 +3572,7 @@ exports[`scene golden > E06-two-standees 1`] = `
     "selectedAssets": [
       {
         "assetId": "frozen-01",
-        "label": "Elsa & Anna Duo",
+        "label": "Ice Sisters Duo",
         "previewUrl": "/cutouts/frozen/frozen-01.png",
         "quantities": {
           "large": 1,
@@ -3582,7 +3582,7 @@ exports[`scene golden > E06-two-standees 1`] = `
       },
       {
         "assetId": "frozen-02",
-        "label": "Elsa & Anna Classic",
+        "label": "Ice Sisters Classic",
         "previewUrl": "/cutouts/frozen/frozen-02.png",
         "quantities": {
           "large": 1,

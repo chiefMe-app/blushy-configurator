@@ -1271,3 +1271,7 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-single { margin: 4px 0 2px; font: 500 13px/1.4 var(--bz-sans); color: #6b5a62; }
 .bz-tb-single b { color: var(--bz-ink); }
 .bz-tb-single em { font-style: normal; color: var(--bz-pink); font-weight: 700; }
+/* The theme's own cups, plates and napkins, after the plain kind (2026-10-30). */
+.bz-tb-themed { margin-top: 12px; }
+.bz-tb-themed > span { display: block; margin-bottom: 6px; font: 700 12px var(--bz-sans); letter-spacing: 0.04em; text-transform: uppercase; color: #8a7680; }
+.bz-tb-single.on b { color: var(--bz-pink); }

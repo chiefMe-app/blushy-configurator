@@ -12,7 +12,7 @@ const renderCalls = (guard: Guard) => guard.blocked.filter((r) => r.url().includ
 async function renderAndSave(page: Page, guard: Guard) {
   guard.fakeRender = true;
   await signIn(page);
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Extras");
   await renderButton(page).click(); // → stand-in, stored
   await expect(renderButton(page)).toHaveCount(0); // the render is in

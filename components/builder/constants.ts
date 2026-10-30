@@ -91,11 +91,18 @@ export const THEME_GROUPS: { key: "girl" | "boy"; title: string; items: { id: st
     { id: "unicorn", icon: "unicorn" }, { id: "frozen", icon: "frozen" }, { id: "barbie", icon: "barbie" },
     { id: "princess", icon: "princess" }, { id: "bluey", icon: "bluey" }, { id: "mermaid", icon: "mermaid" },
     { id: "space", icon: "space-girl" }, { id: "kpop", icon: "kpop" },
+    // 2026-10-30 (owner): new themes; the dinosaur for girls too, with its own icon.
+    { id: "butterfly_fairy", icon: "butterfly-fairy" }, { id: "ballerina", icon: "ballerina" },
+    { id: "dinosaur", icon: "dinosaur-girl" }, { id: "circus", icon: "circus" },
   ] },
   { key: "boy", title: "For boys", items: [
     { id: "dinosaur", icon: "dinosaur" }, { id: "safari", icon: "safari" }, { id: "space", icon: "space-boy" },
     { id: "superhero", icon: "superhero" }, { id: "pokemon", icon: "pokemon" }, { id: "lego", icon: "lego" },
     { id: "minecraft", icon: "minecraft" }, { id: "star_wars", icon: "star-wars" },
+    { id: "vehicles", icon: "vehicles" }, { id: "under_the_sea", icon: "under-the-sea" },
+    { id: "pirates", icon: "pirates" }, { id: "circus", icon: "circus" },
+    // Back in the list with its own icon and its themed cups, plates and napkins (2026-10-30).
+    { id: "football", icon: "football" },
   ] },
 ];
 
@@ -128,29 +135,36 @@ export const THEME_SETUP_PREVIEW: Partial<Record<string, Partial<Record<string, 
   },
 };
 
-/** Per-theme print suggestion text shown below the Theme Graphic card. */
+/** Per-theme print suggestion text shown below the Theme Graphic card (theme shapes only, never characters). */
 export const THEME_PRINT_SUGGESTIONS: Record<string, string> = {
-  frozen: "Frozen castle, snowflakes, Anna & Elsa silhouette",
+  frozen: "Ice castle, snowflakes and sparkling stars",
   unicorn: "Unicorn face with gold horn, flower crown and lashes",
   dinosaur: "Jungle palm trees, volcano, dinosaur footprints",
   safari: "African savanna, giraffe silhouette, tropical leaves",
   princess: "Castle turrets, crown, stars and magic wand",
   superhero: "City skyline, lightning bolt, hero shield",
-  barbie: "Barbie logo, stars, fashion illustration",
-  bluey: "Bluey and Bingo characters with paw prints",
-  pokemon: "Pokeball graphic, Pikachu silhouette, lightning bolt",
-  stitch: "Stitch with hibiscus flowers and Hawaii text",
+  barbie: "Pink stars, hearts and fashion sketches",
+  bluey: "Paw prints, bones and sunny blue skies",
+  pokemon: "Lightning bolts, stars and bright red-and-white circles",
+  stitch: "Hibiscus flowers, palm leaves and ocean waves",
   mermaid: "Underwater scene, shells, bubbles, coral reef",
   space: "Galaxy stars, planets, rocket ship, moon",
   football: "Football pitch lines, soccer ball, jersey number",
-  lego: "Lego brick grid pattern and colorful Lego minifigure face graphics",
+  lego: "Building-brick grid pattern in primary colours",
   kpop: "Stage spotlight, microphone, sparkle star graphics",
-  encanto: "Casita house, magical candle, Colombian flowers",
-  cocomelon: "Watermelon slices, JJ character, bright polka dots",
+  encanto: "Colourful casita, candles and tropical flowers",
+  cocomelon: "Watermelon slices, bright polka dots and music notes",
   teddy_bear: "Cute teddy bear illustrations, hearts, soft bow",
   pineapple_tropical: "Gold pineapple outline, tropical monstera leaves, hibiscus",
   blush_garden: "Botanical roses and peonies, delicate foliage",
   luxury_neutral: "Minimal gold line art, abstract botanical, elegant monogram",
+  // 2026-10-30: the new themes; the licensed ones above say theme shapes only, never characters.
+  butterfly_fairy: "Pastel butterflies, daisies and a fairy toadstool",
+  vehicles: "Race cars, fire trucks and road signs",
+  under_the_sea: "Friendly sharks, whales, bubbles and seaweed",
+  circus: "Striped big top, stars, popcorn and bunting",
+  ballerina: "Ballet slippers, tutus, swans and bows",
+  pirates: "Pirate ship, treasure chest and an old map",
 };
 
 /** Short display labels for plinth size buttons. */

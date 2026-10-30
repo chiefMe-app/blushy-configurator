@@ -19,7 +19,7 @@ test("P1 the sample pack downloads as a ZIP", async ({ page }) => {
 });
 
 test("P2 the Package step links the sample under the design packages", async ({ page }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   // Straight to the Package step: the design kept on this device, at step 4.
   await page.waitForTimeout(800); // the device copy is written a moment after a change
   await page.evaluate(() => {

@@ -7,7 +7,7 @@ import type { Page } from "@playwright/test";
 const aed = (s: string | null) => Number((s ?? "").replace(/[^0-9]/g, ""));
 
 async function toTable(page: Page) {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Extras");
   await expect(next(page)).toHaveText(/Next: Table setup/);
   await next(page).click();
@@ -28,13 +28,15 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   expect(aed(await total(page).textContent())).toBe(before + tableSum);
   // The owner's six tables and three chairs, with her photos and prices.
   await expect(page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio")).toHaveCount(6);
-  await expect(page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio")).toHaveCount(3);
-  await page.getByRole("radiogroup", { name: "Chairs" }).getByRole("radio", { name: /Bow chair for kids/ }).click();
+  // 2026-10-30: the colour chair (white to begin with) and the bow chair; the white chair went.
+  await expect(page.getByRole("radiogroup", { name: "Chairs", exact: true }).getByRole("radio")).toHaveCount(2);
+  await expect(page.getByRole("radiogroup", { name: "Chairs", exact: true }).getByRole("radio", { name: /Colour chair for kids/ })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("radiogroup", { name: "Chairs", exact: true }).getByRole("radio", { name: /Bow chair for kids/ }).click();
   expect(aed(await total(page).textContent())).toBe(before + tableSum); // every chair is AED 25
   // The low table: floor cushions instead of chairs.
   await page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio", { name: /Low table/ }).click();
   await expect(page.getByTestId("floor-cushions")).toBeVisible();
-  await expect(page.getByRole("radiogroup", { name: "Chairs" })).toHaveCount(0);
+  await expect(page.getByRole("radiogroup", { name: "Chairs", exact: true })).toHaveCount(0);
   expect(aed(await total(page).textContent())).toBe(before + tableSum + (749 - 399) - 10 * 25);
   await page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio", { name: /Flower table/ }).click();
   await page.getByRole("tab", { name: "Whole table" }).click(); // on a phone a change brings the top view back
@@ -49,22 +51,22 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await expect(cloth).toHaveCount(2);
   await expect(cloth.first()).toHaveAttribute("aria-checked", "true");
   for (const gone of ["Runner", "Name cards", "Chair decoration"]) await expect(page.getByRole("radiogroup", { name: gone })).toHaveCount(0);
-  await expect(page.getByRole("radiogroup", { name: "Cutlery holder" }).getByRole("radio")).toHaveCount(2); // None + the band
+  await expect(page.getByRole("radiogroup", { name: "Cutlery holder", exact: true }).getByRole("radio")).toHaveCount(2); // None + the band
   await expect(page.getByRole("radiogroup", { name: "Water bottle label" }).getByRole("radio")).toHaveCount(4);
   // The placemats: the theme's own, with the customer's words on them.
   const placemats = page.getByRole("radiogroup", { name: "Placemats" });
   await expect(placemats.getByRole("radio", { name: /Watercolour placemat/ }).locator("img")).toHaveAttribute("src", "/design/table/placemats/frozen/watercolour.webp");
   await page.getByRole("textbox", { name: /Words on the placemats/ }).fill("Zahra turns 4");
   await expect(placemats.locator(".words").first()).toHaveText("Zahra turns 4");
-  // Only the plain napkin takes a colour.
-  await expect(page.getByRole("radiogroup", { name: "Napkins colour" })).toHaveCount(0);
-  await page.getByRole("radiogroup", { name: "Napkins", exact: true }).getByRole("radio", { name: /Plain napkins/ }).click();
-  await expect(page.getByRole("radiogroup", { name: "Napkins colour" })).toBeVisible();
+  // The plain napkin, white to begin with; the theme's own napkins after it (2026-10-30: none made for this theme yet).
+  await expect(page.getByTestId("napkins-colour").getByRole("radio", { name: "white" }).first()).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("napkins-themed")).toHaveCount(0);
   // The bottle label: a name, and the finished label to see.
   await page.getByRole("radiogroup", { name: "Water bottle label" }).getByRole("radio", { name: /Sparkle label/ }).click();
   await page.getByRole("textbox", { name: /Words on the bottle labels/ }).fill("Arya turns 6");
   await expect(page.getByTestId("bottle-label-preview")).toHaveText("Arya turns 6");
-  await page.getByRole("radiogroup", { name: "Cutlery holder" }).getByRole("radio", { name: /Napkin band/ }).click();
+  // The napkin band comes chosen, in the theme's colour (2026-10-30).
+  await expect(page.getByRole("radiogroup", { name: "Cutlery holder", exact: true }).getByRole("radio", { name: /Napkin band/ })).toHaveAttribute("aria-checked", "true");
   await expect(page.getByRole("textbox", { name: /Name on the cutlery holders/ })).toBeVisible();
   await expect(page.getByTestId("cutleryHolder-colour")).toBeVisible();
   // The words in the theme's colour, unless another is picked — on the placemats and the labels alike.
@@ -75,7 +77,9 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await expect(page.getByTestId("plate-card-preview")).toHaveCount(0);
   await expect(page.getByRole("radiogroup", { name: "Plates", exact: true })).toHaveCount(0);
   await expect(page.getByTestId("plates-single")).toContainText("AED 3 each");
-  await expect(page.getByTestId("plates-colour").getByRole("radio", { name: "iridescent foil" })).toHaveAttribute("aria-checked", "true");
+  // Pastels of the theme's colours to begin with (2026-10-30).
+  await expect(page.getByTestId("plates-colour").getByRole("radio", { name: "pastel baby blue" }).first()).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("small-plate-colour").getByRole("radio", { name: "pastel lilac" }).first()).toHaveAttribute("aria-checked", "true");
   await page.getByTestId("plates-colour").getByRole("radio", { name: "bright red" }).click();
   await expect(page.getByTestId("plates-colour").getByRole("radio", { name: "bright red" })).toHaveAttribute("aria-checked", "true");
   // …and in a shape (2026-10-29).
@@ -87,7 +91,7 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await expect(page.getByTestId("small-plate-colour")).toBeVisible();
   await expect(page.getByTestId("partyHats-colour")).toBeVisible();
   // The kids' chair in any plain colour: its picture follows.
-  const chairs = page.getByRole("radiogroup", { name: "Chairs" });
+  const chairs = page.getByRole("radiogroup", { name: "Chairs", exact: true });
   await page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio", { name: /Standard table/ }).click();
   await chairs.getByRole("radio", { name: /Colour chair for kids/ }).click();
   await expect(page.getByTestId("chairs-colour").getByRole("radio")).toHaveCount(3); // white, pink, light blue
@@ -131,7 +135,7 @@ test("K4 the backdrop is a choice too: skipping it leaves it out of the total", 
   await page.goto("/builder");
   await page.locator(".bz-choice.bz-birthday").click();
   await next(page).click();
-  await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: /^Frozen$/ }) }).first().click();
+  await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: /^Ice Princess$/ }) }).first().click();
   await next(page).click();
   await expect(page.getByTestId("backdrop-intro")).toBeVisible();
   const withBackdrop = aed(await total(page).textContent());
@@ -153,7 +157,8 @@ test("K9 the top view of one place follows every colour and word at once, with n
   const place = page.getByTestId("table-place");
   const focus = place.locator("[data-place=focus]");
   await expect(focus).toBeVisible();
-  // The plates in iridescent foil to begin with (2026-10-29: a foil is a colour).
+  // A foil is a colour (2026-10-29).
+  await page.getByTestId("plates-colour").getByRole("radio", { name: "iridescent foil" }).click();
   await expect(focus.locator("[data-part$=-plates]")).toHaveAttribute("data-foil", "iridescent");
   // The plain cup: white inside, its outside in the chosen colour.
   await page.getByTestId("cups-colour").getByRole("radio", { name: "hot pink" }).click();

@@ -4,7 +4,7 @@
 // (plus "None" for the optional ones) from lib/studio/tableCatalog.ts, the
 // cloth's colour and the words on the placemats. Prices add to the party total.
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
-import { CHAIR_COLOURS, FOILS, FOIL_ITEMS, NONE, PLAIN_COLOURS, PLATE_SHAPES, drawColour, foilOf, swatchBackground, TABLE_SECTIONS, onFloor, optionPhoto, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
+import { CHAIR_COLOURS, FOILS, NONE, THEMED_ITEMS, isThemed, PLAIN_COLOURS, PLATE_SHAPES, drawColour, foilOf, swatchBackground, TABLE_SECTIONS, onFloor, optionPhoto, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
 import { TABLE_FONTS, fontCss, tableFont, type TableFont } from "@/lib/studio/tableFonts";
 import { COLOUR_OF, FONT_OF, nameColour, wordsColour, MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, WORDS_ITEMS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup, type WordsKey } from "@/lib/studio/tableSetup";
 import { GlyphDefs, glyph, scallop, type GlyphColours } from "@/components/studio/table/glyphs";
@@ -25,7 +25,7 @@ function OptionArt({ item, option, colours, themeId, words, colour, textColor, f
     const swatch = colour && !option.colouredPhotos ? colour : null;
     return <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className={option.colouredPhotos ? "photo cutout" : "photo"} src={photo} alt="" loading="lazy" />
+      <img className={option.colouredPhotos || option.cutout ? "photo cutout" : "photo"} src={photo} alt="" loading="lazy" />
       {swatch && <i className="swatch" style={{ background: swatch }} aria-hidden="true" />}
       {words && <span className={`words ${item.key} ${option.id}`} style={textColor ? wordsStyle(textColor, font) : undefined} aria-hidden="true">{item.key === "placemats" ? stacked(words) : words}</span>}
     </>;
@@ -127,13 +127,52 @@ export default function TableStep({ config, setTable }: {
     const words = key === "placemats" || key === "bottleLabel" ? table.words?.[key as WordsKey] : undefined;
     const fontField = key === "placemats" || key === "bottleLabel" ? FONT_OF[key] : undefined;
     const font = fontField ? tableFont(table[fontField]) : undefined;
-    // The plates and cups come in one kind, in a colour or a foil: no option cards (2026-10-29: "başlık olmasın").
-    const single = FOIL_ITEMS.includes(key) && it.options.length === 1 ? it.options[0] : undefined;
+    // The plates, cups and napkins: the plain kind in a colour (or a foil), no option card (2026-10-29: "başlık
+    // olmasın"), then the theme's own designs, if it has any (2026-10-30: "themed cup diye bir kategori").
+    const single = THEMED_ITEMS.includes(key) ? it.options.find((o) => o.id === "plain") : undefined;
+    const themedOpts = single ? it.options.filter((o) => isThemed(o) && (o.themes!.includes(theme.id) || table.choices[key] === o.id)) : [];
+    const plainChosen = table.choices[key] === "plain";
     const finishes = [...FOILS.map((f) => f.id), ...swatches];
+    const card = (o: TableOption) => (
+      <button key={o.id} type="button" role="radio" aria-checked={table.choices[key] === o.id} className={`bz-tb-option ${table.choices[key] === o.id ? "on" : ""}`} onClick={() => choose(key, o.id)}>
+        {table.choices[key] === o.id && <span className="tick">✓</span>}
+        <span className="art"><OptionArt item={it} option={o} colours={colours} themeId={theme.id} words={words} colour={colourOf(o)} textColor={textColor} font={font} /></span>
+        <b>{o.name}</b>
+        <small>{o.note}</small>
+        <em>{unitLabel(o)}</em>
+      </button>
+    );
+    if (single && field) {
+      // A colour picked: the plain kind again.
+      const pickPlain = (patch: Partial<TableSetup>) => set({ ...patch, choices: { ...table.choices, [key]: "plain" } });
+      const row = (label: string, value: string, options: string[], f: "plateColor" | "smallPlateColor" | "cupColor" | "napkinColor", testId: string) =>
+        swatchRow(label, plainChosen ? value : "", options, (hex) => pickPlain({ [f]: hex }), testId);
+      return (
+        <div key={key} className="bz-tb-item">
+          <h3>{it.label}</h3>
+          <p className={`bz-tb-single ${plainChosen ? "on" : ""}`} data-testid={`${key}-single`}><b>{single.name}</b> · {single.note} · <em>{unitLabel(single)}</em></p>
+          {key === "plates" ? <>
+            <div className="bz-tb-words-colour"><span>Big plate colour</span>{row("Big plate colour", table.plateColor, finishes, "plateColor", "plates-colour")}</div>
+            <div className="bz-tb-words-colour"><span>Small plate colour</span>{row("Small plate colour", table.smallPlateColor, finishes, "smallPlateColor", "small-plate-colour")}</div>
+            <div className="bz-tb-shapes" role="radiogroup" aria-label="Plate shape" data-testid="plate-shape">
+              {PLATE_SHAPES.map((p) => (
+                <button key={p.id} type="button" role="radio" aria-checked={plainChosen && table.plateShape === p.id} className={plainChosen && table.plateShape === p.id ? "on" : ""} onClick={() => pickPlain({ plateShape: p.id })}>{p.name}</button>
+              ))}
+            </div>
+          </> : row(`${it.label} colour`, table[field], key === "cups" ? finishes : swatches, key === "cups" ? "cupColor" : "napkinColor", `${key}-colour`)}
+          {themedOpts.length > 0 && (
+            <div className="bz-tb-themed" data-testid={`${key}-themed`}>
+              <span>Themed {it.label.toLowerCase()} · {theme.name}</span>
+              <div className="bz-tb-options" role="radiogroup" aria-label={`Themed ${it.label.toLowerCase()}`}>{themedOpts.map(card)}</div>
+            </div>
+          )}
+        </div>
+      );
+    }
     return (
       <div key={key} className="bz-tb-item">
         <h3>{it.label}</h3>
-        {single ? <p className="bz-tb-single" data-testid={`${key}-single`}><b>{single.name}</b> · {single.note} · <em>{unitLabel(single)}</em></p> : (
+        {(
         <div className="bz-tb-options" role="radiogroup" aria-label={it.label}>
           {it.optional && (
             <button type="button" role="radio" aria-checked={table.choices[key] === NONE} className={`bz-tb-option ${table.choices[key] === NONE ? "on" : ""}`} onClick={() => choose(key, NONE)}>
@@ -142,36 +181,11 @@ export default function TableStep({ config, setTable }: {
             </button>
           )}
           {/* A themed piece is offered in the themes it has been made for (the theme cutouts: Frozen first). */}
-          {it.options.filter((o) => !o.themes || o.themes.includes(theme.id) || table.choices[key] === o.id).map((o) => (
-            <button key={o.id} type="button" role="radio" aria-checked={table.choices[key] === o.id} className={`bz-tb-option ${table.choices[key] === o.id ? "on" : ""}`} onClick={() => choose(key, o.id)}>
-              {table.choices[key] === o.id && <span className="tick">✓</span>}
-              <span className="art"><OptionArt item={it} option={o} colours={colours} themeId={theme.id} words={words} colour={colourOf(o)} textColor={textColor} font={font} /></span>
-              <b>{o.name}</b>
-              <small>{o.note}</small>
-              <em>{unitLabel(o)}</em>
-            </button>
-          ))}
+          {it.options.filter((o) => !o.themes || o.themes.includes(theme.id) || table.choices[key] === o.id).map(card)}
         </div>
         )}
         {/* The chair comes in white, pink or light blue only. */}
-        {colourKey && table.choices[key] !== NONE && (key === "plates"
-          // The plain plates: the big one's colour, then the small one's (2026-10-29).
-          ? <div className="bz-tb-words-colour"><span>Big plate colour</span>{swatchRow("Big plate colour", table[colourKey], finishes, (hex) => set({ [colourKey]: hex }), `${key}-colour`)}</div>
-          : swatchRow(`${it.label} colour`, table[colourKey], key === "chairs" ? CHAIR_COLOURS : key === "cups" ? finishes : swatches, (hex) => set({ [colourKey]: hex }), `${key}-colour`))}
-        {key === "plates" && table.choices.plates === "plain" && (
-          // The small plate in its own colour (2026-10-29).
-          <div className="bz-tb-words-colour">
-            <span>Small plate colour</span>
-            {swatchRow("Small plate colour", table.smallPlateColor, finishes, (hex) => set({ smallPlateColor: hex }), "small-plate-colour")}
-          </div>
-        )}
-        {key === "plates" && table.choices.plates === "plain" && (
-          <div className="bz-tb-shapes" role="radiogroup" aria-label="Plate shape" data-testid="plate-shape">
-            {PLATE_SHAPES.map((p) => (
-              <button key={p.id} type="button" role="radio" aria-checked={table.plateShape === p.id} className={table.plateShape === p.id ? "on" : ""} onClick={() => set({ plateShape: p.id })}>{p.name}</button>
-            ))}
-          </div>
-        )}
+        {colourKey && table.choices[key] !== NONE && swatchRow(`${it.label} colour`, table[colourKey], key === "chairs" ? CHAIR_COLOURS : swatches, (hex) => set({ [colourKey]: hex }), `${key}-colour`)}
         {wordsItem && table.choices[key] !== NONE && (
           <label className="bz-tb-words">
             <span>{wordsItem.label} <small>(optional)</small></span>

@@ -2,7 +2,7 @@
 // (BuilderConfig.table), chosen in the Decor step after the backdrop, item by
 // item from lib/studio/tableCatalog.ts. Pure data and sums — no UI, no config
 // import (lib/config.ts uses the price lines).
-import { CHAIR_COLOURS, FOIL_ITEMS, NONE, PLATE_SHAPES, TABLE_ITEMS, foilOf, onFloor, tableOption, type PlateShape, type TableItemKey } from "./tableCatalog";
+import { CHAIR_COLOURS, FOIL_ITEMS, NONE, PLATE_SHAPES, TABLE_ITEMS, foilOf, onFloor, pastelOf, tableOption, type PlateShape, type TableItemKey } from "./tableCatalog";
 import { DEFAULT_TABLE_FONT, TABLE_FONTS } from "./tableFonts";
 
 export interface TableSetup {
@@ -74,10 +74,12 @@ export const MAX_KIDS = 40;
 export const clampKids = (n: number) => Math.max(MIN_KIDS, Math.min(MAX_KIDS, Math.round(Number.isFinite(n) ? n : MIN_KIDS)));
 
 const DEFAULT_CHOICES: Record<TableItemKey, string> = {
-  table: "standard", chairs: "white_kids",
+  // 2026-10-30 (owner): the standard table, the colour chair in white, a plain
+  // white napkin, plain wooden cutlery and the napkin band in the theme's colour.
+  table: "standard", chairs: "blue_kids",
   // The owner's tables show bare unless a cloth is chosen (2026-10-28).
-  tablecloth: NONE, napkins: "printed",
-  placemats: "watercolour", plates: "plain", cups: "plain", cutlery: "wooden", cutleryHolder: NONE,
+  tablecloth: NONE, napkins: "plain",
+  placemats: "watercolour", plates: "plain", cups: "plain", cutlery: "wooden", cutleryHolder: "band",
   centrepiece: "balloons", bottleLabel: NONE, partyHats: "cone",
   // Not offered at the kids' table (the grown-ups' table will have them).
   runner: NONE, chargers: NONE, chairDecor: NONE, nameCards: NONE,
@@ -115,8 +117,8 @@ export function itemColour(t: TableSetup, key: TableItemKey): string | undefined
   const field = COLOUR_OF[key], item = TABLE_ITEMS.find((i) => i.key === key);
   return field && (item?.coloured || tableOption(key, t.choices[key])?.coloured) ? t[field] : undefined;
 }
-/** The kids' chair's first colour: the owner's own blue chair. */
-export const DEFAULT_CHAIR_COLOR = "#38BDF8";
+/** The kids' chair's first colour: white (2026-10-30; the owner's own blue chair before). */
+export const DEFAULT_CHAIR_COLOR = "#FFFFFF";
 
 /**
  * The printed words' colour: the customer's, or the theme's accent (chosen to
@@ -127,6 +129,12 @@ export const wordsColour = (t: Pick<TableSetup, "textColor">, theme: { accent: s
 /** The name on the bands: its own colour, or the words colour. */
 export const nameColour = (t: Pick<TableSetup, "textColor" | "nameColor">, theme: { accent: string }) => t.nameColor ?? wordsColour(t, theme);
 
+/** The theme's colours other than white, its accent after them. */
+const themeTones = (theme: { balloonColors: string[]; accent: string }) => {
+  const tones = theme.balloonColors.filter((c) => !/^#F[0-9A-F]F[0-9A-F]F[0-9A-F]$/i.test(c));
+  return [tones[0] ?? theme.accent, tones[1] ?? tones[0] ?? theme.accent];
+};
+
 /** A new table, in the theme's colours. */
 export function defaultTableSetup(theme: { balloonColors: string[]; accent: string }): TableSetup {
   return {
@@ -135,17 +143,17 @@ export function defaultTableSetup(theme: { balloonColors: string[]; accent: stri
     choices: { ...DEFAULT_CHOICES },
     clothColor: "#FFFFFF",
     runnerColor: theme.balloonColors[1] ?? theme.accent,
-    napkinColor: theme.balloonColors[2] ?? theme.accent,
+    napkinColor: "#FFFFFF",
     cupColor: theme.balloonColors[2] ?? theme.accent,
     holderColor: theme.balloonColors[1] ?? theme.accent,
     chairColor: DEFAULT_CHAIR_COLOR,
     placematColor: theme.balloonColors[1] ?? theme.accent,
     labelColor: theme.balloonColors[1] ?? theme.accent,
     plateShape: "round",
-    // The owner's first look: iridescent foil plates (2026-10-29: a foil is a colour now).
-    plateColor: "iridescent",
-    smallPlateColor: "iridescent",
-    hatColor: theme.balloonColors[2] ?? theme.accent,
+    // Pastels of the theme's colours, the big plate and the small one (2026-10-30).
+    plateColor: pastelOf(themeTones(theme)[0]),
+    smallPlateColor: pastelOf(themeTones(theme)[1]),
+    hatColor: themeTones(theme)[0],
     placematFont: DEFAULT_TABLE_FONT,
     labelFont: DEFAULT_TABLE_FONT,
   };
@@ -218,8 +226,8 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     plateColor: plateFoil ?? finish(r.plateColor, base.plateColor),
     cupColor: cupFoil ?? finish(r.cupColor, base.cupColor),
     holderColor: colour(r.holderColor, base.holderColor),
-    // The chair's pictures come only in its own colours.
-    chairColor: CHAIR_COLOURS.find((c) => typeof r.chairColor === "string" && c === r.chairColor.toUpperCase()) ?? base.chairColor,
+    // The chair's pictures come only in its own colours; the white chair of before is the colour chair in white.
+    chairColor: (stored.chairs === "blue_kids" && CHAIR_COLOURS.find((c) => typeof r.chairColor === "string" && c === r.chairColor.toUpperCase())) || base.chairColor,
     placematColor: colour(r.placematColor, base.placematColor),
     labelColor: colour(r.labelColor, base.labelColor),
     plateShape: PLATE_SHAPES.find((p) => p.id === r.plateShape)?.id ?? base.plateShape,

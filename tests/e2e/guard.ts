@@ -224,7 +224,7 @@ export const next = (page: Page) => page.locator(".bz-footer button.bz-next"); /
 export const total = (page: Page) => page.locator(".bz-total strong");
 
 /** Event → Theme → Decor (Backdrop tab), with the given theme and setup. */
-export async function openDecor(page: Page, theme = "Frozen", setup?: string) {
+export async function openDecor(page: Page, theme = "Ice Princess", setup?: string) {
   await page.goto("/builder");
   await page.locator(".bz-choice.bz-birthday").click();
   await next(page).click();

@@ -5,7 +5,8 @@
 // node scripts/table/top-render.mjs <projectDir> <outDir> [name,name…]
 import fs from "node:fs"; import path from "node:path";
 import sharp from "sharp";
-const [projectDir, out, only] = process.argv.slice(2);
+const [dir, out, only] = process.argv.slice(2);
+const projectDir = path.resolve(dir);
 const env = fs.readFileSync(path.join(projectDir, ".env.local"), "utf8");
 const key = (env.match(/^FAL_KEY\s*=\s*"?([^"\r\n]+)"?/m) || [])[1];
 const photo = async (f) => `data:image/jpeg;base64,${(await sharp(path.join(projectDir, "public/design/table", f)).resize(768, 768, { fit: "inside" }).flatten({ background: "#fff" }).jpeg({ quality: 88 }).toBuffer()).toString("base64")}`;
@@ -33,8 +34,9 @@ const P = [
   ["chair-blue_kids", "chairs-blue_kids.webp", "The children's chair of image 2, but in plain matte white, seen from directly above: its slatted back at the bottom of the picture, the front edge of its seat at the top. Only the chair."],
   ["chair-bow_kids", "chairs-bow_kids.webp", "The pink children's chair with the bow-shaped back of image 2, seen from directly above: its back at the bottom of the picture, the front edge of its round seat at the top. Only the chair."],
   ["cushion", null, "One soft square white floor cushion for a child, about 40 cm across, with gently rounded corners and a soft linen cover, lying flat."],
-  // 2026-10-29 (owner): "themed centerpiece, standing themed cutouts … aralarda" — theme shapes only, never characters.
-  ["centrepiece-cutouts-frozen", "placemats/frozen/pattern.webp", "A little group of three small standing party cutouts for a children's table, in the wintry snowflake theme of image 2: thick white card shapes printed in soft icy blue, lilac and white with a touch of silver glitter — a big snowflake in the middle, a small ice-castle silhouette on one side and a star on the other — each standing upright on a small clear acrylic base, close together. Seen from above and a little in front, about 45 degrees down, so their printed faces show. No characters, no people, no faces, no words, no logos."],
+  // 2026-10-29 (owner): "themed centerpiece, standing themed cutouts … aralarda" — theme shapes only, never characters;
+  // 2026-10-30: lying flat, with no stands ("don't put stand of them in the design").
+  ["centrepiece-cutouts-frozen", "placemats/frozen/pattern.webp", "A little group of three small party cutouts for a children's table, in the wintry snowflake theme of image 2: thick white card shapes printed in soft icy blue, lilac and white with a touch of silver glitter — a big snowflake in the middle, a small ice-castle silhouette on one side and a star on the other — lying flat side by side, close together, printed faces up — no stands, no bases, no sticks. No characters, no people, no faces, no words, no logos."],
 ];
 // The floor round the table (2026-10-29, the owner: "maybe we can do grass the floor"): a photo, not a cut-out piece.
 const FLOORS = {

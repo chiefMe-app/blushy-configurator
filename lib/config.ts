@@ -58,7 +58,13 @@ export type ThemeId =
   | "blush_garden"
   | "luxury_neutral"
   | "minecraft"
-  | "star_wars";
+  | "star_wars"
+  | "butterfly_fairy"
+  | "vehicles"
+  | "under_the_sea"
+  | "circus"
+  | "ballerina"
+  | "pirates";
 
 export interface Theme {
   id: ThemeId;
@@ -120,30 +126,37 @@ export function backdropSwatchesForTheme(theme: Pick<Theme, "backdropColors">): 
 }
 
 export const THEMES: Theme[] = [
-  { id: "frozen", name: "Frozen", emoji: "--", desc: "Icy satin, silver frost", backdropColors: ["#E8F4FD", "#B3D9F2", "#FFFFFF"], balloonColors: ["#FFFFFF", "#BAE6FD", "#DCD7F2", "#C7C9C7", "#F0F4F8"], priceModifier: 50, accent: "#4A90D9" },
+  { id: "frozen", name: "Ice Princess", emoji: "--", desc: "Icy satin, silver frost", backdropColors: ["#E8F4FD", "#B3D9F2", "#FFFFFF"], balloonColors: ["#FFFFFF", "#BAE6FD", "#DCD7F2", "#C7C9C7", "#F0F4F8"], priceModifier: 50, accent: "#4A90D9" },
   { id: "unicorn", name: "Unicorn", emoji: "-", desc: "Pearlescent pastels, soft iridescence", backdropColors: ["#F9D5DF", "#E8C8F0", "#FFFFFF"], balloonColors: ["#F8BBD0", "#DDD6FE", "#FEF08A", "#BBF7D0", "#FFFFFF"], priceModifier: 50, accent: "#C77DD6" },
   { id: "dinosaur", name: "Dinosaur", emoji: "-", desc: "Sage botanicals, muted terracotta", backdropColors: ["#E8F5E9", "#C8DFC8", "#F5F0E8"], balloonColors: ["#15803D", "#84CC16", "#C9A96E", "#D4A017", "#F5EDD6"], priceModifier: 30, accent: "#4CAF82" },
   { id: "safari", name: "Safari", emoji: "-", desc: "Warm linen, sun-washed neutrals", backdropColors: ["#FFF8E1", "#FFE0B2", "#F5F0E8"], balloonColors: ["#C9A96E", "#F5EDD6", "#FFC200", "#7B3F00", "#6EE7B7"], priceModifier: 30, accent: "#B5762A" },
   { id: "princess", name: "Princess", emoji: "-", desc: "Blush satin, pearl & soft gold", backdropColors: ["#FCE4EC", "#FFF9C4", "#FFFFFF"], balloonColors: ["#F8BBD0", "#FBCFE8", "#FFFFFF", "#FDE68A", "#E9D5FF"], priceModifier: 50, accent: "#E84F8B" },
   { id: "superhero", name: "Superhero", emoji: "-", desc: "Bold editorial color, graphic energy", backdropColors: ["#E3F2FD", "#FFEBEE", "#F3E5F5"], balloonColors: ["#EF4444", "#2563EB", "#FFD700", "#1F2937", "#C7C9C7"], priceModifier: 40, accent: "#1565C0" },
-  { id: "barbie", name: "Barbie", emoji: "-", desc: "Glam pink, glossy studio shine", backdropColors: ["#FF69B4", "#FFB6C1", "#FFFFFF"], balloonColors: ["#FF1DCE", "#F9A8D4", "#F8BBD0", "#FFFFFF", "#D8899B"], priceModifier: 60, accent: "#FF1493" },
-  { id: "bluey", name: "Bluey", emoji: "-", desc: "Soft blues, warm honey accents", backdropColors: ["#E3F2FD", "#BBDEFB", "#FFFFFF"], balloonColors: ["#3B82F6", "#7DD3FC", "#BFDBFE", "#FFC200", "#F5EDD6"], priceModifier: 40, accent: "#2E86DE" },
-  { id: "pokemon", name: "Pokemon", emoji: "-", desc: "Sunny gold, crimson accents", backdropColors: ["#FFFDE7", "#FFF9C4", "#FFFFFF"], balloonColors: ["#FFD700", "#EF4444", "#FFFFFF", "#1F2937", "#FFC200"], priceModifier: 50, accent: "#E0382B" },
-  { id: "stitch", name: "Stitch", emoji: "-", desc: "Ocean blues, tropical calm", backdropColors: ["#E3F2FD", "#B3E5FC", "#E8F5E9"], balloonColors: ["#3B82F6", "#0EA5E9", "#7DD3FC", "#1E3A8A", "#F8BBD0"], priceModifier: 40, accent: "#2196D6" },
+  { id: "barbie", name: "Pretty in Pink", emoji: "-", desc: "Glam pink, glossy studio shine", backdropColors: ["#FF69B4", "#FFB6C1", "#FFFFFF"], balloonColors: ["#FF1DCE", "#F9A8D4", "#F8BBD0", "#FFFFFF", "#D8899B"], priceModifier: 60, accent: "#FF1493" },
+  { id: "bluey", name: "Blue Puppy Fun", emoji: "-", desc: "Soft blues, warm honey accents", backdropColors: ["#E3F2FD", "#BBDEFB", "#FFFFFF"], balloonColors: ["#3B82F6", "#7DD3FC", "#BFDBFE", "#FFC200", "#F5EDD6"], priceModifier: 40, accent: "#2E86DE" },
+  { id: "pokemon", name: "Monster Catcher", emoji: "-", desc: "Sunny gold, crimson accents", backdropColors: ["#FFFDE7", "#FFF9C4", "#FFFFFF"], balloonColors: ["#FFD700", "#EF4444", "#FFFFFF", "#1F2937", "#FFC200"], priceModifier: 50, accent: "#E0382B" },
+  { id: "stitch", name: "Aloha Alien", emoji: "-", desc: "Ocean blues, tropical calm", backdropColors: ["#E3F2FD", "#B3E5FC", "#E8F5E9"], balloonColors: ["#3B82F6", "#0EA5E9", "#7DD3FC", "#1E3A8A", "#F8BBD0"], priceModifier: 40, accent: "#2196D6" },
   { id: "mermaid", name: "Mermaid", emoji: "----", desc: "Teal pearl, underwater light", backdropColors: ["#E0F7FA", "#B2EBF2", "#F3E5F5"], balloonColors: ["#00CED1", "#0F766E", "#A7F3D0", "#C084FC", "#FFFFFF"], priceModifier: 50, accent: "#1FB6C4" },
   { id: "space", name: "Space", emoji: "-", desc: "Deep navy, starlit metallics", backdropColors: ["#1A237E", "#283593", "#311B92"], balloonColors: ["#1E3A8A", "#7C3AED", "#1F2937", "#C7C9C7", "#FDE68A"], priceModifier: 60, accent: "#3949AB" },
   { id: "football", name: "Football", emoji: "-", desc: "Fresh pitch green, crisp white", backdropColors: ["#E8F5E9", "#FFFFFF", "#F5F5F5"], balloonColors: ["#22C55E", "#16A34A", "#FFFFFF", "#1F2937", "#FDE68A"], priceModifier: 30, accent: "#2E9E4F" },
-  { id: "lego", name: "Lego", emoji: "-", desc: "Primary color blocks, clean geometry", backdropColors: ["#FFFFFF", "#EF5350", "#1565C0"], balloonColors: ["#EF4444", "#FFD700", "#2563EB", "#22C55E", "#FF8C00"], priceModifier: 40, accent: "#1565C0" },
+  { id: "lego", name: "Building Bricks", emoji: "-", desc: "Primary color blocks, clean geometry", backdropColors: ["#FFFFFF", "#EF5350", "#1565C0"], balloonColors: ["#EF4444", "#FFD700", "#2563EB", "#22C55E", "#FF8C00"], priceModifier: 40, accent: "#1565C0" },
   { id: "kpop", name: "K-Pop", emoji: "-", desc: "Neon stage glow, chrome sparkle", backdropColors: ["#F3E5F5", "#E8EAF6", "#FCE4EC"], balloonColors: ["#A21CAF", "#A855F7", "#FF10F0", "#1F2937", "#C7C9C7"], priceModifier: 70, accent: "#B14FD8" },
-  { id: "encanto", name: "Encanto", emoji: "-", desc: "Vibrant blooms, golden warmth", backdropColors: ["#FFF8E1", "#FCE4EC", "#E8F5E9"], balloonColors: ["#A21CAF", "#FF1DCE", "#FFC200", "#00CED1", "#15803D"], priceModifier: 50, accent: "#E0561E" },
-  { id: "cocomelon", name: "Cocomelon", emoji: "-", desc: "Fresh melon tones, soft greens", backdropColors: ["#E8F5E9", "#E3F2FD", "#FFFFFF"], balloonColors: ["#22C55E", "#84CC16", "#FF6B6B", "#FEF08A", "#FFFFFF"], priceModifier: 30, accent: "#3AA655" },
+  { id: "encanto", name: "Magical Casita", emoji: "-", desc: "Vibrant blooms, golden warmth", backdropColors: ["#FFF8E1", "#FCE4EC", "#E8F5E9"], balloonColors: ["#A21CAF", "#FF1DCE", "#FFC200", "#00CED1", "#15803D"], priceModifier: 50, accent: "#E0561E" },
+  { id: "cocomelon", name: "Nursery Rhymes", emoji: "-", desc: "Fresh melon tones, soft greens", backdropColors: ["#E8F5E9", "#E3F2FD", "#FFFFFF"], balloonColors: ["#22C55E", "#84CC16", "#FF6B6B", "#FEF08A", "#FFFFFF"], priceModifier: 30, accent: "#3AA655" },
   { id: "teddy_bear", name: "Teddy Bear", emoji: "-", desc: "Cream boucle, cocoa warmth", backdropColors: ["#F5EDE0", "#F2C4CE", "#EDE0D4"], balloonColors: ["#C9A96E", "#6F4E37", "#F5EDD6", "#FFF8E7", "#FFD1A4"], priceModifier: 30, accent: "#C08552" },
   { id: "pineapple_tropical", name: "Tropical", emoji: "-", desc: "Golden light, palm greens", backdropColors: ["#FFF9C4", "#FCE4EC", "#FFFFFF"], balloonColors: ["#FFC200", "#22C55E", "#FF6B6B", "#00CED1", "#FFFFFF"], priceModifier: 40, accent: "#E0561E" },
   { id: "blush_garden", name: "Blush Garden", emoji: "-", desc: "Blush florals, romantic softness", backdropColors: ["#FCE4EC", "#F8BBD0", "#FFFFFF"], balloonColors: ["#F8BBD0", "#FDA4AF", "#FBCFE8", "#FFFFFF", "#F5E6C8"], priceModifier: 0, accent: "#E5739A" },
   // 2026-10-23: added for the Boys list. Balloon colours are the Sempertex
   // shades named in themeCatalog (sempertexPaletteIds), in the same order.
-  { id: "minecraft", name: "Minecraft", emoji: "-", desc: "Pixel greens, earthy blocks", backdropColors: ["#FFFFFF", "#E8F5E9", "#DCE5D8"], balloonColors: ["#22C55E", "#15803D", "#84CC16", "#6F4E37", "#1F2937"], priceModifier: 40, accent: "#2E9E4F" },
-  { id: "star_wars", name: "Star Wars", emoji: "-", desc: "Galactic black, chrome, saber glow", backdropColors: ["#FFFFFF", "#1F2937", "#D1D5DB"], balloonColors: ["#1F2937", "#C7C9C7", "#FFFFFF", "#EF4444", "#3B82F6"], priceModifier: 40, accent: "#2563EB" },
+  { id: "minecraft", name: "Pixel Blocks", emoji: "-", desc: "Pixel greens, earthy blocks", backdropColors: ["#FFFFFF", "#E8F5E9", "#DCE5D8"], balloonColors: ["#22C55E", "#15803D", "#84CC16", "#6F4E37", "#1F2937"], priceModifier: 40, accent: "#2E9E4F" },
+  { id: "star_wars", name: "Galaxy Knights", emoji: "-", desc: "Galactic black, chrome, saber glow", backdropColors: ["#FFFFFF", "#1F2937", "#D1D5DB"], balloonColors: ["#1F2937", "#C7C9C7", "#FFFFFF", "#EF4444", "#3B82F6"], priceModifier: 40, accent: "#2563EB" },
+  // 2026-10-30 (owner): new themes from the party shops' best-sellers.
+  { id: "butterfly_fairy", name: "Butterfly & Fairy", emoji: "-", desc: "Pastel wings, flower-garden whimsy", backdropColors: ["#FCE4EC", "#F3E5F5", "#FFFFFF"], balloonColors: ["#F8BBD0", "#DDD6FE", "#A7F3D0", "#FEF08A", "#FFFFFF"], priceModifier: 40, accent: "#C26DBC" },
+  { id: "vehicles", name: "Vehicles", emoji: "-", desc: "Racing red, sunny yellow, road-trip fun", backdropColors: ["#FFFFFF", "#FFF8E1", "#E3F2FD"], balloonColors: ["#EF4444", "#FFC200", "#2563EB", "#1F2937", "#FFFFFF"], priceModifier: 40, accent: "#D7322B" },
+  { id: "under_the_sea", name: "Under the Sea", emoji: "-", desc: "Ocean blues, sandy shores", backdropColors: ["#E0F7FA", "#E3F2FD", "#FFFFFF"], balloonColors: ["#1E3A8A", "#0EA5E9", "#00CED1", "#F5EDD6", "#FFFFFF"], priceModifier: 40, accent: "#0E7FB0" },
+  { id: "circus", name: "Circus & Carnival", emoji: "-", desc: "Big-top stripes, popcorn brights", backdropColors: ["#FFFFFF", "#FFF8E1", "#FFEBEE"], balloonColors: ["#EF4444", "#FFFFFF", "#FFC200", "#00CED1", "#1E3A8A"], priceModifier: 40, accent: "#D63A3A" },
+  { id: "ballerina", name: "Ballerina & Swan", emoji: "-", desc: "Tutu blush, pearl and champagne", backdropColors: ["#FCE4EC", "#FFFFFF", "#F5F0EE"], balloonColors: ["#F8BBD0", "#FBCFE8", "#F5F0EE", "#F5E6C8", "#E9D5FF"], priceModifier: 40, accent: "#D9709A" },
+  { id: "pirates", name: "Pirates", emoji: "-", desc: "Navy seas, treasure gold, sailcloth", backdropColors: ["#F5EDD6", "#FFFFFF", "#E3F2FD"], balloonColors: ["#1E3A8A", "#EF4444", "#1F2937", "#FDE68A", "#F5EDD6"], priceModifier: 40, accent: "#9B2C2C" },
   { id: "luxury_neutral", name: "Luxury Neutral", emoji: "-", desc: "Champagne satin, gold foil", backdropColors: ["#F5F0E8", "#EDE0D0", "#FFFFFF"], balloonColors: ["#F5E6C8", "#FEF3C7", "#F5EDD6", "#FDE68A", "#C9A96E"], priceModifier: 80, accent: "#B08D57" },
 ];
 
@@ -599,6 +612,7 @@ export const THEME_TEXT_COLOR: Record<string, TextColor> = {
   pokemon: "gold", stitch: "silver", mermaid: "rose_gold", space: "silver",
   football: "gold", lego: "gold", kpop: "silver", encanto: "gold", cocomelon: "gold",
   minecraft: "gold", star_wars: "silver",
+  butterfly_fairy: "rose_gold", vehicles: "silver", under_the_sea: "silver", circus: "gold", ballerina: "rose_gold", pirates: "gold",
 };
 export function themeTextColor(themeId: string | undefined): TextColor {
   return (themeId && THEME_TEXT_COLOR[themeId]) || DEFAULT_TEXT_COLOR;

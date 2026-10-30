@@ -6,7 +6,7 @@
 // drawings. Every choice is also described in words. Shared by the API route
 // (the pictures and the prompt) and the builder (is the render still current?).
 import { hexToColorName } from "@/lib/generatePrompt";
-import { NONE, PLATE_SHAPES, foilOf, onFloor, optionPhoto, plainColour, tableOption, type TableItemKey } from "./tableCatalog";
+import { NONE, PLATE_SHAPES, foilOf, isThemed, onFloor, optionPhoto, plainColour, tableOption, type TableItemKey } from "./tableCatalog";
 import type { TableScene, TableSetup } from "./tableSetup";
 import type { TableView } from "./tableCloseGuide";
 import { WORDS_ITEMS, clampKids, itemColour, nameColour, wordsColour, wordsOn } from "./tableSetup";
@@ -33,6 +33,7 @@ const MOTIF: Record<string, string> = {
   football: "soccer balls and stars", lego: "colourful building blocks and dots", kpop: "hearts, stars and music notes", encanto: "flowers and butterflies",
   cocomelon: "watermelons and little fruits", teddy_bear: "hearts and paw prints", pineapple_tropical: "pineapples and palm leaves", blush_garden: "little flowers",
   minecraft: "pixel squares", star_wars: "stars and planets", luxury_neutral: "gold dots and stars",
+  butterfly_fairy: "butterflies, daisies and little flowers", vehicles: "race cars, fire trucks, diggers and trains", under_the_sea: "friendly sharks, whales, fish and bubbles", circus: "circus tents, stars and popcorn", ballerina: "ballet slippers, swans and bows", pirates: "pirate ships, treasure chests and anchors",
 };
 export const motifOf = (themeId: string) => MOTIF[themeId] ?? "confetti dots and stars";
 /** A colour in the prompt's words: the plain colours by their own names. */
@@ -117,7 +118,9 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
   const c = t.choices;
   const floor = onFloor(c);
   const round = c.table === "round" || c.table === "flower";
-  const word = (k: TableItemKey) => (c[k] === NONE || (floor && k === "chairs") ? "" : (WORDS[k]?.[c[k]] ?? "")
+  // A themed cup, plate or napkin is its own look (2026-10-30).
+  const themed = (k: TableItemKey) => { const o = tableOption(k, c[k]); return isThemed(o) ? (k === "cups" ? `a paper cup ${o!.look} (no straw)` : k === "plates" ? `disposable paper plates ${o!.look}` : `a paper napkin ${o!.look}`) : undefined; };
+  const word = (k: TableItemKey) => (c[k] === NONE || (floor && k === "chairs") ? "" : (themed(k) ?? WORDS[k]?.[c[k]] ?? "")
     .replace("{cloth}", colourWords(t.clothColor)).replace("{napkin}", colourWords(t.napkinColor)).replace("{motif}", motifOf(theme.id))
     .replace("{plate}", colourWords(t.plateColor)).replace("{cup}", finishWords(t.cupColor)).replace("{holder}", colourWords(t.holderColor)).replace("{chair}", colourWords(t.chairColor))
     .replace("{placemat}", colourWords(t.placematColor)).replace("{label}", colourWords(t.labelColor)).replace("{hat}", colourWords(t.hatColor)).replace("{plateShape}", PLATE_SHAPES.find((p) => p.id === t.plateShape)?.words ?? "round"));
@@ -141,7 +144,8 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
   // 2026-10-28 (owner): a big plate with a small one on it (2026-10-29: nothing in the small one).
   const themedMats = !!tableOption("placemats", c.placemats)?.themed;
   // The plain ones each in their colour (2026-10-29: the small plate's own colour).
-  const pair = c.plates === "plain"
+  const pair = isThemed(tableOption("plates", c.plates)) ? "a big plate with a smaller plate of the same design sitting in it"
+    : c.plates === "plain"
     ? (t.smallPlateColor.toUpperCase() === t.plateColor.toUpperCase() ? `a big plate with a smaller plate of the same kind sitting in it, both ${finishWords(t.plateColor)}` : `a big ${finishWords(t.plateColor)} plate with a smaller ${finishWords(t.smallPlateColor)} plate of the same shape sitting in it, a plate in its own right with its own rim`)
     : "a big plate with a smaller plate of the same kind sitting in it";
   if (word("plates")) seat.push(`in the middle of the placemat, two ${word("plates")}${exactly("plates")}: ${pair}, exactly as image 1 shows — one big plate and one small plate${top ? "" : " on each placemat"}, both empty, nothing on them and nothing written on them, and nothing lying beside the plates: to their right is bare placemat`);

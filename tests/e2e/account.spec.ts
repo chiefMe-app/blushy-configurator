@@ -20,7 +20,7 @@ async function signInByEmail(page: Page) {
 
 /** A design saved to the account: Save, sign in, back in the Builder. */
 async function saveSignedIn(page: Page) {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await page.getByTestId("save-design").click();
   await signInByEmail(page);
   await expect(page).toHaveURL(/\/builder$/);
@@ -46,7 +46,7 @@ test("A2 a saved design is in My designs", async ({ page, guard }) => {
   await page.goto("/my-designs");
   const cards = page.getByTestId("saved-design");
   await expect(cards).toHaveCount(1);
-  await expect(cards.first()).toContainText("Frozen · Single Round");
+  await expect(cards.first()).toContainText("Ice Princess · Single Round");
   expect(guard.supabase.items.map((i) => i.owner_id)).toEqual([FAKE_ACCOUNT.id]);
   await expect(page.getByRole("button", { name: /^Account:/ })).toHaveText("A");
   await expect(cards.first().getByTestId("sketch-lettering").locator("path").first()).toBeAttached(); // the sketch's lettering has come
@@ -94,7 +94,7 @@ test("A5 My designs signed out asks to sign in, and signing in there comes back 
 });
 
 test("A6 signing in from the Builder's top bar comes back to the Builder, saving nothing", async ({ page, guard }) => {
-  await openDecor(page, "Frozen", "Single Round");
+  await openDecor(page, "Ice Princess", "Single Round");
   await page.getByRole("banner").getByRole("button", { name: "Sign in" }).click();
   await signInByEmail(page);
   await expect(page).toHaveURL(/\/builder$/);

@@ -33,7 +33,7 @@ const cases: { fixture: string; setup: string; steps?: (page: import("@playwrigh
 for (const c of cases) {
   test(`${c.fixture}: UI sends the fixture's render body`, async ({ page, guard }) => {
     await signIn(page); // renders need an account
-    await openDecor(page, "Frozen", c.setup);
+    await openDecor(page, "Ice Princess", c.setup);
     if (c.steps) await c.steps(page);
     const sent = comparableBody(await captureRenderBody(page, guard));
     const expected = comparableBody(renderBody(withBuilderLettering(fixtureById(c.fixture).config)) as Record<string, unknown>);

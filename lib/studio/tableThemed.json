@@ -1,0 +1,61 @@
+{
+  "_": "Themed cups, plates and napkins (2026-10-30, the owner: 'themed cup diye bir kategori', the same for plates and napkins). Each is drawn from words, never from a shop's photo, with no characters, logos or words; 'look' is how it is described to the render and the AI picture. scripts/table/themed-render.mjs makes the pieces; lib/studio/tableCatalog.ts offers them in their themes.",
+  "prices": { "cups": 5, "plates": 6, "napkins": 3 },
+  "items": [
+    { "item": "cups", "theme": "football", "id": "football_ball", "name": "Football cups", "look": "printed all over as a black-and-white soccer ball" },
+    { "item": "cups", "theme": "football", "id": "football_pitch", "name": "Pitch cups", "look": "printed in fresh green with white pitch lines and a little gold trophy" },
+    { "item": "cups", "theme": "football", "id": "football_stars", "name": "Star kick cups", "look": "printed in bright green with little white footballs and stars" },
+    { "item": "plates", "theme": "football", "id": "football_ball", "name": "Football plates", "look": "printed as a black-and-white soccer ball" },
+    { "item": "plates", "theme": "football", "id": "football_pitch", "name": "Pitch plates", "look": "printed in green with white football-pitch lines" },
+    { "item": "napkins", "theme": "football", "id": "football_ball", "name": "Football napkins", "look": "green, printed with little white footballs" },
+    { "item": "napkins", "theme": "football", "id": "football_check", "name": "Hexagon napkins", "look": "printed with a black-and-white soccer-ball hexagon pattern" },
+
+    { "item": "cups", "theme": "dinosaur", "id": "dino_trex", "name": "T-Rex cups", "look": "printed in sage green with a friendly cartoon T-Rex dinosaur, side on, with a long snout and little white teeth, clearly a dinosaur" },
+    { "item": "cups", "theme": "dinosaur", "id": "dino_prints", "name": "Footprint cups", "look": "printed in cream with green dinosaur footprints and leaves" },
+    { "item": "cups", "theme": "dinosaur", "id": "dino_spikes", "name": "Dino spike cups", "look": "printed in green with orange dinosaur back spikes rising round it" },
+    { "item": "plates", "theme": "dinosaur", "id": "dino_face", "name": "Dino face plates", "look": "printed with the head of a friendly green cartoon T-Rex dinosaur, side on, with a long snout, little white teeth and small arms, clearly a dinosaur" },
+    { "item": "plates", "theme": "dinosaur", "id": "dino_pattern", "name": "Little dinos plates", "look": "printed with a pattern of little dinosaurs, palm leaves and volcanoes on cream" },
+    { "item": "napkins", "theme": "dinosaur", "id": "dino_prints", "name": "Footprint napkins", "look": "sage green, printed with dinosaur footprints" },
+    { "item": "napkins", "theme": "dinosaur", "id": "dino_pattern", "name": "Little dinos napkins", "look": "cream, printed with little dinosaurs and volcanoes" },
+
+    { "item": "cups", "theme": "mermaid", "id": "mermaid_scales", "name": "Mermaid scale cups", "look": "printed with shimmering teal and lilac mermaid scales" },
+    { "item": "cups", "theme": "mermaid", "id": "mermaid_shells", "name": "Seashell cups", "look": "pastel pink, printed with seashells, starfish and pearls" },
+    { "item": "cups", "theme": "mermaid", "id": "mermaid_tail", "name": "Mermaid tail cups", "look": "lilac, printed with a turquoise mermaid tail fin wrapping round it" },
+    { "item": "plates", "theme": "mermaid", "id": "mermaid_shell", "name": "Shell plates", "look": "shaped like a scallop seashell, in shimmering iridescent pink" },
+    { "item": "plates", "theme": "mermaid", "id": "mermaid_scales", "name": "Mermaid scale plates", "look": "printed with teal and lilac mermaid scales" },
+    { "item": "napkins", "theme": "mermaid", "id": "mermaid_scales", "name": "Mermaid scale napkins", "look": "printed with teal and lilac mermaid scales" },
+    { "item": "napkins", "theme": "mermaid", "id": "mermaid_shells", "name": "Seashell napkins", "look": "pastel pink, printed with seashells and pearls" },
+
+    { "item": "cups", "theme": "unicorn", "id": "unicorn_horn", "name": "Unicorn horn cups", "look": "white, printed with a golden unicorn horn, little ears and a flowing pastel mane" },
+    { "item": "cups", "theme": "unicorn", "id": "unicorn_rainbow", "name": "Rainbow cups", "look": "printed with soft pastel rainbow stripes and tiny gold stars" },
+    { "item": "cups", "theme": "unicorn", "id": "unicorn_clouds", "name": "Cloud cups", "look": "pale pink, printed with little white unicorns and clouds" },
+    { "item": "plates", "theme": "unicorn", "id": "unicorn_face", "name": "Unicorn plates", "look": "white, printed with a golden unicorn horn, closed eyes and a flowing pastel mane round the edge" },
+    { "item": "plates", "theme": "unicorn", "id": "unicorn_rainbow", "name": "Rainbow plates", "look": "printed with a soft pastel rainbow and clouds" },
+    { "item": "napkins", "theme": "unicorn", "id": "unicorn_rainbow", "name": "Rainbow napkins", "look": "printed with soft pastel rainbow stripes" },
+    { "item": "napkins", "theme": "unicorn", "id": "unicorn_stars", "name": "Starry napkins", "look": "lilac, printed with gold stars and little unicorns" },
+
+    { "item": "cups", "theme": "safari", "id": "safari_leopard", "name": "Leopard cups", "look": "printed with a soft leopard print" },
+    { "item": "cups", "theme": "safari", "id": "safari_zebra", "name": "Zebra cups", "look": "printed with black-and-white zebra stripes" },
+    { "item": "cups", "theme": "safari", "id": "safari_jungle", "name": "Jungle cups", "look": "printed with green jungle leaves and a friendly lion face" },
+    { "item": "plates", "theme": "safari", "id": "safari_lion", "name": "Lion plates", "look": "printed with a friendly lion face with a golden mane" },
+    { "item": "plates", "theme": "safari", "id": "safari_leaves", "name": "Jungle leaf plates", "look": "printed with green palm leaves and a touch of leopard print" },
+    { "item": "napkins", "theme": "safari", "id": "safari_leopard", "name": "Leopard napkins", "look": "printed with a soft leopard print" },
+    { "item": "napkins", "theme": "safari", "id": "safari_leaves", "name": "Palm leaf napkins", "look": "printed with green palm leaves" },
+
+    { "item": "cups", "theme": "space", "id": "space_planets", "name": "Planet cups", "look": "navy, printed with little planets and stars" },
+    { "item": "cups", "theme": "space", "id": "space_rocket", "name": "Rocket cups", "look": "white, printed with a red-and-white rocket among stars" },
+    { "item": "cups", "theme": "space", "id": "space_silver", "name": "Silver star cups", "look": "in shiny silver foil with little stars" },
+    { "item": "plates", "theme": "space", "id": "space_planet", "name": "Planet plates", "look": "printed as a planet with rings, on navy with stars" },
+    { "item": "plates", "theme": "space", "id": "space_rockets", "name": "Rocket plates", "look": "navy, printed with little rockets and stars" },
+    { "item": "napkins", "theme": "space", "id": "space_stars", "name": "Gold star napkins", "look": "navy, printed with little gold stars" },
+    { "item": "napkins", "theme": "space", "id": "space_rockets", "name": "Rocket napkins", "look": "printed with planets and little rockets on navy" },
+
+    { "item": "cups", "theme": "superhero", "id": "hero_burst", "name": "Comic burst cups", "look": "printed with red, blue and yellow comic-book action bursts and stars, no words" },
+    { "item": "cups", "theme": "superhero", "id": "hero_bolt", "name": "Lightning cups", "look": "red, printed with a yellow lightning bolt" },
+    { "item": "cups", "theme": "superhero", "id": "hero_cape", "name": "Cape cups", "look": "blue, with a little red cape and a star emblem" },
+    { "item": "plates", "theme": "superhero", "id": "hero_burst", "name": "Comic burst plates", "look": "printed as a comic-book action burst in red, blue and yellow, no words" },
+    { "item": "plates", "theme": "superhero", "id": "hero_bolt", "name": "Lightning plates", "look": "blue, printed with a yellow lightning-bolt emblem" },
+    { "item": "napkins", "theme": "superhero", "id": "hero_bolt", "name": "Lightning napkins", "look": "red, printed with yellow lightning bolts" },
+    { "item": "napkins", "theme": "superhero", "id": "hero_stars", "name": "Comic star napkins", "look": "blue, printed with comic stars and bursts, no words" }
+  ]
+}
