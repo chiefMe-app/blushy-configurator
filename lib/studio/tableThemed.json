@@ -2,6 +2,15 @@
   "_": "Themed cups, plates and napkins (2026-10-30, the owner: 'themed cup diye bir kategori', the same for plates and napkins). Each is drawn from words, never from a shop's photo, with no characters, logos or words; 'look' is how it is described to the render and the AI picture. scripts/table/themed-render.mjs makes the pieces; lib/studio/tableCatalog.ts offers them in their themes.",
   "prices": { "cups": 5, "plates": 6, "napkins": 3 },
   "items": [
+    { "item": "cups", "theme": "frozen", "id": "ice_snowflakes", "name": "Snowflake cups", "look": "icy pale blue, printed with white and silver snowflakes" },
+    { "item": "cups", "theme": "frozen", "id": "ice_snowglobe", "name": "Snowglobe cups", "look": "printed as a little snowglobe: pale blue sky, falling white snow and a tiny white snowy castle, no people" },
+    { "item": "cups", "theme": "frozen", "id": "ice_tiara", "name": "Tiara cups", "look": "pale lilac, printed with a small sparkly silver tiara and little stars" },
+    { "item": "plates", "theme": "frozen", "id": "ice_snowglobe", "name": "Snowglobe plates", "look": "shaped like a round snowglobe on a little silver base, printed with pale blue sky and falling white snowflakes" },
+    { "item": "plates", "theme": "frozen", "id": "ice_scallop", "name": "Snowflake scallop plates", "look": "white with a scalloped edge, printed with shiny silver snowflakes" },
+    { "item": "plates", "theme": "frozen", "id": "ice_crown", "name": "Crown plates", "look": "shaped like a princess crown, in shimmering icy blue and silver" },
+    { "item": "napkins", "theme": "frozen", "id": "ice_snowflakes", "name": "Snowflake napkins", "look": "pale icy blue, printed with silver snowflakes" },
+    { "item": "napkins", "theme": "frozen", "id": "ice_holo", "name": "Icy holographic napkins", "look": "in shimmering holographic icy blue foil" },
+
     { "item": "cups", "theme": "football", "id": "football_ball", "name": "Football cups", "look": "printed all over as a black-and-white soccer ball" },
     { "item": "cups", "theme": "football", "id": "football_pitch", "name": "Pitch cups", "look": "printed in fresh green with white pitch lines and a little gold trophy" },
     { "item": "cups", "theme": "football", "id": "football_stars", "name": "Star kick cups", "look": "printed in bright green with little white footballs and stars" },

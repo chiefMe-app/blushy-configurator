@@ -161,6 +161,18 @@
   "w": 704,
   "h": 720
  },
+ "themed-cups-ice_snowflakes": {
+  "w": 583,
+  "h": 720
+ },
+ "themed-cups-ice_snowglobe": {
+  "w": 566,
+  "h": 720
+ },
+ "themed-cups-ice_tiara": {
+  "w": 619,
+  "h": 720
+ },
  "themed-cups-mermaid_scales": {
   "w": 599,
   "h": 720
@@ -233,6 +245,14 @@
   "w": 334,
   "h": 720
  },
+ "themed-napkins-ice_holo": {
+  "w": 348,
+  "h": 720
+ },
+ "themed-napkins-ice_snowflakes": {
+  "w": 338,
+  "h": 720
+ },
  "themed-napkins-mermaid_scales": {
   "w": 363,
   "h": 720
@@ -288,6 +308,18 @@
  "themed-plates-hero_burst": {
   "w": 716,
   "h": 720
+ },
+ "themed-plates-ice_crown": {
+  "w": 704,
+  "h": 720
+ },
+ "themed-plates-ice_scallop": {
+  "w": 720,
+  "h": 717
+ },
+ "themed-plates-ice_snowglobe": {
+  "w": 720,
+  "h": 716
  },
  "themed-plates-mermaid_scales": {
   "w": 716,

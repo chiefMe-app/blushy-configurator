@@ -58,9 +58,11 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await expect(placemats.getByRole("radio", { name: /Watercolour placemat/ }).locator("img")).toHaveAttribute("src", "/design/table/placemats/frozen/watercolour.webp");
   await page.getByRole("textbox", { name: /Words on the placemats/ }).fill("Zahra turns 4");
   await expect(placemats.locator(".words").first()).toHaveText("Zahra turns 4");
-  // The plain napkin, white to begin with; the theme's own napkins after it (2026-10-30: none made for this theme yet).
+  // The plain napkin, white to begin with; the theme's own napkins after it (2026-10-30: Ice Princess has two).
   await expect(page.getByTestId("napkins-colour").getByRole("radio", { name: "white" }).first()).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByTestId("napkins-themed")).toHaveCount(0);
+  await expect(page.getByTestId("napkins-themed").getByRole("radio")).toHaveCount(2);
+  await expect(page.getByTestId("cups-themed").getByRole("radio")).toHaveCount(3);
+  await expect(page.getByTestId("plates-themed").getByRole("radio")).toHaveCount(3);
   // The bottle label: a name, and the finished label to see.
   await page.getByRole("radiogroup", { name: "Water bottle label" }).getByRole("radio", { name: /Sparkle label/ }).click();
   await page.getByRole("textbox", { name: /Words on the bottle labels/ }).fill("Arya turns 6");
