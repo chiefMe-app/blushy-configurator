@@ -2,10 +2,12 @@
 // first (the owner: "welcome board istemiyorsa skip edebilmeli"), then the
 // board on one page — size and shape, its design, the words and their
 // lettering, the board and its stand (lib/studio/welcomeBoard.ts).
+// 2026-10-31 (owner): a round shape, painted corners, balloons or flowers.
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
-import { BOARD_DESIGNS, BOARD_MATERIALS, BOARD_SHAPES, BOARD_SIZES, BOARD_STANDS, MAX_BOARD_TEXT, boardArt, boardWordsColour, cleanBoardText, defaultWelcomeBoard, welcomeTotal, type WelcomeBoard } from "@/lib/studio/welcomeBoard";
+import { BOARD_DESIGNS, BOARD_GARNISHES, BOARD_MATERIALS, BOARD_SHAPES, BOARD_SIZES, BOARD_STANDS, MAX_BOARD_TEXT, boardArt, boardFace, boardWordsColour, cleanBoardText, defaultWelcomeBoard, welcomeTotal, type WelcomeBoard } from "@/lib/studio/welcomeBoard";
+import WelcomeBoardArt, { PaintedCorners, paintInks } from "@/components/studio/WelcomeBoardArt";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
 
 export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
@@ -69,9 +71,14 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
         <div className="bz-tb-item">
           <h3>Size</h3>
           <div className="bz-tb-options" role="radiogroup" aria-label="Board size">
-            {BOARD_SIZES.map((s) => card(b.size === s.id, () => set({ size: s.id }),
-              <svg viewBox="0 0 100 130" aria-hidden="true"><rect x={50 - s.w * 0.45} y={125 - s.h * 0.95} width={s.w * 0.9} height={s.h * 0.95} rx={2} fill="#fff" stroke="#5a4950" strokeWidth={1.5} /></svg>,
-              s.name, s.note, `AED ${formatAED(s.price)}`, s.id))}
+            {BOARD_SIZES.map((s) => {
+              const face = boardFace({ size: s.id, shape: b.shape });
+              return card(b.size === s.id, () => set({ size: s.id }),
+                <svg viewBox="0 0 100 130" aria-hidden="true">{b.shape === "round"
+                  ? <circle cx={50} cy={125 - face.h * 0.475} r={face.w * 0.45} fill="#fff" stroke="#5a4950" strokeWidth={1.5} />
+                  : <rect x={50 - face.w * 0.45} y={125 - face.h * 0.95} width={face.w * 0.9} height={face.h * 0.95} rx={b.shape === "arch" ? face.w * 0.45 : 2} fill="#fff" stroke="#5a4950" strokeWidth={1.5} />}</svg>,
+                s.name, face.note, `AED ${formatAED(s.price)}`, s.id);
+            })}
           </div>
         </div>
         <div className="bz-tb-item">
@@ -87,8 +94,11 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
           <div className="bz-tb-options" role="radiogroup" aria-label="Board design">
             {BOARD_DESIGNS.map((d) => {
               const art = boardArt({ design: d.id }, theme.id);
-              // eslint-disable-next-line @next/next/no-img-element
-              return card(b.design === d.id, () => set({ design: d.id }), art ? <img className="photo" src={art} alt="" loading="lazy" /> : <i className="swatch-big" style={{ background: b.colour }} />, d.name, d.note, "", d.id);
+              const look = d.id === "corners"
+                ? <svg className="photo" viewBox="0 0 70 100" aria-hidden="true"><rect width={70} height={100} fill="#fff" /><PaintedCorners w={70} h={100} inks={paintInks([theme.accent, ...theme.balloonColors, ...theme.backdropColors])} motif={theme.id === "frozen" ? "flake" : "leaf"} uid="wb-design-corners" /></svg>
+                // eslint-disable-next-line @next/next/no-img-element
+                : art ? <img className="photo" src={art} alt="" loading="lazy" /> : <i className="swatch-big" style={{ background: b.colour }} />;
+              return card(b.design === d.id, () => set({ design: d.id }), look, d.name, d.note, "", d.id);
             })}
           </div>
           {b.design === "plain" && swatchRow("Board colour", b.colour, swatches, (colour) => set({ colour }), "welcome-colour")}
@@ -112,6 +122,18 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
           <div className="bz-tb-words-colour">
             <span>Words colour</span>
             {swatchRow("Words colour", ink, Array.from(new Set([theme.accent.toUpperCase(), ...swatches])), (hex) => set({ textColor: hex }), "welcome-words-colour")}
+          </div>
+        </div>
+      </section>
+
+      <section className="bz-tb-section" aria-label="Balloons and flowers">
+        <h2>Balloons &amp; flowers</h2>
+        <div className="bz-tb-item">
+          <h3>On the board</h3>
+          <div className="bz-tb-options" role="radiogroup" aria-label="Balloons and flowers" data-testid="welcome-garnish">
+            {BOARD_GARNISHES.map((g) => card(b.garnish === g.id, () => set({ garnish: g.id }),
+              <WelcomeBoardArt board={{ ...b, garnish: g.id, heading: "", name: "", line: "", stand: "none" }} theme={theme} balloons={config.decor.balloonColors} placeholders={false} className="photo" />,
+              g.name, g.note, g.extra ? `+AED ${formatAED(g.extra)}` : "", g.id))}
           </div>
         </div>
       </section>

@@ -6,18 +6,17 @@
 // otomatik yönlendir"), with a way back to the choices. Later that day: no
 // render at this step ("bu aşamada render seçeneği olmasın") — one combined
 // render of the backdrop and the table comes at the end instead.
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { tableCounts, type TableSetup } from "@/lib/studio/tableSetup";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import TableSketch from "@/components/studio/table/TableSketch";
 import TablePerspective from "@/components/studio/table/TablePerspective";
 import TablePlace from "@/components/studio/table/TablePlace";
+import { usePhoneJump } from "@/components/builder/usePhoneJump";
 
 // 2026-10-31 (owner): one place first, then six places, a part of the table.
 type View = "place" | "six" | "perspective" | "top";
-/** The builder's phone layout (app/blushy.css): the preview comes after the choices. */
-const PHONE = "(max-width: 860px)";
 /** How a table render asked for in this visit is going (kept for the builder's notes). */
 export type TableRenderJob = "loading" | "ready" | "error";
 
@@ -33,38 +32,11 @@ export default function TablePreview({ config }: {
   const theme = themeById(config.theme) ?? THEMES[0];
   const table = config.table;
 
-  // On a phone, every change brings the top view into sight (typing: once the
-  // field is left), and "Back to your choices" returns to where the change was made.
-  const [backTo, setBackTo] = useState<number | null>(null);
-  const changeKey = table?.enabled ? tableRenderKey(table, config.theme) : "";
-  const lastKey = useRef(changeKey);
-  // When the customer last picked a view: the jump leaves a view picked after the change alone.
+  // On a phone, every change brings the top view into sight; a view the
+  // customer picked after the change is left alone.
   const pickedAt = useRef(0);
-  useEffect(() => {
-    // Not when the table is first added (the customer is about to choose), only on a change to it.
-    const before = lastKey.current;
-    lastKey.current = changeKey;
-    if (!changeKey || !before || changeKey === before || typeof window === "undefined" || !window.matchMedia?.(PHONE).matches) return;
-    const changedAt = performance.now();
-    const jump = () => {
-      const card = document.getElementById("table-preview-card");
-      if (!card) return;
-      if (pickedAt.current < changedAt) setView("place");
-      setBackTo((b) => b ?? window.scrollY);
-      card.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-    const field = document.activeElement;
-    if (field instanceof HTMLInputElement && field.type === "text") {
-      // Words: once the customer leaves the field (or presses Enter), not on every letter.
-      const left = (e: Event) => { if (e.type === "focusout" || (e as KeyboardEvent).key === "Enter") { stop(); jump(); } };
-      const stop = () => { document.removeEventListener("focusout", left, true); document.removeEventListener("keydown", left, true); };
-      document.addEventListener("focusout", left, true);
-      document.addEventListener("keydown", left, true);
-      return stop;
-    }
-    const t = setTimeout(jump, 350);
-    return () => clearTimeout(t);
-  }, [changeKey]);
+  const changeKey = table?.enabled ? tableRenderKey(table, config.theme) : "";
+  const { backTo, back } = usePhoneJump(changeKey, "table-preview-card", (changedAt) => { if (pickedAt.current < changedAt) setView("place"); });
 
   const tab = (v: View, name: string) => <button type="button" role="tab" aria-selected={view === v} className={view === v ? "on" : ""} onClick={() => { pickedAt.current = performance.now(); setView(v); }}>{name}</button>;
   return (
@@ -95,7 +67,7 @@ export default function TablePreview({ config }: {
           </p>
           {backTo !== null && (
             <button type="button" className="bz-tb-back" data-testid="table-back-to-choices"
-              onClick={() => { window.scrollTo({ top: backTo, behavior: "smooth" }); setBackTo(null); }}>↑ Back to your choices</button>
+              onClick={back}>↑ Back to your choices</button>
           )}
         </>
       )}

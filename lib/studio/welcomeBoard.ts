@@ -4,6 +4,9 @@
 // on the theme's own art (the placemat designs, lib/studio/tableCatalog.ts) or
 // a plain colour, drawn live as the customer chooses. Prices are placeholders
 // until the owner sets them (TO CONFIRM). Pure data and sums.
+// 2026-10-31 (owner): a round shape too; balloons or flowers on the board
+// ("balon ya da çiçek ekleme opsiyonları lazım"); and painted corners like her
+// Frozen example ("rectangle frozen örneğindeki background'u beğendim").
 import { TABLE_FONTS } from "./tableFonts";
 
 export interface BoardSize { id: string; name: string; note: string; w: number; h: number; price: number }
@@ -17,11 +20,13 @@ export const BOARD_SIZES: BoardSize[] = [
 export const BOARD_SHAPES = [
   { id: "rectangle", name: "Rectangle" },
   { id: "arch", name: "Arch top" },
+  { id: "round", name: "Round" },
 ] as const;
 export type BoardShape = (typeof BOARD_SHAPES)[number]["id"];
 
 /** The board's face: the theme's art (as on the placemats), or a plain colour. */
 export const BOARD_DESIGNS = [
+  { id: "corners", name: "Painted corners", note: "Soft painted shapes in the corners, on white" },
   { id: "watercolour", name: "Watercolour", note: "The theme's soft wash, shapes in the corners" },
   { id: "sparkle", name: "Sparkle", note: "The theme's glittering design" },
   { id: "plain", name: "Plain colour", note: "One colour you pick" },
@@ -40,6 +45,15 @@ export const BOARD_STANDS = [
 ] as const;
 export type BoardStand = (typeof BOARD_STANDS)[number]["id"];
 
+/** Balloons or flowers on the board (placeholder prices, TO CONFIRM). */
+export const BOARD_GARNISHES = [
+  { id: "none", name: "Just the board", note: "Nothing on it", extra: 0 },
+  { id: "balloons", name: "Balloon garland", note: "Up one side, in your balloon colours", extra: 250 },
+  { id: "flowers", name: "Flowers", note: "Silk flowers on two corners", extra: 180 },
+  { id: "both", name: "Balloons & flowers", note: "A garland with flowers tucked in", extra: 380 },
+] as const;
+export type BoardGarnish = (typeof BOARD_GARNISHES)[number]["id"];
+
 export interface WelcomeBoard {
   /** false: the customer skipped it. */
   enabled: boolean;
@@ -50,6 +64,8 @@ export interface WelcomeBoard {
   colour: string;
   material: BoardMaterial;
   stand: BoardStand;
+  /** Balloons or flowers on it. */
+  garnish: BoardGarnish;
   /** The words, top to bottom: a small heading, the name (big, in the lettering), a line under it. */
   heading: string;
   name: string;
@@ -72,25 +88,32 @@ export function cleanBoardText(v: unknown): string {
 
 export function defaultWelcomeBoard(theme: { backdropColors: string[]; accent: string }): WelcomeBoard {
   return {
-    enabled: true, size: "medium", shape: "arch", design: "watercolour",
-    colour: theme.backdropColors[0] ?? "#FFFFFF", material: "foam", stand: "easel",
+    enabled: true, size: "medium", shape: "arch", design: "corners",
+    colour: theme.backdropColors[0] ?? "#FFFFFF", material: "foam", stand: "easel", garnish: "none",
     heading: "Welcome to", name: "", line: "", font: "birthstone-bounce",
   };
 }
 
 export const boardSize = (b: Pick<WelcomeBoard, "size">) => BOARD_SIZES.find((s) => s.id === b.size) ?? BOARD_SIZES[1];
+/** The board's face in centimetres: a round board is as tall as it is wide. */
+export function boardFace(b: Pick<WelcomeBoard, "size" | "shape">) {
+  const s = boardSize(b);
+  return b.shape === "round" ? { w: s.w, h: s.w, note: `Ø ${s.w} cm` } : { w: s.w, h: s.h, note: s.note };
+}
 export const boardWordsColour = (b: Pick<WelcomeBoard, "textColor">, theme: { accent: string }) => b.textColor ?? theme.accent;
-/** The theme's art for the board's face, if it has one. */
-export const boardArt = (b: Pick<WelcomeBoard, "design">, themeId: string) => (b.design === "plain" ? null : `/design/table/placemats/${themeId}/${b.design}.webp`);
+/** The theme's art for the board's face, if it has one (painted corners are drawn, not a picture). */
+export const boardArt = (b: Pick<WelcomeBoard, "design">, themeId: string) => (b.design === "plain" || b.design === "corners" ? null : `/design/table/placemats/${themeId}/${b.design}.webp`);
 
 export function welcomePriceLines(b: WelcomeBoard): { label: string; amount: number }[] {
   if (!b.enabled) return [];
   const size = boardSize(b);
   const material = BOARD_MATERIALS.find((m) => m.id === b.material)!;
   const stand = BOARD_STANDS.find((s) => s.id === b.stand)!;
-  const lines = [{ label: `Welcome board, ${size.name} ${size.note}`, amount: size.price }];
+  const garnish = BOARD_GARNISHES.find((g) => g.id === b.garnish) ?? BOARD_GARNISHES[0];
+  const lines = [{ label: `Welcome board, ${b.shape === "round" ? "round" : size.name} ${boardFace(b).note}`, amount: size.price }];
   if (material.extra) lines.push({ label: `${material.name} board`, amount: material.extra });
   if (stand.extra) lines.push({ label: stand.name, amount: stand.extra });
+  if (garnish.extra) lines.push({ label: `${garnish.name} on the board`, amount: garnish.extra });
   return lines;
 }
 
@@ -112,6 +135,7 @@ export function readWelcomeBoard(raw: unknown, theme: { backdropColors: string[]
     colour: typeof r.colour === "string" && HEX.test(r.colour) ? r.colour : base.colour,
     material: oneOf(BOARD_MATERIALS, r.material, base.material),
     stand: oneOf(BOARD_STANDS, r.stand, base.stand),
+    garnish: oneOf(BOARD_GARNISHES, r.garnish, base.garnish),
     heading: typeof r.heading === "string" ? cleanBoardText(r.heading) : base.heading,
     name: cleanBoardText(r.name),
     line: cleanBoardText(r.line),

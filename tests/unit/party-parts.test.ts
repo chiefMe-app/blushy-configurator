@@ -8,7 +8,8 @@ import { fromDraft, toDraft } from "@/lib/draft";
 import { NONE } from "@/lib/studio/tableCatalog";
 import { defaultTableSetup, readTableSetup } from "@/lib/studio/tableSetup";
 import { ADULT_ITEMS, ADULT_SECTIONS, adultCounts, adultPriceLines, adultTotal, defaultAdultTable, readAdultTable } from "@/lib/studio/adultTable";
-import { boardArt, cleanBoardText, defaultWelcomeBoard, readWelcomeBoard, welcomePriceLines, welcomeTotal } from "@/lib/studio/welcomeBoard";
+import { boardArt, boardFace, cleanBoardText, defaultWelcomeBoard, readWelcomeBoard, welcomePriceLines, welcomeTotal } from "@/lib/studio/welcomeBoard";
+import { paintInks, stackWords } from "@/components/studio/WelcomeBoardArt";
 import { designCards, joinParty, readStoredTable, splitDesign, TABLE_ITEM, WELCOME_ITEM, type SavedItem } from "@/lib/savedDesigns";
 
 const frozen = themeById("frozen")!;
@@ -57,9 +58,42 @@ describe("the welcome board", () => {
     expect(welcomePriceLines({ ...b, enabled: false })).toEqual([]);
     expect(priceBreakdown({ ...base(), welcomeBoard: b }).total).toBe(priceBreakdown(base()).total + 290);
   });
-  it("uses the theme's own art, or none for a plain board", () => {
+  it("balloons or flowers on the board add their price; a round board is as tall as it is wide", () => {
+    const b = defaultWelcomeBoard(frozen);
+    expect(b.garnish).toBe("none");
+    expect(welcomePriceLines({ ...b, garnish: "both" })).toContainEqual({ label: "Balloons & flowers on the board", amount: 380 });
+    expect(welcomeTotal({ ...b, garnish: "balloons" })).toBe(welcomeTotal(b) + 250);
+    expect(welcomeTotal({ ...b, garnish: "flowers" })).toBe(welcomeTotal(b) + 180);
+    expect(boardFace({ size: "medium", shape: "round" })).toEqual({ w: 70, h: 70, note: "Ø 70 cm" });
+    expect(welcomePriceLines({ ...b, shape: "round" })[0]).toEqual({ label: "Welcome board, round Ø 70 cm", amount: 250 });
+    expect(readWelcomeBoard({ shape: "round", garnish: "both" }, frozen)).toMatchObject({ shape: "round", garnish: "both" });
+    expect(readWelcomeBoard({ garnish: "fireworks" }, frozen)!.garnish).toBe("none");
+  });
+  it("the words never run into each other: stacked with a gap, a line too wide made smaller (2026-10-31)", () => {
+    const space = { y0: 20, y1: 90, maxW: 56 };
+    const ms = [{ w: 40, asc: 4, desc: 0.5 }, { w: 120, asc: 16, desc: 9 }, { w: 50, asc: 4, desc: 0.4 }];
+    const { size, base } = stackWords(ms, [5, 14, 4.9], space, 2.4);
+    // The name, twice too wide, is made half the size.
+    expect(size[1]).toBeCloseTo(14 * (56 / 120));
+    const k = size[1] / 14;
+    expect(base[0] + ms[0].desc).toBeLessThan(base[1] - ms[1].asc * k);
+    expect(base[1] + ms[1].desc * k).toBeLessThan(base[2] - ms[2].asc);
+    expect(base[0] - ms[0].asc).toBeGreaterThanOrEqual(space.y0);
+    // Too tall for the space: all of it smaller, still apart.
+    const tall = stackWords([{ w: 10, asc: 40, desc: 20 }, { w: 10, asc: 40, desc: 20 }, null], [10, 10, 10], space, 2);
+    expect(tall.base[1] - 40 * (tall.size[1] / 10)).toBeGreaterThan(tall.base[0] + 20 * (tall.size[0] / 10));
+    expect(tall.base[1] + 20 * (tall.size[1] / 10)).toBeLessThanOrEqual(space.y1 + 0.001);
+  });
+  it("painted corners in the theme's own hues, never grey", () => {
+    const inks = paintInks([frozen.accent, ...frozen.balloonColors]);
+    expect(inks).toHaveLength(3);
+    expect(new Set(inks).size).toBe(3);
+    expect(paintInks(["#FFFFFF", "#C7C9C7"])).toHaveLength(3);
+  });
+  it("uses the theme's own art, or none for a plain board or painted corners", () => {
     expect(boardArt({ design: "watercolour" }, "frozen")).toBe("/design/table/placemats/frozen/watercolour.webp");
     expect(boardArt({ design: "plain" }, "frozen")).toBeNull();
+    expect(boardArt({ design: "corners" }, "frozen")).toBeNull();
     // Every theme has both pictures.
     for (const t of THEMES) for (const design of ["watercolour", "sparkle"] as const) expect(existsSync(`public${boardArt({ design }, t.id)}`), `${t.id} ${design}`).toBe(true);
   });
@@ -67,7 +101,7 @@ describe("the welcome board", () => {
     expect(cleanBoardText("<b>Arya's</b>   party")).toBe("bArya'sb party");
     expect(cleanBoardText("x".repeat(80))).toHaveLength(30);
     const b = readWelcomeBoard({ size: "huge", shape: "star", design: "plain", colour: "#123456", name: "Arya's", font: "comic", textColor: "blue" }, frozen)!;
-    expect(b).toMatchObject({ size: "medium", shape: "arch", design: "plain", colour: "#123456", name: "Arya's", font: "birthstone-bounce" });
+    expect(b).toMatchObject({ size: "medium", shape: "arch", design: "plain", colour: "#123456", name: "Arya's", font: "birthstone-bounce", garnish: "none" });
     expect(b.textColor).toBeUndefined();
   });
 });

@@ -42,7 +42,7 @@ import TablePreview, { type TableRenderJob } from "@/components/builder/table/Ta
 import AdultTableStep from "@/components/builder/table/AdultTableStep";
 import WelcomeStep from "@/components/builder/welcome/WelcomeStep";
 import AdultTableSketch from "@/components/studio/table/AdultTableSketch";
-import WelcomeBoardArt from "@/components/studio/WelcomeBoardArt";
+import WelcomePreview from "@/components/builder/welcome/WelcomePreview";
 import { adultCounts, defaultAdultTable } from "@/lib/studio/adultTable";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
 import { defaultWelcomeBoard } from "@/lib/studio/welcomeBoard";
@@ -508,16 +508,7 @@ export default function ConfigurePage() {
               </> : <div className="empty">Add a grown-ups&apos; table to see it here.</div>}
             </div>
           )}
-          {onWelcome && (
-            <div className="bz-tb-preview" data-testid="welcome-preview">
-              <div className="head"><span className="title">✦ Your welcome board</span></div>
-              {config.welcomeBoard?.enabled ? <>
-                <link rel="stylesheet" href="/fonts/typography/fonts.css" />
-                <div className="bz-wb-wait"><WelcomeBoardArt board={config.welcomeBoard} theme={theme} className="bz-wb-art" /></div>
-                <p className="note">To scale, on its stand — your words show as you type. A drawing, not a photo.</p>
-              </> : <div className="empty">Add a welcome board to see it here.</div>}
-            </div>
-          )}
+          {onWelcome && <WelcomePreview config={config} />}
           <div hidden={!onKids}>
             <TablePreview config={config} setTable={(table) => setConfig((c) => ({ ...c, table }))}
               onSignInNeeded={() => askSignIn("table-render")}

@@ -161,7 +161,9 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   await page.getByTestId("welcome-line").fill("6th Birthday");
   await expect(board).toContainText("Arya's");
   await expect(board).toContainText("6TH BIRTHDAY");
-  // The theme's art on the board, or a plain colour.
+  // Painted corners first (2026-10-31, the owner's Frozen example), the theme's art, or a plain colour.
+  await expect(board.locator("[data-part=painted-corners]")).toHaveCount(1);
+  await page.getByRole("radiogroup", { name: "Board design" }).getByRole("radio", { name: /Watercolour/ }).click();
   await expect(board.locator("image")).toHaveAttribute("href", "/design/table/placemats/frozen/watercolour.webp");
   await page.getByRole("radiogroup", { name: "Board design" }).getByRole("radio", { name: /Plain colour/ }).click();
   await expect(board.locator("image")).toHaveCount(0);
@@ -170,14 +172,52 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   expect(aed(await total(page).textContent())).toBe(before + sum);
   await page.getByRole("radiogroup", { name: "Board size" }).getByRole("radio", { name: /Large/ }).click();
   await page.getByTestId("welcome-material").getByRole("radio", { name: "Acrylic" }).click();
-  expect(aed(await page.getByTestId("welcome-total").locator("b").textContent())).toBeGreaterThan(sum);
+  expect(aed(await page.getByTestId("welcome-total").locator("b").textContent())).toBe(sum + (320 - 250) + 150);
+  // Round, and balloons with flowers on it (2026-10-31).
+  await page.getByTestId("welcome-shape").getByRole("radio", { name: "Round" }).click();
+  await expect(board).toHaveAttribute("data-shape", "round");
+  await page.getByTestId("welcome-garnish").getByRole("radio", { name: /Balloons & flowers/ }).click();
+  await expect(board.locator("[data-part=balloons]")).toHaveCount(1);
+  await expect(board.locator("[data-part=flowers]")).toHaveCount(1);
+  expect(aed(await page.getByTestId("welcome-total").locator("b").textContent())).toBe(sum + (320 - 250) + 150 + 380);
+  // The words, measured once drawn, never run into each other.
+  await page.getByTestId("welcome-name").fill("Maximiliana-Josephine's");
+  for (const font of ["Calligraphy", "Classic"]) {
+    await page.getByTestId("welcome-font").getByRole("radio", { name: new RegExp(font) }).click();
+    await expect.poll(async () => board.evaluate((svg) => {
+      const [h, n, l] = ["heading", "name", "line"].map((k) => (svg.querySelector(`[data-word=${k}]`) as SVGTextElement).getBBox());
+      return h.y + h.height <= n.y + 0.01 && n.y + n.height <= l.y + 0.01;
+    })).toBe(true);
+  }
   await expect(next(page)).toHaveText(/Finish the welcome board/);
   await next(page).click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   await page.getByRole("button", { name: "← Back" }).click();
   await expect(page.getByTestId("finish-welcome")).toHaveText(/Next: Package/);
-  await expect(page.getByTestId("welcome-name")).toHaveValue("Arya's");
+  await expect(page.getByTestId("welcome-name")).toHaveValue("Maximiliana-Josephine's");
   expect(guard.blocked).toEqual([]);
+});
+
+test("W2 on a phone, a change to the welcome board brings it into sight, and Back returns to the choices", async ({ page }, info) => {
+  test.skip(info.project.name !== "mobile", "the phone layout only");
+  await toTable(page);
+  await page.getByRole("button", { name: "No thanks, skip" }).click();
+  await next(page).click();
+  await next(page).click();
+  await page.getByRole("button", { name: /Yes, design the board/ }).click();
+  await page.waitForTimeout(800);
+  await expect(page.getByTestId("welcome-back-to-choices")).toHaveCount(0);
+  await page.getByTestId("welcome-garnish").getByRole("radio", { name: /Balloon garland/ }).click();
+  await expect(page.getByTestId("welcome-preview").locator("svg")).toBeInViewport();
+  await page.getByTestId("welcome-back-to-choices").click();
+  await expect(page.getByTestId("welcome-garnish")).toBeInViewport();
+  // Typing: once the field is left.
+  const name = page.getByTestId("welcome-name");
+  await name.fill("Zara's");
+  await expect(page.getByTestId("welcome-preview").locator("svg")).not.toBeInViewport();
+  await name.blur();
+  await expect(page.getByTestId("welcome-preview").locator("svg")).toBeInViewport();
+  await expect(page.getByTestId("welcome-preview").locator("svg [data-word=name]")).toHaveText("Zara's");
 });
 
 test("K2 skipping the table adds nothing; Back walks back to the backdrop", async ({ page }) => {

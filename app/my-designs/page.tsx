@@ -172,7 +172,7 @@ export default function MyDesigns() {
                   <div className="sketch">
                     {isTable
                       ? kids ? <TablePlace table={kids} theme={theme} fill /> : <AdultTableSketch a={adults!} theme={theme} />
-                      : isWelcome ? <WelcomeBoardArt board={c.welcomeBoard!} theme={theme} placeholders={false} />
+                      : isWelcome ? <WelcomeBoardArt board={c.welcomeBoard!} theme={theme} balloons={c.decor?.balloonColors} placeholders={false} />
                       : render
                         // eslint-disable-next-line @next/next/no-img-element
                         ? <img className="render" src={render} alt="Your render of this design" data-testid="saved-render" />
