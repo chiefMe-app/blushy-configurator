@@ -6,9 +6,12 @@
 // overlap olmasın hiç bir zaman") — each line is measured once drawn and
 // stacked with a gap, made smaller if it is too wide.
 // Later that day (owner: "render görüntülerini kullanarak preview görsellerini
-// oluşturmak", as the table's top view): the room, the easel, the balloons and
-// the roses are real photo pieces, each rendered once (scripts/welcome/), stacked
-// round the printed board — the balloons tinted to the party's colours. No render.
+// oluşturmak", then, with a render as the example, "görüntü bunun gibi gerçekçi
+// olmalı, yazı sadece user tarafından değişebilir"): a real photo of the board's
+// shape on its easel or wall, rendered once with its face blank, the customer's
+// print and words laid onto that face live; a real garland in the theme's colours
+// beside it (balloon pieces tinted to the party's colours where a theme has none
+// yet), and real roses. Every photo made once (scripts/welcome/) — no render.
 import { useId, useLayoutEffect, useRef, useState } from "react";
 import PIECES from "@/lib/studio/welcomePieces.json";
 import { tableFont, fontCss, asPrinted } from "@/lib/studio/tableFonts";
@@ -264,19 +267,6 @@ function Roses({ x, y, width, turn, mirror }: { x: number; y: number; width: num
   );
 }
 
-/** The easel's photo, cut at its ledge: above it from the easel's top to the board's foot, below it from there to the floor. */
-function Easel({ cx, width, y0, ledge, floor, part }: { cx: number; width: number; y0: number; ledge: number; floor: number; part: "top" | "bottom" }) {
-  const p = PIECES.easel;
-  const cut = p.ledge[0] * p.h;
-  const [from, to, vy, vh] = part === "top" ? [y0, ledge, 0, cut] : [ledge, floor, cut, p.h - cut];
-  return (
-    <svg data-part="easel" aria-hidden="true" x={cx - width / 2} y={from} width={width} height={to - from} viewBox={`0 ${f1(vy)} ${p.w} ${f1(vh)}`} preserveAspectRatio="none" overflow="hidden">
-      {/* eslint-disable-next-line jsx-a11y/alt-text */}
-      <image href={piece("easel")} x={0} y={0} width={p.w} height={p.h} />
-    </svg>
-  );
-}
-
 /** A line's size measured at its nominal font size: width, and how far it reaches above and below its baseline. */
 interface Metric { w: number; asc: number; desc: number }
 
@@ -392,25 +382,24 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
   }, [key, board.shape]);
 
   // A board without a stand hangs on the wall, above the floor.
-  const floor = top + h + (easel ? 40 : 30);
-  const right = w + (garland ? 54 * u : 22);
-  const bottom = floor + 8;
-  // The room behind: its photo scaled to cover the view, its wall meeting the floor a little behind the easel's feet.
-  const room = PIECES.room, wallBase = easel ? floor - 10 : floor;
-  const side = Math.max(right + 44, wallBase / room.floor, (bottom - wallBase) / (1 - room.floor));
-  const ledge = top + h - 1.5;
+  // The real photo of this shape on its stand, placed so its blank board is exactly the board's face.
+  const scene = PIECES[`scene-${board.shape}-${easel ? "easel" : "none"}`];
+  const [fx0, fy0, fx1, fy1] = scene.face;
+  const photoW = w / (fx1 - fx0), photoH = h / (fy1 - fy0);
+  const photoX = -fx0 * photoW, photoY = top - fy0 * photoH;
+  const floor = photoY + scene.floor * photoH;
+  // The theme's own real garland: up the board's right side from the floor, curving over its top corner.
+  const real = (PIECES as Record<string, { w: number; h: number }>)[`garland-${theme.id}`];
+  const gH = floor + 2 - (top + h * (board.shape === "rectangle" ? 0.02 : 0.08)), gW = real ? (gH * real.w) / real.h : 0;
+  const gX = w + 9 * u - gW * 0.74;
+  const right = garland ? (real ? Math.max(w + 22, gX + gW + 3) : w + 54 * u) : w + 22;
+  const bottom = Math.min(floor + 8, photoY + photoH);
   const shine = board.material === "acrylic";
   return (
     <svg className={className} viewBox={`-22 0 ${f1(right + 22)} ${f1(bottom)}`} role="img" aria-label="Your welcome board" data-shape={board.shape} data-garnish={board.garnish}>
       <defs>
         <clipPath id={`${uid}-clip`}><path d={shape} /></clipPath>
         <filter id={`${uid}-soft`} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation={1.6} /></filter>
-        <filter id={`${uid}-lift`} x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx={1.4} dy={2} stdDeviation={1.8} floodColor="#3b2a22" floodOpacity={0.28} /></filter>
-        <linearGradient id={`${uid}-light`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FFFFFF" stopOpacity={0.16} />
-          <stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0} />
-          <stop offset="1" stopColor="#3b2a22" stopOpacity={0.07} />
-        </linearGradient>
         <linearGradient id={`${uid}-gloss`} x1="0" y1="0" x2="1" y2="0.6">
           <stop offset="0.18" stopColor="#FFFFFF" stopOpacity={0} />
           <stop offset="0.26" stopColor="#FFFFFF" stopOpacity={0.38} />
@@ -420,36 +409,42 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
         </linearGradient>
       </defs>
       {/* eslint-disable-next-line jsx-a11y/alt-text */}
-      <image data-part="room" href={piece("room")} x={(right - 22) / 2 - side / 2} y={wallBase - side * room.floor} width={side} height={side} preserveAspectRatio="none" />
-      {easel && <>
-        <ellipse cx={cx} cy={floor} rx={w * 0.5} ry={2.4} fill="#3b2a22" opacity={0.2} filter={`url(#${uid}-soft)`} />
-        <Easel part="top" cx={cx} width={w * 0.62} y0={top - 9} ledge={ledge} floor={floor} />
-      </>}
-      <g filter={`url(#${uid}-lift)`}>
-        <g clipPath={`url(#${uid}-clip)`}>
-          <rect x={0} y={top} width={w} height={h} fill={art || board.design === "corners" ? "#FFFFFF" : board.colour} />
-          {art && (
-            // eslint-disable-next-line jsx-a11y/alt-text
-            <image data-part="art" href={art} x={cx - h / 2} y={cy - w / 2} width={h} height={w} preserveAspectRatio="xMidYMid slice" transform={`rotate(90 ${cx} ${cy})`} />
-          )}
-          {board.design === "corners" && <PaintedCorners w={w} h={h} top={top} shape={board.shape} inks={paintInks(palette)} motif={theme.id === "frozen" ? "flake" : "leaf"} uid={uid} />}
+      <image data-part="scene" href={piece(`scene-${board.shape}-${easel ? "easel" : "none"}`)} x={f1(photoX)} y={f1(photoY)} width={f1(photoW)} height={f1(photoH)} preserveAspectRatio="none" />
+      {/* A wide card shows past the photo's sides: its own empty wall and floor there, mirrored at each edge. */}
+      {[photoX, photoX + photoW].map((edge, i) => (
+        <g key={i} clipPath={`url(#${uid}-side${i})`}>
+          <clipPath id={`${uid}-side${i}`}><rect x={f1(i ? edge : edge - photoW * 0.25)} y={f1(photoY)} width={f1(photoW * 0.25)} height={f1(photoH)} /></clipPath>
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
+          <image href={piece(`scene-${board.shape}-${easel ? "easel" : "none"}`)} x={f1(photoX)} y={f1(photoY)} width={f1(photoW)} height={f1(photoH)} preserveAspectRatio="none" transform={`matrix(-1 0 0 1 ${f1(2 * edge)} 0)`} />
         </g>
+      ))}
+      {/* The print, laid onto the photo's blank board: multiplied, so the photo's own light and shade show through it. */}
+      <g clipPath={`url(#${uid}-clip)`} style={{ mixBlendMode: "multiply" }} data-part="print">
+        <rect x={0} y={top} width={w} height={h} fill={art || board.design === "corners" ? "#FFFFFF" : board.colour} />
+        {art && (
+          // eslint-disable-next-line jsx-a11y/alt-text
+          <image data-part="art" href={art} x={cx - h / 2} y={cy - w / 2} width={h} height={w} preserveAspectRatio="xMidYMid slice" transform={`rotate(90 ${cx} ${cy})`} />
+        )}
+        {board.design === "corners" && <PaintedCorners w={w} h={h} top={top} shape={board.shape} inks={paintInks(palette)} motif={theme.id === "frozen" ? "flake" : "leaf"} uid={uid} />}
       </g>
-      <g fill={ink} textAnchor="middle" {...halo}>
+      <g fill={ink} textAnchor="middle" {...halo} style={isLight(ink) ? undefined : { mixBlendMode: "multiply" }}>
         {texts[0] && <text ref={refs[0]} x={cx} y={f1(fit.base[0])} fontSize={f1(fit.size[0])} letterSpacing={f1(fit.size[0] * 0.16)} data-word="heading" style={{ fontFamily: "var(--bz-sans), 'DM Sans', sans-serif", fontWeight: 700 }}>{texts[0]}</text>}
         {texts[1] && <text ref={refs[1]} x={cx} y={f1(fit.base[1])} fontSize={f1(fit.size[1])} opacity={faded(board.name)} data-word="name" style={{ fontFamily: `${fontCss(font)}, Georgia, serif`, fontWeight: font.weight }}>{texts[1]}</text>}
         {texts[2] && <text ref={refs[2]} x={cx} y={f1(fit.base[2])} fontSize={f1(fit.size[2])} letterSpacing={f1(fit.size[2] * 0.11)} opacity={faded(board.line)} data-word="line" style={{ fontFamily: "var(--bz-sans), 'DM Sans', sans-serif", fontWeight: 600 }}>{texts[2]}</text>}
       </g>
-      {/* The light on the print, and its edge: a thin white foam edge, or the clear polished edge and shine of acrylic. */}
-      <path d={shape} fill={`url(#${uid}-${shine ? "gloss" : "light"})`} pointerEvents="none" />
-      <path d={shape} fill="none" stroke={shine ? "rgba(255,255,255,0.95)" : "#FFFFFF"} strokeWidth={shine ? 0.9 : 0.5} />
-      <path d={shape} fill="none" stroke={shine ? "#8FA3B5" : "#3b2a22"} strokeOpacity={shine ? 0.55 : 0.18} strokeWidth={0.18} />
-      {easel && <Easel part="bottom" cx={cx} width={w * 0.62} y0={top - 9} ledge={ledge} floor={floor} />}
+      {shine && <path d={shape} fill={`url(#${uid}-gloss)`} pointerEvents="none" />}
       {flowers && <>
         <Roses x={corner.tl[0]} y={corner.tl[1]} width={w * 0.46} turn={corner.tl[2]} />
         {!garland && <Roses x={corner.br[0]} y={corner.br[1]} width={w * 0.4} turn={corner.br[2]} mirror />}
       </>}
-      {garland && <Garland x={w + 14 * u} y0={floor} y1={top + h * (board.shape === "rectangle" ? 0.16 : board.shape === "arch" ? 0.32 : 0.22)} u={u} colours={balloonColours} uid={uid} roses={flowers} />}
+      {garland && real && (
+        <g data-part="balloons">
+          <ellipse cx={gX + gW * 0.74} cy={floor} rx={gW * 0.42} ry={2.6} fill="#3b2a22" opacity={0.22} filter={`url(#${uid}-soft)`} />
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
+          <image data-part="garland" href={piece(`garland-${theme.id}` as keyof typeof PIECES)} x={f1(gX)} y={f1(floor + 2 - gH)} width={f1(gW)} height={f1(gH)} />
+        </g>
+      )}
+      {garland && !real && <Garland x={w + 14 * u} y0={floor} y1={top + h * (board.shape === "rectangle" ? 0.16 : board.shape === "arch" ? 0.32 : 0.22)} u={u} colours={balloonColours} uid={uid} roses={flowers} />}
     </svg>
   );
 }

@@ -108,13 +108,18 @@ describe("the welcome board", () => {
 });
 
 describe("the welcome board's photo pieces", () => {
-  it("each piece the preview stacks is there, with where the easel's ledge and the room's floor are", () => {
-    for (const name of Object.keys(PIECES)) expect(existsSync(`public/design/welcome/pieces/${name}.webp`), name).toBe(true);
-    expect(Object.keys(PIECES).sort()).toEqual(["balloon-chrome", "balloon-latex", "easel", "room", "roses-spray", "roses-trio"]);
-    expect(PIECES.easel.ledge[0]).toBeGreaterThan(0.4);
-    expect(PIECES.easel.ledge[0]).toBeLessThan(PIECES.easel.ledge[1]);
-    expect(PIECES.room.floor).toBeGreaterThan(0.4);
-    expect(PIECES.room.floor).toBeLessThan(0.9);
+  it("each photo the preview uses is there, with where its blank board and floor are", () => {
+    const all = PIECES as Record<string, { w: number; h: number; face?: number[]; floor?: number }>;
+    for (const name of Object.keys(all)) expect(existsSync(`public/design/welcome/pieces/${name}.webp`), name).toBe(true);
+    for (const shape of ["rectangle", "arch", "round"]) for (const stand of ["easel", "none"]) {
+      const { face, floor } = all[`scene-${shape}-${stand}`];
+      const [x0, y0, x1, y1] = face!;
+      expect(0 < x0 && x0 < x1 && x1 < 1 && 0 < y0 && y0 < y1 && y1 < 1, `${shape} ${stand}`).toBe(true);
+      expect(floor!).toBeGreaterThan(y1);
+      expect(floor!).toBeLessThan(1);
+    }
+    // Ice Princess first (the owner's pilot); the other themes' garlands follow.
+    expect(all["garland-frozen"].h).toBeGreaterThan(all["garland-frozen"].w);
   });
 });
 

@@ -1,7 +1,8 @@
 // The left-hand preview during the welcome board part of Decor (2026-10-31):
 // the board drawn live. On a phone, where it sits under the choices, each
 // change brings it into view, with a way back (as the kids' table does).
-// Later that day: the room, easel, balloons and roses are real photo pieces
+// Later that day: a real photo of the board on its stand, the customer's print
+// and words laid onto it, with a real garland and roses
 // (components/studio/WelcomeBoardArt.tsx) — still no render.
 import { themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import WelcomeBoardArt from "@/components/studio/WelcomeBoardArt";
@@ -19,7 +20,7 @@ export default function WelcomePreview({ config }: { config: BuilderConfig }) {
       {b?.enabled ? <>
         <link rel="stylesheet" href="/fonts/typography/fonts.css" />
         <div className="bz-wb-wait"><WelcomeBoardArt board={b} theme={theme} balloons={config.decor.balloonColors} className="bz-wb-art" /></div>
-        <p className="note">To scale, on its stand, made from photos of each piece — your words show as you type.</p>
+        <p className="note">A real photo of your board, to scale — your words show as you type.</p>
         {backTo !== null && <button type="button" className="bz-tb-back" data-testid="welcome-back-to-choices" onClick={back}>↑ Back to your choices</button>}
       </> : <div className="empty">Add a welcome board to see it here.</div>}
     </div>
