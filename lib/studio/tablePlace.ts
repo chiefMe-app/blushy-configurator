@@ -117,8 +117,11 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
   return nodes;
 }
 
-/** How the standing cup's photo is turned, on the screen, to lie flat on its side, its mouth to the left (degrees). */
-const CUP_TURN = -90;
+/**
+ * How the cup's photo is turned on the screen (degrees). It lay on its side, mouth to the left (-90); then a
+ * quarter turn clockwise (2026-10-31, the owner: "cup görünümünü clockwise sağ tarafa 90 derece döndür"): mouth up.
+ */
+const CUP_TURN = 0;
 /** The pompom in the hat's photo (hat-cone.webp, 540 × 720): centre and radius, as fractions of its width. */
 const HAT_POMPOM = { cx: 0.096, cy: 0.093, r: 0.093 };
 

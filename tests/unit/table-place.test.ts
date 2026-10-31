@@ -39,11 +39,11 @@ describe("the top view of one place", () => {
     const wave = placeLayout(table({ table: "half_wave" }), frozen, "six").filter((n): n is Extract<PlaceNode, { k: "group" }> => n.k === "group");
     for (const p of wave) expect(Math.min(Math.abs(p.rot), Math.abs(Math.abs(p.rot) - 180))).toBeLessThan(1);
   });
-  it("the cup lies flat, the same way up in every place; the hat's pompom stays white", () => {
+  it("the cup the same way up in every place, its mouth up; the hat's pompom stays white", () => {
     const places = placeLayout(table({ partyHats: "cone" }), frozen, "six").filter((n): n is Extract<PlaceNode, { k: "group" }> => n.k === "group");
     for (const p of places) {
       const cup = p.nodes.find((n) => "id" in n && n.id.endsWith("cup-in")) as Extract<PlaceNode, { k: "img" }>;
-      expect((((cup.rot! + p.rot) % 360) + 360) % 360).toBeCloseTo(270);
+      expect((((cup.rot! + p.rot) % 360) + 360) % 360).toBeCloseTo(0);
     }
     expect(part(places[0].nodes, "hat")).toMatchObject({ keep: { r: expect.any(Number) } });
   });
@@ -69,8 +69,8 @@ describe("the top view of one place", () => {
     expect(part(f, "cup-in")).toMatchObject({ src: "/design/table/top/cup-plain-in.webp" });
     expect((part(f, "cup-in") as { tint?: string }).tint).toBeUndefined();
     expect(part(f, "cup-out")).toMatchObject({ src: "/design/table/top/cup-plain-out.webp", tint: "#EC407A" });
-    // Lying on its side (2026-10-29: "cup daha yatay").
-    expect(Math.abs((part(f, "cup-out") as { rot?: number }).rot ?? 0)).toBeGreaterThan(60);
+    // Its mouth up (2026-10-31: a quarter turn clockwise from lying mouth-left).
+    expect((part(f, "cup-out") as { rot?: number }).rot ?? 0).toBe(0);
     expect(part(f, "-plates")).toMatchObject({ src: "/design/table/top/plates-plain-scalloped.webp", tint: "#F8BBD0" });
     expect(f.some((n) => "id" in n && /card/.test(n.id))).toBe(false);
     // A foil is a colour: the plate's shape in the foil, no tint.
