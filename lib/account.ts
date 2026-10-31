@@ -38,7 +38,7 @@ export const callbackUrl = () => `${window.location.origin}/account/callback`;
 // signed in from — and when they signed in to save or to see a render, the
 // Builder then does that straight away (0.5b: renders need an account).
 export const AFTER_SIGN_IN_KEY = "partymuse.after-sign-in.v1";
-export type AfterSignInAction = "save" | "render" | "table-render";
+export type AfterSignInAction = "save" | "render" | "table-render" | "welcome-render";
 interface AfterSignIn { to: string; then?: AfterSignInAction; at: number }
 
 /** Before leaving for Google or the inbox: where to come back to, and what to do there. */

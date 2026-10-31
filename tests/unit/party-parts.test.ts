@@ -10,6 +10,7 @@ import { defaultTableSetup, readTableSetup } from "@/lib/studio/tableSetup";
 import { ADULT_ITEMS, ADULT_SECTIONS, adultCounts, adultPriceLines, adultTotal, defaultAdultTable, readAdultTable } from "@/lib/studio/adultTable";
 import { boardArt, boardFace, cleanBoardText, defaultWelcomeBoard, readWelcomeBoard, welcomePriceLines, welcomeTotal } from "@/lib/studio/welcomeBoard";
 import { paintInks, stackWords } from "@/components/studio/WelcomeBoardArt";
+import { balloonColourName, welcomePrompt, welcomeRenderKey } from "@/lib/studio/welcomeRender";
 import { designCards, joinParty, readStoredTable, splitDesign, TABLE_ITEM, WELCOME_ITEM, type SavedItem } from "@/lib/savedDesigns";
 
 const frozen = themeById("frozen")!;
@@ -103,6 +104,43 @@ describe("the welcome board", () => {
     const b = readWelcomeBoard({ size: "huge", shape: "star", design: "plain", colour: "#123456", name: "Arya's", font: "comic", textColor: "blue" }, frozen)!;
     expect(b).toMatchObject({ size: "medium", shape: "arch", design: "plain", colour: "#123456", name: "Arya's", font: "birthstone-bounce", garnish: "none" });
     expect(b.textColor).toBeUndefined();
+  });
+});
+
+describe("the welcome board's photo", () => {
+  const b = { ...defaultWelcomeBoard(frozen), name: "Arya's", line: "6th birthday", garnish: "both" as const, shape: "arch" as const };
+  it("names balloon colours as they look, so the photo cannot take others", () => {
+    expect(["#FFFFFF", "#BFDFF7", "#C9B6E4", "#C0C0C0", "#F4B6C9", "#D4AF37"].map(balloonColourName))
+      .toEqual(["white", "pastel blue", "pastel lilac", "silver", "pastel pink", "gold"]);
+  });
+  it("asks for the exact words, the garland in only the party's colours, the roses, and keeps the arch's top", () => {
+    const p = welcomePrompt(b, ["#FFFFFF", "#BFDFF7"]);
+    expect(p).toMatch(/"WELCOME TO", then "Arya.s", then "6TH BIRTHDAY"/);
+    expect(p).toContain("ONLY in white, pastel blue");
+    expect(p).toContain("no pink unless pink is listed");
+    expect(p).toContain("silk roses");
+    expect(p).toContain("arch top stays fully visible");
+    expect(p).not.toMatch(/image 2/i);
+    const plain = welcomePrompt({ ...b, garnish: "none", shape: "round" }, ["#FFFFFF"]);
+    expect(plain).toContain("No balloons.");
+    expect(plain).toContain("No flowers.");
+    expect(plain).not.toContain("arch top");
+  });
+  it("is current until something in the picture changes", () => {
+    const k = welcomeRenderKey(b, "frozen", ["#FFFFFF"]);
+    expect(welcomeRenderKey({ ...b, render: { key: "x", path: "u/x.jpg" }, done: true }, "frozen", ["#FFFFFF"])).toBe(k);
+    expect(welcomeRenderKey({ ...b, name: "Zara's" }, "frozen", ["#FFFFFF"])).not.toBe(k);
+    expect(welcomeRenderKey(b, "frozen", ["#C0C0C0"])).not.toBe(k);
+    // Without a garland the balloon colours are not in the picture.
+    const flowers = { ...b, garnish: "flowers" as const };
+    expect(welcomeRenderKey(flowers, "frozen", ["#FFFFFF"])).toBe(welcomeRenderKey(flowers, "frozen", ["#C0C0C0"]));
+  });
+  it("a kept photo is read back only when it looks like one of ours", () => {
+    const ok = { key: "abc123", path: "0f5e-11aa/abc123.jpg" };
+    expect(readWelcomeBoard({ ...b, render: ok }, frozen)?.render).toEqual(ok);
+    for (const render of [{ key: "abc", path: "../etc/passwd" }, { key: "ABC!", path: "u/a.jpg" }, { key: "abc", path: "https://x.y/a.jpg" }, "abc"]) {
+      expect(readWelcomeBoard({ ...b, render }, frozen)?.render).toBeUndefined();
+    }
   });
 });
 

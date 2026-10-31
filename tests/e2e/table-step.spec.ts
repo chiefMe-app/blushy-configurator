@@ -1,7 +1,7 @@
 // The kids' table, part 2 of Decor (2026-10-27, F2): after the backdrop's
 // Extras, a yes or skip; then every item on one page (2026-10-28); the price
 // adds to the party total; Back walks back; the table is kept on the device.
-import { test, expect, openDecor, decorTab, next, total, settle } from "./guard";
+import { test, expect, openDecor, decorTab, next, total, settle, signIn, FAKE_WELCOME_RENDER } from "./guard";
 import type { Page } from "@playwright/test";
 
 const aed = (s: string | null) => Number((s ?? "").replace(/[^0-9]/g, ""));
@@ -171,10 +171,10 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   const sum = aed(await page.getByTestId("welcome-total").locator("b").textContent());
   expect(aed(await total(page).textContent())).toBe(before + sum);
   await page.getByRole("radiogroup", { name: "Board size" }).getByRole("radio", { name: /Large/ }).click();
-  await page.getByTestId("welcome-material").getByRole("radio", { name: "Acrylic" }).click();
+  await page.getByTestId("welcome-material").getByRole("radio", { name: /Acrylic/ }).click();
   expect(aed(await page.getByTestId("welcome-total").locator("b").textContent())).toBe(sum + (320 - 250) + 150);
   // Round, and balloons with flowers on it (2026-10-31).
-  await page.getByTestId("welcome-shape").getByRole("radio", { name: "Round" }).click();
+  await page.getByTestId("welcome-shape").getByRole("radio", { name: /Round/ }).click();
   await expect(board).toHaveAttribute("data-shape", "round");
   await page.getByTestId("welcome-garnish").getByRole("radio", { name: /Balloons & flowers/ }).click();
   await expect(board.locator("[data-part=balloons]")).toHaveCount(1);
@@ -218,6 +218,51 @@ test("W2 on a phone, a change to the welcome board brings it into sight, and Bac
   await name.blur();
   await expect(page.getByTestId("welcome-preview").locator("svg")).toBeInViewport();
   await expect(page.getByTestId("welcome-preview").locator("svg [data-word=name]")).toHaveText("Zara's");
+});
+
+test("W3 the welcome board's photo: made from the drawing, shown beside it, and asked for again once the board changes", async ({ page, guard }) => {
+  guard.fakeRender = true;
+  let release!: () => void;
+  guard.holdWelcomeRender = new Promise<void>((r) => { release = r; });
+  await signIn(page); // renders need an account
+  await toTable(page);
+  await page.getByRole("button", { name: "No thanks, skip" }).click();
+  await next(page).click();
+  await next(page).click();
+  await page.getByRole("button", { name: /Yes, design the board/ }).click();
+  await page.getByTestId("welcome-name").fill("Arya's");
+  await page.getByTestId("welcome-garnish").getByRole("radio", { name: /Balloons & flowers/ }).click();
+  const sent = page.waitForRequest((r) => r.url().includes("/api/welcome-render"));
+  await page.getByTestId("welcome-render-button").click();
+  const body = JSON.parse((await sent).postData()!);
+  expect(body.board.name).toBe("Arya's");
+  expect(body.drawing).toMatch(/^data:image\/jpeg;base64,/);
+  await expect(page.getByTestId("welcome-render-wait")).toBeVisible();
+  release();
+  await expect(page.getByTestId("welcome-render")).toHaveAttribute("src", FAKE_WELCOME_RENDER);
+  await expect(page.getByTestId("welcome-render-button")).toHaveCount(0);
+  await page.getByRole("tab", { name: "Drawing" }).click();
+  await expect(page.getByTestId("welcome-preview").locator("svg")).toBeVisible();
+  await page.getByRole("tab", { name: "Photo" }).click();
+  await expect(page.getByTestId("welcome-render")).toBeVisible();
+  // A change to the board: back to the drawing, and the photo can be made again.
+  await page.getByTestId("welcome-name").fill("Zara's");
+  await expect(page.getByTestId("welcome-render")).toHaveCount(0);
+  await expect(page.getByTestId("welcome-render-button")).toHaveText("Update the photo ✦");
+  // The one render asked for, answered by the stand-in.
+  expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/welcome-render"]);
+});
+
+test("W4 signed out, asking for the board's photo asks to sign in first", async ({ page, guard }) => {
+  guard.fakeRender = true;
+  await toTable(page);
+  await page.getByRole("button", { name: "No thanks, skip" }).click();
+  await next(page).click();
+  await next(page).click();
+  await page.getByRole("button", { name: /Yes, design the board/ }).click();
+  await page.getByTestId("welcome-render-button").click();
+  await expect(page.getByRole("dialog")).toContainText("Sign in to see your board");
+  expect(guard.blocked).toEqual([]);
 });
 
 test("K2 skipping the table adds nothing; Back walks back to the backdrop", async ({ page }) => {

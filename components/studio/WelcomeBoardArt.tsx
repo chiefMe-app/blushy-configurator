@@ -351,13 +351,17 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
     let live = true;
     fonts?.ready.then(() => live && measure());
     fonts?.addEventListener?.("loadingdone", measure);
-    return () => { live = false; fonts?.removeEventListener?.("loadingdone", measure); };
+    // Drawn while hidden (the builder keeps it mounted), nothing measures: again once it shows.
+    const svg = refs.find((r) => r.current)?.current?.ownerSVGElement;
+    const seen = svg && typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => measure()) : undefined;
+    if (svg) seen?.observe(svg);
+    return () => { live = false; fonts?.removeEventListener?.("loadingdone", measure); seen?.disconnect(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, board.shape]);
 
   const floor = top + h + (easel ? 40 : 6);
-  const right = w + (garland ? 38 * u : 22);
-  const bottom = Math.max(h + top + (easel ? 46 : 8), garland ? floor + 14 * u : 0);
+  const right = w + (garland ? 46 * u : 22);
+  const bottom = Math.max(h + top + (easel ? 46 : 8), garland ? floor + 22 * u : 0);
   return (
     <svg className={className} viewBox={`-22 0 ${f1(right + 22)} ${f1(bottom)}`} role="img" aria-label="Your welcome board" data-shape={board.shape} data-garnish={board.garnish}>
       <defs><clipPath id={`${uid}-clip`}><path d={shape} /></clipPath></defs>

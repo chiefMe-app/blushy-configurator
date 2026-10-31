@@ -6,8 +6,8 @@
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
-import { BOARD_DESIGNS, BOARD_GARNISHES, BOARD_MATERIALS, BOARD_SHAPES, BOARD_SIZES, BOARD_STANDS, MAX_BOARD_TEXT, boardArt, boardFace, boardWordsColour, cleanBoardText, defaultWelcomeBoard, welcomeTotal, type WelcomeBoard } from "@/lib/studio/welcomeBoard";
-import WelcomeBoardArt, { PaintedCorners, paintInks } from "@/components/studio/WelcomeBoardArt";
+import { BOARD_DESIGNS, BOARD_GARNISHES, BOARD_MATERIALS, BOARD_SHAPES, BOARD_SIZES, BOARD_STANDS, MAX_BOARD_TEXT, boardArt, boardFace, boardWordsColour, cleanBoardText, defaultWelcomeBoard, welcomePhoto, welcomeTotal, type WelcomeBoard } from "@/lib/studio/welcomeBoard";
+import { PaintedCorners, paintInks } from "@/components/studio/WelcomeBoardArt";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
 
 export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
@@ -43,9 +43,13 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
       ))}
     </div>
   );
-  const chips = <T extends string>(label: string, list: readonly { id: T; name: string }[], value: T, pick: (id: T) => void, testId: string) => (
-    <div className="bz-tb-shapes" role="radiogroup" aria-label={label} data-testid={testId}>
-      {list.map((o) => <button key={o.id} type="button" role="radio" aria-checked={value === o.id} className={value === o.id ? "on" : ""} onClick={() => pick(o.id)}>{o.name}</button>)}
+  // The options with a picture each (2026-10-31: "bu seçeneklerin renderını alıp").
+  const photoCards = <T extends string>(label: string, kind: Parameters<typeof welcomePhoto>[0], list: readonly { id: T; name: string; note: string; extra?: number }[], value: T, pick: (id: T) => void, testId: string) => (
+    <div className="bz-tb-options" role="radiogroup" aria-label={label} data-testid={testId}>
+      {list.map((o) => card(value === o.id, () => pick(o.id),
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="photo" src={welcomePhoto(kind, o.id)} alt="" loading="lazy" />,
+        o.name, o.note, o.extra ? `+AED ${formatAED(o.extra)}` : "", o.id))}
     </div>
   );
   const card = (on: boolean, pick: () => void, art: React.ReactNode, name: string, note: string, price: string, key: string) => (
@@ -83,7 +87,7 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
         </div>
         <div className="bz-tb-item">
           <h3>Shape</h3>
-          {chips("Board shape", BOARD_SHAPES, b.shape, (shape) => set({ shape }), "welcome-shape")}
+          {photoCards("Board shape", "shape", BOARD_SHAPES, b.shape, (shape) => set({ shape }), "welcome-shape")}
         </div>
       </section>
 
@@ -130,11 +134,7 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
         <h2>Balloons &amp; flowers</h2>
         <div className="bz-tb-item">
           <h3>On the board</h3>
-          <div className="bz-tb-options" role="radiogroup" aria-label="Balloons and flowers" data-testid="welcome-garnish">
-            {BOARD_GARNISHES.map((g) => card(b.garnish === g.id, () => set({ garnish: g.id }),
-              <WelcomeBoardArt board={{ ...b, garnish: g.id, heading: "", name: "", line: "", stand: "none" }} theme={theme} balloons={config.decor.balloonColors} placeholders={false} className="photo" />,
-              g.name, g.note, g.extra ? `+AED ${formatAED(g.extra)}` : "", g.id))}
-          </div>
+          {photoCards("Balloons and flowers", "garnish", BOARD_GARNISHES, b.garnish, (garnish) => set({ garnish }), "welcome-garnish")}
         </div>
       </section>
 
@@ -142,13 +142,11 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
         <h2>Board &amp; stand</h2>
         <div className="bz-tb-item">
           <h3>Board</h3>
-          {chips("Board material", BOARD_MATERIALS, b.material, (material) => set({ material }), "welcome-material")}
-          <p className="bz-tb-floor">{BOARD_MATERIALS.find((m) => m.id === b.material)!.note}{BOARD_MATERIALS.find((m) => m.id === b.material)!.extra ? ` · +AED ${BOARD_MATERIALS.find((m) => m.id === b.material)!.extra}` : ""}</p>
+          {photoCards("Board material", "material", BOARD_MATERIALS, b.material, (material) => set({ material }), "welcome-material")}
         </div>
         <div className="bz-tb-item">
           <h3>Stand</h3>
-          {chips("Board stand", BOARD_STANDS, b.stand, (stand) => set({ stand }), "welcome-stand")}
-          <p className="bz-tb-floor">{BOARD_STANDS.find((s) => s.id === b.stand)!.note}{BOARD_STANDS.find((s) => s.id === b.stand)!.extra ? ` · +AED ${BOARD_STANDS.find((s) => s.id === b.stand)!.extra}` : ""}</p>
+          {photoCards("Board stand", "stand", BOARD_STANDS, b.stand, (stand) => set({ stand }), "welcome-stand")}
         </div>
       </section>
 
