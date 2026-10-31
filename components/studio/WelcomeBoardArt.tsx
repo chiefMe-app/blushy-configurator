@@ -5,7 +5,12 @@
 // like her Frozen example; and the words never run into each other ("yazı
 // overlap olmasın hiç bir zaman") — each line is measured once drawn and
 // stacked with a gap, made smaller if it is too wide.
+// Later that day (owner: "render görüntülerini kullanarak preview görsellerini
+// oluşturmak", as the table's top view): the room, the easel, the balloons and
+// the roses are real photo pieces, each rendered once (scripts/welcome/), stacked
+// round the printed board — the balloons tinted to the party's colours. No render.
 import { useId, useLayoutEffect, useRef, useState } from "react";
+import PIECES from "@/lib/studio/welcomePieces.json";
 import { tableFont, fontCss, asPrinted } from "@/lib/studio/tableFonts";
 import { boardArt, boardFace, boardWordsColour, type WelcomeBoard } from "@/lib/studio/welcomeBoard";
 
@@ -173,75 +178,102 @@ export function PaintedCorners({ w, h, top = 0, shape = "rectangle", inks, motif
   );
 }
 
-/** A silk rose seen from the front: petals as rings round a tight centre. */
-function Rose({ x, y, r, c }: { x: number; y: number; r: number; c: string }) {
-  const dark = mix(c, "#8A4A5E", 0.28);
+const piece = (name: keyof typeof PIECES) => `/design/welcome/pieces/${name}.webp`;
+
+/** How a balloon colour is shown: the white latex photo tinted to it, or the chrome one (silver as it is, gold tinted). */
+function balloonLook(hex: string): { src: string; tint?: string } {
+  const { h, s, l } = hsl(hex);
+  if (s < 0.12 && l > 0.45 && l < 0.92) return { src: piece("balloon-chrome") };
+  if (h >= 35 && h <= 60 && s > 0.35 && l < 0.62) return { src: piece("balloon-chrome"), tint: mix(hex, "#FFFFFF", 0.2) };
+  return { src: piece("balloon-latex"), tint: l >= 0.92 && s < 0.3 ? undefined : hex };
+}
+
+/** A white piece multiplied by its colour, its brightest light kept white (a balloon's shine). */
+function Tint({ id, colour }: { id: string; colour: string }) {
   return (
-    <g>
-      <circle cx={x} cy={y} r={r} fill={c} stroke={mix(c, "#8A4A5E", 0.15)} strokeWidth={r * 0.05} />
-      {[0.72, 0.5, 0.3].map((k, i) => {
-        const a0 = (i * 110 * Math.PI) / 180, a1 = a0 + 4.2;
-        return <path key={i} d={`M${f1(x + Math.cos(a0) * r * k)},${f1(y + Math.sin(a0) * r * k)}A${f1(r * k)},${f1(r * k)} 0 1 1 ${f1(x + Math.cos(a1) * r * k)},${f1(y + Math.sin(a1) * r * k)}`} fill="none" stroke={dark} strokeWidth={r * 0.07} strokeLinecap="round" opacity={0.75} />;
-      })}
-      <circle cx={x} cy={y} r={r * 0.13} fill={dark} opacity={0.8} />
-    </g>
+    <filter id={id} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+      <feFlood floodColor={colour} result="c" />
+      <feComposite in="c" in2="SourceGraphic" operator="arithmetic" k1={1} k2={0} k3={0} k4={0} result="t" />
+      <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 3.6 7.08 1.32 0 -11.28" result="hi" />
+      <feComposite in="hi" in2="t" operator="over" result="lit" />
+      <feComposite in="lit" in2="SourceAlpha" operator="in" />
+    </filter>
   );
 }
 
-function Leaf({ x, y, r, a }: { x: number; y: number; r: number; a: number }) {
-  return (
-    <g transform={`rotate(${a} ${f1(x)} ${f1(y)})`}>
-      <ellipse cx={x + r * 0.9} cy={y} rx={r * 0.95} ry={r * 0.36} fill="#9DBF8E" />
-      <path d={`M${f1(x)},${f1(y)}H${f1(x + r * 1.7)}`} stroke="#7FA373" strokeWidth={r * 0.06} />
-    </g>
-  );
-}
+type Ball = { cx: number; cy: number; r: number; c: number; turn: number };
 
-/** A spray of flowers on a corner; dir 1 opens down-right (a top-left corner), -1 up-left. */
-function Spray({ x, y, u, dir, colours }: { x: number; y: number; u: number; dir: 1 | -1; colours: string[] }) {
-  const roses: [number, number, number][] = [[0, 0, 4.8], [6.8, 2.2, 3.8], [-1.6, 7, 3.6], [11, -1, 2.8], [-5.6, -2.2, 2.6], [3.5, 9.5, 2.4]];
-  const leaves: [number, number, number][] = [[12, 4, 20], [6, 10, 60], [-6, 6, 120], [-7, -3, 200], [14, -4, -20], [0, 13, 85]];
-  return (
-    <g data-part="flowers">
-      {leaves.map(([dx, dy, a], i) => <Leaf key={`l${i}`} x={x + dx * u * dir * 0.6} y={y + dy * u * dir * 0.6} r={4.2 * u} a={dir === 1 ? a : a + 180} />)}
-      {roses.map(([dx, dy, r], i) => <Rose key={`r${i}`} x={x + dx * u * dir} y={y + dy * u * dir} r={r * u} c={colours[i % colours.length]} />)}
-    </g>
-  );
-}
-
-/** A balloon garland up the board's right side, from the floor to near its top (11" balloons, some 5" and 18"). */
-function Garland({ x, y0, y1, u, colours, uid, flowers }: { x: number; y0: number; y1: number; u: number; colours: string[]; uid: string; flowers?: string[] }) {
+/** A balloon garland up the board's right side, from the floor to near its top: 11" balloons, some 18", 5" ones tucked in front. */
+function Garland({ x, y0, y1, u, colours, uid, roses }: { x: number; y0: number; y1: number; u: number; colours: string[]; uid: string; roses?: boolean }) {
   const rand = rng(5);
-  const big: [number, number, number, number][] = [];
-  const small: [number, number, number, number][] = [];
-  const n = Math.max(4, Math.round((y0 - y1) / 12));
+  const back: Ball[] = [], main: Ball[] = [], small: Ball[] = [];
+  const n = Math.max(6, Math.round((y0 - y1) / 9));
+  const pick = () => Math.floor(rand() * colours.length);
+  const turn = () => (rand() - 0.5) * 24;
   for (let i = 0; i <= n; i++) {
     const t = i / n;
-    const cy = y0 - (y0 - y1) * t;
+    const cy = y0 - 12 * u - (y0 - 12 * u - y1) * t;
     const cx = x + Math.sin(t * 7.5) * 3.5 * u + (rand() - 0.5) * 2.5 * u;
     const r = (t < 0.5 && rand() < 0.22 ? 20 : 12.5 + rand() * 1.5) * u * (t > 0.9 ? 0.85 : 1);
-    big.push([cx, cy, r, Math.floor(rand() * colours.length)]);
+    // Behind it, one to each side: the garland's width.
+    for (const side of [-1, 1]) back.push({ cx: cx + side * (7 + rand() * 4) * u, cy: cy - (2 + rand() * 4) * u, r: r * (0.78 + rand() * 0.12), c: pick(), turn: turn() });
+    main.push({ cx, cy, r, c: pick(), turn: turn() });
     for (let k = 0; k < 1 + Math.round(rand()); k++) {
       const a = rand() * Math.PI * 2;
-      small.push([cx + Math.cos(a) * r * 1.02, cy + Math.sin(a) * r * 1.02, (5.5 + rand()) * u, Math.floor(rand() * colours.length)]);
+      small.push({ cx: cx + Math.cos(a) * r * 0.95, cy: cy + Math.sin(a) * r * 0.95, r: (5.5 + rand()) * u, c: pick(), turn: turn() });
     }
   }
-  const ball = ([cx, cy, r, c]: [number, number, number, number], i: number, kind: string) => <circle key={`${kind}${i}`} cx={cx} cy={cy} r={r} fill={`url(#${uid}-b${c})`} />;
+  const looks = colours.map(balloonLook);
+  const aspect = PIECES["balloon-latex"].w / PIECES["balloon-latex"].h;
+  const ball = (b: Ball, i: number, kind: string) => {
+    const look = looks[b.c];
+    const hgt = b.r * 2.1, wid = hgt * aspect;
+    return (
+      // eslint-disable-next-line jsx-a11y/alt-text
+      <image key={`${kind}${i}`} href={look.src} x={b.cx - wid / 2} y={b.cy - hgt / 2} width={wid} height={hgt} preserveAspectRatio="none"
+        transform={`rotate(${f1(b.turn)} ${f1(b.cx)} ${f1(b.cy)})`} filter={look.tint ? `url(#${uid}-t${b.c})` : undefined} />
+    );
+  };
+  const trio = PIECES["roses-trio"];
   return (
     <g data-part="balloons">
-      <defs>
-        {colours.map((c, i) => (
-          <radialGradient key={i} id={`${uid}-b${i}`} cx="0.36" cy="0.32" r="0.78">
-            <stop offset="0" stopColor={mix(c, "#FFFFFF", 0.7)} />
-            <stop offset="0.35" stopColor={c} />
-            <stop offset="1" stopColor={mix(c, "#2A2030", 0.22)} />
-          </radialGradient>
-        ))}
-      </defs>
-      {big.map((b, i) => ball(b, i, "b"))}
-      {flowers && [2, Math.floor(n / 2) + 1, n - 1].map((i, k) => big[i] && <Rose key={`fr${k}`} x={big[i][0] - big[i][2] * 0.8} y={big[i][1] + big[i][2] * 0.5} r={3.6 * u} c={flowers[k % flowers.length]} />)}
+      <defs>{looks.map((l, i) => l.tint && <Tint key={i} id={`${uid}-t${i}`} colour={l.tint} />)}</defs>
+      <ellipse cx={x} cy={y0} rx={24 * u} ry={3.2 * u} fill="#3b2a22" opacity={0.22} filter={`url(#${uid}-soft)`} />
+      <g opacity={0.92}>{back.map((b, i) => ball(b, i, "k"))}</g>
+      {main.map((b, i) => ball(b, i, "b"))}
+      {roses && [2, Math.floor(n / 2) + 1, n - 1].map((i, k) => main[i] && (
+        // eslint-disable-next-line jsx-a11y/alt-text
+        <image key={`fr${k}`} data-part="garland-roses" href={piece("roses-trio")} x={main[i].cx - main[i].r * 1.25} y={main[i].cy + main[i].r * 0.05} width={13 * u} height={(13 * u * trio.h) / trio.w} />
+      ))}
       {small.map((b, i) => ball(b, i, "s"))}
     </g>
+  );
+}
+
+/** The rose spray on a corner: its fullest roses at the corner (x, y), trailing off along the edge at `turn` degrees; mirrored for a right-hand corner. */
+function Roses({ x, y, width, turn, mirror }: { x: number; y: number; width: number; turn: number; mirror?: boolean }) {
+  const p = PIECES["roses-spray"];
+  const hgt = (width * p.h) / p.w;
+  // The spray's fullest point, in the picture: about a fifth of the way along, halfway down.
+  const fx = width * 0.2, fy = hgt * 0.5;
+  return (
+    <g data-part="flowers" transform={`translate(${f1(x)} ${f1(y)}) rotate(${turn})${mirror ? " scale(-1 1)" : ""}`}>
+      {/* eslint-disable-next-line jsx-a11y/alt-text */}
+      <image href={piece("roses-spray")} x={-fx} y={-fy} width={width} height={hgt} />
+    </g>
+  );
+}
+
+/** The easel's photo, cut at its ledge: above it from the easel's top to the board's foot, below it from there to the floor. */
+function Easel({ cx, width, y0, ledge, floor, part }: { cx: number; width: number; y0: number; ledge: number; floor: number; part: "top" | "bottom" }) {
+  const p = PIECES.easel;
+  const cut = p.ledge[0] * p.h;
+  const [from, to, vy, vh] = part === "top" ? [y0, ledge, 0, cut] : [ledge, floor, cut, p.h - cut];
+  return (
+    <svg data-part="easel" aria-hidden="true" x={cx - width / 2} y={from} width={width} height={to - from} viewBox={`0 ${f1(vy)} ${p.w} ${f1(vh)}`} preserveAspectRatio="none" overflow="hidden">
+      {/* eslint-disable-next-line jsx-a11y/alt-text */}
+      <image href={piece("easel")} x={0} y={0} width={p.w} height={p.h} />
+    </svg>
   );
 }
 
@@ -293,7 +325,6 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
   const flowers = board.garnish === "flowers" || board.garnish === "both";
   const palette = [theme.accent, ...(theme.balloonColors ?? []), ...(theme.backdropColors ?? [])];
   const balloonColours = (balloons?.length ? balloons : theme.balloonColors ?? [theme.accent]).slice(0, 5);
-  const flowerColours = ["#FFFFFF", "#F6D3DC", ...palette.filter((c) => hsl(c).l > 0.7 && hsl(c).s > 0.2).slice(0, 1), "#FBE7EC"];
 
   const shape = board.shape === "arch"
     ? `M0,${top + h}L0,${top + w / 2}A${w / 2},${w / 2} 0 0 1 ${w},${top + w / 2}L${w},${top + h}Z`
@@ -307,11 +338,12 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
       ? { y0: top + w * 0.4, y1: top + h * 0.84, maxW: w * 0.8 }
       : { y0: top + h * 0.2, y1: top + h * 0.82, maxW: w * 0.8 };
   if (garland) space.maxW -= w * 0.06;
+  // The roses: where their fullest point sits on each corner, and the way they trail along the edge.
   const corner = board.shape === "rectangle"
-    ? { tl: [2 * u, top + 2 * u], br: [w - 2 * u, top + h - 2 * u] }
+    ? { tl: [3 * u, top + 3 * u, 8], br: [w - 3 * u, top + h - 4 * u, -8] }
     : board.shape === "arch"
-      ? { tl: [cx - w * 0.36, top + w * 0.15], br: [w - 2 * u, top + h - 2 * u] }
-      : { tl: [cx - w * 0.4, cy - w * 0.36], br: [cx + w * 0.42, cy + w * 0.4] };
+      ? { tl: [cx - w * 0.33, top + w * 0.16, -42], br: [w - 3 * u, top + h - 4 * u, -8] }
+      : { tl: [cx - w * 0.36, cy - w * 0.33, -45], br: [cx + w * 0.38, cy + w * 0.34, -45] };
 
   // The words: nominal sizes, an estimate until they are measured on screen.
   const texts = [board.heading.trim().toUpperCase(), name ? asPrinted(name, font) : "", line.toUpperCase()];
@@ -359,36 +391,65 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, board.shape]);
 
-  const floor = top + h + (easel ? 40 : 6);
-  const right = w + (garland ? 46 * u : 22);
-  const bottom = Math.max(h + top + (easel ? 46 : 8), garland ? floor + 22 * u : 0);
+  // A board without a stand hangs on the wall, above the floor.
+  const floor = top + h + (easel ? 40 : 30);
+  const right = w + (garland ? 54 * u : 22);
+  const bottom = floor + 8;
+  // The room behind: its photo scaled to cover the view, its wall meeting the floor a little behind the easel's feet.
+  const room = PIECES.room, wallBase = easel ? floor - 10 : floor;
+  const side = Math.max(right + 44, wallBase / room.floor, (bottom - wallBase) / (1 - room.floor));
+  const ledge = top + h - 1.5;
+  const shine = board.material === "acrylic";
   return (
     <svg className={className} viewBox={`-22 0 ${f1(right + 22)} ${f1(bottom)}`} role="img" aria-label="Your welcome board" data-shape={board.shape} data-garnish={board.garnish}>
-      <defs><clipPath id={`${uid}-clip`}><path d={shape} /></clipPath></defs>
-      {easel && <g stroke="#C9B9A6" strokeWidth={2.2} strokeLinecap="round" fill="none">
-        <path d={`M${cx},${top + 4}L${cx - w * 0.42},${top + h + 42}M${cx},${top + 4}L${cx + w * 0.42},${top + h + 42}M${cx},${top + 4}L${cx},${top + h + 36}`} />
-      </g>}
-      <g clipPath={`url(#${uid}-clip)`}>
-        <rect x={0} y={top} width={w} height={h} fill={art || board.design === "corners" ? "#FFFFFF" : board.colour} />
-        {art && (
-          // eslint-disable-next-line jsx-a11y/alt-text
-          <image href={art} x={cx - h / 2} y={cy - w / 2} width={h} height={w} preserveAspectRatio="xMidYMid slice" transform={`rotate(90 ${cx} ${cy})`} />
-        )}
-        {board.design === "corners" && <PaintedCorners w={w} h={h} top={top} shape={board.shape} inks={paintInks(palette)} motif={theme.id === "frozen" ? "flake" : "leaf"} uid={uid} />}
+      <defs>
+        <clipPath id={`${uid}-clip`}><path d={shape} /></clipPath>
+        <filter id={`${uid}-soft`} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation={1.6} /></filter>
+        <filter id={`${uid}-lift`} x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx={1.4} dy={2} stdDeviation={1.8} floodColor="#3b2a22" floodOpacity={0.28} /></filter>
+        <linearGradient id={`${uid}-light`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#FFFFFF" stopOpacity={0.16} />
+          <stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0} />
+          <stop offset="1" stopColor="#3b2a22" stopOpacity={0.07} />
+        </linearGradient>
+        <linearGradient id={`${uid}-gloss`} x1="0" y1="0" x2="1" y2="0.6">
+          <stop offset="0.18" stopColor="#FFFFFF" stopOpacity={0} />
+          <stop offset="0.26" stopColor="#FFFFFF" stopOpacity={0.38} />
+          <stop offset="0.34" stopColor="#FFFFFF" stopOpacity={0} />
+          <stop offset="0.4" stopColor="#FFFFFF" stopOpacity={0.18} />
+          <stop offset="0.45" stopColor="#FFFFFF" stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      {/* eslint-disable-next-line jsx-a11y/alt-text */}
+      <image data-part="room" href={piece("room")} x={(right - 22) / 2 - side / 2} y={wallBase - side * room.floor} width={side} height={side} preserveAspectRatio="none" />
+      {easel && <>
+        <ellipse cx={cx} cy={floor} rx={w * 0.5} ry={2.4} fill="#3b2a22" opacity={0.2} filter={`url(#${uid}-soft)`} />
+        <Easel part="top" cx={cx} width={w * 0.62} y0={top - 9} ledge={ledge} floor={floor} />
+      </>}
+      <g filter={`url(#${uid}-lift)`}>
+        <g clipPath={`url(#${uid}-clip)`}>
+          <rect x={0} y={top} width={w} height={h} fill={art || board.design === "corners" ? "#FFFFFF" : board.colour} />
+          {art && (
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <image data-part="art" href={art} x={cx - h / 2} y={cy - w / 2} width={h} height={w} preserveAspectRatio="xMidYMid slice" transform={`rotate(90 ${cx} ${cy})`} />
+          )}
+          {board.design === "corners" && <PaintedCorners w={w} h={h} top={top} shape={board.shape} inks={paintInks(palette)} motif={theme.id === "frozen" ? "flake" : "leaf"} uid={uid} />}
+        </g>
       </g>
-      <path d={shape} fill="none" stroke={board.material === "acrylic" ? "#B9C3CD" : "#5a4950"} strokeWidth={board.material === "acrylic" ? 1.2 : 0.6} />
-      {board.material === "acrylic" && <path d={`M${w * 0.1},${top + h * 0.25}L${w * 0.3},${top + h * 0.12}`} stroke="#FFFFFF" strokeWidth={1.4} opacity={0.7} strokeLinecap="round" />}
       <g fill={ink} textAnchor="middle" {...halo}>
         {texts[0] && <text ref={refs[0]} x={cx} y={f1(fit.base[0])} fontSize={f1(fit.size[0])} letterSpacing={f1(fit.size[0] * 0.16)} data-word="heading" style={{ fontFamily: "var(--bz-sans), 'DM Sans', sans-serif", fontWeight: 700 }}>{texts[0]}</text>}
         {texts[1] && <text ref={refs[1]} x={cx} y={f1(fit.base[1])} fontSize={f1(fit.size[1])} opacity={faded(board.name)} data-word="name" style={{ fontFamily: `${fontCss(font)}, Georgia, serif`, fontWeight: font.weight }}>{texts[1]}</text>}
         {texts[2] && <text ref={refs[2]} x={cx} y={f1(fit.base[2])} fontSize={f1(fit.size[2])} letterSpacing={f1(fit.size[2] * 0.11)} opacity={faded(board.line)} data-word="line" style={{ fontFamily: "var(--bz-sans), 'DM Sans', sans-serif", fontWeight: 600 }}>{texts[2]}</text>}
       </g>
-      {easel && <rect x={-4} y={top + h - 1} width={w + 8} height={3.5} rx={1} fill="#C9B9A6" />}
+      {/* The light on the print, and its edge: a thin white foam edge, or the clear polished edge and shine of acrylic. */}
+      <path d={shape} fill={`url(#${uid}-${shine ? "gloss" : "light"})`} pointerEvents="none" />
+      <path d={shape} fill="none" stroke={shine ? "rgba(255,255,255,0.95)" : "#FFFFFF"} strokeWidth={shine ? 0.9 : 0.5} />
+      <path d={shape} fill="none" stroke={shine ? "#8FA3B5" : "#3b2a22"} strokeOpacity={shine ? 0.55 : 0.18} strokeWidth={0.18} />
+      {easel && <Easel part="bottom" cx={cx} width={w * 0.62} y0={top - 9} ledge={ledge} floor={floor} />}
       {flowers && <>
-        <Spray x={corner.tl[0]} y={corner.tl[1]} u={u} dir={1} colours={flowerColours} />
-        {!garland && <Spray x={corner.br[0]} y={corner.br[1]} u={u} dir={-1} colours={flowerColours} />}
+        <Roses x={corner.tl[0]} y={corner.tl[1]} width={w * 0.46} turn={corner.tl[2]} />
+        {!garland && <Roses x={corner.br[0]} y={corner.br[1]} width={w * 0.4} turn={corner.br[2]} mirror />}
       </>}
-      {garland && <Garland x={w + 10 * u} y0={floor} y1={top + (board.shape === "rectangle" ? h * 0.06 : h * 0.18)} u={u} colours={balloonColours} uid={uid} flowers={flowers ? flowerColours : undefined} />}
+      {garland && <Garland x={w + 14 * u} y0={floor} y1={top + h * (board.shape === "rectangle" ? 0.16 : board.shape === "arch" ? 0.32 : 0.22)} u={u} colours={balloonColours} uid={uid} roses={flowers} />}
     </svg>
   );
 }

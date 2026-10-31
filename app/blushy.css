@@ -1295,12 +1295,9 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-tables button { border: 0; background: transparent; border-radius: 999px; padding: 8px 16px; font: 700 13.5px var(--bz-sans); color: var(--bz-muted); cursor: pointer; }
 .bz-tb-tables button.on { background: #fff; color: var(--bz-pink); box-shadow: 0 3px 10px rgba(103,44,71,.1); }
 .bz-tb-tables button:disabled { opacity: .45; cursor: not-allowed; }
-.bz-wb-wait { display: grid; place-items: center; background: #fbf7f4; border-radius: 16px; padding: 14px; }
-.bz-wb-art { width: 100%; max-width: 380px; max-height: 560px; display: block; }
-/* The board's photo on its way (2026-10-31): the drawing faded under the dots. */
-.bz-wb-wait.on { position: relative; }
-.bz-wb-wait.on > .bz-wb-art { opacity: .35; filter: blur(1px); transition: opacity .3s; }
-.bz-wb-wait[hidden] { display: none; }
+/* The board among its photo pieces (2026-10-31): the picture fills the card, the room's wall round it. */
+.bz-wb-wait { display: grid; place-items: center; background: #f3e6dc; border-radius: 16px; overflow: hidden; }
+.bz-wb-art { width: 100%; max-height: 560px; display: block; }
 .bz-tb-option .art .swatch-big { width: 60%; height: 70%; border-radius: 8px; border: 1px solid #d9c9cf; display: block; }
 .bz-md-card.welcome .sketch { display: grid; place-items: center; background: #fbf7f4; }
 .bz-md-card.welcome .sketch > svg { height: 92%; width: auto; max-width: 100%; }

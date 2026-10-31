@@ -1,7 +1,7 @@
 // The kids' table, part 2 of Decor (2026-10-27, F2): after the backdrop's
 // Extras, a yes or skip; then every item on one page (2026-10-28); the price
 // adds to the party total; Back walks back; the table is kept on the device.
-import { test, expect, openDecor, decorTab, next, total, settle, signIn, FAKE_WELCOME_RENDER } from "./guard";
+import { test, expect, openDecor, decorTab, next, total, settle } from "./guard";
 import type { Page } from "@playwright/test";
 
 const aed = (s: string | null) => Number((s ?? "").replace(/[^0-9]/g, ""));
@@ -155,7 +155,7 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   await expect(next(page)).toHaveText(/Skip to Package/);
   const before = aed(await total(page).textContent());
   await page.getByRole("button", { name: /Yes, design the board/ }).click();
-  const board = page.getByTestId("welcome-preview").locator("svg");
+  const board = page.getByTestId("welcome-preview").getByRole("img", { name: "Your welcome board" });
   await expect(board).toBeVisible();
   await page.getByTestId("welcome-name").fill("Arya's");
   await page.getByTestId("welcome-line").fill("6th Birthday");
@@ -164,9 +164,9 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   // Painted corners first (2026-10-31, the owner's Frozen example), the theme's art, or a plain colour.
   await expect(board.locator("[data-part=painted-corners]")).toHaveCount(1);
   await page.getByRole("radiogroup", { name: "Board design" }).getByRole("radio", { name: /Watercolour/ }).click();
-  await expect(board.locator("image")).toHaveAttribute("href", "/design/table/placemats/frozen/watercolour.webp");
+  await expect(board.locator("[data-part=art]")).toHaveAttribute("href", "/design/table/placemats/frozen/watercolour.webp");
   await page.getByRole("radiogroup", { name: "Board design" }).getByRole("radio", { name: /Plain colour/ }).click();
-  await expect(board.locator("image")).toHaveCount(0);
+  await expect(board.locator("[data-part=art]")).toHaveCount(0);
   await expect(page.getByTestId("welcome-colour")).toBeVisible();
   const sum = aed(await page.getByTestId("welcome-total").locator("b").textContent());
   expect(aed(await total(page).textContent())).toBe(before + sum);
@@ -179,6 +179,13 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   await page.getByTestId("welcome-garnish").getByRole("radio", { name: /Balloons & flowers/ }).click();
   await expect(board.locator("[data-part=balloons]")).toHaveCount(1);
   await expect(board.locator("[data-part=flowers]")).toHaveCount(1);
+  // Real photo pieces round the printed board (2026-10-31): the room, the easel, the balloons in the party's colours, the roses.
+  await expect(board.locator("[data-part=room]")).toHaveCount(1);
+  await expect(board.locator("[data-part=easel]")).toHaveCount(2);
+  expect(await board.locator("[data-part=balloons] image[filter]").count()).toBeGreaterThan(5);
+  for (const src of await board.locator("image").evaluateAll((l) => Array.from(new Set(l.map((i) => i.getAttribute("href")!))))) {
+    expect((await page.request.get(src)).status(), src).toBe(200);
+  }
   expect(aed(await page.getByTestId("welcome-total").locator("b").textContent())).toBe(sum + (320 - 250) + 150 + 380);
   // The words, measured once drawn, never run into each other.
   await page.getByTestId("welcome-name").fill("Maximiliana-Josephine's");
@@ -208,61 +215,16 @@ test("W2 on a phone, a change to the welcome board brings it into sight, and Bac
   await page.waitForTimeout(800);
   await expect(page.getByTestId("welcome-back-to-choices")).toHaveCount(0);
   await page.getByTestId("welcome-garnish").getByRole("radio", { name: /Balloon garland/ }).click();
-  await expect(page.getByTestId("welcome-preview").locator("svg")).toBeInViewport();
+  await expect(page.getByTestId("welcome-preview").getByRole("img", { name: "Your welcome board" })).toBeInViewport();
   await page.getByTestId("welcome-back-to-choices").click();
   await expect(page.getByTestId("welcome-garnish")).toBeInViewport();
   // Typing: once the field is left.
   const name = page.getByTestId("welcome-name");
   await name.fill("Zara's");
-  await expect(page.getByTestId("welcome-preview").locator("svg")).not.toBeInViewport();
+  await expect(page.getByTestId("welcome-preview").getByRole("img", { name: "Your welcome board" })).not.toBeInViewport();
   await name.blur();
-  await expect(page.getByTestId("welcome-preview").locator("svg")).toBeInViewport();
+  await expect(page.getByTestId("welcome-preview").getByRole("img", { name: "Your welcome board" })).toBeInViewport();
   await expect(page.getByTestId("welcome-preview").locator("svg [data-word=name]")).toHaveText("Zara's");
-});
-
-test("W3 the welcome board's photo: made from the drawing, shown beside it, and asked for again once the board changes", async ({ page, guard }) => {
-  guard.fakeRender = true;
-  let release!: () => void;
-  guard.holdWelcomeRender = new Promise<void>((r) => { release = r; });
-  await signIn(page); // renders need an account
-  await toTable(page);
-  await page.getByRole("button", { name: "No thanks, skip" }).click();
-  await next(page).click();
-  await next(page).click();
-  await page.getByRole("button", { name: /Yes, design the board/ }).click();
-  await page.getByTestId("welcome-name").fill("Arya's");
-  await page.getByTestId("welcome-garnish").getByRole("radio", { name: /Balloons & flowers/ }).click();
-  const sent = page.waitForRequest((r) => r.url().includes("/api/welcome-render"));
-  await page.getByTestId("welcome-render-button").click();
-  const body = JSON.parse((await sent).postData()!);
-  expect(body.board.name).toBe("Arya's");
-  expect(body.drawing).toMatch(/^data:image\/jpeg;base64,/);
-  await expect(page.getByTestId("welcome-render-wait")).toBeVisible();
-  release();
-  await expect(page.getByTestId("welcome-render")).toHaveAttribute("src", FAKE_WELCOME_RENDER);
-  await expect(page.getByTestId("welcome-render-button")).toHaveCount(0);
-  await page.getByRole("tab", { name: "Drawing" }).click();
-  await expect(page.getByTestId("welcome-preview").locator("svg")).toBeVisible();
-  await page.getByRole("tab", { name: "Photo" }).click();
-  await expect(page.getByTestId("welcome-render")).toBeVisible();
-  // A change to the board: back to the drawing, and the photo can be made again.
-  await page.getByTestId("welcome-name").fill("Zara's");
-  await expect(page.getByTestId("welcome-render")).toHaveCount(0);
-  await expect(page.getByTestId("welcome-render-button")).toHaveText("Update the photo ✦");
-  // The one render asked for, answered by the stand-in.
-  expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/welcome-render"]);
-});
-
-test("W4 signed out, asking for the board's photo asks to sign in first", async ({ page, guard }) => {
-  guard.fakeRender = true;
-  await toTable(page);
-  await page.getByRole("button", { name: "No thanks, skip" }).click();
-  await next(page).click();
-  await next(page).click();
-  await page.getByRole("button", { name: /Yes, design the board/ }).click();
-  await page.getByTestId("welcome-render-button").click();
-  await expect(page.getByRole("dialog")).toContainText("Sign in to see your board");
-  expect(guard.blocked).toEqual([]);
 });
 
 test("K2 skipping the table adds nothing; Back walks back to the backdrop", async ({ page }) => {

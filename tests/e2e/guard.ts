@@ -7,18 +7,14 @@ import nodePath from "path";
 import { test as base, expect, type Page, type Request, type Route } from "@playwright/test";
 import { renderKey } from "@/lib/renderKey";
 import { tableRenderKey } from "@/lib/studio/tableRender";
-import { welcomeRenderKey } from "@/lib/studio/welcomeRender";
-import type { WelcomeBoard } from "@/lib/studio/welcomeBoard";
 import type { TableSetup } from "@/lib/studio/tableSetup";
 
-const BLOCKED_API = /\/api\/(orders|generate|generate-cutouts|generate-controlled-render|generate-structure-render-test|table-render|welcome-render)\/?(\?|$)/;
+const BLOCKED_API = /\/api\/(orders|generate|generate-cutouts|generate-controlled-render|generate-structure-render-test|table-render)\/?(\?|$)/;
 
 /** A stand-in render: any local picture, so the flow can move past Decor. */
 export const FAKE_RENDER = "/design/balloon-dog-outline.webp";
 /** Stand-ins for the table render's two views. */
 export const FAKE_TABLE_RENDER = { close: "/design/table/plates-themed.webp" };
-/** A stand-in for the welcome board's render. */
-export const FAKE_WELCOME_RENDER = "/design/welcome/garnish-balloons.webp";
 
 export interface Guard {
   blocked: Request[];
@@ -31,8 +27,6 @@ export interface Guard {
   limitRender?: { status: number; error: string; busy?: boolean };
   /** The stand-in table render answers only once this has settled (to see it waiting). */
   holdTableRender?: Promise<void>;
-  /** The stand-in welcome board render answers only once this has settled. */
-  holdWelcomeRender?: Promise<void>;
   /** The stand-in Supabase at supabase.test (see fakeSupabase below). */
   supabase: FakeSupabase;
 }
@@ -197,15 +191,6 @@ export async function lockNetwork(page: Page): Promise<Guard> {
         // As the route streams it: the close-up's line, then the end.
         const lines = [{ view: "close", url: FAKE_TABLE_RENDER.close },
           { done: true, ...(sub ? { render: { key, close: `${sub}/c${key}.jpg` } } : {}) }];
-        return route.fulfill({ contentType: "application/x-ndjson", body: lines.map((l) => `${JSON.stringify(l)}\n`).join("") });
-      }
-      if (guard.fakeRender && url.pathname.startsWith("/api/welcome-render")) {
-        const body = (() => { try { return JSON.parse(req.postData() ?? "{}") as { board?: WelcomeBoard; theme?: string; balloons?: string[]; drawing?: string }; } catch { return {}; } })();
-        if (!body.board || !body.drawing?.startsWith("data:image/jpeg;base64,")) return route.fulfill({ status: 400, json: { error: "Missing board or drawing" } });
-        const sub = tokenSubject(req.headers()["authorization"]);
-        const key = welcomeRenderKey(body.board, body.theme ?? "", body.balloons ?? []);
-        await guard.holdWelcomeRender;
-        const lines = [{ url: FAKE_WELCOME_RENDER }, { done: true, ...(sub ? { render: { key, path: `${sub}/w${key}.jpg` } } : {}) }];
         return route.fulfill({ contentType: "application/x-ndjson", body: lines.map((l) => `${JSON.stringify(l)}\n`).join("") });
       }
       if (guard.fakeOrder && url.pathname.startsWith("/api/orders")) {

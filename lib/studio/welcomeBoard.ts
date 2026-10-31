@@ -54,9 +54,6 @@ export const BOARD_GARNISHES = [
 ] as const;
 export type BoardGarnish = (typeof BOARD_GARNISHES)[number]["id"];
 
-/** A kept render (2026-10-31): the board it shows (welcomeRenderKey) and its picture in the private renders bucket. */
-export interface WelcomeRender { key: string; path: string }
-
 export interface WelcomeBoard {
   /** false: the customer skipped it. */
   enabled: boolean;
@@ -79,15 +76,6 @@ export interface WelcomeBoard {
   textColor?: string;
   /** The customer pressed Finish (they may still change it). */
   done?: boolean;
-  /** The last real render of the board, if one was made (lib/studio/welcomeRender.ts). */
-  render?: WelcomeRender;
-}
-
-// Only ever a file in the customer's own folder, as the table's (lib/studio/tableSetup.ts).
-const RENDER_PATH = /^[0-9a-z-]{1,64}\/[0-9a-z]{1,40}\.jpg$/i;
-export function readWelcomeRender(raw: unknown): WelcomeRender | undefined {
-  const r = raw as Partial<WelcomeRender> | null;
-  return r && typeof r === "object" && typeof r.key === "string" && /^[a-z0-9]{1,13}$/.test(r.key) && typeof r.path === "string" && RENDER_PATH.test(r.path) ? { key: r.key, path: r.path } : undefined;
 }
 
 export const MAX_BOARD_TEXT = 30;
@@ -157,6 +145,5 @@ export function readWelcomeBoard(raw: unknown, theme: { backdropColors: string[]
     font: oneOf(TABLE_FONTS, r.font, base.font),
     ...(typeof r.textColor === "string" && HEX.test(r.textColor) ? { textColor: r.textColor } : {}),
     ...(r.done === true ? { done: true } : {}),
-    ...(readWelcomeRender(r.render) ? { render: readWelcomeRender(r.render) } : {}),
   };
 }

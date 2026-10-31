@@ -118,8 +118,8 @@ export default function ConfigurePage() {
   const serverDraft = useServerDraft({ config, step, decorTab });
   // 2026-10-27 (0.5b): renders need an account too. One sign-in window, for
   // saving or for a render; back from signing in, that is done at once.
-  const [signInFor, setSignInFor] = useState<"save" | "render" | "table-render" | "welcome-render" | null>(null);
-  const askSignIn = (purpose: "save" | "render" | "table-render" | "welcome-render") => {
+  const [signInFor, setSignInFor] = useState<"save" | "render" | "table-render" | null>(null);
+  const askSignIn = (purpose: "save" | "render" | "table-render") => {
     draft.flush(); // the design must be here when they come back
     setSignInFor(purpose);
   };
@@ -128,14 +128,12 @@ export default function ConfigurePage() {
   };
   const [renderOnArrival, setRenderOnArrival] = useState(false);
   const [tableRenderOnArrival, setTableRenderOnArrival] = useState(false);
-  const [welcomeRenderOnArrival, setWelcomeRenderOnArrival] = useState(false);
   useEffect(() => {
     // After the device copy is restored (useLocalDraft, above), in the same pass.
     const then = takeAfterSignIn();
     if (then === "save") serverDraft.saveOnArrival();
     if (then === "render") setRenderOnArrival(true);
     if (then === "table-render") { setDecorPart("table"); setTableRenderOnArrival(true); }
-    if (then === "welcome-render") { setDecorPart("welcome"); setWelcomeRenderOnArrival(true); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const startOver = () => {
@@ -510,12 +508,7 @@ export default function ConfigurePage() {
               </> : <div className="empty">Add a grown-ups&apos; table to see it here.</div>}
             </div>
           )}
-          {/* Kept mounted on every step, so a render carries on while the customer moves on. */}
-          <div hidden={!onWelcome}>
-            <WelcomePreview config={config} setWelcomeBoard={(welcomeBoard) => setConfig((c) => ({ ...c, welcomeBoard }))}
-              onSignInNeeded={() => askSignIn("welcome-render")}
-              startNow={welcomeRenderOnArrival} onStarted={() => setWelcomeRenderOnArrival(false)} />
-          </div>
+          {onWelcome && <WelcomePreview config={config} />}
           <div hidden={!onKids}>
             <TablePreview config={config} setTable={(table) => setConfig((c) => ({ ...c, table }))}
               onSignInNeeded={() => askSignIn("table-render")}
