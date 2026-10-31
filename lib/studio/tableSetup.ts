@@ -41,6 +41,8 @@ export interface TableSetup {
   scene?: TableScene;
   /** The last close-up render of this table (F3), if one was made. */
   render?: TableRender;
+  /** The customer pressed Finish (2026-10-31); they may still change it. The grown-ups' table is asked after. */
+  done?: boolean;
 }
 
 export type TableScene = "garden" | "indoor";
@@ -240,6 +242,7 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     ...(readWords(r) ? { words: readWords(r) } : {}),
     ...(r.scene === "garden" || r.scene === "indoor" ? { scene: r.scene } : {}),
     ...(readTableRender(r.render) ? { render: readTableRender(r.render) } : {}),
+    ...(r.done === true ? { done: true } : {}),
   };
 }
 

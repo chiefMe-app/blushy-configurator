@@ -64,7 +64,12 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   expect(renders[0].headers()["authorization"]).toMatch(/^Bearer \S+/);
   await next(page).click(); // the kids' table: skipped here (tests/e2e/table-step.spec.ts)
   await page.getByRole("button", { name: "No thanks, skip" }).click();
-  await expect(next(page)).toHaveText(/Continue to Package/);
+  // Then the grown-ups' table and the welcome board (2026-10-31), both skipped.
+  await expect(next(page)).toHaveText(/Next: Grown-ups' table/);
+  await next(page).click();
+  await expect(next(page)).toHaveText(/Skip to Welcome board/);
+  await next(page).click();
+  await expect(next(page)).toHaveText(/Skip to Package/);
   await next(page).click();
   await shot(page, "f1-05-package");
   await next(page).click();
@@ -263,7 +268,12 @@ test("F13 the Package step without a render: the render is optional", async ({ p
   await expect(renderButton(page)).toBeVisible(); // offered, not required
   await expect(next(page)).toHaveText(/Next: Table setup/);
   await next(page).click();
-  await expect(next(page)).toHaveText(/Skip to Package/); // the table is optional too
+  // The tables and the welcome board are optional too (2026-10-31).
+  await expect(next(page)).toHaveText(/Skip the kids' table/);
+  await next(page).click();
+  await expect(next(page)).toHaveText(/Skip to Welcome board/);
+  await next(page).click();
+  await expect(next(page)).toHaveText(/Skip to Package/);
   await next(page).click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   expect(guard.blocked.some((r) => r.url().includes("/api/generate-controlled-render"))).toBe(false);

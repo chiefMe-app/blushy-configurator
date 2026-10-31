@@ -8,9 +8,9 @@
 // (lib/draft.ts), never the customer's name, phone or venue.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BuilderConfig } from "@/lib/config";
-import { BACKDROP_ITEM, TABLE_ITEM, splitDesign } from "@/lib/savedDesigns";
+import { BACKDROP_ITEM, TABLE_ITEM, WELCOME_ITEM, splitDesign } from "@/lib/savedDesigns";
 
-export { BACKDROP_ITEM, TABLE_ITEM };
+export { BACKDROP_ITEM, TABLE_ITEM, WELCOME_ITEM };
 export const SERVER_DRAFT_KEY = "partymuse.party.v1";
 
 /** Which party and item this browser writes to, and for which session. */
@@ -20,6 +20,8 @@ export interface ServerDraftRef {
   itemId?: string;
   /** The kids' table's own item (2026-10-30). */
   tableItemId?: string;
+  /** The welcome board's own item (2026-10-31). */
+  welcomeItemId?: string;
   /** Fingerprint of the design last saved (components/builder/useServerDraft.ts). */
   savedPrint?: string;
 }
@@ -53,20 +55,21 @@ async function sessionUser(sb: SupabaseClient): Promise<string> {
 export async function saveDesign(sb: SupabaseClient, config: BuilderConfig, step: number, decorTab: number, ref: ServerDraftRef): Promise<ServerDraftRef> {
   const userId = await sessionUser(sb);
   let next: ServerDraftRef = ref.userId === userId ? { ...ref } : { userId };
-  const { backdrop, table } = splitDesign(config, step, decorTab);
+  const { backdrop, table, welcome } = splitDesign(config, step, decorTab);
   const context = { theme: config.theme, eventType: config.eventType };
 
   if (!next.partyId) {
     const { data, error } = await sb.from("parties").insert({ context }).select("id").single();
     if (error || !data) throw new Error(error?.message ?? "party not created");
-    next = { ...next, partyId: (data as { id: string }).id, itemId: undefined, tableItemId: undefined };
+    next = { ...next, partyId: (data as { id: string }).id, itemId: undefined, tableItemId: undefined, welcomeItemId: undefined };
   } else {
     await sb.from("parties").update({ context }).eq("id", next.partyId);
   }
 
   const itemId = await putItem(sb, next.partyId!, BACKDROP_ITEM, backdrop, next.itemId);
   const tableItemId = await putItem(sb, next.partyId!, TABLE_ITEM, table, next.tableItemId);
-  return { userId: next.userId, partyId: next.partyId, ...(itemId ? { itemId } : {}), ...(tableItemId ? { tableItemId } : {}) };
+  const welcomeItemId = await putItem(sb, next.partyId!, WELCOME_ITEM, welcome, next.welcomeItemId);
+  return { userId: next.userId, partyId: next.partyId, ...(itemId ? { itemId } : {}), ...(tableItemId ? { tableItemId } : {}), ...(welcomeItemId ? { welcomeItemId } : {}) };
 }
 
 /** Writes one item of the party (or removes it, once the customer no longer has that part); its id after. */

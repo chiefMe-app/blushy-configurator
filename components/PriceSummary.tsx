@@ -56,6 +56,10 @@ export default function PriceSummary({
   const designLines  = lines.filter((l) => l.section === "design");
   const packageLines = lines.filter((l) => l.section === "package");
   const addonLines   = lines.filter((l) => l.section === "addons");
+  // 2026-10-31: the tables and the welcome board were in the total but not listed.
+  const tableLines   = lines.filter((l) => l.section === "table");
+  const adultLines   = lines.filter((l) => l.section === "adults");
+  const welcomeLines = lines.filter((l) => l.section === "welcome");
 
   return (
     <div className={`rounded-2xl bg-white p-4 ${className}`} style={{ border: "1.5px solid #F5E4E9", boxShadow: "0 8px 25px rgba(103,44,71,.035)" }}>
@@ -67,6 +71,9 @@ export default function PriceSummary({
       <div className="space-y-4">
         <SectionGroup title="Service Package" lines={packageLines} />
         <SectionGroup title="Design Items"    lines={designLines} />
+        <SectionGroup title="Kids' table"     lines={tableLines} />
+        <SectionGroup title="Grown-ups' table" lines={adultLines} />
+        <SectionGroup title="Welcome board"   lines={welcomeLines} />
         <SectionGroup title="Add-ons"         lines={addonLines} />
       </div>
 

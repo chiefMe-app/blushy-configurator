@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { TableSetup } from "@/lib/studio/tableSetup";
 import { fitPlacematWords, placematWordsBottom, placematWordsGap } from "@/lib/studio/placematWords";
-import { placeLayout, placeView, type PlaceNode } from "@/lib/studio/tablePlace";
+import { placeLayout, placeView, type PlaceMode, type PlaceNode } from "@/lib/studio/tablePlace";
 import { FOILS } from "@/lib/studio/tableCatalog";
 import { fontCss, tableFont } from "@/lib/studio/tableFonts";
 
@@ -70,10 +70,39 @@ function Filter({ tint, lift }: { tint?: string; lift: number }) {
   );
 }
 
+/**
+ * A white yarn pompom (2026-10-31, the owner: "pompomu gerçek pompom ve beyaz
+ * olsun"): a soft shaded ball of fine strands, its edge frayed.
+ */
+function Pompom({ id, cx, cy, r }: { id: string; cx: number; cy: number; r: number }) {
+  // The same strands every time (no Math.random: the server and the page must agree).
+  const strands = Array.from({ length: 90 }, (_, i) => {
+    const a = i * 2.39996, d = r * Math.sqrt(((i * 37) % 90) / 90), len = r * (0.25 + ((i * 53) % 10) / 30);
+    const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+    return { x1: x, y1: y, x2: x + Math.cos(a + 0.5) * len, y2: y + Math.sin(a + 0.5) * len, shade: i % 3 };
+  });
+  return (
+    <g data-part={id}>
+      <defs>
+        <radialGradient id={`${id}-g`} cx="0.38" cy="0.35" r="0.7"><stop offset="0" stopColor="#FFFFFF" /><stop offset="0.65" stopColor="#F6F3F5" /><stop offset="1" stopColor="#DCD6DB" /></radialGradient>
+        <filter id={`${id}-f`} x="-40%" y="-40%" width="180%" height="180%">
+          <feTurbulence type="fractalNoise" baseFrequency={6 / r} numOctaves={2} seed={7} result="n" />
+          <feDisplacementMap in="SourceGraphic" in2="n" scale={r * 0.22} xChannelSelector="R" yChannelSelector="G" result="d" />
+          <feDropShadow in="d" dx={0.12} dy={0.2} stdDeviation={0.12} floodColor="#2b1d24" floodOpacity={0.22} />
+        </filter>
+      </defs>
+      <g filter={`url(#${id}-f)`}>
+        <circle cx={cx} cy={cy} r={r} fill={`url(#${id}-g)`} />
+        {strands.map((s, i) => <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke={["#FFFFFF", "#EEEAED", "#E2DCE1"][s.shade]} strokeWidth={r * 0.07} strokeLinecap="round" />)}
+      </g>
+    </g>
+  );
+}
+
 /** `fill`: covers its box, cropping the sides (a card in My designs, 2026-10-30). */
-export default function TablePlace({ table, theme, className, fill }: { table: TableSetup; theme: { id: string; balloonColors: string[]; accent: string }; className?: string; fill?: boolean }) {
-  const nodes = useMemo(() => placeLayout(table, theme), [table, theme]);
-  const view = useMemo(() => placeView(table), [table]);
+export default function TablePlace({ table, theme, className, fill, mode = "one" }: { table: TableSetup; theme: { id: string; balloonColors: string[]; accent: string }; className?: string; fill?: boolean; mode?: PlaceMode }) {
+  const nodes = useMemo(() => placeLayout(table, theme, mode), [table, theme, mode]);
+  const view = useMemo(() => placeView(table, mode), [table, mode]);
   const top = nodes.find((n): n is Extract<PlaceNode, { k: "top" }> => n.k === "top");
   const { family, weight, width } = useMeasure(facesOf(nodes));
   const filters = new Map<string, { tint?: string; lift: number }>();
@@ -107,6 +136,14 @@ export default function TablePlace({ table, theme, className, fill }: { table: T
             <mask id={`${n.id}-m`}><image href={n.src} {...box} /></mask>
             <image href={n.print} {...box} preserveAspectRatio="xMidYMid slice" mask={`url(#${n.id}-m)`} />
             <image href={n.src} {...box} style={{ mixBlendMode: "multiply" }} />
+          </g>;
+        }
+        if (n.keep) {
+          // The tinted hat, and a real white pompom over its tip, a little bigger than the photo's (2026-10-31).
+          const k = n.keep;
+          return <g key={n.id} transform={turn} data-part={n.id} data-tint={n.tint}>
+            <image href={n.src} {...box} filter={use(n.tint, n.lift)} />
+            <Pompom id={`${n.id}-pompom`} cx={box.x + k.cx * n.w} cy={box.y + k.cy * n.w} r={k.r * n.w * 1.35} />
           </g>;
         }
         return <image key={n.id} href={n.src} {...box} transform={turn} filter={use(n.tint, n.lift)} data-part={n.id} data-tint={n.tint} />;
@@ -159,7 +196,7 @@ export default function TablePlace({ table, theme, className, fill }: { table: T
   return (
     <svg className={className} viewBox={`${view.x.toFixed(2)} ${view.y.toFixed(2)} ${view.w.toFixed(2)} ${view.h.toFixed(2)}`} role="img" data-testid="table-place"
       {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}
-      aria-label="One place at your kids' table, from above">
+      aria-label={mode === "one" ? "One place at your kids' table, from above" : "Six places at your kids' table, from above"} data-mode={mode}>
       <defs>
         <linearGradient id="tp-band" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity={0.35} /><stop offset="0.5" stopColor="#fff" stopOpacity={0} /><stop offset="1" stopColor="#000" stopOpacity={0.12} /></linearGradient>
         {Array.from(filters, ([id, f]) => <Filter key={id} {...f} />)}

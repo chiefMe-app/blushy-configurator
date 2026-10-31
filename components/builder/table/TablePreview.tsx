@@ -14,7 +14,8 @@ import TableSketch from "@/components/studio/table/TableSketch";
 import TablePerspective from "@/components/studio/table/TablePerspective";
 import TablePlace from "@/components/studio/table/TablePlace";
 
-type View = "place" | "perspective" | "top";
+// 2026-10-31 (owner): one place first, then six places, a part of the table.
+type View = "place" | "six" | "perspective" | "top";
 /** The builder's phone layout (app/blushy.css): the preview comes after the choices. */
 const PHONE = "(max-width: 860px)";
 /** How a table render asked for in this visit is going (kept for the builder's notes). */
@@ -37,15 +38,18 @@ export default function TablePreview({ config }: {
   const [backTo, setBackTo] = useState<number | null>(null);
   const changeKey = table?.enabled ? tableRenderKey(table, config.theme) : "";
   const lastKey = useRef(changeKey);
+  // When the customer last picked a view: the jump leaves a view picked after the change alone.
+  const pickedAt = useRef(0);
   useEffect(() => {
     // Not when the table is first added (the customer is about to choose), only on a change to it.
     const before = lastKey.current;
     lastKey.current = changeKey;
     if (!changeKey || !before || changeKey === before || typeof window === "undefined" || !window.matchMedia?.(PHONE).matches) return;
+    const changedAt = performance.now();
     const jump = () => {
       const card = document.getElementById("table-preview-card");
       if (!card) return;
-      setView("place");
+      if (pickedAt.current < changedAt) setView("place");
       setBackTo((b) => b ?? window.scrollY);
       card.scrollIntoView({ behavior: "smooth", block: "start" });
     };
@@ -62,13 +66,14 @@ export default function TablePreview({ config }: {
     return () => clearTimeout(t);
   }, [changeKey]);
 
-  const tab = (v: View, name: string) => <button type="button" role="tab" aria-selected={view === v} className={view === v ? "on" : ""} onClick={() => setView(v)}>{name}</button>;
+  const tab = (v: View, name: string) => <button type="button" role="tab" aria-selected={view === v} className={view === v ? "on" : ""} onClick={() => { pickedAt.current = performance.now(); setView(v); }}>{name}</button>;
   return (
     <div className="bz-tb-preview" id="table-preview-card">
       <div className="head">
         <span className="title">✦ Your kids&apos; table</span>
         <div className="views" role="tablist" aria-label="Table view">
-          {tab("place", "Top view")}
+          {tab("place", "One place")}
+          {tab("six", "Six places")}
           {tab("top", "Whole table")}
           {tab("perspective", "Perspective")}
         </div>
@@ -78,12 +83,13 @@ export default function TablePreview({ config }: {
       ) : (
         <>
           <div className="bz-tb-wait">
-            {view === "place" ? <TablePlace table={table} theme={theme} className="bz-tb-place" />
+            {view === "place" || view === "six" ? <TablePlace table={table} theme={theme} mode={view === "six" ? "six" : "one"} className="bz-tb-place" />
               : view === "top" ? <TableSketch table={table} palette={theme.balloonColors} accent={theme.accent} className="bz-tb-sketch" />
               : <TablePerspective table={table} palette={theme.balloonColors} accent={theme.accent} className="bz-tb-sketch" />}
           </div>
           <p className="note">
-            {view === "place" ? <>Two places from above, made from photos of each piece — your colours and words show straight away.</>
+            {view === "place" ? <>One place from above, made from photos of each piece — your colours and words show straight away.</>
+              : view === "six" ? <>Six places, a part of the table, from above.</>
               : view === "top" ? <>From above, to scale · {tableCounts(table).tables} table{tableCounts(table).tables > 1 ? "s" : ""} · {table.kids} kids — a drawing, not a photo.</>
                 : <>From the front · {table.kids} kids — a drawing, not a photo.</>}
           </p>

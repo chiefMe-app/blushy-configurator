@@ -14,7 +14,9 @@ import { fingerprint } from "@/components/builder/useServerDraft";
 import { THEMES, formatAED, priceBreakdown, themeById } from "@/lib/config";
 import { DRAFT_KEY, fromDraft, toDraft } from "@/lib/draft";
 import TablePlace from "@/components/studio/table/TablePlace";
-import { TABLE_ITEM, designCards, joinParty, splitDesign, type DesignCard, type SavedItem } from "@/lib/savedDesigns";
+import AdultTableSketch from "@/components/studio/table/AdultTableSketch";
+import WelcomeBoardArt from "@/components/studio/WelcomeBoardArt";
+import { TABLE_ITEM, WELCOME_ITEM, designCards, joinParty, splitDesign, type DesignCard, type SavedItem } from "@/lib/savedDesigns";
 import { SERVER_DRAFT_KEY } from "@/lib/serverDraft";
 import { SETUP_LAYOUT_TEMPLATES, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 import { RENDER_BUCKET, renderKeyOf } from "@/lib/renderKey";
@@ -63,18 +65,18 @@ export default function MyDesigns() {
     const config = fromDraft(JSON.stringify(joined.draft))!.config;
     try {
       window.localStorage.setItem(DRAFT_KEY, JSON.stringify(joined.draft));
-      window.localStorage.setItem(SERVER_DRAFT_KEY, JSON.stringify({ userId, partyId: card.partyId, itemId: joined.itemId, tableItemId: joined.tableItemId, savedPrint: fingerprint(config) }));
+      window.localStorage.setItem(SERVER_DRAFT_KEY, JSON.stringify({ userId, partyId: card.partyId, itemId: joined.itemId, tableItemId: joined.tableItemId, welcomeItemId: joined.welcomeItemId, savedPrint: fingerprint(config) }));
     } catch { /* storage blocked: the Builder opens empty */ }
-    window.location.href = card.kind === "table" ? "/builder?part=table" : "/builder";
+    window.location.href = card.kind === "backdrop" ? "/builder" : `/builder?part=${card.kind}`;
   }
 
   async function remove(card: DesignCard) {
-    if (!window.confirm(`Delete this ${card.kind === "table" ? "kids' table" : "backdrop"} design? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete this ${{ backdrop: "backdrop", table: "table setup", welcome: "welcome board" }[card.kind]} design? This cannot be undone.`)) return;
     const sb = await loadClient();
     if (!sb) return;
     const item = card.item;
     const fail = () => setProblem("That design could not be deleted. Please try again.");
-    if (item.ref_id === TABLE_ITEM) {
+    if (item.ref_id === TABLE_ITEM || item.ref_id === WELCOME_ITEM) {
       const { error } = await sb.from("party_items").delete().eq("id", item.id);
       if (error) return fail();
     } else {
@@ -116,6 +118,8 @@ export default function MyDesigns() {
         </div>
       </header>
       <main className="bz-md-main">
+        {/* The lettering of the welcome boards' words. */}
+        <link rel="stylesheet" href="/fonts/typography/fonts.css" />
         <div className="bz-md-head">
           <h1>My designs</h1>
           <a className="bz-next" href="/builder">+ New design</a>
@@ -155,26 +159,30 @@ export default function MyDesigns() {
             {designCards(items).map((card) => {
               const c = card.config;
               const theme = themeById(c.theme) ?? THEMES[0];
-              const isTable = card.kind === "table";
+              const isTable = card.kind === "table", isWelcome = card.kind === "welcome";
+              const kids = c.table?.enabled ? c.table : undefined, adults = c.adultTable?.enabled ? c.adultTable : undefined;
               const setupId = inferSetupLayoutTemplateIdFromBackdropItems(c.decor.backdropItems);
-              const setup = isTable ? "Kids' table" : SETUP_LAYOUT_TEMPLATES.find((t) => t.id === setupId)?.name ?? "Backdrop";
-              const words = isTable ? undefined : c.decor.backdropItems.find((i) => i.text?.enabled && i.text.value.trim())?.text.value.trim();
-              const render = isTable ? undefined : renders[renderPath(card.item) ?? ""];
+              const setup = isTable ? [kids && "Kids' table", adults && "Grown-ups' table"].filter(Boolean).join(" + ")
+                : isWelcome ? "Welcome board" : SETUP_LAYOUT_TEMPLATES.find((t) => t.id === setupId)?.name ?? "Backdrop";
+              const words = isTable ? undefined : isWelcome ? [c.welcomeBoard!.heading, c.welcomeBoard!.name, c.welcomeBoard!.line].filter((w) => w.trim()).join(" ")
+                : c.decor.backdropItems.find((i) => i.text?.enabled && i.text.value.trim())?.text.value.trim();
+              const render = isTable || isWelcome ? undefined : renders[renderPath(card.item) ?? ""];
               return (
-                <li key={card.key} className={`bz-md-card ${isTable ? "table" : ""}`} data-testid="saved-design" data-kind={card.kind}>
+                <li key={card.key} className={`bz-md-card ${card.kind === "backdrop" ? "" : card.kind}`} data-testid="saved-design" data-kind={card.kind}>
                   <div className="sketch">
                     {isTable
-                      ? <TablePlace table={c.table!} theme={theme} fill />
+                      ? kids ? <TablePlace table={kids} theme={theme} fill /> : <AdultTableSketch a={adults!} theme={theme} />
+                      : isWelcome ? <WelcomeBoardArt board={c.welcomeBoard!} theme={theme} placeholders={false} />
                       : render
                         // eslint-disable-next-line @next/next/no-img-element
                         ? <img className="render" src={render} alt="Your render of this design" data-testid="saved-render" />
                         : <LiveSketch config={c} />}
                   </div>
                   <div className="body">
-                    <span className="kind">{isTable ? "Table setup" : "Backdrop"}</span>
+                    <span className="kind">{isTable ? "Table setup" : isWelcome ? "Welcome board" : "Backdrop"}</span>
                     <strong>{theme.name} · {setup}</strong>
                     {words && <span className="words">“{words}”</span>}
-                    {isTable && <span className="words">{c.table!.kids} children</span>}
+                    {isTable && <span className="words">{[kids && `${kids.kids} children`, adults && `${adults.guests} grown-ups`].filter(Boolean).join(" · ")}</span>}
                     <span className="meta">
                       {card.total ? `AED ${formatAED(card.total)} · ` : ""}
                       Saved {new Date(card.updatedAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}

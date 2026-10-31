@@ -14,9 +14,42 @@ const focus = (nodes: PlaceNode[]) => (nodes.find((n) => n.k === "group" && n.fo
 const part = (nodes: PlaceNode[], end: string) => nodes.find((n) => "id" in n && n.id.endsWith(end));
 
 describe("the top view of one place", () => {
-  it("only the table top (no chairs, no floor), the two places facing each other, the middle one last, the centrepieces", () => {
+  it("one place on its own first (2026-10-31): only it, square in the picture, no centrepieces", () => {
+    const nodes = placeLayout(table(), frozen);
+    const places = nodes.filter((n): n is Extract<PlaceNode, { k: "group" }> => n.k === "group");
+    expect(places).toHaveLength(1);
+    expect(places[0].focus).toBe(true);
+    expect([places[0].x, places[0].y, places[0].rot].map(Math.abs)).toEqual([0, 0, 0]);
+    expect(nodes.some((n) => n.k === "img" && n.id.startsWith("centre"))).toBe(false);
+    const view = placeView(table());
+    expect(view.w / view.h).toBeCloseTo(4 / 3);
+    expect(view.w).toBeLessThan(70);
+  });
+  it("six places, a part of the table: three a side, facing each other, the centrepieces between", () => {
     const t = table();
-    const nodes = placeLayout(t, frozen);
+    const nodes = placeLayout(t, frozen, "six");
+    const view = placeView(t, "six");
+    const places = nodes.filter((n): n is Extract<PlaceNode, { k: "group" }> => n.k === "group");
+    const whole = places.filter((p) => p.x > view.x && p.x < view.x + view.w && p.y > view.y && p.y < view.y + view.h);
+    expect(whole).toHaveLength(6);
+    expect(whole.filter((p) => Math.abs(p.rot) < 1)).toHaveLength(3);
+    expect(whole.filter((p) => Math.abs(Math.abs(p.rot) - 180) < 1)).toHaveLength(3);
+    expect(nodes.some((n) => n.k === "img" && n.id.startsWith("centre"))).toBe(true);
+    // The half wave table, close up, sits straight (2026-10-31: "half wave table bozuk duruyor").
+    const wave = placeLayout(table({ table: "half_wave" }), frozen, "six").filter((n): n is Extract<PlaceNode, { k: "group" }> => n.k === "group");
+    for (const p of wave) expect(Math.min(Math.abs(p.rot), Math.abs(Math.abs(p.rot) - 180))).toBeLessThan(1);
+  });
+  it("the cup lies flat, the same way up in every place; the hat's pompom stays white", () => {
+    const places = placeLayout(table({ partyHats: "cone" }), frozen, "six").filter((n): n is Extract<PlaceNode, { k: "group" }> => n.k === "group");
+    for (const p of places) {
+      const cup = p.nodes.find((n) => "id" in n && n.id.endsWith("cup-in")) as Extract<PlaceNode, { k: "img" }>;
+      expect((((cup.rot! + p.rot) % 360) + 360) % 360).toBeCloseTo(270);
+    }
+    expect(part(places[0].nodes, "hat")).toMatchObject({ keep: { r: expect.any(Number) } });
+  });
+  it("only the table top (no chairs, no floor), the places facing each other, the middle one last, the centrepieces", () => {
+    const t = table();
+    const nodes = placeLayout(t, frozen, "six");
     expect(nodes.some((n) => n.k === "group" && n.id.startsWith("seat"))).toBe(false);
     expect(placePictures(nodes).some((p) => /chair|cushion|grass/.test(p))).toBe(false);
     const places = nodes.filter((n): n is Extract<PlaceNode, { k: "group" }> => n.k === "group" && n.id.startsWith("place"));
@@ -24,12 +57,12 @@ describe("the top view of one place", () => {
     const mid = places[places.length - 1];
     expect([mid.x, mid.y, mid.rot].map((v) => Math.abs(v))).toEqual([0, 0, 0]); // the middle place, square in the picture
     // Across the table, turned round to face it, both in the picture (2026-10-29).
-    const view = placeView(t);
+    const view = placeView(t, "six");
     const across = places.find((p) => Math.abs(Math.abs(p.rot) - 180) < 1 && Math.abs(p.x) < 1)!;
     expect(across.y).toBeLessThan(-30);
     expect(view.y).toBeLessThan(across.y - 15);
     expect(view.y + view.h).toBeGreaterThan(15);
-    expect(view.w / view.h).toBeCloseTo(4 / 3);
+    expect(view.w / view.h).toBeGreaterThan(4 / 3);
   });
   it("the plain cup white inside, its outside in the colour; plain plates in their colour and shape; no card", () => {
     const f = focus(placeLayout(table({ cups: "plain", plates: "plain" }, { cupColor: "#EC407A", plateColor: "#F8BBD0", plateShape: "scalloped" }), frozen));
@@ -78,7 +111,7 @@ describe("the top view of one place", () => {
     expect(part(focus(placeLayout(table({}, { smallPlateColor: "iridescent" }), frozen)), "small-plate")).toMatchObject({ foil: "iridescent" });
     // The hat in its colour.
     expect(part(focus(placeLayout(table({ partyHats: "cone" }, { hatColor: "#F8BBD0" }), frozen)), "hat")).toMatchObject({ tint: "#F8BBD0" });
-    const all = placeLayout(table({ centrepiece: "cutouts" }), frozen);
+    const all = placeLayout(table({ centrepiece: "cutouts" }), frozen, "six");
     expect(all.some((n) => n.k === "img" && n.src.endsWith("centrepiece-cutouts-frozen.webp"))).toBe(true);
   });
   it("the lettering read back: one of the offered faces, or the classic one", () => {
@@ -106,18 +139,18 @@ describe("the top view of one place", () => {
       expect(apart, c.id).toBe(true);
     }
   });
-  it("round a round table, the two places side by side, both in the picture", () => {
+  it("round a round table, six places side by side, all in the picture", () => {
     const t = table({ table: "round" });
-    const places = placeLayout(t, frozen).filter((n): n is Extract<PlaceNode, { k: "group" }> => n.k === "group");
-    const view = placeView(t);
+    const places = placeLayout(t, frozen, "six").filter((n): n is Extract<PlaceNode, { k: "group" }> => n.k === "group");
+    const view = placeView(t, "six");
     const inside = places.filter((p) => p.x > view.x && p.x < view.x + view.w && p.y > view.y && p.y < view.y + view.h);
-    expect(inside.length).toBeGreaterThanOrEqual(2);
+    expect(inside.length).toBeGreaterThanOrEqual(6);
   });
   it("every picture it can ask for is there", () => {
     const all = new Set<string>();
     for (const plates of ["plain"]) for (const shape of ["round", "scalloped", "square"]) for (const cups of ["plain", "iridescent"])
       for (const cutlery of ["wooden", "dipped", "glitter"]) for (const centrepiece of ["balloons", "florals", "toppers", "cutouts"]) for (const chairs of ["white_kids"])
-        placePictures(placeLayout(table({ plates, cups, cutlery, centrepiece, chairs, napkins: "printed", bottleLabel: "watercolour", cutleryHolder: "band" }, { plateShape: shape, words: { cutleryHolder: "A" } }), frozen)).forEach((p) => all.add(p));
+        placePictures(placeLayout(table({ plates, cups, cutlery, centrepiece, chairs, napkins: "printed", bottleLabel: "watercolour", cutleryHolder: "band" }, { plateShape: shape, words: { cutleryHolder: "A" } }), frozen, "six")).forEach((p) => all.add(p));
     placePictures(placeLayout(table({ table: "low" }), frozen)).forEach((p) => all.add(p));
     for (const p of Array.from(all)) expect(fs.existsSync(path.join(process.cwd(), "public", p)), p).toBe(true);
   });

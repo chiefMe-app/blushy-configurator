@@ -104,6 +104,8 @@ test("D8 the saved design is cleared once the request is sent", async ({ page, g
   await renderButton(page).click(); // → stand-in
   await expect(renderButton(page)).toHaveCount(0); // the render is in
   await next(page).click(); // the kids' table
+  await next(page).click(); // skipped → the grown-ups' table
+  await next(page).click(); // skipped → the welcome board
   await next(page).click(); // skipped → Package
   await next(page).click();
   await next(page).click();

@@ -8,6 +8,7 @@ import { CHAIR_COLOURS, FOILS, NONE, THEMED_ITEMS, isThemed, PLAIN_COLOURS, PLAT
 import { TABLE_FONTS, fontCss, tableFont, type TableFont } from "@/lib/studio/tableFonts";
 import { COLOUR_OF, FONT_OF, nameColour, wordsColour, MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, WORDS_ITEMS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup, type WordsKey } from "@/lib/studio/tableSetup";
 import { GlyphDefs, glyph, scallop, type GlyphColours } from "@/components/studio/table/glyphs";
+import { FinishBar } from "@/components/builder/table/AdultTableStep";
 
 /** The printed words in their colour, with a shadow that keeps light words readable on the design. */
 export function wordsStyle(hex: string, font?: TableFont) {
@@ -66,9 +67,11 @@ const stacked = (words: string) => words.trim().split(/\s+/).join("\n");
 
 const unitLabel = (o: TableOption) => `AED ${formatAED(o.price)} ${o.unit === "per_child" ? "each" : "a table"}`;
 
-export default function TableStep({ config, setTable }: {
+export default function TableStep({ config, setTable, onFinish }: {
   config: BuilderConfig;
   setTable: (t: TableSetup) => void;
+  /** Finish (2026-10-31): the kids' table is done; the grown-ups' table is asked next. */
+  onFinish: () => void;
 }) {
   const theme = themeById(config.theme) ?? THEMES[0];
   const table = config.table;
@@ -81,7 +84,7 @@ export default function TableStep({ config, setTable }: {
         <h2>Add a kids&apos; table?</h2>
         <p>Seats, plates, napkins and little treats for every guest — in your {theme.name} theme. You choose every piece; the price adds to your party.</p>
         <div className="actions">
-          <button type="button" className="bz-next" onClick={() => setTable({ ...defaultTableSetup(theme), ...(table ? { ...table, enabled: true } : {}) })}>Yes, design the table ✦</button>
+          <button type="button" className="bz-next" onClick={() => setTable({ ...defaultTableSetup(theme), ...(table ? { ...table, enabled: true, done: false } : {}) })}>Yes, design the table ✦</button>
           {!table && <button type="button" className="bz-back" onClick={() => setTable({ ...defaultTableSetup(theme), enabled: false })}>No thanks, skip</button>}
         </div>
         {table && !table.enabled && <p className="skipped">You skipped the kids&apos; table — it isn&apos;t in your total.</p>}
@@ -256,8 +259,9 @@ export default function TableStep({ config, setTable }: {
       <div className="bz-tb-sum" data-testid="table-total">
         <span>Kids&apos; table · {table.kids} kids</span>
         <b>AED {formatAED(tableTotal(table))}</b>
-        <button type="button" className="bz-restart" onClick={() => setTable({ ...table, enabled: false })}>Remove the table</button>
+        <button type="button" className="bz-restart" onClick={() => setTable({ ...table, enabled: false, done: false })}>Remove the table</button>
       </div>
+      <FinishBar done={table.done} what="kids' table" next="Grown-ups' table" onFinish={onFinish} testId="finish-kids-table" />
     </div>
   );
 }

@@ -10,6 +10,10 @@
 // child (the child sits at the bottom). 2026-10-29 (owner, with a flat-lay
 // photo): only the table top — no chairs, no floor — with the two places
 // facing each other across it (side by side round a round table).
+// 2026-10-31 (owner): two views — one place on its own first ("ilk karşıma
+// çıkan view tekli view olsun"), then six places, a part of the table ("6
+// kişinin partially view olarak"); the cup lies flat and straight for the one
+// looking at the screen, in every place; the hat's pompom stays white.
 import { NONE, foilOf, isThemed, tableOption } from "./tableCatalog";
 import { arrangeTables, focusSeats, type Pt, type Seat } from "./tableShapes";
 import { itemColour, nameColour, wordsColour, wordsOn, type TableSetup } from "./tableSetup";
@@ -33,8 +37,11 @@ export type Lift = number;
 export type PlaceNode =
   /** The table top (or its cloth), the floor round it. */
   | { k: "top"; pts: Pt[]; fill: string; cloth: boolean }
-  /** A piece's picture centred on (x, y), w wide, turned rot degrees; a white piece may be tinted, printed with a design, or in a foil (FOILS). */
-  | { k: "img"; src: string; x: number; y: number; w: number; h: number; rot?: number; tint?: string; print?: string; foil?: string; lift: Lift; id: string }
+  /**
+   * A piece's picture centred on (x, y), w wide, turned rot degrees; a white piece may be tinted, printed with a design, or in a foil (FOILS).
+   * keep: a round part left untinted (the hat's white pompom), its centre and radius as fractions of w.
+   */
+  | { k: "img"; src: string; x: number; y: number; w: number; h: number; rot?: number; tint?: string; print?: string; foil?: string; keep?: { cx: number; cy: number; r: number }; lift: Lift; id: string }
   /** A printed sheet: the placemat (the design, or a plain colour). */
   | { k: "sheet"; x: number; y: number; w: number; h: number; art?: string; fill?: string; lift: Lift; id: string }
   /** The napkin band, a strip in its colour. */
@@ -50,7 +57,7 @@ export type PlaceNode =
 
 
 /** One place's pieces, in its own frame (x to the child's right, y towards the child). */
-function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; accent: string }, id: string): PlaceNode[] {
+function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; accent: string }, id: string, turn: number): PlaceNode[] {
   const ch = t.choices, nodes: PlaceNode[] = [];
   const colour = (k: Parameters<typeof itemColour>[1]) => itemColour(t, k);
   const words = wordsColour(t, theme);
@@ -88,10 +95,12 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
     if (name) nodes.push({ k: "words", lines: [name], face: "script", colour: nameColour(t, theme), x: -16.6, y: 1.5, w: 7.4, h: 3.4, id: `${id}-name` });
   }
   // The cup on the top-right corner, white inside, lying on its side (2026-10-29: "cup daha yatay"); the bottle beside it.
+  // 2026-10-31 (owner: "iyice yatık olsun, ekrandan bakan kişi düz görsün"): flat, the same way up in every place.
   const themedCup = themedPiece("cups");
-  if (themedCup && PIECES[themedCup]) nodes.push({ k: "img", src: piece(themedCup), x: 15.2, y: -11, rot: CUP_TURN, w: 8.6, h: tall(themedCup, 8.6), lift: 1.2, id: `${id}-cup` });
+  const cupTurn = CUP_TURN - turn;
+  if (themedCup && PIECES[themedCup]) nodes.push({ k: "img", src: piece(themedCup), x: 15.2, y: -11, rot: cupTurn, w: 8.6, h: tall(themedCup, 8.6), lift: 1.2, id: `${id}-cup` });
   else if (ch.cups !== NONE) {
-    const cup = { x: 15.2, y: -11, rot: CUP_TURN };
+    const cup = { x: 15.2, y: -11, rot: cupTurn };
     nodes.push({ k: "img", src: piece("cup-plain-in"), ...cup, w: 8.6, h: tall("cup-plain-in", 8.6), lift: 1.2, id: `${id}-cup-in` });
     nodes.push({ k: "img", src: piece("cup-plain-out"), ...cup, w: 8.6, h: tall("cup-plain-out", 8.6), ...finish(t.cupColor), lift: 0, id: `${id}-cup-out` });
   }
@@ -103,16 +112,23 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
   }
   // The cone hat on its side, top-left, in the customer's colour (2026-10-29).
   // Above the plate, a little to the left: the centrepieces stand between the places, clear of it (2026-10-30).
-  if (ch.partyHats === "cone") nodes.push({ k: "img", src: piece("hat-cone"), x: -6, y: -19, w: (11 * PIECES["hat-cone"].w) / PIECES["hat-cone"].h, h: 11, tint: colour("partyHats") ?? t.hatColor, lift: 2, id: `${id}-hat` });
+  // Its pompom a real white one, whatever the hat's colour (2026-10-31: "pompomu gerçek pompom ve beyaz olsun").
+  if (ch.partyHats === "cone") nodes.push({ k: "img", src: piece("hat-cone"), x: -6, y: -19, w: (11 * PIECES["hat-cone"].w) / PIECES["hat-cone"].h, h: 11, tint: colour("partyHats") ?? t.hatColor, keep: HAT_POMPOM, lift: 2, id: `${id}-hat` });
   return nodes;
 }
 
-/** How the standing cup's photo is turned to lie on its side, its mouth to the upper left (degrees). */
-const CUP_TURN = 115;
+/** How the standing cup's photo is turned, on the screen, to lie flat on its side, its mouth to the left (degrees). */
+const CUP_TURN = -90;
+/** The pompom in the hat's photo (hat-cone.webp, 540 × 720): centre and radius, as fractions of its width. */
+const HAT_POMPOM = { cx: 0.096, cy: 0.093, r: 0.093 };
 
-/** The focus place and the plan in the picture's frame. */
-function frame(t: TableSetup) {
-  const { tables } = arrangeTables(t);
+/** The views (2026-10-31): one place on its own, or six places, a part of the table. */
+export type PlaceMode = "one" | "six";
+
+/** The focus place, the places shown, and the plan in the picture's frame. */
+function frame(t: TableSetup, mode: PlaceMode) {
+  // Close up, the half wave table is a straight one: along its S-curve the places sat askew (2026-10-31: "half wave table bozuk duruyor").
+  const { tables } = arrangeTables(t.choices.table === "half_wave" ? { ...t, choices: { ...t.choices, table: "standard" } } : t);
   const table = tables[0];
   const [a, b] = focusSeats(table);
   const focus = table.kind === "round" || table.kind === "flower" ? a : b;
@@ -125,22 +141,38 @@ function frame(t: TableSetup) {
   const at = ([px, py]: Pt): Pt => { const dx = px - C[0], dy = py - C[1]; return [dx * R[0] + dy * R[1], -(dx * F[0] + dy * F[1])]; };
   /** How far a seat's frame is turned in the picture, degrees. */
   const turn = (s: Seat) => { const r = right(s); return (Math.atan2(-(r[0] * F[0] + r[1] * F[1]), r[0] * R[0] + r[1] * R[1]) * 180) / Math.PI; };
-  // The other place in the picture: across the table, or beside it round a round one.
-  const other = focus === a ? b : a;
-  return { table, focus, other, at, turn, centre };
+  return { table, focus, shown: mode === "one" ? [focus] : sixPlaces(table.seats, focus, table.kind === "round" || table.kind === "flower"), at, turn, centre };
 }
 
-/** The picture's frame: the two places and a little round them, 4:3. */
-export function placeView(t: TableSetup): PlaceView {
-  const { focus, other, at, turn, centre } = frame(t);
-  const pts = [focus, other].flatMap((s) => {
+/**
+ * The six places of the part of the table shown: at a long table the place and
+ * its two neighbours, and the three across from them; round a round one, the
+ * six nearest. Fewer at a smaller table.
+ */
+function sixPlaces(seats: Seat[], focus: Seat, round: boolean): Seat[] {
+  const near = (x: number) => (p: Seat, q: Seat) => Math.abs(p.ex - x) - Math.abs(q.ex - x);
+  const dist = (s: Seat) => Math.hypot(s.ex - focus.ex, s.ey - focus.ey);
+  if (round) return [...seats].sort((p, q) => dist(p) - dist(q)).slice(0, 6);
+  const side = (s: Seat) => Math.sin(s.facing) > 0;
+  const mine = seats.filter((s) => side(s) === side(focus)).sort(near(focus.ex)).slice(0, 3);
+  const mid = mine.reduce((a, s) => a + s.ex, 0) / mine.length;
+  const across = seats.filter((s) => side(s) !== side(focus)).sort(near(mid)).slice(0, 3);
+  return [...mine, ...across];
+}
+
+/** The picture's frame: the places shown and a little round them, 4:3. */
+export function placeView(t: TableSetup, mode: PlaceMode = "one"): PlaceView {
+  const { shown, at, turn, centre } = frame(t, mode);
+  const pts = shown.flatMap((s) => {
     const [cx, cy] = at(centre(s)), r = (turn(s) * Math.PI) / 180;
     return [[PLACE_BOX.x0, PLACE_BOX.y0], [PLACE_BOX.x1, PLACE_BOX.y0], [PLACE_BOX.x0, PLACE_BOX.y1], [PLACE_BOX.x1, PLACE_BOX.y1]]
       .map(([x, y]) => [cx + x * Math.cos(r) - y * Math.sin(r), cy + x * Math.sin(r) + y * Math.cos(r)]);
   });
   const x0 = Math.min(...pts.map((p) => p[0])), x1 = Math.max(...pts.map((p) => p[0])), y0 = Math.min(...pts.map((p) => p[1])), y1 = Math.max(...pts.map((p) => p[1]));
   let w = x1 - x0 + 4, h = y1 - y0 + 2;
-  if (w / h > 4 / 3) h = (w * 3) / 4; else w = (h * 4) / 3;
+  // One place in a 4:3 picture; six in a picture as wide as they are, a part of the table beyond them at the sides.
+  if (mode === "six") w += 24;
+  else if (w / h > 4 / 3) h = (w * 3) / 4; else w = (h * 4) / 3;
   return { x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h / 2, w, h };
 }
 
@@ -148,21 +180,22 @@ export function placeView(t: TableSetup): PlaceView {
  * Everything in the top view, back to front: the table top (filling the
  * picture), every place in sight (the middle one last), the centrepieces.
  */
-export function placeLayout(t: TableSetup, theme: { id: string; balloonColors: string[]; accent: string }): PlaceNode[] {
-  const { table, focus, at, turn, centre } = frame(t);
-  const view = placeView(t);
+export function placeLayout(t: TableSetup, theme: { id: string; balloonColors: string[]; accent: string }, mode: PlaceMode = "one"): PlaceNode[] {
+  const { table, focus, at, turn, centre } = frame(t, mode);
+  const view = placeView(t, mode);
   const inView = ([x, y]: Pt, margin: number) => x > view.x - margin && x < view.x + view.w + margin && y > view.y - margin && y < view.y + view.h + margin;
-  const seats = table.seats.map((s, i) => ({ s, i, c: at(centre(s)) })).filter(({ c }) => inView(c, 30));
+  // One place is on its own; six show the places beyond them in part, at the edges.
+  const seats = table.seats.map((s, i) => ({ s, i, c: at(centre(s)) })).filter(({ s, c }) => (mode === "one" ? s === focus : inView(c, 30)));
   const nodes: PlaceNode[] = [];
   const cloth = t.choices.tablecloth !== NONE;
   nodes.push({ k: "top", pts: table.outline.map(at), fill: cloth ? t.clothColor : "#F7F5F2", cloth });
   for (const { s, i, c } of [...seats].sort((p, q) => Number(p.s === focus) - Number(q.s === focus))) {
-    nodes.push({ k: "group", x: c[0], y: c[1], rot: turn(s), nodes: setting(t, theme, `place-${i}`), id: `place-${i}`, focus: s === focus });
+    nodes.push({ k: "group", x: c[0], y: c[1], rot: turn(s), nodes: setting(t, theme, `place-${i}`, turn(s)), id: `place-${i}`, focus: s === focus });
   }
   const cp = t.choices.centrepiece;
   // The theme cutouts are the theme's own piece (2026-10-29: Frozen first).
   const cpName = (cp === "cutouts" ? `centrepiece-cutouts-${theme.id}` : `centrepiece-${cp}`) as PieceName;
-  if (cp !== NONE && PIECES[cpName]) {
+  if (cp !== NONE && PIECES[cpName] && mode === "six") {
     const name = cpName, w = cp === "toppers" ? 16 : cp === "balloons" ? 22 : cp === "cutouts" ? 24 : 20;
     table.centres.map(at).filter((p) => inView(p, 12)).forEach(([x, y], k) => nodes.push({ k: "img", src: piece(name), x, y, w, h: tall(name, w), lift: 4, id: `centre-${k}` }));
   }

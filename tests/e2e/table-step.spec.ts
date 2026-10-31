@@ -14,12 +14,14 @@ async function toTable(page: Page) {
   await expect(page.getByTestId("table-intro")).toBeVisible();
 }
 
-test("K1 design the kids' table: picture options on one page, the total grows, then Package", async ({ page, guard }) => {
+test("K1 design the kids' table: picture options on one page, the total grows, then Finish", async ({ page, guard }) => {
   await toTable(page);
   const before = aed(await total(page).textContent());
   await page.getByRole("button", { name: /Yes, design the table/ }).click();
-  // The preview opens on the top view of one place (2026-10-29); the whole table and the perspective are a tab away.
-  await expect(page.getByTestId("table-place")).toBeVisible();
+  // The preview opens on one place from above (2026-10-29, on its own since 2026-10-31); six places, the whole table and the perspective are a tab away.
+  await expect(page.getByTestId("table-place")).toHaveAttribute("data-mode", "one");
+  await page.getByRole("tab", { name: "Six places" }).click();
+  await expect(page.getByTestId("table-place")).toHaveAttribute("data-mode", "six");
   await page.getByRole("tab", { name: "Perspective" }).click();
   await expect(page.getByTestId("table-perspective-sketch")).toHaveAttribute("aria-label", "Perspective: 1 standard table for 10 children");
   await page.getByRole("tab", { name: "Whole table" }).click();
@@ -99,12 +101,82 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await expect(page.getByTestId("chairs-colour").getByRole("radio")).toHaveCount(3); // white, pink, light blue
   await page.getByTestId("chairs-colour").getByRole("radio", { name: "pastel pink" }).click();
   await expect(chairs.getByRole("radio", { name: /Colour chair for kids/ }).locator("img")).toHaveAttribute("src", "/design/table/chairs/blue_kids/f8bbd0.webp");
-  await expect(next(page)).toHaveText(/Continue to Package/);
+  await expect(next(page)).toHaveText(/Finish the kids' table/);
   await expect(page.getByRole("radiogroup", { name: "Party hats", exact: true }).getByRole("radio")).toHaveCount(2); // None + the cone hat (2026-10-29)
   await page.getByRole("radiogroup", { name: "Party hats", exact: true }).getByRole("radio", { name: /None/ }).click();
-  await expect(next(page)).toHaveText(/Continue to Package/);
+  // 2026-10-31 (owner): Finish the table, then the grown-ups' table is asked — not Package.
+  await expect(next(page)).toHaveText(/Finish the kids' table/);
+  await next(page).click();
+  await expect(page.getByTestId("adult-intro")).toBeVisible();
+  expect(guard.blocked).toEqual([]);
+});
+
+test("K10 the grown-ups' table: asked only once the kids' table is finished, then on to the welcome board", async ({ page }) => {
+  await toTable(page);
+  await page.getByRole("button", { name: /Yes, design the table/ }).click();
+  // Not before the kids' table is finished.
+  await expect(page.getByTestId("adults-tab")).toBeDisabled();
+  await page.getByTestId("finish-kids-table").click();
+  await expect(page.getByRole("heading", { name: "Add a grown-ups' table?" })).toBeVisible();
+  const before = aed(await total(page).textContent());
+  await page.getByRole("button", { name: /Yes, design it/ }).click();
+  await expect(page.getByTestId("adult-preview").locator("svg")).toHaveAttribute("aria-label", "The grown-ups' table from above");
+  const sum = aed(await page.getByTestId("adult-total").locator("b").textContent());
+  expect(sum).toBeGreaterThan(0);
+  expect(aed(await total(page).textContent())).toBe(before + sum);
+  // More guests, a second table: the price grows.
+  for (let i = 0; i < 2; i++) await page.getByRole("button", { name: "One more guest" }).click();
+  await expect(page.getByTestId("guests-count")).toHaveText("12");
+  expect(aed(await page.getByTestId("adult-total").locator("b").textContent())).toBeGreaterThan(sum);
+  await page.getByRole("radiogroup", { name: "Charger plates" }).getByRole("radio", { name: /Rattan charger/ }).click();
+  await expect(page.getByRole("radiogroup", { name: "Charger plates" }).getByRole("radio", { name: /Rattan charger/ })).toHaveAttribute("aria-checked", "true");
+  // The kids' table is still there, ticked as finished.
+  await page.getByRole("tab", { name: /Kids' table/ }).click();
+  await expect(page.getByTestId("finish-kids-table")).toHaveText(/Next: Grown-ups' table/);
+  await page.getByRole("tab", { name: /Grown-ups' table/ }).click();
+  await expect(next(page)).toHaveText(/Finish the grown-ups' table/);
+  await next(page).click();
+  await expect(page.getByTestId("welcome-intro")).toBeVisible();
+  await expect(page.getByRole("tab", { name: /Table setup/ }).locator(".n")).toHaveText("✓");
+  // Kept on the device.
+  await page.waitForTimeout(800);
+  await page.reload();
+  await page.getByRole("tab", { name: /Table setup/ }).click();
+  await page.getByRole("tab", { name: /Grown-ups' table/ }).click();
+  await expect(page.getByTestId("guests-count")).toHaveText("12");
+});
+
+test("W1 the welcome board: words and lettering drawn live, priced, Finish goes on to Package; Back comes back", async ({ page, guard }) => {
+  await toTable(page);
+  await page.getByRole("button", { name: "No thanks, skip" }).click();
+  await next(page).click(); // to the grown-ups' table
+  await next(page).click(); // skipped: the welcome board
+  await expect(page.getByTestId("welcome-intro")).toBeVisible();
+  await expect(next(page)).toHaveText(/Skip to Package/);
+  const before = aed(await total(page).textContent());
+  await page.getByRole("button", { name: /Yes, design the board/ }).click();
+  const board = page.getByTestId("welcome-preview").locator("svg");
+  await expect(board).toBeVisible();
+  await page.getByTestId("welcome-name").fill("Arya's");
+  await page.getByTestId("welcome-line").fill("6th Birthday");
+  await expect(board).toContainText("Arya's");
+  await expect(board).toContainText("6TH BIRTHDAY");
+  // The theme's art on the board, or a plain colour.
+  await expect(board.locator("image")).toHaveAttribute("href", "/design/table/placemats/frozen/watercolour.webp");
+  await page.getByRole("radiogroup", { name: "Board design" }).getByRole("radio", { name: /Plain colour/ }).click();
+  await expect(board.locator("image")).toHaveCount(0);
+  await expect(page.getByTestId("welcome-colour")).toBeVisible();
+  const sum = aed(await page.getByTestId("welcome-total").locator("b").textContent());
+  expect(aed(await total(page).textContent())).toBe(before + sum);
+  await page.getByRole("radiogroup", { name: "Board size" }).getByRole("radio", { name: /Large/ }).click();
+  await page.getByTestId("welcome-material").getByRole("radio", { name: "Acrylic" }).click();
+  expect(aed(await page.getByTestId("welcome-total").locator("b").textContent())).toBeGreaterThan(sum);
+  await expect(next(page)).toHaveText(/Finish the welcome board/);
   await next(page).click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(page.getByTestId("finish-welcome")).toHaveText(/Next: Package/);
+  await expect(page.getByTestId("welcome-name")).toHaveValue("Arya's");
   expect(guard.blocked).toEqual([]);
 });
 
@@ -196,7 +268,7 @@ test("K10 on a phone, a change brings the top view into sight, and Back returns 
   await page.getByTestId("cups-colour").getByRole("radio", { name: "gold foil" }).click();
   // The preview comes up, on the top view.
   await expect(page.getByTestId("table-place")).toBeInViewport();
-  await expect(page.getByRole("tab", { name: "Top view" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: "One place" })).toHaveAttribute("aria-selected", "true");
   const back = page.getByTestId("table-back-to-choices");
   await back.click();
   await expect(page.getByTestId("cups-colour")).toBeInViewport();

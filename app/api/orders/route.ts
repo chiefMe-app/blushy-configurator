@@ -67,6 +67,10 @@ export async function POST(req: NextRequest) {
     package: body.package,
     servicePackageId: body.servicePackageId,
     decor: body.decor,
+    // The tables and the welcome board are priced in the total: the team needs their choices too (2026-10-31).
+    table: body.table,
+    adultTable: body.adultTable,
+    welcomeBoard: body.welcomeBoard,
     addOns: body.addOns,
     venue: body.venue,
   };

@@ -144,8 +144,9 @@ export async function importGuestDesigns(sb: SupabaseClient): Promise<number> {
   const ref = readRef();
   const newIds = (inserted ?? []) as { id: string }[];
   const moved = (id?: string) => newIds[stash.items.findIndex((it) => it.id === id)]?.id;
-  const itemId = moved(ref.itemId), tableItemId = moved(ref.tableItemId); // the backdrop and the table (2026-10-30)
-  if (itemId || tableItemId) writeRef({ ...ref, userId: account.userId, partyId, itemId, tableItemId });
+  // The backdrop, the tables (2026-10-30) and the welcome board (2026-10-31).
+  const itemId = moved(ref.itemId), tableItemId = moved(ref.tableItemId), welcomeItemId = moved(ref.welcomeItemId);
+  if (itemId || tableItemId || welcomeItemId) writeRef({ ...ref, userId: account.userId, partyId, itemId, tableItemId, welcomeItemId });
   else if (ref.userId === stash.fromUserId) {
     try { window.localStorage.removeItem(SERVER_DRAFT_KEY); } catch { /* storage blocked */ }
   }

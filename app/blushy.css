@@ -213,6 +213,7 @@
 .bz-save:disabled { cursor: default; }
 .bz-save.done { border-color: #47d67a; color: #23934b; box-shadow: 0 4px 0 #dff5e6; }
 .bz-save .short { display: none; }
+.bz-footer .bz-next .short { display: none; }
 .bz-spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; animation: bz-spin .8s linear infinite; display: inline-block; }
 @keyframes bz-spin { to { transform: rotate(360deg); } }
 
@@ -421,6 +422,8 @@
   .bz-save { font-size: 16px; padding: 9px 14px 5px; }
   .bz-save .full { display: none; }
   .bz-save .short { display: inline; }
+  .bz-footer .bz-next .full { display: none; }
+  .bz-footer .bz-next .short { display: inline; }
   .bz-back, .bz-next { white-space: nowrap; }
   .bz-main { padding: 0 12px; }
   .bz-placeholder { min-height: 300px; }
@@ -1220,6 +1223,11 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-preview .head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; margin-bottom: 10px; }
 .bz-tb-preview .title { font: 400 20px var(--bz-hand); white-space: nowrap; }
 .bz-tb-preview .views { display: flex; gap: 4px; padding: 3px; border-radius: 999px; background: #fbf4f7; }
+/* Four views on a phone: two by two, the whole width, every tab in sight (2026-10-31). */
+@media (max-width: 520px) {
+  .bz-tb-preview .views { width: 100%; display: grid; grid-template-columns: 1fr 1fr; border-radius: 16px; }
+  .bz-tb-preview .views button { border-radius: 12px; }
+}
 .bz-tb-preview .views button { border: 0; background: transparent; border-radius: 999px; padding: 6px 11px; font: 700 12px var(--bz-sans); color: var(--bz-muted); cursor: pointer; white-space: nowrap; }
 .bz-tb-preview .views button.on { background: #fff; color: var(--bz-pink); box-shadow: 0 2px 6px rgba(103,44,71,.08); }
 .bz-tb-sketch { display: block; width: 100%; height: auto; max-height: 64vh; }
@@ -1278,3 +1286,18 @@ div.bz-stale-banner { cursor: default; }
 /* My designs: the backdrop and the kids' table, each its own card (2026-10-30). */
 .bz-md-card .body .kind { font: 700 11px var(--bz-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--bz-pink); }
 .bz-md-card.table .sketch > svg { width: 100%; height: 100%; display: block; }
+/* 2026-10-31: Finish at the end of a part; the kids' and the grown-ups' tables; the welcome board. */
+.bz-tb-finish { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; padding: 14px 16px; border-radius: 18px; border: 1.5px dashed var(--bz-pink-soft); background: var(--bz-pink-fog); }
+.bz-tb-finish p { margin: 0; flex: 1 1 220px; font-size: 13.5px; color: var(--bz-muted); }
+.bz-tb-finish.done { border-style: solid; border-color: #bfe5c9; background: #f1fbf4; }
+.bz-tb-finish.done p { color: #2f7a46; font-weight: 600; }
+.bz-tb-tables { display: flex; gap: 6px; margin: 0 0 14px; padding: 4px; border-radius: 999px; background: #fbf4f7; width: fit-content; max-width: 100%; }
+.bz-tb-tables button { border: 0; background: transparent; border-radius: 999px; padding: 8px 16px; font: 700 13.5px var(--bz-sans); color: var(--bz-muted); cursor: pointer; }
+.bz-tb-tables button.on { background: #fff; color: var(--bz-pink); box-shadow: 0 3px 10px rgba(103,44,71,.1); }
+.bz-tb-tables button:disabled { opacity: .45; cursor: not-allowed; }
+.bz-wb-wait { display: grid; place-items: center; background: #fbf7f4; border-radius: 16px; padding: 14px; }
+.bz-wb-art { width: 100%; max-width: 380px; max-height: 560px; display: block; }
+.bz-tb-option .art .swatch-big { width: 60%; height: 70%; border-radius: 8px; border: 1px solid #d9c9cf; display: block; }
+.bz-md-card.welcome .sketch { display: grid; place-items: center; background: #fbf7f4; }
+.bz-md-card.welcome .sketch > svg { height: 92%; width: auto; max-width: 100%; }
+.bz-tb-place[data-mode="six"] { aspect-ratio: auto; }

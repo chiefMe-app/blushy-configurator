@@ -4,6 +4,8 @@
 // NEVER hardcode prices in components - derive everything from here.
 // ---------------------------------------------------------------------------
 import { tablePriceLines, type TableSetup } from "./studio/tableSetup";
+import { adultPriceLines, type AdultTable } from "./studio/adultTable";
+import { welcomePriceLines, type WelcomeBoard } from "./studio/welcomeBoard";
 
 // =====================  STEP - EVENT TYPE  =================================
 
@@ -1289,6 +1291,10 @@ export interface BuilderConfig {
   decor: DecorConfig;
   /** 2026-10-27 (F2): the kids' table, designed after the backdrop; absent until visited. */
   table?: TableSetup;
+  /** 2026-10-31: the grown-ups' table, asked after the kids' table; absent until asked. */
+  adultTable?: AdultTable;
+  /** 2026-10-31: the welcome board, the Decor step's third part; absent until visited. */
+  welcomeBoard?: WelcomeBoard;
   addOns: SelectedAddOn[];
   venue: VenueDetails;
   customer: CustomerDetails;
@@ -1356,7 +1362,7 @@ export interface PriceLine {
   label:   string;
   amount:  number;
   /** Groups lines for display in the pricing breakdown. */
-  section: "design" | "table" | "package" | "addons";
+  section: "design" | "table" | "adults" | "welcome" | "package" | "addons";
 }
 
 /**
@@ -1488,6 +1494,9 @@ export function priceBreakdown(config: BuilderConfig): {
 
   // -- The kids' table (2026-10-27, F2) ---------------------------------------
   if (config.table) for (const l of tablePriceLines(config.table)) lines.push({ ...l, section: "table" });
+  // -- The grown-ups' table and the welcome board (2026-10-31) -----------------
+  if (config.adultTable) for (const l of adultPriceLines(config.adultTable)) lines.push({ ...l, section: "adults" });
+  if (config.welcomeBoard) for (const l of welcomePriceLines(config.welcomeBoard)) lines.push({ ...l, section: "welcome" });
 
   // -- Add-ons -------------------------------------------------------------
   // Available for all service packages - never cleared by package selection.

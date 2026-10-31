@@ -39,6 +39,13 @@ import { takeAfterSignIn } from "@/lib/account";
 import TableStep from "@/components/builder/table/TableStep";
 import BackdropIntro from "@/components/builder/decor/BackdropIntro";
 import TablePreview, { type TableRenderJob } from "@/components/builder/table/TablePreview";
+import AdultTableStep from "@/components/builder/table/AdultTableStep";
+import WelcomeStep from "@/components/builder/welcome/WelcomeStep";
+import AdultTableSketch from "@/components/studio/table/AdultTableSketch";
+import WelcomeBoardArt from "@/components/studio/WelcomeBoardArt";
+import { adultCounts, defaultAdultTable } from "@/lib/studio/adultTable";
+import { defaultTableSetup } from "@/lib/studio/tableSetup";
+import { defaultWelcomeBoard } from "@/lib/studio/welcomeBoard";
 
 import Sprinkles from "@/components/design/Sprinkles";
 
@@ -62,15 +69,21 @@ export default function ConfigurePage() {
   const [stylePieceId, setStylePieceId] = useState<string | null>(null);
   // 2026-10-27 (F2): the Decor step in parts — the backdrop, then the kids'
   // table (then, in turn, welcome board, giveaways and helium balloons).
-  const [decorPart, setDecorPart] = useState<"backdrop" | "table">("backdrop");
-  const shownPart = useRef(decorPart);
+  // 2026-10-31: the table part holds the kids' table, then (once that is
+  // finished or skipped) the grown-ups' table; the welcome board comes after.
+  const [decorPart, setDecorPart] = useState<"backdrop" | "table" | "welcome">("backdrop");
+  const [tableView, setTableView] = useState<"kids" | "adults">("kids");
+  const shownPart = useRef(`${decorPart}:${tableView}`);
   useEffect(() => {
     // Only when the part changes — not on arrival (effects can run twice then).
-    if (shownPart.current === decorPart) return;
-    shownPart.current = decorPart;
+    if (shownPart.current === `${decorPart}:${tableView}`) return;
+    shownPart.current = `${decorPart}:${tableView}`;
     document.querySelector<HTMLElement>(".bz-content")?.scrollTo({ top: 0 });
     if (typeof window !== "undefined" && window.innerWidth < 1024) document.querySelector(".bz-right")?.scrollIntoView({ block: "start" });
-  }, [decorPart]);
+    // On a phone the parts strip scrolls sideways: the part now open comes into sight.
+    const strip = document.querySelector<HTMLElement>(".bz-parts"), on = strip?.querySelector<HTMLElement>("button.on");
+    if (strip && on) strip.scrollLeft = on.offsetLeft - strip.offsetLeft - 12;
+  }, [decorPart, tableView]);
   // Which list the theme was picked from, so Space (in both) ticks only there.
   const [themeGroup, setThemeGroup] = useState<"girl" | "boy" | null>(null);
   // The landing page links straight to the Theme step (/builder?step=theme).
@@ -89,9 +102,11 @@ export default function ConfigurePage() {
       setConfig(d.config);
       const query = new URLSearchParams(window.location.search);
       const toTheme = query.get("step") === "theme";
-      setStep(toTheme ? 1 : query.get("part") === "table" ? 2 : d.step);
-      // A saved kids' table, opened from My designs (2026-10-30).
-      if (!toTheme && query.get("part") === "table") setDecorPart("table");
+      const part = query.get("part");
+      setStep(toTheme ? 1 : part === "table" || part === "welcome" ? 2 : d.step);
+      // A saved table setup (2026-10-30) or welcome board (2026-10-31), opened from My designs.
+      if (!toTheme && part === "table") { setDecorPart("table"); setTableView(d.config.table?.enabled ? "kids" : "adults"); }
+      if (!toTheme && part === "welcome") setDecorPart("welcome");
       // The restored tab is not a tab change: no scroll.
       if (d.decorTab !== decorTab) firstDecorTab.current = true;
       setDecorTab(d.decorTab);
@@ -187,6 +202,10 @@ export default function ConfigurePage() {
       // regardless of what the customer picked and saw priced on the Review step.
       servicePackageId: config.servicePackageId,
       decor: config.decor,
+      // 2026-10-31: was missing, so the server priced orders without the kids' table.
+      ...(config.table ? { table: config.table } : {}),
+      ...(config.adultTable ? { adultTable: config.adultTable } : {}),
+      ...(config.welcomeBoard ? { welcomeBoard: config.welcomeBoard } : {}),
       addOns: config.addOns,
       venue: {
         ...config.venue,
@@ -343,12 +362,36 @@ export default function ConfigurePage() {
   };
 
   const onTable = step === 2 && decorPart === "table";
-  const openTable = () => { goToStep(2); setDecorPart("table"); };
+  const onWelcome = step === 2 && decorPart === "welcome";
+  const openTable = () => { goToStep(2); setDecorPart("table"); setTableView("kids"); };
+  // The grown-ups' table is asked once the kids' table is finished or skipped (2026-10-31).
+  const kidsDecided = !!config.table && (!config.table.enabled || !!config.table.done);
+  const onAdults = onTable && tableView === "adults" && kidsDecided;
+  const onKids = onTable && !onAdults;
+  const setTable = (table: NonNullable<typeof config.table>) => setConfig((c) => ({ ...c, table }));
+  const setAdultTable = (adultTable: NonNullable<typeof config.adultTable>) => setConfig((c) => ({ ...c, adultTable }));
+  const setWelcomeBoard = (welcomeBoard: NonNullable<typeof config.welcomeBoard>) => setConfig((c) => ({ ...c, welcomeBoard }));
+  const finishKids = () => { if (config.table) setTable({ ...config.table, done: true }); setTableView("adults"); };
+  const toWelcome = () => {
+    // Leaving the grown-ups' question unanswered skips it.
+    if (!config.adultTable) setAdultTable({ ...defaultAdultTable(themeById(config.theme) ?? THEMES[0]), enabled: false });
+    setDecorPart("welcome");
+  };
+  const finishAdults = () => { if (config.adultTable) setAdultTable({ ...config.adultTable, done: true }); toWelcome(); };
+  const toPackage = () => {
+    if (!config.welcomeBoard) setWelcomeBoard({ ...defaultWelcomeBoard(themeById(config.theme) ?? THEMES[0]), enabled: false });
+    goToStep(3);
+  };
+  const finishWelcome = () => { if (config.welcomeBoard) setWelcomeBoard({ ...config.welcomeBoard, done: true }); toPackage(); };
   // The backdrop is a choice too: asked first, and skippable.
   const backdropAsked = config.decor.backdropChoice === "yes";
   const onBackdropQuestion = step === 2 && decorPart === "backdrop" && !backdropAsked;
-  const copy = onTable
+  const copy = onAdults
+    ? { eyebrow: "DECOR · PART 2 · TABLE SETUP", heading: ["Set the", "grown-ups' table"] as [string, string], description: "For the parents and guests — every piece on one page.", progress: "Table, linens, tableware and decor" }
+    : onTable
     ? { eyebrow: "DECOR · PART 2 · TABLE SETUP", heading: ["Set the", "kids' table"] as [string, string], description: "Every piece on one page — we work out how many.", progress: "Table, linens, tableware and extras" }
+    : onWelcome
+    ? { eyebrow: "DECOR · PART 3 · WELCOME BOARD", heading: ["Greet your", "guests"] as [string, string], description: "A printed board at the entrance, with your words.", progress: "Size, design, words and stand" }
     : (step === 2 && DECOR_STEP_COPY[decorTab]) || STEP_COPY[step];
   const total = priceBreakdown(config).total;
 
@@ -373,15 +416,35 @@ export default function ConfigurePage() {
       nextDisabled = archUnsized;
     }
   }
-  if (onTable) {
-    nextLabel = config.table ? "Continue to Package →" : "Skip to Package →";
+  // 2026-10-31 (owner): each table is finished with a button, then on to the
+  // grown-ups' table, then the welcome board — not straight to Package.
+  // A long label and a short one for phones (blushy.css).
+  const label = (full: string, short: string) => <><span className="full">{full}</span><span className="short" aria-hidden="true">{short}</span></>;
+  if (onKids) {
+    if (config.table?.enabled && !config.table.done) { nextLabel = label("Finish the kids' table ✓", "Finish ✓"); onNext = finishKids; }
+    else if (!config.table) {
+      nextLabel = label("Skip the kids' table →", "Skip →");
+      onNext = () => { setTable({ ...defaultTableSetup(themeById(config.theme) ?? THEMES[0]), enabled: false }); setTableView("adults"); };
+    } else { nextLabel = label("Next: Grown-ups' table →", "Next →"); onNext = () => setTableView("adults"); }
+  }
+  if (onAdults) {
+    if (config.adultTable?.enabled && !config.adultTable.done) { nextLabel = label("Finish the grown-ups' table ✓", "Finish ✓"); onNext = finishAdults; }
+    else { nextLabel = config.adultTable ? label("Next: Welcome board →", "Next →") : label("Skip to Welcome board →", "Skip →"); onNext = toWelcome; }
+  }
+  if (onWelcome) {
+    if (config.welcomeBoard?.enabled && !config.welcomeBoard.done) { nextLabel = label("Finish the welcome board ✓", "Finish ✓"); onNext = finishWelcome; }
+    else { nextLabel = config.welcomeBoard ? label("Continue to Package →", "Package →") : label("Skip to Package →", "Skip →"); onNext = toPackage; }
   }
   // Back walks the parts and tabs of Decor before leaving it.
   const onBack = () => {
+    if (onWelcome) { setDecorPart("table"); setTableView(kidsDecided ? "adults" : "kids"); return; }
+    if (onAdults) { setTableView("kids"); return; }
     if (onTable) {
       setDecorPart("backdrop"); setDecorTab(DECOR_TABS.length - 1);
       return;
     }
+    // Back from Package lands on the welcome board.
+    if (step === 3) { goToStep(2); setDecorPart("welcome"); return; }
     goToStep(step - 1);
   };
   if (step === 5) nextLabel = "See my party →";
@@ -436,7 +499,26 @@ export default function ConfigurePage() {
         {/* Left: the balloon dog during Event and Theme, then the real AI render card */}
         <section className="bz-left" aria-label="Party concept preview">
           {/* The table's preview stays mounted, so a close-up keeps rendering on the other steps. */}
-          <div hidden={!onTable}>
+          {onAdults && (
+            <div className="bz-tb-preview" data-testid="adult-preview">
+              <div className="head"><span className="title">✦ Your grown-ups&apos; table</span></div>
+              {config.adultTable?.enabled ? <>
+                <div className="bz-tb-wait"><AdultTableSketch a={config.adultTable} theme={theme} className="bz-tb-sketch" /></div>
+                <p className="note">One table from above, to scale · {adultCounts(config.adultTable).tables} table{adultCounts(config.adultTable).tables > 1 ? "s" : ""} · {config.adultTable.guests} guests — a drawing, not a photo.</p>
+              </> : <div className="empty">Add a grown-ups&apos; table to see it here.</div>}
+            </div>
+          )}
+          {onWelcome && (
+            <div className="bz-tb-preview" data-testid="welcome-preview">
+              <div className="head"><span className="title">✦ Your welcome board</span></div>
+              {config.welcomeBoard?.enabled ? <>
+                <link rel="stylesheet" href="/fonts/typography/fonts.css" />
+                <div className="bz-wb-wait"><WelcomeBoardArt board={config.welcomeBoard} theme={theme} className="bz-wb-art" /></div>
+                <p className="note">To scale, on its stand — your words show as you type. A drawing, not a photo.</p>
+              </> : <div className="empty">Add a welcome board to see it here.</div>}
+            </div>
+          )}
+          <div hidden={!onKids}>
             <TablePreview config={config} setTable={(table) => setConfig((c) => ({ ...c, table }))}
               onSignInNeeded={() => askSignIn("table-render")}
               startNow={tableRenderOnArrival} onStarted={() => setTableRenderOnArrival(false)} onJob={setTableJob} />
@@ -453,11 +535,11 @@ export default function ConfigurePage() {
             </div>
           ) : (
             <>
-              {!onTable && config.decor.backdropChoice === "skip" && (
+              {!onTable && !onWelcome && config.decor.backdropChoice === "skip" && (
                 <div className="bz-tb-preview"><div className="empty">No backdrop in this party — add one any time.</div></div>
               )}
               {/* The backdrop's preview stays mounted (its render is kept) while the table is on show. */}
-              <div hidden={onTable || config.decor.backdropChoice === "skip"}>
+              <div hidden={onTable || onWelcome || config.decor.backdropChoice === "skip"}>
               <SetupPreview
                 config={config}
                 status={preview.status}
@@ -482,7 +564,7 @@ export default function ConfigurePage() {
                 sketchActiveId={isDecorStep && decorTab === 1 && sketchItems.length > 1 ? sketchActiveId : null}
                 sketchCutouts={sketchCutouts}
               />
-              {isDecorStep && !onTable && !finalRenderState.hasRender && (
+              {isDecorStep && !onTable && !onWelcome && !finalRenderState.hasRender && (
                 <div className="bz-little-note">
                   <svg viewBox="0 0 35 28" aria-hidden="true"><path d="M3 4Q6 23 29 16M21 11L30 16L23 23" /></svg>
                   <span>Want to see it for real? Tap <b>Generate render</b> on the Extras tab — or carry on without one.</span>
@@ -538,14 +620,18 @@ export default function ConfigurePage() {
               <div className="bz-parts-wrap">
                 <span className="label">Your party, piece by piece</span>
                 <div className="bz-parts" role="tablist" aria-label="Decor parts">
-                  {([["backdrop", "Backdrop"], ["table", "Table setup"]] as const).map(([id, name], i) => (
-                    <span key={id} style={{ display: "contents" }}>
-                      {i > 0 && <span className="arrow" aria-hidden="true">→</span>}
-                      <button type="button" role="tab" aria-selected={decorPart === id} className={decorPart === id ? "on" : ""}
-                        onClick={() => setDecorPart(id)}><span className="n">{i + 1}</span>{name}</button>
-                    </span>
-                  ))}
-                  {["Welcome board", "Giveaways", "Helium balloons"].map((name) => (
+                  {([["backdrop", "Backdrop"], ["table", "Table setup"], ["welcome", "Welcome board"]] as const).map(([id, name], i) => {
+                    const done = id === "table" ? kidsDecided && !!config.adultTable && (!config.adultTable.enabled || !!config.adultTable.done)
+                      : id === "welcome" ? !!config.welcomeBoard && (!config.welcomeBoard.enabled || !!config.welcomeBoard.done) : false;
+                    return (
+                      <span key={id} style={{ display: "contents" }}>
+                        {i > 0 && <span className="arrow" aria-hidden="true">→</span>}
+                        <button type="button" role="tab" aria-selected={decorPart === id} className={`${decorPart === id ? "on" : ""} ${done ? "done" : ""}`}
+                          onClick={() => setDecorPart(id)}><span className="n">{done ? "✓" : i + 1}</span>{name}</button>
+                      </span>
+                    );
+                  })}
+                  {["Giveaways", "Helium balloons"].map((name) => (
                     <span key={name} style={{ display: "contents" }}>
                       <span className="arrow" aria-hidden="true">→</span>
                       <span className="soon" aria-disabled="true">{name} <small>soon</small></span>
@@ -563,9 +649,22 @@ export default function ConfigurePage() {
                 onContinue={() => setDecorPart("table")} />
             )}
             {onTable && (
-              <TableStep config={config}
-                setTable={(table) => setConfig((c) => ({ ...c, table }))} />
+              // The two tables, the grown-ups' only once the kids' is finished or skipped.
+              <div className="bz-tb-tables" role="tablist" aria-label="Tables">
+                <button type="button" role="tab" aria-selected={onKids} className={onKids ? "on" : ""} onClick={() => setTableView("kids")}>
+                  {config.table?.done ? "✓ " : ""}Kids&apos; table
+                </button>
+                <button type="button" role="tab" aria-selected={onAdults} className={onAdults ? "on" : ""} disabled={!kidsDecided} data-testid="adults-tab"
+                  title={kidsDecided ? undefined : "Finish the kids' table first"} onClick={() => setTableView("adults")}>
+                  {config.adultTable?.done ? "✓ " : ""}Grown-ups&apos; table
+                </button>
+              </div>
             )}
+            {onKids && (
+              <TableStep config={config} setTable={setTable} onFinish={finishKids} />
+            )}
+            {onAdults && <AdultTableStep config={config} setAdultTable={setAdultTable} onFinish={finishAdults} />}
+            {onWelcome && <WelcomeStep config={config} setWelcomeBoard={setWelcomeBoard} onFinish={finishWelcome} />}
 
             {step === 3 && <PackageStep config={config} setServicePackage={setServicePackage} />}
 

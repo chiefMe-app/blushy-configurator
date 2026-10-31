@@ -4,12 +4,14 @@
 // read back as a sensible design is ignored, never trusted.
 import { THEMES, defaultConfig, servicePackageById, themeById, type BuilderConfig } from "@/lib/config";
 import { readTableSetup } from "@/lib/studio/tableSetup";
+import { readAdultTable } from "@/lib/studio/adultTable";
+import { readWelcomeBoard } from "@/lib/studio/welcomeBoard";
 
 export const DRAFT_KEY = "partymuse.builder.draft.v1";
 const LAST_STEP = 6;
 const LAST_DECOR_TAB = 3;
 
-type DesignFields = Pick<BuilderConfig, "eventType" | "theme" | "themeSelected" | "package" | "servicePackageId" | "decor" | "table" | "addOns">;
+type DesignFields = Pick<BuilderConfig, "eventType" | "theme" | "themeSelected" | "package" | "servicePackageId" | "decor" | "table" | "adultTable" | "welcomeBoard" | "addOns">;
 
 export interface StoredDraft {
   v: 1;
@@ -31,13 +33,13 @@ export function isWorthSaving(config: BuilderConfig, step: number): boolean {
 }
 
 export function toDraft(config: BuilderConfig, step: number, decorTab: number, now = new Date()): StoredDraft {
-  const { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, table, addOns } = config;
+  const { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, table, adultTable, welcomeBoard, addOns } = config;
   return {
     v: 1,
     savedAt: now.toISOString(),
     step,
     decorTab,
-    config: { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, ...(table ? { table } : {}), addOns },
+    config: { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, ...(table ? { table } : {}), ...(adultTable ? { adultTable } : {}), ...(welcomeBoard ? { welcomeBoard } : {}), addOns },
   };
 }
 
@@ -68,6 +70,10 @@ export function fromDraft(raw: string | null): RestoredDraft | null {
   };
   const table = readTableSetup(c.table, themeById(config.theme) ?? THEMES[0]);
   if (table) config.table = table;
+  const adultTable = readAdultTable(c.adultTable, themeById(config.theme) ?? THEMES[0]);
+  if (adultTable) config.adultTable = adultTable;
+  const welcomeBoard = readWelcomeBoard(c.welcomeBoard, themeById(config.theme) ?? THEMES[0]);
+  if (welcomeBoard) config.welcomeBoard = welcomeBoard;
   // Past the Theme step only with a theme chosen.
   const step = config.themeSelected ? clampInt(d.step, LAST_STEP) : Math.min(clampInt(d.step, LAST_STEP), 1);
   return { config, step, decorTab: clampInt(d.decorTab, LAST_DECOR_TAB) };
