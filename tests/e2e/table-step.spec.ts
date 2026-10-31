@@ -179,9 +179,10 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   await page.getByTestId("welcome-garnish").getByRole("radio", { name: /Balloons & flowers/ }).click();
   await expect(board.locator("[data-part=balloons]")).toHaveCount(1);
   await expect(board.locator("[data-part=flowers]")).toHaveCount(1);
-  // A real photo of the board on its easel, the print laid onto it, Ice Princess's real garland and the roses (2026-10-31).
+  // A real photo of the board on its easel, the print laid onto it, the real garland with roses in it (2026-10-31).
   await expect(board.locator("[data-part=scene]")).toHaveAttribute("href", /scene-round-easel/);
-  await expect(board.locator("[data-part=garland]")).toHaveAttribute("href", /garland-frozen/);
+  await expect(board.locator("[data-part=garland]")).toHaveAttribute("href", /garland-pastel/);
+  await expect(board.locator("[data-part=garland-roses]")).toHaveCount(2);
   for (const src of await board.locator("image").evaluateAll((l) => Array.from(new Set(l.map((i) => i.getAttribute("href")!))))) {
     expect((await page.request.get(src)).status(), src).toBe(200);
   }

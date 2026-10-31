@@ -118,8 +118,9 @@ describe("the welcome board's photo pieces", () => {
       expect(floor!).toBeGreaterThan(y1);
       expect(floor!).toBeLessThan(1);
     }
-    // Ice Princess first (the owner's pilot); the other themes' garlands follow.
-    expect(all["garland-frozen"].h).toBeGreaterThan(all["garland-frozen"].w);
+    // One garland for every theme: the one in the step's own "Balloon garland" photo (the owner, 2026-10-31).
+    expect(all["garland-pastel"].h).toBeGreaterThan(all["garland-pastel"].w);
+    expect(Object.keys(all).filter((k) => k.startsWith("garland-"))).toEqual(["garland-pastel"]);
   });
 });
 

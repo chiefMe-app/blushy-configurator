@@ -19,7 +19,7 @@ export default function WelcomePreview({ config }: { config: BuilderConfig }) {
       <div className="head"><span className="title">✦ Your welcome board</span></div>
       {b?.enabled ? <>
         <link rel="stylesheet" href="/fonts/typography/fonts.css" />
-        <div className="bz-wb-wait"><WelcomeBoardArt board={b} theme={theme} balloons={config.decor.balloonColors} className="bz-wb-art" /></div>
+        <div className="bz-wb-wait"><WelcomeBoardArt board={b} theme={theme} className="bz-wb-art" /></div>
         <p className="note">A real photo of your board, to scale — your words show as you type.</p>
         {backTo !== null && <button type="button" className="bz-tb-back" data-testid="welcome-back-to-choices" onClick={back}>↑ Back to your choices</button>}
       </> : <div className="empty">Add a welcome board to see it here.</div>}

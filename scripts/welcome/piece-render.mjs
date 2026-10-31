@@ -1,7 +1,6 @@
 // The welcome board's photo pieces (2026-10-31, the owner: "render almak değil,
 // render görüntülerini kullanarak preview görsellerini oluşturmak" — as the
-// table's top view): a balloon (tinted to every colour in the builder), a
-// chrome balloon and roses — each rendered once, alone, straight on, on a key
+// table's top view): roses — each rendered once, alone, straight on, on a key
 // colour; scripts/welcome/piece-prepare.ts cuts them out. (The room and the
 // easel are now whole scenes: scripts/welcome/scene-render.mjs.) Paid (Seedream, $0.035 a piece): run only with the owner's approval.
 // node scripts/welcome/piece-render.mjs <projectDir> <outDir> [name,name…]
@@ -15,8 +14,6 @@ const plate = async (c) => `data:image/jpeg;base64,${(await sharp({ create: { wi
 const stage = (k) => `Seen straight on from the front at eye level, the piece centred with plenty of space round it, alone on a perfectly flat, even, pure ${KEYS[k][1]} background — no shadow on the background, no floor, no texture, no props, no other objects, no hands. Soft, bright, even daylight from the front left. Photo-real product photograph, crisp fine detail.`;
 // [name, key colour, size, what]
 const P = [
-  ["balloon-latex", "green", "square_hd", "One round white matte-satin latex party balloon, about 28 cm (11 inch), fully inflated, seen from the side so it looks perfectly round, its knot hidden behind it; one soft highlight on its upper left, gentle shading towards its lower right."],
-  ["balloon-chrome", "green", "square_hd", "One round shiny chrome silver party balloon, about 28 cm (11 inch), fully inflated, seen from the side so it looks perfectly round, its knot hidden behind it: a mirror-like metallic silver surface with soft, blurry light reflections, not reflecting any green."],
   ["roses-spray", "magenta", "landscape_4_3", "A lush horizontal spray of real-looking white and ivory silk roses, full open blooms of mixed sizes with a few small buds, soft green rose leaves and a few trailing eucalyptus sprigs, as fixed on the corner of a party sign, about 40 cm wide, its fullest roses at the centre-left and thinning out to the right."],
   ["roses-trio", "magenta", "square_hd", "A small tight cluster of three real-looking white and ivory silk roses with a few soft green leaves, about 15 cm across."],
 ];

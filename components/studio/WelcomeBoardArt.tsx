@@ -215,76 +215,6 @@ export function PaintedCorners({ w, h, top = 0, shape = "rectangle", inks, motif
 
 const piece = (name: keyof typeof PIECES) => `/design/welcome/pieces/${name}.webp`;
 
-/** How a balloon colour is shown: the white latex photo tinted to it, or the chrome one (silver as it is, gold tinted). */
-function balloonLook(hex: string): { src: string; tint?: string } {
-  const { h, s, l } = hsl(hex);
-  if (s < 0.12 && l > 0.45 && l < 0.92) return { src: piece("balloon-chrome") };
-  if (h >= 35 && h <= 60 && s > 0.35 && l < 0.62) return { src: piece("balloon-chrome"), tint: mix(hex, "#FFFFFF", 0.2) };
-  return { src: piece("balloon-latex"), tint: l >= 0.92 && s < 0.3 ? undefined : hex };
-}
-
-/** A white piece multiplied by its colour, its brightest light kept white (a balloon's shine). */
-function Tint({ id, colour }: { id: string; colour: string }) {
-  return (
-    <filter id={id} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
-      <feFlood floodColor={colour} result="c" />
-      <feComposite in="c" in2="SourceGraphic" operator="arithmetic" k1={1} k2={0} k3={0} k4={0} result="t" />
-      <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 3.6 7.08 1.32 0 -11.28" result="hi" />
-      <feComposite in="hi" in2="t" operator="over" result="lit" />
-      <feComposite in="lit" in2="SourceAlpha" operator="in" />
-    </filter>
-  );
-}
-
-type Ball = { cx: number; cy: number; r: number; c: number; turn: number };
-
-/** A balloon garland up the board's right side, from the floor to near its top: 11" balloons, some 18", 5" ones tucked in front. */
-function Garland({ x, y0, y1, u, colours, uid, roses }: { x: number; y0: number; y1: number; u: number; colours: string[]; uid: string; roses?: boolean }) {
-  const rand = rng(5);
-  const back: Ball[] = [], main: Ball[] = [], small: Ball[] = [];
-  const n = Math.max(6, Math.round((y0 - y1) / 9));
-  const pick = () => Math.floor(rand() * colours.length);
-  const turn = () => (rand() - 0.5) * 24;
-  for (let i = 0; i <= n; i++) {
-    const t = i / n;
-    const cy = y0 - 12 * u - (y0 - 12 * u - y1) * t;
-    const cx = x + Math.sin(t * 7.5) * 3.5 * u + (rand() - 0.5) * 2.5 * u;
-    const r = (t < 0.5 && rand() < 0.22 ? 20 : 12.5 + rand() * 1.5) * u * (t > 0.9 ? 0.85 : 1);
-    // Behind it, one to each side: the garland's width.
-    for (const side of [-1, 1]) back.push({ cx: cx + side * (7 + rand() * 4) * u, cy: cy - (2 + rand() * 4) * u, r: r * (0.78 + rand() * 0.12), c: pick(), turn: turn() });
-    main.push({ cx, cy, r, c: pick(), turn: turn() });
-    for (let k = 0; k < 1 + Math.round(rand()); k++) {
-      const a = rand() * Math.PI * 2;
-      small.push({ cx: cx + Math.cos(a) * r * 0.95, cy: cy + Math.sin(a) * r * 0.95, r: (5.5 + rand()) * u, c: pick(), turn: turn() });
-    }
-  }
-  const looks = colours.map(balloonLook);
-  const aspect = PIECES["balloon-latex"].w / PIECES["balloon-latex"].h;
-  const ball = (b: Ball, i: number, kind: string) => {
-    const look = looks[b.c];
-    const hgt = b.r * 2.1, wid = hgt * aspect;
-    return (
-      // eslint-disable-next-line jsx-a11y/alt-text
-      <image key={`${kind}${i}`} href={look.src} x={b.cx - wid / 2} y={b.cy - hgt / 2} width={wid} height={hgt} preserveAspectRatio="none"
-        transform={`rotate(${f1(b.turn)} ${f1(b.cx)} ${f1(b.cy)})`} filter={look.tint ? `url(#${uid}-t${b.c})` : undefined} />
-    );
-  };
-  const trio = PIECES["roses-trio"];
-  return (
-    <g data-part="balloons">
-      <defs>{looks.map((l, i) => l.tint && <Tint key={i} id={`${uid}-t${i}`} colour={l.tint} />)}</defs>
-      <ellipse cx={x} cy={y0} rx={24 * u} ry={3.2 * u} fill="#3b2a22" opacity={0.22} filter={`url(#${uid}-soft)`} />
-      <g opacity={0.92}>{back.map((b, i) => ball(b, i, "k"))}</g>
-      {main.map((b, i) => ball(b, i, "b"))}
-      {roses && [2, Math.floor(n / 2) + 1, n - 1].map((i, k) => main[i] && (
-        // eslint-disable-next-line jsx-a11y/alt-text
-        <image key={`fr${k}`} data-part="garland-roses" href={piece("roses-trio")} x={main[i].cx - main[i].r * 1.25} y={main[i].cy + main[i].r * 0.05} width={13 * u} height={(13 * u * trio.h) / trio.w} />
-      ))}
-      {small.map((b, i) => ball(b, i, "s"))}
-    </g>
-  );
-}
-
 /** The rose spray on a corner: its fullest roses at the corner (x, y), trailing off along the edge at `turn` degrees; mirrored for a right-hand corner. */
 function Roses({ x, y, width, turn, mirror }: { x: number; y: number; width: number; turn: number; mirror?: boolean }) {
   const p = PIECES["roses-spray"];
@@ -322,11 +252,9 @@ export function stackWords(ms: (Metric | null)[], nominal: number[], space: { y0
   return { size: nominal.map((n, i) => n * k[i] * s), base };
 }
 
-export default function WelcomeBoardArt({ board, theme, balloons, className, placeholders = true }: {
+export default function WelcomeBoardArt({ board, theme, className, placeholders = true }: {
   board: WelcomeBoard;
   theme: { id: string; accent: string; balloonColors?: string[]; backdropColors?: string[] };
-  /** The party's balloon colours (the backdrop's), for a garland on the board. */
-  balloons?: string[];
   className?: string;
   /** Show example words where the customer has none yet (the builder), or leave them out (a saved design). */
   placeholders?: boolean;
@@ -346,7 +274,6 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
   const garland = board.garnish === "balloons" || board.garnish === "both";
   const flowers = board.garnish === "flowers" || board.garnish === "both";
   const palette = [theme.accent, ...(theme.balloonColors ?? []), ...(theme.backdropColors ?? [])];
-  const balloonColours = (balloons?.length ? balloons : theme.balloonColors ?? [theme.accent]).slice(0, 5);
 
   const shape = board.shape === "arch"
     ? `M0,${top + h}L0,${top + w / 2}A${w / 2},${w / 2} 0 0 1 ${w},${top + w / 2}L${w},${top + h}Z`
@@ -420,17 +347,22 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
   const photoW = w / (fx1 - fx0), photoH = h / (fy1 - fy0);
   const photoX = -fx0 * photoW, photoY = top - fy0 * photoH;
   const floor = photoY + scene.floor * photoH;
-  // The theme's own real garland: a full column of big balloons from the floor up the board's right side, a little
-  // over its edge, leaning over its top corner (2026-10-31, the owner's photo: "dolu dolu olmalı", not a thin rope).
-  const real = (PIECES as Record<string, { w: number; h: number }>)[`garland-${theme.id}`];
-  const gH = floor + 2 - (top - h * 0.04), gW = real ? (gH * real.w) / real.h : 0;
-  // The column's body starts at the board's right edge, as in her example (a twentieth of the way across the picture).
-  const gX = w * (board.shape === "round" ? 0.96 : 1) - gW * 0.05;
-  const right = garland ? (real ? Math.max(w + 22, gX + gW + 3) : w + 54 * u) : w + 22;
+  // The garland (2026-10-31, the owner: "burdaki balonlar iyi gözüküyordu"): the one in the step's own "Balloon
+  // garland" photo, lifted out of it — from the floor up the board's right side and arching over its top, where
+  // that photo has it: its top two fifths of the board's width above the board, the board's right edge 47% across it.
+  const gp = PIECES["garland-pastel"];
+  const gTop = top - w * 0.4, gH = floor + 2 - gTop, gW = (gH * gp.w) / gp.h;
+  const gX = w * (board.shape === "round" ? 0.97 : 1) - gW * 0.468;
+  const right = garland ? Math.max(w + 22, gX + gW + 3) : w + 22;
   const bottom = Math.min(floor + 8, photoY + photoH);
+  // The garland rises above the photo: the picture starts higher, and the photo's own wall reaches up to it.
+  const y0 = garland ? Math.min(0, gTop - 3) : 0;
+  const strip = photoH * 0.03, k = (photoY + strip - y0) / strip;
+  // Stretched across from the photo's middle, well past where a wide card shows the picture.
+  const pc = photoX + photoW / 2, sx = Math.max(1, (2 * Math.max(pc + 22, right + 22 - pc)) / photoW) * 1.8;
   const shine = board.material === "acrylic";
   return (
-    <svg className={className} viewBox={`-22 0 ${f1(right + 22)} ${f1(bottom)}`} role="img" aria-label="Your welcome board" data-shape={board.shape} data-garnish={board.garnish}>
+    <svg className={className} viewBox={`-22 ${f1(y0)} ${f1(right + 22)} ${f1(bottom - y0)}`} role="img" aria-label="Your welcome board" data-shape={board.shape} data-garnish={board.garnish}>
       <defs>
         <clipPath id={`${uid}-clip`}><path d={shape} /></clipPath>
         {/* The garland's soft shadow on the wall behind it. */}
@@ -455,6 +387,19 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
           <image href={piece(`scene-${board.shape}-${easel ? "easel" : "none"}`)} x={f1(photoX)} y={f1(photoY)} width={f1(photoW)} height={f1(photoH)} preserveAspectRatio="none" transform={`matrix(-1 0 0 1 ${f1(2 * edge)} 0)`} />
         </g>
       ))}
+      {/* Above the photo, its top strip of wall stretched up (and across) to the picture's top edge. */}
+      {y0 < photoY && (
+        <g mask={`url(#${uid}-above)`}>
+          {/* Faded into the photo over the strip, so the join does not show. */}
+          <mask id={`${uid}-above`} maskUnits="userSpaceOnUse" x={-200} y={f1(y0 - 1)} width={f1(right + 400)} height={f1(photoY + strip - y0 + 1)}>
+            <linearGradient id={`${uid}-fade`} gradientUnits="userSpaceOnUse" x1="0" y1={f1(photoY)} x2="0" y2={f1(photoY + strip)}><stop offset="0" stopColor="#fff" /><stop offset="1" stopColor="#000" /></linearGradient>
+            <rect x={-200} y={f1(y0 - 1)} width={f1(right + 400)} height={f1(photoY + strip - y0 + 1)} fill={`url(#${uid}-fade)`} />
+          </mask>
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
+          <image href={piece(`scene-${board.shape}-${easel ? "easel" : "none"}`)} x={f1(photoX)} y={f1(photoY)} width={f1(photoW)} height={f1(photoH)} preserveAspectRatio="none"
+            transform={`translate(${f1(pc)} ${f1(y0 - photoY * k)}) scale(${f1(sx)} ${f1(k)}) translate(${f1(-pc)} 0)`} />
+        </g>
+      )}
       {/* The print, laid onto the photo's blank board: multiplied, so the photo's own light and shade show through it. */}
       <g clipPath={`url(#${uid}-clip)`} style={{ mixBlendMode: "multiply" }} data-part="print">
         <rect x={0} y={top} width={w} height={h} fill={art || board.design === "corners" ? "#FFFFFF" : board.colour} />
@@ -474,14 +419,18 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
         <Roses x={corner.tl[0]} y={corner.tl[1]} width={w * 0.46} turn={corner.tl[2]} />
         {!garland && <Roses x={corner.br[0]} y={corner.br[1]} width={w * 0.4} turn={corner.br[2]} mirror />}
       </>}
-      {garland && real && (
+      {garland && (
         <g data-part="balloons">
-          <ellipse cx={gX + gW * 0.55} cy={floor + 0.5} rx={gW * 0.5} ry={2.2} fill="#3b2a22" opacity={0.14} filter={`url(#${uid}-soft)`} />
+          <ellipse cx={gX + gW * 0.66} cy={floor + 0.5} rx={gW * 0.36} ry={2.2} fill="#3b2a22" opacity={0.14} filter={`url(#${uid}-soft)`} />
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <image data-part="garland" href={piece(`garland-${theme.id}` as keyof typeof PIECES)} x={f1(gX)} y={f1(floor + 2 - gH)} width={f1(gW)} height={f1(gH)} filter={`url(#${uid}-wall)`} />
+          <image data-part="garland" href={piece("garland-pastel")} x={f1(gX)} y={f1(gTop)} width={f1(gW)} height={f1(gH)} filter={`url(#${uid}-wall)`} />
+          {/* With flowers too: roses tucked in at the arch's end and halfway down, as in the step's "Balloons & flowers" photo. */}
+          {flowers && [[0.03, 0.05], [0.36, 0.58]].map(([fx, fy], i) => (
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <image key={i} data-part="garland-roses" href={piece("roses-trio")} x={f1(gX + gW * fx)} y={f1(gTop + gH * fy)} width={f1(w * 0.22)} height={f1((w * 0.22 * PIECES["roses-trio"].h) / PIECES["roses-trio"].w)} />
+          ))}
         </g>
       )}
-      {garland && !real && <Garland x={w + 14 * u} y0={floor} y1={top + h * (board.shape === "rectangle" ? 0.16 : board.shape === "arch" ? 0.32 : 0.22)} u={u} colours={balloonColours} uid={uid} roses={flowers} />}
     </svg>
   );
 }
