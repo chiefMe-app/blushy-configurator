@@ -45,19 +45,28 @@ const scenePrompt = (shape, stand) => [
 const GARLANDS = {
   frozen: "white, pale ice blue, soft pastel lilac and shiny chrome silver",
 };
-// Its shape drawn as grey circles on the green (2026-10-31: asked in words only, it came out a tapering tree):
-// wide on the floor, up the sign's right side, curving over to the left at the top, as round a welcome sign.
+// Its shape drawn as grey circles on the green (2026-10-31: asked in words only, it came out a tapering tree).
+// v3, the owner with a photo as the example ("balonlar çok ip gibi, dolu dolu olmalı"): a thick column of
+// big balloons, wide on the floor, up the sign's right side, leaning over its top corner — not a thin rope.
 function garlandGuide() {
   let rnd = 7; const r = () => ((rnd = (rnd * 16807) % 2147483647) / 2147483647);
-  const pts = [];
-  for (let t = 0; t <= 1.0001; t += 0.035) {
-    const y = 119 - t * 106, x = 60 + Math.sin(t * Math.PI * 0.9) * 7 - (t > 0.72 ? (t - 0.72) * 95 : 0);
-    const size = 9.5 - t * 4, spread = t < 0.18 ? 2.6 : 1.5;
-    for (let k = 0; k < 3; k++) pts.push([x + (r() - 0.5) * size * spread, y + (r() - 0.5) * 5, size * (0.5 + r() * 0.5)]);
+  // At height t (0 the floor, 1 the top): the column's middle, its half-width, and where it is.
+  const mid = (t) => 56 + Math.sin(t * 9) * 2.5 - (t > 0.7 ? ((t - 0.7) / 0.3) ** 1.5 * 18 : 0);
+  const half = (t) => (27 - t * 13) * (1 + Math.sin(t * 13 + 1) * 0.12);
+  const Y = (t) => 125 - t * 114;
+  const balls = [];
+  // A few big ones (18 inch) low down, many 11 inch, then 5 inch tucked in the gaps and round the edge.
+  for (const [size, tries, most, low] of [[11.5, 400, 7, 0.75], [7.2, 3000, 99, 1], [3.6, 5000, 99, 1]]) {
+    for (let n = 0, made = 0; n < tries && made < most; n++) {
+      const t = r() * low, s = size * (0.85 + r() * 0.3) * (1 - t * 0.25);
+      const x = mid(t) + (r() * 2 - 1) * Math.max(0, half(t) - s * 0.3), y = Y(t) + (r() - 0.5) * 3;
+      if (y + s > 131 || y - s < 2 || x - s < 2 || x + s > 98) continue;
+      if (balls.every(([bx, by, bs]) => Math.hypot(bx - x, by - y) > (bs + s) * 0.84)) { balls.push([x, y, s]); made++; }
+    }
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="768" height="1024" viewBox="0 0 100 133.3"><rect width="100" height="133.3" fill="#00B140" />${pts.map(([x, y, s]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${s.toFixed(1)}" fill="#D9D9D9" stroke="#BBBBBB" stroke-width="0.3" />`).join("")}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="768" height="1024" viewBox="0 0 100 133.3"><rect width="100" height="133.3" fill="#00B140" />${balls.map(([x, y, s]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${s.toFixed(1)}" fill="#D9D9D9" stroke="#BBBBBB" stroke-width="0.3" />`).join("")}</svg>`;
 }
-const garlandPrompt = (colours) => `Image 1 shows, on a green background, the exact outline of a balloon garland as grey circles. Turn the grey circles into a real, lush, full organic balloon garland filling exactly that outline — wide and full on the floor at the bottom, rising up, and curving over to the left at its top, as it goes up the side of a welcome sign and over its top corner (the sign is not in the picture): many round latex balloons of mixed sizes — 5, 11 and 18 inch — clustered tightly with no gaps, ONLY in ${colours}. No other colours. Keep the background exactly the flat, even, pure chroma-key green (#00B140) of image 1 — no shadow on it, no floor, no stand, no sign, no other objects. Seen straight on from the front at eye level. Soft, bright, even daylight from the front left. Photo-real event-styling photograph, crisp fine detail.`;
+const garlandPrompt = (colours) => `Image 1 shows, on a green background, the exact outline of a balloon garland as grey circles. Turn every grey circle into one real round latex balloon of that same size, in that same place: a thick, lush, full organic balloon garland column — big 18 inch balloons, 11 inch balloons and small 5 inch balloons tucked between them, clustered tightly with no gaps, nothing thin or rope-like — wide and full on the floor at the bottom, rising up, and leaning a little to the left at its top, as it stands beside a welcome sign and over its top corner (the sign is not in the picture); ONLY in ${colours}. No other colours. Keep the background exactly the flat, even, pure chroma-key green (#00B140) of image 1 — no shadow on it, no floor, no stand, no sign, no other objects. Seen straight on from the front at eye level. Soft, bright, even daylight from the front left. Photo-real event-styling photograph, crisp fine detail.`;
 
 const jobs = [];
 for (const shape of ["rectangle", "arch", "round"]) for (const stand of ["easel", "none"]) {

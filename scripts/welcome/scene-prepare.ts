@@ -61,6 +61,11 @@ async function scene(name: string, file: string) {
     const name = f.replace(/\.png$/, "");
     if (name.startsWith("scene-")) { await scene(name, path.join(RAW, f)); continue; }
     const r = await cutOut(path.join(RAW, f));
+    // The green's own dark shadow under the garland's bottom balloons, too dark to key out: away (2026-10-31, it showed as a black blot).
+    for (let y = Math.floor(r.height * 0.9); y < r.height; y++) for (let x = 0; x < r.width; x++) {
+      const i = (y * r.width + x) * 4, [cr, cg, cb] = [r.data[i], r.data[i + 1], r.data[i + 2]];
+      if (Math.max(cr, cg, cb) < 70 && cg >= cr && cg >= cb) r.data[i + 3] = 0;
+    }
     const buf = await sharp(r.data, { raw: { width: r.width, height: r.height, channels: 4 } }).resize({ width: 900, height: 900, fit: "inside" }).webp({ quality: 88, alphaQuality: 100 }).toBuffer();
     writeFileSync(path.join(OUT, `${name}.webp`), buf);
     const m = await sharp(buf).metadata();

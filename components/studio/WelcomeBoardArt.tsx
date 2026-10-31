@@ -109,7 +109,8 @@ function sprig(x: number, y: number, a: number, len: number, leaf: boolean) {
 /** Where a board's corners are, inside its shape: top-left, top-right, bottom-left, bottom-right. */
 export function boardCorners(shape: string, w: number, h: number, top: number): [number, number][] {
   if (shape === "round") {
-    const c = top + h / 2, d = w * 0.37;
+    // Out at the rim, cut by it (2026-10-31, the owner: further in, they ran into the words).
+    const c = top + h / 2, d = w * 0.4;
     return [[w / 2 - d, c - d], [w / 2 + d, c - d], [w / 2 - d, c + d], [w / 2 + d, c + d]];
   }
   const y0 = shape === "arch" ? top + w * 0.17 : top + h * 0.03;
@@ -157,10 +158,9 @@ export function PaintedCorners({ w, h, top = 0, shape = "rectangle", inks, motif
         </filter>
         <filter id={`${uid}-bleed`} x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation={1.3 * u} /></filter>
       </defs>
-      {/* A soft wash in the two main corners, and the shapes' bleed — one filter pass each (a filter on every shape was slow to draw). */}
+      {/* The shapes' bleed — one filter pass (a filter on every shape was slow to draw). No wash round them: on the
+          photo it showed as a pale patch with straight edges (the owner, 2026-10-31: "bi tuhaf duruyor"). */}
       <g filter={`url(#${uid}-bleed)`}>
-        <ellipse cx={tl[0]} cy={tl[1]} rx={w * 0.26} ry={w * 0.2} fill={c1} opacity={0.14} />
-        <ellipse cx={br[0]} cy={br[1]} rx={w * 0.26} ry={w * 0.18} fill={c2} opacity={0.14} />
         {!leaf && flakes.map(([x, y, r, rot, c, o], i) => <path key={`fb${i}`} d={flake(x, y, r, rot)} stroke={c} strokeWidth={r * 0.1} fill={c} strokeLinecap="round" opacity={o * 0.35} />)}
       </g>
       <g filter={`url(#${uid}-wc)`}>
@@ -388,10 +388,12 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
   const photoW = w / (fx1 - fx0), photoH = h / (fy1 - fy0);
   const photoX = -fx0 * photoW, photoY = top - fy0 * photoH;
   const floor = photoY + scene.floor * photoH;
-  // The theme's own real garland: up the board's right side from the floor, curving over its top corner.
+  // The theme's own real garland: a full column of big balloons from the floor up the board's right side, a little
+  // over its edge, leaning over its top corner (2026-10-31, the owner's photo: "dolu dolu olmalı", not a thin rope).
   const real = (PIECES as Record<string, { w: number; h: number }>)[`garland-${theme.id}`];
-  const gH = floor + 2 - (top + h * (board.shape === "rectangle" ? 0.02 : 0.08)), gW = real ? (gH * real.w) / real.h : 0;
-  const gX = w + 9 * u - gW * 0.74;
+  const gH = floor + 2 - (top - h * 0.04), gW = real ? (gH * real.w) / real.h : 0;
+  // The column's body starts a tenth of the way across the picture (its top leans out further left).
+  const gX = w * (board.shape === "round" ? 0.86 : 0.9) - gW * 0.09;
   const right = garland ? (real ? Math.max(w + 22, gX + gW + 3) : w + 54 * u) : w + 22;
   const bottom = Math.min(floor + 8, photoY + photoH);
   const shine = board.material === "acrylic";
@@ -399,6 +401,8 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
     <svg className={className} viewBox={`-22 0 ${f1(right + 22)} ${f1(bottom)}`} role="img" aria-label="Your welcome board" data-shape={board.shape} data-garnish={board.garnish}>
       <defs>
         <clipPath id={`${uid}-clip`}><path d={shape} /></clipPath>
+        {/* The garland's soft shadow on the wall behind it. */}
+        <filter id={`${uid}-wall`} x="-20%" y="-10%" width="140%" height="120%"><feDropShadow dx={1.6} dy={1.2} stdDeviation={1.8} floodColor="#4a3328" floodOpacity={0.22} /></filter>
         <filter id={`${uid}-soft`} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation={1.6} /></filter>
         <linearGradient id={`${uid}-gloss`} x1="0" y1="0" x2="1" y2="0.6">
           <stop offset="0.18" stopColor="#FFFFFF" stopOpacity={0} />
@@ -410,8 +414,9 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
       </defs>
       {/* eslint-disable-next-line jsx-a11y/alt-text */}
       <image data-part="scene" href={piece(`scene-${board.shape}-${easel ? "easel" : "none"}`)} x={f1(photoX)} y={f1(photoY)} width={f1(photoW)} height={f1(photoH)} preserveAspectRatio="none" />
-      {/* A wide card shows past the photo's sides: its own empty wall and floor there, mirrored at each edge. */}
-      {[photoX, photoX + photoW].map((edge, i) => (
+      {/* A wide card shows past the photo's sides: its own empty wall and floor there, mirrored at each edge —
+          just inside it, over the photo's soft last pixels (mirrored right at the edge, they showed as a pale line). */}
+      {[photoX + photoW * 0.004, photoX + photoW * 0.996].map((edge, i) => (
         <g key={i} clipPath={`url(#${uid}-side${i})`}>
           <clipPath id={`${uid}-side${i}`}><rect x={f1(i ? edge : edge - photoW * 0.25)} y={f1(photoY)} width={f1(photoW * 0.25)} height={f1(photoH)} /></clipPath>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
@@ -439,9 +444,9 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
       </>}
       {garland && real && (
         <g data-part="balloons">
-          <ellipse cx={gX + gW * 0.74} cy={floor} rx={gW * 0.42} ry={2.6} fill="#3b2a22" opacity={0.22} filter={`url(#${uid}-soft)`} />
+          <ellipse cx={gX + gW * 0.55} cy={floor + 0.5} rx={gW * 0.5} ry={2.2} fill="#3b2a22" opacity={0.14} filter={`url(#${uid}-soft)`} />
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <image data-part="garland" href={piece(`garland-${theme.id}` as keyof typeof PIECES)} x={f1(gX)} y={f1(floor + 2 - gH)} width={f1(gW)} height={f1(gH)} />
+          <image data-part="garland" href={piece(`garland-${theme.id}` as keyof typeof PIECES)} x={f1(gX)} y={f1(floor + 2 - gH)} width={f1(gW)} height={f1(gH)} filter={`url(#${uid}-wall)`} />
         </g>
       )}
       {garland && !real && <Garland x={w + 14 * u} y0={floor} y1={top + h * (board.shape === "rectangle" ? 0.16 : board.shape === "arch" ? 0.32 : 0.22)} u={u} colours={balloonColours} uid={uid} roses={flowers} />}
