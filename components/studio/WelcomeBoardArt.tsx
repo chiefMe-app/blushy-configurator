@@ -72,8 +72,11 @@ function flake(cx: number, cy: number, r: number, rot: number) {
     for (const [t, len] of [[0.36, 0.28], [0.6, 0.2]]) {
       const [px, py] = at(t);
       for (const s of [1, -1]) {
-        const b = a + (s * Math.PI) / 4;
-        d += `M${f1(px)},${f1(py)}L${f1(px + Math.cos(b) * r * len)},${f1(py + Math.sin(b) * r * len)}`;
+        const b = a + (s * Math.PI) / 4, [qx, qy] = [px + Math.cos(b) * r * len, py + Math.sin(b) * r * len];
+        d += `M${f1(px)},${f1(py)}L${f1(qx)},${f1(qy)}`;
+        // A small diamond at its tip.
+        const k = r * 0.05, [ux, uy] = [Math.cos(b), Math.sin(b)];
+        d += `M${f1(qx - ux * k)},${f1(qy - uy * k)}L${f1(qx - uy * k)},${f1(qy + ux * k)}L${f1(qx + ux * k * 1.6)},${f1(qy + uy * k * 1.6)}L${f1(qx + uy * k)},${f1(qy - ux * k)}Z`;
       }
     }
     const k = [at(0.78), at(0.9, 0.07), at(1.02), at(0.9, -0.07)];
@@ -120,6 +123,31 @@ export function boardCorners(shape: string, w: number, h: number, top: number): 
 
 type Mark = [number, number, number, number, string, number];
 
+/**
+ * Snowflakes painted half off the board (2026-10-31, the owner, on her Frozen example: "yarım snowflake gibi
+ * duruyor aslında" — what looked like sprigs in its corners are big flakes' arms, cut by the board's edge):
+ * [x, y, size, turn, ink, strength] — big ones centred on the edge, a few small whole ones near it.
+ */
+function edgeFlakes(shape: string, w: number, h: number, top: number, [c1, c2, c3]: string[]): Mark[] {
+  // A point on the rim of a round or arched top, at angle a (degrees, 0 = right, counter-clockwise).
+  const rim = (cx: number, cy: number, a: number): [number, number] => [cx + Math.cos((a * Math.PI) / 180) * w * 0.5, cy - Math.sin((a * Math.PI) / 180) * w * 0.5];
+  const k = shape === "round" ? 0.62 : 1;
+  const W = "watercolour";
+  const [A, B, D, E, F, s1, s2, s3]: [number, number][] = shape === "round"
+    ? [rim(w / 2, top + h / 2, 152), rim(w / 2, top + h / 2, 32), rim(w / 2, top + h / 2, 236), rim(w / 2, top + h / 2, 305), rim(w / 2, top + h / 2, 196),
+       [w * 0.5, top + h * 0.07], [w * 0.13, top + h * 0.7], [w * 0.86, top + h * 0.7]]
+    : shape === "arch"
+      ? [rim(w / 2, top + w / 2, 152), rim(w / 2, top + w / 2, 32), [w * 0.32, top + h], [w * 0.93, top + h * 0.98], [0, top + h * 0.62],
+         [w * 0.44, top + w * 0.1], [w * 0.06, top + h * 0.84], [w * 0.8, top + h * 0.86]]
+      : [[0, top + h * 0.15], [w, top + h * 0.1], [w * 0.32, top + h], [w * 0.93, top + h * 0.98], [0, top + h * 0.58],
+         [w * 0.46, top + h * 0.06], [w * 0.06, top + h * 0.82], [w * 0.8, top + h * 0.85]];
+  return [
+    [...A, w * 0.3 * k, 8, W, 0.7], [...B, w * 0.34 * k, 20, c3, 0.28], [...D, w * 0.25 * k, 14, W, 0.6],
+    [...E, w * 0.2 * k, 0, c2, 0.55], [...F, w * 0.16 * k, 30, c3, 0.28],
+    [...s1, w * 0.06 * k, 12, c2, 0.45], [...s2, w * 0.045 * k, 25, c3, 0.4], [...s3, w * 0.05 * k, 5, c3, 0.35],
+  ];
+}
+
 /** Painted corners (2026-10-31, the owner's Frozen example): watercolour shapes in two corners, fainter ones in the others, a few specks — on white. */
 export function PaintedCorners({ w, h, top = 0, shape = "rectangle", inks, motif, uid }: { w: number; h: number; top?: number; shape?: string; inks: string[]; motif: "flake" | "leaf"; uid: string }) {
   // A round board has less room in its corners: the shapes smaller there.
@@ -128,23 +156,26 @@ export function PaintedCorners({ w, h, top = 0, shape = "rectangle", inks, motif
   const [c1, c2, c3] = inks;
   const [tl, tr, bl, br] = boardCorners(shape, w, h, top);
   const leaf = motif === "leaf";
+  const ink = (c: string) => (c === "watercolour" ? `url(#${uid}-ink)` : c);
   // Shapes round each corner, d the way into the board: [x, y, size, turn, ink, strength].
   const at = ([x, y]: [number, number], dx: number, dy: number, d: [number, number]): [number, number] => [x + dx * u * d[0], y + dy * u * d[1]];
   const IN: Record<string, [number, number]> = { tl: [1, 1], tr: [-1, 1], bl: [1, -1], br: [-1, -1] };
-  const flakes: Mark[] = [
+  const flakes: Mark[] = !leaf ? edgeFlakes(shape, w, h, top, inks) : [
     [...at(tl, 0, 0, IN.tl), 21 * u, 8, c1, 0.8], [...at(tl, 20, -4, IN.tl), 10 * u, 20, c2, 0.6], [...at(tl, 9, 17, IN.tl), 5 * u, 2, c2, 0.55],
     [...at(tr, 0, 0, IN.tr), 15 * u, 30, c3, 0.4], [...at(tr, 17, 7, IN.tr), 4.5 * u, 12, c2, 0.5],
     [...at(bl, 0, 0, IN.bl), 10 * u, 15, c3, 0.35],
     [...at(br, 0, 0, IN.br), 19 * u, 4, c1, 0.6], [...at(br, 21, 7, IN.br), 6 * u, 25, c2, 0.55], [...at(br, 7, 20, IN.br), 4 * u, 7, c3, 0.5],
   ];
-  const sprigs: Mark[] = [
+  const sprigs: Mark[] = !leaf ? [] : [
     [...at(tl, -4, 15, IN.tl), -12, 26 * u, c1, 0.65], [...at(tl, 14, -6, IN.tl), 58, 20 * u, c2, 0.55],
     [...at(tr, 2, 12, IN.tr), 168, 16 * u, c3, 0.4],
     [...at(bl, -2, -10, IN.bl), -25, 16 * u, c3, 0.45],
     [...at(br, 4, -16, IN.br), 192, 24 * u, c1, 0.6], [...at(br, 18, 4, IN.br), -118, 18 * u, c2, 0.55], [...at(br, 30, 2, IN.br), -150, 13 * u, c3, 0.5],
   ];
+  // A splatter of specks: round the top flakes for snowflakes (as in her example), else two corners.
+  const [sa, sb] = leaf ? [tr, bl] : [flakes[0], flakes[1]].map(([x, y]) => [x, y] as [number, number]);
   const specks = Array.from({ length: 80 }, () => {
-    const [x, y] = rand() < 0.5 ? tr : bl;
+    const [x, y] = rand() < 0.5 ? sa : sb;
     const a = rand() * Math.PI * 2, d = rand() * 22 * u;
     return [Math.max(0, Math.min(w, x + Math.cos(a) * d)), y + Math.sin(a) * d, (0.1 + rand() * 0.22) * u, rand()] as const;
   });
@@ -156,12 +187,13 @@ export function PaintedCorners({ w, h, top = 0, shape = "rectangle", inks, motif
           <feDisplacementMap in="SourceGraphic" in2="n" scale={0.8 * u} xChannelSelector="R" yChannelSelector="G" result="d" />
           <feGaussianBlur in="d" stdDeviation={0.1 * u} />
         </filter>
+        <linearGradient id={`${uid}-ink`} x1="0" y1="0" x2="1" y2="1"><stop offset="0.15" stopColor={c1} /><stop offset="0.85" stopColor={c2} /></linearGradient>
         <filter id={`${uid}-bleed`} x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation={1.3 * u} /></filter>
       </defs>
       {/* The shapes' bleed — one filter pass (a filter on every shape was slow to draw). No wash round them: on the
           photo it showed as a pale patch with straight edges (the owner, 2026-10-31: "bi tuhaf duruyor"). */}
       <g filter={`url(#${uid}-bleed)`}>
-        {!leaf && flakes.map(([x, y, r, rot, c, o], i) => <path key={`fb${i}`} d={flake(x, y, r, rot)} stroke={c} strokeWidth={r * 0.1} fill={c} strokeLinecap="round" opacity={o * 0.35} />)}
+        {!leaf && flakes.map(([x, y, r, rot, c, o], i) => <path key={`fb${i}`} d={flake(x, y, r, rot)} stroke={ink(c)} strokeWidth={r * 0.1} fill={ink(c)} strokeLinecap="round" opacity={o * 0.35} />)}
       </g>
       <g filter={`url(#${uid}-wc)`}>
         {sprigs.map(([x, y, a, len, c, o], i) => {
@@ -174,7 +206,7 @@ export function PaintedCorners({ w, h, top = 0, shape = "rectangle", inks, motif
         {flakes.map(([x, y, r, rot, c, o], i) => leaf
           // Without snowflakes: soft painted berries where they would be.
           ? <g key={`f${i}`} opacity={o * 0.8}>{[0, 1, 2].map((k) => <circle key={k} cx={x + Math.cos(rot + k * 2.1) * r * 0.22} cy={y + Math.sin(rot + k * 2.1) * r * 0.22} r={r * 0.16} fill={c} />)}</g>
-          : <path key={`f${i}`} d={flake(x, y, r, rot)} stroke={c} strokeWidth={r * 0.055} fill={c} strokeLinecap="round" strokeLinejoin="round" opacity={o} />)}
+          : <path key={`f${i}`} d={flake(x, y, r, rot)} stroke={ink(c)} strokeWidth={r * 0.045} fill={ink(c)} strokeLinecap="round" strokeLinejoin="round" opacity={o} />)}
       </g>
       {specks.map(([x, y, r, t], i) => <circle key={`d${i}`} cx={x} cy={y} r={r} fill={t < 0.6 ? "#9AA0AE" : inks[i % 3]} opacity={0.35 + t * 0.3} />)}
     </g>
@@ -392,8 +424,8 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
   // over its edge, leaning over its top corner (2026-10-31, the owner's photo: "dolu dolu olmalı", not a thin rope).
   const real = (PIECES as Record<string, { w: number; h: number }>)[`garland-${theme.id}`];
   const gH = floor + 2 - (top - h * 0.04), gW = real ? (gH * real.w) / real.h : 0;
-  // The column's body starts a tenth of the way across the picture (its top leans out further left).
-  const gX = w * (board.shape === "round" ? 0.86 : 0.9) - gW * 0.09;
+  // The column's body starts at the board's right edge, as in her example (a twentieth of the way across the picture).
+  const gX = w * (board.shape === "round" ? 0.96 : 1) - gW * 0.05;
   const right = garland ? (real ? Math.max(w + 22, gX + gW + 3) : w + 54 * u) : w + 22;
   const bottom = Math.min(floor + 8, photoY + photoH);
   const shine = board.material === "acrylic";

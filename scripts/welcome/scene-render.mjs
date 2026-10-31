@@ -48,25 +48,31 @@ const GARLANDS = {
 // Its shape drawn as grey circles on the green (2026-10-31: asked in words only, it came out a tapering tree).
 // v3, the owner with a photo as the example ("balonlar çok ip gibi, dolu dolu olmalı"): a thick column of
 // big balloons, wide on the floor, up the sign's right side, leaning over its top corner — not a thin rope.
+// v4 (her examples again: "garland gibi durmuyor"): balloons pressed together and overlapping, in depth, no
+// gaps — each drawn shaded as a ball, the small ones in front, so the model sees a packed 3D garland.
 function garlandGuide() {
   let rnd = 7; const r = () => ((rnd = (rnd * 16807) % 2147483647) / 2147483647);
   // At height t (0 the floor, 1 the top): the column's middle, its half-width, and where it is.
-  const mid = (t) => 56 + Math.sin(t * 9) * 2.5 - (t > 0.7 ? ((t - 0.7) / 0.3) ** 1.5 * 18 : 0);
-  const half = (t) => (27 - t * 13) * (1 + Math.sin(t * 13 + 1) * 0.12);
-  const Y = (t) => 125 - t * 114;
+  const mid = (t) => 56 + Math.sin(t * 8) * 4.5 - (t > 0.7 ? ((t - 0.7) / 0.3) ** 1.5 * 16 : 0);
+  const half = (t) => (25 - t * 11) * (1 + Math.sin(t * 11 + 1) * 0.18);
+  const Y = (t) => 124 - t * 112;
   const balls = [];
-  // A few big ones (18 inch) low down, many 11 inch, then 5 inch tucked in the gaps and round the edge.
-  for (const [size, tries, most, low] of [[11.5, 400, 7, 0.75], [7.2, 3000, 99, 1], [3.6, 5000, 99, 1]]) {
+  // A few big ones (18 inch) low down, many 11 inch overlapping each other, then 5 inch in clusters on top of them.
+  for (const [size, tries, most, low, gap] of [[12, 400, 6, 0.7, 0.8], [7.5, 4000, 99, 1, 0.62], [3.4, 6000, 34, 1, 0.55]]) {
     for (let n = 0, made = 0; n < tries && made < most; n++) {
       const t = r() * low, s = size * (0.85 + r() * 0.3) * (1 - t * 0.25);
-      const x = mid(t) + (r() * 2 - 1) * Math.max(0, half(t) - s * 0.3), y = Y(t) + (r() - 0.5) * 3;
+      const x = mid(t) + (r() * 2 - 1) * Math.max(0, half(t) - s * 0.2), y = Y(t) + (r() - 0.5) * 3;
       if (y + s > 131 || y - s < 2 || x - s < 2 || x + s > 98) continue;
-      if (balls.every(([bx, by, bs]) => Math.hypot(bx - x, by - y) > (bs + s) * 0.84)) { balls.push([x, y, s]); made++; }
+      // Small ones only where they sit on bigger ones (tucked in, not floating off the edge).
+      if (size < 4 && !balls.some(([bx, by, bs]) => Math.hypot(bx - x, by - y) < bs + s * 0.3)) continue;
+      if (balls.every(([bx, by, bs]) => Math.hypot(bx - x, by - y) > (bs + s) * gap)) { balls.push([x, y, s, r()]); made++; }
     }
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="768" height="1024" viewBox="0 0 100 133.3"><rect width="100" height="133.3" fill="#00B140" />${balls.map(([x, y, s]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${s.toFixed(1)}" fill="#D9D9D9" stroke="#BBBBBB" stroke-width="0.3" />`).join("")}</svg>`;
+  // Behind to in front: the big ones first, then by size, so overlaps read as depth.
+  balls.sort((a, b) => b[2] - a[2] || a[3] - b[3]);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="768" height="1024" viewBox="0 0 100 133.3"><defs><radialGradient id="b" cx="0.36" cy="0.32" r="0.75"><stop offset="0" stop-color="#F4F4F4" /><stop offset="0.6" stop-color="#C9C9C9" /><stop offset="1" stop-color="#8E8E8E" /></radialGradient></defs><rect width="100" height="133.3" fill="#00B140" />${balls.map(([x, y, s]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${s.toFixed(1)}" fill="url(#b)" />`).join("")}</svg>`;
 }
-const garlandPrompt = (colours) => `Image 1 shows, on a green background, the exact outline of a balloon garland as grey circles. Turn every grey circle into one real round latex balloon of that same size, in that same place: a thick, lush, full organic balloon garland column — big 18 inch balloons, 11 inch balloons and small 5 inch balloons tucked between them, clustered tightly with no gaps, nothing thin or rope-like — wide and full on the floor at the bottom, rising up, and leaning a little to the left at its top, as it stands beside a welcome sign and over its top corner (the sign is not in the picture); ONLY in ${colours}. No other colours. Keep the background exactly the flat, even, pure chroma-key green (#00B140) of image 1 — no shadow on it, no floor, no stand, no sign, no other objects. Seen straight on from the front at eye level. Soft, bright, even daylight from the front left. Photo-real event-styling photograph, crisp fine detail.`;
+const garlandPrompt = (colours) => `Image 1 shows, on a green background, a balloon garland drawn as grey shaded balls. Turn every ball into one real round latex balloon of that same size, in that same place, overlapping the same way: a professional, lush, organic balloon garland as an event stylist makes it — balloons pressed tightly together and overlapping in depth, some in front of others, big 18 inch balloons, 11 inch balloons and clusters of small 5 inch balloons tucked between them, a thick full column with no gaps through it, nothing thin or rope-like. Soft matte satin pastel latex (not glossy, not plastic-looking), ONLY in ${colours}; the chrome ones with a real mirror-like metallic shine. No other colours, no strings, no ribbons. Keep the background exactly the flat, even, pure chroma-key green (#00B140) of image 1 — no shadow on it, no floor, no stand, no sign, no other objects. Seen straight on from the front at eye level. Soft, bright, even daylight from the front left. Photo-real event-styling photograph, crisp fine detail.`;
 
 const jobs = [];
 for (const shape of ["rectangle", "arch", "round"]) for (const stand of ["easel", "none"]) {
