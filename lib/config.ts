@@ -129,7 +129,7 @@ export function backdropSwatchesForTheme(theme: Pick<Theme, "backdropColors">): 
 
 export const THEMES: Theme[] = [
   { id: "frozen", name: "Ice Princess", emoji: "--", desc: "Icy satin, silver frost", backdropColors: ["#E8F4FD", "#B3D9F2", "#FFFFFF"], balloonColors: ["#FFFFFF", "#BAE6FD", "#DCD7F2", "#C7C9C7", "#F0F4F8"], priceModifier: 50, accent: "#4A90D9" },
-  { id: "unicorn", name: "Unicorn", emoji: "-", desc: "Pearlescent pastels, soft iridescence", backdropColors: ["#F9D5DF", "#E8C8F0", "#FFFFFF"], balloonColors: ["#F8BBD0", "#DDD6FE", "#FEF08A", "#BBF7D0", "#FFFFFF"], priceModifier: 50, accent: "#C77DD6" },
+  { id: "unicorn", name: "Unicorn", emoji: "-", desc: "Pearlescent pastels, soft iridescence", backdropColors: ["#F9D5DF", "#E8C8F0", "#FFFFFF"], balloonColors: ["#F8BBD0", "#FDBA74", "#FEF08A", "#BBF7D0", "#DDD6FE"], priceModifier: 50, accent: "#C77DD6" },
   { id: "dinosaur", name: "Dinosaur", emoji: "-", desc: "Sage botanicals, muted terracotta", backdropColors: ["#E8F5E9", "#C8DFC8", "#F5F0E8"], balloonColors: ["#15803D", "#84CC16", "#C9A96E", "#D4A017", "#F5EDD6"], priceModifier: 30, accent: "#4CAF82" },
   { id: "safari", name: "Safari", emoji: "-", desc: "Warm linen, sun-washed neutrals", backdropColors: ["#FFF8E1", "#FFE0B2", "#F5F0E8"], balloonColors: ["#C9A96E", "#F5EDD6", "#FFC200", "#7B3F00", "#6EE7B7"], priceModifier: 30, accent: "#B5762A" },
   { id: "princess", name: "Princess", emoji: "-", desc: "Blush satin, pearl & soft gold", backdropColors: ["#FCE4EC", "#FFF9C4", "#FFFFFF"], balloonColors: ["#F8BBD0", "#FBCFE8", "#FFFFFF", "#FDE68A", "#E9D5FF"], priceModifier: 50, accent: "#E84F8B" },
@@ -357,7 +357,8 @@ export type BackdropShapeId =
   | "balloon_ring"
   | "shimmer_wall"
   | "open_arch_frame"
-  | "wavy";
+  | "wavy"
+  | "fringe";
 
 export type ArchSizeId = "small" | "medium" | "large";
 
@@ -509,6 +510,13 @@ export function makeBackdropItem(
   } else if (type === "round") {
     widthCm = 200; heightCm = 200;
   } else if (type === "shimmer_wall") {
+    widthCm = 200; heightCm = 200;
+  } else if (type === "wavy") {
+    // 2026-11-01 (owner): a board with a wavy outline, "single arch size" —
+    // the lone arch's Large, 120 x 220.
+    widthCm = 120; heightCm = 220;
+  } else if (type === "fringe") {
+    // 2026-11-01 (owner): a tinsel and paper fringe curtain, "2m x 2m".
     widthCm = 200; heightCm = 200;
   } else if (type === "open_arch_frame") {
     // Hollow open arch frame prop — arch-like footprint
@@ -965,7 +973,10 @@ export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   // 2026-09-05: shimmer wall is offered again, and a hollow balloon ring is new.
   { id: "shimmer_wall", label: "Shimmer Wall",         price: 0 },
   { id: "balloon_ring", label: "Balloon Ring",         price: 0 },
-  // "wavy" removed from product - not selectable. Kept in BackdropShapeId for backward compat.
+  // 2026-11-01 (owner): the wavy board is offered again, and a fringe curtain is
+  // new — each at the same price as any board for now ("fiyatları aynı olsun").
+  { id: "wavy",         label: "Wavy Backdrop",        price: 0 },
+  { id: "fringe",       label: "Fringe Backdrop 2x2m", price: 0 },
   // "shimmer_wall" removed from product (2026-07-12) - shimmer pipeline too
   // unreliable, focus shifted to arch-based designs. Kept in BackdropShapeId
   // for backward compat with old saved configs.
@@ -1462,7 +1473,7 @@ export function priceBreakdown(config: BuilderConfig): {
   // whole-backdrop print reached the total, so those were never charged.
   // They are priced per board now; the old print line stays for designs that
   // still carry it and have no per-board choice.
-  const printable = (it: BackdropItem) => !["shimmer_wall", "balloon_ring", "open_arch_frame"].includes(it.type);
+  const printable = (it: BackdropItem) => !["shimmer_wall", "balloon_ring", "open_arch_frame", "fringe"].includes(it.type);
   const textPrice = backdropPrintById("name_only")?.price ?? 0;
   const graphicPrice = backdropPrintById("theme_print")?.price ?? 0;
   const lettered = d.backdropItems.filter((it) => printable(it) && it.text?.enabled && (it.text.value ?? "").trim());

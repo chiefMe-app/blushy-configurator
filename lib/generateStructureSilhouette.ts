@@ -26,6 +26,7 @@ import { frozenBannerPrintSvg } from "./bannerPrint";
 import { FROZEN_CASTLE_PRINT } from "./bannerCastlePrint";
 import UNICORN_PRINT from "./bannerThemePrints/unicorn";
 import { bannerPrintTheme } from "./bannerPrintThemes";
+import { wavyBoardPath } from "./wavyBoard";
 
 // Each banner print, by theme (lib/bannerPrintThemes.ts lists them).
 const BANNER_PRINTS: Record<string, string> = { frozen: FROZEN_CASTLE_PRINT, unicorn: UNICORN_PRINT };
@@ -245,19 +246,14 @@ function panelPathOrShape(
   }
 
   if (shape === "wavy") {
-    const amp    = pw * 0.08;
-    const segs   = 3;
-    const segW   = pw / segs;
-    const topY   = apexY + amp;
-    const pts    = [`M ${left},${floorY}`, `L ${left},${topY + amp}`];
-    for (let i = 0; i < segs; i++) {
-      const x1 = left + (i + 0.5) * segW;
-      const x2 = Math.min(left + (i + 1) * segW, right);
-      const y1 = i % 2 === 0 ? topY - amp : topY + amp * 2;
-      pts.push(`Q ${x1.toFixed(1)},${y1.toFixed(1)} ${x2.toFixed(1)},${(topY + amp).toFixed(1)}`);
-    }
-    pts.push(`L ${right},${floorY}`, "Z");
-    return `<path d="${pts.join(" ")}" fill="${fillColor}" ${stroke}/>`;
+    // 2026-11-01: the Wavy Backdrop's own outline (lib/wavyBoard.ts), the one the live sketch draws.
+    void right;
+    return `<path d="${wavyBoardPath(left, apexY, pw, floorY - apexY)}" fill="${fillColor}" ${stroke}/>`;
+  }
+  if (shape === "fringe") {
+    // Square, as the banner (2 x 2 m).
+    const side = Math.min(pw, floorY - apexY);
+    return `<rect x="${cx - side / 2}" y="${floorY - side}" width="${side}" height="${side}" fill="${fillColor}" ${stroke}/>`;
   }
 
   // arch — the most important case for structure guidance
@@ -340,19 +336,8 @@ function panelEdgeOnly(
     return `<path d="${d}" ${edgeStroke}/>`;
   }
   if (shape === "wavy") {
-    const amp = pw * 0.08;
-    const segs = 3;
-    const segW = pw / segs;
-    const topY = apexY + amp;
-    const pts = [`M ${left},${floorY}`, `L ${left},${topY + amp}`];
-    for (let i = 0; i < segs; i++) {
-      const x1 = left + (i + 0.5) * segW;
-      const x2 = Math.min(left + (i + 1) * segW, right);
-      const y1 = i % 2 === 0 ? topY - amp : topY + amp * 2;
-      pts.push(`Q ${x1.toFixed(1)},${y1.toFixed(1)} ${x2.toFixed(1)},${(topY + amp).toFixed(1)}`);
-    }
-    pts.push(`L ${right},${floorY}`); // open bottom
-    return `<path d="${pts.join(" ")}" ${edgeStroke}/>`;
+    void right;
+    return `<path d="${wavyBoardPath(left, apexY, pw, floorY - apexY)}" ${edgeStroke}/>`;
   }
   // arch — open-bottom outline: two side lines + top arc, no horizontal base
   const springY = apexY + r;
@@ -1030,7 +1015,7 @@ function balloonRadiiPx(widthCm: number, widthPx: number): { X: number; L: numbe
 }
 
 export function generateStructureSilhouette(
-  backdropItems:    BackdropItem[],
+  realBackdropItems: BackdropItem[],
   plinthSizes:      PlinthSize[],
   balloonStyle:     BalloonStyleId,
   balloonColors?:   string[],
@@ -1066,6 +1051,13 @@ export function generateStructureSilhouette(
     styleReference?: boolean;
   },
 ): SilhouetteResult {
+  // 2026-11-01: the Wavy Backdrop is laid out, garlanded and plinthed exactly
+  // as the lone arch it is sized like, and the Fringe Backdrop as the 2 x 2 m
+  // banner — every one of those choices was tuned on renders. Only how the
+  // board itself is drawn (drawAs) is their own.
+  const backdropItems: (BackdropItem & { drawAs?: BackdropShapeId })[] = realBackdropItems.map((it) =>
+    it?.type === "wavy" ? { ...it, type: "arch", drawAs: "wavy" }
+      : it?.type === "fringe" ? { ...it, type: "banner", drawAs: "fringe" } : it);
   const shimmerTileFill = shimmerColorHex ?? "#D8D8E4";
   /**
    * Deepen a balloon colour for the GUIDE only.
@@ -1289,7 +1281,7 @@ export function generateStructureSilhouette(
   const sorted = [...layout.panels].sort((a, b) => a.zOrder - b.zOrder);
   sorted.forEach((panel, sortedIdx) => {
     const item      = backdropItems[panel.idx];
-    const shape     = (item?.type ?? "arch") as BackdropShapeId;
+    const shape     = (item?.drawAs ?? item?.type ?? "arch") as BackdropShapeId;
     const isShimmer = shape === "shimmer_wall";
 
     // Open arch frame. 2026-09-08, after five prompt rewrites and three guide
@@ -1372,7 +1364,31 @@ export function generateStructureSilhouette(
     // 2026-10-21: the lone banner too. Drawn as a hairline, its white face
     // left the white plinth marker in front of it with nothing to stand out
     // against, and the render dropped the plinth ("plinthe noldu?").
-    } else if (layout.panels.length === 1 && (shape === "arch" || shape === "banner")) {
+    } else if (layout.panels.length === 1 && shape === "fringe") {
+      // 2026-11-01: the lone Fringe Backdrop — vertical bands in the balloon
+      // colours (as the live sketch stripes it), fine strands over them, and
+      // the thin bar it hangs from.
+      // Square, as the banner is (2 x 2 m; the layout does not keep a panel's aspect).
+      const side = Math.min(panel.pw, panel.floorY - panel.apexY);
+      const fp = { cx: panel.cx, pw: side, apexY: panel.floorY - side, floorY: panel.floorY };
+      const left = fp.cx - fp.pw / 2, panelH = side;
+      // Every matte balloon colour in turn — not the chrome or clear ones,
+      // which a tinsel band cannot be.
+      const clearHex = new Set((extras?.clearColors ?? []).map((h) => String(h).toLowerCase()));
+      const matte = (balloonColors ?? []).slice(0, 5)
+        .filter((h) => !chromeHexSet.has(String(h).toLowerCase()) && !clearHex.has(String(h).toLowerCase()));
+      const cols = matte.length ? matte : ["#F8BBD0", "#DDD6FE", "#BAE6FD"];
+      const bands: string[] = [];
+      for (let x = 0, k = 0; x < fp.pw; k++) {
+        const w = fp.pw * (0.07 + ((k * 37) % 7) * 0.012);
+        bands.push(`<rect x="${(left + x).toFixed(1)}" y="${fp.apexY.toFixed(1)}" width="${(Math.min(w, fp.pw - x) + 0.5).toFixed(1)}" height="${panelH.toFixed(1)}" fill="${cols[k % cols.length]}"/>`);
+        x += w;
+      }
+      const strands = Array.from({ length: Math.round(fp.pw / 4) }, (_, i) =>
+        `<line x1="${(left + i * 4 + 2).toFixed(1)}" y1="${fp.apexY.toFixed(1)}" x2="${(left + i * 4 + 2).toFixed(1)}" y2="${fp.floorY.toFixed(1)}" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1"/>`).join("");
+      content.push(`<g>${bands.join("")}${strands}</g>` +
+        `<line x1="${(left - 8).toFixed(1)}" y1="${fp.apexY.toFixed(1)}" x2="${(left + fp.pw + 8).toFixed(1)}" y2="${fp.apexY.toFixed(1)}" stroke="#D8D5D0" stroke-width="5" stroke-linecap="round"/>`);
+    } else if (layout.panels.length === 1 && (shape === "arch" || shape === "banner" || shape === "wavy")) {
       // 2026-09-09: a lone arch draws its board FILLED, with a firm edge.
       //
       // panelEdgeOnly gives the board a 2px, 45%-opacity outline. On the
@@ -1473,7 +1489,7 @@ export function generateStructureSilhouette(
           // 2026-10-22: centred on its board ("happy birthday yazisi backdropu
           // ortalasin") — the second board's garland only starts halfway down.
           : bothArches ? "doublearch"
-          : layout.panels.length === 1 && shape === "arch" ? (fullerTier ? "lonearch" : "right")
+          : layout.panels.length === 1 && (shape === "arch" || shape === "wavy") ? (fullerTier ? "lonearch" : "right")
           : "none";
       const textGuide = customTextGuide(
         panel.cx, panel.pw, panel.apexY, panel.floorY, panelTextValue,

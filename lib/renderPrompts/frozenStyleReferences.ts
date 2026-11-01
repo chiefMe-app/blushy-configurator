@@ -86,6 +86,10 @@ export function sceneStyleReference(scene: { theme?: string; panels: { type: str
   const t = types[0];
   if (t === "round") return { image: ROUND_STYLE_REFERENCE, board: "round board", light: "soft daylight" };
   if (t === "arch") return { image: ARCH_STYLE_REFERENCE, board: "arch board", light: "warm, airy soft daylight" };
+  // 2026-11-01: the Wavy Backdrop is laid out as a lone arch, so it is shot
+  // against the same photo; the guide gives it its wavy outline. The Fringe
+  // Backdrop has none — the banner photo's printed board would come back.
+  if (t === "wavy") return { image: ARCH_STYLE_REFERENCE, board: "wavy board", light: "warm, airy soft daylight" };
   if (t === "banner") return { image: BANNER_STYLE_REFERENCE, board: "square banner board", light: "warm, airy soft daylight" };
   if (t === "shimmer_wall") return { image: SHIMMER_STYLE_REFERENCE, board: "shimmer wall", light: "soft daylight" };
   return null;

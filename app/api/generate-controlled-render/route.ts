@@ -918,7 +918,7 @@ async function handleRender(req: NextRequest) {
 // ── Model routing + cache lookup ──────────────────────────────────────
 const modelMode = getModelMode();
 
-const hasArchPanelInScene = sceneModel.panels.some((p) => p.type === "arch");
+const hasArchPanelInScene = sceneModel.panels.some((p) => p.type === "arch" || p.type === "wavy");
 const hasRoundPanelInScene = sceneModel.panels.some((p) => p.type === "round");
 // A lone arch: one panel, and it is an arch. Used by the optional balloon
 // style-reference input on the first_generate call below.
@@ -3404,7 +3404,7 @@ forbiddenBalloonColorLabels: hasSempertexLock
     // explicit error for this configurator, so we gate hard before calling it.
     const isGeometryCriticalScene =
       sceneModel.panels.some((p) => p.type === "round") ||
-      sceneModel.panels.some((p) => p.type === "arch") ||
+      sceneModel.panels.some((p) => p.type === "arch" || p.type === "wavy") ||
       sceneModel.plinths.length > 0;
     const authOrBillingError = isAuthOrBillingError(fallbackErrorMessage);
     const t2iAllowed         = isT2IFallbackAllowed();

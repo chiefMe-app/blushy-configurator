@@ -16,6 +16,7 @@ export interface Fixture {
 const SETUPS = [
   "single_arch", "single_round", "single_banner", "single_shimmer", "arch_shimmer",
   "balloon_ring", "arch_open_frame", "double_arch", "triple_arch",
+  "single_wavy", "single_fringe",
 ] as const;
 
 const round = () => frozen("single_round");
@@ -86,6 +87,8 @@ const list: Fixture[] = [
   { id: "E09-no-balloons", note: "Single Round, no balloons", config: withDecor(round(), { balloonStyle: "none" }) },
   { id: "E10-barbie", note: "Barbie palette, Single Round", config: withSetup(withTheme(defaultConfig(), "barbie"), "single_round") },
   { id: "E11-minecraft", note: "Minecraft palette, Double Arch", config: withSetup(withTheme(defaultConfig(), "minecraft"), "double_arch") },
+  { id: "E13-unicorn-fringe", note: "Unicorn rainbow palette, Fringe 2x2m", config: withSetup(withTheme(defaultConfig(), "unicorn"), "single_fringe") },
+  { id: "E14-unicorn-wavy", note: "Unicorn rainbow palette, Wavy", config: withSetup(withTheme(defaultConfig(), "unicorn"), "single_wavy") },
   { id: "E12-zero-plinths", note: "no plinth", config: withDecor(round(), { plinths: 0, plinthSizes: [] }) },
 
   // N. Typography System lettering (2026-10-26): a Heading over a Name, each in its own font

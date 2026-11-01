@@ -92,7 +92,9 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     price: 50,
     description: "Pastels, iridescent, rainbow magic",
     swatchHexes: ["#F8BBD0", "#DDD6FE", "#FEF08A"],
-    sempertexPaletteIds: ["pastel-matte-609-pink", "pastel-matte-650-lilac", "pastel-matte-620-yellow", "pastel-matte-630-green", "fashion-005-white"],
+    // 2026-11-01 (owner): "hep rainbow pastel colors olsun, silver olmasın balonda" —
+    // a pastel rainbow, no white or silver: pink, peach, yellow, mint, lilac.
+    sempertexPaletteIds: ["pastel-matte-609-pink", "pastel-matte-660-malibu-peach", "pastel-matte-620-yellow", "pastel-matte-630-green", "pastel-matte-650-lilac"],
     renderDescription: "Magical unicorn theme with pastel rainbow colors, iridescent shimmer, and sparkle magic",
     graphicPresets: [
       { id: "unicorn_face",    assetId: "unicorn-01", label: "Unicorn Portrait", desc: "Unicorn face with gold horn and flower crown" },

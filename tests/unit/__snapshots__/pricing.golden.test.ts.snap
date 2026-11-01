@@ -261,6 +261,42 @@ exports[`pricing golden > A-single_banner 1`] = `
 }
 `;
 
+exports[`pricing golden > A-single_fringe 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Ice Princess theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Fringe Backdrop 2x2m",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+    ],
+    "total": 1010,
+  },
+  "total": 1010,
+}
+`;
+
 exports[`pricing golden > A-single_round 1`] = `
 {
   "breakdown": {
@@ -340,6 +376,47 @@ exports[`pricing golden > A-single_shimmer 1`] = `
     "total": 1340,
   },
   "total": 1340,
+}
+`;
+
+exports[`pricing golden > A-single_wavy 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Ice Princess theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Wavy Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
 }
 `;
 
@@ -1877,6 +1954,83 @@ exports[`pricing golden > E12-zero-plinths 1`] = `
     "total": 980,
   },
   "total": 980,
+}
+`;
+
+exports[`pricing golden > E13-unicorn-fringe 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Unicorn theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Fringe Backdrop 2x2m",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+    ],
+    "total": 1010,
+  },
+  "total": 1010,
+}
+`;
+
+exports[`pricing golden > E14-unicorn-wavy 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Unicorn theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Wavy Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+    ],
+    "total": 1090,
+  },
+  "total": 1090,
 }
 `;
 

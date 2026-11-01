@@ -56,7 +56,7 @@ export interface LayoutZone {
 export type MiniPreviewShape =
   | "arch" | "arch_large" | "arch_small"
   | "half_arch_left" | "half_arch_right"
-  | "round" | "shimmer" | "open_frame" | "banner" | "ring" | "balloons";
+  | "round" | "shimmer" | "open_frame" | "banner" | "ring" | "balloons" | "wavy" | "fringe";
 
 export interface SetupLayoutTemplate {
   id: string;
@@ -147,6 +147,36 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
       "running down the right edge and ending in a loose cluster on the floor at the banner base. " +
       "The left side stays clean. Balloons never cover the printed banner face.",
     plinthInstruction: "Place cylinder plinths on the left/front side of the banner, clear of the garland.",
+    standeeZones: ZONES_STANDARD,
+  },
+  {
+    // 2026-11-01 (owner): "wavy single arch size'ında olsun" — one board with a
+    // wavy outline, 120 x 220, its garland like the lone arch's.
+    id: "single_wavy",
+    name: "Wavy Backdrop",
+    description: "Board with a soft wavy outline",
+    backdropTypes: ["wavy"],
+    maxBackdrops: 1,
+    badge: "New",
+    miniPreview: ["wavy", "balloons"],
+    panelInstruction: "A single freestanding solid board with a soft wavy outline, centred in the scene. No second backdrop.",
+    garlandInstruction: "Balloon design: one statement half-garland anchored by a dense cluster of large balloons at the top-right corner of the wavy board, cascading down its right edge with gradually smaller balloons, ending in a loose cluster on the floor at its base. The left side stays clean.",
+    plinthInstruction: "Place cylinder plinths on the left/front side of the board, clear of the garland.",
+    standeeZones: ZONES_STANDARD,
+  },
+  {
+    // 2026-11-01 (owner): "fringe olan 2m x 2m" — a curtain of tinsel and paper
+    // streamers in the party's colours, hanging from a bar; nothing printed on it.
+    id: "single_fringe",
+    name: "Fringe Backdrop",
+    description: "2x2m tinsel and streamer curtain",
+    backdropTypes: ["fringe"],
+    maxBackdrops: 1,
+    badge: "New",
+    miniPreview: ["fringe", "balloons"],
+    panelInstruction: "A single 2 m by 2 m fringe curtain of long tinsel and paper streamers hanging from a thin bar to the floor. No second backdrop.",
+    garlandInstruction: "Balloon design: one organic half-garland across the top of the fringe from its middle to the top-right corner and down the right edge to a cluster on the floor. The left side stays clean.",
+    plinthInstruction: "Place cylinder plinths on the left/front side of the fringe, clear of the garland.",
     standeeZones: ZONES_STANDARD,
   },
   {
@@ -366,6 +396,8 @@ export function inferSetupLayoutTemplateIdFromBackdropItems(
   if (key === "arch") return "single_arch";
   if (key === "round") return "single_round";
   if (key === "banner") return "single_banner";
+  if (key === "wavy") return "single_wavy";
+  if (key === "fringe") return "single_fringe";
   if (key === "balloon_ring") return "balloon_ring";
   if (key === "shimmer_wall") return "single_shimmer";
   if (key === "arch+shimmer_wall") return "arch_shimmer";

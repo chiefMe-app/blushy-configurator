@@ -88,6 +88,7 @@ const BACKDROP_SAFE_AREA: Record<BackdropShapeId, { x: number; y: number; w: num
   balloon_ring:    { x: 30, y: 28, w: 40, h: 30 },
   shimmer_wall: { x: 16, y: 14, w: 68, h: 46 },
   wavy:         { x: 18, y: 16, w: 64, h: 40 },
+  fringe:       { x: 16, y: 14, w: 68, h: 46 },
 };
 
 function resolveTextColor(color: TextColor, accent: string): string {

@@ -115,6 +115,8 @@ export const SETUP_ICON: Partial<Record<string, string>> = {
   arch_shimmer: "/design/backdrops-v2/arch-shimmer.webp", balloon_ring: "/design/backdrops-v2/balloon-ring.webp",
   arch_open_frame: "/design/backdrops-v2/arch-open-frame.webp", double_arch: "/design/backdrops-v2/double-arch.webp",
   triple_arch: "/design/backdrops-v2/triple-arch.webp",
+  // 2026-11-01: drawn in her set's style (scripts/themes/setup-icon-render.mjs).
+  single_wavy: "/design/backdrops-v2/wavy.webp", single_fringe: "/design/backdrops-v2/fringe.webp",
 };
 
 // 2026-10-23: each theme's own example photo of a setup, shown (labelled as an

@@ -102,10 +102,28 @@ function letteringLayoutSentence(t: PanelText): string {
     `"${lines[1].text.trim()}" larger, centred below it, in ${lineDescriptor(lines[1])} — the same letterforms, not another font. `;
 }
 
+// 2026-11-01: the Wavy Backdrop is laid out as a lone arch and the Fringe
+// Backdrop as a lone square banner — the guide draws them that way too — so
+// every tuned arch and banner rule below applies to them unchanged. Only the
+// sentences that describe the board itself read the real shape.
+function renderAliasScene(scene: SceneModel): SceneModel {
+  return {
+    ...scene,
+    panels: scene.panels.map((p) =>
+      p.type === "wavy" ? { ...p, type: "arch" as const }
+        : p.type === "fringe" ? { ...p, type: "banner" as const } : p),
+  };
+}
+
 export function buildLayoutRefEditPrompt(
-  sceneModel: SceneModel,
+  realSceneModel: SceneModel,
   effectiveSempertexSelection?: SempertexSelectionItem[]
 ): string {
+  const sceneModel = renderAliasScene(realSceneModel);
+  const loneRealType = realSceneModel.panels.length === 1 ? realSceneModel.panels[0]?.type : null;
+  const isWavy = loneRealType === "wavy";
+  const isFringe = loneRealType === "fringe";
+  const squareBoardNoun = isFringe ? "square fringe curtain" : "square banner board";
   const panelCount = sceneModel.panels.length;
   const isMulti = panelCount > 1;
   const theme = String(sceneModel.theme ?? "").toLowerCase();
@@ -244,6 +262,22 @@ export function buildLayoutRefEditPrompt(
           `No backdrop board, no panel, no disc, no fabric and no balloons of any kind inside the opening. ` +
           `There is no board behind the ring. ` +
           `The hoop itself is dense and organic, mixing large and small balloons, thickest where it meets the floor.`;
+    } else if (isFringe) {
+      // A tinsel-and-streamer curtain, not a board: what the owner's fringe
+      // photos show. It has no print and no lettering; its colours are the
+      // balloons' own, in vertical bands.
+      backdropDesc =
+        `a square fringe curtain backdrop, exactly ${p.widthCm}cm wide x ${p.heightCm}cm tall — a perfect square: ` +
+        `hundreds of long thin vertical strands of shiny metallic tinsel and matte paper streamers hanging ` +
+        `straight down side by side from one slim straight bar along the top, the strands reaching the floor. ` +
+        `The strands are grouped in broad vertical bands of the same colours as the balloons, each band a ` +
+        `few strands mixed, softly catching the light. ` +
+        `Clearly freestanding in front of the wall, with visible separation between the curtain and the wall behind it. ` +
+        `NO visible stand, NO poles, NO feet — the bar's supports are hidden behind the balloons. ` +
+        `Nothing is printed and nothing is written on it. NOT a painted striped board, NOT a sequin wall, NOT a door curtain, ` +
+        `NOT an arch, NOT a circle. ` +
+        `NO extra base of any kind beneath or around it — the floor beneath and around it is completely ` +
+        `bare except for the balloon garland.`;
     } else if (p.type === "banner") {
       // 2026-09-05, rewritten. The first version described this as "a taut
       // printed fabric banner stretched on a slim freestanding frame", and that
@@ -270,6 +304,15 @@ export function buildLayoutRefEditPrompt(
         `NOT an arch, NOT a rounded top, NOT a circle. ` +
         `NO extra base of any kind beneath or around the panel — the floor beneath and around it is completely ` +
         `bare except for the balloon garland.`;
+    } else if (isWavy) {
+      // The owner's wavy board photo: a tall solid board whose sides run in a
+      // few soft waves and whose top is softly scalloped, like a wavy mirror.
+      backdropDesc =
+        `single wavy-edged backdrop board, ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
+        `a tall solid filled freestanding board with a fully opaque surface, its two long sides running in ` +
+        `soft gentle waves from top to bottom and its top edge softly scalloped with rounded corners, like a ` +
+        `wavy mirror. The entire face is one continuous solid board, seamless matte ${backdropColorLabel(p.color)} surface, ` +
+        `no cut-out opening, no hollow doorway, no frame. NOT a plain rounded arch, NOT a rectangle with straight sides.`;
     } else if (p.type === "arch") {
       backdropDesc =
         `single rounded arch backdrop, ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
@@ -1045,7 +1088,7 @@ export function buildLayoutRefEditPrompt(
   // three; this one held it on all three.
   // 2026-10-22 (later): and the Frozen lone arch, against its own photo, whose
   // daylight is warm — said here because the customer asked for it by name.
-  const styleRef = sceneStyleReference(sceneModel);
+  const styleRef = sceneStyleReference(realSceneModel);
   // 2026-10-22: a Large beside a Medium came back with a white paper backdrop
   // on a stand behind the pair. Said first, in one sentence that names the
   // pedestal in the usual words: without them it pushed the plinth out.
@@ -1208,6 +1251,8 @@ export function buildLayoutRefEditPrompt(
     // asked for it to be 2 metres across and to meet the ground ("2metre
     // gensiliginde olmali yere degmeli").
     if (t === "round")  return `The backdrop is ONE round disc, a full circle 2 metres across, standing on the floor. `;
+    if (isWavy)         return `The backdrop is ONE tall board with softly wavy sides and a scalloped top. `;
+    if (isFringe)       return `The backdrop is ONE square curtain of hanging tinsel and streamer strands. `;
     if (t === "arch")   return `The backdrop is ONE arch board. `;
     if (t === "banner") return `The backdrop is ONE square board. `;
     // 2026-10-21: the ring had no shape line, and the render stood it in
@@ -1234,7 +1279,7 @@ export function buildLayoutRefEditPrompt(
   })();
 
   const frontBannerAspectLine = hasBannerPanelInPrompt && !isMulti
-    ? `The backdrop is a SQUARE board, as wide as it is tall — 2 metres by 2 metres, a 1:1 square, ` +
+    ? `The backdrop is a SQUARE ${isFringe ? "fringe curtain" : "board"}, as wide as it is tall — 2 metres by 2 metres, a 1:1 square, ` +
       `not taller than it is wide. `
     : "";
 
@@ -1733,6 +1778,8 @@ export function buildLayoutRefEditPrompt(
   const neonPanelLabel = (() => {
     const p = sceneModel.panels[neonPanelIdx];
     const what = p?.type === "shimmer_wall" ? "shimmer wall"
+      : isWavy ? "wavy backdrop"
+      : isFringe ? "fringe curtain"
       : p?.type === "arch" ? "arch backdrop"
       : p?.type === "round" ? "round backdrop"
       : p?.type === "banner" ? "banner board"
@@ -1974,7 +2021,7 @@ export function buildLayoutRefEditPrompt(
     // arch beside an open frame, and the Triple Arch's centre board unless the
     // whole reference photo (with its own lettering) is in play.
     .map((p, i) => {
-      const ref = sceneStyleReference(sceneModel);
+      const ref = sceneStyleReference(realSceneModel);
       const tripleOverlay = (!ref || !!ref.closeUp) && sceneModel.panels.filter((q) => q.type === "half_arch").length === 2;
       const overlaid = (hasOpenFramePair || tripleOverlay) && p.type === "arch";
       return p.text.enabled && !overlaid && p.text.value.trim().length > 0 ? i : -1;
@@ -2136,7 +2183,7 @@ export function buildLayoutRefEditPrompt(
       `nothing cropped, but do not render the setup small in a large empty room. `
     : (hasBannerPanelInPrompt && !isMulti)
     ? `Transform this clean layout reference into a premium photorealistic indoor ${eventSetupLabel}. ` +
-      `Tight medium-close event photography. The square banner board and the balloon garland framing it are ` +
+      `Tight medium-close event photography. The ${squareBoardNoun} and the balloon garland framing it are ` +
       `ONE object and must DOMINATE the frame together: the board fills almost the whole picture, with only a ` +
       `narrow strip of wall to either side and a shallow strip of floor beneath it. ` +
       // 2026-09-05: the previous version said only that the BOARD fills the frame.
@@ -2246,9 +2293,10 @@ const setupTemplateClause = setupTemplate
   inventoryItems.push(
     !lone ? `the ${panelCount} backdrop boards`
       : lone.type === "round" ? `the round backdrop disc`
-      : lone.type === "banner" ? `the square banner board`
+      : lone.type === "banner" ? `the ${squareBoardNoun}`
       : lone.type === "shimmer_wall" ? `the sequin shimmer wall`
       : lone.type === "balloon_ring" ? (loneRingStyle === "full" ? `the balloon ring` : `the white metal hoop`)
+      : isWavy ? `the wavy backdrop board`
       : `the arch backdrop board`,
   );
   if (sceneModel.balloons.style !== "none" && loneRingStyle !== "none") {
@@ -2306,7 +2354,7 @@ const setupTemplateClause = setupTemplate
     // L 195 where the Arch + Shimmer reference sits at 166 against a board of
     // 220. Naming the grey concrete room first, then the balloon palette,
     // keeps the two apart.
-    (loneRoundRoom ? roundRoomLine : (styleRef?.board === "arch board" || styleRef?.board === "square banner board") ? archRefRoomLine : frontRoomLine) +
+    (loneRoundRoom ? roundRoomLine : (styleRef?.board === "arch board" || styleRef?.board === "wavy board" || styleRef?.board === "square banner board") ? archRefRoomLine : frontRoomLine) +
     frontColourLine +
     frontPaletteLine +
     frontMetallicLine +

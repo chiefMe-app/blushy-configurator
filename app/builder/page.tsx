@@ -551,7 +551,10 @@ export default function ConfigurePage() {
                 emptyArtLabel={`${themeById(config.theme)?.name ?? "Theme"} example.`}
                 emptyArtNote={isDecorStep && decorTab === 3 ? "Your render will update after generation to show your selected extras." : undefined}
                 // 2026-10-24: from Style on, a live sketch of the choices (not a render).
-                sketchFirst={isDecorStep && decorTab > 0}
+                // 2026-11-01: from the Backdrop tab too — the owner, on Unicorn's empty
+                // preview: "preview olarak görmek gerekiyor backdrop seçince". A theme's
+                // example photo stays one tap away (the Example toggle).
+                sketchFirst={isDecorStep}
                 sketchActiveId={isDecorStep && decorTab === 1 && sketchItems.length > 1 ? sketchActiveId : null}
                 sketchCutouts={sketchCutouts}
               />

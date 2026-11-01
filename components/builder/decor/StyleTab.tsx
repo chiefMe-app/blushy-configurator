@@ -26,6 +26,7 @@ import type { DecorCtx } from "@/components/builder/decor/useDecorStep";
 import LetteringControls from "@/components/builder/decor/LetteringControls";
 import { changeLine, letteringFromLegacy, letteringPatch, MAX_LETTERING_TEXT } from "@/lib/typography/lettering";
 import { presetById } from "@/lib/typography/presets";
+import { wavyBoardPath } from "@/lib/wavyBoard";
 import type { BoardLettering } from "@/lib/config";
 
 export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
@@ -45,7 +46,7 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
 
   const archCount = items.filter((i) => i.type === "arch").length;
   const hasHalf = items.some((i) => i.type === "half_arch");
-  const isPrintable = (it: BackdropItem) => !["shimmer_wall", "balloon_ring", "open_arch_frame"].includes(it.type);
+  const isPrintable = (it: BackdropItem) => !["shimmer_wall", "balloon_ring", "open_arch_frame", "fringe"].includes(it.type);
   const pieceName = (it: BackdropItem, idx: number) => {
     if (it.type === "arch") {
       const n = items.filter((i, k) => i.type === "arch" && k <= idx).length;
@@ -93,7 +94,8 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
     const w = 30 * (o.w / maxW), h = 44 * (o.h / maxH), x = 22 - w / 2, top = 50 - h;
     switch (item.type) {
       case "round": case "balloon_ring": return <circle cx="22" cy="28" r="19" fill={item.type === "round" ? fill : "none"} stroke={fill} strokeWidth={item.type === "round" ? 0 : 5} />;
-      case "rect": case "banner": case "shimmer_wall": return <rect x={x} y={top} width={w} height={h} rx="3" fill={fill} />;
+      case "rect": case "banner": case "shimmer_wall": case "fringe": return <rect x={x} y={top} width={w} height={h} rx="3" fill={fill} />;
+      case "wavy": return <path d={wavyBoardPath(x, top, w, h)} fill={fill} />;
       case "half_arch": return <path d={`M ${x},50 L ${x},${top + w} A ${w},${w} 0 0 1 ${x + w},${top} L ${x + w},50 Z`} fill={fill} />;
       case "open_arch_frame": return <path d={`M ${x},50 L ${x},${top + w / 2} A ${w / 2},${w / 2} 0 0 1 ${x + w},${top + w / 2} L ${x + w},50`} fill="none" stroke={fill} strokeWidth="5" />;
       default: return <path d={`M ${x},50 L ${x},${top + w / 2} A ${w / 2},${w / 2} 0 0 1 ${x + w},${top + w / 2} L ${x + w},50 Z`} fill={fill} />;
@@ -260,6 +262,7 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
         <section className={`bz-st-sec c-lilac ${lastWide && !showGraphic ? "wide" : ""}`}>
           <Head n={nColors} title={item.type === "balloon_ring" ? "Pick your ring style" : "Pick your colors"}
             sub={item.type === "shimmer_wall" ? "Choose the sequin finish."
+              : item.type === "fringe" ? "The fringe takes your balloon colours."
               : item.type === "balloon_ring" ? "Choose how the hoop is dressed."
               : showFont ? "Choose a backdrop color and text color." : "Choose a backdrop color."} />
           <div className="bz-st-colors">
@@ -279,6 +282,16 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
                     </button>
                   );
                 })}
+              </div>
+            ) : item.type === "fringe" ? (
+              // 2026-11-01: the fringe is striped in the party's balloon colours (change them on the Balloons tab).
+              <div className="bz-st-group">
+                <span className="lbl">Fringe colours · <b>your balloon colours</b></span>
+                <div className="bz-st-swatches">
+                  {(d.balloonColors.length ? d.balloonColors : theme.balloonColors).map((hex) => (
+                    <span key={hex} className="bz-st-sw" title={hex} style={{ background: hex, cursor: "default" }} />
+                  ))}
+                </div>
               </div>
             ) : item.type === "shimmer_wall" ? (
               <div className="bz-st-group">

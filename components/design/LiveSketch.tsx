@@ -21,6 +21,7 @@ import {
 } from "@/lib/config";
 import { useLetteringLayout } from "./useLetteringLayout";
 import { bannerPrintTheme } from "@/lib/bannerPrintThemes";
+import { wavyBoardPath } from "@/lib/wavyBoard";
 
 const VB = 1000;
 const FLOOR = 870;
@@ -134,6 +135,22 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     plinth: { x: 0.457, y: 0.656, w: 0.091, h: 0.165 },
     florals: fromPx([[180, 520], [150, 620], [130, 720], [200, 450], [260, 380], [330, 320], [420, 280], [500, 260], [590, 290], [660, 330], [740, 390], [800, 460], [830, 560], [840, 680]]),
     numberX: 0.86, standeeX: [0.06, 0.95],
+  },
+  // 2026-11-01: the Wavy Backdrop (the Single Arch photo, its board made wavy) and the Fringe Backdrop (the Banner
+  // photo, its board made a white and silver fringe curtain, striped here in the party's colours).
+  wavy: {
+    room: `${SK}/single_wavy-room.webp`, balloons: `${SK}/single_wavy-balloons.webp`, families: `${SK}/single_wavy-families.png`,
+    boards: [{ mask: `${SK}/single_wavy-board-0.png`, x0: 0.2783, y0: 0.2188, x1: 0.5645, y1: 0.8418, text: { cx: 0.42, cy: 0.42, w: 0.22 } }],
+    plinth: { x: 0.37, y: 0.612, w: 0.1, h: 0.288 },
+    florals: fromPx([[300, 150], [420, 110], [540, 170], [620, 270], [650, 380], [680, 480], [690, 580], [680, 680], [650, 780], [640, 860]]),
+    numberX: 0.2, standeeX: [0.13, 0.9],
+  },
+  fringe: {
+    room: `${SK}/single_fringe-room.webp`, balloons: `${SK}/single_fringe-balloons.webp`, families: `${SK}/single_fringe-families.png`,
+    boards: [{ mask: `${SK}/single_fringe-board-0.png`, x0: 0.0654, y0: 0.1123, x1: 0.8652, y1: 0.8965, text: { cx: 0.42, cy: 0.42, w: 0.36 } }],
+    plinth: { x: 0.452, y: 0.65, w: 0.143, h: 0.273 },
+    florals: fromPx([[300, 70], [420, 40], [560, 90], [680, 170], [800, 230], [880, 330], [900, 450], [880, 560], [860, 680], [820, 800], [760, 880]]),
+    numberX: 0.2, standeeX: [0.06, 0.96],
   },
   balloon_ring: {
     room: `${SK}/balloon_ring-room.webp`, balloons: `${SK}/balloon_ring-balloons.webp`, families: `${SK}/balloon_ring-families.png`,
@@ -306,8 +323,10 @@ function piecePath(p: Piece, floor = FLOOR): string | null {
       const cy = floor - r;
       return `M ${x} ${cy} a ${r} ${r} 0 1 0 ${w} 0 a ${r} ${r} 0 1 0 ${-w} 0 Z`;
     }
-    case "rect": case "banner": case "shimmer_wall":
+    case "rect": case "banner": case "shimmer_wall": case "fringe":
       return `M ${x} ${floor} V ${top} H ${x + w} V ${floor} Z`;
+    case "wavy":
+      return wavyBoardPath(x, top, w, floor - top);
     case "half_arch": {
       const rr = Math.min(w, floor - top);
       return p.curveLeft
@@ -319,6 +338,20 @@ function piecePath(p: Piece, floor = FLOOR): string | null {
     default: // arch and open frame
       return `M ${x} ${floor} V ${top + r} A ${r} ${r} 0 0 1 ${x + w} ${top + r} V ${floor} Z`;
   }
+}
+
+/** The fringe's vertical bands in the party's colours (2026-11-01, the owner's fringe references): uneven widths, no two alike side by side. */
+function fringeStripes(x0: number, x1: number, palette: string[], seed: number): { x: number; w: number; hex: string }[] {
+  const rnd = seeded(seed * 31 + 7), cols = palette.length ? palette : ["#f7c5d8"];
+  const out: { x: number; w: number; hex: string }[] = [];
+  let k = Math.floor(rnd() * cols.length);
+  for (let x = x0; x < x1;) {
+    const w = Math.min(x1 - x, (x1 - x0) * (0.06 + rnd() * 0.08));
+    if (cols.length > 1) k = (k + 1 + Math.floor(rnd() * (cols.length - 1))) % cols.length;
+    out.push({ x, w: w + 0.5, hex: cols[k] });
+    x += w;
+  }
+  return out;
 }
 
 function seeded(seed: number) {
@@ -360,7 +393,7 @@ function garlandTrack(p: Piece, side: "left" | "right" | "both"): { x: number; y
     if (p.curveLeft) arc(x + rr, top + rr, rr, 1, 0.5); else arc(x + w - rr, top + rr, rr, 0, 0.5);
     return pts;
   }
-  const flat = p.item.type === "rect" || p.item.type === "banner" || p.item.type === "shimmer_wall";
+  const flat = ["rect", "banner", "shimmer_wall", "wavy", "fringe"].includes(p.item.type);
   const springY = flat ? top : top + r;
   const up = (sx: number) => { for (let y = FLOOR; y >= springY; y -= 18) pts.push({ x: sx, y }); };
   const along = (from: number, to: number) => { for (let i = 0; i <= 10; i++) pts.push({ x: x + w * (from + (to - from) * (i / 10)), y: top }); };
@@ -683,6 +716,11 @@ export default function LiveSketch({
           <image href={base.room} width={VB} height={VB} />
           {/* Each board's colour, laid over its photographed light and shade. */}
           {pieces.map((p) => {
+            if (p.item.type === "fringe") return base.boards[p.idx].mask && (
+              <g key={p.item.id} mask={`url(#skBoard${uid}${p.idx})`} style={{ mixBlendMode: "multiply" }}>
+                {fringeStripes(base.boards[p.idx].x0 * VB, base.boards[p.idx].x1 * VB, palette, p.idx).map((st, i) => <rect key={i} x={st.x} width={st.w} height={VB} fill={st.hex} />)}
+              </g>
+            );
             // A shimmer wall was photographed silver; a board white.
             const tint = p.item.type === "shimmer_wall"
               ? ((d.shimmerColor ?? "silver") === "silver" ? null : SHIMMER_COLOR_HEX[d.shimmerColor!])
@@ -708,6 +746,19 @@ export default function LiveSketch({
             }
             if (p.item.type === "open_arch_frame") {
               return <path key={p.item.id} d={path!} fill="none" stroke={color} strokeWidth={Math.max(18, p.w * 0.16)} strokeLinejoin="round" filter="url(#skShadow)" />;
+            }
+            if (p.item.type === "fringe") {
+              return (
+                <g key={p.item.id} filter="url(#skShadow)">
+                  <clipPath id={`skFringe${uid}${p.idx}`}><path d={path!} /></clipPath>
+                  <g clipPath={`url(#skFringe${uid}${p.idx})`}>
+                    {fringeStripes(p.x, p.x + p.w, palette, p.idx).map((st, i) => <rect key={i} x={st.x} y={p.top} width={st.w} height={FLOOR - p.top} fill={st.hex} />)}
+                    {/* Its strands. */}
+                    {Array.from({ length: Math.round(p.w / 5) }, (_, i) => <line key={i} x1={p.x + i * 5 + 2} x2={p.x + i * 5 + 2} y1={p.top} y2={FLOOR} stroke="rgba(255,255,255,.35)" strokeWidth={1} />)}
+                  </g>
+                  <line x1={p.x - 6} x2={p.x + p.w + 6} y1={p.top} y2={p.top} stroke="#f4f1ec" strokeWidth={5} strokeLinecap="round" />
+                </g>
+              );
             }
             return (
               <g key={p.item.id}>

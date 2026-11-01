@@ -61,7 +61,8 @@ describe("the colours on the table", () => {
     expect(wordsColour({ textColor: "#1F2937" }, unicorn)).toBe("#1F2937");
     expect([t.cupColor, t.holderColor, t.hatColor].every((c) => /^#[0-9A-F]{6}$/i.test(c))).toBe(true);
     // Pastels of the theme's colours, the big plate and the small one (2026-10-30).
-    expect([t.plateColor, t.smallPlateColor]).toEqual(["#F8BBD0", "#DDD6FE"]);
+    // (Unicorn went rainbow pastel on 2026-11-01: pink, then peach.)
+    expect([t.plateColor, t.smallPlateColor]).toEqual(["#F8BBD0", "#FFD1A4"]);
     expect([defaultTableSetup(frozen).plateColor, defaultTableSetup(frozen).smallPlateColor]).toEqual(["#BAE6FD", "#DDD6FE"]);
     // A white napkin, and the napkin band in the theme's colour.
     expect(t).toMatchObject({ napkinColor: "#FFFFFF", chairColor: "#FFFFFF", holderColor: unicorn.balloonColors[1] });

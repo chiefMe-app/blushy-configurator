@@ -58,7 +58,9 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
   open_arch_frame:
     "one freestanding hollow open arch frame, pastel painted foam/wood frame, empty center opening, no solid backdrop surface inside, standing directly on the floor",
   wavy:
-    "one wavy organic-shaped vertical backdrop panel with soft curved edges, standing directly on the floor",
+    "one tall freestanding solid board whose outline is wavy all round — soft rounded waves down both sides and a softly scalloped top, like a wavy mirror — standing directly on the floor",
+  fringe:
+    "one 2 metre by 2 metre fringe backdrop: a dense curtain of long shiny tinsel and paper streamers hanging straight down from a thin bar to the floor, in vertical bands of the party colours",
 };
 
 const THEME_MOOD: Record<string, string> = {
@@ -571,7 +573,8 @@ export function generatePrompt(input: PromptInput): {
     shimmer_wall:    "rectangular shimmer wall",
     half_arch:       "half arch side panel (rounded outer corner)",
     open_arch_frame: "hollow open arch frame",
-    wavy:            "wavy top",
+    wavy:            "wavy-edged board",
+    fringe:          "tinsel and streamer fringe curtain",
   };
 
   // Per-item label includes type + size for the strict requirements block

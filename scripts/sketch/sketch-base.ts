@@ -24,9 +24,12 @@ const SEEDS: Record<string, [number, number, number, number, number, number][]> 
   single_shimmer: [[0, 0, 255, 392, 735, 800]],
   triple_arch: [[320, 650, 250, 400, 378, 790], [515, 650, 372, 380, 660, 790], [700, 650, 652, 400, 780, 790]],
   balloon_ring: [],
+  // 2026-11-01: the Wavy Board (from the Single Arch photo) and the Fringe (from the Banner photo), made by one paid edit each.
+  single_wavy: [[400, 500, 270, 214, 620, 885]],
+  single_fringe: [[0, 0, 70, 118, 885, 915]],
 };
-/** Boards that aren't flat paint (a sequin wall): the whole box, but for the balloons in front. */
-const RECT: Record<string, number[]> = { arch_shimmer: [1], single_shimmer: [0] };
+/** Boards that aren't flat paint (a sequin wall, a fringe curtain): the whole box, but for the balloons in front. */
+const RECT: Record<string, number[]> = { arch_shimmer: [1], single_shimmer: [0], single_fringe: [0] };
 /** Boards photographed tinted (light blue): made neutral, so their colour is laid on white. */
 const NEUTRAL = new Set(["arch_open_frame"]);
 /** How coloured a board's paint may be (the light blue one more than a white one). */
