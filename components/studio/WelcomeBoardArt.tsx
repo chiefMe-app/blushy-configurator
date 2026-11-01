@@ -16,6 +16,7 @@ import { useId, useLayoutEffect, useRef, useState } from "react";
 import PIECES from "@/lib/studio/welcomePieces.json";
 import { tableFont, fontCss, asPrinted } from "@/lib/studio/tableFonts";
 import { boardArt, boardFace, boardWordsColour, type WelcomeBoard } from "@/lib/studio/welcomeBoard";
+import { GARLAND_LAYERS, garlandColours } from "@/lib/studio/welcomeGarland";
 
 const rgb = (hex: string) => { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
 const isLight = (hex: string) => { const [r, g, b] = rgb(hex); return (0.3 * r + 0.59 * g + 0.11 * b) / 255 > 0.75; };
@@ -60,6 +61,7 @@ function rng(seed: number) {
 }
 
 const f1 = (n: number) => n.toFixed(2);
+const f3 = (n: number) => n.toFixed(3);
 
 /** A six-armed snowflake: branches on each arm, a kite at its tip. */
 function flake(cx: number, cy: number, r: number, rot: number) {
@@ -229,6 +231,27 @@ function Roses({ x, y, width, turn, mirror }: { x: number; y: number; width: num
   );
 }
 
+/**
+ * A garland layer (grey light and shade, its balloons' own colour at BODY) in a colour: multiplied by it, its
+ * shine kept white. `grey` first takes the colour out (the chrome, photographed with the room's tints in it).
+ */
+function GarlandTint({ id, colour, gain = 1 / 0.86, grey }: { id: string; colour: string; gain?: number; grey?: boolean }) {
+  // How white its shine goes: a dark balloon's shine is small (whitened as much as a pale one's, it went grey).
+  const [r, g, b] = rgb(colour), a = (0.55 / 0.14) * (0.25 + (0.75 * (0.3 * r + 0.59 * g + 0.11 * b)) / 255);
+  return (
+    <filter id={id} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+      {grey && <feColorMatrix in="SourceGraphic" type="saturate" values="0" result="src" />}
+      <feColorMatrix in={grey ? "src" : "SourceGraphic"} type="matrix" values={`${gain} 0 0 0 0 0 ${gain} 0 0 0 0 0 ${gain} 0 0 0 0 0 1 0`} result="lit" />
+      <feFlood floodColor={colour} result="c" />
+      <feComposite in="c" in2="lit" operator="arithmetic" k1={1} k2={0} k3={0} k4={0} result="t" />
+      {/* Its shine: lighter than the balloon's own colour, a little whiter, smoothly (a sharp cut showed as pale patches). */}
+      <feColorMatrix in={grey ? "src" : "SourceGraphic"} type="matrix" values={`0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 ${f3(0.299 * a)} ${f3(0.587 * a)} ${f3(0.114 * a)} 0 ${f3(-0.86 * a)}`} result="hi" />
+      <feComposite in="hi" in2="t" operator="over" result="all" />
+      <feComposite in="all" in2="SourceAlpha" operator="in" />
+    </filter>
+  );
+}
+
 /** A line's size measured at its nominal font size: width, and how far it reaches above and below its baseline. */
 interface Metric { w: number; asc: number; desc: number }
 
@@ -252,9 +275,11 @@ export function stackWords(ms: (Metric | null)[], nominal: number[], space: { y0
   return { size: nominal.map((n, i) => n * k[i] * s), base };
 }
 
-export default function WelcomeBoardArt({ board, theme, className, placeholders = true }: {
+export default function WelcomeBoardArt({ board, theme, balloons, className, placeholders = true }: {
   board: WelcomeBoard;
   theme: { id: string; accent: string; balloonColors?: string[]; backdropColors?: string[] };
+  /** The party's balloon colours (the customer's picks); the theme's when there are none. */
+  balloons?: string[];
   className?: string;
   /** Show example words where the customer has none yet (the builder), or leave them out (a saved design). */
   placeholders?: boolean;
@@ -351,6 +376,8 @@ export default function WelcomeBoardArt({ board, theme, className, placeholders 
   // garland" photo, lifted out of it — from the floor up the board's right side and arching over its top, where
   // that photo has it: its top two fifths of the board's width above the board, the board's right edge 47% across it.
   const gp = PIECES["garland-pastel"];
+  // In the party's own balloon colours (2026-11-01): the photo's balloons, each colour tinted live.
+  const tints = garlandColours(balloons?.length ? balloons : theme.balloonColors ?? []);
   const gTop = top - w * 0.4, gH = floor + 2 - gTop, gW = (gH * gp.w) / gp.h;
   const gX = w * (board.shape === "round" ? 0.97 : 1) - gW * 0.468;
   const right = garland ? Math.max(w + 22, gX + gW + 3) : w + 22;
@@ -368,6 +395,8 @@ export default function WelcomeBoardArt({ board, theme, className, placeholders 
         {/* The garland's soft shadow on the wall behind it. */}
         <filter id={`${uid}-wall`} x="-20%" y="-10%" width="140%" height="120%"><feDropShadow dx={1.6} dy={1.2} stdDeviation={1.8} floodColor="#4a3328" floodOpacity={0.22} /></filter>
         <filter id={`${uid}-soft`} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation={1.6} /></filter>
+        {garland && GARLAND_LAYERS.map((l) => <GarlandTint key={l.id} id={`${uid}-g-${l.id}`} colour={tints.latex[l.id]} />)}
+        {garland && tints.chrome && <GarlandTint id={`${uid}-g-chrome`} colour={tints.chrome} gain={1.25} grey />}
         <linearGradient id={`${uid}-gloss`} x1="0" y1="0" x2="1" y2="0.6">
           <stop offset="0.18" stopColor="#FFFFFF" stopOpacity={0} />
           <stop offset="0.26" stopColor="#FFFFFF" stopOpacity={0.38} />
@@ -423,7 +452,13 @@ export default function WelcomeBoardArt({ board, theme, className, placeholders 
         <g data-part="balloons">
           <ellipse cx={gX + gW * 0.66} cy={floor + 0.5} rx={gW * 0.36} ry={2.2} fill="#3b2a22" opacity={0.14} filter={`url(#${uid}-soft)`} />
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <image data-part="garland" href={piece("garland-pastel")} x={f1(gX)} y={f1(gTop)} width={f1(gW)} height={f1(gH)} filter={`url(#${uid}-wall)`} />
+          <g data-part="garland" data-colours={GARLAND_LAYERS.map((l) => tints.latex[l.id]).join(" ")} filter={`url(#${uid}-wall)`}>
+            {[...GARLAND_LAYERS.map((l) => l.id), "chrome" as const].map((l) => (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <image key={l} href={piece(`garland-pastel-${l}`)} x={f1(gX)} y={f1(gTop)} width={f1(gW)} height={f1(gH)}
+                filter={l !== "chrome" || tints.chrome ? `url(#${uid}-g-${l})` : undefined} />
+            ))}
+          </g>
           {/* With flowers too: roses tucked in at the arch's end and halfway down, as in the step's "Balloons & flowers" photo. */}
           {flowers && [[0.03, 0.05], [0.36, 0.58]].map(([fx, fy], i) => (
             // eslint-disable-next-line jsx-a11y/alt-text

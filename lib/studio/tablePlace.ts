@@ -96,13 +96,15 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
   }
   // The cup on the top-right corner, white inside, lying on its side (2026-10-29: "cup daha yatay"); the bottle beside it.
   // 2026-10-31 (owner: "iyice yatık olsun, ekrandan bakan kişi düz görsün"): flat, the same way up in every place.
-  const themedCup = themedPiece("cups");
+  // 2026-11-01 (owner: "cup bu sidedayken baya tamamen yere yatık olsun"): its photo seen from the side, as a cup
+  // lying on the table looks from above (scripts/table/cup-lie.ts) — the mouth a thin ellipse, the whole side showing.
+  const themed = themedPiece("cups"), themedCup = themed && (`${themed}-lying` as PieceName);
   const cupTurn = CUP_TURN - turn;
-  if (themedCup && PIECES[themedCup]) nodes.push({ k: "img", src: piece(themedCup), x: 15.2, y: -11, rot: cupTurn, w: 8.6, h: tall(themedCup, 8.6), lift: 1.2, id: `${id}-cup` });
+  if (themedCup && PIECES[themedCup]) nodes.push({ k: "img", src: piece(themedCup), x: 15.2, y: -11, rot: cupTurn, w: CUP_W, h: tall(themedCup, CUP_W), lift: 1.2, id: `${id}-cup` });
   else if (ch.cups !== NONE) {
     const cup = { x: 15.2, y: -11, rot: cupTurn };
-    nodes.push({ k: "img", src: piece("cup-plain-in"), ...cup, w: 8.6, h: tall("cup-plain-in", 8.6), lift: 1.2, id: `${id}-cup-in` });
-    nodes.push({ k: "img", src: piece("cup-plain-out"), ...cup, w: 8.6, h: tall("cup-plain-out", 8.6), ...finish(t.cupColor), lift: 0, id: `${id}-cup-out` });
+    nodes.push({ k: "img", src: piece("cup-plain-in-lying"), ...cup, w: CUP_W, h: tall("cup-plain-in-lying", CUP_W), lift: 1.2, id: `${id}-cup-in` });
+    nodes.push({ k: "img", src: piece("cup-plain-out-lying"), ...cup, w: CUP_W, h: tall("cup-plain-out-lying", CUP_W), ...finish(t.cupColor), lift: 0, id: `${id}-cup-out` });
   }
   const label = tableOption("bottleLabel", ch.bottleLabel);
   if (label) {
@@ -122,6 +124,8 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
  * quarter turn clockwise (2026-10-31, the owner: "cup görünümünü clockwise sağ tarafa 90 derece döndür"): mouth up.
  */
 const CUP_TURN = 0;
+/** The cup's mouth across (cm). */
+const CUP_W = 7.8;
 /** The pompom in the hat's photo (hat-cone.webp, 540 × 720): centre and radius, as fractions of its width. */
 const HAT_POMPOM = { cx: 0.096, cy: 0.093, r: 0.093 };
 

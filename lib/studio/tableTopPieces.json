@@ -49,9 +49,17 @@
   "w": 609,
   "h": 720
  },
+ "cup-plain-in-lying": {
+  "w": 612,
+  "h": 612
+ },
  "cup-plain-out": {
   "w": 609,
   "h": 720
+ },
+ "cup-plain-out-lying": {
+  "w": 612,
+  "h": 612
  },
  "cushion": {
   "w": 720,
@@ -129,97 +137,193 @@
   "w": 591,
   "h": 720
  },
+ "themed-cups-dino_prints-lying": {
+  "w": 594,
+  "h": 628
+ },
  "themed-cups-dino_spikes": {
   "w": 635,
   "h": 720
+ },
+ "themed-cups-dino_spikes-lying": {
+  "w": 638,
+  "h": 620
  },
  "themed-cups-dino_trex": {
   "w": 585,
   "h": 720
  },
+ "themed-cups-dino_trex-lying": {
+  "w": 588,
+  "h": 617
+ },
  "themed-cups-football_ball": {
   "w": 608,
   "h": 720
+ },
+ "themed-cups-football_ball-lying": {
+  "w": 610,
+  "h": 624
  },
  "themed-cups-football_pitch": {
   "w": 595,
   "h": 720
  },
+ "themed-cups-football_pitch-lying": {
+  "w": 598,
+  "h": 627
+ },
  "themed-cups-football_stars": {
   "w": 611,
   "h": 720
+ },
+ "themed-cups-football_stars-lying": {
+  "w": 614,
+  "h": 623
  },
  "themed-cups-hero_bolt": {
   "w": 642,
   "h": 720
  },
+ "themed-cups-hero_bolt-lying": {
+  "w": 645,
+  "h": 589
+ },
  "themed-cups-hero_burst": {
   "w": 581,
   "h": 720
+ },
+ "themed-cups-hero_burst-lying": {
+  "w": 584,
+  "h": 628
  },
  "themed-cups-hero_cape": {
   "w": 704,
   "h": 720
  },
+ "themed-cups-hero_cape-lying": {
+  "w": 639,
+  "h": 109
+ },
  "themed-cups-ice_snowflakes": {
   "w": 583,
   "h": 720
+ },
+ "themed-cups-ice_snowflakes-lying": {
+  "w": 584,
+  "h": 644
  },
  "themed-cups-ice_snowglobe": {
   "w": 566,
   "h": 720
  },
+ "themed-cups-ice_snowglobe-lying": {
+  "w": 567,
+  "h": 656
+ },
  "themed-cups-ice_tiara": {
   "w": 619,
   "h": 720
+ },
+ "themed-cups-ice_tiara-lying": {
+  "w": 622,
+  "h": 602
  },
  "themed-cups-mermaid_scales": {
   "w": 599,
   "h": 720
  },
+ "themed-cups-mermaid_scales-lying": {
+  "w": 602,
+  "h": 630
+ },
  "themed-cups-mermaid_shells": {
   "w": 589,
   "h": 720
+ },
+ "themed-cups-mermaid_shells-lying": {
+  "w": 591,
+  "h": 619
  },
  "themed-cups-mermaid_tail": {
   "w": 622,
   "h": 720
  },
+ "themed-cups-mermaid_tail-lying": {
+  "w": 625,
+  "h": 613
+ },
  "themed-cups-safari_jungle": {
   "w": 600,
   "h": 720
+ },
+ "themed-cups-safari_jungle-lying": {
+  "w": 602,
+  "h": 642
  },
  "themed-cups-safari_leopard": {
   "w": 599,
   "h": 720
  },
+ "themed-cups-safari_leopard-lying": {
+  "w": 602,
+  "h": 622
+ },
  "themed-cups-safari_zebra": {
   "w": 585,
   "h": 720
+ },
+ "themed-cups-safari_zebra-lying": {
+  "w": 588,
+  "h": 627
  },
  "themed-cups-space_planets": {
   "w": 609,
   "h": 720
  },
+ "themed-cups-space_planets-lying": {
+  "w": 611,
+  "h": 611
+ },
  "themed-cups-space_rocket": {
   "w": 653,
   "h": 720
+ },
+ "themed-cups-space_rocket-lying": {
+  "w": 656,
+  "h": 570
  },
  "themed-cups-space_silver": {
   "w": 637,
   "h": 720
  },
+ "themed-cups-space_silver-lying": {
+  "w": 640,
+  "h": 611
+ },
  "themed-cups-unicorn_clouds": {
   "w": 592,
   "h": 720
+ },
+ "themed-cups-unicorn_clouds-lying": {
+  "w": 595,
+  "h": 620
  },
  "themed-cups-unicorn_horn": {
   "w": 590,
   "h": 720
  },
+ "themed-cups-unicorn_horn-lying": {
+  "w": 592,
+  "h": 621
+ },
  "themed-cups-unicorn_rainbow": {
   "w": 601,
   "h": 720
+ },
+ "themed-cups-unicorn_rainbow-lying": {
+  "w": 604,
+  "h": 624
  },
  "themed-napkins-dino_pattern": {
   "w": 366,

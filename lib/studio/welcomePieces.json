@@ -3,6 +3,31 @@
   "w": 589,
   "h": 900
  },
+ "garland-pastel-blue": {
+  "w": 589,
+  "h": 900,
+  "share": 0.0871
+ },
+ "garland-pastel-chrome": {
+  "w": 589,
+  "h": 900,
+  "share": 0.0527
+ },
+ "garland-pastel-lilac": {
+  "w": 589,
+  "h": 900,
+  "share": 0.0696
+ },
+ "garland-pastel-pink": {
+  "w": 589,
+  "h": 900,
+  "share": 0.106
+ },
+ "garland-pastel-white": {
+  "w": 589,
+  "h": 900,
+  "share": 0.1441
+ },
  "roses-spray": {
   "w": 720,
   "h": 231

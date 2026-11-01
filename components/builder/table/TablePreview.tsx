@@ -33,9 +33,10 @@ export default function TablePreview({ config }: {
   const table = config.table;
 
   // On a phone, every change brings the top view into sight; a view the
-  // customer picked after the change is left alone.
+  // customer picked after the change is left alone. Not the table or the
+  // chairs (2026-11-01, owner: "table ve chair seçince preview a inmesin").
   const pickedAt = useRef(0);
-  const changeKey = table?.enabled ? tableRenderKey(table, config.theme) : "";
+  const changeKey = table?.enabled ? tableRenderKey({ ...table, choices: { ...table.choices, table: "", chairs: "" }, chairColor: "" }, config.theme) : "";
   const { backTo, back } = usePhoneJump(changeKey, "table-preview-card", (changedAt) => { if (pickedAt.current < changedAt) setView("place"); });
 
   const tab = (v: View, name: string) => <button type="button" role="tab" aria-selected={view === v} className={view === v ? "on" : ""} onClick={() => { pickedAt.current = performance.now(); setView(v); }}>{name}</button>;

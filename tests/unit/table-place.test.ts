@@ -66,9 +66,9 @@ describe("the top view of one place", () => {
   });
   it("the plain cup white inside, its outside in the colour; plain plates in their colour and shape; no card", () => {
     const f = focus(placeLayout(table({ cups: "plain", plates: "plain" }, { cupColor: "#EC407A", plateColor: "#F8BBD0", plateShape: "scalloped" }), frozen));
-    expect(part(f, "cup-in")).toMatchObject({ src: "/design/table/top/cup-plain-in.webp" });
+    expect(part(f, "cup-in")).toMatchObject({ src: "/design/table/top/cup-plain-in-lying.webp" });
     expect((part(f, "cup-in") as { tint?: string }).tint).toBeUndefined();
-    expect(part(f, "cup-out")).toMatchObject({ src: "/design/table/top/cup-plain-out.webp", tint: "#EC407A" });
+    expect(part(f, "cup-out")).toMatchObject({ src: "/design/table/top/cup-plain-out-lying.webp", tint: "#EC407A" });
     // Its mouth up (2026-10-31: a quarter turn clockwise from lying mouth-left).
     expect((part(f, "cup-out") as { rot?: number }).rot ?? 0).toBe(0);
     expect(part(f, "-plates")).toMatchObject({ src: "/design/table/top/plates-plain-scalloped.webp", tint: "#F8BBD0" });
@@ -125,7 +125,7 @@ describe("the top view of one place", () => {
     // 2026-10-30: a themed cup, plate and napkin (football).
     const football = themeById("football")!;
     const th = focus(placeLayout(table({ cups: "football_ball", plates: "football_pitch", napkins: "football_check" }), football));
-    expect(part(th, "-cup")).toMatchObject({ src: "/design/table/top/themed-cups-football_ball.webp" });
+    expect(part(th, "-cup")).toMatchObject({ src: "/design/table/top/themed-cups-football_ball-lying.webp" });
     expect(part(th, "-plates")).toMatchObject({ src: "/design/table/top/themed-plates-football_pitch.webp" });
     expect((part(th, "-plates") as { tint?: string }).tint).toBeUndefined();
     expect(part(th, "small-plate")).toBeUndefined();

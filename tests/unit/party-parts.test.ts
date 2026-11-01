@@ -10,6 +10,7 @@ import { defaultTableSetup, readTableSetup } from "@/lib/studio/tableSetup";
 import { ADULT_ITEMS, ADULT_SECTIONS, adultCounts, adultPriceLines, adultTotal, defaultAdultTable, readAdultTable } from "@/lib/studio/adultTable";
 import { boardArt, boardFace, cleanBoardText, defaultWelcomeBoard, readWelcomeBoard, welcomePriceLines, welcomeTotal } from "@/lib/studio/welcomeBoard";
 import { paintInks, stackWords } from "@/components/studio/WelcomeBoardArt";
+import { GARLAND_LAYERS, garlandColours } from "@/lib/studio/welcomeGarland";
 import PIECES from "@/lib/studio/welcomePieces.json";
 import { designCards, joinParty, readStoredTable, splitDesign, TABLE_ITEM, WELCOME_ITEM, type SavedItem } from "@/lib/savedDesigns";
 
@@ -120,7 +121,24 @@ describe("the welcome board's photo pieces", () => {
     }
     // One garland for every theme: the one in the step's own "Balloon garland" photo (the owner, 2026-10-31).
     expect(all["garland-pastel"].h).toBeGreaterThan(all["garland-pastel"].w);
-    expect(Object.keys(all).filter((k) => k.startsWith("garland-"))).toEqual(["garland-pastel"]);
+    // Split into its four latex colours and its chrome, to be tinted to the party's colours (2026-11-01).
+    expect(Object.keys(all).filter((k) => k.startsWith("garland-"))).toEqual(["garland-pastel", ...[...GARLAND_LAYERS.map((l) => l.id), "chrome"].sort().map((l) => `garland-pastel-${l}`)]);
+  });
+  it("the garland takes the party's balloon colours: pastels where they were, the chrome gold only with gold", () => {
+    const frozen = garlandColours(themeById("frozen")!.balloonColors);
+    expect(Object.values(frozen.latex).every((c) => themeById("frozen")!.balloonColors.includes(c))).toBe(true);
+    expect(frozen.latex.white).toMatch(/^#(FFFFFF|F0F4F8)$/);
+    expect(frozen.chrome).toBeNull();
+    // The theme's pastels where the photo has them.
+    expect(garlandColours(["#FFFFFF", "#F8BBD0", "#BAE6FD", "#DDD6FE"]).latex).toEqual({ white: "#FFFFFF", pink: "#F8BBD0", blue: "#BAE6FD", lilac: "#DDD6FE" });
+    // The customer's own picks: every colour used, a short list going round again; gold chrome when picked.
+    const dino = garlandColours(["#15803D", "#84CC16", "#D4A017"]);
+    expect(new Set(Object.values(dino.latex))).toEqual(new Set(["#15803D", "#84CC16"]));
+    expect(dino.chrome).toBe("#D4A017");
+    expect(new Set(Object.values(garlandColours(["#EF4444"]).latex))).toEqual(new Set(["#EF4444"]));
+    // Silver chrome stays as photographed; nothing usable falls back to the photo's own colours.
+    expect(garlandColours(["#C7C9C7", "#FF1DCE"]).chrome).toBeNull();
+    expect(garlandColours([]).latex.pink).toBe("#EFB2B9");
   });
 });
 

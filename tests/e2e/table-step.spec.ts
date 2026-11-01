@@ -181,7 +181,10 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   await expect(board.locator("[data-part=flowers]")).toHaveCount(1);
   // A real photo of the board on its easel, the print laid onto it, the real garland with roses in it (2026-10-31).
   await expect(board.locator("[data-part=scene]")).toHaveAttribute("href", /scene-round-easel/);
-  await expect(board.locator("[data-part=garland]")).toHaveAttribute("href", /garland-pastel/);
+  // In the party's balloon colours, each of the photo's four latex colours tinted live (2026-11-01).
+  await expect(board.locator("[data-part=garland] image")).toHaveCount(5);
+  await expect(board.locator("[data-part=garland] image").first()).toHaveAttribute("href", /garland-pastel-white/);
+  expect((await board.locator("[data-part=garland]").getAttribute("data-colours"))!.split(" ").every((c) => /^#[0-9A-F]{6}$/i.test(c))).toBe(true);
   await expect(board.locator("[data-part=garland-roses]")).toHaveCount(2);
   for (const src of await board.locator("image").evaluateAll((l) => Array.from(new Set(l.map((i) => i.getAttribute("href")!))))) {
     expect((await page.request.get(src)).status(), src).toBe(200);

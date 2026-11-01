@@ -906,6 +906,13 @@ div.bz-stale-banner { cursor: default; }
   justify-content: center; text-align: center; padding: 10px 14px; border-radius: 14px;
   background: #ff0d66; color: #fff; font: 600 13px/1.35 var(--bz-sans); box-shadow: 0 6px 18px rgba(255,13,102,.32); }
 .bz-placeholder.art .tag b { color: #fff; font-weight: 800; }
+/* 2026-11-01 (the owner: "pembe uyarı tamamen kapıyor bütün görüntüyü, daha üstte ve şeffaf olsun backgroundu"):
+   no box — pink words with a white halo, tucked against the picture's top edge. */
+.bz-placeholder.art .tag { top: 4px; left: 8px; right: 8px; padding: 2px 4px; background: transparent; box-shadow: none;
+  color: #ff0d66; font: 700 11.5px/1.3 var(--bz-sans);
+  text-shadow: 0 0 2px #fff, 0 0 4px #fff, 0 0 7px #fff, 0 0 10px rgba(255,255,255,.9); }
+.bz-placeholder.art .tag b { color: #ff0d66; }
+.bz-placeholder.art .tag > span[aria-hidden] { display: none; }
 @media (min-width: 1024px) { .bz-placeholder.art img { flex: 1 1 0; height: 100%; } }
 
 /* 2026-10-23: the card already has its title — no second one under the picture;
