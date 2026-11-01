@@ -16,7 +16,7 @@ import { useId, useLayoutEffect, useRef, useState } from "react";
 import PIECES from "@/lib/studio/welcomePieces.json";
 import { tableFont, fontCss, asPrinted } from "@/lib/studio/tableFonts";
 import { boardArt, boardFace, boardWordsColour, type WelcomeBoard } from "@/lib/studio/welcomeBoard";
-import { GARLAND_LAYERS, garlandColours } from "@/lib/studio/welcomeGarland";
+import { GARLAND_LAYERS, balloonBody, garlandColours } from "@/lib/studio/welcomeGarland";
 
 const rgb = (hex: string) => { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
 const isLight = (hex: string) => { const [r, g, b] = rgb(hex); return (0.3 * r + 0.59 * g + 0.11 * b) / 255 > 0.75; };
@@ -237,7 +237,8 @@ function Roses({ x, y, width, turn, mirror }: { x: number; y: number; width: num
  */
 /** How light a balloon's own colour may be, its shine above it (the photo's white balloons are at 0.88). */
 const MAX_BODY = 0.88;
-function GarlandTint({ id, colour, gain = 1 / 0.86, grey }: { id: string; colour: string; gain?: number; grey?: boolean }) {
+function GarlandTint({ id, colour: picked, gain = 1 / 0.86, grey }: { id: string; colour: string; gain?: number; grey?: boolean }) {
+  const colour = grey ? picked : balloonBody(picked);
   // How white its shine goes: a dark balloon's shine is small (whitened as much as a pale one's, it went grey).
   const [r, g, b] = rgb(colour), lum = (0.3 * r + 0.59 * g + 0.11 * b) / 255, a = (0.55 / 0.14) * (0.25 + 0.75 * lum);
   // A white or near-white balloon is photographed a little grey, its shine the only white (at white itself,

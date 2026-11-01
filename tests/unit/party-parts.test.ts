@@ -10,7 +10,7 @@ import { defaultTableSetup, readTableSetup } from "@/lib/studio/tableSetup";
 import { ADULT_ITEMS, ADULT_SECTIONS, adultCounts, adultPriceLines, adultTotal, defaultAdultTable, readAdultTable } from "@/lib/studio/adultTable";
 import { boardArt, boardFace, cleanBoardText, defaultWelcomeBoard, readWelcomeBoard, welcomePriceLines, welcomeTotal } from "@/lib/studio/welcomeBoard";
 import { paintInks, stackWords } from "@/components/studio/WelcomeBoardArt";
-import { GARLAND_LAYERS, garlandColours } from "@/lib/studio/welcomeGarland";
+import { GARLAND_LAYERS, balloonBody, garlandColours } from "@/lib/studio/welcomeGarland";
 import PIECES from "@/lib/studio/welcomePieces.json";
 import { designCards, joinParty, readStoredTable, splitDesign, TABLE_ITEM, WELCOME_ITEM, type SavedItem } from "@/lib/savedDesigns";
 
@@ -132,6 +132,13 @@ describe("the welcome board's photo pieces", () => {
     expect(frozen.chrome).toBeNull();
     // Its white and its ice white are one colour: once white, not half the garland (2026-11-01).
     expect(Object.values(frozen.latex).filter((c) => c === "#FFFFFF" || c === "#F0F4F8")).toHaveLength(1);
+    // Its three colours spread evenly: no colour on more than two of the four layers.
+    for (const c of Object.values(frozen.latex)) expect(Object.values(frozen.latex).filter((x) => x === c).length).toBeLessThanOrEqual(2);
+    // Pale pastels drawn as deep as the photo's balloons, so each reads apart (2026-11-01); white, creams and
+    // darker colours as they are.
+    expect(balloonBody("#BAE6FD")).toBe("#A8D7F0");
+    expect(balloonBody("#DCD7F2")).toBe("#BCB2E6");
+    for (const c of ["#FFFFFF", "#F0F4F8", "#F5EDD6", "#FEF08A", "#EF4444", "#C7C9C7"]) expect(balloonBody(c)).toBe(c);
     // The theme's pastels where the photo has them.
     expect(garlandColours(["#FFFFFF", "#F8BBD0", "#BAE6FD", "#DDD6FE"]).latex).toEqual({ white: "#FFFFFF", pink: "#F8BBD0", blue: "#BAE6FD", lilac: "#DDD6FE" });
     // The customer's own picks: every colour used, a short list going round again; gold chrome when picked.

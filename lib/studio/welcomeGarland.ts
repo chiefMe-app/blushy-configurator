@@ -6,12 +6,12 @@
 // the party's balloon colours — the customer's own picks, which start as the
 // theme's — and the chrome stays silver unless the party has gold chrome.
 
-/** The photo's own layers, the most balloons first, with the colour each is in the photo. */
+/** The photo's own layers, the most balloons first, with the colour each is in the photo and how much of it they are (welcomePieces.json). */
 export const GARLAND_LAYERS = [
-  { id: "white", photo: "#F2F1EC" },
-  { id: "pink", photo: "#EFB2B9" },
-  { id: "blue", photo: "#9FC5E8" },
-  { id: "lilac", photo: "#B39DDB" },
+  { id: "white", photo: "#F2F1EC", share: 0.129 },
+  { id: "pink", photo: "#EFB2B9", share: 0.111 },
+  { id: "blue", photo: "#9FC5E8", share: 0.085 },
+  { id: "lilac", photo: "#B39DDB", share: 0.083 },
 ] as const;
 export type GarlandLayer = (typeof GARLAND_LAYERS)[number]["id"];
 
@@ -31,6 +31,27 @@ export function balloonLook(hex: string): "silver" | "gold" | "latex" {
   if (h >= 35 && h <= 60 && s > 0.35 && l < 0.62) return "gold";
   return "latex";
 }
+const hex2 = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0").toUpperCase();
+function fromHsl(h: number, s: number, l: number) {
+  const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2;
+  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return `#${hex2(r + m)}${hex2(g + m)}${hex2(b + m)}`;
+}
+/** How light a coloured balloon is drawn at most, and how strong: the photo's own pink, blue and lilac are at 0.74–0.82, 0.47–0.68. */
+export const MAX_COLOUR_LIGHT = 0.8;
+const MAX_PASTEL_SAT = 0.7;
+/**
+ * The colour a balloon is drawn in (2026-11-01, the owner, of the photo's own garland: "burdaki gibi balonlar
+ * daha renkleri birbirine karışmamış"): a palette's pale pastels (Ice Princess's ice blue and lilac, all but
+ * white) as deep as the photo's balloons, so each colour reads apart from the next and from white; white
+ * and the near-whites as they are; darker colours as they are.
+ */
+export function balloonBody(hex: string): string {
+  const { h, s, l } = hsl(hex);
+  // Creams and pale yellows read apart from white as they are (deeper, a cream went tan).
+  if (l <= MAX_COLOUR_LIGHT || s < 0.2 || l > 0.93 || (h >= 35 && h <= 70)) return hex.toUpperCase();
+  return fromHsl(h, Math.min(Math.max(s, 0.45), MAX_PASTEL_SAT), MAX_COLOUR_LIGHT);
+}
 const far = (a: string, b: string) => { const x = rgb(a), y = rgb(b); return 2 * (x[0] - y[0]) ** 2 + 4 * (x[1] - y[1]) ** 2 + 3 * (x[2] - y[2]) ** 2; };
 
 /**
@@ -45,12 +66,15 @@ export function garlandColours(colours: string[]): { latex: Record<GarlandLayer,
   const gold = valid.find((c) => balloonLook(c) === "gold");
   if (!latex.length) latex = valid.length ? valid : GARLAND_LAYERS.map((l) => l.photo);
   const out = {} as Record<GarlandLayer, string>;
-  let left = [...latex];
+  // Once every colour has its layer, the rest go to the colours with the fewest balloons so far (by
+  // nearness, one colour came out on half the garland).
+  const left = [...latex], used = new Map<string, number>();
   for (const layer of GARLAND_LAYERS) {
-    if (!left.length) left = [...latex];
-    const pick = left.reduce((a, b) => (far(b, layer.photo) < far(a, layer.photo) ? b : a));
+    const from = left.length ? left : latex.filter((c) => used.get(c) === Math.min(...latex.map((x) => used.get(x) ?? 0)));
+    const pick = from.reduce((a, b) => (far(b, layer.photo) < far(a, layer.photo) ? b : a));
     out[layer.id] = pick;
-    left.splice(left.indexOf(pick), 1);
+    used.set(pick, (used.get(pick) ?? 0) + layer.share);
+    if (left.includes(pick)) left.splice(left.indexOf(pick), 1);
   }
   return { latex: out, chrome: gold ?? null };
 }
