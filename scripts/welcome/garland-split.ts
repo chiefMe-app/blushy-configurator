@@ -15,12 +15,30 @@ const MANIFEST = "lib/studio/welcomePieces.json";
 export const LAYERS = ["white", "pink", "blue", "lilac", "chrome"] as const;
 /** Where a latex balloon's own colour sits in its grey layer: lighter is its shine, darker its shade. */
 const BODY = 0.86;
-/** How sharp a change in colour is a balloon's outline (summed Sobel over R, G and B). */
-const EDGE = +(process.env.EDGE ?? 45);
-/** How far (px) both balloons must rise above the neck between them to stay apart. */
-const NECK = +(process.env.NECK ?? 4);
 /** The chrome balls in the photo (px: middle, radius). */
 const CHROME: [number, number, number][] = [[265, 63, 18], [255, 126, 44], [369, 275, 44], [372, 391, 47], [428, 484, 50]];
+type Latex = Exclude<(typeof LAYERS)[number], "chrome">;
+/** The latex balloons in the photo, by hand (px: middle, radius, colour; "front": in front of all it overlaps). */
+const BALLOONS: [number, number, number, Latex, "front"?][] = [
+  // The top, left to right.
+  [42, 86, 47, "white"], [96, 135, 37, "white"], [128, 55, 45, "white"], [82, 85, 15, "blue"],
+  [210, 55, 42, "pink"], [171, 133, 42, "pink"], [205, 92, 16, "lilac"],
+  [330, 48, 62, "white"], [296, 90, 16, "blue"], [416, 148, 57, "white"], [460, 215, 14, "white"],
+  // Down the column.
+  [332, 152, 38, "blue"], [286, 177, 17, "blue"], [321, 177, 17, "blue"], [362, 192, 32, "white"],
+  [258, 193, 38, "blue"], [298, 231, 41, "blue"], [436, 258, 42, "pink"], [290, 290, 30, "lilac"],
+  [315, 310, 16, "lilac"], [339, 331, 19, "pink"], [296, 355, 40, "pink"], [371, 338, 13, "pink"],
+  [436, 340, 50, "white"], [472, 413, 52, "blue"], [433, 411, 14, "blue"], [300, 430, 35, "white"],
+  [325, 431, 15, "pink"], [341, 451, 16, "pink"], [369, 459, 12, "lilac"], [290, 483, 18, "blue"],
+  [336, 500, 39, "blue"], [392, 505, 22, "blue"], [378, 529, 17, "lilac"], [355, 550, 20, "lilac"],
+  [466, 550, 18, "lilac"], [410, 580, 45, "lilac"], [300, 575, 40, "pink"], [336, 600, 31, "white"],
+  [470, 585, 15, "lilac"], [480, 580, 10, "white"],
+  // The foot.
+  [452, 655, 52, "pink"], [505, 710, 42, "pink"], [377, 656, 38, "white"], [327, 646, 17, "pink"],
+  [300, 683, 52, "blue"], [424, 697, 17, "blue"], [381, 740, 46, "blue"], [463, 735, 35, "lilac"],
+  [493, 770, 18, "pink"], [248, 783, 76, "white"], [305, 812, 72, "pink", "front"], [441, 833, 67, "lilac"],
+  [535, 818, 62, "lilac"],
+];
 
 (async () => {
   const { data, info } = await sharp(path.join(OUT, "garland-pastel.webp")).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -44,95 +62,49 @@ const CHROME: [number, number, number][] = [[265, 63, 18], [255, 126, 44], [369,
     else if (hue >= 238 && hue < 330) label[i] = 3;
     else label[i] = 0;
   }
-  // Tidied: each point takes the group most of its neighbours are in (a balloon is one colour throughout).
-  const M = 14, tidy = new Int8Array(N).fill(-1);
+  // Tidied a little: each point takes the group most of its near neighbours are in (shade and shine read
+  // as other colours point by point).
+  const M = 5, tidy = new Int8Array(N).fill(-1);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x;
-    if (label[i] < 0) continue;
-    if (label[i] === 4) { tidy[i] = 4; continue; }
-    const votes = [0, 0, 0, 0, 0];
-    for (let dy = -M; dy <= M; dy += 2) for (let dx = -M; dx <= M; dx += 2) {
-      if (dx * dx + dy * dy > M * M) continue;
+    if (label[i] < 0 || label[i] === 4) { tidy[i] = label[i]; continue; }
+    const votes = [0, 0, 0, 0];
+    for (let dy = -M; dy <= M; dy++) for (let dx = -M; dx <= M; dx++) {
       const xx = x + dx, yy = y + dy;
-      if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+      if (dx * dx + dy * dy > M * M || xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
       const k = label[yy * W + xx]; if (k >= 0 && k < 4) votes[k]++;
     }
-    tidy[i] = votes.indexOf(Math.max(...votes)) as number;
+    tidy[i] = votes.indexOf(Math.max(...votes));
   }
-  // Then one colour for each balloon (tinted strongly, a balloon in two colours showed as a puzzle piece):
-  // the balloons are the patches between the photo's outlines, each taking the colour most of it has; the
-  // outlines themselves the colour of the balloon beside them.
-  const soft = await sharp(path.join(OUT, "garland-pastel.webp")).removeAlpha().blur(1.2).raw().toBuffer();
-  const edge = new Uint8Array(N);
-  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-    let g = 0;
-    for (let c = 0; c < 3; c++) {
-      const at = (dx: number, dy: number) => soft[((y + dy) * W + x + dx) * 3 + c];
-      const gx = at(1, -1) + 2 * at(1, 0) + at(1, 1) - at(-1, -1) - 2 * at(-1, 0) - at(-1, 1);
-      const gy = at(-1, 1) + 2 * at(0, 1) + at(1, 1) - at(-1, -1) - 2 * at(0, -1) - at(1, -1);
-      g += Math.hypot(gx, gy);
-    }
-    edge[y * W + x] = g > EDGE ? 1 : 0;
-  }
-  // Touching balloons whose outline is too soft to find still meet at a narrow neck: each patch is split
-  // there (a watershed of how far each point is from the patch's edge), one piece for each balloon.
-  const inside = (i: number) => !edge[i] && tidy[i] >= 0 && tidy[i] !== 4 && data[i * 4 + 3] >= 128;
-  const dist = new Float32Array(N);
-  for (let i = 0; i < N; i++) dist[i] = inside(i) ? 1e9 : 0;
-  const pass = (order: number[], steps: [number, number, number][]) => {
-    for (const i of order) {
-      if (!dist[i]) continue;
-      const x = i % W, y = (i - x) / W;
-      for (const [dx, dy, c] of steps) {
-        const xx = x + dx, yy = y + dy;
-        if (xx >= 0 && yy >= 0 && xx < W && yy < H) dist[i] = Math.min(dist[i], dist[yy * W + xx] + c);
-      }
-    }
-  };
-  const all = Array.from({ length: N }, (_, i) => i);
-  pass(all, [[-1, 0, 1], [0, -1, 1], [-1, -1, 1.414], [1, -1, 1.414]]);
-  pass(all.reverse(), [[1, 0, 1], [0, 1, 1], [1, 1, 1.414], [-1, 1, 1.414]]);
-  // Flooded from the deepest points down; two pieces meeting stay apart when both rise well above the neck.
-  const region = new Int32Array(N).fill(-1), peak: number[] = [], parent: number[] = [];
-  const root = (a: number): number => (parent[a] === a ? a : (parent[a] = root(parent[a])));
-  const byDepth = all.filter(inside).sort((a, b) => dist[b] - dist[a]);
-  for (const i of byDepth) {
-    const x = i % W, near = new Set<number>();
-    for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) if (j >= 0 && j < N && region[j] >= 0) near.add(root(region[j]));
-    if (!near.size) { region[i] = peak.length; parent.push(peak.length); peak.push(dist[i]); continue; }
-    const pieces = Array.from(near).sort((a, b) => peak[b] - peak[a]);
-    region[i] = pieces[0];
-    for (const other of pieces.slice(1)) if (peak[other] - dist[i] < NECK) parent[other] = pieces[0];
-  }
-  const sizes = new Map<number, number>(), votesOf = new Map<number, number[]>();
-  for (const i of byDepth) {
-    const r = root(region[i]); region[i] = r;
-    sizes.set(r, (sizes.get(r) ?? 0) + 1);
-    const v = votesOf.get(r) ?? [0, 0, 0, 0]; v[tidy[i]]++; votesOf.set(r, v);
-  }
-  if (process.env.REGIONS) {
-    const map = Buffer.alloc(N * 3, 200);
-    for (const i of byDepth) { const r = region[i] * 2654435761; map[i * 3] = r & 255; map[i * 3 + 1] = (r >> 8) & 255; map[i * 3 + 2] = (r >> 16) & 255; }
-    await sharp(map, { raw: { width: W, height: H, channels: 3 } }).png().toFile(process.env.REGIONS);
-  }
+  // Then each balloon one colour throughout (found point by point, a balloon came out in two colours, a
+  // puzzle piece once tinted): every latex balloon in the photo by hand, a circle with its colour. A point
+  // in a colour goes to the balloon over it in that colour (the one it is deepest inside); a point with next
+  // to no colour (white, or any balloon's shine) to the one it is deepest inside; a point under none to the
+  // nearest.
   const final = new Int8Array(N).fill(-1);
   for (let i = 0; i < N; i++) {
-    if (tidy[i] === 4) final[i] = 4;
-    else if (region[i] >= 0 && sizes.get(region[i])! >= 60) { const v = votesOf.get(region[i])!; final[i] = v.indexOf(Math.max(...v)); }
+    if (tidy[i] < 0 || tidy[i] === 4) { final[i] = tidy[i]; continue; }
+    const x = i % W, y = (i - x) / W;
+    let best = -1, bestD = Infinity, own = -1, ownD = Infinity, near = -1, nearD = Infinity;
+    const front = BALLOONS.findIndex(([cx, cy, r, , f]) => f && Math.hypot(x - cx, y - cy) < r);
+    if (front >= 0) { final[i] = LAYERS.indexOf(BALLOONS[front][3]); continue; }
+    BALLOONS.forEach(([cx, cy, r, k], n) => {
+      const d = Math.hypot(x - cx, y - cy) / r;
+      if (d - 1 < nearD) { nearD = d - 1; near = n; }
+      if (d > 1.06) return;
+      if (d < bestD) { bestD = d; best = n; }
+      if (tidy[i] > 0 && LAYERS.indexOf(k) === tidy[i] && d < ownD) { ownD = d; own = n; }
+    });
+    const pick = own >= 0 ? own : best >= 0 ? best : near;
+    final[i] = LAYERS.indexOf(BALLOONS[pick][3]);
   }
-  // The outlines and crumbs: from the nearest balloon, growing outwards a ring at a time.
-  for (let ring = 0, open = true; open && ring < 40; ring++) {
-    open = false;
-    const grown = final.slice();
-    for (let i = 0; i < N; i++) {
-      if (final[i] >= 0 || tidy[i] < 0) continue;
-      const x = i % W;
-      for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) if (j >= 0 && j < N && final[j] >= 0 && final[j] < 4) { grown[i] = final[j]; break; }
-      if (grown[i] < 0) open = true;
-    }
-    final.set(grown);
+  if (process.env.REGIONS) {
+    const tone = [[245, 237, 214], [239, 68, 68], [37, 99, 235], [31, 41, 55], [160, 160, 160]];
+    const map = Buffer.alloc(N * 3, 220);
+    for (let i = 0; i < N; i++) if (final[i] >= 0) tone[final[i]].forEach((v, c) => (map[i * 3 + c] = Math.round(v * (0.55 + 0.45 * lum[i]))));
+    await sharp(map, { raw: { width: W, height: H, channels: 3 } }).png().toFile(process.env.REGIONS);
   }
-  for (let i = 0; i < N; i++) if (tidy[i] >= 0) tidy[i] = final[i] >= 0 ? final[i] : tidy[i];
+  for (let i = 0; i < N; i++) tidy[i] = final[i];
   const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as Record<string, unknown>;
   for (let k = 0; k < LAYERS.length; k++) {
     const own: number[] = [];

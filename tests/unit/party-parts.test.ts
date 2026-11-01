@@ -55,21 +55,22 @@ describe("the grown-ups' table", () => {
 describe("the welcome board", () => {
   it("prices the size, an acrylic board and the easel", () => {
     const b = defaultWelcomeBoard(frozen);
-    expect(welcomePriceLines(b)).toEqual([{ label: "Welcome board, Medium 70 × 100 cm", amount: 250 }, { label: "Easel", amount: 40 }]);
-    expect(welcomeTotal({ ...b, size: "large", material: "acrylic", stand: "none" })).toBe(320 + 150);
+    // Her A1 board with a balloon garland first (2026-11-01).
+    expect(welcomePriceLines(b)).toEqual([{ label: "Welcome board, A1 60 × 84 cm", amount: 180 }, { label: "Easel", amount: 40 }, { label: "Balloon garland on the board", amount: 250 }]);
+    expect(welcomeTotal({ ...b, size: "large", material: "acrylic", stand: "none", garnish: "none" })).toBe(320 + 150);
     expect(welcomePriceLines({ ...b, enabled: false })).toEqual([]);
-    expect(priceBreakdown({ ...base(), welcomeBoard: b }).total).toBe(priceBreakdown(base()).total + 290);
+    expect(priceBreakdown({ ...base(), welcomeBoard: b }).total).toBe(priceBreakdown(base()).total + 470);
   });
   it("balloons or flowers on the board add their price; a round board is as tall as it is wide", () => {
-    const b = defaultWelcomeBoard(frozen);
-    expect(b.garnish).toBe("none");
+    const b = { ...defaultWelcomeBoard(frozen), size: "medium", garnish: "none" as const };
+    expect(defaultWelcomeBoard(frozen)).toMatchObject({ shape: "rectangle", design: "plain", colour: "#FFFFFF", font: "sacramento", garnish: "balloons", line: "Birthday Party" });
     expect(welcomePriceLines({ ...b, garnish: "both" })).toContainEqual({ label: "Balloons & flowers on the board", amount: 380 });
     expect(welcomeTotal({ ...b, garnish: "balloons" })).toBe(welcomeTotal(b) + 250);
     expect(welcomeTotal({ ...b, garnish: "flowers" })).toBe(welcomeTotal(b) + 180);
     expect(boardFace({ size: "medium", shape: "round" })).toEqual({ w: 70, h: 70, note: "Ø 70 cm" });
     expect(welcomePriceLines({ ...b, shape: "round" })[0]).toEqual({ label: "Welcome board, round Ø 70 cm", amount: 250 });
     expect(readWelcomeBoard({ shape: "round", garnish: "both" }, frozen)).toMatchObject({ shape: "round", garnish: "both" });
-    expect(readWelcomeBoard({ garnish: "fireworks" }, frozen)!.garnish).toBe("none");
+    expect(readWelcomeBoard({ garnish: "fireworks" }, frozen)!.garnish).toBe("balloons");
   });
   it("the words never run into each other: stacked with a gap, a line too wide made smaller (2026-10-31)", () => {
     const space = { y0: 20, y1: 90, maxW: 56 };
@@ -103,7 +104,7 @@ describe("the welcome board", () => {
     expect(cleanBoardText("<b>Arya's</b>   party")).toBe("bArya'sb party");
     expect(cleanBoardText("x".repeat(80))).toHaveLength(30);
     const b = readWelcomeBoard({ size: "huge", shape: "star", design: "plain", colour: "#123456", name: "Arya's", font: "comic", textColor: "blue" }, frozen)!;
-    expect(b).toMatchObject({ size: "medium", shape: "arch", design: "plain", colour: "#123456", name: "Arya's", font: "birthstone-bounce", garnish: "none" });
+    expect(b).toMatchObject({ size: "a1", shape: "rectangle", design: "plain", colour: "#123456", name: "Arya's", font: "sacramento", garnish: "balloons" });
     expect(b.textColor).toBeUndefined();
   });
 });
@@ -129,6 +130,8 @@ describe("the welcome board's photo pieces", () => {
     expect(Object.values(frozen.latex).every((c) => themeById("frozen")!.balloonColors.includes(c))).toBe(true);
     expect(frozen.latex.white).toMatch(/^#(FFFFFF|F0F4F8)$/);
     expect(frozen.chrome).toBeNull();
+    // Its white and its ice white are one colour: once white, not half the garland (2026-11-01).
+    expect(Object.values(frozen.latex).filter((c) => c === "#FFFFFF" || c === "#F0F4F8")).toHaveLength(1);
     // The theme's pastels where the photo has them.
     expect(garlandColours(["#FFFFFF", "#F8BBD0", "#BAE6FD", "#DDD6FE"]).latex).toEqual({ white: "#FFFFFF", pink: "#F8BBD0", blue: "#BAE6FD", lilac: "#DDD6FE" });
     // The customer's own picks: every colour used, a short list going round again; gold chrome when picked.

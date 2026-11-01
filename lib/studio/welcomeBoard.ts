@@ -86,11 +86,13 @@ export function cleanBoardText(v: unknown): string {
   return v.replace(/[\u0000-\u001f<>{}[\]\\/"`$^*=|~#%@+;:_]/g, "").replace(/\s+/g, " ").slice(0, MAX_BOARD_TEXT);
 }
 
-export function defaultWelcomeBoard(theme: { backdropColors: string[]; accent: string }): WelcomeBoard {
+// 2026-11-01 (owner, of her A1 board — rectangle, plain white, the handwritten name, a balloon garland,
+// "Birthday Party" under it: "default bu yazıtipi ve bu şekil vs gelsin").
+export function defaultWelcomeBoard(_theme: { backdropColors: string[]; accent: string }): WelcomeBoard {
   return {
-    enabled: true, size: "medium", shape: "arch", design: "corners",
-    colour: theme.backdropColors[0] ?? "#FFFFFF", material: "foam", stand: "easel", garnish: "none",
-    heading: "Welcome to", name: "", line: "", font: "birthstone-bounce",
+    enabled: true, size: "a1", shape: "rectangle", design: "plain",
+    colour: "#FFFFFF", material: "foam", stand: "easel", garnish: "balloons",
+    heading: "Welcome to", name: "", line: "Birthday Party", font: "sacramento",
   };
 }
 

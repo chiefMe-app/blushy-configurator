@@ -161,7 +161,12 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   await page.getByTestId("welcome-line").fill("6th Birthday");
   await expect(board).toContainText("Arya's");
   await expect(board).toContainText("6TH BIRTHDAY");
-  // Painted corners first (2026-10-31, the owner's Frozen example), the theme's art, or a plain colour.
+  // Her board first (2026-11-01): plain white, the handwritten name, a balloon garland; painted corners, the
+  // theme's art, or a plain colour.
+  await expect(board.locator("[data-part=painted-corners]")).toHaveCount(0);
+  await expect(board.locator("[data-part=garland]")).toHaveCount(1);
+  await expect(page.getByTestId("welcome-font").getByRole("radio", { name: /Handwritten/ })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("radiogroup", { name: "Board design" }).getByRole("radio", { name: /Painted corners/ }).click();
   await expect(board.locator("[data-part=painted-corners]")).toHaveCount(1);
   await page.getByRole("radiogroup", { name: "Board design" }).getByRole("radio", { name: /Watercolour/ }).click();
   await expect(board.locator("[data-part=art]")).toHaveAttribute("href", "/design/table/placemats/frozen/watercolour.webp");
@@ -172,7 +177,7 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   expect(aed(await total(page).textContent())).toBe(before + sum);
   await page.getByRole("radiogroup", { name: "Board size" }).getByRole("radio", { name: /Large/ }).click();
   await page.getByTestId("welcome-material").getByRole("radio", { name: /Acrylic/ }).click();
-  expect(aed(await page.getByTestId("welcome-total").locator("b").textContent())).toBe(sum + (320 - 250) + 150);
+  expect(aed(await page.getByTestId("welcome-total").locator("b").textContent())).toBe(sum + (320 - 180) + 150);
   // Round, and balloons with flowers on it (2026-10-31).
   await page.getByTestId("welcome-shape").getByRole("radio", { name: /Round/ }).click();
   await expect(board).toHaveAttribute("data-shape", "round");
@@ -189,7 +194,7 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   for (const src of await board.locator("image").evaluateAll((l) => Array.from(new Set(l.map((i) => i.getAttribute("href")!))))) {
     expect((await page.request.get(src)).status(), src).toBe(200);
   }
-  expect(aed(await page.getByTestId("welcome-total").locator("b").textContent())).toBe(sum + (320 - 250) + 150 + 380);
+  expect(aed(await page.getByTestId("welcome-total").locator("b").textContent())).toBe(sum + (320 - 180) + 150 + (380 - 250));
   // The words, measured once drawn, never run into each other.
   await page.getByTestId("welcome-name").fill("Maximiliana-Josephine's");
   for (const font of ["Calligraphy", "Classic"]) {
@@ -217,7 +222,7 @@ test("W2 on a phone, a change to the welcome board brings it into sight, and Bac
   await page.getByRole("button", { name: /Yes, design the board/ }).click();
   await page.waitForTimeout(800);
   await expect(page.getByTestId("welcome-back-to-choices")).toHaveCount(0);
-  await page.getByTestId("welcome-garnish").getByRole("radio", { name: /Balloon garland/ }).click();
+  await page.getByTestId("welcome-garnish").getByRole("radio", { name: /Just the board/ }).click();
   await expect(page.getByTestId("welcome-preview").getByRole("img", { name: "Your welcome board" })).toBeInViewport();
   await page.getByTestId("welcome-back-to-choices").click();
   await expect(page.getByTestId("welcome-garnish")).toBeInViewport();

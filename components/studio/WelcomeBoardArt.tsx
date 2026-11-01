@@ -235,14 +235,21 @@ function Roses({ x, y, width, turn, mirror }: { x: number; y: number; width: num
  * A garland layer (grey light and shade, its balloons' own colour at BODY) in a colour: multiplied by it, its
  * shine kept white. `grey` first takes the colour out (the chrome, photographed with the room's tints in it).
  */
+/** How light a balloon's own colour may be, its shine above it (the photo's white balloons are at 0.88). */
+const MAX_BODY = 0.88;
 function GarlandTint({ id, colour, gain = 1 / 0.86, grey }: { id: string; colour: string; gain?: number; grey?: boolean }) {
   // How white its shine goes: a dark balloon's shine is small (whitened as much as a pale one's, it went grey).
-  const [r, g, b] = rgb(colour), a = (0.55 / 0.14) * (0.25 + (0.75 * (0.3 * r + 0.59 * g + 0.11 * b)) / 255);
+  const [r, g, b] = rgb(colour), lum = (0.3 * r + 0.59 * g + 0.11 * b) / 255, a = (0.55 / 0.14) * (0.25 + 0.75 * lum);
+  // A white or near-white balloon is photographed a little grey, its shine the only white (at white itself,
+  // a balloon's whole lit half was flat white, with a hard edge).
+  const k = Math.min(1, MAX_BODY / Math.max(lum, 0.01)), body = `rgb(${[r, g, b].map((v) => Math.round(v * k)).join(",")})`;
+  // And its shade softer: a pale balloon's shadows as deep as a lilac one's read as grey, or as silver.
+  const soft = grey ? 1 : 1 - 0.35 * Math.min(1, Math.max(0, (lum - 0.6) / 0.35)), m = gain * soft, o = gain * (1 - soft) * 0.86;
   return (
     <filter id={id} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
       {grey && <feColorMatrix in="SourceGraphic" type="saturate" values="0" result="src" />}
-      <feColorMatrix in={grey ? "src" : "SourceGraphic"} type="matrix" values={`${gain} 0 0 0 0 0 ${gain} 0 0 0 0 0 ${gain} 0 0 0 0 0 1 0`} result="lit" />
-      <feFlood floodColor={colour} result="c" />
+      <feColorMatrix in={grey ? "src" : "SourceGraphic"} type="matrix" values={`${f3(m)} 0 0 0 ${f3(o)} 0 ${f3(m)} 0 0 ${f3(o)} 0 0 ${f3(m)} 0 ${f3(o)} 0 0 0 1 0`} result="lit" />
+      <feFlood floodColor={grey ? colour : body} result="c" />
       <feComposite in="c" in2="lit" operator="arithmetic" k1={1} k2={0} k3={0} k4={0} result="t" />
       {/* Its shine: lighter than the balloon's own colour, a little whiter, smoothly (a sharp cut showed as pale patches). */}
       <feColorMatrix in={grey ? "src" : "SourceGraphic"} type="matrix" values={`0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 ${f3(0.299 * a)} ${f3(0.587 * a)} ${f3(0.114 * a)} 0 ${f3(-0.86 * a)}`} result="hi" />

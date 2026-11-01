@@ -39,7 +39,9 @@ const far = (a: string, b: string) => { const x = rgb(a), y = rgb(b); return 2 *
  */
 export function garlandColours(colours: string[]): { latex: Record<GarlandLayer, string>; chrome: string | null } {
   const valid = colours.filter((c) => /^#[0-9a-f]{6}$/i.test(c));
-  let latex = valid.filter((c) => balloonLook(c) === "latex");
+  // Two all but the same colours (Ice Princess's white and its ice white) are one: twice white, half the
+  // garland came out white, its shaded balloons grey.
+  let latex = valid.filter((c, i) => balloonLook(c) === "latex" && !valid.slice(0, i).some((o) => balloonLook(o) === "latex" && far(o, c) < 2000));
   const gold = valid.find((c) => balloonLook(c) === "gold");
   if (!latex.length) latex = valid.length ? valid : GARLAND_LAYERS.map((l) => l.photo);
   const out = {} as Record<GarlandLayer, string>;
