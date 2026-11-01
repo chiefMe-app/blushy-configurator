@@ -32,17 +32,116 @@ const FLOOR = 870;
  * the room and the balloons; plinths, neon, number and standees on top.
  * Geometry is in fractions of the square image.
  */
-const ROUND_BASE = {
-  room: "/design/sketch/round-room.webp",
-  balloons: "/design/sketch/round-balloons.webp",
+const ROUND = { cx: 0.5004, cy: 0.5154, r: 0.3236 };
+/**
+ * 2026-11-01 (owner: "roundda sadece live sketch bu şekilde yapmıştık, diğer
+ * backdrop seçeneklerini … bütün temalara uygulamamız lazım"): every setup
+ * with a photographed base is drawn on it, made the same way
+ * (scripts/sketch/sketch-base.ts). Keyed by the boards' types, left to right.
+ */
+type PhotoBase = {
+  room: string;
+  balloons: string;
   // Which balloon family each pixel belongs to (0 white/silver, 100 blue,
   // 200 lilac), worked out ahead of time and smoothed, so a balloon's
   // highlight is repainted with the balloon.
-  families: "/design/sketch/round-families.png",
-  boardMask: "/design/sketch/round-board-mask.png",
-  cx: 0.5004, cy: 0.5154, r: 0.3236,
-  // The photographed plinth (the XXL, 90 cm): left, top, width, height.
-  plinth: { x: 0.4521, y: 0.5605, w: 0.1143, h: 0.3330 },
+  families: string;
+  /** Each board, left to right: where it shows (none for the ring), its box and where its words go. */
+  boards: { mask?: string; x0: number; y0: number; x1: number; y1: number; text: { cx: number; cy: number; w: number } }[];
+  /** The photographed plinth (the XXL, 90 cm): left, top, width, height. */
+  plinth: { x: number; y: number; w: number; h: number };
+  /** Florals tucked into the garland: x, y and their turn in degrees. */
+  florals: [number, number, number][];
+  /** Where the number and the standees stand when there are no plinths. */
+  numberX: number;
+  standeeX: [number, number];
+};
+const SK = "/design/sketch";
+const fromPx = (pts: [number, number][]) => pts.map(([x, y], i) => [x / 1024, y / 1024, (i * 67) % 180 - 60] as [number, number, number]);
+const PHOTO_BASES: Record<string, PhotoBase> = {
+  round: {
+    room: `${SK}/round-room.webp`, balloons: `${SK}/round-balloons.webp`, families: `${SK}/round-families.png`,
+    // The garland covers the board's left side: the words sit right of centre.
+    boards: [{ mask: `${SK}/round-board-mask.png`, x0: ROUND.cx - ROUND.r, y0: ROUND.cy - ROUND.r, x1: ROUND.cx + ROUND.r, y1: ROUND.cy + ROUND.r,
+      text: { cx: ROUND.cx + ROUND.r * 0.12, cy: ROUND.cy - ROUND.r * 0.18, w: ROUND.r * 2 * 0.66 } }],
+    plinth: { x: 0.4521, y: 0.5605, w: 0.1143, h: 0.3330 },
+    florals: [218, 198, 178, 160, 143, 126, 108, 92, 76, -52, -68].map((a, i) => {
+      const t = (a * Math.PI) / 180, rr = ROUND.r * 1.04 * (i % 2 ? 1.06 : 0.98);
+      return [ROUND.cx + Math.cos(t) * rr, ROUND.cy - Math.sin(t) * rr, -a + 90] as [number, number, number];
+    }),
+    numberX: 0.66, standeeX: [0.15, 0.86],
+  },
+  arch: {
+    room: `${SK}/single_arch-room.webp`, balloons: `${SK}/single_arch-balloons.webp`, families: `${SK}/single_arch-families.png`,
+    boards: [{ mask: `${SK}/single_arch-board-0.png`, x0: 0.2725, y0: 0.207, x1: 0.6191, y1: 0.8369, text: { cx: 0.43, cy: 0.4, w: 0.27 } }],
+    plinth: { x: 0.415, y: 0.612, w: 0.1, h: 0.288 },
+    florals: fromPx([[330, 175], [430, 150], [520, 215], [590, 300], [612, 400], [630, 500], [640, 600], [630, 700], [598, 800]]),
+    numberX: 0.2, standeeX: [0.13, 0.9],
+  },
+  "arch,arch": {
+    room: `${SK}/double_arch-room.webp`, balloons: `${SK}/double_arch-balloons.webp`, families: `${SK}/double_arch-families.png`,
+    boards: [
+      { mask: `${SK}/double_arch-board-0.png`, x0: 0.3457, y0: 0.2578, x1: 0.5244, y1: 0.7412, text: { cx: 0.45, cy: 0.42, w: 0.15 } },
+      { mask: `${SK}/double_arch-board-1.png`, x0: 0.5195, y0: 0.293, x1: 0.751, y1: 0.7549, text: { cx: 0.632, cy: 0.45, w: 0.19 } },
+    ],
+    plinth: { x: 0.4554, y: 0.5673, w: 0.0889, h: 0.2227 },
+    florals: fromPx([[300, 280], [262, 380], [232, 470], [250, 560], [300, 650], [362, 720], [762, 480], [758, 560], [742, 650], [780, 740]]),
+    numberX: 0.86, standeeX: [0.12, 0.93],
+  },
+  "arch,open_arch_frame": {
+    room: `${SK}/arch_open_frame-room.webp`, balloons: `${SK}/arch_open_frame-balloons.webp`, families: `${SK}/arch_open_frame-families.png`,
+    boards: [
+      { mask: `${SK}/arch_open_frame-board-0.png`, x0: 0.248, y0: 0.2412, x1: 0.5645, y1: 0.7988, text: { cx: 0.43, cy: 0.4, w: 0.22 } },
+      { mask: `${SK}/arch_open_frame-board-1.png`, x0: 0.5391, y0: 0.3193, x1: 0.8438, y1: 0.8105, text: { cx: 0.69, cy: 0.45, w: 0.14 } },
+    ],
+    plinth: { x: 0.429, y: 0.578, w: 0.133, h: 0.279 },
+    florals: fromPx([[200, 180], [150, 300], [110, 420], [90, 540], [100, 650], [150, 750], [640, 330], [760, 320], [860, 420], [900, 540], [880, 650], [900, 760]]),
+    numberX: 0.68, standeeX: [0.08, 0.95],
+  },
+  "arch,shimmer_wall": {
+    room: `${SK}/arch_shimmer-room.webp`, balloons: `${SK}/arch_shimmer-balloons.webp`, families: `${SK}/arch_shimmer-families.png`,
+    boards: [
+      { mask: `${SK}/arch_shimmer-board-0.png`, x0: 0.2822, y0: 0.3721, x1: 0.4375, y1: 0.7656, text: { cx: 0.37, cy: 0.5, w: 0.12 } },
+      { mask: `${SK}/arch_shimmer-board-1.png`, x0: 0.4316, y0: 0.3975, x1: 0.7012, y1: 0.7764, text: { cx: 0.566, cy: 0.5, w: 0.22 } },
+    ],
+    plinth: { x: 0.464, y: 0.614, w: 0.072, h: 0.167 },
+    florals: fromPx([[200, 400], [170, 500], [160, 620], [180, 740], [300, 420], [860, 380], [900, 480], [930, 600], [900, 720], [760, 420]]),
+    numberX: 0.62, standeeX: [0.06, 0.96],
+  },
+  banner: {
+    room: `${SK}/single_banner-room.webp`, balloons: `${SK}/single_banner-balloons.webp`, families: `${SK}/single_banner-families.png`,
+    // The garland covers the banner's top right: the words sit a little left of centre.
+    boards: [{ mask: `${SK}/single_banner-board-0.png`, x0: 0.0566, y0: 0.0947, x1: 0.85, y1: 0.8721, text: { cx: 0.44, cy: 0.37, w: 0.38 } }],
+    plinth: { x: 0.452, y: 0.65, w: 0.143, h: 0.273 },
+    florals: fromPx([[330, 90], [450, 60], [600, 100], [720, 170], [830, 260], [870, 380], [880, 520], [860, 650], [800, 780], [720, 880]]),
+    numberX: 0.2, standeeX: [0.08, 0.95],
+  },
+  shimmer_wall: {
+    room: `${SK}/single_shimmer-room.webp`, balloons: `${SK}/single_shimmer-balloons.webp`, families: `${SK}/single_shimmer-families.png`,
+    boards: [{ mask: `${SK}/single_shimmer-board-0.png`, x0: 0.3018, y0: 0.3799, x1: 0.7207, y1: 0.7842, text: { cx: 0.51, cy: 0.5, w: 0.3 } }],
+    plinth: { x: 0.469, y: 0.543, w: 0.084, h: 0.255 },
+    florals: fromPx([[180, 420], [150, 540], [140, 660], [200, 760], [310, 400], [720, 380], [800, 420], [880, 520], [900, 650], [860, 760]]),
+    numberX: 0.62, standeeX: [0.06, 0.96],
+  },
+  "half_arch,arch,half_arch": {
+    room: `${SK}/triple_arch-room.webp`, balloons: `${SK}/triple_arch-balloons.webp`, families: `${SK}/triple_arch-families.png`,
+    boards: [
+      { mask: `${SK}/triple_arch-board-0.png`, x0: 0.251, y0: 0.4512, x1: 0.3652, y1: 0.7656, text: { cx: 0.31, cy: 0.58, w: 0.09 } },
+      { mask: `${SK}/triple_arch-board-1.png`, x0: 0.3662, y0: 0.3799, x1: 0.6357, y1: 0.7666, text: { cx: 0.5, cy: 0.52, w: 0.2 } },
+      { mask: `${SK}/triple_arch-board-2.png`, x0: 0.6377, y0: 0.4492, x1: 0.7627, y1: 0.7666, text: { cx: 0.7, cy: 0.58, w: 0.09 } },
+    ],
+    plinth: { x: 0.457, y: 0.656, w: 0.091, h: 0.165 },
+    florals: fromPx([[180, 520], [150, 620], [130, 720], [200, 450], [260, 380], [330, 320], [420, 280], [500, 260], [590, 290], [660, 330], [740, 390], [800, 460], [830, 560], [840, 680]]),
+    numberX: 0.86, standeeX: [0.06, 0.95],
+  },
+  balloon_ring: {
+    room: `${SK}/balloon_ring-room.webp`, balloons: `${SK}/balloon_ring-balloons.webp`, families: `${SK}/balloon_ring-families.png`,
+    // No board: the ring is all balloons, with the wall showing through.
+    boards: [{ x0: 0.06, y0: 0.16, x1: 0.96, y1: 0.88, text: { cx: 0.52, cy: 0.45, w: 0.3 } }],
+    plinth: { x: 0.429, y: 0.571, w: 0.143, h: 0.321 },
+    florals: fromPx([[120, 700], [110, 560], [150, 420], [230, 300], [350, 220], [500, 190], [650, 190], [780, 250], [870, 360], [900, 500], [910, 650]]),
+    numberX: 0.66, standeeX: [0.04, 0.97],
+  },
 };
 /** The plinth cut from the same photo, used for every plinth in every sketch. */
 const PLINTH_SRC = "/design/sketch/plinth.webp";
@@ -112,13 +211,19 @@ function loadBase(src: string, familiesSrc: string): Promise<BaseData> {
  * repainting Frozen's own lilac a paler lilac.
  */
 function useRecoloredBase(src: string | null, familiesSrc: string, palette: string[], asShot: boolean): string | null {
-  const [url, setUrl] = useState<string | null>(src);
+  // Kept with the base it was made for: on another setup's room a previous
+  // setup's balloons must not show while its own are repainted.
+  const [got, setGot] = useState<{ src: string | null; url: string | null }>({ src: null, url: null });
+  const setUrl = (url: string | null) => setGot((prev) => {
+    if (prev.url?.startsWith("blob:") && prev.url !== url) URL.revokeObjectURL(prev.url);
+    return { src, url };
+  });
   const key = palette.join(",");
+  useEffect(() => () => { setGot((prev) => { if (prev.url?.startsWith("blob:")) URL.revokeObjectURL(prev.url); return prev; }); }, []);
   useEffect(() => {
     if (!src) { setUrl(null); return; }
     if (asShot) { setUrl(src); return; }
     let alive = true;
-    let made: string | null = null;
     loadBase(src, familiesSrc).then(({ img, fam, means }) => {
       if (!alive) return;
       const cols = palette.map(hexRgb);
@@ -153,14 +258,13 @@ function useRecoloredBase(src: string | null, familiesSrc: string, palette: stri
       cv.getContext("2d")!.putImageData(out, 0, 0);
       cv.toBlob((b) => {
         if (!alive || !b) return;
-        made = URL.createObjectURL(b);
-        setUrl(made);
+        setUrl(URL.createObjectURL(b));
       }, "image/png");
     }).catch(() => { if (alive) setUrl(src); });
-    return () => { alive = false; if (made) URL.revokeObjectURL(made); };
+    return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src, familiesSrc, key, asShot]);
-  return url;
+  return got.src === src ? got.url : null;
 }
 
 type Piece = {
@@ -193,26 +297,26 @@ function layoutPieces(items: BackdropItem[], room: { maxW: number; maxH: number 
 }
 
 /** The board's outline as an SVG path (filled boards), or null for the ring. */
-function piecePath(p: Piece): string | null {
+function piecePath(p: Piece, floor = FLOOR): string | null {
   const { x, w, top } = p;
   const r = w / 2;
   switch (p.item.type) {
     case "round": {
-      const cy = FLOOR - r;
+      const cy = floor - r;
       return `M ${x} ${cy} a ${r} ${r} 0 1 0 ${w} 0 a ${r} ${r} 0 1 0 ${-w} 0 Z`;
     }
     case "rect": case "banner": case "shimmer_wall":
-      return `M ${x} ${FLOOR} V ${top} H ${x + w} V ${FLOOR} Z`;
+      return `M ${x} ${floor} V ${top} H ${x + w} V ${floor} Z`;
     case "half_arch": {
-      const rr = Math.min(w, FLOOR - top);
+      const rr = Math.min(w, floor - top);
       return p.curveLeft
-        ? `M ${x} ${FLOOR} V ${top + rr} A ${rr} ${rr} 0 0 1 ${x + rr} ${top} H ${x + w} V ${FLOOR} Z`
-        : `M ${x} ${FLOOR} V ${top} H ${x + w - rr} A ${rr} ${rr} 0 0 1 ${x + w} ${top + rr} V ${FLOOR} Z`;
+        ? `M ${x} ${floor} V ${top + rr} A ${rr} ${rr} 0 0 1 ${x + rr} ${top} H ${x + w} V ${floor} Z`
+        : `M ${x} ${floor} V ${top} H ${x + w - rr} A ${rr} ${rr} 0 0 1 ${x + w} ${top + rr} V ${floor} Z`;
     }
     case "balloon_ring":
       return null;
     default: // arch and open frame
-      return `M ${x} ${FLOOR} V ${top + r} A ${r} ${r} 0 0 1 ${x + w} ${top + r} V ${FLOOR} Z`;
+      return `M ${x} ${floor} V ${top + r} A ${r} ${r} 0 0 1 ${x + w} ${top + r} V ${floor} Z`;
   }
 }
 
@@ -421,25 +525,28 @@ export default function LiveSketch({
   const hasNumber = !!d.numberLight?.enabled && !!(d.numberLight.value ?? "").trim();
   const standees = cutoutPreviews.slice(0, 2);
   // A lone round board is drawn on the photographed base.
-  const roundBase = items.length === 1 && items[0].type === "round";
-  const { pieces, scale } = useMemo(() => {
-    if (!roundBase) return layoutPieces(items, { maxW: hasNumber || standees.length ? 640 : 760, maxH: 640 });
-    const B = ROUND_BASE, R = B.r * VB;
-    const piece: Piece = { item: items[0], idx: 0, x: B.cx * VB - R, w: 2 * R, h: 2 * R, top: B.cy * VB - R, curveLeft: false };
-    return { pieces: [piece], scale: (2 * R) / Math.max(60, items[0].widthCm || 200) };
-  }, [items, hasNumber, standees.length, roundBase]);
-  // Where things stand: the floor line, and how far in front of it the front row sits.
-  const floorY = roundBase ? (ROUND_BASE.plinth.y + ROUND_BASE.plinth.h) * VB : FLOOR;
-  const palette = d.balloonColors.length ? d.balloonColors : (theme?.balloonColors ?? ["#f7c5d8"]);
   const balloonsOn = normalizeBalloonStyle(d.balloonStyle) !== "none";
+  // Without balloons (or a ring that isn't a full one) the photo's own garland would stay, so then it's drawn plain.
+  const fullRing = !items.some((i) => i.type === "balloon_ring") || (d.balloonRingStyle ?? "full") === "full";
+  const base = balloonsOn && fullRing ? PHOTO_BASES[items.map((i) => i.type).join(",")] ?? null : null;
+  const { pieces, scale } = useMemo(() => {
+    if (!base) return layoutPieces(items, { maxW: hasNumber || standees.length ? 640 : 760, maxH: 640 });
+    const ps: Piece[] = base.boards.map((b, idx) => ({ item: items[idx], idx, x: b.x0 * VB, w: (b.x1 - b.x0) * VB, h: (b.y1 - b.y0) * VB, top: b.y0 * VB, curveLeft: b.x0 + b.x1 < 1 }));
+    // To scale: the first board as photographed for its size (a round one's width, else its height).
+    const cm = items[0].type === "round" ? items[0].widthCm : items[0].heightCm;
+    return { pieces: ps, scale: (items[0].type === "round" ? ps[0].w : ps[0].h) / Math.max(60, cm || 200) };
+  }, [items, hasNumber, standees.length, base]);
+  // Where things stand: the floor line, and how far in front of it the front row sits.
+  const floorY = base ? (base.plinth.y + base.plinth.h) * VB : FLOOR;
+  const palette = d.balloonColors.length ? d.balloonColors : (theme?.balloonColors ?? ["#f7c5d8"]);
   const asShot = config.theme === "frozen" && sameColours(palette, (themeById("frozen")?.balloonColors ?? []).slice(0, 5));
-  const baseBalloons = useRecoloredBase(roundBase && balloonsOn ? ROUND_BASE.balloons : null, ROUND_BASE.families, palette, asShot);
+  const baseBalloons = useRecoloredBase(base ? base.balloons : null, base?.families ?? "", palette, asShot);
   const garlandSize = 18 + scale * 8;
   // How far the garland reaches past the boards' outer edges.
-  const garlandReach = !balloonsOn ? 12 : roundBase ? 0.17 * VB : garlandSize * 2.6;
+  const garlandReach = !balloonsOn ? 12 : base ? 0.17 * VB : garlandSize * 2.6;
   const groupL = pieces.length ? pieces[0].x : VB / 2;
   const groupR = pieces.length ? pieces[pieces.length - 1].x + pieces[pieces.length - 1].w : VB / 2;
-  const groupMid = roundBase ? (ROUND_BASE.plinth.x + ROUND_BASE.plinth.w / 2) * VB : (groupL + groupR) / 2;
+  const groupMid = base ? (base.plinth.x + base.plinth.w / 2) * VB : (groupL + groupR) / 2;
 
   // Plinths: the photographed one, sized by the ladder (XXL 90, XL 75, L 60 cm).
   // The biggest stands in the middle, the next on its left, the last on its right.
@@ -447,7 +554,7 @@ export default function LiveSketch({
     const sizes = d.plinthSizes.slice(0, 3);
     const dims = sizes.map((s) => {
       const c = PLINTH_CM[s] ?? PLINTH_CM.medium;
-      const h = roundBase ? ROUND_BASE.plinth.h * VB * (c.h / 90) : c.h * scale;
+      const h = base ? base.plinth.h * VB * (c.h / 90) : c.h * scale;
       return { h, w: h * PLINTH_ASPECT * (c.d / 40) / (c.h / 90) };
     });
     const order = dims.map((dm, i) => ({ ...dm, i })).sort((a, b) => b.h - a.h);
@@ -456,13 +563,13 @@ export default function LiveSketch({
     if (order[1]) out.push({ x: out[0].x - order[1].w * 1.02, y: floorY - order[1].h, w: order[1].w, h: order[1].h });
     if (order[2]) out.push({ x: out[0].x + out[0].w * 1.02, y: floorY - order[2].h, w: order[2].w, h: order[2].h });
     return out;
-  }, [d.plinthSizes, roundBase, scale, groupMid, floorY]);
+  }, [d.plinthSizes, base, scale, groupMid, floorY]);
   const plinthTop = plinths.length ? Math.min(...plinths.map((p) => p.y)) : Infinity;
   const plinthRight = plinths.length ? Math.max(...plinths.map((p) => p.x + p.w)) : groupMid;
 
   // Garland balloons (drawn setups): on the outer sides of the group, as the renders have them.
   const balloons = useMemo(() => {
-    if (!balloonsOn || pieces.length === 0 || roundBase) return [] as { x: number; y: number; r: number; c: string }[];
+    if (!balloonsOn || pieces.length === 0 || base) return [] as { x: number; y: number; r: number; c: string }[];
     const rnd = seeded(items.length * 131 + palette.length * 17 + 7);
     const out: { x: number; y: number; r: number; c: string }[] = [];
     const add = (track: { x: number; y: number }[], size: number) => {
@@ -490,14 +597,11 @@ export default function LiveSketch({
       add(garlandTrack(pieces[pieces.length - 1], "right"), size);
     }
     return out.sort((a, b) => a.y - b.y);
-  }, [balloonsOn, pieces, palette, garlandSize, items.length, d.balloonRingStyle, roundBase]);
+  }, [balloonsOn, pieces, palette, garlandSize, items.length, d.balloonRingStyle, base]);
 
-  // Florals on the base: tucked in along its garland (angles in degrees).
-  const baseFlorals = roundBase && balloonsOn && d.garlandFlorals
-    ? [218, 198, 178, 160, 143, 126, 108, 92, 76, -52, -68].map((a, i) => {
-        const R = ROUND_BASE.r * VB * 1.04, t = (a * Math.PI) / 180, rr = R * (i % 2 ? 1.06 : 0.98);
-        return { x: ROUND_BASE.cx * VB + Math.cos(t) * rr, y: ROUND_BASE.cy * VB - Math.sin(t) * rr, r: R * 0.1, a: -a + 90 };
-      })
+  // Florals on the base: tucked in along its garland.
+  const baseFlorals = base && d.garlandFlorals
+    ? base.florals.map(([x, y, a]) => ({ x: x * VB, y: y * VB, r: ROUND.r * VB * 0.104, a }))
     : [];
 
   const neon = d.neonSign?.enabled && (d.neonSign.text ?? "").trim() ? d.neonSign : null;
@@ -524,12 +628,11 @@ export default function LiveSketch({
 
   /** Where a board's words go: its centre, clear of the garland and above the plinth. */
   const textSpot = (p: Piece, blockH: number) => {
-    if (roundBase) {
-      // The garland covers the board's left side: the words sit right of centre.
-      const cx = ROUND_BASE.cx * VB + (balloonsOn ? ROUND_BASE.r * VB * 0.12 : 0);
-      let cy = ROUND_BASE.cy * VB - ROUND_BASE.r * VB * 0.18;
+    if (base) {
+      const t = base.boards[p.idx].text;
+      let cy = t.cy * VB;
       if (cy + blockH / 2 > plinthTop - 34) cy = plinthTop - 34 - blockH / 2;
-      return { cx, cy, w: p.w * (balloonsOn ? 0.66 : 0.8) };
+      return { cx: t.cx * VB, cy, w: t.w * VB };
     }
     const cy = p.item.type === "round" ? FLOOR - p.w / 2 : p.top + p.h * 0.36;
     return { cx: p.x + p.w / 2, cy, w: p.w * 0.85 };
@@ -541,16 +644,16 @@ export default function LiveSketch({
   const numberDigits = String(d.numberLight?.value ?? "").replace(/[^0-9]/g, "").slice(0, 2);
   const digitW = numberH * 0.66, digitGap = digitW * 0.14;
   const numberW = digitW * numberDigits.length + digitGap * Math.max(0, numberDigits.length - 1);
-  const numberX = Math.min(VB - numberW / 2 - 6, plinths.length ? plinthRight + numberW / 2 + 10 : roundBase ? 0.66 * VB : groupMid + numberW / 2);
+  const numberX = Math.min(VB - numberW / 2 - 6, plinths.length ? plinthRight + numberW / 2 + 10 : base ? base.numberX * VB : groupMid + numberW / 2);
   const standeeBoxes = standees.map((src, i) => {
     // Wide enough for a two-character picture, which a narrow box shrank.
     const h = 150 * scale, w = h * 0.95;
     let cx = i === 0
-      ? Math.max(w * 0.42, roundBase ? 0.15 * VB : groupL - garlandReach * 0.55)
-      : Math.min(VB - w * 0.42, roundBase ? 0.86 * VB : groupR + garlandReach * 0.55);
+      ? Math.max(w * 0.42, base ? base.standeeX[0] * VB : groupL - garlandReach * 0.55)
+      : Math.min(VB - w * 0.42, base ? base.standeeX[1] * VB : groupR + garlandReach * 0.55);
     // The right one steps aside so the number stays in view.
     if (i === 1 && hasNumber) cx = Math.max(cx, numberX + numberW / 2 + w * 0.3);
-    return { src, x: cx - w / 2, y: floorY + (roundBase ? 0.05 * VB : 14) - h, w, h };
+    return { src, x: cx - w / 2, y: floorY + (base ? 0.05 * VB : 14) - h, w, h };
   });
 
   const wallTop = "#7d8085", wallLow = "#a4a6aa", floorTop = "#c3c4c7", floorLow = "#e2e3e5";
@@ -568,17 +671,25 @@ export default function LiveSketch({
         <pattern id="skSequin" width="16" height="16" patternUnits="userSpaceOnUse">
           <circle cx="8" cy="8" r="6.2" fill="rgba(255,255,255,.55)" /><circle cx="6" cy="6" r="2" fill="#fff" opacity=".7" />
         </pattern>
-        {roundBase && <mask id="skBoardMask" maskUnits="userSpaceOnUse" x="0" y="0" width={VB} height={VB}><image href={ROUND_BASE.boardMask} width={VB} height={VB} /></mask>}
+        {base?.boards.map((b, i) => b.mask && (
+          <mask key={i} id={`skBoard${uid}${i}`} maskUnits="userSpaceOnUse" x="0" y="0" width={VB} height={VB}><image href={b.mask} width={VB} height={VB} /></mask>
+        ))}
       </defs>
 
-      {roundBase ? (
+      {base ? (
         <>
-          {/* The room, the board and (beneath the balloon layer) the balloons, as photographed. */}
-          <image href={ROUND_BASE.room} width={VB} height={VB} />
-          {/* The board's colour, laid over its photographed light and shade. */}
-          {!isWhite(items[0].color || d.backdropColor) && (
-            <rect width={VB} height={VB} fill={items[0].color || d.backdropColor} mask="url(#skBoardMask)" style={{ mixBlendMode: "multiply" }} />
-          )}
+          {/* The room, the boards and (beneath the balloon layer) the balloons, as photographed. */}
+          <image href={base.room} width={VB} height={VB} />
+          {/* Each board's colour, laid over its photographed light and shade. */}
+          {pieces.map((p) => {
+            // A shimmer wall was photographed silver; a board white.
+            const tint = p.item.type === "shimmer_wall"
+              ? ((d.shimmerColor ?? "silver") === "silver" ? null : SHIMMER_COLOR_HEX[d.shimmerColor!])
+              : isWhite(p.item.color || d.backdropColor) ? null : p.item.color || d.backdropColor;
+            return tint && base.boards[p.idx].mask && (
+              <rect key={p.item.id} width={VB} height={VB} fill={tint} mask={`url(#skBoard${uid}${p.idx})`} style={{ mixBlendMode: "multiply" }} />
+            );
+          })}
         </>
       ) : (
         <>
@@ -608,12 +719,22 @@ export default function LiveSketch({
       )}
 
       {/* Theme graphic: a few small motifs on the board */}
-      {pieces.filter((p) => p.item.graphic?.enabled && (roundBase || piecePath(p))).map((p) => {
+      {pieces.filter((p) => p.item.graphic?.enabled && (base || piecePath(p))).map((p) => {
+        // A Frozen banner is printed with the customer's castle artwork (as the render guide draws it).
+        if (base && p.item.type === "banner" && String(p.item.graphic.assetId ?? "").startsWith("frozen-")) {
+          return (
+            <image key={`g${p.item.id}`} href={`${SK}/banner-print-frozen.webp`} x={p.x} y={p.top} width={p.w} height={p.h}
+              preserveAspectRatio="xMidYMid slice" mask={`url(#skBoard${uid}${p.idx})`} style={{ mixBlendMode: "multiply" }} />
+          );
+        }
         const rnd = seeded(p.idx * 97 + 3);
         return (
-          <g key={`g${p.item.id}`} opacity={0.75} mask={roundBase ? "url(#skBoardMask)" : undefined}>
-            {Array.from({ length: 6 }, (_, i) => {
-              const cx = p.x + p.w * (0.3 + rnd() * 0.55), cy = p.top + p.h * (0.5 + rnd() * 0.4), s = p.w * 0.05;
+          <g key={`g${p.item.id}`} opacity={base ? 0.5 : 0.75} mask={base?.boards[p.idx].mask ? `url(#skBoard${uid}${p.idx})` : undefined}>
+            {/* On a photographed board, a light scatter like a print; on a drawn one, a few bold motifs. */}
+            {Array.from({ length: base ? 16 : 6 }, (_, i) => {
+              const cx = base ? p.x + p.w * (0.08 + rnd() * 0.8) : p.x + p.w * (0.3 + rnd() * 0.55);
+              const cy = base ? p.top + p.h * (0.1 + rnd() * 0.8) : p.top + p.h * (0.5 + rnd() * 0.4);
+              const s = p.w * (base ? 0.018 + rnd() * 0.012 : 0.05);
               return <path key={i} d={`M ${cx} ${cy - s} L ${cx + s * 0.3} ${cy - s * 0.3} L ${cx + s} ${cy} L ${cx + s * 0.3} ${cy + s * 0.3} L ${cx} ${cy + s} L ${cx - s * 0.3} ${cy + s * 0.3} L ${cx - s} ${cy} L ${cx - s * 0.3} ${cy - s * 0.3} Z`} fill={accent} />;
             })}
           </g>
@@ -621,7 +742,7 @@ export default function LiveSketch({
       })}
 
       {/* Printed lettering — staggered and tilted like the renders' script */}
-      {pieces.filter((p) => p.item.text?.enabled && (p.item.text.value ?? "").trim() && (roundBase || piecePath(p)) && p.item.type !== "open_arch_frame").map((p) => {
+      {pieces.filter((p) => p.item.text?.enabled && (p.item.text.value ?? "").trim() && (base || piecePath(p)) && p.item.type !== "open_arch_frame").map((p) => {
         if (p.item.text.lettering) {
           return (
             <SketchLettering key={`t${p.item.id}`} lettering={p.item.text.lettering} spot={(h) => textSpot(p, h)}
@@ -663,7 +784,7 @@ export default function LiveSketch({
       })}
 
       {/* The photographed garland on the round base, in the chosen colours */}
-      {roundBase && baseBalloons && <image href={baseBalloons} width={VB} height={VB} />}
+      {base && baseBalloons && <image href={baseBalloons} width={VB} height={VB} />}
       {baseFlorals.map((f, i) => (
         <g key={`bf${i}`} transform={`rotate(${f.a} ${f.x} ${f.y})`}>
           <ellipse cx={f.x - f.r * 0.7} cy={f.y} rx={f.r} ry={f.r * 0.36} fill="#7fa77a" />
@@ -696,7 +817,7 @@ export default function LiveSketch({
         const size = Math.min(neonPiece.w * 0.14, textSpot(neonPiece, 0).w / (longest * fontFor("script").adv)) * 0.85;
         const spot = textSpot(neonPiece, size * 1.05 * (ls.length - 1) + size);
         const cx = spot.cx;
-        const cy = isRing ? FLOOR - neonPiece.w * 0.62 : roundBase ? spot.cy : neonPiece.top + neonPiece.h * 0.34;
+        const cy = base ? spot.cy : isRing ? FLOOR - neonPiece.w * 0.62 : neonPiece.top + neonPiece.h * 0.34;
         const txt = (glow: boolean) => (
           <text x={cx} y={cy - (ls.length - 1) * size * 0.5} textAnchor="middle" fontFamily="var(--bz-signature)" fontWeight={400}
             fontSize={size} fill={glow ? "#ffb36b" : "#fffaf0"} filter={glow ? "url(#skGlow)" : undefined} opacity={glow ? 0.9 : 1}
@@ -718,9 +839,9 @@ export default function LiveSketch({
           {numberDigits.split("").map((g, i) => d.numberLight?.style === "foil"
             // 80cm and slimmer than the marquee.
             ? <FoilDigit key={i} uid={`skFoil${i}`} glyph={g} w={digitW * 0.78} h={numberH * 0.8} hex={foilColourFor(d.numberLight, palette)} palette={palette}
-                x={numberX - numberW / 2 + i * (digitW + digitGap) + digitW * 0.11} y={floorY + (roundBase ? 0.03 * VB : 4) - numberH * 0.8} />
+                x={numberX - numberW / 2 + i * (digitW + digitGap) + digitW * 0.11} y={floorY + (base ? 0.03 * VB : 4) - numberH * 0.8} />
             : <MarqueeDigit key={i} uid={`skMq${i}`} glyph={g} w={digitW} h={numberH}
-                x={numberX - numberW / 2 + i * (digitW + digitGap)} y={floorY + (roundBase ? 0.03 * VB : 4) - numberH} />
+                x={numberX - numberW / 2 + i * (digitW + digitGap)} y={floorY + (base ? 0.03 * VB : 4) - numberH} />
           )}
         </g>
       )}
@@ -732,7 +853,8 @@ export default function LiveSketch({
 
       {/* The piece being styled */}
       {activeId && pieces.length > 1 && pieces.filter((p) => p.item.id === activeId).map((p) => {
-        const path = piecePath(p) ?? `M ${p.x} ${FLOOR} V ${p.top} H ${p.x + p.w} V ${FLOOR} Z`;
+        const floor = base ? p.top + p.h : FLOOR;
+        const path = piecePath(p, floor) ?? `M ${p.x} ${floor} V ${p.top} H ${p.x + p.w} V ${floor} Z`;
         return <path key="active" d={path} fill="none" stroke="#ff0d66" strokeWidth={6} strokeDasharray="16 10" strokeLinejoin="round" />;
       })}
     </svg>

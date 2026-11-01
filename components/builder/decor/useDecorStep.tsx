@@ -583,7 +583,10 @@ function clearAllStandees() {
       panels = panels.map((p) => p.type === "shimmer_wall" ? { ...p, text: { ...p.text, enabled: false } } : p);
       patchDecor({ backdropItems: panels, neonSign: { enabled: true, text: DEFAULT_TEXT_VALUE, panelIndex: textOn } });
     } else {
-      patchDecor({ backdropItems: panels });
+      // 2026-11-01: the shimmer's own neon sign goes with it — on a board the
+      // same words are printed, and both showed "Happy Birthday" twice.
+      const shimmerNeon = textOn >= 0 && d.neonSign?.enabled && (d.neonSign.text ?? "").trim() === DEFAULT_TEXT_VALUE;
+      patchDecor(shimmerNeon ? { backdropItems: panels, neonSign: { ...d.neonSign!, enabled: false } } : { backdropItems: panels });
     }
     setOpenCustomizeIds(new Set(panels.map(p => p.id)));
   }

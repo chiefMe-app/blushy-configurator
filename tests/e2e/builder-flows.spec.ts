@@ -224,6 +224,17 @@ test("F8 neon swap and back", async ({ page }) => {
   await expect(page.getByLabel("Name text")).toHaveValue("Arya");
 });
 
+test("F8b a shimmer's neon sign goes with it: the next setup prints the words once", async ({ page }) => {
+  await openDecor(page, "Ice Princess", "Arch + Shimmer");
+  await decorTab(page, "Extras");
+  const neon = page.getByRole("switch", { name: "Add a neon sign" });
+  await expect(neon).toBeChecked();
+  await decorTab(page, "Backdrop");
+  await chooseSetup(page, "Banner Backdrop");
+  await decorTab(page, "Extras");
+  await expect(neon).not.toBeChecked();
+});
+
 test("F9 show sizes", async ({ page }) => {
   await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Style");
