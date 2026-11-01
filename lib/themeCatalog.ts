@@ -93,7 +93,7 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     description: "Pastels, iridescent, rainbow magic",
     swatchHexes: ["#F8BBD0", "#DDD6FE", "#FEF08A"],
     // 2026-11-01 (owner): "hep rainbow pastel colors olsun, silver olmasın balonda" —
-    // a pastel rainbow, no white or silver: pink, peach, yellow, mint, lilac.
+    // a pastel rainbow, no white or silver; her reference (no peach): pink, yellow, mint, baby blue, lilac.
     sempertexPaletteIds: ["pastel-matte-609-pink", "pastel-matte-620-yellow", "pastel-matte-630-green", "pastel-matte-640-blue", "pastel-matte-650-lilac"],
     renderDescription: "Magical unicorn theme with pastel rainbow colors, iridescent shimmer, and sparkle magic",
     graphicPresets: [
@@ -103,10 +103,10 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
     ],
     // 2026-11-01: drawn in the style of the owner's example unicorns
     // (scripts/themes/theme-art.mjs); she may send her own in their place.
+    // No baby unicorn (2026-11-01, the owner: "bebek unicorn koyma").
     cutoutPresets: [
       { id: "unicorn-01", assetId: "unicorn-01", label: "Prancing Unicorn", desc: "Unicorn rearing up, rainbow mane",  previewUrl: "/cutouts/unicorn/unicorn-01.png" },
       { id: "unicorn-02", assetId: "unicorn-02", label: "Rainbow Unicorn",  desc: "Unicorn on a cloud under a rainbow", previewUrl: "/cutouts/unicorn/unicorn-02.png" },
-      { id: "unicorn-03", assetId: "unicorn-03", label: "Baby Unicorn",     desc: "Baby unicorn with a heart balloon",  previewUrl: "/cutouts/unicorn/unicorn-03.png" },
     ],
   },
   {

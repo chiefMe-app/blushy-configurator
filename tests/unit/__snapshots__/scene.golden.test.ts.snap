@@ -920,6 +920,7 @@ exports[`scene golden > A-single_wavy 1`] = `
   },
   "panels": [
     {
+      "borderColor": "#BAE6FD",
       "color": "#FFFFFF",
       "graphic": {
         "assetId": undefined,
@@ -4509,6 +4510,7 @@ exports[`scene golden > E14-unicorn-wavy 1`] = `
   },
   "panels": [
     {
+      "borderColor": "#F8BBD0",
       "color": "#FFFFFF",
       "graphic": {
         "assetId": undefined,

@@ -49,7 +49,7 @@ export const SEMPERTEX_CATALOG: SempertexColor[] = [
   { id:"pastel-dusk-107-cream",         code:"107", brand:"Sempertex", colorName:"Cream",           finish:"Pastel Dusk",  family:"neutral", hex:"#FFF8E7", availableSizes:["11"] },
   { id:"silk-806-oyster-white",         code:"806", brand:"Sempertex", colorName:"Oyster White",    finish:"Silk",         family:"white",   hex:"#D9D9D6", pms:"427", renderLabel:"cool pearl white, light grey-white, not beige, not cream, not champagne", availableSizes:["11"] },
   { id:"fashion-071-white-sand",        code:"071", brand:"Sempertex", colorName:"White Sand",      finish:"Fashion",      family:"neutral", hex:"#F5EDD6", availableSizes:["11"] },
-  { id:"pastel-matte-620-yellow",       code:"620", brand:"Sempertex", colorName:"Yellow",          finish:"Pastel Matte", family:"yellow",  hex:"#FEF08A", renderLabel:"pale vanilla cream, matte pastel", availableSizes:["11"] },
+  { id:"pastel-matte-620-yellow",       code:"620", brand:"Sempertex", colorName:"Yellow",          finish:"Pastel Matte", family:"yellow",  hex:"#FEF08A", renderLabel:"soft pastel lemon yellow, matte pastel", availableSizes:["11"] },
   { id:"neon-220-yellow",               code:"220", brand:"Sempertex", colorName:"Yellow",          finish:"Neon",         family:"yellow",  hex:"#FEFF38", availableSizes:["11"] },
   { id:"fashion-020-yellow",            code:"020", brand:"Sempertex", colorName:"Yellow",          finish:"Fashion",      family:"yellow",  hex:"#FFD700", availableSizes:["11"] },
   { id:"fashion-021-honey-yellow",      code:"021", brand:"Sempertex", colorName:"Honey Yellow",    finish:"Fashion",      family:"yellow",  hex:"#FFC200", availableSizes:["11"] },

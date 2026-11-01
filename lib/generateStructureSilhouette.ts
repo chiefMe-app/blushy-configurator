@@ -26,7 +26,7 @@ import { frozenBannerPrintSvg } from "./bannerPrint";
 import { FROZEN_CASTLE_PRINT } from "./bannerCastlePrint";
 import UNICORN_PRINT from "./bannerThemePrints/unicorn";
 import { bannerPrintTheme } from "./bannerPrintThemes";
-import { wavyBoardPath } from "./wavyBoard";
+import { wavyBoardPath, wavyFacePath } from "./wavyBoard";
 
 // Each banner print, by theme (lib/bannerPrintThemes.ts lists them).
 const BANNER_PRINTS: Record<string, string> = { frozen: FROZEN_CASTLE_PRINT, unicorn: UNICORN_PRINT };
@@ -181,6 +181,8 @@ function panelPathOrShape(
   // Which side a half_arch curves toward. Ignored by every other shape.
   facing: "left" | "right" = "left",
   strongEdge = false,
+  // A wavy board's rim (lib/wavyBoard.ts): the board behind in this colour, the face over it.
+  borderColor?: string,
 ): string {
   const r     = pw / 2;
   const left  = cx - r;
@@ -248,6 +250,8 @@ function panelPathOrShape(
   if (shape === "wavy") {
     // 2026-11-01: the Wavy Backdrop's own outline (lib/wavyBoard.ts), the one the live sketch draws.
     void right;
+    if (borderColor) return `<path d="${wavyBoardPath(left, apexY, pw, floorY - apexY)}" fill="${borderColor}" ${stroke}/>`
+      + `<path d="${wavyFacePath(left, apexY, pw, floorY - apexY)}" fill="${fillColor}"/>`;
     return `<path d="${wavyBoardPath(left, apexY, pw, floorY - apexY)}" fill="${fillColor}" ${stroke}/>`;
   }
   if (shape === "fringe") {
@@ -1365,9 +1369,10 @@ export function generateStructureSilhouette(
     // left the white plinth marker in front of it with nothing to stand out
     // against, and the render dropped the plinth ("plinthe noldu?").
     } else if (layout.panels.length === 1 && shape === "fringe") {
-      // 2026-11-01: the lone Fringe Backdrop — vertical bands in the balloon
-      // colours (as the live sketch stripes it), fine strands over them, and
-      // the thin bar it hangs from.
+      // 2026-11-01: the lone Fringe Backdrop — tiers in the balloon colours,
+      // each over the next with an uneven hem, the lowest to the floor, glitter
+      // strands between, in the slim wooden frame it hangs in (the owner's
+      // reference: "o frame'in içinde olsun … yere değmeli").
       // Square, as the banner is (2 x 2 m; the layout does not keep a panel's aspect).
       const side = Math.min(panel.pw, panel.floorY - panel.apexY);
       const fp = { cx: panel.cx, pw: side, apexY: panel.floorY - side, floorY: panel.floorY };
@@ -1378,16 +1383,17 @@ export function generateStructureSilhouette(
       const matte = (balloonColors ?? []).slice(0, 5)
         .filter((h) => !chromeHexSet.has(String(h).toLowerCase()) && !clearHex.has(String(h).toLowerCase()));
       const cols = matte.length ? matte : ["#F8BBD0", "#DDD6FE", "#BAE6FD"];
-      const bands: string[] = [];
-      for (let x = 0, k = 0; x < fp.pw; k++) {
-        const w = fp.pw * (0.07 + ((k * 37) % 7) * 0.012);
-        bands.push(`<rect x="${(left + x).toFixed(1)}" y="${fp.apexY.toFixed(1)}" width="${(Math.min(w, fp.pw - x) + 0.5).toFixed(1)}" height="${panelH.toFixed(1)}" fill="${cols[k % cols.length]}"/>`);
-        x += w;
+      const tiers = 5, th = panelH / tiers, parts: string[] = [];
+      for (let t = tiers - 1; t >= 0; t--) {
+        const y0 = fp.apexY + t * th;
+        for (let x = 0, k = 0; x < fp.pw; x += 3.5, k++) {
+          const glitter = (k * 7 + t * 3) % 6 === 0;
+          const len = t === tiers - 1 ? fp.floorY - y0 : th * (1.15 + ((k * 13 + t * 5) % 9) * 0.04);
+          parts.push(`<line x1="${(left + x).toFixed(1)}" y1="${y0.toFixed(1)}" x2="${(left + x).toFixed(1)}" y2="${Math.min(fp.floorY, y0 + len).toFixed(1)}" stroke="${glitter ? "#ECEAF4" : cols[t % cols.length]}" stroke-width="${glitter ? 1.5 : 4}"/>`);
+        }
       }
-      const strands = Array.from({ length: Math.round(fp.pw / 4) }, (_, i) =>
-        `<line x1="${(left + i * 4 + 2).toFixed(1)}" y1="${fp.apexY.toFixed(1)}" x2="${(left + i * 4 + 2).toFixed(1)}" y2="${fp.floorY.toFixed(1)}" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1"/>`).join("");
-      content.push(`<g>${bands.join("")}${strands}</g>` +
-        `<line x1="${(left - 8).toFixed(1)}" y1="${fp.apexY.toFixed(1)}" x2="${(left + fp.pw + 8).toFixed(1)}" y2="${fp.apexY.toFixed(1)}" stroke="#D8D5D0" stroke-width="5" stroke-linecap="round"/>`);
+      content.push(`<g>${parts.join("")}</g>` +
+        `<path d="M ${(left - 5).toFixed(1)} ${fp.floorY.toFixed(1)} V ${(fp.apexY - 5).toFixed(1)} H ${(left + fp.pw + 5).toFixed(1)} V ${fp.floorY.toFixed(1)}" fill="none" stroke="#D9BF94" stroke-width="6" stroke-linejoin="round"/>`);
     } else if (layout.panels.length === 1 && (shape === "arch" || shape === "banner" || shape === "wavy")) {
       // 2026-09-09: a lone arch draws its board FILLED, with a firm edge.
       //
@@ -1424,6 +1430,7 @@ export function generateStructureSilhouette(
       content.push(panelPathOrShape(
         panel.cx, panel.pw, panel.apexY, panel.floorY, shape,
         nearWhite ? "#F1EFEC" : ownFill, "left", true,
+        shape === "wavy" ? (item as { borderColor?: string } | undefined)?.borderColor : undefined,
       ));
       // 2026-10-21: a Frozen-printed banner carries its print IN the guide.
       // Laid on after the render, the print had to have the plinth cut out

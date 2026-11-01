@@ -21,7 +21,7 @@ import {
 } from "@/lib/config";
 import { useLetteringLayout } from "./useLetteringLayout";
 import { bannerPrintTheme } from "@/lib/bannerPrintThemes";
-import { wavyBoardPath } from "@/lib/wavyBoard";
+import { wavyBoardPath, wavyFacePath, wavyBorderColor } from "@/lib/wavyBoard";
 
 const VB = 1000;
 const FLOOR = 870;
@@ -52,7 +52,7 @@ type PhotoBase = {
    *  so when the palette has one), 50 for a theme's own (one per its colour, 255 for a balloon left as shot). */
   familyStep?: number;
   /** Each board, left to right: where it shows (none for the ring), its box and where its words go. */
-  boards: { mask?: string; x0: number; y0: number; x1: number; y1: number; text: { cx: number; cy: number; w: number } }[];
+  boards: { mask?: string; rim?: string; x0: number; y0: number; x1: number; y1: number; text: { cx: number; cy: number; w: number } }[];
   /** The photographed plinth (the XXL, 90 cm): left, top, width, height. */
   plinth: { x: number; y: number; w: number; h: number };
   /** Florals tucked into the garland: x, y and their turn in degrees. */
@@ -140,10 +140,11 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     numberX: 0.86, standeeX: [0.06, 0.95],
   },
   // 2026-11-01: the Wavy Backdrop (the Single Arch photo, its board made wavy) and the Fringe Backdrop (the Banner
-  // photo, its board made a white and silver fringe curtain, striped here in the party's colours).
+  // photo, its board made a layered fringe of tissue and tinsel in a wooden frame, repainted with the balloons).
   wavy: {
     room: `${SK}/single_wavy-room.webp`, balloons: `${SK}/single_wavy-balloons.webp`, families: `${SK}/single_wavy-families.png`,
-    boards: [{ mask: `${SK}/single_wavy-board-0.png`, x0: 0.2783, y0: 0.2188, x1: 0.5645, y1: 0.8418, text: { cx: 0.42, cy: 0.42, w: 0.22 } }],
+    // Re-shot 2026-11-01 wider, on its offset rim ("wavy daha geniş olmalı … border offset olmalı"): the rim has its own mask.
+    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.2969, y0: 0.1436, x1: 0.6650, y1: 0.8350, text: { cx: 0.395, cy: 0.4, w: 0.17 } }],
     plinth: { x: 0.37, y: 0.612, w: 0.1, h: 0.288 },
     florals: fromPx([[300, 150], [420, 110], [540, 170], [620, 270], [650, 380], [680, 480], [690, 580], [680, 680], [650, 780], [640, 860]]),
     numberX: 0.2, standeeX: [0.13, 0.9],
@@ -173,7 +174,7 @@ const THEME_SHOTS = new Set(["unicorn"]);
 function themeShot(base: PhotoBase, theme: string): PhotoBase {
   const at = (u: string) => u.replace(`${SK}/`, `${SK}/${theme}/`).replace("round-board-mask", "round-board-0");
   return { ...base, room: at(base.room), balloons: at(base.balloons), families: at(base.families), familyStep: 50,
-    boards: base.boards.map((b) => ({ ...b, mask: b.mask && at(b.mask) })) };
+    boards: base.boards.map((b) => ({ ...b, mask: b.mask && at(b.mask), rim: b.rim && at(b.rim) })) };
 }
 /** The plinth cut from the same photo, used for every plinth in every sketch. */
 const PLINTH_SRC = "/design/sketch/plinth.webp";
@@ -356,16 +357,19 @@ function piecePath(p: Piece, floor = FLOOR): string | null {
   }
 }
 
-/** The fringe's vertical bands in the party's colours (2026-11-01, the owner's fringe references): uneven widths, no two alike side by side. */
-function fringeStripes(x0: number, x1: number, palette: string[], seed: number): { x: number; w: number; hex: string }[] {
+/** The fringe's strands (2026-11-01, the owner's fringe references: "o frame'in içinde olsun … yere değmeli,
+ *  aralarda glitter renkler de ok"): tiers of tissue streamers in the party's colours, one over the next, with
+ *  glitter tinsel between, the lowest to the floor. Bottom tier first, so each upper one hangs in front. */
+function fringeStrands(x: number, top: number, w: number, h: number, palette: string[], seed: number): { x: number; y0: number; y1: number; w: number; hex: string }[] {
   const rnd = seeded(seed * 31 + 7), cols = palette.length ? palette : ["#f7c5d8"];
-  const out: { x: number; w: number; hex: string }[] = [];
-  let k = Math.floor(rnd() * cols.length);
-  for (let x = x0; x < x1;) {
-    const w = Math.min(x1 - x, (x1 - x0) * (0.06 + rnd() * 0.08));
-    if (cols.length > 1) k = (k + 1 + Math.floor(rnd() * (cols.length - 1))) % cols.length;
-    out.push({ x, w: w + 0.5, hex: cols[k] });
-    x += w;
+  const tiers = 5, th = h / tiers, out: { x: number; y0: number; y1: number; w: number; hex: string }[] = [];
+  for (let t = tiers - 1; t >= 0; t--) {
+    const hex = cols[t % cols.length], y0 = top + t * th;
+    for (let sx = x; sx < x + w; sx += 3.2) {
+      const glitter = rnd() < 0.16;
+      const len = t === tiers - 1 ? top + h - y0 : th * (1.15 + rnd() * 0.35);
+      out.push({ x: sx + rnd() * 2, y0, y1: Math.min(top + h, y0 + len), w: glitter ? 1.4 : 3.4, hex: glitter ? "#e9e7f2" : hex });
+    }
   }
   return out;
 }
@@ -592,6 +596,7 @@ export default function LiveSketch({
   // Where things stand: the floor line, and how far in front of it the front row sits.
   const floorY = base ? (base.plinth.y + base.plinth.h) * VB : FLOOR;
   const palette = d.balloonColors.length ? d.balloonColors : (theme?.balloonColors ?? ["#f7c5d8"]);
+  const rimOf = (item: BackdropItem) => wavyBorderColor(item.borderColor, palette, accent);
   const asShot = sameColours(palette, (themeById(shotTheme)?.balloonColors ?? []).slice(0, 5));
   const baseBalloons = useRecoloredBase(base ? base.balloons : null, base?.families ?? "", palette, asShot, base?.familyStep);
   const garlandSize = 18 + scale * 8;
@@ -727,6 +732,9 @@ export default function LiveSketch({
         {base?.boards.map((b, i) => b.mask && (
           <mask key={i} id={`skBoard${uid}${i}`} maskUnits="userSpaceOnUse" x="0" y="0" width={VB} height={VB}><image href={b.mask} width={VB} height={VB} /></mask>
         ))}
+        {base?.boards.map((b, i) => b.rim && (
+          <mask key={`r${i}`} id={`skRim${uid}${i}`} maskUnits="userSpaceOnUse" x="0" y="0" width={VB} height={VB}><image href={b.rim} width={VB} height={VB} /></mask>
+        ))}
       </defs>
 
       {base ? (
@@ -735,18 +743,21 @@ export default function LiveSketch({
           <image href={base.room} width={VB} height={VB} />
           {/* Each board's colour, laid over its photographed light and shade. */}
           {pieces.map((p) => {
-            // A theme's own fringe was photographed in its colours (repainted with the balloons).
-            if (p.item.type === "fringe") return shotTheme === "frozen" && base.boards[p.idx].mask && (
-              <g key={p.item.id} mask={`url(#skBoard${uid}${p.idx})`} style={{ mixBlendMode: "multiply" }}>
-                {fringeStripes(base.boards[p.idx].x0 * VB, base.boards[p.idx].x1 * VB, palette, p.idx).map((st, i) => <rect key={i} x={st.x} width={st.w} height={VB} fill={st.hex} />)}
-              </g>
-            );
+            // The fringe was photographed in colour, in its frame: it is repainted with the balloons.
+            if (p.item.type === "fringe") return null;
             // A shimmer wall was photographed silver; a board white.
             const tint = p.item.type === "shimmer_wall"
               ? ((d.shimmerColor ?? "silver") === "silver" ? null : SHIMMER_COLOR_HEX[d.shimmerColor!])
               : isWhite(p.item.color || d.backdropColor) ? null : p.item.color || d.backdropColor;
-            return tint && base.boards[p.idx].mask && (
-              <rect key={p.item.id} width={VB} height={VB} fill={tint} mask={`url(#skBoard${uid}${p.idx})`} style={{ mixBlendMode: "multiply" }} />
+            const rim = base.boards[p.idx].rim;
+            return (
+              <g key={p.item.id}>
+                {tint && base.boards[p.idx].mask && (
+                  <rect width={VB} height={VB} fill={tint} mask={`url(#skBoard${uid}${p.idx})`} style={{ mixBlendMode: "multiply" }} />
+                )}
+                {/* A wavy board's offset rim, photographed white, in its colour. */}
+                {rim && <rect width={VB} height={VB} fill={rimOf(p.item)} mask={`url(#skRim${uid}${p.idx})`} style={{ mixBlendMode: "multiply" }} />}
+              </g>
             );
           })}
         </>
@@ -772,11 +783,20 @@ export default function LiveSketch({
                 <g key={p.item.id} filter="url(#skShadow)">
                   <clipPath id={`skFringe${uid}${p.idx}`}><path d={path!} /></clipPath>
                   <g clipPath={`url(#skFringe${uid}${p.idx})`}>
-                    {fringeStripes(p.x, p.x + p.w, palette, p.idx).map((st, i) => <rect key={i} x={st.x} y={p.top} width={st.w} height={FLOOR - p.top} fill={st.hex} />)}
-                    {/* Its strands. */}
-                    {Array.from({ length: Math.round(p.w / 5) }, (_, i) => <line key={i} x1={p.x + i * 5 + 2} x2={p.x + i * 5 + 2} y1={p.top} y2={FLOOR} stroke="rgba(255,255,255,.35)" strokeWidth={1} />)}
+                    {fringeStrands(p.x, p.top, p.w, FLOOR - p.top, palette, p.idx).map((st, i) => (
+                      <line key={i} x1={st.x} x2={st.x} y1={st.y0} y2={st.y1} stroke={st.hex} strokeWidth={st.w} strokeLinecap="round" />
+                    ))}
                   </g>
-                  <line x1={p.x - 6} x2={p.x + p.w + 6} y1={p.top} y2={p.top} stroke="#f4f1ec" strokeWidth={5} strokeLinecap="round" />
+                  {/* The slim wooden frame it hangs in. */}
+                  <path d={`M ${p.x - 4} ${FLOOR} V ${p.top - 4} H ${p.x + p.w + 4} V ${FLOOR}`} fill="none" stroke="#d9bf94" strokeWidth={5} strokeLinejoin="round" />
+                </g>
+              );
+            }
+            if (p.item.type === "wavy") {
+              return (
+                <g key={p.item.id}>
+                  <path d={path!} fill={rimOf(p.item)} stroke="rgba(39,22,23,.18)" strokeWidth={2} filter="url(#skShadow)" />
+                  <path d={wavyFacePath(p.x, p.top, p.w, FLOOR - p.top)} fill={color} />
                 </g>
               );
             }

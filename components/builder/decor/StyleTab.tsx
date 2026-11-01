@@ -26,7 +26,7 @@ import type { DecorCtx } from "@/components/builder/decor/useDecorStep";
 import LetteringControls from "@/components/builder/decor/LetteringControls";
 import { changeLine, letteringFromLegacy, letteringPatch, MAX_LETTERING_TEXT } from "@/lib/typography/lettering";
 import { presetById } from "@/lib/typography/presets";
-import { wavyBoardPath } from "@/lib/wavyBoard";
+import { wavyBoardPath, wavyFacePath, wavyBorderColor } from "@/lib/wavyBoard";
 import type { BoardLettering } from "@/lib/config";
 
 export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
@@ -95,7 +95,7 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
     switch (item.type) {
       case "round": case "balloon_ring": return <circle cx="22" cy="28" r="19" fill={item.type === "round" ? fill : "none"} stroke={fill} strokeWidth={item.type === "round" ? 0 : 5} />;
       case "rect": case "banner": case "shimmer_wall": case "fringe": return <rect x={x} y={top} width={w} height={h} rx="3" fill={fill} />;
-      case "wavy": return <path d={wavyBoardPath(x, top, w, h)} fill={fill} />;
+      case "wavy": return <g><path d={wavyBoardPath(x, top, w, h)} fill={fill} /><path d={wavyFacePath(x, top, w, h)} fill="#fff" opacity={0.55} /></g>;
       case "half_arch": return <path d={`M ${x},50 L ${x},${top + w} A ${w},${w} 0 0 1 ${x + w},${top} L ${x + w},50 Z`} fill={fill} />;
       case "open_arch_frame": return <path d={`M ${x},50 L ${x},${top + w / 2} A ${w / 2},${w / 2} 0 0 1 ${x + w},${top + w / 2} L ${x + w},50`} fill="none" stroke={fill} strokeWidth="5" />;
       default: return <path d={`M ${x},50 L ${x},${top + w / 2} A ${w / 2},${w / 2} 0 0 1 ${x + w},${top + w / 2} L ${x + w},50 Z`} fill={fill} />;
@@ -111,6 +111,10 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
   const boardSwatches = backdropSwatchesForTheme(theme);
   const sameHex = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
   const boardInList = boardSwatches.some((hex) => sameHex(hex, boardHex));
+  // A wavy board's rim: the party's balloon colours to pick from.
+  const rimSwatches = d.balloonColors.length ? d.balloonColors : theme.balloonColors;
+  const rimHex = wavyBorderColor(item.borderColor, rimSwatches, theme.accent);
+  const rimInList = rimSwatches.some((hex) => sameHex(hex, rimHex));
   const sampleText = item.text.value.trim() || DEFAULT_TEXT_VALUE;
   // 2026-10-26: the board's lettering — a Heading over a Name, each in its
   // own font and size (useDecorStep gives every board one).
@@ -322,6 +326,25 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
                     <span aria-hidden="true">+</span>
                     <input type="color" aria-label="Custom backdrop colour" value={item.color || d.backdropColor || "#FFFFFF"}
                       onChange={(e) => patchItem(itemIdx, { color: e.target.value })} />
+                  </label>
+                </div>
+              </div>
+            )}
+            {item.type === "wavy" && (
+              // 2026-11-01 (the owner: "wavy de border offset olmalı örnekteki gibi"): the coloured rim round the face.
+              <div className="bz-st-group">
+                <span className="lbl">Border color</span>
+                <div className="bz-st-swatches">
+                  {rimSwatches.map((hex) => (
+                    <button key={hex} type="button" aria-pressed={sameHex(hex, rimHex)} aria-label={`Border ${hex}`} title={hex}
+                      className={`bz-st-sw ${sameHex(hex, rimHex) ? "on" : ""}`} style={{ background: hex }}
+                      onClick={() => patchItem(itemIdx, { borderColor: hex })} />
+                  ))}
+                  <label className={`bz-st-sw custom ${!rimInList ? "on" : ""}`} title={rimInList ? "Custom colour" : `Current colour ${rimHex}`}
+                    style={!rimInList ? { background: rimHex } : undefined}>
+                    <span aria-hidden="true">+</span>
+                    <input type="color" aria-label="Custom border colour" value={rimHex}
+                      onChange={(e) => patchItem(itemIdx, { borderColor: e.target.value })} />
                   </label>
                 </div>
               </div>

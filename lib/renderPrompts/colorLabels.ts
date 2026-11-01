@@ -40,7 +40,8 @@ export function getVisualLabel(c: SempertexSelectionItem): string {
 // that appear in SAFE_VISUAL_LABEL but can bias AI color generation when placed in positive prompts.
 export const HEX_POSITIVE_LABEL: Record<string, string> = {
   "#fbcfe8": "soft baby pink",
-  "#fef08a": "pale vanilla cream",
+  // 2026-11-01: "pale vanilla cream" came back cream and peach on Unicorn; the owner wants it a pastel yellow.
+  "#fef08a": "soft pastel lemon yellow",
   "#bbf7d0": "pale mint green",
   "#ffffff": "pure white",
   // 2026-10-21: Fashion 390 Clear — a see-through bubble, not a white balloon.

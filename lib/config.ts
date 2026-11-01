@@ -475,6 +475,8 @@ export interface BackdropItem {
   heightCm: number;
   /** Per-panel backdrop color. Falls back to global backdropColor when empty. */
   color: string;
+  /** A wavy board's rim (lib/wavyBoard.ts): empty for the party's first balloon colour. */
+  borderColor?: string;
   text: BackdropItemText;
   graphic: BackdropItemGraphic;
 }

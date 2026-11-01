@@ -28,7 +28,8 @@ import type {
   BoardLettering,
 } from "./config";
 import { getPlinthDimensions } from "./layoutDimensions";
-import { normalizeCutouts, normalizeBalloonStyle } from "@/lib/config";
+import { normalizeCutouts, normalizeBalloonStyle, themeById } from "@/lib/config";
+import { wavyBorderColor } from "./wavyBoard";
 
 // ---------------------------------------------------------------------------
 // Legacy shimmer_wall sanitization
@@ -93,6 +94,8 @@ export interface ScenePanel {
   heightCm: number;
   /** Resolved color — per-panel color if set, otherwise global backdropColor */
   color:    string;
+  /** A wavy board's rim colour, resolved (lib/wavyBoard.ts). */
+  borderColor?: string;
   /** Selection order (0-indexed) */
   order: number;
   text: {
@@ -167,6 +170,9 @@ export interface SceneModel {
 export function buildSceneModel(config: BuilderConfig): SceneModel {
   const d           = config.decor;
   const globalColor = d.backdropColor;
+  const theme       = themeById(config.theme);
+  const rim = (item: BackdropItem) => item.type === "wavy"
+    ? { borderColor: wavyBorderColor(item.borderColor, d.balloonColors.length ? d.balloonColors : theme?.balloonColors ?? [], theme?.accent ?? "#F8BBD0") } : {};
 
   // Panels: resolve per-item color, falling back to global backdrop color.
   const panels: ScenePanel[] = sanitizeBackdropItems(d.backdropItems)
@@ -178,6 +184,7 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
       widthCm:  item.widthCm,
       heightCm: item.heightCm,
       color:    item.color || globalColor,
+      ...rim(item),
       order:    i,
       text: {
         enabled:   item.text.enabled,
@@ -262,6 +269,7 @@ export function buildSceneModelFromItems(
     widthCm:  item.widthCm,
     heightCm: item.heightCm,
     color:    item.color || globalColor,
+    ...(item.type === "wavy" ? { borderColor: wavyBorderColor(item.borderColor, balloonColors, "#F8BBD0") } : {}),
     order:    i,
     text: {
       enabled:   item.text.enabled,

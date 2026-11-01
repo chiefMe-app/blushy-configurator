@@ -8,6 +8,8 @@ import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } f
 import { buildSceneModel } from "@/lib/buildSceneModel";
 import { buildLayoutRefEditPrompt } from "@/lib/renderPrompts/buildLayoutRefEditPrompt";
 import { sceneStyleReference } from "@/lib/renderPrompts/frozenStyleReferences";
+import { UNICORN_ARCH_STYLE_REFERENCE } from "@/lib/renderPrompts/unicornStyleReferences";
+import { wavyBorderColor } from "@/lib/wavyBoard";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
 import { withSetup, withTheme } from "../fixtures/builder";
 import { defaultConfig } from "@/lib/config";
@@ -56,18 +58,36 @@ describe("wavy and fringe backdrops", () => {
     for (const f of frozen) expect(existsSync(path.join(sk, "unicorn", f.replace("round-board-mask", "round-board-0"))), f).toBe(true);
   });
 
+  it("give the wavy board an offset border, in the party's first colour unless one is picked", () => {
+    const wavy = buildSceneModel(withSetup(withTheme(defaultConfig(), "unicorn"), "single_wavy")).panels[0];
+    expect(wavy.borderColor).toBe("#F8BBD0");
+    expect(wavyBorderColor("#123456", ["#F8BBD0"], "#000000")).toBe("#123456");
+    // White, silver and clear are passed over.
+    expect(wavyBorderColor(undefined, ["#FFFFFF", "#C0C0C0", "#BAE6FD"], "#000000")).toBe("#BAE6FD");
+    expect(buildLayoutRefEditPrompt(buildSceneModel(withSetup(withTheme(defaultConfig(), "unicorn"), "single_wavy")))).toContain("offset border");
+  });
+
+  it("hang the fringe in a frame, in tiers, down to the floor", () => {
+    const fringe = buildLayoutRefEditPrompt(buildSceneModel(withSetup(withTheme(defaultConfig(), "unicorn"), "single_fringe")));
+    expect(fringe).toContain("wooden frame");
+    expect(fringe).toContain("touches the floor");
+  });
+
   it("describe their own shape in the render prompt", () => {
     const wavy = buildLayoutRefEditPrompt(buildSceneModel(withSetup(withTheme(defaultConfig(), "frozen"), "single_wavy")));
     expect(wavy).toContain("softly wavy sides");
     expect(wavy).not.toContain("ONE arch board");
     const fringe = buildLayoutRefEditPrompt(buildSceneModel(withSetup(withTheme(defaultConfig(), "unicorn"), "single_fringe")));
     expect(fringe).toContain("tinsel");
-    expect(fringe).toContain("square fringe curtain");
+    expect(fringe).toContain("fringe curtain");
     expect(fringe).not.toContain("square banner board");
   });
 
-  it("shoot the wavy board against the arch photo, the fringe against none", () => {
+  it("shoot the wavy board against the arch photo (Unicorn's own), the fringe against none", () => {
     expect(sceneStyleReference({ theme: "frozen", panels: [{ type: "wavy" }], balloons: { style: "half" } })?.board).toBe("wavy board");
+    expect(sceneStyleReference({ theme: "unicorn", panels: [{ type: "wavy" }], balloons: { style: "half" } })?.image).toBe(UNICORN_ARCH_STYLE_REFERENCE);
+    expect(sceneStyleReference({ theme: "unicorn", panels: [{ type: "arch" }], balloons: { style: "half" } })?.image).toBe(UNICORN_ARCH_STYLE_REFERENCE);
+    expect(sceneStyleReference({ theme: "frozen", panels: [{ type: "arch" }], balloons: { style: "half" } })?.image).not.toBe(UNICORN_ARCH_STYLE_REFERENCE);
     expect(sceneStyleReference({ theme: "frozen", panels: [{ type: "fringe" }], balloons: { style: "half" } })).toBeNull();
   });
 

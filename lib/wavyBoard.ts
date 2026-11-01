@@ -35,3 +35,26 @@ export function wavyBoardPath(x: number, top: number, w: number, h: number): str
   d.push("Z");
   return d.join(" ");
 }
+
+/**
+ * The offset border (2026-11-01, the owner: "wavy de border offset olmalı örnekteki gibi"): the board is
+ * two layers, a coloured one behind showing as a rim all round the face. The rim, of the board's width.
+ */
+export const WAVY_BORDER = 0.055;
+
+/** The face of a wavy board in the box (x, top, w, h): the same outline, inset by the rim (none at the foot). */
+export function wavyFacePath(x: number, top: number, w: number, h: number): string {
+  const b = w * WAVY_BORDER;
+  return wavyBoardPath(x + b, top + b, w - 2 * b, h - b);
+}
+
+/** The rim's colour: the one picked, else the party's first balloon colour that isn't white, silver or clear. */
+export function wavyBorderColor(picked: string | undefined, balloonColors: string[], accent: string): string {
+  if (picked) return picked;
+  const sat = (h: string) => {
+    const n = parseInt(h.replace("#", ""), 16), c = [n >> 16, (n >> 8) & 255, n & 255];
+    const mx = Math.max(...c), mn = Math.min(...c);
+    return mx ? (mx - mn) / mx : 0;
+  };
+  return balloonColors.find((h) => /^#[0-9a-f]{6}$/i.test(h) && sat(h) >= 0.12) ?? accent;
+}

@@ -263,17 +263,16 @@ export function buildLayoutRefEditPrompt(
           `There is no board behind the ring. ` +
           `The hoop itself is dense and organic, mixing large and small balloons, thickest where it meets the floor.`;
     } else if (isFringe) {
-      // A tinsel-and-streamer curtain, not a board: what the owner's fringe
-      // photos show. It has no print and no lettering; its colours are the
-      // balloons' own, in vertical bands.
+      // A layered tissue-and-tinsel fringe hung in a slim wooden frame, not a board: the owner's fringe
+      // photos (2026-11-01: "renkler ve tinsellar benzer olmalı … yere değmeli, o frame'in içinde olsun,
+      // aralarda glitter renkler de ok"). No print and no lettering; its colours are the balloons' own.
       backdropDesc =
-        `a square fringe curtain backdrop, exactly ${p.widthCm}cm wide x ${p.heightCm}cm tall — a perfect square: ` +
-        `hundreds of long thin vertical strands of shiny metallic tinsel and matte paper streamers hanging ` +
-        `straight down side by side from one slim straight bar along the top, the strands reaching the floor. ` +
-        `The strands are grouped in broad vertical bands of the same colours as the balloons, each band a ` +
-        `few strands mixed, softly catching the light. ` +
-        `Clearly freestanding in front of the wall, with visible separation between the curtain and the wall behind it. ` +
-        `NO visible stand, NO poles, NO feet — the bar's supports are hidden behind the balloons. ` +
+        `a square layered fringe backdrop, exactly ${p.widthCm}cm wide x ${p.heightCm}cm tall — a perfect square: ` +
+        `a slim freestanding rectangular frame of thin light natural wood standing on the floor, and hanging inside it, ` +
+        `filling the whole frame, a full fluffy fringe of long matte tissue-paper streamers in several overlapping ` +
+        `tiers, each tier mostly one of the balloon colours, with strands of shiny iridescent and glitter tinsel mixed ` +
+        `in between. Each upper tier hangs over the next with a soft uneven hem; the lowest tier reaches all the way ` +
+        `down and touches the floor. Clearly freestanding in front of the wall. ` +
         `Nothing is printed and nothing is written on it. NOT a painted striped board, NOT a sequin wall, NOT a door curtain, ` +
         `NOT an arch, NOT a circle. ` +
         `NO extra base of any kind beneath or around it — the floor beneath and around it is completely ` +
@@ -311,8 +310,14 @@ export function buildLayoutRefEditPrompt(
         `single wavy-edged backdrop board, ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
         `a tall solid filled freestanding board with a fully opaque surface, its two long sides running in ` +
         `soft gentle waves from top to bottom and its top edge softly scalloped with rounded corners, like a ` +
-        `wavy mirror. The entire face is one continuous solid board, seamless matte ${backdropColorLabel(p.color)} surface, ` +
-        `no cut-out opening, no hollow doorway, no frame. NOT a plain rounded arch, NOT a rectangle with straight sides.`;
+        `wavy mirror, broad — a little over half as wide as it is tall. The entire face is one continuous solid board, seamless matte ${backdropColorLabel(p.color)} surface, ` +
+        `no cut-out opening, no hollow doorway. NOT a plain rounded arch, NOT a rectangle with straight sides.` +
+        // 2026-11-01 (the owner: "wavy de border offset olmalı örnekteki gibi"): two layers, the face on a coloured one.
+        (p.borderColor
+          ? ` It is made of two layers: behind the face stands a slightly larger wavy board of the same outline in ` +
+            `matte ${backdropColorLabel(p.borderColor)}, showing as an even rim about 6 cm wide all round the face, ` +
+            `like an offset border.`
+          : "");
     } else if (p.type === "arch") {
       backdropDesc =
         `single rounded arch backdrop, ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
@@ -1251,8 +1256,8 @@ export function buildLayoutRefEditPrompt(
     // asked for it to be 2 metres across and to meet the ground ("2metre
     // gensiliginde olmali yere degmeli").
     if (t === "round")  return `The backdrop is ONE round disc, a full circle 2 metres across, standing on the floor. `;
-    if (isWavy)         return `The backdrop is ONE tall board with softly wavy sides and a scalloped top. `;
-    if (isFringe)       return `The backdrop is ONE square curtain of hanging tinsel and streamer strands. `;
+    if (isWavy)         return `The backdrop is ONE tall board with softly wavy sides and a scalloped top, on a coloured rim. `;
+    if (isFringe)       return `The backdrop is ONE square wooden frame filled with layered tiers of tissue and tinsel fringe down to the floor. `;
     if (t === "arch")   return `The backdrop is ONE arch board. `;
     if (t === "banner") return `The backdrop is ONE square board. `;
     // 2026-10-21: the ring had no shape line, and the render stood it in
@@ -1606,6 +1611,7 @@ export function buildLayoutRefEditPrompt(
   const frontPaletteLine = hasSempertexLock && targetAppearanceParts.length > 0
     ? `Every balloon in this image is one of exactly ${targetAppearanceParts.length} colours: ` +
       `${targetAppearanceParts.join(", ")}. ` +
+
       `No balloon is ${[
         ...(hasGoldInPalette   ? [] : ["gold", "champagne", "copper", "bronze", "rose gold"]),
         ...(hasPinkInPalette   ? [] : ["pink", "peach", "coral"]),

@@ -34,13 +34,20 @@ const SEEDS: Record<string, [number, number, number, number, number, number][]> 
   // Only for a theme's re-shoot (the Frozen round base was made apart): the round board, clear of the garland.
   round: [[640, 420, 175, 185, 850, 870]],
   // 2026-11-01: the Wavy Board (from the Single Arch photo) and the Fringe (from the Banner photo), made by one paid edit each.
-  single_wavy: [[400, 500, 270, 214, 620, 885]],
+  // Re-shot wider, on a coral rim (2026-11-01, the owner: "wavy daha geniş olmalı … border offset olmalı").
+  single_wavy: [[420, 500, 255, 80, 800, 890]],
   single_fringe: [[0, 0, 70, 118, 885, 915]],
 };
 /** A round board's circle (px: centre and radius), past which nothing is board. */
 const CIRCLE: Record<string, [number, number, number]> = { round: [512, 528, 333] };
 /** Re-shoots whose garland walls off pieces of board from the flood (not where a white balloon would go too). */
 const PATCHES = new Set(["round", "double_arch", "arch_shimmer", "arch_open_frame"]);
+/** Parts of the photo that are all foreground though the cut-out missed some (a fringe's busy strands):
+ *  px x0, y0, x1, y1. The Fringe's frame and its tiers, re-shot 2026-11-01 ("o frame'in içinde olsun"). */
+const SOLID: Record<string, [number, number, number, number]> = { single_fringe: [138, 150, 830, 912] };
+/** Boards photographed on a coral rim (the offset border): the rim's own mask (<setup>-rim-<i>.png), made
+ *  neutral so its colour is laid on it like a board's. */
+const RIM = new Set(["single_wavy"]);
 /** Boards that aren't flat paint (a sequin wall, a fringe curtain): the whole box, but for the balloons in front. */
 const RECT: Record<string, number[]> = { arch_shimmer: [1], single_shimmer: [0], single_fringe: [0] };
 /** Boards photographed tinted (light blue): made neutral, so their colour is laid on white. */
@@ -88,6 +95,8 @@ const FAMILIES: Record<string, [number, number][][]> = {
   const e1 = await sharp(path.join(dir, shot)).removeAlpha().resize(1024, 1024).raw().toBuffer({ resolveWithObject: true });
   const fg = await sharp(path.join(dir, theme ? `${setup}-ufg.png` : `${setup}-fg1.png`)).ensureAlpha().resize(1024, 1024).raw().toBuffer();
   const W = e1.info.width, H = e1.info.height, N = W * H, px = e1.data;
+  const solid = SOLID[setup];
+  if (solid) for (let y = solid[1]; y <= solid[3]; y++) for (let x = solid[0]; x <= solid[2]; x++) fg[(y * W + x) * 4 + 3] = 255;
   const { top, bottom } = FILL[setup] ?? {};
   const mirror = (y: number, from: number, span: number, dir: 1 | -1) => {
     const k = Math.abs(y - from) % (2 * span), src = from + dir * (k < span ? k : 2 * span - 1 - k);
@@ -187,11 +196,46 @@ const FAMILIES: Record<string, [number, number][][]> = {
     const l = Math.round(lum(i));
     px[i * 3] = px[i * 3 + 1] = px[i * 3 + 2] = Math.min(255, l + 6);
   }
+  // The rim: strongly coral (no balloon is), in a board's box, next to nothing else; greyed to the board's white.
+  const rim = new Int8Array(N).fill(-1);
+  if (RIM.has(setup)) SEEDS[setup].forEach(([, , bx0, by0, bx1, by1], b) => {
+    for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
+      const i = y * W + x, r = at(i, 0), g = at(i, 1), bl = at(i, 2);
+      // Coral: red past green past blue, its hue under ~28° (a yellow balloon's is ~55°, a pink one's past 330°).
+      const hue = r > g && g >= bl ? (60 * (g - bl)) / (r - bl || 1) : 99;
+      if (filled[i] < 0 && chroma(i) > 80 && hue < 28) rim[i] = b;
+    }
+  });
+  // Only long pieces of it: a balloon's orange-shaded side is a speck.
+  {
+    const seen = new Uint8Array(N);
+    for (let i = 0; i < N; i++) {
+      if (seen[i] || rim[i] < 0) continue;
+      const part = [i], stack = [i];
+      seen[i] = 1;
+      while (stack.length) {
+        const k = stack.pop()!, x = k % W;
+        for (const j of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, k - W, k + W]) {
+          if (j < 0 || j >= N || seen[j] || rim[j] < 0) continue;
+          seen[j] = 1; part.push(j); stack.push(j);
+        }
+      }
+      if (part.length < 600) for (const k of part) rim[k] = -1;
+    }
+  }
+  const grownRim = grow(rim, 1, (i) => { const hue = at(i, 0) > at(i, 1) && at(i, 1) >= at(i, 2) ? (60 * (at(i, 1) - at(i, 2))) / (at(i, 0) - at(i, 2) || 1) : 99; return filled[i] < 0 && chroma(i) > 40 && hue < 32; });
+  rim.set(grownRim);
+  if (RIM.has(setup)) {
+    let sl = 0, n = 0;
+    for (let i = 0; i < N; i++) if (rim[i] >= 0) { sl += lum(i); n++; }
+    const k = n ? 236 / (sl / n) : 1;
+    for (let i = 0; i < N; i++) if (rim[i] >= 0) px[i * 3] = px[i * 3 + 1] = px[i * 3 + 2] = Math.min(255, Math.round(lum(i) * k));
+  }
   // The balloons: the cut-out, less the boards.
   const balloons = Buffer.alloc(N * 4);
   const fam = Buffer.alloc(N);
   for (let i = 0; i < N; i++) {
-    const a = Math.round(Math.max(kept[i] * 255, filled[i] >= 0 || erased(i) ? 0 : fg[i * 4 + 3]));
+    const a = Math.round(Math.max(kept[i] * 255, filled[i] >= 0 || rim[i] >= 0 || erased(i) ? 0 : fg[i * 4 + 3]));
     balloons[i * 4] = at(i, 0); balloons[i * 4 + 1] = at(i, 1); balloons[i * 4 + 2] = at(i, 2); balloons[i * 4 + 3] = a;
     // Its family by hue: blue, lilac, else white, silver or clear.
     const r = at(i, 0), g = at(i, 1), b = at(i, 2), mx = Math.max(r, g, b), d = chroma(i);
@@ -251,5 +295,9 @@ const FAMILIES: Record<string, [number, number][][]> = {
     }
     await sharp(m, { raw: { width: W, height: H, channels: 1 } }).png().toFile(path.join(OUT, `${setup}-board-${b}.png`));
     console.log(`board ${b}: x ${(x0 / W).toFixed(4)}–${(x1 / W).toFixed(4)}, y ${(y0 / H).toFixed(4)}–${(y1 / H).toFixed(4)}`);
+    if (!RIM.has(setup)) continue;
+    const rm = Buffer.alloc(N);
+    for (let i = 0; i < N; i++) if (rim[i] === b) rm[i] = 255;
+    await sharp(rm, { raw: { width: W, height: H, channels: 1 } }).png().toFile(path.join(OUT, `${setup}-rim-${b}.png`));
   }
 })();

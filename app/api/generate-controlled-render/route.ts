@@ -751,6 +751,8 @@ async function generateLayoutReferencePng(
     const colouredBackdropItems = (promptInput.backdropItems ?? []).map((item, i) => ({
       ...item,
       color: sceneModel.panels[i]?.color || item.color,
+      // A wavy board's rim, resolved like its colour.
+      ...(sceneModel.panels[i]?.borderColor ? { borderColor: sceneModel.panels[i].borderColor } : {}),
     }));
     silhouette = generateStructureSilhouette(
       colouredBackdropItems,
