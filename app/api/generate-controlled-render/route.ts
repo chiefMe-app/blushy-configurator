@@ -853,6 +853,10 @@ export async function POST(req: NextRequest) {
   try {
     const b = JSON.parse(raw) as Partial<RequestBody>;
     freePreview = b?.debugLayoutReferenceOnly === true && b?.renderMode !== "edit_existing";
+    // 2026-11-01: the Customized Themed set is shown as its real photo; nothing is rendered of it.
+    if (b?.sceneModel?.panels?.some((p) => p?.type === "themed_set")) {
+      return NextResponse.json({ error: "The Customized Themed set is shown as its photo; there is no render of it." }, { status: 400 });
+    }
     sceneHash = typeof b?.currentSceneHash === "string" ? b.currentSceneHash : "";
   } catch { /* handleRender answers invalid JSON */ }
   const inner = new NextRequest(req.url, { method: "POST", headers: req.headers, body: raw });

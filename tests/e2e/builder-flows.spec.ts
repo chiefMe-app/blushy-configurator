@@ -104,7 +104,7 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   });
 });
 
-const SETUPS = ["Single Arch", "Single Round", "Banner Backdrop", "Wavy Backdrop", "Fringe Backdrop", "Shimmer Wall", "Arch + Shimmer", "Balloon Ring", "Arch + Open Frame", "Double Arch", "Triple Arch"];
+const SETUPS = ["Single Arch", "Single Round", "Banner Backdrop", "Wavy Backdrop", "Fringe Backdrop", "Customized Themed", "Shimmer Wall", "Arch + Shimmer", "Balloon Ring", "Arch + Open Frame", "Double Arch", "Triple Arch"];
 
 test("F2 every setup opens with its price and sketch", async ({ page }) => {
   await openDecor(page);

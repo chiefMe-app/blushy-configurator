@@ -94,7 +94,7 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
     const w = 30 * (o.w / maxW), h = 44 * (o.h / maxH), x = 22 - w / 2, top = 50 - h;
     switch (item.type) {
       case "round": case "balloon_ring": return <circle cx="22" cy="28" r="19" fill={item.type === "round" ? fill : "none"} stroke={fill} strokeWidth={item.type === "round" ? 0 : 5} />;
-      case "rect": case "banner": case "shimmer_wall": case "fringe": return <rect x={x} y={top} width={w} height={h} rx="3" fill={fill} />;
+      case "rect": case "banner": case "shimmer_wall": case "fringe": case "themed_set": return <rect x={x} y={top} width={w} height={h} rx="3" fill={fill} />;
       case "wavy": return <g><path d={wavyBoardPath(x, top, w, h)} fill={fill} /><path d={wavyFacePath(x, top, w, h)} fill="#fff" opacity={0.55} /></g>;
       case "half_arch": return <path d={`M ${x},50 L ${x},${top + w} A ${w},${w} 0 0 1 ${x + w},${top} L ${x + w},50 Z`} fill={fill} />;
       case "open_arch_frame": return <path d={`M ${x},50 L ${x},${top + w / 2} A ${w / 2},${w / 2} 0 0 1 ${x + w},${top + w / 2} L ${x + w},50`} fill="none" stroke={fill} strokeWidth="5" />;
@@ -286,6 +286,11 @@ export default function StyleTab({ ctx }: { ctx: DecorCtx }) {
                     </button>
                   );
                 })}
+              </div>
+            ) : item.type === "themed_set" ? (
+              // 2026-11-01: the set's printed panels are as photographed.
+              <div className="bz-st-group">
+                <span className="lbl">Colours · <b>printed as in the photo</b></span>
               </div>
             ) : item.type === "fringe" ? (
               // 2026-11-01: the fringe is striped in the party's balloon colours (change them on the Balloons tab).

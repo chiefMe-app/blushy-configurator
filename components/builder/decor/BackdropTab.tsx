@@ -1,7 +1,7 @@
 // Decor step · Backdrop tab (tab 01), moved unchanged from DecorStep in
 // app/builder/page.tsx (Phase 0.1). Everything it reads comes from the
 // step's shared state (useDecorStep).
-import { ARCH_SIZES, PER_BACKDROP, formatAED } from "@/lib/config";
+import { ARCH_SIZES, backdropItemPrice, formatAED, type BackdropShapeId } from "@/lib/config";
 import { SETUP_LAYOUT_TEMPLATES } from "@/lib/setupLayoutCatalog";
 import { MAX_BACKDROP_ITEMS, SETUP_ICON } from "@/components/builder/constants";
 import { SetupMiniPreview } from "@/components/builder/ui";
@@ -9,7 +9,7 @@ import type { DecorCtx } from "@/components/builder/decor/useDecorStep";
 
 export default function BackdropTab({ ctx }: { ctx: DecorCtx }) {
   const {
-    patchDecor, showManualPieces, setShowManualPieces, d, t, card, nextCue, BackdropShapePreview,
+    config, patchDecor, showManualPieces, setShowManualPieces, d, t, card, nextCue, BackdropShapePreview,
     toggleArchSize, toggleRound, toggleOtherType, applySetupTemplate, activeSetupTemplateId, TYPE_LABEL,
   } = ctx;
   return (
@@ -19,7 +19,7 @@ export default function BackdropTab({ ctx }: { ctx: DecorCtx }) {
       <div style={{ marginBottom: 16 }}>
         {d.backdropItems.length === 0 && <div style={{ marginBottom: 10 }}>{nextCue("Start here — tap a layout")}</div>}
         <div className="bz-layout-grid">
-          {SETUP_LAYOUT_TEMPLATES.map((tpl) => {
+          {SETUP_LAYOUT_TEMPLATES.filter((tpl) => !tpl.themes || tpl.themes.includes(config.theme)).map((tpl) => {
             const active = activeSetupTemplateId === tpl.id;
             const icon = SETUP_ICON[tpl.id];
             return (
@@ -45,8 +45,8 @@ export default function BackdropTab({ ctx }: { ctx: DecorCtx }) {
                     : <SetupMiniPreview shapes={tpl.miniPreview} />}
                 </span>
                 <h3>{tpl.name}</h3>
-                {/* 2026-10-25: every choice shows its price. Boards cost PER_BACKDROP each (+80 for a shimmer wall). */}
-                <small className="bz-layout-price">AED {formatAED(tpl.backdropTypes.reduce((s, t) => s + PER_BACKDROP + (t === "shimmer_wall" ? 80 : 0), 0))}</small>
+                {/* 2026-10-25: every choice shows its price (lib/config backdropItemPrice). */}
+                <small className="bz-layout-price">AED {formatAED(tpl.backdropTypes.reduce((s, t) => s + backdropItemPrice(t as BackdropShapeId), 0))}</small>
               </button>
             );
           })}

@@ -7,6 +7,10 @@ const nextConfig = {
       { protocol: "https", hostname: "v3.fal.media" },
     ],
   },
+  // 2026-11-01: browsers still ask for /favicon.ico (a 404 in every console); the icon is the svg.
+  async rewrites() {
+    return [{ source: "/favicon.ico", destination: "/favicon.svg" }];
+  },
   experimental: {
     // The lettering engine (lib/typography) runs HarfBuzz from node_modules:
     // it finds its .wasm next to itself, which bundling would break. The

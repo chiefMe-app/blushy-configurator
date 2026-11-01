@@ -60,6 +60,7 @@ export function getPanelDimensions(
   if (type === "shimmer_wall") return { widthCm: 200, heightCm: 200 };
   if (type === "wavy")         return { widthCm: 120, heightCm: 220 };
   if (type === "fringe")       return { widthCm: 200, heightCm: 200 };
+  if (type === "themed_set")   return { widthCm: 400, heightCm: 250 };
   return { widthCm: 100, heightCm: 200 };
 }
 

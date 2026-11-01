@@ -53,7 +53,8 @@ describe("wavy and fringe backdrops", () => {
 
   it("Unicorn has its own photographed sketch base for every setup (2026-11-01: real renders, cut out)", () => {
     const sk = path.join(process.cwd(), "public/design/sketch");
-    const frozen = readdirSync(sk).filter((f) => /-(room\.webp|balloons\.webp|families\.png|board-\d\.png)$/.test(f));
+    // The Customized Themed set is Frozen's own photo (Unicorn's comes from her reference).
+    const frozen = readdirSync(sk).filter((f) => /-(room\.webp|balloons\.webp|families\.png|board-\d\.png)$/.test(f) && !f.startsWith("themed_set"));
     expect(frozen.length).toBeGreaterThan(40);
     for (const f of frozen) expect(existsSync(path.join(sk, "unicorn", f.replace("round-board-mask", "round-board-0"))), f).toBe(true);
   });

@@ -358,7 +358,10 @@ export type BackdropShapeId =
   | "shimmer_wall"
   | "open_arch_frame"
   | "wavy"
-  | "fringe";
+  | "fringe"
+  // 2026-11-01 (owner: "customized themed diye bir seçenek eklensin … birebir aynısını frozen'a yapalım"):
+  // a theme's whole designed set — printed panels, garlands, stage — shown as its real photo, the name laid on live.
+  | "themed_set";
 
 export type ArchSizeId = "small" | "medium" | "large";
 
@@ -517,6 +520,9 @@ export function makeBackdropItem(
     // 2026-11-01 (owner): a board with a wavy outline, "single arch size" —
     // the lone arch's Large, 120 x 220.
     widthCm = 120; heightCm = 220;
+  } else if (type === "themed_set") {
+    // The whole set, about 4 m across and 2.5 m at its peak.
+    widthCm = 400; heightCm = 250;
   } else if (type === "fringe") {
     // 2026-11-01 (owner): a tinsel and paper fringe curtain, "2m x 2m".
     widthCm = 200; heightCm = 200;
@@ -979,6 +985,7 @@ export const BACKDROP_SHAPES: Option<BackdropShapeId>[] = [
   // new — each at the same price as any board for now ("fiyatları aynı olsun").
   { id: "wavy",         label: "Wavy Backdrop",        price: 0 },
   { id: "fringe",       label: "Fringe Backdrop 2x2m", price: 0 },
+  { id: "themed_set",   label: "Customized Themed Set", price: 0 },
   // "shimmer_wall" removed from product (2026-07-12) - shimmer pipeline too
   // unreliable, focus shifted to arch-based designs. Kept in BackdropShapeId
   // for backward compat with old saved configs.
@@ -1139,6 +1146,13 @@ export const CAKE_TABLE_PRICE = 300;
 
 /** Price per backdrop panel. Each selected panel adds this to the total. */
 export const PER_BACKDROP = 350;
+/** The Customized Themed set, all of it (a placeholder until the owner prices it). */
+export const THEMED_SET_PRICE = 1500;
+/** One backdrop piece's price: a board PER_BACKDROP, a shimmer wall 80 more, the themed set its own. */
+export function backdropItemPrice(type: BackdropShapeId): number {
+  if (type === "themed_set") return THEMED_SET_PRICE;
+  return PER_BACKDROP + (type === "shimmer_wall" ? 80 : 0);
+}
 
 /** Effective panel count from the selected backdrop items. */
 export function backdropPanelCount(items: BackdropItem[]): number {
@@ -1433,8 +1447,7 @@ export function priceBreakdown(config: BuilderConfig): {
     const item = d.backdropItems[i];
     const sInfo = shapeById(item.type);
     const sLabel = sInfo?.label ?? item.type;
-    const shimmerExtra = item.type === "shimmer_wall" ? 80 : 0;
-    const cost = PER_BACKDROP + shimmerExtra;
+    const cost = backdropItemPrice(item.type);
     lines.push({
       // sLabel already ends in "Backdrop" for most shapes — don't repeat it.
       label: d.backdropItems.length === 1 ? sLabel : `${sLabel} - panel ${i + 1}`,

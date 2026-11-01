@@ -83,6 +83,7 @@ export function withSetup(c: BuilderConfig, templateId: string): BuilderConfig {
     case "single_shimmer": panels = [makeBackdropItem("shimmer_wall")]; break;
     case "single_wavy": panels = [makeBackdropItem("wavy")]; break;
     case "single_fringe": panels = [makeBackdropItem("fringe")]; break;
+    case "custom_themed": panels = [makeBackdropItem("themed_set")]; decorPatch = { plinthSizes: [] }; break;
     case "arch_shimmer": panels = [archUnsized("arch-1"), makeBackdropItem("shimmer_wall")]; break;
     case "balloon_ring":
       panels = [makeBackdropItem("balloon_ring")];
@@ -103,7 +104,7 @@ export function withSetup(c: BuilderConfig, templateId: string): BuilderConfig {
   const idx = (t: string) => panels.findIndex((p) => p.type === t);
   const textOn = (() => {
     switch (templateId) {
-      case "single_arch": case "single_round": case "single_banner": case "single_shimmer": case "single_wavy": return 0;
+      case "single_arch": case "single_round": case "single_banner": case "single_shimmer": case "single_wavy": case "custom_themed": return 0;
       case "double_arch": case "triple_arch": return 1;
       case "arch_shimmer": return idx("shimmer_wall");
       case "arch_open_frame": return idx("arch");

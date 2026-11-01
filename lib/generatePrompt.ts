@@ -61,6 +61,9 @@ const SHAPE_DESC: Record<BackdropShapeId, string> = {
     "one tall freestanding solid board whose outline is wavy all round — soft rounded waves down both sides and a softly scalloped top, like a wavy mirror — standing directly on the floor",
   fringe:
     "one 2 metre by 2 metre fringe backdrop: a dense curtain of long shiny tinsel and paper streamers hanging straight down from a thin bar to the floor, in vertical bands of the party colours",
+  // 2026-11-01: the Customized Themed set is shown as its photo, never rendered.
+  themed_set:
+    "the theme's full printed set of layered peaked panels with balloon garlands and a round white stage",
 };
 
 const THEME_MOOD: Record<string, string> = {
@@ -575,6 +578,7 @@ export function generatePrompt(input: PromptInput): {
     open_arch_frame: "hollow open arch frame",
     wavy:            "wavy-edged board",
     fringe:          "tinsel and streamer fringe curtain",
+    themed_set:      "full printed themed set",
   };
 
   // Per-item label includes type + size for the strict requirements block

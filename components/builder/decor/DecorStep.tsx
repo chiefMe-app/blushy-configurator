@@ -70,7 +70,8 @@ export default function DecorStep(props: DecorStepProps) {
           </button>
         ) : (
           <span className="bz-decor-actions">
-            {!renderReady && (
+            {/* The Customized Themed set is its real photo: no render is made of it. */}
+            {!renderReady && !d.backdropItems.some((i) => i.type === "themed_set") && (
               <button type="button" className="bz-decor-hint" onClick={onGenerate} data-testid="generate-render"
                 disabled={generating || d.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}>
                 {generating ? "Generating…" : hasRender ? "Regenerate render ✨" : "Generate render ✨"}

@@ -523,6 +523,11 @@ function clearAllStandees() {
       // 2026-11-01: one fixed size each (the wavy board the lone arch's Large, the fringe 2 x 2 m).
       case "single_wavy":        panels = [makeBackdropItem("wavy")]; break;
       case "single_fringe":      panels = [makeBackdropItem("fringe")]; break;
+      // 2026-11-01: the theme's whole set; it stands on its own round stage, so no plinths.
+      case "custom_themed":
+        panels = [makeBackdropItem("themed_set")];
+        patchDecor({ plinthSizes: [] });
+        break;
       case "arch_shimmer":       panels = [makeArchUnsized("arch-1"), makeBackdropItem("shimmer_wall")]; break;
       case "balloon_ring":
         panels = [makeBackdropItem("balloon_ring")];
@@ -563,7 +568,7 @@ function clearAllStandees() {
     const textOn = (() => {
       const idx = (t: string) => panels.findIndex((p) => p.type === t);
       switch (templateId) {
-        case "single_arch": case "single_round": case "single_banner": case "single_shimmer": case "single_wavy": return 0;
+        case "single_arch": case "single_round": case "single_banner": case "single_shimmer": case "single_wavy": case "custom_themed": return 0;
         case "double_arch": return 1;
         case "triple_arch": return 1;
         case "arch_shimmer": return idx("shimmer_wall");
@@ -597,7 +602,7 @@ function clearAllStandees() {
   const activeSetupTemplateId = inferSetupLayoutTemplateIdFromBackdropItems(d.backdropItems);
 
   // Readable type labels for summaries
-  const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", half_arch: "Half Arch", rect: "Rectangular Backdrop", round: "Round Backdrop", banner: "Banner Backdrop", balloon_ring: "Balloon Ring", shimmer_wall: "Shimmer Wall", open_arch_frame: "Open Arch Frame", wavy: "Wavy Backdrop", fringe: "Fringe Backdrop" };
+  const TYPE_LABEL: Record<string, string> = { arch: "Arch Backdrop", half_arch: "Half Arch", rect: "Rectangular Backdrop", round: "Round Backdrop", banner: "Banner Backdrop", balloon_ring: "Balloon Ring", shimmer_wall: "Shimmer Wall", open_arch_frame: "Open Arch Frame", wavy: "Wavy Backdrop", fringe: "Fringe Backdrop", themed_set: "Customized Themed Set" };
 
   return {
     config, patchDecor, decorTab, setDecorTab, stylePieceId, setStylePieceId, onGenerate, renderReady,

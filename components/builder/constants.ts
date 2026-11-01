@@ -117,6 +117,8 @@ export const SETUP_ICON: Partial<Record<string, string>> = {
   triple_arch: "/design/backdrops-v2/triple-arch.webp",
   // 2026-11-01: drawn in her set's style (scripts/themes/setup-icon-render.mjs).
   single_wavy: "/design/backdrops-v2/wavy.webp", single_fringe: "/design/backdrops-v2/fringe.webp",
+  // 2026-11-01: the Customized Themed set, a crop of its photo.
+  custom_themed: "/design/backdrops-v2/custom-themed.webp",
 };
 
 // 2026-10-23: each theme's own example photo of a setup, shown (labelled as an

@@ -51,6 +51,8 @@ type PhotoBase = {
   /** families.png's step between families: 100 for the Frozen photos' three (white/silver/clear first, kept
    *  so when the palette has one), 50 for a theme's own (one per its colour, 255 for a balloon left as shot). */
   familyStep?: number;
+  /** A set photographed whole (the Customized Themed set): no balloon layer of its own, nothing repainted. */
+  fixed?: boolean;
   /** Each board, left to right: where it shows (none for the ring), its box and where its words go. */
   boards: { mask?: string; rim?: string; x0: number; y0: number; x1: number; y1: number; text: { cx: number; cy: number; w: number } }[];
   /** The photographed plinth (the XXL, 90 cm): left, top, width, height. */
@@ -155,6 +157,15 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     plinth: { x: 0.452, y: 0.65, w: 0.143, h: 0.273 },
     florals: fromPx([[300, 70], [420, 40], [560, 90], [680, 170], [800, 230], [880, 330], [900, 450], [880, 560], [860, 680], [820, 800], [760, 880]]),
     numberX: 0.2, standeeX: [0.06, 0.96],
+  },
+  // 2026-11-01: the Customized Themed set (Frozen), the owner's photo re-made with generic art and no name;
+  // the name goes on the top of the centre panel. It is shown as it is, its own stage in place of plinths.
+  themed_set: {
+    room: `${SK}/themed_set-room.webp`, balloons: "", families: "", fixed: true,
+    boards: [{ x0: 0.39, y0: 0.17, x1: 0.61, y1: 0.75, text: { cx: 0.515, cy: 0.37, w: 0.17 } }],
+    plinth: { x: 0.34, y: 0.72, w: 0.3, h: 0.1 },
+    florals: [],
+    numberX: 0.78, standeeX: [0.07, 0.93],
   },
   balloon_ring: {
     room: `${SK}/balloon_ring-room.webp`, balloons: `${SK}/balloon_ring-balloons.webp`, families: `${SK}/balloon_ring-families.png`,
@@ -340,7 +351,7 @@ function piecePath(p: Piece, floor = FLOOR): string | null {
       const cy = floor - r;
       return `M ${x} ${cy} a ${r} ${r} 0 1 0 ${w} 0 a ${r} ${r} 0 1 0 ${-w} 0 Z`;
     }
-    case "rect": case "banner": case "shimmer_wall": case "fringe":
+    case "rect": case "banner": case "shimmer_wall": case "fringe": case "themed_set":
       return `M ${x} ${floor} V ${top} H ${x + w} V ${floor} Z`;
     case "wavy":
       return wavyBoardPath(x, top, w, floor - top);
@@ -582,9 +593,10 @@ export default function LiveSketch({
   const balloonsOn = normalizeBalloonStyle(d.balloonStyle) !== "none";
   // Without balloons (or a ring that isn't a full one) the photo's own garland would stay, so then it's drawn plain.
   const fullRing = !items.some((i) => i.type === "balloon_ring") || (d.balloonRingStyle ?? "full") === "full";
-  const frozenBase = balloonsOn && fullRing ? PHOTO_BASES[items.map((i) => i.type).join(",")] ?? null : null;
+  // The themed set is its photo, garland and all, whatever the balloon choice.
+  const frozenBase = (balloonsOn && fullRing) || items.some((i) => i.type === "themed_set") ? PHOTO_BASES[items.map((i) => i.type).join(",")] ?? null : null;
   // The theme's own photos when it has them (a palette changed from the theme's is repainted on them).
-  const shotTheme = frozenBase && THEME_SHOTS.has(config.theme) ? config.theme : "frozen";
+  const shotTheme = frozenBase && !frozenBase.fixed && THEME_SHOTS.has(config.theme) ? config.theme : "frozen";
   const base = useMemo(() => frozenBase && shotTheme !== "frozen" ? themeShot(frozenBase, shotTheme) : frozenBase, [frozenBase, shotTheme]);
   const { pieces, scale } = useMemo(() => {
     if (!base) return layoutPieces(items, { maxW: hasNumber || standees.length ? 640 : 760, maxH: 640 });
@@ -598,7 +610,7 @@ export default function LiveSketch({
   const palette = d.balloonColors.length ? d.balloonColors : (theme?.balloonColors ?? ["#f7c5d8"]);
   const rimOf = (item: BackdropItem) => wavyBorderColor(item.borderColor, palette, accent);
   const asShot = sameColours(palette, (themeById(shotTheme)?.balloonColors ?? []).slice(0, 5));
-  const baseBalloons = useRecoloredBase(base ? base.balloons : null, base?.families ?? "", palette, asShot, base?.familyStep);
+  const baseBalloons = useRecoloredBase(base && !base.fixed ? base.balloons : null, base?.families ?? "", palette, asShot, base?.familyStep);
   const garlandSize = 18 + scale * 8;
   // How far the garland reaches past the boards' outer edges.
   const garlandReach = !balloonsOn ? 12 : base ? 0.17 * VB : garlandSize * 2.6;
@@ -811,7 +823,7 @@ export default function LiveSketch({
       )}
 
       {/* Theme graphic: a few small motifs on the board */}
-      {pieces.filter((p) => p.item.graphic?.enabled && (base || piecePath(p))).map((p) => {
+      {pieces.filter((p) => p.item.graphic?.enabled && !base?.fixed && (base || piecePath(p))).map((p) => {
         // A banner in a theme with its own print (Frozen's castle, Unicorn's rainbow) carries it, as the render guide draws it.
         const print = p.item.type === "banner" ? bannerPrintTheme(p.item.graphic.assetId) : null;
         if (base && print) {

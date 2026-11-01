@@ -67,6 +67,8 @@ export interface SetupLayoutTemplate {
   maxBackdrops: number;
   /** Optional playful badge shown on the card, e.g. "Popular", "Glam". */
   badge?: string;
+  /** Offered only on these themes (a set photographed for them); every theme when absent. */
+  themes?: string[];
   /** Shapes drawn in the card's mini preview illustration. */
   miniPreview: MiniPreviewShape[];
   garlandInstruction: string;
@@ -177,6 +179,24 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     panelInstruction: "A single 2 m by 2 m fringe curtain of long tinsel and paper streamers hanging from a thin bar to the floor. No second backdrop.",
     garlandInstruction: "Balloon design: one organic half-garland across the top of the fringe from its middle to the top-right corner and down the right edge to a cluster on the floor. The left side stays clean.",
     plinthInstruction: "Place cylinder plinths on the left/front side of the fringe, clear of the garland.",
+    standeeZones: ZONES_STANDARD,
+  },
+  {
+    // 2026-11-01 (owner): "customized themed diye bir seçenek eklensin. mesela bu eklediğim görselin
+    // birebir aynısını frozen'a yapalım, unicorn içinde gene buna benzer bulucam". The theme's whole set
+    // as in her photo (generic art for the character), the customer's name on it. Its preview is that photo;
+    // no AI render is made of it (the route refuses one).
+    id: "custom_themed",
+    name: "Customized Themed",
+    description: "Our full themed set, made with your name",
+    backdropTypes: ["themed_set"],
+    maxBackdrops: 1,
+    badge: "New",
+    themes: ["frozen"],
+    miniPreview: ["banner", "balloons"],
+    panelInstruction: "The theme's full printed set, as photographed. No second backdrop.",
+    garlandInstruction: "Balloon design: as photographed.",
+    plinthInstruction: "The set's own round stage; no plinths.",
     standeeZones: ZONES_STANDARD,
   },
   {
@@ -398,6 +418,7 @@ export function inferSetupLayoutTemplateIdFromBackdropItems(
   if (key === "banner") return "single_banner";
   if (key === "wavy") return "single_wavy";
   if (key === "fringe") return "single_fringe";
+  if (key === "themed_set") return "custom_themed";
   if (key === "balloon_ring") return "balloon_ring";
   if (key === "shimmer_wall") return "single_shimmer";
   if (key === "arch+shimmer_wall") return "arch_shimmer";
