@@ -99,6 +99,13 @@ export const THEME_CATALOG: ThemeCatalogEntry[] = [
       { id: "unicorn_full",    assetId: "unicorn-02", label: "Full Unicorn",     desc: "Prancing unicorn with rainbow mane" },
       { id: "unicorn_rainbow", assetId: "unicorn-03", label: "Rainbow Magic",    desc: "Rainbow with clouds and glitter stars" },
     ],
+    // 2026-11-01: drawn in the style of the owner's example unicorns
+    // (scripts/themes/theme-art.mjs); she may send her own in their place.
+    cutoutPresets: [
+      { id: "unicorn-01", assetId: "unicorn-01", label: "Prancing Unicorn", desc: "Unicorn rearing up, rainbow mane",  previewUrl: "/cutouts/unicorn/unicorn-01.png" },
+      { id: "unicorn-02", assetId: "unicorn-02", label: "Rainbow Unicorn",  desc: "Unicorn on a cloud under a rainbow", previewUrl: "/cutouts/unicorn/unicorn-02.png" },
+      { id: "unicorn-03", assetId: "unicorn-03", label: "Baby Unicorn",     desc: "Baby unicorn with a heart balloon",  previewUrl: "/cutouts/unicorn/unicorn-03.png" },
+    ],
   },
   {
     id: "dinosaur",

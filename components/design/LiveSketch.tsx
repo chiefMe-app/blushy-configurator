@@ -20,6 +20,7 @@ import {
   type BoardLettering,
 } from "@/lib/config";
 import { useLetteringLayout } from "./useLetteringLayout";
+import { bannerPrintTheme } from "@/lib/bannerPrintThemes";
 
 const VB = 1000;
 const FLOOR = 870;
@@ -720,10 +721,11 @@ export default function LiveSketch({
 
       {/* Theme graphic: a few small motifs on the board */}
       {pieces.filter((p) => p.item.graphic?.enabled && (base || piecePath(p))).map((p) => {
-        // A Frozen banner is printed with the customer's castle artwork (as the render guide draws it).
-        if (base && p.item.type === "banner" && String(p.item.graphic.assetId ?? "").startsWith("frozen-")) {
+        // A banner in a theme with its own print (Frozen's castle, Unicorn's rainbow) carries it, as the render guide draws it.
+        const print = p.item.type === "banner" ? bannerPrintTheme(p.item.graphic.assetId) : null;
+        if (base && print) {
           return (
-            <image key={`g${p.item.id}`} href={`${SK}/banner-print-frozen.webp`} x={p.x} y={p.top} width={p.w} height={p.h}
+            <image key={`g${p.item.id}`} href={`${SK}/banner-print-${print}.webp`} x={p.x} y={p.top} width={p.w} height={p.h}
               preserveAspectRatio="xMidYMid slice" mask={`url(#skBoard${uid}${p.idx})`} style={{ mixBlendMode: "multiply" }} />
           );
         }

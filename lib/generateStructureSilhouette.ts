@@ -24,6 +24,11 @@ import { layoutBoardLettering, placeLettering } from "./typography/boardLayout";
 import { fontById } from "./typography/registry";
 import { frozenBannerPrintSvg } from "./bannerPrint";
 import { FROZEN_CASTLE_PRINT } from "./bannerCastlePrint";
+import UNICORN_PRINT from "./bannerThemePrints/unicorn";
+import { bannerPrintTheme } from "./bannerPrintThemes";
+
+// Each banner print, by theme (lib/bannerPrintThemes.ts lists them).
+const BANNER_PRINTS: Record<string, string> = { frozen: FROZEN_CASTLE_PRINT, unicorn: UNICORN_PRINT };
 import { calculateExactLayout } from "./calculateExactLayout";
 import { calculateRenderAspectRatio } from "./calculateRenderAspectRatio";
 import type { FalImageSize } from "./calculateRenderAspectRatio";
@@ -1410,14 +1415,16 @@ export function generateStructureSilhouette(
       // and an angled white wedge of unprinted board showed above it. Drawn
       // here, the render paints the board printed and stands the plinth and
       // balloons in front of it itself.
-      if (shape === "banner" && item?.graphic?.enabled && String(item?.graphic?.assetId ?? "").startsWith("frozen-")) {
+      // 2026-11-01: and a Unicorn one with its own (any theme in BANNER_PRINTS).
+      const printTheme = shape === "banner" && item?.graphic?.enabled ? bannerPrintTheme(item?.graphic?.assetId) : null;
+      if (printTheme && BANNER_PRINTS[printTheme]) {
         const side = Math.min(panel.pw, panel.floorY - panel.apexY);
         const bl = panel.cx - side / 2, bt = panel.floorY - side;
         // 2026-10-22: the customer's castle artwork (bannerCastlePrint), in
         // place of the drawn snowflake wash.
         void frozenBannerPrintSvg;
         content.push(`<image x="${bl.toFixed(1)}" y="${bt.toFixed(1)}" width="${side.toFixed(1)}" height="${side.toFixed(1)}" ` +
-          `preserveAspectRatio="xMidYMid slice" href="${FROZEN_CASTLE_PRINT}"/>`);
+          `preserveAspectRatio="xMidYMid slice" href="${BANNER_PRINTS[printTheme]}"/>`);
         bannerPrintInGuide = true;
       }
     } else {

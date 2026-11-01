@@ -87,6 +87,20 @@ function flake(cx: number, cy: number, r: number, rot: number) {
   return d;
 }
 
+/** A plump five-pointed star (Unicorn's corners), drawn as one closed shape; its points rounded by the stroke. */
+function star(cx: number, cy: number, r: number, rot: number) {
+  const pts = Array.from({ length: 10 }, (_, i) => {
+    const a = ((rot - 90 + i * 36) * Math.PI) / 180, d = i % 2 ? r * 0.5 : r * 0.92;
+    return `${f1(cx + Math.cos(a) * d)},${f1(cy + Math.sin(a) * d)}`;
+  });
+  return `M${pts.join("L")}Z`;
+}
+
+/** The painted corners' shape for a theme (2026-11-01: Unicorn's stars, after Frozen's snowflakes); leafy sprigs otherwise. */
+export function cornerMotif(themeId: string): "flake" | "star" | "leaf" {
+  return themeId === "frozen" ? "flake" : themeId === "unicorn" ? "star" : "leaf";
+}
+
 /** A sprig from (x, y), angle a (degrees), len long: pine needles or small leaves along it. */
 function sprig(x: number, y: number, a: number, len: number, leaf: boolean) {
   const r = (a * Math.PI) / 180;
@@ -151,13 +165,15 @@ function edgeFlakes(shape: string, w: number, h: number, top: number, [c1, c2, c
 }
 
 /** Painted corners (2026-10-31, the owner's Frozen example): watercolour shapes in two corners, fainter ones in the others, a few specks — on white. */
-export function PaintedCorners({ w, h, top = 0, shape = "rectangle", inks, motif, uid }: { w: number; h: number; top?: number; shape?: string; inks: string[]; motif: "flake" | "leaf"; uid: string }) {
+export function PaintedCorners({ w, h, top = 0, shape = "rectangle", inks, motif, uid }: { w: number; h: number; top?: number; shape?: string; inks: string[]; motif: "flake" | "star" | "leaf"; uid: string }) {
   // A round board has less room in its corners: the shapes smaller there.
   const u = (w / 70) * (shape === "round" ? 0.62 : 1);
   const rand = rng(11);
   const [c1, c2, c3] = inks;
   const [tl, tr, bl, br] = boardCorners(shape, w, h, top);
   const leaf = motif === "leaf";
+  // Snowflakes or stars, in the same places (half off the board's edge).
+  const shapeD = motif === "star" ? (x: number, y: number, r: number, rot: number) => star(x, y, r * 0.8, rot) : flake;
   const ink = (c: string) => (c === "watercolour" ? `url(#${uid}-ink)` : c);
   // Shapes round each corner, d the way into the board: [x, y, size, turn, ink, strength].
   const at = ([x, y]: [number, number], dx: number, dy: number, d: [number, number]): [number, number] => [x + dx * u * d[0], y + dy * u * d[1]];
@@ -195,7 +211,7 @@ export function PaintedCorners({ w, h, top = 0, shape = "rectangle", inks, motif
       {/* The shapes' bleed — one filter pass (a filter on every shape was slow to draw). No wash round them: on the
           photo it showed as a pale patch with straight edges (the owner, 2026-10-31: "bi tuhaf duruyor"). */}
       <g filter={`url(#${uid}-bleed)`}>
-        {!leaf && flakes.map(([x, y, r, rot, c, o], i) => <path key={`fb${i}`} d={flake(x, y, r, rot)} stroke={ink(c)} strokeWidth={r * 0.1} fill={ink(c)} strokeLinecap="round" opacity={o * 0.35} />)}
+        {!leaf && flakes.map(([x, y, r, rot, c, o], i) => <path key={`fb${i}`} d={shapeD(x, y, r, rot)} stroke={ink(c)} strokeWidth={r * 0.1} fill={ink(c)} strokeLinecap="round" opacity={o * 0.35} />)}
       </g>
       <g filter={`url(#${uid}-wc)`}>
         {sprigs.map(([x, y, a, len, c, o], i) => {
@@ -208,7 +224,7 @@ export function PaintedCorners({ w, h, top = 0, shape = "rectangle", inks, motif
         {flakes.map(([x, y, r, rot, c, o], i) => leaf
           // Without snowflakes: soft painted berries where they would be.
           ? <g key={`f${i}`} opacity={o * 0.8}>{[0, 1, 2].map((k) => <circle key={k} cx={x + Math.cos(rot + k * 2.1) * r * 0.22} cy={y + Math.sin(rot + k * 2.1) * r * 0.22} r={r * 0.16} fill={c} />)}</g>
-          : <path key={`f${i}`} d={flake(x, y, r, rot)} stroke={ink(c)} strokeWidth={r * 0.045} fill={ink(c)} strokeLinecap="round" strokeLinejoin="round" opacity={o} />)}
+          : <path key={`f${i}`} d={shapeD(x, y, r, rot)} stroke={ink(c)} strokeWidth={r * (motif === "star" ? 0.12 : 0.045)} fill={ink(c)} strokeLinecap="round" strokeLinejoin="round" opacity={o} />)}
       </g>
       {specks.map(([x, y, r, t], i) => <circle key={`d${i}`} cx={x} cy={y} r={r} fill={t < 0.6 ? "#9AA0AE" : inks[i % 3]} opacity={0.35 + t * 0.3} />)}
     </g>
@@ -444,7 +460,7 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
           // eslint-disable-next-line jsx-a11y/alt-text
           <image data-part="art" href={art} x={cx - h / 2} y={cy - w / 2} width={h} height={w} preserveAspectRatio="xMidYMid slice" transform={`rotate(90 ${cx} ${cy})`} />
         )}
-        {board.design === "corners" && <PaintedCorners w={w} h={h} top={top} shape={board.shape} inks={paintInks(palette)} motif={theme.id === "frozen" ? "flake" : "leaf"} uid={uid} />}
+        {board.design === "corners" && <PaintedCorners w={w} h={h} top={top} shape={board.shape} inks={paintInks(palette)} motif={cornerMotif(theme.id)} uid={uid} />}
       </g>
       <g fill={ink} textAnchor="middle" {...halo} style={isLight(ink) ? undefined : { mixBlendMode: "multiply" }}>
         {texts[0] && <text ref={refs[0]} x={cx} y={f1(fit.base[0])} fontSize={f1(fit.size[0])} letterSpacing={f1(fit.size[0] * 0.16)} data-word="heading" style={{ fontFamily: "var(--bz-sans), 'DM Sans', sans-serif", fontWeight: 700 }}>{texts[0]}</text>}

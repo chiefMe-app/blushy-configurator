@@ -142,7 +142,7 @@ export const TABLE_ITEMS: TableItem[] = [
     { id: "florals", name: "Fresh florals", note: "A small, low arrangement", price: 90, unit: "per_table", photo: "/design/table/centrepiece-florals.webp" },
     { id: "toppers", name: "Theme toppers", note: "Stars and theme shapes on sticks", price: 40, unit: "per_table", photo: "/design/table/centrepiece-toppers.webp" },
     // 2026-10-29 (owner): "themed centerpiece, standing themed cutouts" — theme shapes, never characters; Frozen first (a pilot).
-    { id: "cutouts", name: "Theme cutouts", note: "Little standing theme shapes", price: 45, unit: "per_table", themed: true, themes: ["frozen"] },
+    { id: "cutouts", name: "Theme cutouts", note: "Little standing theme shapes", price: 45, unit: "per_table", themed: true, themes: ["frozen", "unicorn"] },
   ] },
   // A small water bottle wrapped in a 20.5 × 5 cm label in the placemats' designs, with
   // the customer's words — they see the finished label (2026-10-28: "tasarımın son halini görsün").

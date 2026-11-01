@@ -7,7 +7,7 @@ import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
 import { BOARD_DESIGNS, BOARD_GARNISHES, BOARD_MATERIALS, BOARD_SHAPES, BOARD_SIZES, BOARD_STANDS, MAX_BOARD_TEXT, boardArt, boardFace, boardWordsColour, cleanBoardText, defaultWelcomeBoard, welcomePhoto, welcomeTotal, type WelcomeBoard } from "@/lib/studio/welcomeBoard";
-import { PaintedCorners, paintInks } from "@/components/studio/WelcomeBoardArt";
+import { PaintedCorners, cornerMotif, paintInks } from "@/components/studio/WelcomeBoardArt";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
 
 export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
@@ -99,7 +99,7 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
             {BOARD_DESIGNS.map((d) => {
               const art = boardArt({ design: d.id }, theme.id);
               const look = d.id === "corners"
-                ? <svg className="photo" viewBox="0 0 70 100" aria-hidden="true"><rect width={70} height={100} fill="#fff" /><PaintedCorners w={70} h={100} inks={paintInks([theme.accent, ...theme.balloonColors, ...theme.backdropColors])} motif={theme.id === "frozen" ? "flake" : "leaf"} uid="wb-design-corners" /></svg>
+                ? <svg className="photo" viewBox="0 0 70 100" aria-hidden="true"><rect width={70} height={100} fill="#fff" /><PaintedCorners w={70} h={100} inks={paintInks([theme.accent, ...theme.balloonColors, ...theme.backdropColors])} motif={cornerMotif(theme.id)} uid="wb-design-corners" /></svg>
                 // eslint-disable-next-line @next/next/no-img-element
                 : art ? <img className="photo" src={art} alt="" loading="lazy" /> : <i className="swatch-big" style={{ background: b.colour }} />;
               return card(b.design === d.id, () => set({ design: d.id }), look, d.name, d.note, "", d.id);
