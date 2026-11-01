@@ -10,8 +10,15 @@
 //   <setup>-board-<i>.png  where each board shows (its colour is laid there)
 // and prints each board's box, for LiveSketch's PHOTO_BASES.
 // Run: npx tsx scripts/sketch/sketch-base.ts <dir with <setup>-e1.png, -fg1.png> <setup>
+//
+// A theme's own bases (2026-11-01, the owner: "bunları gerçekten render alıp sonra ordan kesmek
+// lazım"): the same photo re-shot by a paid edit with the theme's balloons (<setup>-u1.png, or -u2.png
+// when fixed up again) and cut out (<setup>-ufg.png), split the same way into
+// public/design/sketch/<theme>/, its families one per theme colour (see FAMILIES):
+//   npx tsx scripts/sketch/sketch-base.ts <dir> <setup> <theme>
 import sharp from "sharp";
 import path from "node:path";
+import { existsSync, mkdirSync } from "node:fs";
 
 /** Each setup's boards, left to right: a point well inside each, and the box it stays in (px of the 1024 square:
  *  x, y, then x0, y0, x1, y1 — two boards side by side, or a white balloon on a board, share no outline). */
@@ -24,10 +31,16 @@ const SEEDS: Record<string, [number, number, number, number, number, number][]> 
   single_shimmer: [[0, 0, 255, 392, 735, 800]],
   triple_arch: [[320, 650, 250, 400, 378, 790], [515, 650, 372, 380, 660, 790], [700, 650, 652, 400, 780, 790]],
   balloon_ring: [],
+  // Only for a theme's re-shoot (the Frozen round base was made apart): the round board, clear of the garland.
+  round: [[640, 420, 175, 185, 850, 870]],
   // 2026-11-01: the Wavy Board (from the Single Arch photo) and the Fringe (from the Banner photo), made by one paid edit each.
   single_wavy: [[400, 500, 270, 214, 620, 885]],
   single_fringe: [[0, 0, 70, 118, 885, 915]],
 };
+/** A round board's circle (px: centre and radius), past which nothing is board. */
+const CIRCLE: Record<string, [number, number, number]> = { round: [512, 528, 333] };
+/** Re-shoots whose garland walls off pieces of board from the flood (not where a white balloon would go too). */
+const PATCHES = new Set(["round", "double_arch", "arch_shimmer", "arch_open_frame"]);
 /** Boards that aren't flat paint (a sequin wall, a fringe curtain): the whole box, but for the balloons in front. */
 const RECT: Record<string, number[]> = { arch_shimmer: [1], single_shimmer: [0], single_fringe: [0] };
 /** Boards photographed tinted (light blue): made neutral, so their colour is laid on white. */
@@ -35,7 +48,7 @@ const NEUTRAL = new Set(["arch_open_frame"]);
 /** How coloured a board's paint may be (the light blue one more than a white one). */
 const CHROMA: Record<string, number> = { arch_open_frame: 34 };
 /** How dark a board may be in a balloon's shadow before the flood stops. */
-const LUM: Record<string, number> = { arch_open_frame: 140, arch_shimmer: 150 };
+const LUM: Record<string, number> = { arch_open_frame: 140, arch_shimmer: 150, round: 150 };
 /** Strips the square's padding left smeared (the photo was widened or heightened to a square): filled from
  *  the rows next to them, mirrored (px: the first good row, how many rows to mirror). */
 const FILL: Record<string, { top?: [number, number]; bottom?: [number, number] }> = {
@@ -60,12 +73,20 @@ const KEEP: Record<string, [number, number, number][]> = {
 const ERASE: Record<string, [number, number, number, number][]> = {
   double_arch: [[432, 238, 500, 335], [395, 268, 432, 335]],
 };
-const OUT = "public/design/sketch";
+/** A theme's balloon families by hue, in its palette's order (the value in families.png is the turn × 50;
+ *  255 marks a balloon of none of them, left as shot). Hue ranges in degrees. */
+const FAMILIES: Record<string, [number, number][][]> = {
+  unicorn: [[[320, 360], [0, 25]], [[25, 75]], [[75, 165]], [[165, 245]], [[245, 320]]],
+};
 
 (async () => {
-  const [dir, setup] = process.argv.slice(2);
-  const e1 = await sharp(path.join(dir, `${setup}-e1.png`)).removeAlpha().resize(1024, 1024).raw().toBuffer({ resolveWithObject: true });
-  const fg = await sharp(path.join(dir, `${setup}-fg1.png`)).ensureAlpha().resize(1024, 1024).raw().toBuffer();
+  const [dir, setup, theme] = process.argv.slice(2);
+  const OUT = theme ? `public/design/sketch/${theme}` : "public/design/sketch";
+  const shot = theme ? (existsSync(path.join(dir, `${setup}-u2.png`)) ? `${setup}-u2.png` : `${setup}-u1.png`) : `${setup}-e1.png`;
+  // A re-shoot: a fresh photo of the cleaned square, its balloons elsewhere (so none of the hand fixes).
+  if (theme) for (const fix of [FILL, BAND, KEEP, ERASE]) delete fix[setup];
+  const e1 = await sharp(path.join(dir, shot)).removeAlpha().resize(1024, 1024).raw().toBuffer({ resolveWithObject: true });
+  const fg = await sharp(path.join(dir, theme ? `${setup}-ufg.png` : `${setup}-fg1.png`)).ensureAlpha().resize(1024, 1024).raw().toBuffer();
   const W = e1.info.width, H = e1.info.height, N = W * H, px = e1.data;
   const { top, bottom } = FILL[setup] ?? {};
   const mirror = (y: number, from: number, span: number, dir: 1 | -1) => {
@@ -134,6 +155,32 @@ const OUT = "public/design/sketch";
     }
     return out;
   };
+  // A re-shoot's garland can wall off a piece of board from the flood: a big plain piece of the cut-out
+  // (the wall never is in it; a balloon's highlight is far smaller) is board too — the round's in its circle.
+  const patchLike = (i: number) => fg[i * 4 + 3] > 128 && lum(i) > 125 && chroma(i) < 16;
+  if (theme && PATCHES.has(setup)) SEEDS[setup].forEach(([, , bx0, by0, bx1, by1], b) => {
+    if (RECT[setup]?.includes(b)) return;
+    const c = CIRCLE[setup];
+    const inside = (j: number) => {
+      const x = j % W, y = (j - x) / W;
+      if (x < bx0 || x > bx1 || y < by0 || y > by1) return false;
+      return !c || Math.hypot(x - c[0], y - c[1]) <= c[2];
+    };
+    const seen = new Uint8Array(N);
+    for (let i = 0; i < N; i++) {
+      if (seen[i] || board[i] >= 0 || !inside(i) || !patchLike(i)) continue;
+      const part = [i], stack = [i];
+      seen[i] = 1;
+      while (stack.length) {
+        const k = stack.pop()!, x = k % W;
+        for (const j of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, k - W, k + W]) {
+          if (j < 0 || j >= N || seen[j] || board[j] >= 0 || !inside(j) || !patchLike(j) || step(k, j) > 8) continue;
+          seen[j] = 1; part.push(j); stack.push(j);
+        }
+      }
+      if (part.length >= 1200) for (const k of part) board[k] = b;
+    }
+  });
   let filled = grow(board, 2, (i) => boardLike(i) && !kept[i]);
   filled = grow(filled, 1, (i) => !kept[i]);
   if (NEUTRAL.has(setup)) for (let i = 0; i < N; i++) if (filled[i] >= 0) {
@@ -150,7 +197,8 @@ const OUT = "public/design/sketch";
     const r = at(i, 0), g = at(i, 1), b = at(i, 2), mx = Math.max(r, g, b), d = chroma(i);
     let h = d === 0 ? 0 : mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
     h = (h * 60 + 360) % 360;
-    fam[i] = d < 22 || mx < 50 ? 0 : h >= 165 && h < 245 ? 1 : h >= 245 && h < 330 ? 2 : 0;
+    if (theme) fam[i] = d < 22 || mx < 50 ? 255 : Math.max(0, FAMILIES[theme].findIndex((rs) => rs.some(([a, b]) => h >= a && h < b)));
+    else fam[i] = d < 22 || mx < 50 ? 0 : h >= 165 && h < 245 ? 1 : h >= 245 && h < 330 ? 2 : 0;
   }
   // Crumbs of board left loose (a few hundred points, apart from every balloon) go.
   const seen = new Uint8Array(N);
@@ -171,6 +219,17 @@ const OUT = "public/design/sketch";
   const tidy = Buffer.alloc(N);
   const M = 4;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (theme) {
+      // Most of its near neighbours' family (a theme's: up to five, and the as-shot ones).
+      const v = new Map<number, number>();
+      for (let dy = -M; dy <= M; dy++) for (let dx = -M; dx <= M; dx++) {
+        const xx = x + dx, yy = y + dy;
+        if (xx >= 0 && yy >= 0 && xx < W && yy < H && balloons[(yy * W + xx) * 4 + 3] > 60) v.set(fam[yy * W + xx], (v.get(fam[yy * W + xx]) ?? 0) + 1);
+      }
+      const best = Array.from(v).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 255;
+      tidy[y * W + x] = best === 255 ? 255 : best * 50;
+      continue;
+    }
     const v = [0, 0, 0];
     for (let dy = -M; dy <= M; dy++) for (let dx = -M; dx <= M; dx++) {
       const xx = x + dx, yy = y + dy;
@@ -178,6 +237,7 @@ const OUT = "public/design/sketch";
     }
     tidy[y * W + x] = v[1] > v[0] && v[1] >= v[2] ? 100 : v[2] > v[0] && v[2] > v[1] ? 200 : 0;
   }
+  mkdirSync(OUT, { recursive: true });
   await sharp(px, { raw: { width: W, height: H, channels: 3 } }).webp({ quality: 88 }).toFile(path.join(OUT, `${setup}-room.webp`));
   await sharp(balloons, { raw: { width: W, height: H, channels: 4 } }).webp({ quality: 90, alphaQuality: 100 }).toFile(path.join(OUT, `${setup}-balloons.webp`));
   await sharp(tidy, { raw: { width: W, height: H, channels: 1 } }).png().toFile(path.join(OUT, `${setup}-families.png`));

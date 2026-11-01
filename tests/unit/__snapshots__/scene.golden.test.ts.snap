@@ -4372,9 +4372,9 @@ exports[`scene golden > E13-unicorn-fringe 1`] = `
   "balloons": {
     "colors": [
       "#F8BBD0",
-      "#FDBA74",
       "#FEF08A",
       "#BBF7D0",
+      "#BAE6FD",
       "#DDD6FE",
     ],
     "style": "full",
@@ -4461,9 +4461,9 @@ exports[`scene golden > E14-unicorn-wavy 1`] = `
   "balloons": {
     "colors": [
       "#F8BBD0",
-      "#FDBA74",
       "#FEF08A",
       "#BBF7D0",
+      "#BAE6FD",
       "#DDD6FE",
     ],
     "style": "full",

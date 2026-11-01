@@ -129,7 +129,7 @@ export function backdropSwatchesForTheme(theme: Pick<Theme, "backdropColors">): 
 
 export const THEMES: Theme[] = [
   { id: "frozen", name: "Ice Princess", emoji: "--", desc: "Icy satin, silver frost", backdropColors: ["#E8F4FD", "#B3D9F2", "#FFFFFF"], balloonColors: ["#FFFFFF", "#BAE6FD", "#DCD7F2", "#C7C9C7", "#F0F4F8"], priceModifier: 50, accent: "#4A90D9" },
-  { id: "unicorn", name: "Unicorn", emoji: "-", desc: "Pearlescent pastels, soft iridescence", backdropColors: ["#F9D5DF", "#E8C8F0", "#FFFFFF"], balloonColors: ["#F8BBD0", "#FDBA74", "#FEF08A", "#BBF7D0", "#DDD6FE"], priceModifier: 50, accent: "#C77DD6" },
+  { id: "unicorn", name: "Unicorn", emoji: "-", desc: "Pearlescent pastels, soft iridescence", backdropColors: ["#F9D5DF", "#E8C8F0", "#FFFFFF"], balloonColors: ["#F8BBD0", "#FEF08A", "#BBF7D0", "#BAE6FD", "#DDD6FE"], priceModifier: 50, accent: "#C77DD6" },
   { id: "dinosaur", name: "Dinosaur", emoji: "-", desc: "Sage botanicals, muted terracotta", backdropColors: ["#E8F5E9", "#C8DFC8", "#F5F0E8"], balloonColors: ["#15803D", "#84CC16", "#C9A96E", "#D4A017", "#F5EDD6"], priceModifier: 30, accent: "#4CAF82" },
   { id: "safari", name: "Safari", emoji: "-", desc: "Warm linen, sun-washed neutrals", backdropColors: ["#FFF8E1", "#FFE0B2", "#F5F0E8"], balloonColors: ["#C9A96E", "#F5EDD6", "#FFC200", "#7B3F00", "#6EE7B7"], priceModifier: 30, accent: "#B5762A" },
   { id: "princess", name: "Princess", emoji: "-", desc: "Blush satin, pearl & soft gold", backdropColors: ["#FCE4EC", "#FFF9C4", "#FFFFFF"], balloonColors: ["#F8BBD0", "#FBCFE8", "#FFFFFF", "#FDE68A", "#E9D5FF"], priceModifier: 50, accent: "#E84F8B" },

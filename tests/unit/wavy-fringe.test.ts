@@ -1,6 +1,6 @@
 // The Wavy and Fringe Backdrops (2026-11-01, the owner: "wavy single arch
 // size inda olsun. fringe olan 2mx 2m size olsun, fiyatlari ayni olsun").
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { makeBackdropItem, priceBreakdown } from "@/lib/config";
@@ -49,6 +49,13 @@ describe("wavy and fringe backdrops", () => {
     }
   });
 
+  it("Unicorn has its own photographed sketch base for every setup (2026-11-01: real renders, cut out)", () => {
+    const sk = path.join(process.cwd(), "public/design/sketch");
+    const frozen = readdirSync(sk).filter((f) => /-(room\.webp|balloons\.webp|families\.png|board-\d\.png)$/.test(f));
+    expect(frozen.length).toBeGreaterThan(40);
+    for (const f of frozen) expect(existsSync(path.join(sk, "unicorn", f.replace("round-board-mask", "round-board-0"))), f).toBe(true);
+  });
+
   it("describe their own shape in the render prompt", () => {
     const wavy = buildLayoutRefEditPrompt(buildSceneModel(withSetup(withTheme(defaultConfig(), "frozen"), "single_wavy")));
     expect(wavy).toContain("softly wavy sides");
@@ -64,9 +71,9 @@ describe("wavy and fringe backdrops", () => {
     expect(sceneStyleReference({ theme: "frozen", panels: [{ type: "fringe" }], balloons: { style: "half" } })).toBeNull();
   });
 
-  it("gives Unicorn rainbow pastel balloons with no silver", () => {
+  it("gives Unicorn rainbow pastel balloons with no silver, like the owner's reference (no peach)", () => {
     const u = THEME_CATALOG.find((t) => t.id === "unicorn")!;
-    expect(u.sempertexPaletteIds.some((id) => /chrome|silver/i.test(id))).toBe(false);
-    expect(u.sempertexPaletteIds.length).toBe(5);
+    expect(u.sempertexPaletteIds.some((id) => /chrome|silver|peach/i.test(id))).toBe(false);
+    expect(u.sempertexPaletteIds).toEqual(["pastel-matte-609-pink", "pastel-matte-620-yellow", "pastel-matte-630-green", "pastel-matte-640-blue", "pastel-matte-650-lilac"]);
   });
 });

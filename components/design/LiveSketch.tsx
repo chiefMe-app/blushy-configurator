@@ -48,6 +48,9 @@ type PhotoBase = {
   // 200 lilac), worked out ahead of time and smoothed, so a balloon's
   // highlight is repainted with the balloon.
   families: string;
+  /** families.png's step between families: 100 for the Frozen photos' three (white/silver/clear first, kept
+   *  so when the palette has one), 50 for a theme's own (one per its colour, 255 for a balloon left as shot). */
+  familyStep?: number;
   /** Each board, left to right: where it shows (none for the ring), its box and where its words go. */
   boards: { mask?: string; x0: number; y0: number; x1: number; y1: number; text: { cx: number; cy: number; w: number } }[];
   /** The photographed plinth (the XXL, 90 cm): left, top, width, height. */
@@ -161,6 +164,17 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     numberX: 0.66, standeeX: [0.04, 0.97],
   },
 };
+/**
+ * Themes whose balloons were photographed for every setup (2026-11-01, the owner: "bunları gerçekten
+ * render alıp sonra ordan kesmek lazım"): the same photos re-shot with the theme's balloons, in
+ * /design/sketch/<theme>/, one family per theme colour (families.png holds its turn × 50, 255 left as shot).
+ */
+const THEME_SHOTS = new Set(["unicorn"]);
+function themeShot(base: PhotoBase, theme: string): PhotoBase {
+  const at = (u: string) => u.replace(`${SK}/`, `${SK}/${theme}/`).replace("round-board-mask", "round-board-0");
+  return { ...base, room: at(base.room), balloons: at(base.balloons), families: at(base.families), familyStep: 50,
+    boards: base.boards.map((b) => ({ ...b, mask: b.mask && at(b.mask) })) };
+}
 /** The plinth cut from the same photo, used for every plinth in every sketch. */
 const PLINTH_SRC = "/design/sketch/plinth.webp";
 const PLINTH_ASPECT = 0.343; // width / height of the sprite (the XXL)
@@ -182,7 +196,8 @@ const tintHex = (t: [number, number, number], l: number) => "#" + t.map((k) =>
     .toString(16).padStart(2, "0")).join("");
 const isWhite = (h: string) => { const [r, g, b] = hexRgb(h || "#ffffff"); return r > 246 && g > 246 && b > 246; };
 
-type BaseData = { img: ImageData; fam: Uint8Array; means: { rgb: Rgb; l: number }[] };
+type BaseData = { img: ImageData; fam: Uint8Array; means: { rgb: Rgb; l: number }[]; neutral: boolean };
+const AS_SHOT = 255;
 const baseCache = new Map<string, Promise<BaseData>>();
 const pixelsOf = (src: string, w?: number, h?: number) => new Promise<ImageData>((resolve, reject) => {
   const im = new Image();
@@ -197,25 +212,26 @@ const pixelsOf = (src: string, w?: number, h?: number) => new Promise<ImageData>
   im.onerror = reject;
   im.src = src;
 });
-function loadBase(src: string, familiesSrc: string): Promise<BaseData> {
+function loadBase(src: string, familiesSrc: string, step = 100): Promise<BaseData> {
   let p = baseCache.get(src);
   if (!p) {
     p = pixelsOf(src).then(async (img) => {
       const map = await pixelsOf(familiesSrc, img.width, img.height);
       const px = img.data;
       const fam = new Uint8Array(img.width * img.height);
-      const sum = [0, 1, 2].map(() => [0, 0, 0, 0]);
+      const last = Math.round(200 / step);
+      const sum = Array.from({ length: last + 1 }, () => [0, 0, 0, 0]);
       for (let k = 0, i = 0; i < px.length; k++, i += 4) {
-        const f = Math.min(2, Math.round(map.data[i] / 100));
+        const f = step < 100 && map.data[i] > 230 ? AS_SHOT : Math.min(last, Math.round(map.data[i] / step));
         fam[k] = f;
-        if (px[i + 3] < 128) continue;
+        if (f === AS_SHOT || px[i + 3] < 128) continue;
         sum[f][0] += px[i]; sum[f][1] += px[i + 1]; sum[f][2] += px[i + 2]; sum[f][3]++;
       }
       const means = sum.map(([r, g, b, n]) => {
         const rgb: Rgb = n ? [r / n, g / n, b / n] : [235, 235, 235];
         return { rgb, l: lum(...rgb) };
       });
-      return { img, fam, means };
+      return { img, fam, means, neutral: step === 100 };
     });
     baseCache.set(src, p);
   }
@@ -228,7 +244,7 @@ function loadBase(src: string, familiesSrc: string): Promise<BaseData> {
  * was taken with) shows the photo untouched — "purple kaybolmus" came from
  * repainting Frozen's own lilac a paler lilac.
  */
-function useRecoloredBase(src: string | null, familiesSrc: string, palette: string[], asShot: boolean): string | null {
+function useRecoloredBase(src: string | null, familiesSrc: string, palette: string[], asShot: boolean, familyStep?: number): string | null {
   // Kept with the base it was made for: on another setup's room a previous
   // setup's balloons must not show while its own are repainted.
   const [got, setGot] = useState<{ src: string | null; url: string | null }>({ src: null, url: null });
@@ -242,17 +258,17 @@ function useRecoloredBase(src: string | null, familiesSrc: string, palette: stri
     if (!src) { setUrl(null); return; }
     if (asShot) { setUrl(src); return; }
     let alive = true;
-    loadBase(src, familiesSrc).then(({ img, fam, means }) => {
+    loadBase(src, familiesSrc, familyStep).then(({ img, fam, means, neutral }) => {
       if (!alive) return;
       const cols = palette.map(hexRgb);
       const dist = (a: Rgb, b: Rgb) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-      const target: (Rgb | null)[] = [null, null, null];
+      const target: (Rgb | null)[] = means.map(() => null);
       const used = new Set<number>();
       // White and silver stay white and silver when a white, silver or grey
       // is chosen (matched by distance, the chrome would pull them to a pastel).
       const sat = (c: Rgb) => { const mx = Math.max(...c), mn = Math.min(...c); return mx ? (mx - mn) / mx : 0; };
       const neutralK = cols.map((c, k) => ({ c, k })).filter(({ c }) => sat(c) < 0.12).sort((a, b) => lum(...b.c) - lum(...a.c))[0];
-      if (neutralK) { target[0] = neutralK.c; used.add(neutralK.k); }
+      if (neutral && neutralK) { target[0] = neutralK.c; used.add(neutralK.k); }
       // The rest: greedy nearest match, each chosen colour used once while any are left.
       const pairs = means.flatMap((m, f) => cols.map((c, k) => ({ f, k, dd: dist(m.rgb, c) }))).sort((a, b) => a.dd - b.dd);
       for (const pr of pairs) {
@@ -261,11 +277,11 @@ function useRecoloredBase(src: string | null, familiesSrc: string, palette: stri
       }
       const out = new ImageData(new Uint8ClampedArray(img.data), img.width, img.height);
       const px = out.data;
-      const keep = target.map((t, f) => !t || dist(t, means[f].rgb) < 24 || (f === 0 && sat(t) < 0.12 && lum(...t) > 170));
+      const keep = target.map((t, f) => !t || dist(t, means[f].rgb) < 24 || (neutral && f === 0 && sat(t) < 0.12 && lum(...t) > 170));
       for (let k = 0, i = 0; i < px.length; k++, i += 4) {
         if (px[i + 3] === 0) continue;
         const f = fam[k];
-        if (keep[f]) continue;
+        if (f === AS_SHOT || keep[f]) continue;
         const t = target[f]!, lb = means[f].l, l = lum(px[i], px[i + 1], px[i + 2]);
         for (let c = 0; c < 3; c++) {
           px[i + c] = l <= lb ? t[c] * (l / lb) : t[c] + (255 - t[c]) * ((l - lb) / (255 - lb));
@@ -562,7 +578,10 @@ export default function LiveSketch({
   const balloonsOn = normalizeBalloonStyle(d.balloonStyle) !== "none";
   // Without balloons (or a ring that isn't a full one) the photo's own garland would stay, so then it's drawn plain.
   const fullRing = !items.some((i) => i.type === "balloon_ring") || (d.balloonRingStyle ?? "full") === "full";
-  const base = balloonsOn && fullRing ? PHOTO_BASES[items.map((i) => i.type).join(",")] ?? null : null;
+  const frozenBase = balloonsOn && fullRing ? PHOTO_BASES[items.map((i) => i.type).join(",")] ?? null : null;
+  // The theme's own photos when it has them (a palette changed from the theme's is repainted on them).
+  const shotTheme = frozenBase && THEME_SHOTS.has(config.theme) ? config.theme : "frozen";
+  const base = useMemo(() => frozenBase && shotTheme !== "frozen" ? themeShot(frozenBase, shotTheme) : frozenBase, [frozenBase, shotTheme]);
   const { pieces, scale } = useMemo(() => {
     if (!base) return layoutPieces(items, { maxW: hasNumber || standees.length ? 640 : 760, maxH: 640 });
     const ps: Piece[] = base.boards.map((b, idx) => ({ item: items[idx], idx, x: b.x0 * VB, w: (b.x1 - b.x0) * VB, h: (b.y1 - b.y0) * VB, top: b.y0 * VB, curveLeft: b.x0 + b.x1 < 1 }));
@@ -573,8 +592,8 @@ export default function LiveSketch({
   // Where things stand: the floor line, and how far in front of it the front row sits.
   const floorY = base ? (base.plinth.y + base.plinth.h) * VB : FLOOR;
   const palette = d.balloonColors.length ? d.balloonColors : (theme?.balloonColors ?? ["#f7c5d8"]);
-  const asShot = config.theme === "frozen" && sameColours(palette, (themeById("frozen")?.balloonColors ?? []).slice(0, 5));
-  const baseBalloons = useRecoloredBase(base ? base.balloons : null, base?.families ?? "", palette, asShot);
+  const asShot = sameColours(palette, (themeById(shotTheme)?.balloonColors ?? []).slice(0, 5));
+  const baseBalloons = useRecoloredBase(base ? base.balloons : null, base?.families ?? "", palette, asShot, base?.familyStep);
   const garlandSize = 18 + scale * 8;
   // How far the garland reaches past the boards' outer edges.
   const garlandReach = !balloonsOn ? 12 : base ? 0.17 * VB : garlandSize * 2.6;
@@ -716,7 +735,8 @@ export default function LiveSketch({
           <image href={base.room} width={VB} height={VB} />
           {/* Each board's colour, laid over its photographed light and shade. */}
           {pieces.map((p) => {
-            if (p.item.type === "fringe") return base.boards[p.idx].mask && (
+            // A theme's own fringe was photographed in its colours (repainted with the balloons).
+            if (p.item.type === "fringe") return shotTheme === "frozen" && base.boards[p.idx].mask && (
               <g key={p.item.id} mask={`url(#skBoard${uid}${p.idx})`} style={{ mixBlendMode: "multiply" }}>
                 {fringeStripes(base.boards[p.idx].x0 * VB, base.boards[p.idx].x1 * VB, palette, p.idx).map((st, i) => <rect key={i} x={st.x} width={st.w} height={VB} fill={st.hex} />)}
               </g>
