@@ -28,6 +28,7 @@ import type {
   BoardLettering,
 } from "./config";
 import { getPlinthDimensions } from "./layoutDimensions";
+import { setHexes, themeBalloonSets } from "./balloonSets";
 import { normalizeCutouts, normalizeBalloonStyle, themeById } from "@/lib/config";
 import { wavyBorderColor } from "./wavyBoard";
 
@@ -135,6 +136,12 @@ export type SceneCutouts = DecorConfig["cutouts"];
  * All color resolution and fallbacks are applied here.
  * Consumers (preview, AI prompt, export) should NOT re-implement this logic.
  */
+/** The fringe's colours: its theme's Pastel tones (SceneModel.fringeColors), else the balloons'. */
+function fringeColours(theme: string, balloonColors: string[]): string[] {
+  const pastel = setHexes(themeBalloonSets(theme).pastel);
+  return pastel.length ? pastel : balloonColors;
+}
+
 export interface SceneModel {
   theme:      ThemeId;
   panels:     ScenePanel[];
@@ -145,6 +152,12 @@ export interface SceneModel {
   garlandFlorals: boolean;
   /** Rainbow foil balloons on cloud bunches in the garland. */
   rainbowBalloons: boolean;
+  /**
+   * The Fringe Backdrop's colours: always its theme's Pastel tones, whatever set the balloons are
+   * (2026-11-02, the owner: "bright colorsta fringe in kendi degismesin pastelde kalsin sadece balon
+   * rengi degisecek"). Only on a scene with a fringe.
+   */
+  fringeColors?: string[];
   /** How the balloon ring is dressed — see BalloonRingStyleId. */
   balloonRingStyle: "full" | "half" | "none";
   /** Illuminated marquee number standing beside the backdrop. */
@@ -228,6 +241,7 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
     cutouts,
     garlandFlorals: d.garlandFlorals === true,
     rainbowBalloons: d.rainbowBalloons === true,
+    ...(panels.some((p) => p.type === "fringe") ? { fringeColors: fringeColours(config.theme, balloons.colors) } : {}),
     balloonRingStyle: d.balloonRingStyle === "half" ? "half"
       : d.balloonRingStyle === "none" ? "none" : "full",
     numberLight:    d.numberLight ?? { enabled: false, value: "1" },

@@ -8,6 +8,7 @@
 import { layoutLettering, type LetteringElementInput, type LetteringLayout } from "./layout";
 import { presetById } from "./presets";
 import { DEMO_BOX, DEMO_NAME_CAP_MM } from "./demo";
+import { headingRows } from "./lettering";
 
 export const LETTERING_BOX = DEMO_BOX;
 
@@ -20,6 +21,8 @@ export interface BoardLetteringInput {
 /** The layout of a board's lettering in LETTERING_BOX millimetres. */
 export function layoutBoardLettering(input: BoardLetteringInput): LetteringLayout {
   let { heading, name } = input;
+  // The heading on two rows, "Happy" over "Birthday" (headingRows).
+  if (heading?.text.trim()) heading = { ...heading, text: headingRows(heading.text).join("\n") };
   // A single line leads: with no name, the heading is set at the name's size.
   if (heading?.text.trim() && !name?.text.trim()) [heading, name] = [undefined, heading];
   return layoutLettering({

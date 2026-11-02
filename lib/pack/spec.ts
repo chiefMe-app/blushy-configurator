@@ -111,7 +111,7 @@ function letteringSpec(config: BuilderConfig, index: number, placement: { widthM
     const thin = a.notes.find((n) => n.kind === "thin_strokes");
     return {
       role: e.role,
-      text: e.input.text,
+      text: e.input.text.replace(/\n/g, " "),
       font: fontById(e.input.fontId)?.family ?? e.input.fontId,
       weight: e.input.weight,
       capHeightMm: round1(capHeightMm),

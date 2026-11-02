@@ -18,7 +18,7 @@ export interface Fixture {
 const SETUPS = [
   "single_arch", "single_round", "single_banner", "single_shimmer", "arch_shimmer",
   "balloon_ring", "arch_open_frame", "double_arch", "triple_arch",
-  "single_wavy", "single_fringe",
+  "single_wavy", "single_fringe", "wavy_shimmer",
 ] as const;
 
 const round = () => frozen("single_round");

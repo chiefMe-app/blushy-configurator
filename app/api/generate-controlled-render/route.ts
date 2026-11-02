@@ -389,9 +389,9 @@ const BALLOON_STYLE: Record<string, string> = {
            "it does NOT become a horizontal floor trail, a balloon carpet, or a front-of-stage installation. " +
            "The opposite side remains completely open and clean. " +
            "Do NOT wrap around to the other side. Do NOT become a full garland or full frame. " +
-           "Varied balloon sizes (large, medium, small), layered depth, glossy latex balloons",
+           "Varied balloon sizes (large, medium, small), layered depth, matte latex balloons",
   full:    "a full organic balloon frame around the backdrop group — both sides and top, " +
-           "varied balloon sizes, rich layered depth, glossy latex balloons",
+           "varied balloon sizes, rich layered depth, matte latex balloons",
   premium: "a dense luxury organic balloon installation — large, medium, small, and mini latex balloons, " +
            "rich layered depth, high-end editorial balloon styling",
   none:    "no balloons anywhere in the scene",
@@ -779,6 +779,7 @@ async function generateLayoutReferencePng(
         // 2026-10-24: none any more — "butun frozen setuplardan balonlarin
         // arasindaki snowflake kaldiralim".
         clearColors: clearHexColors, snowflakes: false,
+        fringeColors: sceneModel.fringeColors,
         // (a close-up does not show lettering, so it does not count here)
         styleReference: !!sceneStyleReference(sceneModel) && !sceneStyleReference(sceneModel)?.closeUp },
     );

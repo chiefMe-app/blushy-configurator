@@ -45,7 +45,8 @@ test("opens on #5 Soft Signature, big lettering, customer choices only, no conso
   expect(Object.keys(p).sort()).toEqual(["heading", "name"]);
   // The name leads: a short name spans well over a third of the 2 m board.
   expect(await widthMm(page, "name")).toBeGreaterThan(700);
-  expect(await widthMm(page, "heading")).toBeGreaterThan(450);
+  // The heading on two rows ("Happy" over "Birthday", 2026-11-02), so narrower but taller than on one.
+  expect(await widthMm(page, "heading")).toBeGreaterThan(350);
   // Vinyl only; no production engineering on the page.
   await expect(page.getByTestId("finish")).toContainText("vinyl");
   const text = await page.locator("body").innerText();

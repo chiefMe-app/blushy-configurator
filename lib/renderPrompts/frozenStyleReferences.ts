@@ -20,7 +20,7 @@
 // photos here are the second pass, told to keep every round balloon.
 //
 // The customer's reference photo, 720px wide, as a JPEG data URI.
-import { hexPaletteKind } from "../balloonSets";
+import { sceneBalloonSet } from "../balloonSets";
 import { BRIGHT_ARCH_STYLE_REFERENCE, UNICORN_ARCH_STYLE_REFERENCE, UNICORN_BRIGHT_ARCH_STYLE_REFERENCE } from "./unicornStyleReferences";
 
 export const ROUND_STYLE_REFERENCE: string =
@@ -73,6 +73,10 @@ export function sceneStyleReference(scene: { theme?: string; panels: { type: str
   if (types.length === 2 && types.includes("arch") && types.includes("shimmer_wall")) {
     return { image: ARCH_SHIMMER_STYLE_REFERENCE, board: "arch board, the shimmer wall", light: "bright, airy neutral white daylight" };
   }
+  // 2026-11-02: Wavy + Shimmer is laid out as Arch + Shimmer, so it is shot against the same photo.
+  if (types.length === 2 && types.includes("wavy") && types.includes("shimmer_wall")) {
+    return { image: ARCH_SHIMMER_STYLE_REFERENCE, board: "wavy board, the shimmer wall", light: "bright, airy neutral white daylight" };
+  }
   if (types.length === 3 && types.filter((t) => t === "half_arch").length === 2 && types.includes("arch")) {
     // (2026-10-22: a garland close-up was tried instead, for a smooth plinth and
     // the customer's sail-shaped side boards; reverted the same day — the
@@ -92,7 +96,7 @@ export function sceneStyleReference(scene: { theme?: string; panels: { type: str
   // Frozen one its five pastels came back two.
   // 2026-11-02: and the Bright colours set its own bright photo ("pastel tone opsiyon 1 … bright color opsiyon 2"):
   // flux-2/flash/edit takes the balloons' colours from this photo, so a pastel one would turn the bright set pastel.
-  const bright = hexPaletteKind(scene.balloons?.colors ?? []) === "bright";
+  const bright = sceneBalloonSet(scene.theme, scene.balloons?.colors ?? []) === "bright";
   const archPhoto = scene.theme === "unicorn"
     ? (bright ? UNICORN_BRIGHT_ARCH_STYLE_REFERENCE : UNICORN_ARCH_STYLE_REFERENCE)
     : bright ? BRIGHT_ARCH_STYLE_REFERENCE : ARCH_STYLE_REFERENCE;

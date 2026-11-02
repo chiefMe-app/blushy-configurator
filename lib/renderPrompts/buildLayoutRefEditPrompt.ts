@@ -4,9 +4,10 @@ import { getVisualLabel, renderSafeBalloonLabel, getPositiveLabel } from "./colo
 import { hasLoneArchStyleReference } from "./loneArchStyleReference";
 import { sceneStyleReference } from "./frozenStyleReferences";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
+import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
 import { getSetupLayoutTemplate, inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
 import { describeTextColor, messageLines, foilColourFor, FOIL_NUMBER_COLOURS } from "@/lib/config";
-import { cleanLettering, lineDescriptor } from "@/lib/typography/lettering";
+import { cleanLettering, headingRows, lineDescriptor } from "@/lib/typography/lettering";
 
 // A raw hex means nothing to the edit model, and "#FFFFFF" used to collapse into
 // the same "cream-white" as an unset panel — so choosing white for one arch read
@@ -97,8 +98,19 @@ function letteringTypeface(t: PanelText, legacy: string): string {
 function letteringLayoutSentence(t: PanelText): string {
   const lines = panelLettering(t);
   if (!lines) return "";
-  if (lines.length === 1) return `It is ONE line, "${lines[0].text.trim()}" in ${lineDescriptor(lines[0])}, letter for letter as IMAGE 1 draws it. `;
-  return `It is set in two lines exactly as IMAGE 1 draws them: "${lines[0].text.trim()}" in ${lineDescriptor(lines[0])} on top, and ` +
+  // 2026-11-02: the heading on two rows, "Happy" over "Birthday" (headingRows, as the guide sets it).
+  const rows = (l: typeof lines[number], i: number) => (i === 0 && t.lettering?.heading.text.trim() ? headingRows(l.text) : [l.text.trim()]);
+  const said = (l: typeof lines[number], i: number) => {
+    const r = rows(l, i);
+    return r.length > 1 ? `"${r[0]}" on one row with "${r.slice(1).join(" ")}" centred on the row below it` : `"${r[0]}"`;
+  };
+  if (lines.length === 1) {
+    const r = rows(lines[0], 0);
+    return r.length > 1
+      ? `It is set in ${r.length} rows exactly as IMAGE 1 draws them, in ${lineDescriptor(lines[0])}: ${said(lines[0], 0)} — letter for letter, the rows NOT joined into one line. `
+      : `It is ONE line, "${r[0]}" in ${lineDescriptor(lines[0])}, letter for letter as IMAGE 1 draws it. `;
+  }
+  return `It is set exactly as IMAGE 1 draws it: ${said(lines[0], 0)}, in ${lineDescriptor(lines[0])}, on top, and ` +
     `"${lines[1].text.trim()}" larger, centred below it, in ${lineDescriptor(lines[1])} — the same letterforms, not another font. `;
 }
 
@@ -124,6 +136,11 @@ export function buildLayoutRefEditPrompt(
   const isWavy = loneRealType === "wavy";
   const isFringe = loneRealType === "fringe";
   const squareBoardNoun = isFringe ? "square fringe curtain" : "square banner board";
+  // The fringe's own colours (SceneModel.fringeColors: its theme's Pastel tones, whatever the balloons are).
+  const fringeWords = Array.from(new Set((realSceneModel.fringeColors ?? [])
+    .map((h) => SEMPERTEX_CATALOG.find((c) => c.hex.toLowerCase() === h.toLowerCase()))
+    .filter((c) => !!c && !/clear|chrome|reflex|metallic/i.test(`${c.finish} ${c.colorName}`))
+    .map((c) => getVisualLabel(c!).split(",")[0].trim())));
   const panelCount = sceneModel.panels.length;
   const isMulti = panelCount > 1;
   const theme = String(sceneModel.theme ?? "").toLowerCase();
@@ -265,7 +282,7 @@ export function buildLayoutRefEditPrompt(
     } else if (isFringe) {
       // A layered tissue-and-tinsel fringe hung in a slim wooden frame, not a board: the owner's fringe
       // photos (2026-11-01: "renkler ve tinsellar benzer olmalı … yere değmeli, o frame'in içinde olsun,
-      // aralarda glitter renkler de ok"). No print and no lettering; its colours are the balloons' own.
+      // aralarda glitter renkler de ok"). No print and no lettering.
       backdropDesc =
         `a square layered fringe backdrop, exactly ${p.widthCm}cm wide x ${p.heightCm}cm tall — a perfect square: ` +
         `a slim freestanding rectangular frame of thin light natural wood standing on the floor, and hanging inside it, ` +
@@ -273,8 +290,12 @@ export function buildLayoutRefEditPrompt(
         // see-through foil curtain was wrong — it is a dense, full fringe in bold colour blocks, the wall never
         // showing through, with panels of metallic tinsel laid over it at different heights.
         `filling the whole frame edge to edge, a dense, full, thick fringe of long matte crepe-paper streamers hung ` +
-        `side by side in wide vertical colour blocks, each block one of the balloon colours, the colours repeating ` +
-        `across. Over them hang panels of shiny metallic foil tinsel — gold and a metallic shade of the balloon ` +
+        `side by side in wide vertical colour blocks, ` +
+        // 2026-11-02: its own soft pastels, not the balloons' ("fringe in kendi degismesin pastelde kalsin").
+        (fringeWords.length
+          ? `each block one of these soft pastel colours: ${fringeWords.join(", ")} — whatever colour the balloons are — the colours repeating `
+          : `each block one of the balloon colours, the colours repeating `) +
+        `across. Over them hang panels of shiny metallic foil tinsel — gold and a metallic shade of the fringe ` +
         `colours — some from the top bar, some starting lower down, ending at different heights, like layered tiers. ` +
         `The streamers are packed so thick that the wall never shows through anywhere; their hems are soft and ` +
         `uneven, and the lowest reach all the way down and touch the floor. Clearly freestanding in front of the wall. ` +
@@ -377,6 +398,9 @@ export function buildLayoutRefEditPrompt(
       const isArch      = p.type === "arch";
       const isOpenFrame = p.type === "open_arch_frame";
       const isHalfArch  = p.type === "half_arch";
+      // A wavy board is laid out as an arch (renderAliasScene); only its own words differ (Wavy + Shimmer).
+      const real = realSceneModel.panels[i];
+      const isWavyP     = real?.type === "wavy";
       const shimmerC  = sceneModel.shimmerColor ?? "silver";
       const pColor = backdropColorLabel(p.color);
       const surfaceDesc = isShimmer
@@ -404,12 +428,18 @@ export function buildLayoutRefEditPrompt(
               `full height. The curved corner faces OUTWARD, away from the centre board; the straight edge ` +
               `is butted flat against the centre board with no gap. It is NOT a full arch, NOT symmetrical, ` +
               `NOT rounded on both top corners`
+          : isWavyP
+            ? `tall solid freestanding board whose two long sides run in soft gentle waves from top to bottom and whose ` +
+              `top edge is softly scalloped with rounded corners, like a wavy mirror, seamless matte ${pColor} face` +
+              (real?.borderColor ? ` on a slightly larger wavy board of the same outline in matte ${backdropColorLabel(real.borderColor)}, ` +
+                `showing as an even rim about 6 cm wide all round the face` : "") +
+              `, no cut-out opening, NOT a plain rounded arch, NOT a rectangle with straight sides`
           : isArch
             ? `solid filled freestanding arch backdrop panel, fully opaque surface, seamless matte ${pColor} surface, ` +
               `no cut-out opening, no hollow doorway, full solid panel face visible`
             : `full-width solid opaque ${pColor} freestanding backdrop board with broad visible surface`;
       return (
-        `Panel ${i + 1} (${posLabels[i]}): ${panelTypeLabel(p.type)}${isOpenFrame ? "" : " backdrop board"}, ` +
+        `Panel ${i + 1} (${posLabels[i]}): ${panelTypeLabel(isWavyP ? "wavy" : p.type)}${isOpenFrame ? "" : " backdrop board"}, ` +
         `${p.widthCm}cm wide by ${p.heightCm}cm tall (width-to-height ratio ${wRatio}), ` +
         `${surfaceDesc}, not compressed, not narrow, not a tower, correctly proportioned`
       );
@@ -997,12 +1027,13 @@ export function buildLayoutRefEditPrompt(
   // wall stays described against the board (darker than it), which is what keeps the two apart.
   // 2026-11-02 (later), "çok sarı olmuş gibi duruyor ışık, bu kadar sarı sevmiyorum": the light is neutral
   // white daylight and the wall soft off-white — no cream, no warm glow.
+  // 2026-11-02 (later still), "bu cok shiny duruyor balloon ring, matlastiralim": the latex balloons are matte.
   const roundRoomLine = `The room is bright, airy and joyful, full of clean, bright, neutral white daylight: a smooth soft off-white plaster wall ` +
     `— clearly darker than the ${backdropWordForRoom} standing against it, never white — and a light natural oak ` +
     `wooden floor with a soft sheen. Bright, soft daylight comes from a large window off to the left, out of the ` +
     `frame, with a gentle bright glow on the wall and soft natural shadows behind the setup — fresh and clean, a ` +
     `neutral white balance, not yellow, golden or orange, with no hard sunbeam or bright patch across the backdrop and no blown-out highlights. The balloons ` +
-    `look fresh, glossy and vivid. ` +
+    `look fresh and vivid: soft MATTE latex with only a gentle satin sheen — no glossy shine, no wet-look highlights. ` +
     `No window, doorway, radiator or furniture is visible. `;
   // 2026-10-22: the Frozen lone arch, shot against its reference photo, gets
   // that photo's room: a warm light-greige wall in warm daylight from the
@@ -1013,7 +1044,7 @@ export function buildLayoutRefEditPrompt(
     `wooden floor with a soft sheen. Bright, soft daylight comes from a large window off to the left, out of the ` +
     `frame, with a gentle bright glow on the wall and soft natural shadows behind the setup — fresh and clean, a ` +
     `neutral white balance, not yellow, golden or orange, with no hard sunbeam or bright patch across the backdrop and no blown-out highlights. The balloons ` +
-    `look fresh, glossy and vivid. ` +
+    `look fresh and vivid: soft MATTE latex with only a gentle satin sheen — no glossy shine, no wet-look highlights. ` +
     `No window, doorway, radiator or furniture is visible. `;
   const loneRoundRoom = panelCount === 1 && sceneModel.panels[0]?.type === "round";
   const frontRoomLine = `The room is bright, airy and joyful, full of clean, bright, neutral white daylight: a smooth soft off-white plaster wall ` +
@@ -1021,7 +1052,7 @@ export function buildLayoutRefEditPrompt(
     `wooden floor with a soft sheen. Bright, soft daylight comes from a large window off to the left, out of the ` +
     `frame, with a gentle bright glow on the wall and soft natural shadows behind the setup — fresh and clean, a ` +
     `neutral white balance, not yellow, golden or orange, with no hard sunbeam or bright patch across the backdrop and no blown-out highlights. The balloons ` +
-    `look fresh, glossy and vivid. ` +
+    `look fresh and vivid: soft MATTE latex with only a gentle satin sheen — no glossy shine, no wet-look highlights. ` +
     `At the very left edge of the frame a narrow slice of a tall window frame is visible as a quiet ` +
     `background detail — just the edge of it, never dominating, and no daylight or glare spilling from ` +
     `it onto the setup. No doorway, radiator or furniture is visible. `;
@@ -1184,7 +1215,8 @@ export function buildLayoutRefEditPrompt(
         if (lettering) return `The lettering reads exactly "${p.text.value.trim()}". ${lettering}`;
         const ls = messageLines(p.text.value) ?? [p.text.value.trim()];
         return ls.length > 1
-          ? `The lettering reads exactly "${p.text.value.trim()}", in ${ls.length} lines as IMAGE 1 sets it: "${ls[0]}" on one line and "${ls.slice(1).join(" ")}" centred on the line below. `
+          ? `The lettering reads exactly "${p.text.value.trim()}", in ${ls.length} lines as IMAGE 1 sets it: "${ls[0]}" on one line, ` +
+            ls.slice(1).map((l) => `"${l}" centred on the line below`).join(", then ") + `. `
           : `The lettering reads exactly "${ls[0]}", on ONE line as IMAGE 1 sets it. `;
       }).join("") + `IMAGE 2's words are NOT copied — only their finish. `
     : "";

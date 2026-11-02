@@ -23,36 +23,35 @@ import { existsSync, mkdirSync } from "node:fs";
 /** Each setup's boards, left to right: a point well inside each, and the box it stays in (px of the 1024 square:
  *  x, y, then x0, y0, x1, y1 — two boards side by side, or a white balloon on a board, share no outline). */
 const SEEDS: Record<string, [number, number, number, number, number, number][]> = {
-  single_arch: [[420, 520, 270, 208, 680, 860]],
-  double_arch: [[460, 500, 330, 235, 534, 780], [640, 500, 535, 290, 790, 780]],
-  arch_open_frame: [[420, 520, 240, 240, 580, 830], [585, 640, 550, 320, 870, 830]],
-  arch_shimmer: [[370, 650, 280, 380, 445, 795], [0, 0, 445, 410, 715, 792]],
-  single_banner: [[300, 500, 55, 100, 900, 897]],
-  single_shimmer: [[0, 0, 255, 392, 735, 800]],
-  triple_arch: [[320, 650, 250, 400, 378, 790], [515, 650, 372, 380, 660, 790], [700, 650, 652, 400, 780, 790]],
+  // 2026-11-02: every setup re-shot fresh in the Single Arch's light ("single arch'taki renk ve ortam ışığını
+  // sevdim, onun gibi yapalım hepsini"), from its own route guide; one geometry across the four set folders.
+  // A seed at x -1 is a board its garland hides whole in these shots (the Triple Arch's half arches): no mask.
+  single_arch: [[420, 520, 270, 240, 680, 870]],
+  double_arch: [[470, 520, 300, 190, 560, 870], [700, 520, 545, 255, 835, 870]],
+  arch_open_frame: [[400, 520, 180, 215, 560, 870], [572, 640, 545, 265, 880, 870]],
+  arch_shimmer: [[380, 600, 140, 300, 470, 870], [0, 0, 470, 372, 705, 840]],
+  single_banner: [[400, 600, 200, 80, 880, 870]],
+  single_shimmer: [[0, 0, 298, 262, 760, 836]],
+  triple_arch: [[-1, 0, 0, 0, 0, 0], [512, 700, 380, 380, 650, 870], [-1, 0, 0, 0, 0, 0]],
   balloon_ring: [],
-  // Only for a theme's re-shoot (the Frozen round base was made apart): the round board, clear of the garland.
-  round: [[640, 420, 175, 185, 850, 870]],
-  // 2026-11-01: the Wavy Board (from the Single Arch photo) and the Fringe (from the Banner photo), made by one paid edit each.
-  // Re-shot wider, on a coral rim (2026-11-01, the owner: "wavy daha geniş olmalı … border offset olmalı").
-  // 2026-11-02: re-shot from a real render of its new garland (down the left from the top, low on the right).
-  single_wavy: [[540, 520, 380, 230, 705, 875]],
-  // 2026-11-02: re-shot from a real render of the owner's second fringe photo ("bunun gibi olmali"): wide
-  // vertical colour blocks with tinsel panels, in its frame.
-  single_fringe: [[0, 0, 218, 258, 802, 848]],
+  round: [[600, 550, 175, 185, 850, 870]],
+  single_wavy: [[540, 520, 380, 220, 700, 880]],
+  single_fringe: [[0, 0, 218, 258, 806, 850]],
+  // The Wavy + Shimmer (new 2026-11-02): laid out as the Arch + Shimmer.
+  wavy_shimmer: [[380, 600, 140, 300, 480, 870], [0, 0, 470, 372, 705, 840]],
 };
 /** A round board's circle (px: centre and radius), past which nothing is board. */
-const CIRCLE: Record<string, [number, number, number]> = { round: [512, 528, 333] };
+const CIRCLE: Record<string, [number, number, number]> = { round: [505, 560, 300] };
 /** Re-shoots whose garland walls off pieces of board from the flood (not where a white balloon would go too). */
-const PATCHES = new Set(["round", "double_arch", "arch_shimmer", "arch_open_frame"]);
+const PATCHES = new Set(["round", "double_arch", "arch_shimmer", "arch_open_frame", "wavy_shimmer"]);
 /** Parts of the photo that are all foreground though the cut-out missed some (a fringe's busy strands):
  *  px x0, y0, x1, y1. The Fringe's frame and its tiers, re-shot 2026-11-01 ("o frame'in içinde olsun"). */
-const SOLID: Record<string, [number, number, number, number]> = { single_fringe: [218, 258, 802, 848] };
+const SOLID: Record<string, [number, number, number, number]> = { single_fringe: [218, 258, 806, 850] };
 /** Boards photographed on a coral rim (the offset border): the rim's own mask (<setup>-rim-<i>.png), made
  *  neutral so its colour is laid on it like a board's. */
 const RIM = new Set(["single_wavy"]);
 /** Boards that aren't flat paint (a sequin wall, a fringe curtain): the whole box, but for the balloons in front. */
-const RECT: Record<string, number[]> = { arch_shimmer: [1], single_shimmer: [0], single_fringe: [0] };
+const RECT: Record<string, number[]> = { arch_shimmer: [1], single_shimmer: [0], single_fringe: [0], wavy_shimmer: [1] };
 /** Boards photographed tinted (light blue): made neutral, so their colour is laid on white. */
 const NEUTRAL = new Set(["arch_open_frame"]);
 /** How coloured a board's paint may be (the light blue one more than a white one). */
@@ -88,9 +87,9 @@ const ERASE: Record<string, [number, number, number, number][]> = {
 const FAMILIES: Record<string, [number, number][][]> = {
   unicorn: [[[320, 360], [0, 25]], [[25, 75]], [[75, 165]], [[165, 245]], [[245, 320]]],
   // 2026-11-02: a shot per theme and balloon set (lib/balloonSets.ts), relit in neutral daylight. Each set's
-  // own order: Unicorn's pastel is its palette; its bright is rose, peach, mint, lavender.
+  // own order: Unicorn's pastel is its palette; its bright is peach, rose, green, lilac (the owner's Sempertex picks).
   "unicorn-pastel": [[[320, 360], [0, 25]], [[25, 75]], [[75, 165]], [[165, 245]], [[245, 320]]],
-  "unicorn-bright": [[[300, 360], [0, 15]], [[15, 60]], [[60, 200]], [[200, 300]]],
+  "unicorn-bright": [[[15, 60]], [[300, 360], [0, 15]], [[60, 200]], [[200, 300]]],
   // Frozen's: white, ice blue, lilac, silver, clear (pastel); white, royal blue, caribbean blue, violet, silver
   // (bright). White, silver and clear have no hue: left as shot.
   "frozen-pastel": [[], [[165, 245]], [[245, 330]], [], []],
@@ -103,6 +102,8 @@ const FAMILIES: Record<string, [number, number][][]> = {
   const shot = theme ? (existsSync(path.join(dir, `${setup}-u2.png`)) ? `${setup}-u2.png` : `${setup}-u1.png`) : `${setup}-e1.png`;
   // A re-shoot: a fresh photo of the cleaned square, its balloons elsewhere (so none of the hand fixes).
   if (theme) for (const fix of [FILL, BAND, KEEP, ERASE]) delete fix[setup];
+  // Its boards are shot white (the tinted Open Frame was the first photo's).
+  if (theme) { NEUTRAL.delete(setup); delete CHROMA[setup]; }
   const e1 = await sharp(path.join(dir, shot)).removeAlpha().resize(1024, 1024).raw().toBuffer({ resolveWithObject: true });
   const fg = await sharp(path.join(dir, theme ? `${setup}-ufg.png` : `${setup}-fg1.png`)).ensureAlpha().resize(1024, 1024).raw().toBuffer();
   const W = e1.info.width, H = e1.info.height, N = W * H, px = e1.data;
@@ -145,9 +146,79 @@ const FAMILIES: Record<string, [number, number][][]> = {
   }
   const erased = (i: number) => { const x = i % W, y = (i - x) / W; return (ERASE[setup] ?? []).some(([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1); };
   const board = new Int8Array(N).fill(-1);
+  // 2026-11-02: a fresh shot's white boards on its white wall flood out past their outline, so each board is
+  // held to its outline in the route guide it was shot from (shots2/<theme>/<setup>-guide.png, flat paint
+  // inside a drawn line), widened a little for the shot's drift.
+  const guideFile = theme ? path.join(dir, "..", "..", "shots2", theme, `${setup === "round" ? "single_round" : setup}-guide.png`) : "";
+  const guide = guideFile && existsSync(guideFile) ? await sharp(guideFile).removeAlpha().resize(W, H).raw().toBuffer() : null;
+  const clamps = SEEDS[setup].map(([sx, sy]) => {
+    // The Single Arch's guide hides its board's top under the garland that the shot leaves bare: its arch as
+    // shot (px: left, right, top) stands in.
+    if (setup === "single_arch") {
+      const [x0, x1, top] = [288, 638, 245], r = (x1 - x0) / 2, cx = x0 + r, cy = top + r;
+      const m = new Uint8Array(N);
+      for (let y = top; y < H; y++) for (let x = x0; x <= x1; x++) if (y >= cy || Math.hypot(x - cx, y - cy) <= r) m[y * W + x] = 1;
+      return m;
+    }
+    if (!guide || sx < 0) return null;
+    const m = new Uint8Array(N), gs = (i: number, j: number) => Math.abs(guide[i * 3] - guide[j * 3]) + Math.abs(guide[i * 3 + 1] - guide[j * 3 + 1]) + Math.abs(guide[i * 3 + 2] - guide[j * 3 + 2]);
+    const stack = [sy * W + sx];
+    m[stack[0]] = 1;
+    let n = 1;
+    while (stack.length) {
+      const i = stack.pop()!, x = i % W;
+      for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) {
+        if (j < 0 || j >= N || m[j] || gs(i, j) > 12) continue;
+        m[j] = 1; n++; stack.push(j);
+      }
+    }
+    if (n < 2000 || n > N * 0.4) { console.log(`guide ${setup}: no outline at the seed (${n})`); return null; }
+    let out = m;
+    for (let k = 0; k < 10; k++) {
+      const prev = out.slice();
+      for (let i = 0; i < N; i++) if (!prev[i]) { const x = i % W; if ((x > 0 && prev[i - 1]) || (x < W - 1 && prev[i + 1]) || prev[i - W] || prev[i + W]) out[i] = 1; }
+    }
+    return out;
+  });
   SEEDS[setup].forEach(([sx, sy, bx0, by0, bx1, by1], b) => {
+    if (sx < 0) return;
     if (RECT[setup]?.includes(b)) {
       for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) if (fg[(y * W + x) * 4 + 3] < 128) board[y * W + x] = b;
+      if (SOLID[setup]) return;
+      // 2026-11-02: the cut-out took (some of) a sequin wall in with the balloons. The sequins are busy, a balloon
+      // is smooth: big smooth pieces of the cut-out are balloons (and a few points round them); the rest is wall.
+      const smooth = new Uint8Array(N);
+      for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
+        let s = 0, s2 = 0, n = 0;
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+          const xx = x + dx, yy = y + dy;
+          if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+          const l = lum(yy * W + xx); s += l; s2 += l * l; n++;
+        }
+        if (s2 / n - (s / n) ** 2 < 30 && fg[(y * W + x) * 4 + 3] >= 128) smooth[y * W + x] = 1;
+      }
+      const ball = new Uint8Array(N), seen = new Uint8Array(N);
+      for (let i = 0; i < N; i++) {
+        if (!smooth[i] || seen[i]) continue;
+        const part = [i], stack = [i];
+        seen[i] = 1;
+        while (stack.length) {
+          const k = stack.pop()!, x = k % W;
+          for (const j of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, k - W, k + W]) {
+            if (j < 0 || j >= N || seen[j] || !smooth[j]) continue;
+            seen[j] = 1; part.push(j); stack.push(j);
+          }
+        }
+        if (part.length >= 250) for (const k of part) ball[k] = 1;
+      }
+      for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
+        let near = false;
+        for (let dy = -4; dy <= 4 && !near; dy++) for (let dx = -4; dx <= 4; dx++) {
+          const xx = x + dx, yy = y + dy;
+          if (xx >= 0 && yy >= 0 && xx < W && yy < H && ball[yy * W + xx]) { near = true; break; }
+        }
+        if (!near) board[y * W + x] = b;
+      }
       return;
     }
     const stack = [sy * W + sx];
@@ -156,7 +227,7 @@ const FAMILIES: Record<string, [number, number][][]> = {
       const i = stack.pop()!, x = i % W;
       for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) {
         const jx = j % W, jy = (j - jx) / W;
-        if (j < 0 || j >= N || board[j] >= 0 || kept[j] > 0 || !boardLike(j) || step(i, j) > (process.env.ST ? +process.env.ST : 5) || jx < bx0 || jx > bx1 || jy < by0 || jy > by1) continue;
+        if (j < 0 || j >= N || board[j] >= 0 || kept[j] > 0 || !boardLike(j) || step(i, j) > (process.env.ST ? +process.env.ST : 5) || jx < bx0 || jx > bx1 || jy < by0 || jy > by1 || (clamps[b] && !clamps[b]![j])) continue;
         board[j] = b; stack.push(j);
       }
     }
@@ -178,13 +249,13 @@ const FAMILIES: Record<string, [number, number][][]> = {
   // A re-shoot's garland can wall off a piece of board from the flood: a big plain piece of the cut-out
   // (the wall never is in it; a balloon's highlight is far smaller) is board too — the round's in its circle.
   const patchLike = (i: number) => fg[i * 4 + 3] > 128 && lum(i) > 125 && chroma(i) < 16;
-  if (theme && PATCHES.has(setup)) SEEDS[setup].forEach(([, , bx0, by0, bx1, by1], b) => {
-    if (RECT[setup]?.includes(b)) return;
+  if (theme && PATCHES.has(setup)) SEEDS[setup].forEach(([sx, , bx0, by0, bx1, by1], b) => {
+    if (sx < 0 || RECT[setup]?.includes(b)) return;
     const c = CIRCLE[setup];
     const inside = (j: number) => {
       const x = j % W, y = (j - x) / W;
       if (x < bx0 || x > bx1 || y < by0 || y > by1) return false;
-      return !c || Math.hypot(x - c[0], y - c[1]) <= c[2];
+      return (!c || Math.hypot(x - c[0], y - c[1]) <= c[2]) && (!clamps[b] || !!clamps[b]![j]);
     };
     const seen = new Uint8Array(N);
     for (let i = 0; i < N; i++) {
@@ -225,8 +296,9 @@ const FAMILIES: Record<string, [number, number][][]> = {
     for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
       const i = y * W + x, r = at(i, 0), g = at(i, 1), bl = at(i, 2);
       if (near) {
-        // Pink: red highest, blue past green (a pink balloon is too, so only in the band, right of the seed).
-        if (near[i] === 2 && x > sx - 60 && r > g + 14 && bl >= g - 4 && lum(i) > 120) rim[i] = b;
+        // Coloured, as the wall never is: pink, peach or blue by the set (a balloon is too, so only in the band,
+        // right of the seed).
+        if (near[i] === 2 && x > sx - 60 && chroma(i) > 16 && lum(i) > 100) rim[i] = b;
         continue;
       }
       // Coral: red past green past blue, its hue under ~28° (a yellow balloon's is ~55°, a pink one's past 330°).
@@ -321,6 +393,7 @@ const FAMILIES: Record<string, [number, number][][]> = {
       x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
     }
     await sharp(m, { raw: { width: W, height: H, channels: 1 } }).png().toFile(path.join(OUT, `${setup}-board-${b}.png`));
+    if (x1 < x0) { console.log(`board ${b}: hidden`); continue; }
     console.log(`board ${b}: x ${(x0 / W).toFixed(4)}–${(x1 / W).toFixed(4)}, y ${(y0 / H).toFixed(4)}–${(y1 / H).toFixed(4)}`);
     if (!RIM.has(setup)) continue;
     const rm = Buffer.alloc(N);

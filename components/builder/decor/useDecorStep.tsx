@@ -23,7 +23,7 @@ import {
   type GraphicStyle,
 } from "@/lib/config";
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
-import { themeBalloonSets, matchingBalloonSet, type BalloonSetId } from "@/lib/balloonSets";
+import { themeBalloonSets, matchingBalloonSet, themedSetBalloons, type BalloonSetId } from "@/lib/balloonSets";
 import { letteringFromLegacy, letteringPatch } from "@/lib/typography/lettering";
 import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS, getThemeCutoutPresets } from "@/lib/themeCatalog";
 import { inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
@@ -181,8 +181,23 @@ export function useDecorStep(props: DecorStepProps) {
   };
   // 2026-11-02: the theme's two colour sets, Pastel tones and Bright colours ("onu seçince komple balon rengi
   // değişsin heryerde"): a set is the whole palette, for every part of the party.
-  const balloonSets = useMemo(() => themeBalloonSets(config.theme, getThemeDefault(config.theme)), [config.theme]);
-  const activeBalloonSet = matchingBalloonSet(config.theme, sempertexIds, getThemeDefault(config.theme));
+  // The Customized Themed set is its photo: its balloons are the photo's, one set only.
+  const themedSet = config.decor.backdropItems.some((i: BackdropItem) => i.type === "themed_set");
+  const balloonSets = useMemo(() => {
+    if (!themedSet) return themeBalloonSets(config.theme, getThemeDefault(config.theme));
+    const ids = themedSetBalloons(config.theme, getThemeDefault(config.theme));
+    return { pastel: ids, bright: ids };
+  }, [config.theme, themedSet]);
+  const activeBalloonSet = themedSet
+    ? (sempertexIds.join() === balloonSets.pastel.join() ? "pastel" : null)
+    : matchingBalloonSet(config.theme, sempertexIds, getThemeDefault(config.theme));
+  useEffect(() => {
+    const own = themedSetBalloons(config.theme, getThemeDefault(config.theme));
+    if (themedSet && sempertexIds.join() !== own.join()) { setSempertexIds(own); setSempertexManual(true); setSempertexExceeded(false); }
+    // Leaving the set: back to the theme's own colours.
+    if (!themedSet && sempertexIds.join() === own.join()) { setSempertexIds(getThemeDefault(config.theme)); setSempertexManual(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [themedSet, config.theme]);
   const chooseBalloonSet = (id: BalloonSetId) => {
     const ids = balloonSets[id];
     setSempertexIds(ids);
@@ -540,6 +555,7 @@ function clearAllStandees() {
         patchDecor({ plinthSizes: [] });
         break;
       case "arch_shimmer":       panels = [makeArchUnsized("arch-1"), makeBackdropItem("shimmer_wall")]; break;
+      case "wavy_shimmer":       panels = [makeBackdropItem("wavy"), makeBackdropItem("shimmer_wall")]; break;
       case "balloon_ring":
         panels = [makeBackdropItem("balloon_ring")];
         // The ring is made of balloons, so a "none" tier carried over from a
@@ -582,7 +598,7 @@ function clearAllStandees() {
         case "single_arch": case "single_round": case "single_banner": case "single_shimmer": case "single_wavy": case "custom_themed": return 0;
         case "double_arch": return 1;
         case "triple_arch": return 1;
-        case "arch_shimmer": return idx("shimmer_wall");
+        case "arch_shimmer": case "wavy_shimmer": return idx("shimmer_wall");
         case "arch_open_frame": return idx("arch");
         default: return -1;
       }

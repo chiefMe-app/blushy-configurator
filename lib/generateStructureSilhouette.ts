@@ -743,8 +743,7 @@ function customTextGuide(
     // Beside an open frame, a little smaller: it is laid over the render
     // there and must sit inside the board's clear face.
     // 2026-11-02: wider (0.64 -> 0.78, the Wavy's 0.80), "happy birthday large olmasına rağmen çok küçük
-    // duruyor": one line across a tall board is short however it is fitted, so it gets more of the board
-    // ("Happy Birthday" stays on one line, as messageLines keeps it).
+    // duruyor": it gets more of the board (and "Happy" now sits over "Birthday", messageLines).
     garlandSide === "wavy" ? pw * 0.80 :
     loneArchClear ? pw * (garlandSide === "lonearchleft" ? 0.54 : 0.78) :
     garlandSide === "shimmer" ? pw * 0.44 :
@@ -785,7 +784,7 @@ function customTextGuide(
     else lines.push(w);
   }
   if (lines.length === 0) lines.push(text.trim());
-  // 2026-10-24: "Happy Birthday" on one line, the name centred under it.
+  // "Happy" over "Birthday", the name centred under them (messageLines).
   const fixedLines = messageLines(text);
   if (fixedLines) lines.splice(0, lines.length, ...fixedLines);
   // 2026-10-22, customer reference: the lettering is a thin, slanted,
@@ -1068,6 +1067,8 @@ export function generateStructureSilhouette(
     chromeColors?: string[];
     /** Hexes in the palette that are clear (transparent) balloons. */
     clearColors?: string[];
+    /** The Fringe Backdrop's colours (SceneModel.fringeColors); the balloons' when not given. */
+    fringeColors?: string[];
     /** Draw the white snowflake ornaments of the reference garlands (Frozen). */
     snowflakes?: boolean;
     /** The render is also given a reference photo (frozenStyleReferences). */
@@ -1358,7 +1359,8 @@ export function generateStructureSilhouette(
         // beside an open frame — "backdropla balonlar arasinda bosluklar
         // gozukmemesi lazim". On a hairline board the render could not see
         // where the board ended, and the garland stood off it.
-        const besideOpenFrame = shape === "arch";
+        // 2026-11-02: and the Wavy board of Wavy + Shimmer, on its coloured rim as when it stands alone.
+        const besideOpenFrame = shape === "arch" || shape === "wavy";
         const ownFillM = fillForPanel(sortedIdx, panel.idx);
         const nearWhiteM = /^#(f[0-9a-f]){3}$/i.test(ownFillM) || ownFillM.toUpperCase() === "#FFFFFF";
         content.push(panelPathOrShape(panel.cx, panel.pw, panel.apexY, panel.floorY, shape,
@@ -1367,7 +1369,8 @@ export function generateStructureSilhouette(
           // garland covering most of the side boards, the hairline edges left
           // nothing to say three boards stand there, and the render made one
           // big paper backdrop on a stand out of them.
-          besideOpenFrame || isTripleArchGuide));
+          besideOpenFrame || isTripleArchGuide,
+          shape === "wavy" ? (item as { borderColor?: string } | undefined)?.borderColor : undefined));
       }
     } else if (isShimmer) {
       // Single shimmer wall: force a clean rectangle (never arch edges) with tile grid.
@@ -1396,10 +1399,10 @@ export function generateStructureSilhouette(
       const side = Math.min(panel.pw, panel.floorY - panel.apexY);
       const fp = { cx: panel.cx, pw: side, apexY: panel.floorY - side, floorY: panel.floorY };
       const left = fp.cx - fp.pw / 2, panelH = side;
-      // Every matte balloon colour in turn — not the chrome or clear ones,
-      // which a tinsel band cannot be.
+      // Every matte colour of the fringe in turn — not the chrome or clear ones, which a tinsel band cannot
+      // be. 2026-11-02: the theme's Pastel tones whatever the balloons are ("fringe in kendi degismesin").
       const clearHex = new Set((extras?.clearColors ?? []).map((h) => String(h).toLowerCase()));
-      const matte = (balloonColors ?? []).slice(0, 5)
+      const matte = (extras?.fringeColors ?? balloonColors ?? []).slice(0, 5)
         .filter((h) => !chromeHexSet.has(String(h).toLowerCase()) && !clearHex.has(String(h).toLowerCase()));
       const cols = matte.length ? matte : ["#F8BBD0", "#DDD6FE", "#BAE6FD"];
       // 2026-11-02, the owner's second fringe photo ("fringe neden boyle gozukuyor bunun gibi olmali"): the
@@ -1988,7 +1991,10 @@ export function generateStructureSilhouette(
       if (slot === "C" && white !== undefined) return white;
       const own = slot === "B" ? blue : slot === "L" ? lav : undefined;
       if (own !== undefined) return others.length > 0 && k % 3 === 2 ? others[Math.floor(k / 3) % others.length] : own;
-      return rest[(2 * k + (slot === "L" ? 1 : 0)) % rest.length];
+      // Two at a time, unless that skips half the colours: with an even number (Unicorn's bright peach, rose,
+      // green and lilac) a stride of 2 only ever reached every other one, and the rose went missing (2026-11-02).
+      const stride = rest.length % 2 === 0 ? 1 : 2;
+      return rest[(stride * k + (slot === "L" ? 1 : 0)) % rest.length];
     };
     // A clear bubble balloon: the wall shows through it, with a bright rim
     // and a window highlight. Drawn as a tinted disc it rendered as a white

@@ -237,6 +237,25 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     standeeZones: ZONES_STANDARD,
   },
   {
+    // 2026-11-02 (the owner: "bide wavy +shimmer backdropu yapalim"): Arch + Shimmer with the Wavy board
+    // in the arch's place, laid out and garlanded as Arch + Shimmer is.
+    id: "wavy_shimmer",
+    name: "Wavy + Shimmer",
+    description: "Wavy board beside a shimmer wall",
+    backdropTypes: ["wavy", "shimmer_wall"],
+    maxBackdrops: 2,
+    badge: "New",
+    miniPreview: ["wavy", "shimmer", "balloons"],
+    panelInstruction:
+      "Two freestanding backdrop pieces side by side: a solid board with a soft wavy outline and a square sequin " +
+      "shimmer wall. Both stand directly on the floor.",
+    garlandInstruction:
+      "Balloon design: the wavy board carries a full organic garland down its outer edge and over its top " +
+      "shoulder; the shimmer wall carries a smaller accent cluster on its near top corner only.",
+    plinthInstruction: "Place cylinder plinths in front of the wavy board, clear of the garland.",
+    standeeZones: ZONES_STANDARD,
+  },
+  {
     // A hoop of balloons with nothing inside it — the opening is the setup, and
     // it is where the neon sign goes.
     id: "balloon_ring",
@@ -319,7 +338,7 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
       "floor at the arch base. The inner sides of both arches and the centre gap stay completely clean " +
       "and balloon-free. The balloon circles in the layout reference only mark where each garland sits " +
       "and how thick it is — re-create each garland as a real professional installation: dozens of " +
-      "individual glossy latex balloons in a wide range of sizes, from large statement balloons down to " +
+      "individual matte latex balloons in a wide range of sizes, from large statement balloons down to " +
       "small filler balloons tucked into the gaps, each balloon a distinct sphere.",
     plinthInstruction:
       "Double Arch's plinth is AI-rendered (2026-07-19), exactly like Single Arch's — guide " +
@@ -361,7 +380,7 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
       "three boards, thickest over the two joins and over the centre crown, with dense clusters spilling " +
       "down both outer edges and pooling on the floor at each end. The balloon circles in the layout " +
       "reference only mark where the garland sits and how thick it is — re-create it as a real " +
-      "professional installation: dozens of individual glossy latex balloons in a wide range of sizes, " +
+      "professional installation: dozens of individual matte latex balloons in a wide range of sizes, " +
       "from large statement balloons down to small filler balloons tucked into the gaps.",
     plinthInstruction:
       "The plinth stands centred in front of the middle board, as on every other layout.",
@@ -423,6 +442,7 @@ export function inferSetupLayoutTemplateIdFromBackdropItems(
   if (key === "balloon_ring") return "balloon_ring";
   if (key === "shimmer_wall") return "single_shimmer";
   if (key === "arch+shimmer_wall") return "arch_shimmer";
+  if (key === "shimmer_wall+wavy") return "wavy_shimmer";
   if (key === "arch+arch") return "double_arch";
   if (key === "arch+open_arch_frame") return "arch_open_frame";
   if (key === "arch+half_arch+half_arch") return "triple_arch";

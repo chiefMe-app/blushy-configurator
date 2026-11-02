@@ -11,7 +11,8 @@ import { sceneStyleReference } from "@/lib/renderPrompts/frozenStyleReferences";
 import { UNICORN_ARCH_STYLE_REFERENCE } from "@/lib/renderPrompts/unicornStyleReferences";
 import { wavyBorderColor } from "@/lib/wavyBoard";
 import { THEME_CATALOG } from "@/lib/themeCatalog";
-import { withSetup, withTheme } from "../fixtures/builder";
+import { withDecor, withSetup, withTheme } from "../fixtures/builder";
+import { setHexes, themeBalloonSets } from "@/lib/balloonSets";
 import { defaultConfig } from "@/lib/config";
 import { SETUP_ICON } from "@/components/builder/constants";
 
@@ -59,6 +60,8 @@ describe("wavy and fringe backdrops", () => {
     for (const set of ["unicorn-pastel", "unicorn-bright", "frozen-pastel", "frozen-bright"]) {
       for (const f of frozen) expect(existsSync(path.join(sk, set, f.replace("round-board-mask", "round-board-0"))), `${set}/${f}`).toBe(true);
       expect(existsSync(path.join(sk, set, "single_wavy-rim-0.png")), `${set} rim`).toBe(true);
+      // The Wavy + Shimmer (2026-11-02) is shot in the set folders only.
+      for (const f of ["room.webp", "balloons.webp", "families.png", "board-0.png", "board-1.png"]) expect(existsSync(path.join(sk, set, `wavy_shimmer-${f}`)), `${set} wavy_shimmer-${f}`).toBe(true);
     }
   });
 
@@ -77,6 +80,19 @@ describe("wavy and fringe backdrops", () => {
     expect(fringe).toContain("vertical colour blocks");
     expect(fringe).toContain("the wall never shows through");
     expect(fringe).toContain("touch the floor");
+  });
+
+  it("keep the fringe in its theme's Pastel tones when the balloons are Bright (2026-11-02)", () => {
+    const pastel = setHexes(themeBalloonSets("unicorn").pastel);
+    const bright = withDecor(withSetup(withTheme(defaultConfig(), "unicorn"), "single_fringe"), { balloonColors: setHexes(themeBalloonSets("unicorn").bright) });
+    const scene = buildSceneModel(bright);
+    expect(scene.fringeColors).toEqual(pastel);
+    expect(scene.balloons.colors).not.toEqual(pastel);
+    const prompt = buildLayoutRefEditPrompt(scene);
+    expect(prompt).toContain("soft pastel colours");
+    expect(prompt).toContain("whatever colour the balloons are");
+    // Only a fringe carries them.
+    expect(buildSceneModel(withSetup(withTheme(defaultConfig(), "unicorn"), "single_arch")).fringeColors).toBeUndefined();
   });
 
   it("describe their own shape in the render prompt", () => {

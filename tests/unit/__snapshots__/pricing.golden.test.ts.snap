@@ -471,6 +471,52 @@ exports[`pricing golden > A-triple_arch 1`] = `
 }
 `;
 
+exports[`pricing golden > A-wavy_shimmer 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Ice Princess theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Wavy Backdrop - panel 1",
+        "section": "design",
+      },
+      {
+        "amount": 430,
+        "label": "Shimmer Wall - panel 2",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Neon LED sign",
+        "section": "design",
+      },
+    ],
+    "total": 1690,
+  },
+  "total": 1690,
+}
+`;
+
 exports[`pricing golden > B01-hb-arya-script 1`] = `
 {
   "breakdown": {

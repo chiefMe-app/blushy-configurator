@@ -10,15 +10,15 @@ import { getThemeCatalogEntry } from "./themeCatalog";
 export type BalloonSetId = "pastel" | "bright";
 export const BALLOON_SETS: { id: BalloonSetId; option: number; label: string; blurb: string }[] = [
   { id: "pastel", option: 1, label: "Pastel tones", blurb: "Soft, dreamy matte shades" },
-  { id: "bright", option: 2, label: "Bright colours", blurb: "Rich, cheerful matte shades" },
+  { id: "bright", option: 2, label: "Bright colours", blurb: "Cheerful matte shades" },
 ];
 
 /** Sets chosen by hand: a theme's photographed sets (see LiveSketch's THEME_SHOTS), kept as shot. */
 const BY_HAND: Record<string, Partial<Record<BalloonSetId, string[]>>> = {
-  // Her reference (a wavy unicorn board): rose pink, peach, mint and lavender. 2026-11-02, the first pick
-  // (fuchsia, orange, yellow, green, lilac) was too loud: "bright colors bunu demek istemedim, burdaki renkler
-  // gibi olsun" — rich, cheerful matte shades, not neon-bright ones.
-  unicorn: { bright: ["fashion-010-rosewood", "pastel-matte-663-melon", "satin-430-green", "fashion-050-lilac"] },
+  // 2026-11-02, the owner, by name: "bright colorda sempertex katalogtan peach, fashion rose, pastel green,
+  // pastel lilac" (after rosewood, melon, satin green and fashion lilac: "bu renklerde istemiyorum"). No
+  // Fashion Rose in the catalog: Pastel Dusk Rose 110 is the rose.
+  unicorn: { bright: ["fashion-060-peach-blush", "pastel-dusk-110-rose", "pastel-matte-630-green", "pastel-matte-650-lilac"] },
   frozen: { bright: ["fashion-005-white", "fashion-041-royal-blue", "fashion-038-caribbean-blue", "reflex-951-violet", "reflex-981-silver"] },
 };
 
@@ -63,6 +63,20 @@ export function hexPaletteKind(hexes: string[]): BalloonSetId {
   return cols.filter((c) => c.l >= 0.78).length * 2 >= cols.length ? "pastel" : "bright";
 }
 
+/**
+ * Which set a scene's balloons are: one of its theme's sets when they are that set's colours (Unicorn's
+ * bright set is as pale as its pastel one, so lightness cannot tell them apart), else by lightness.
+ */
+export function sceneBalloonSet(themeId: string | undefined, hexes: string[]): BalloonSetId {
+  const key = (hs: string[]) => Array.from(new Set(hs.filter((h) => /^#[0-9a-f]{6}$/i.test(h) && hsl(h).s >= 0.15).map((h) => h.toUpperCase()))).sort().join();
+  if (themeId) {
+    const sets = themeBalloonSets(themeId);
+    const k = (["bright", "pastel"] as const).find((id) => key(setHexes(sets[id])) === key(hexes));
+    if (k) return k;
+  }
+  return hexPaletteKind(hexes);
+}
+
 /** A theme's two sets, as Sempertex ids. */
 export function themeBalloonSets(themeId: string, fallback: string[] = []): Record<BalloonSetId, string[]> {
   const own = getThemeCatalogEntry(themeId)?.sempertexPaletteIds;
@@ -80,6 +94,12 @@ export function themeBalloonSets(themeId: string, fallback: string[] = []): Reco
   const sets = { [kind]: base, [other]: made } as Record<BalloonSetId, string[]>;
   return { ...sets, ...BY_HAND[themeId] };
 }
+
+/** The Customized Themed set's balloons: its photo's, which are the theme's pastel set and a shiny Reflex
+ *  Violet (2026-11-02, the owner: "balonlar aynı değil seçeneklerdekiyle, parlak bir mor da var. selected
+ *  balonlara onu da ekleyelim"). The set is shown as photographed, so these are its only colours. */
+export const themedSetBalloons = (themeId: string, fallback: string[] = []) =>
+  Array.from(new Set([...themeBalloonSets(themeId, fallback).pastel, "reflex-951-violet"]));
 
 /** Which of a theme's sets these colours are, if either. */
 export function matchingBalloonSet(themeId: string, ids: string[], fallback: string[] = []): BalloonSetId | null {

@@ -84,24 +84,43 @@ const moveBox = (b: Box, dx: number, dy: number): Box => ({ x0: b.x0 + dx, y0: b
 
 function sized(el: LetteringElementInput, baseCapMm: number, maxWidthMm: number) {
   const lf = loadFont(el.fontId, el.weight, el.optical);
-  const unit = shapeLine(lf, el.text, 1);
-  const inkW1 = Math.max(1e-6, unit.ink.x1 - unit.ink.x0);
+  // Rows (a line break in the text, boardLayout's heading): each centred, the widest fitted to the width.
+  const rows = el.text.split("\n");
+  const inkW1 = Math.max(1e-6, ...rows.map((r) => { const u = shapeLine(lf, r, 1); return u.ink.x1 - u.ink.x0; }));
   const capByWidth = (maxWidthMm / inkW1) * lf.capHeightEm;
   const capMm = Math.min(baseCapMm, capByWidth) * textSizeScale(el.size);
   const fontSizeMm = capMm / lf.capHeightEm;
-  return { lf, fontSizeMm, capMm, line: shapeLine(lf, el.text, fontSizeMm) };
+  const shaped = rows.map((r) => shapeLine(lf, r, fontSizeMm));
+  if (shaped.length === 1) return { lf, fontSizeMm, capMm, line: shaped[0] };
+  // Each row's baseline far enough below the last that a script's descenders clear the next row's tall letters.
+  const glyphs: string[] = [];
+  let ink: Box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity }, y = 0;
+  shaped.forEach((ln, i) => {
+    if (i > 0) y += Math.max(capMm * 1.3, shaped[i - 1].ink.y1 - ln.ink.y0 + capMm * 0.12);
+    const dx = -(ln.ink.x0 + ln.ink.x1) / 2;
+    glyphs.push(...ln.glyphs.map((d) => translate(d, dx, y)));
+    const b = moveBox(ln.ink, dx, y);
+    ink = { x0: Math.min(ink.x0, b.x0), y0: Math.min(ink.y0, b.y0), x1: Math.max(ink.x1, b.x1), y1: Math.max(ink.y1, b.y1) };
+  });
+  return { lf, fontSizeMm, capMm, line: { ...shaped[0], glyphs, ink, missing: shaped.map((l) => l.missing).join("") } };
 }
+
+/** An element's rows (see sized). */
+const rowCount = (el?: LetteringElementInput) => (el?.text.trim() ? el.text.split("\n").length : 0);
 
 export function layoutLettering(input: LayoutInput): LetteringLayout {
   const { box } = input;
   const ratio = input.headingRatio ?? 0.42;
-  const nameBase = Math.min(input.nameCapMm ?? box.widthMm * NAME_CAP_OF_WIDTH, box.heightMm * NAME_CAP_OF_HEIGHT);
+  const kH = rowCount(input.heading), kN = rowCount(input.name);
+  // A name on two rows (a lone heading, set at the name's size) keeps both rows inside the box.
+  const nameBase = Math.min(input.nameCapMm ?? box.widthMm * NAME_CAP_OF_WIDTH, box.heightMm * NAME_CAP_OF_HEIGHT,
+    (box.heightMm * 0.95) / (1.45 + 1.5 * Math.max(0, kN - 1)));
   const headingBase = nameBase * ratio;
-  const hasH = !!input.heading?.text.trim(), hasN = !!input.name?.text.trim();
+  const hasH = kH > 0, hasN = kN > 0;
 
-  // Fixed reference lines (depend on the box only).
-  const headingBand = hasH ? headingBase * 1.9 : 0;
-  const nameBand = hasN ? nameBase * 1.45 : 0;
+  // Fixed reference lines (depend on the box only), with room for each extra row.
+  const headingBand = hasH ? headingBase * (1.9 + 1.5 * (kH - 1)) : 0;
+  const nameBand = hasN ? nameBase * (1.45 + 1.5 * (kN - 1)) : 0;
   const top = (box.heightMm - headingBand - nameBand) / 2;
   const headingBaseline = top + headingBase * 1.3;
   const nameBaseline = top + headingBand + nameBase * 1.1;

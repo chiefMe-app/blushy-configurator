@@ -6,10 +6,13 @@
 /** The outline of a wavy board in the box (x, top, w, h), its foot on top + h, as an SVG path. */
 export function wavyBoardPath(x: number, top: number, w: number, h: number): string {
   const f = (n: number) => n.toFixed(1);
-  const amp = w * 0.045;        // how far a wave swells in or out
-  const sideWaves = 5;          // waves down each side
+  // 2026-11-02, the owner: "birebir ayni backdrop genisligi 120cm mi?" — the waves swing about the board's
+  // true edge, as gently as in her reference (about 3% of the width, four to a side). Swinging about a line
+  // 4.5% in, the board read 9% narrower than its 120 cm.
+  const amp = w * 0.03;         // how far a wave swells in or out
+  const sideWaves = 4;          // waves down each side
   const topWaves = 3;           // scallops along the top
-  const inset = amp;            // the waves swing about a line this far in
+  const inset = 0;              // the waves swing about the edge itself
   const r = w * 0.14;           // the rounded top corners
   const bottom = top + h;
   const d: string[] = [`M ${f(x + inset)} ${f(bottom)}`];

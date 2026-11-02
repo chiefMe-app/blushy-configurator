@@ -20,7 +20,7 @@ import {
   type BoardLettering,
 } from "@/lib/config";
 import { useLetteringLayout } from "./useLetteringLayout";
-import { hexPaletteKind, setHexes, themeBalloonSets } from "@/lib/balloonSets";
+import { hexPaletteKind, sceneBalloonSet, setHexes, themeBalloonSets } from "@/lib/balloonSets";
 import { bannerPrintTheme } from "@/lib/bannerPrintThemes";
 import { wavyBoardPath, wavyFacePath, wavyBorderColor } from "@/lib/wavyBoard";
 
@@ -35,7 +35,7 @@ const FLOOR = 870;
  * the room and the balloons; plinths, neon, number and standees on top.
  * Geometry is in fractions of the square image.
  */
-const ROUND = { cx: 0.5004, cy: 0.5154, r: 0.3236 };
+const ROUND = { cx: 0.507, cy: 0.547, r: 0.283 };
 /**
  * 2026-11-01 (owner: "roundda sadece live sketch bu şekilde yapmıştık, diğer
  * backdrop seçeneklerini … bütün temalara uygulamamız lazım"): every setup
@@ -72,75 +72,83 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     // The garland covers the board's left side: the words sit right of centre.
     boards: [{ mask: `${SK}/round-board-mask.png`, x0: ROUND.cx - ROUND.r, y0: ROUND.cy - ROUND.r, x1: ROUND.cx + ROUND.r, y1: ROUND.cy + ROUND.r,
       text: { cx: ROUND.cx + ROUND.r * 0.12, cy: ROUND.cy - ROUND.r * 0.18, w: ROUND.r * 2 * 0.66 } }],
-    plinth: { x: 0.4521, y: 0.5605, w: 0.1143, h: 0.3330 },
-    florals: [218, 198, 178, 160, 143, 126, 108, 92, 76, -52, -68].map((a, i) => {
-      const t = (a * Math.PI) / 180, rr = ROUND.r * 1.04 * (i % 2 ? 1.06 : 0.98);
-      return [ROUND.cx + Math.cos(t) * rr, ROUND.cy - Math.sin(t) * rr, -a + 90] as [number, number, number];
-    }),
-    numberX: 0.66, standeeX: [0.15, 0.86],
+    plinth: { x: 0.5, y: 0.625, w: 0.0875, h: 0.255 },
+    florals: fromPx([[511, 200], [487, 270], [303, 340], [268, 410], [263, 480], [350, 550], [223, 620], [803, 620], [375, 690], [385, 760], [824, 760], [399, 830], [810, 830]]),
+    numberX: 0.68, standeeX: [0.1, 0.92],
   },
   arch: {
     room: `${SK}/single_arch-room.webp`, balloons: `${SK}/single_arch-balloons.webp`, families: `${SK}/single_arch-families.png`,
-    boards: [{ mask: `${SK}/single_arch-board-0.png`, x0: 0.2725, y0: 0.207, x1: 0.6191, y1: 0.8369, text: { cx: 0.43, cy: 0.4, w: 0.27 } }],
-    plinth: { x: 0.415, y: 0.612, w: 0.1, h: 0.288 },
-    florals: fromPx([[330, 175], [430, 150], [520, 215], [590, 300], [612, 400], [630, 500], [640, 600], [630, 700], [598, 800]]),
+    boards: [{ mask: `${SK}/single_arch-board-0.png`, x0: 0.2783, y0: 0.237, x1: 0.62, y1: 0.835, text: { cx: 0.4336, cy: 0.42, w: 0.266 } }],
+    plinth: { x: 0.426, y: 0.65, w: 0.084, h: 0.245 },
+    florals: fromPx([[442, 60], [462, 130], [582, 130], [485, 200], [551, 270], [662, 270], [680, 410], [758, 480], [708, 550], [667, 690], [644, 760], [761, 760], [773, 830]]),
     numberX: 0.2, standeeX: [0.13, 0.9],
   },
   "arch,arch": {
     room: `${SK}/double_arch-room.webp`, balloons: `${SK}/double_arch-balloons.webp`, families: `${SK}/double_arch-families.png`,
     boards: [
-      { mask: `${SK}/double_arch-board-0.png`, x0: 0.3457, y0: 0.2578, x1: 0.5244, y1: 0.7412, text: { cx: 0.45, cy: 0.42, w: 0.15 } },
-      { mask: `${SK}/double_arch-board-1.png`, x0: 0.5195, y0: 0.293, x1: 0.751, y1: 0.7549, text: { cx: 0.632, cy: 0.45, w: 0.19 } },
+      { mask: `${SK}/double_arch-board-0.png`, x0: 0.335, y0: 0.19, x1: 0.541, y1: 0.826, text: { cx: 0.4552, cy: 0.4034, w: 0.173 } },
+      { mask: `${SK}/double_arch-board-1.png`, x0: 0.529, y0: 0.273, x1: 0.804, y1: 0.837, text: { cx: 0.6626, cy: 0.4647, w: 0.2257 } },
     ],
-    plinth: { x: 0.4554, y: 0.5673, w: 0.0889, h: 0.2227 },
-    florals: fromPx([[300, 280], [262, 380], [232, 470], [250, 560], [300, 650], [362, 720], [762, 480], [758, 560], [742, 650], [780, 740]]),
-    numberX: 0.86, standeeX: [0.12, 0.93],
+    plinth: { x: 0.469, y: 0.626, w: 0.089, h: 0.26 },
+    florals: fromPx([[224, 200], [210, 270], [179, 340], [270, 410], [837, 480], [261, 550], [131, 620], [843, 620], [285, 690], [277, 760], [929, 760], [282, 830], [922, 830]]),
+    numberX: 0.9, standeeX: [0.12, 0.93],
   },
   "arch,open_arch_frame": {
     room: `${SK}/arch_open_frame-room.webp`, balloons: `${SK}/arch_open_frame-balloons.webp`, families: `${SK}/arch_open_frame-families.png`,
     boards: [
-      { mask: `${SK}/arch_open_frame-board-0.png`, x0: 0.248, y0: 0.2412, x1: 0.5645, y1: 0.7988, text: { cx: 0.43, cy: 0.4, w: 0.22 } },
-      { mask: `${SK}/arch_open_frame-board-1.png`, x0: 0.5391, y0: 0.3193, x1: 0.8438, y1: 0.8105, text: { cx: 0.69, cy: 0.45, w: 0.14 } },
+      { mask: `${SK}/arch_open_frame-board-0.png`, x0: 0.215, y0: 0.207, x1: 0.528, y1: 0.83, text: { cx: 0.395, cy: 0.3844, w: 0.2176 } },
+      { mask: `${SK}/arch_open_frame-board-1.png`, x0: 0.531, y0: 0.297, x1: 0.81, y1: 0.831, text: { cx: 0.6692, cy: 0.4391, w: 0.1282 } },
     ],
-    plinth: { x: 0.429, y: 0.578, w: 0.133, h: 0.279 },
-    florals: fromPx([[200, 180], [150, 300], [110, 420], [90, 540], [100, 650], [150, 750], [640, 330], [760, 320], [860, 420], [900, 540], [880, 650], [900, 760]]),
-    numberX: 0.68, standeeX: [0.08, 0.95],
+    plinth: { x: 0.418, y: 0.635, w: 0.0875, h: 0.255 },
+    florals: fromPx([[227, 60], [328, 130], [251, 200], [129, 270], [722, 270], [209, 340], [916, 340], [149, 480], [874, 550], [98, 690], [99, 760], [906, 760], [842, 830]]),
+    numberX: 0.66, standeeX: [0.08, 0.95],
   },
   "arch,shimmer_wall": {
     room: `${SK}/arch_shimmer-room.webp`, balloons: `${SK}/arch_shimmer-balloons.webp`, families: `${SK}/arch_shimmer-families.png`,
     boards: [
-      { mask: `${SK}/arch_shimmer-board-0.png`, x0: 0.2822, y0: 0.3721, x1: 0.4375, y1: 0.7656, text: { cx: 0.37, cy: 0.5, w: 0.12 } },
-      { mask: `${SK}/arch_shimmer-board-1.png`, x0: 0.4316, y0: 0.3975, x1: 0.7012, y1: 0.7764, text: { cx: 0.566, cy: 0.5, w: 0.22 } },
+      { mask: `${SK}/arch_shimmer-board-0.png`, x0: 0.215, y0: 0.3135, x1: 0.461, y1: 0.824, text: { cx: 0.3541, cy: 0.4794, w: 0.19 } },
+      { mask: `${SK}/arch_shimmer-board-1.png`, x0: 0.456, y0: 0.36, x1: 0.691, y1: 0.823, text: { cx: 0.5732, cy: 0.4853, w: 0.1918 } },
     ],
-    plinth: { x: 0.464, y: 0.614, w: 0.072, h: 0.167 },
-    florals: fromPx([[200, 400], [170, 500], [160, 620], [180, 740], [300, 420], [860, 380], [900, 480], [930, 600], [900, 720], [760, 420]]),
-    numberX: 0.62, standeeX: [0.06, 0.96],
+    plinth: { x: 0.426, y: 0.675, w: 0.0717, h: 0.209 },
+    florals: fromPx([[161, 340], [160, 410], [872, 410], [764, 480], [191, 550], [147, 620], [892, 620], [88, 690], [763, 690], [83, 760], [777, 760], [143, 830], [892, 830]]),
+    numberX: 0.6, standeeX: [0.04, 0.97],
+  },
+  // 2026-11-02 (the owner: "wavy + shimmer backdropu yapalım"): laid out as the Arch + Shimmer, shot fresh.
+  "wavy,shimmer_wall": {
+    room: `${SK}/wavy_shimmer-room.webp`, balloons: `${SK}/wavy_shimmer-balloons.webp`, families: `${SK}/wavy_shimmer-families.png`,
+    boards: [
+      { mask: `${SK}/wavy_shimmer-board-0.png`, x0: 0.205, y0: 0.3115, x1: 0.465, y1: 0.821, text: { cx: 0.352, cy: 0.4771, w: 0.2 } },
+      { mask: `${SK}/wavy_shimmer-board-1.png`, x0: 0.456, y0: 0.36, x1: 0.691, y1: 0.823, text: { cx: 0.5732, cy: 0.4853, w: 0.1918 } },
+    ],
+    plinth: { x: 0.422, y: 0.673, w: 0.0717, h: 0.209 },
+    florals: fromPx([[166, 340], [165, 410], [866, 410], [761, 480], [194, 550], [150, 620], [884, 620], [95, 690], [761, 690], [90, 760], [773, 760], [149, 830], [874, 830]]),
+    numberX: 0.6, standeeX: [0.04, 0.97],
   },
   banner: {
     room: `${SK}/single_banner-room.webp`, balloons: `${SK}/single_banner-balloons.webp`, families: `${SK}/single_banner-families.png`,
     // The garland covers the banner's top right: the words sit a little left of centre.
-    boards: [{ mask: `${SK}/single_banner-board-0.png`, x0: 0.0566, y0: 0.0947, x1: 0.85, y1: 0.8721, text: { cx: 0.44, cy: 0.37, w: 0.38 } }],
-    plinth: { x: 0.452, y: 0.65, w: 0.143, h: 0.273 },
-    florals: fromPx([[330, 90], [450, 60], [600, 100], [720, 170], [830, 260], [870, 380], [880, 520], [860, 650], [800, 780], [720, 880]]),
-    numberX: 0.2, standeeX: [0.08, 0.95],
+    boards: [{ mask: `${SK}/single_banner-board-0.png`, x0: 0.209, y0: 0.249, x1: 0.8, y1: 0.83, text: { cx: 0.47, cy: 0.45, w: 0.3 } }],
+    plinth: { x: 0.46, y: 0.66, w: 0.079, h: 0.23 },
+    florals: fromPx([[395, 130], [384, 200], [634, 200], [439, 270], [744, 270], [649, 340], [705, 410], [821, 410], [783, 550], [808, 690], [841, 760], [607, 830], [845, 830]]),
+    numberX: 0.14, standeeX: [0.08, 0.95],
   },
   shimmer_wall: {
     room: `${SK}/single_shimmer-room.webp`, balloons: `${SK}/single_shimmer-balloons.webp`, families: `${SK}/single_shimmer-families.png`,
-    boards: [{ mask: `${SK}/single_shimmer-board-0.png`, x0: 0.3018, y0: 0.3799, x1: 0.7207, y1: 0.7842, text: { cx: 0.51, cy: 0.5, w: 0.3 } }],
-    plinth: { x: 0.469, y: 0.543, w: 0.084, h: 0.255 },
-    florals: fromPx([[180, 420], [150, 540], [140, 660], [200, 760], [310, 400], [720, 380], [800, 420], [880, 520], [900, 650], [860, 760]]),
+    boards: [{ mask: `${SK}/single_shimmer-board-0.png`, x0: 0.288, y0: 0.253, x1: 0.745, y1: 0.819, text: { cx: 0.515, cy: 0.42, w: 0.33 } }],
+    plinth: { x: 0.472, y: 0.624, w: 0.0875, h: 0.255 },
+    florals: fromPx([[249, 200], [215, 270], [274, 340], [197, 410], [188, 480], [178, 550], [218, 620], [110, 690], [820, 690], [106, 760], [941, 760], [247, 830], [924, 830]]),
     numberX: 0.62, standeeX: [0.06, 0.96],
   },
   "half_arch,arch,half_arch": {
     room: `${SK}/triple_arch-room.webp`, balloons: `${SK}/triple_arch-balloons.webp`, families: `${SK}/triple_arch-families.png`,
     boards: [
-      { mask: `${SK}/triple_arch-board-0.png`, x0: 0.251, y0: 0.4512, x1: 0.3652, y1: 0.7656, text: { cx: 0.31, cy: 0.58, w: 0.09 } },
-      { mask: `${SK}/triple_arch-board-1.png`, x0: 0.3662, y0: 0.3799, x1: 0.6357, y1: 0.7666, text: { cx: 0.5, cy: 0.52, w: 0.2 } },
-      { mask: `${SK}/triple_arch-board-2.png`, x0: 0.6377, y0: 0.4492, x1: 0.7627, y1: 0.7666, text: { cx: 0.7, cy: 0.58, w: 0.09 } },
+      { mask: `${SK}/triple_arch-board-0.png`, x0: 0.3, y0: 0.5, x1: 0.398, y1: 0.829, text: { cx: 0.35, cy: 0.635, w: 0.077 } },
+      { mask: `${SK}/triple_arch-board-1.png`, x0: 0.398, y0: 0.45, x1: 0.6, y1: 0.829, text: { cx: 0.5, cy: 0.587, w: 0.15 } },
+      { mask: `${SK}/triple_arch-board-2.png`, x0: 0.6, y0: 0.5, x1: 0.7, y1: 0.829, text: { cx: 0.65, cy: 0.635, w: 0.072 } },
     ],
-    plinth: { x: 0.457, y: 0.656, w: 0.091, h: 0.165 },
-    florals: fromPx([[180, 520], [150, 620], [130, 720], [200, 450], [260, 380], [330, 320], [420, 280], [500, 260], [590, 290], [660, 330], [740, 390], [800, 460], [830, 560], [840, 680]]),
-    numberX: 0.86, standeeX: [0.06, 0.95],
+    plinth: { x: 0.466, y: 0.689, w: 0.0686, h: 0.2 },
+    florals: fromPx([[451, 270], [510, 340], [324, 410], [741, 410], [401, 480], [310, 550], [780, 550], [805, 620], [342, 690], [203, 760], [682, 760], [348, 830], [833, 830]]),
+    numberX: 0.9, standeeX: [0.06, 0.95],
   },
   // 2026-11-01: the Wavy Backdrop (the Single Arch photo, its board made wavy) and the Fringe Backdrop (the Banner
   // photo, its board made a layered fringe of tissue and tinsel in a wooden frame, repainted with the balloons).
@@ -149,26 +157,28 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     // Re-shot 2026-11-02 from a real render of its garland as in the owner's unicorn photo ("wavy backdrop balon
     // lokasyonlari ve genisligi ayni olsun burdakiyle"): a wide column down the left, over the top to the right
     // shoulder, a cluster on the right from halfway down; the offset rim has its own mask.
-    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.376, y0: 0.2529, x1: 0.6553, y1: 0.8398, text: { cx: 0.54, cy: 0.42, w: 0.2 } }],
-    plinth: { x: 0.46, y: 0.615, w: 0.1, h: 0.28 },
-    florals: fromPx([[430, 170], [520, 120], [620, 140], [300, 250], [240, 350], [220, 460], [200, 560], [180, 680], [150, 780], [120, 860], [700, 600], [780, 700], [760, 820]]),
+    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.408, y0: 0.279, x1: 0.652, y1: 0.831, text: { cx: 0.55, cy: 0.436, w: 0.175 } }],
+    plinth: { x: 0.488, y: 0.646, w: 0.084, h: 0.245 },
+    florals: fromPx([[413, 130], [403, 200], [478, 270], [298, 340], [306, 480], [353, 550], [369, 620], [204, 690], [685, 690], [361, 760], [804, 760], [404, 830], [796, 830]]),
     numberX: 0.5, standeeX: [0.06, 0.93],
   },
   fringe: {
     room: `${SK}/single_fringe-room.webp`, balloons: `${SK}/single_fringe-balloons.webp`, families: `${SK}/single_fringe-families.png`,
     // Re-shot 2026-11-02 from a real render, to the owner's second fringe photo ("fringe neden boyle gozukuyor
     // bunun gibi olmali"): wide vertical colour blocks, tinsel panels over them, packed solid to the floor.
-    boards: [{ mask: `${SK}/single_fringe-board-0.png`, x0: 0.2129, y0: 0.252, x1: 0.7832, y1: 0.8281, text: { cx: 0.41, cy: 0.45, w: 0.32 } }],
-    plinth: { x: 0.446, y: 0.61, w: 0.108, h: 0.27 },
+    boards: [{ mask: `${SK}/single_fringe-board-0.png`, x0: 0.213, y0: 0.252, x1: 0.787, y1: 0.83, text: { cx: 0.41, cy: 0.45, w: 0.32 } }],
+    plinth: { x: 0.456, y: 0.635, w: 0.0875, h: 0.255 },
     florals: fromPx([[400, 250], [470, 200], [560, 215], [650, 250], [760, 300], [840, 380], [860, 480], [840, 600], [860, 720], [780, 820], [690, 830]]),
     numberX: 0.2, standeeX: [0.06, 0.96],
   },
   // 2026-11-01: the Customized Themed set (Frozen), the owner's photo re-made with generic art and no name;
-  // the name goes on the top of the centre panel. It is shown as it is, its own stage in place of plinths.
+  // the name goes on the top of the centre panel. It is shown as it is. 2026-11-02 (the owner: "stage gibi olan
+  // şeyi kaldıralım, floordaki banner da kalksın"): its round stage and printed floor mat edited out, so the
+  // plinths stand on the floor in front of the castle panel, to the set's scale (250 cm tall).
   themed_set: {
     room: `${SK}/themed_set-room.webp`, balloons: "", families: "", fixed: true,
     boards: [{ x0: 0.39, y0: 0.17, x1: 0.61, y1: 0.75, text: { cx: 0.515, cy: 0.37, w: 0.17 } }],
-    plinth: { x: 0.34, y: 0.72, w: 0.3, h: 0.1 },
+    plinth: { x: 0.453, y: 0.59, w: 0.094, h: 0.212 },
     florals: [],
     numberX: 0.78, standeeX: [0.07, 0.93],
   },
@@ -176,8 +186,8 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     room: `${SK}/balloon_ring-room.webp`, balloons: `${SK}/balloon_ring-balloons.webp`, families: `${SK}/balloon_ring-families.png`,
     // No board: the ring is all balloons, with the wall showing through.
     boards: [{ x0: 0.06, y0: 0.16, x1: 0.96, y1: 0.88, text: { cx: 0.52, cy: 0.45, w: 0.3 } }],
-    plinth: { x: 0.429, y: 0.571, w: 0.143, h: 0.321 },
-    florals: fromPx([[120, 700], [110, 560], [150, 420], [230, 300], [350, 220], [500, 190], [650, 190], [780, 250], [870, 360], [900, 500], [910, 650]]),
+    plinth: { x: 0.47, y: 0.635, w: 0.0875, h: 0.255 },
+    florals: fromPx([[520, 130], [314, 270], [219, 340], [809, 340], [741, 410], [756, 480], [906, 550], [896, 620], [753, 690], [385, 760], [796, 760], [386, 830], [917, 830]]),
     numberX: 0.66, standeeX: [0.04, 0.97],
   },
 };
@@ -190,7 +200,7 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
  */
 const SET_SHOT_THEMES = new Set(["unicorn", "frozen"]);
 function setShot(themeId: string, palette: string[]): { folder: string; asShot: boolean } {
-  const kind = hexPaletteKind(palette);
+  const kind = sceneBalloonSet(themeId, palette);
   if (SET_SHOT_THEMES.has(themeId)) {
     const own = themeBalloonSets(themeId)[kind];
     const themeDefault = themeById(themeId)?.balloonColors ?? [];
@@ -211,7 +221,6 @@ const RAINBOW_W = 165;
 const RAINBOW_ASPECT = 0.558;
 /** The plinth cut from the same photo, used for every plinth in every sketch. */
 const PLINTH_SRC = "/design/sketch/plinth.webp";
-const PLINTH_ASPECT = 0.343; // width / height of the sprite (the XXL)
 const PLINTH_CM: Record<string, { h: number; d: number }> = { large: { h: 90, d: 40 }, medium: { h: 75, d: 36 }, small: { h: 60, d: 33 } };
 
 type Rgb = [number, number, number];
@@ -623,6 +632,8 @@ export default function LiveSketch({
   const palette = d.balloonColors.length ? d.balloonColors : (theme?.balloonColors ?? ["#f7c5d8"]);
   // The photo of the chosen theme and balloon set (a mix of one's own is repainted on the nearest).
   const shot = frozenBase && !frozenBase.fixed ? setShot(config.theme, palette) : null;
+  // The fringe keeps its theme's Pastel tones whatever the balloons are (SceneModel.fringeColors).
+  const fringePalette = (() => { const p = setHexes(themeBalloonSets(config.theme).pastel); return p.length ? p : palette; })();
   const base = useMemo(() => frozenBase && shot ? themeShot(frozenBase, shot.folder) : frozenBase, [frozenBase, shot?.folder]);
   const { pieces, scale } = useMemo(() => {
     if (!base) return layoutPieces(items, { maxW: hasNumber || standees.length ? 640 : 760, maxH: 640 });
@@ -650,7 +661,9 @@ export default function LiveSketch({
     const dims = sizes.map((s) => {
       const c = PLINTH_CM[s] ?? PLINTH_CM.medium;
       const h = base ? base.plinth.h * VB * (c.h / 90) : c.h * scale;
-      return { h, w: h * PLINTH_ASPECT * (c.d / 40) / (c.h / 90) };
+      // 2026-11-02 ("plinth size bi tuhaf olmuş"): as wide as it really is (the XXL is 40 cm across, 90 tall);
+      // the sprite alone drew it a quarter too narrow.
+      return { h, w: h * (c.d / c.h) };
     });
     const order = dims.map((dm, i) => ({ ...dm, i })).sort((a, b) => b.h - a.h);
     const out: { x: number; y: number; w: number; h: number }[] = [];
@@ -709,7 +722,7 @@ export default function LiveSketch({
   const neonPiece = neon ? (pieces.find((p) => p.idx === (neon.panelIndex ?? 0)) ?? pieces[0]) : undefined;
 
   const lines = (s: string) => {
-    // "Happy Birthday" stays on one line with the name centred below it.
+    // "Happy" over "Birthday", the name centred below them.
     const fixed = messageLines(s);
     if (fixed) return fixed;
     const words = s.trim().split(/\s+/);
@@ -826,7 +839,7 @@ export default function LiveSketch({
                 <g key={p.item.id} filter="url(#skShadow)">
                   <clipPath id={`skFringe${uid}${p.idx}`}><path d={path!} /></clipPath>
                   <g clipPath={`url(#skFringe${uid}${p.idx})`}>
-                    {fringeStrands(p.x, p.top, p.w, FLOOR - p.top, palette, p.idx).map((st, i) => (
+                    {fringeStrands(p.x, p.top, p.w, FLOOR - p.top, fringePalette, p.idx).map((st, i) => (
                       <line key={i} x1={st.x} x2={st.x} y1={st.y0} y2={st.y1} stroke={st.hex} strokeWidth={st.w} strokeLinecap="round" />
                     ))}
                   </g>

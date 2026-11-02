@@ -1,5 +1,5 @@
 // New backdrop setups' card icons in the customer's crayon set (public/design/backdrops-v2),
-// 2026-11-01: the Wavy Board and the Fringe Backdrop. Two of her icons show the style.
+// 2026-11-01: the Wavy Board and the Fringe Backdrop; 2026-11-02 Wavy + Shimmer. Two of her icons show the style.
 // Paid (Seedream, $0.035 an icon): run only with her approval.
 // node scripts/themes/setup-icon-render.mjs <projectDir> <outDir> [icon,icon…]
 import fs from "node:fs"; import path from "node:path";
@@ -13,15 +13,18 @@ const key = (env.match(/^FAL_KEY\s*=\s*"?([^"\r\n]+)"?/m) || [])[1];
 const ref = async (f) => `data:image/png;base64,${(await sharp(path.join(projectDir, "public/design/backdrops-v2", f)).flatten({ background: "#fff" }).png().toBuffer()).toString("base64")}`;
 const ICONS = {
   "wavy-board": "one tall hot-pink board with a wavy, curvy outline all round (soft waves down both sides and a wavy top, like a wavy mirror), standing on the ground, with a small cluster of red, yellow and blue balloons at its top right corner",
+  "wavy-shimmer": "exactly Image 1's arch-and-shimmer-wall pair, but the hot-pink board on the left has Image 2's wavy, curvy outline (soft waves down both sides and a wavy top) instead of a round arch top, beside the same square pink sequin shimmer wall made of little square tiles, with the same two balloons, one blue and one yellow, at the top right",
   "fringe": "a square backdrop of long hanging fringe streamers in vertical stripes of hot pink, purple, turquoise and gold tinsel, hanging from a thin bar, with a small cluster of red, yellow and blue balloons at its top right corner",
 };
 const style = "Images 1 and 2 are two icons from one hand-drawn set of party backdrop icons. Draw a NEW icon for the same set, in exactly the same style: the same bold coloured-pencil and crayon texture, the same bright saturated colours, the same little black sparkle strokes beside it, plain white background, the subject centred, the same size in the picture as in the examples. No words, no letters. Draw:";
 const refs = [await ref("single-arch.webp"), await ref("banner.webp")];
+// An icon made from two of hers takes those two as Images 1 and 2.
+const OWN_REFS = { "wavy-shimmer": ["arch-shimmer.webp", "wavy.webp"] };
 await Promise.all(Object.entries(ICONS).filter(([n]) => !only || only.split(",").includes(n)).map(async ([name, what]) => {
   for (let a = 0; a < 3; a++) {
     try {
       const res = await fetch("https://fal.run/fal-ai/bytedance/seedream/v5/lite/edit", { method: "POST", headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: `${style} ${what}.`, image_urls: refs, num_images: 1, output_format: "png", image_size: { width: 1872, height: 1272 } }), signal: AbortSignal.timeout(170_000) });
+        body: JSON.stringify({ prompt: `${style} ${what}.`, image_urls: OWN_REFS[name] ? await Promise.all(OWN_REFS[name].map(ref)) : refs, num_images: 1, output_format: "png", image_size: { width: 1872, height: 1272 } }), signal: AbortSignal.timeout(170_000) });
       const j = await res.json();
       if (!res.ok) { console.log(name, "HTTP", res.status, JSON.stringify(j).slice(0, 200)); return; }
       fs.writeFileSync(path.join(out, `${name}.png`), Buffer.from(await (await fetch(j.images[0].url)).arrayBuffer()));

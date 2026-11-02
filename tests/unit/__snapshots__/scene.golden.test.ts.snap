@@ -647,6 +647,13 @@ exports[`scene golden > A-single_fringe 1`] = `
     "size": "none",
     "source": "preset",
   },
+  "fringeColors": [
+    "#FFFFFF",
+    "#BAE6FD",
+    "#DCD7F2",
+    "#C7C9C7",
+    "#F0F4F8",
+  ],
   "garlandFlorals": false,
   "neonSign": {
     "enabled": false,
@@ -1093,6 +1100,119 @@ exports[`scene golden > A-triple_arch 1`] = `
   ],
   "rainbowBalloons": false,
   "shimmerColor": null,
+  "theme": "frozen",
+  "totalPrice": 610,
+}
+`;
+
+exports[`scene golden > A-wavy_shimmer 1`] = `
+{
+  "balloonRingStyle": "full",
+  "balloons": {
+    "colors": [
+      "#FFFFFF",
+      "#BAE6FD",
+      "#DCD7F2",
+      "#C7C9C7",
+      "#F0F4F8",
+    ],
+    "style": "full",
+  },
+  "cutouts": {
+    "items": [
+      {
+        "heightCm": 150,
+        "label": "Large standalone cutout",
+        "quantity": 0,
+        "size": "large",
+        "unitPrice": 180,
+      },
+      {
+        "heightCm": 100,
+        "label": "Medium standalone cutout",
+        "quantity": 0,
+        "size": "medium",
+        "unitPrice": 120,
+      },
+      {
+        "heightCm": 60,
+        "label": "Small standalone cutout",
+        "quantity": 0,
+        "size": "small",
+        "unitPrice": 70,
+      },
+    ],
+    "mode": "none",
+    "position": "floor",
+    "selectedAssets": [],
+    "size": "none",
+    "source": "preset",
+  },
+  "garlandFlorals": false,
+  "neonSign": {
+    "enabled": true,
+    "panelIndex": 1,
+    "text": "Happy Birthday",
+  },
+  "numberLight": {
+    "enabled": false,
+    "value": "1",
+  },
+  "panels": [
+    {
+      "borderColor": "#BAE6FD",
+      "color": "#FFFFFF",
+      "graphic": {
+        "assetId": undefined,
+        "enabled": false,
+        "source": undefined,
+        "style": "illustrated",
+      },
+      "heightCm": 220,
+      "id": "wavy",
+      "order": 0,
+      "sizeId": undefined,
+      "text": {
+        "color": "gold",
+        "enabled": false,
+        "fontStyle": "script",
+        "value": "Happy Birthday",
+      },
+      "type": "wavy",
+      "widthCm": 120,
+    },
+    {
+      "color": "#FFFFFF",
+      "graphic": {
+        "assetId": undefined,
+        "enabled": false,
+        "source": undefined,
+        "style": "illustrated",
+      },
+      "heightCm": 200,
+      "id": "shimmer_wall",
+      "order": 1,
+      "sizeId": undefined,
+      "text": {
+        "color": "gold",
+        "enabled": false,
+        "fontStyle": "script",
+        "value": "Happy Birthday",
+      },
+      "type": "shimmer_wall",
+      "widthCm": 200,
+    },
+  ],
+  "plinths": [
+    {
+      "diameterCm": 40,
+      "heightCm": 90,
+      "idx": 0,
+      "size": "large",
+    },
+  ],
+  "rainbowBalloons": false,
+  "shimmerColor": "silver",
   "theme": "frozen",
   "totalPrice": 610,
 }
@@ -4457,6 +4577,13 @@ exports[`scene golden > E13-unicorn-fringe 1`] = `
     "size": "none",
     "source": "preset",
   },
+  "fringeColors": [
+    "#F8BBD0",
+    "#FEF08A",
+    "#BBF7D0",
+    "#BAE6FD",
+    "#DDD6FE",
+  ],
   "garlandFlorals": false,
   "neonSign": {
     "enabled": false,
@@ -4600,10 +4727,10 @@ exports[`scene golden > E15-unicorn-bright-wavy-rainbow 1`] = `
   "balloonRingStyle": "full",
   "balloons": {
     "colors": [
-      "#DB7093",
-      "#FDBA74",
-      "#6EE7B7",
-      "#C084FC",
+      "#FFD1A4",
+      "#FDA4AF",
+      "#BBF7D0",
+      "#DDD6FE",
     ],
     "style": "full",
   },
@@ -4648,7 +4775,7 @@ exports[`scene golden > E15-unicorn-bright-wavy-rainbow 1`] = `
   },
   "panels": [
     {
-      "borderColor": "#DB7093",
+      "borderColor": "#FFD1A4",
       "color": "#FFFFFF",
       "graphic": {
         "assetId": undefined,

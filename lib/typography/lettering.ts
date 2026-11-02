@@ -3,7 +3,7 @@
 // lettering colour). Safe on the client and the server: data and rules only;
 // the shaping itself is boardLayout.ts (server) and /api/typography/layout.
 import {
-  DEFAULT_TEXT_VALUE, TEXT_SIZES, messageLines,
+  DEFAULT_TEXT_VALUE, TEXT_SIZES, messageParts,
   type BackdropItemText, type BoardLettering, type FontStyle, type LetteringLine, type TextSize,
 } from "../config";
 import { DEFAULT_PRESET_ID, PRESETS, presetById, type LetteringPreset } from "./presets";
@@ -26,8 +26,8 @@ export function letteringFromLegacy(t: Pick<BackdropItemText, "value" | "fontSty
   const preset = presetById(PRESET_FOR_LEGACY[t.fontStyle] ?? DEFAULT_PRESET_ID) ?? presetById(DEFAULT_PRESET_ID)!;
   const value = t.value.trim() || DEFAULT_TEXT_VALUE;
   // "Happy Birthday Arya": the heading and the name. Anything else is one line.
-  const lines = messageLines(value);
-  const [heading, name] = lines ? [lines[0], lines.slice(1).join(" ")] : [value, ""];
+  const parts = messageParts(value);
+  const [heading, name] = parts ? [parts.heading, parts.name] : [value, ""];
   return {
     presetId: preset.id,
     basedOn: preset.id,
@@ -104,3 +104,20 @@ export function lineDescriptor(l: LetteringLine): string {
 }
 
 export { PRESETS as LETTERING_PRESETS };
+
+/**
+ * A heading's rows on the board (2026-11-02, the owner: "happy üstte birthday altta olsun … böylece daha büyük
+ * gözükür, heading eklenirse 2 sıra olsun"): two or more words go on two rows, broken where the rows come
+ * out most even ("Happy" over "Birthday"); one word stays one row. Replaces her earlier "happy birthday
+ * yanyana": on one row the words had to shrink to the board's width.
+ */
+export function headingRows(text: string): string[] {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return words.length ? [words[0]] : [];
+  let best = 1, bestGap = Infinity;
+  for (let i = 1; i < words.length; i++) {
+    const gap = Math.abs(words.slice(0, i).join(" ").length - words.slice(i).join(" ").length);
+    if (gap < bestGap) { best = i; bestGap = gap; }
+  }
+  return [words.slice(0, best).join(" "), words.slice(best).join(" ")];
+}

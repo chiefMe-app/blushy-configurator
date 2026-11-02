@@ -70,8 +70,12 @@ exports[`lettering golden > text 00 "Happy Birthday Arya" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 254.1,
@@ -80,8 +84,12 @@ exports[`lettering golden > text 00 "Happy Birthday Arya" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 207.7,
@@ -90,8 +98,12 @@ exports[`lettering golden > text 00 "Happy Birthday Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 167.8,
@@ -100,10 +112,12 @@ exports[`lettering golden > text 00 "Happy Birthday Arya" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Arya",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -116,8 +130,12 @@ exports[`lettering golden > text 01 "Happy Birthday, Arya" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 254.1,
@@ -126,8 +144,12 @@ exports[`lettering golden > text 01 "Happy Birthday, Arya" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 207.7,
@@ -136,8 +158,12 @@ exports[`lettering golden > text 01 "Happy Birthday, Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 167.8,
@@ -146,10 +172,12 @@ exports[`lettering golden > text 01 "Happy Birthday, Arya" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Arya",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -162,8 +190,12 @@ exports[`lettering golden > text 02 "Happy Birthday Arya!" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 287.4,
@@ -172,8 +204,12 @@ exports[`lettering golden > text 02 "Happy Birthday Arya!" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 233.9,
@@ -182,8 +218,12 @@ exports[`lettering golden > text 02 "Happy Birthday Arya!" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 197.3,
@@ -192,10 +232,12 @@ exports[`lettering golden > text 02 "Happy Birthday Arya!" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Arya!",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -208,8 +250,12 @@ exports[`lettering golden > text 03 "Happy Birthday! Arya" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 254.1,
@@ -218,8 +264,12 @@ exports[`lettering golden > text 03 "Happy Birthday! Arya" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 207.7,
@@ -228,8 +278,12 @@ exports[`lettering golden > text 03 "Happy Birthday! Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 167.8,
@@ -238,10 +292,12 @@ exports[`lettering golden > text 03 "Happy Birthday! Arya" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Arya",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -254,8 +310,12 @@ exports[`lettering golden > text 04 "Happy Birthday. Arya" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 254.1,
@@ -264,8 +324,12 @@ exports[`lettering golden > text 04 "Happy Birthday. Arya" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 207.7,
@@ -274,8 +338,12 @@ exports[`lettering golden > text 04 "Happy Birthday. Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 167.8,
@@ -284,10 +352,12 @@ exports[`lettering golden > text 04 "Happy Birthday. Arya" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Arya",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -510,27 +580,41 @@ exports[`lettering golden > text 12 "Happy Birthday" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
   ],
   "scriptFace": [
+    "signature",
     "signature",
   ],
 }
@@ -542,8 +626,12 @@ exports[`lettering golden > text 13 "Happy Birthday Princess" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 472.2,
@@ -552,8 +640,12 @@ exports[`lettering golden > text 13 "Happy Birthday Princess" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 380.6,
@@ -562,8 +654,12 @@ exports[`lettering golden > text 13 "Happy Birthday Princess" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 228.6,
@@ -572,10 +668,12 @@ exports[`lettering golden > text 13 "Happy Birthday Princess" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Princess",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -858,8 +956,12 @@ exports[`lettering golden > text 23 "Happy Birthday Şule" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 238.9,
@@ -868,8 +970,12 @@ exports[`lettering golden > text 23 "Happy Birthday Şule" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 191.3,
@@ -878,8 +984,12 @@ exports[`lettering golden > text 23 "Happy Birthday Şule" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 130.7,
@@ -888,10 +998,12 @@ exports[`lettering golden > text 23 "Happy Birthday Şule" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Şule",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -904,8 +1016,12 @@ exports[`lettering golden > text 24 "Happy Birthday Ğ İ Ş ğ ı ş" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 522,
@@ -914,8 +1030,12 @@ exports[`lettering golden > text 24 "Happy Birthday Ğ İ Ş ğ ı ş" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 409.5,
@@ -924,8 +1044,12 @@ exports[`lettering golden > text 24 "Happy Birthday Ğ İ Ş ğ ı ş" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 292.6,
@@ -934,10 +1058,12 @@ exports[`lettering golden > text 24 "Happy Birthday Ğ İ Ş ğ ı ş" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Ğ İ Ş ğ ı ş",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -980,8 +1106,12 @@ exports[`lettering golden > text 26 "Happy Birthday Ayşe Gül" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 483.3,
@@ -990,8 +1120,12 @@ exports[`lettering golden > text 26 "Happy Birthday Ayşe Gül" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 390.6,
@@ -1000,8 +1134,12 @@ exports[`lettering golden > text 26 "Happy Birthday Ayşe Gül" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 294.5,
@@ -1010,10 +1148,12 @@ exports[`lettering golden > text 26 "Happy Birthday Ayşe Gül" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Ayşe Gül",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -1026,8 +1166,12 @@ exports[`lettering golden > text 27 "Happy Birthday Mary Jane" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 570.8,
@@ -1036,8 +1180,12 @@ exports[`lettering golden > text 27 "Happy Birthday Mary Jane" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 449.4,
@@ -1046,8 +1194,12 @@ exports[`lettering golden > text 27 "Happy Birthday Mary Jane" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 298.5,
@@ -1056,10 +1208,12 @@ exports[`lettering golden > text 27 "Happy Birthday Mary Jane" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Mary Jane",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -1072,8 +1226,12 @@ exports[`lettering golden > text 28 "Happy Birthday Al Fahim" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 475.2,
@@ -1082,8 +1240,12 @@ exports[`lettering golden > text 28 "Happy Birthday Al Fahim" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 400.1,
@@ -1092,8 +1254,12 @@ exports[`lettering golden > text 28 "Happy Birthday Al Fahim" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 298.3,
@@ -1102,10 +1268,12 @@ exports[`lettering golden > text 28 "Happy Birthday Al Fahim" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Al Fahim",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -1118,8 +1286,12 @@ exports[`lettering golden > text 29 "Happy Birthday Mohammed Bin Rashid" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 1244.6,
@@ -1128,8 +1300,12 @@ exports[`lettering golden > text 29 "Happy Birthday Mohammed Bin Rashid" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 1043.4,
@@ -1138,8 +1314,12 @@ exports[`lettering golden > text 29 "Happy Birthday Mohammed Bin Rashid" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 649.6,
@@ -1148,10 +1328,12 @@ exports[`lettering golden > text 29 "Happy Birthday Mohammed Bin Rashid" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Mohammed Bin Rashid",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -1164,8 +1346,12 @@ exports[`lettering golden > text 30 "Happy Birthday Arya & Leo" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 609.7,
@@ -1174,8 +1360,12 @@ exports[`lettering golden > text 30 "Happy Birthday Arya & Leo" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 505.4,
@@ -1184,8 +1374,12 @@ exports[`lettering golden > text 30 "Happy Birthday Arya & Leo" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 368.5,
@@ -1194,10 +1388,12 @@ exports[`lettering golden > text 30 "Happy Birthday Arya & Leo" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Arya & Leo",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -1570,8 +1766,12 @@ exports[`lettering golden > text 43 "Happy Birthday\\nArya" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 254.1,
@@ -1580,8 +1780,12 @@ exports[`lettering golden > text 43 "Happy Birthday\\nArya" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 207.7,
@@ -1590,8 +1794,12 @@ exports[`lettering golden > text 43 "Happy Birthday\\nArya" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 167.8,
@@ -1600,10 +1808,12 @@ exports[`lettering golden > text 43 "Happy Birthday\\nArya" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Arya",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -1616,8 +1826,12 @@ exports[`lettering golden > text 44 "  Happy Birthday Arya  " 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 254.1,
@@ -1626,8 +1840,12 @@ exports[`lettering golden > text 44 "  Happy Birthday Arya  " 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 207.7,
@@ -1636,8 +1854,12 @@ exports[`lettering golden > text 44 "  Happy Birthday Arya  " 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 167.8,
@@ -1646,10 +1868,12 @@ exports[`lettering golden > text 44 "  Happy Birthday Arya  " 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Arya",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -1662,8 +1886,12 @@ exports[`lettering golden > text 45 "HAPPY BIRTHDAY ARYA" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 986.3,
-        "path": "03caa478d0ee1838",
+        "advance": 383.3,
+        "path": "11ab1aaad5ecc92e",
+      },
+      {
+        "advance": 569.7,
+        "path": "2c106b1e60952e5a",
       },
       {
         "advance": 297.5,
@@ -1672,8 +1900,12 @@ exports[`lettering golden > text 45 "HAPPY BIRTHDAY ARYA" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 832.9,
-        "path": "0400a526f88dc171",
+        "advance": 314.8,
+        "path": "c5784e7e51fe3dee",
+      },
+      {
+        "advance": 493.2,
+        "path": "9bab7b31a71a8c66",
       },
       {
         "advance": 249.9,
@@ -1682,8 +1914,12 @@ exports[`lettering golden > text 45 "HAPPY BIRTHDAY ARYA" 1`] = `
     ],
     "script": [
       {
-        "advance": 781.8,
-        "path": "d17f14a11bbeeb7e",
+        "advance": 307.2,
+        "path": "4fb2e13a715e1d59",
+      },
+      {
+        "advance": 457.7,
+        "path": "fd017be923f3fa8b",
       },
       {
         "advance": 259,
@@ -1692,10 +1928,12 @@ exports[`lettering golden > text 45 "HAPPY BIRTHDAY ARYA" 1`] = `
     ],
   },
   "messageLines": [
-    "HAPPY BIRTHDAY",
+    "HAPPY",
+    "BIRTHDAY",
     "ARYA",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -1708,8 +1946,12 @@ exports[`lettering golden > text 46 "happy birthday arya" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 815.5,
-        "path": "4713f86e11381b4a",
+        "advance": 327.2,
+        "path": "847aa190e733aa91",
+      },
+      {
+        "advance": 455,
+        "path": "5af5fd8bb6ad6eae",
       },
       {
         "advance": 243,
@@ -1718,8 +1960,12 @@ exports[`lettering golden > text 46 "happy birthday arya" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 682.7,
-        "path": "f80e900bdb73e5b0",
+        "advance": 275.2,
+        "path": "ef2a683b91826198",
+      },
+      {
+        "advance": 382.6,
+        "path": "d3e334d179a14068",
       },
       {
         "advance": 194.5,
@@ -1728,8 +1974,12 @@ exports[`lettering golden > text 46 "happy birthday arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 376.8,
-        "path": "4696275217b6ee8c",
+        "advance": 144.2,
+        "path": "327d5f978c85fa5a",
+      },
+      {
+        "advance": 215.7,
+        "path": "8f55a609ada44308",
       },
       {
         "advance": 120.4,
@@ -1738,10 +1988,12 @@ exports[`lettering golden > text 46 "happy birthday arya" 1`] = `
     ],
   },
   "messageLines": [
-    "happy birthday",
+    "happy",
+    "birthday",
     "arya",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -1754,8 +2006,12 @@ exports[`lettering golden > text 47 "Happy  Birthday   Arya" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 254.1,
@@ -1764,8 +2020,12 @@ exports[`lettering golden > text 47 "Happy  Birthday   Arya" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 207.7,
@@ -1774,8 +2034,12 @@ exports[`lettering golden > text 47 "Happy  Birthday   Arya" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 167.8,
@@ -1784,10 +2048,12 @@ exports[`lettering golden > text 47 "Happy  Birthday   Arya" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Arya",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -1800,8 +2066,12 @@ exports[`lettering golden > text 48 "Happy Birthday\\n\\nArya" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 254.1,
@@ -1810,8 +2080,12 @@ exports[`lettering golden > text 48 "Happy Birthday\\n\\nArya" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 207.7,
@@ -1820,8 +2094,12 @@ exports[`lettering golden > text 48 "Happy Birthday\\n\\nArya" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 167.8,
@@ -1830,10 +2108,12 @@ exports[`lettering golden > text 48 "Happy Birthday\\n\\nArya" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Arya",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -1846,8 +2126,12 @@ exports[`lettering golden > text 49 "Happy\\nBirthday\\nArya" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 254.1,
@@ -1856,8 +2140,12 @@ exports[`lettering golden > text 49 "Happy\\nBirthday\\nArya" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 207.7,
@@ -1866,8 +2154,12 @@ exports[`lettering golden > text 49 "Happy\\nBirthday\\nArya" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 167.8,
@@ -1876,10 +2168,12 @@ exports[`lettering golden > text 49 "Happy\\nBirthday\\nArya" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Arya",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -1948,8 +2242,12 @@ exports[`lettering golden > text 53 "Happy Birthday Arya 🎉" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 362.4,
@@ -1958,8 +2256,12 @@ exports[`lettering golden > text 53 "Happy Birthday Arya 🎉" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 288.8,
@@ -1968,8 +2270,12 @@ exports[`lettering golden > text 53 "Happy Birthday Arya 🎉" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 251.42,
@@ -1978,10 +2284,12 @@ exports[`lettering golden > text 53 "Happy Birthday Arya 🎉" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Arya 🎉",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "script",
   ],
@@ -2084,8 +2392,12 @@ exports[`lettering golden > text 57 "Happy Birthday 1" 1`] = `
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 66.7,
@@ -2094,8 +2406,12 @@ exports[`lettering golden > text 57 "Happy Birthday 1" 1`] = `
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 37,
@@ -2104,8 +2420,12 @@ exports[`lettering golden > text 57 "Happy Birthday 1" 1`] = `
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 24.3,
@@ -2114,10 +2434,12 @@ exports[`lettering golden > text 57 "Happy Birthday 1" 1`] = `
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "1",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],
@@ -2130,8 +2452,12 @@ exports[`lettering golden > text 58 "Happy Birthday Alexandrina Montgomery-Fitzg
   "guide": {
     "block": [
       {
-        "advance": 843.2,
-        "path": "798282745c6e6771",
+        "advance": 343.8,
+        "path": "3d8155a8c8092471",
+      },
+      {
+        "advance": 466.1,
+        "path": "7583f807f72702eb",
       },
       {
         "advance": 1949.5,
@@ -2140,8 +2466,12 @@ exports[`lettering golden > text 58 "Happy Birthday Alexandrina Montgomery-Fitzg
     ],
     "elegant": [
       {
-        "advance": 705.6,
-        "path": "e13e902cf222779f",
+        "advance": 292.1,
+        "path": "1ea3f3227a35b0f0",
+      },
+      {
+        "advance": 388.6,
+        "path": "37ddb75217c49ff6",
       },
       {
         "advance": 1652.3,
@@ -2150,8 +2480,12 @@ exports[`lettering golden > text 58 "Happy Birthday Alexandrina Montgomery-Fitzg
     ],
     "script": [
       {
-        "advance": 453.7,
-        "path": "58ba34a58fb9cacb",
+        "advance": 191.8,
+        "path": "ba5f146980e479d5",
+      },
+      {
+        "advance": 245,
+        "path": "5bee67b603d4342e",
       },
       {
         "advance": 1023.6,
@@ -2160,10 +2494,12 @@ exports[`lettering golden > text 58 "Happy Birthday Alexandrina Montgomery-Fitzg
     ],
   },
   "messageLines": [
-    "Happy Birthday",
+    "Happy",
+    "Birthday",
     "Alexandrina Montgomery-Fitzgerald",
   ],
   "scriptFace": [
+    "signature",
     "signature",
     "signature",
   ],

@@ -435,24 +435,29 @@ export type TextSize = "small" | "medium" | "large";
 // 2026-10-24 (later): "suan ki small large olmali, medium ve small daha da
 // kucuk olmali" — the first Small is now Large, and the other two step down.
 // A scale of the size the lettering is fitted to across its board's clear
-// width. With "Happy Birthday" kept on one line (messageLines) the fitted size
-// is already about the first Small, so Large is the fit itself.
+// width. Large is the fit itself.
 export const TEXT_SIZES: { id: TextSize; label: string; scale: number }[] = [
   { id: "small",  label: "Small",  scale: 0.64 },
   { id: "medium", label: "Medium", scale: 0.8 },
   { id: "large",  label: "Large",  scale: 1 },
 ];
 
+/** "Happy Birthday Arya" as its heading and name; other messages: null. */
+export function messageParts(text: string): { heading: string; name: string } | null {
+  const m = text.trim().match(/^(happy\s+birthday)[\s,!.]*(.*)$/i);
+  return m ? { heading: m[1].replace(/\s+/g, " "), name: m[2].trim() } : null;
+}
+
 /**
- * How a message breaks into lines: "Happy Birthday" always stays together on
- * the first line, with the rest (the name) on the line below — "herzaman
- * happy birthday yanyana isim altta olmali". Other messages: null (callers
- * wrap them their own way).
+ * How a message breaks into lines: "Happy" over "Birthday", the name below —
+ * 2026-11-02, the owner: "happy ustte birthday altta olsun textte boylece
+ * daha buyuk gozukur" (it replaces "herzaman happy birthday yanyana"). Other
+ * messages: null (callers wrap them their own way).
  */
 export function messageLines(text: string): string[] | null {
-  const m = text.trim().match(/^(happy\s+birthday)[\s,!.]*(.*)$/i);
-  if (!m) return null;
-  return m[2].trim() ? [m[1].replace(/\s+/g, " "), m[2].trim()] : [m[1].replace(/\s+/g, " ")];
+  const p = messageParts(text);
+  if (!p) return null;
+  return [...p.heading.split(" "), ...(p.name ? [p.name] : [])];
 }
 export const textSizeScale = (s?: TextSize) => TEXT_SIZES.find((t) => t.id === (s ?? "medium"))?.scale ?? 0.8;
 
