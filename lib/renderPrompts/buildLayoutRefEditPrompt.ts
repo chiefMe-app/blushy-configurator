@@ -134,6 +134,7 @@ export function buildLayoutRefEditPrompt(
   const sceneModel = renderAliasScene(realSceneModel);
   const loneRealType = realSceneModel.panels.length === 1 ? realSceneModel.panels[0]?.type : null;
   const isWavy = loneRealType === "wavy";
+  const anyWavy = realSceneModel.panels.some((p) => p.type === "wavy");
   const isFringe = loneRealType === "fringe";
   const squareBoardNoun = isFringe ? "square fringe curtain" : "square banner board";
   // The fringe's own colours (SceneModel.fringeColors: its theme's Pastel tones, whatever the balloons are).
@@ -1732,8 +1733,10 @@ export function buildLayoutRefEditPrompt(
       `The main part starts with a DENSE CLUSTER OF LARGE BALLOONS over the TOP-LEFT of the wavy board, runs ` +
       `down the whole LEFT OUTER EDGE with balloons of mixed sizes and pools in a big cluster on the floor at the ` +
       `board's bottom-left corner. The second part is a lower cluster standing on the floor against the board's ` +
-      `RIGHT edge, rising about halfway up it. The top-right of the board stays clean. The garland is attached ` +
-      `directly to the board's edges with NO VISIBLE GAP, closely following its wavy outline. ` +
+      `RIGHT edge, rising about halfway up it. The top-right of the board stays clean. The garland stands ` +
+      `directly BEHIND the board's edges with NO VISIBLE GAP, closely following its wavy outline: the board and ` +
+      `its coloured rim stand IN FRONT, and the balloons only peek out past its sides and top, never covering its face ` +
+      `(2026-11-02, the owner's photo: "backdrop önde olması lazım"). ` +
       `Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
       `standard balloons, and small 5 inch filler balloons. `
     : isLoneArchScene
@@ -2498,7 +2501,10 @@ const setupTemplateClause = setupTemplate
     (hasSempertexLock
       ? `Neutral color-accurate event photography, neutral white balance. `
       : `Premium modern editorial event photography, neutral white balance, clean fresh color grading, `) +
-    `crisp white arch surface, no visible outline or border on the arch. ` +
+    // A Wavy board HAS a border: its coloured rim (Wavy + Shimmer lost it to this line).
+    (anyWavy
+      ? `crisp white board face on its coloured rim; the wavy board stands in front of its balloons. `
+      : `crisp white arch surface, no visible outline or border on the arch. `) +
     (panelsWithText.length === 0
       ? `No text on backdrop. `
       : `No extra text beyond the specified custom text. No misspelled or duplicated lettering. `) +

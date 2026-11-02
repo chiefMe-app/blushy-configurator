@@ -16,7 +16,8 @@ export default defineConfig({
   outputDir: "test-results/e2e",
   snapshotPathTemplate: "tests/e2e/__screenshots__/{projectName}/{testFilePath}/{arg}{ext}",
   fullyParallel: false,
-  workers: 1,
+  // PW_WORKERS=3 for a faster run of a few specs (2026-11-02: "işlemler aşırı uzun sürüyor"); one by default.
+  workers: process.env.PW_WORKERS ? +process.env.PW_WORKERS : 1,
   retries: 0,
   timeout: 180_000,
   expect: { timeout: 15_000, toHaveScreenshot: { maxDiffPixelRatio: 0.002, animations: "disabled", caret: "hide" } },

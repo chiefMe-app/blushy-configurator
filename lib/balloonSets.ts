@@ -17,8 +17,9 @@ export const BALLOON_SETS: { id: BalloonSetId; option: number; label: string; bl
 const BY_HAND: Record<string, Partial<Record<BalloonSetId, string[]>>> = {
   // 2026-11-02, the owner, by name: "bright colorda sempertex katalogtan peach, fashion rose, pastel green,
   // pastel lilac" (after rosewood, melon, satin green and fashion lilac: "bu renklerde istemiyorum"). No
-  // Fashion Rose in the catalog: Pastel Dusk Rose 110 is the rose.
-  unicorn: { bright: ["fashion-060-peach-blush", "pastel-dusk-110-rose", "pastel-matte-630-green", "pastel-matte-650-lilac"] },
+  // Fashion Rose in the catalog: Pastel Dusk Rose 110 was the rose, until later that day she named the pink
+  // herself: "Sempertex Fashion 017 Fuchsia".
+  unicorn: { bright: ["fashion-060-peach-blush", "fashion-017-fuchsia", "pastel-matte-630-green", "pastel-matte-650-lilac"] },
   frozen: { bright: ["fashion-005-white", "fashion-041-royal-blue", "fashion-038-caribbean-blue", "reflex-951-violet", "reflex-981-silver"] },
 };
 

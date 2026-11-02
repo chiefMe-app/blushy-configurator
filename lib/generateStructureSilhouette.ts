@@ -1303,10 +1303,15 @@ export function generateStructureSilhouette(
   };
 
   const sorted = [...layout.panels].sort((a, b) => a.zOrder - b.zOrder);
+  // 2026-11-02: the Wavy board stands IN FRONT of its garland, the balloons peeking out behind its
+  // sides and top, as in the owner's photo ("wavy beceremedin gene, backdrop önde olması lazım").
+  // Its board and lettering are lifted out here and drawn again after the balloons.
+  const wavyFront: string[] = [];
   sorted.forEach((panel, sortedIdx) => {
     const item      = backdropItems[panel.idx];
     const shape     = (item?.drawAs ?? item?.type ?? "arch") as BackdropShapeId;
     const isShimmer = shape === "shimmer_wall";
+    const panelStart = content.length;
 
     // Open arch frame. 2026-09-08, after five prompt rewrites and three guide
     // changes all failed to stop the render carving a stepped moulding around
@@ -1592,6 +1597,7 @@ export function generateStructureSilhouette(
         centreYMm: (textGuide.placement.cy - panel.apexY) * mmY,
       });
     }
+    if (shape === "wavy") wavyFront.push(...content.splice(panelStart));
   });
 
   // v4: Cylindrical plinth edge guide — no fill, no block
@@ -4595,6 +4601,9 @@ export function generateStructureSilhouette(
 
     }
   }
+
+  // The Wavy board goes back on top of its garland (see wavyFront).
+  content.push(...wavyFront);
 
   // ── Cutout standee placeholders ──────────────────────────────────────────
   // Draw one dashed silhouette per selected standee, to the LEFT of the backdrop

@@ -103,25 +103,28 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     florals: fromPx([[227, 60], [328, 130], [251, 200], [129, 270], [722, 270], [209, 340], [916, 340], [149, 480], [874, 550], [98, 690], [99, 760], [906, 760], [842, 830]]),
     numberX: 0.66, standeeX: [0.08, 0.95],
   },
+  // 2026-11-02 ("shimmer neden perde gibi?"): both shimmers re-shot on the earlier shots she liked, a rigid
+  // flat panel of sequins in a square grid.
   "arch,shimmer_wall": {
     room: `${SK}/arch_shimmer-room.webp`, balloons: `${SK}/arch_shimmer-balloons.webp`, families: `${SK}/arch_shimmer-families.png`,
     boards: [
-      { mask: `${SK}/arch_shimmer-board-0.png`, x0: 0.215, y0: 0.3135, x1: 0.461, y1: 0.824, text: { cx: 0.3541, cy: 0.4794, w: 0.19 } },
-      { mask: `${SK}/arch_shimmer-board-1.png`, x0: 0.456, y0: 0.36, x1: 0.691, y1: 0.823, text: { cx: 0.5732, cy: 0.4853, w: 0.1918 } },
+      { mask: `${SK}/arch_shimmer-board-0.png`, x0: 0.2705, y0: 0.3584, x1: 0.4385, y1: 0.7656, text: { cx: 0.358, cy: 0.48, w: 0.12 } },
+      { mask: `${SK}/arch_shimmer-board-1.png`, x0: 0.4365, y0: 0.3975, x1: 0.7061, y1: 0.7793, text: { cx: 0.571, cy: 0.51, w: 0.19 } },
     ],
-    plinth: { x: 0.426, y: 0.675, w: 0.0717, h: 0.209 },
-    florals: fromPx([[161, 340], [160, 410], [872, 410], [764, 480], [191, 550], [147, 620], [892, 620], [88, 690], [763, 690], [83, 760], [777, 760], [143, 830], [892, 830]]),
+    plinth: { x: 0.464, y: 0.647, w: 0.0573, h: 0.167 },
+    florals: fromPx([[253, 410], [794, 410], [252, 480], [261, 550], [831, 550], [215, 620], [834, 620], [172, 690], [281, 690], [840, 690], [268, 760], [779, 760], [893, 760]]),
     numberX: 0.6, standeeX: [0.04, 0.97],
   },
   // 2026-11-02 (the owner: "wavy + shimmer backdropu yapalım"): laid out as the Arch + Shimmer, shot fresh.
   "wavy,shimmer_wall": {
     room: `${SK}/wavy_shimmer-room.webp`, balloons: `${SK}/wavy_shimmer-balloons.webp`, families: `${SK}/wavy_shimmer-families.png`,
+    // The wavy board stands in front of its garland, on its rim ("backdrop önde olması lazım").
     boards: [
-      { mask: `${SK}/wavy_shimmer-board-0.png`, x0: 0.205, y0: 0.3115, x1: 0.465, y1: 0.821, text: { cx: 0.352, cy: 0.4771, w: 0.2 } },
-      { mask: `${SK}/wavy_shimmer-board-1.png`, x0: 0.456, y0: 0.36, x1: 0.691, y1: 0.823, text: { cx: 0.5732, cy: 0.4853, w: 0.1918 } },
+      { mask: `${SK}/wavy_shimmer-board-0.png`, rim: `${SK}/wavy_shimmer-rim-0.png`, x0: 0.2275, y0: 0.3389, x1: 0.4453, y1: 0.7598, text: { cx: 0.34, cy: 0.465, w: 0.15 } },
+      { mask: `${SK}/wavy_shimmer-board-1.png`, x0: 0.4561, y0: 0.373, x1: 0.6865, y1: 0.7773, text: { cx: 0.571, cy: 0.5, w: 0.17 } },
     ],
-    plinth: { x: 0.422, y: 0.673, w: 0.0717, h: 0.209 },
-    florals: fromPx([[166, 340], [165, 410], [866, 410], [761, 480], [194, 550], [150, 620], [884, 620], [95, 690], [761, 690], [90, 760], [773, 760], [149, 830], [874, 830]]),
+    plinth: { x: 0.4275, y: 0.636, w: 0.059, h: 0.172 },
+    florals: fromPx([[194, 340], [168, 410], [732, 410], [843, 410], [806, 480], [799, 550], [146, 620], [759, 620], [158, 690], [893, 690], [119, 760], [248, 760], [903, 760]]),
     numberX: 0.6, standeeX: [0.04, 0.97],
   },
   banner: {
@@ -134,20 +137,21 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
   },
   shimmer_wall: {
     room: `${SK}/single_shimmer-room.webp`, balloons: `${SK}/single_shimmer-balloons.webp`, families: `${SK}/single_shimmer-families.png`,
-    boards: [{ mask: `${SK}/single_shimmer-board-0.png`, x0: 0.288, y0: 0.253, x1: 0.745, y1: 0.819, text: { cx: 0.515, cy: 0.42, w: 0.33 } }],
-    plinth: { x: 0.472, y: 0.624, w: 0.0875, h: 0.255 },
-    florals: fromPx([[249, 200], [215, 270], [274, 340], [197, 410], [188, 480], [178, 550], [218, 620], [110, 690], [820, 690], [106, 760], [941, 760], [247, 830], [924, 830]]),
+    boards: [{ mask: `${SK}/single_shimmer-board-0.png`, x0: 0.3311, y0: 0.373, x1: 0.7109, y1: 0.7842, text: { cx: 0.521, cy: 0.496, w: 0.274 } }],
+    plinth: { x: 0.489, y: 0.644, w: 0.0635, h: 0.185 },
+    florals: fromPx([[703, 340], [284, 410], [277, 480], [799, 480], [814, 550], [246, 620], [770, 620], [180, 690], [293, 690], [896, 690], [178, 760], [762, 760], [901, 760]]),
     numberX: 0.62, standeeX: [0.06, 0.96],
   },
+  // 2026-11-02 ("triple arch bozuk"): re-shot on the earlier shot she liked, all three boards in sight.
   "half_arch,arch,half_arch": {
     room: `${SK}/triple_arch-room.webp`, balloons: `${SK}/triple_arch-balloons.webp`, families: `${SK}/triple_arch-families.png`,
     boards: [
-      { mask: `${SK}/triple_arch-board-0.png`, x0: 0.3, y0: 0.5, x1: 0.398, y1: 0.829, text: { cx: 0.35, cy: 0.635, w: 0.077 } },
-      { mask: `${SK}/triple_arch-board-1.png`, x0: 0.398, y0: 0.45, x1: 0.6, y1: 0.829, text: { cx: 0.5, cy: 0.587, w: 0.15 } },
-      { mask: `${SK}/triple_arch-board-2.png`, x0: 0.6, y0: 0.5, x1: 0.7, y1: 0.829, text: { cx: 0.65, cy: 0.635, w: 0.072 } },
+      { mask: `${SK}/triple_arch-board-0.png`, x0: 0.2725, y0: 0.452, x1: 0.3643, y1: 0.766, text: { cx: 0.32, cy: 0.56, w: 0.07 } },
+      { mask: `${SK}/triple_arch-board-1.png`, x0: 0.367, y0: 0.398, x1: 0.637, y1: 0.766, text: { cx: 0.502, cy: 0.508, w: 0.19 } },
+      { mask: `${SK}/triple_arch-board-2.png`, x0: 0.639, y0: 0.447, x1: 0.763, y1: 0.766, text: { cx: 0.7, cy: 0.56, w: 0.07 } },
     ],
-    plinth: { x: 0.466, y: 0.689, w: 0.0686, h: 0.2 },
-    florals: fromPx([[451, 270], [510, 340], [324, 410], [741, 410], [401, 480], [310, 550], [780, 550], [805, 620], [342, 690], [203, 760], [682, 760], [348, 830], [833, 830]]),
+    plinth: { x: 0.4685, y: 0.629, w: 0.067, h: 0.195 },
+    florals: fromPx([[511, 270], [595, 340], [393, 410], [773, 410], [199, 480], [675, 480], [192, 550], [192, 620], [138, 690], [265, 690], [883, 690], [298, 760], [899, 760]]),
     numberX: 0.9, standeeX: [0.06, 0.95],
   },
   // 2026-11-01: the Wavy Backdrop (the Single Arch photo, its board made wavy) and the Fringe Backdrop (the Banner

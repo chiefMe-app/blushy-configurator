@@ -29,16 +29,18 @@ const SEEDS: Record<string, [number, number, number, number, number, number][]> 
   single_arch: [[420, 520, 270, 240, 680, 870]],
   double_arch: [[470, 520, 300, 190, 560, 870], [700, 520, 545, 255, 835, 870]],
   arch_open_frame: [[400, 520, 180, 215, 560, 870], [572, 640, 545, 265, 880, 870]],
-  arch_shimmer: [[380, 600, 140, 300, 470, 870], [0, 0, 470, 372, 705, 840]],
+  // 2026-11-02 ("shimmer neden perde gibi?", "triple arch bozuk"): the two shimmers and the Triple Arch re-shot
+  // on the earlier shots she liked (LAYOUT), so in their geometry, not their guides'.
+  arch_shimmer: [[400, 600, 280, 370, 450, 800], [0, 0, 450, 410, 720, 795]],
   single_banner: [[400, 600, 200, 80, 880, 870]],
-  single_shimmer: [[0, 0, 298, 262, 760, 836]],
-  triple_arch: [[-1, 0, 0, 0, 0, 0], [512, 700, 380, 380, 650, 870], [-1, 0, 0, 0, 0, 0]],
+  single_shimmer: [[0, 0, 340, 385, 725, 800]],
+  triple_arch: [[340, 650, 180, 440, 380, 790], [512, 650, 370, 375, 655, 790], [690, 650, 645, 440, 850, 790]],
   balloon_ring: [],
   round: [[600, 550, 175, 185, 850, 870]],
   single_wavy: [[540, 520, 380, 220, 700, 880]],
   single_fringe: [[0, 0, 218, 258, 806, 850]],
-  // The Wavy + Shimmer (new 2026-11-02): laid out as the Arch + Shimmer.
-  wavy_shimmer: [[380, 600, 140, 300, 480, 870], [0, 0, 470, 372, 705, 840]],
+  // The Wavy + Shimmer (new 2026-11-02): laid out as the Arch + Shimmer, the wavy board in front on its rim.
+  wavy_shimmer: [[280, 550, 215, 290, 480, 805], [0, 0, 470, 385, 700, 795]],
 };
 /** A round board's circle (px: centre and radius), past which nothing is board. */
 const CIRCLE: Record<string, [number, number, number]> = { round: [505, 560, 300] };
@@ -49,7 +51,9 @@ const PATCHES = new Set(["round", "double_arch", "arch_shimmer", "arch_open_fram
 const SOLID: Record<string, [number, number, number, number]> = { single_fringe: [218, 258, 806, 850] };
 /** Boards photographed on a coral rim (the offset border): the rim's own mask (<setup>-rim-<i>.png), made
  *  neutral so its colour is laid on it like a board's. */
-const RIM = new Set(["single_wavy"]);
+const RIM = new Set(["single_wavy", "wavy_shimmer"]);
+/** Shot on an earlier photo, not on its route guide: no guide to hold the boards to. */
+const NO_GUIDE = new Set(["single_shimmer", "arch_shimmer", "triple_arch"]);
 /** Boards that aren't flat paint (a sequin wall, a fringe curtain): the whole box, but for the balloons in front. */
 const RECT: Record<string, number[]> = { arch_shimmer: [1], single_shimmer: [0], single_fringe: [0], wavy_shimmer: [1] };
 /** Boards photographed tinted (light blue): made neutral, so their colour is laid on white. */
@@ -68,9 +72,6 @@ const FILL: Record<string, { top?: [number, number]; bottom?: [number, number] }
  *  good row, how many rows to take). */
 const BAND: Record<string, { top?: [number, number]; bottom?: [number, number] }> = {
   arch_open_frame: { top: [62, 30] },
-  arch_shimmer: { top: [308, 45], bottom: [881, 40] },
-  single_shimmer: { top: [307, 40], bottom: [880, 40] },
-  triple_arch: { top: [235, 14], bottom: [913, 40] },
 };
 /** By hand, where the flood went wrong: balloons over a board's edge it ate (x, y, radius: kept whole), and
  *  board the cut-out kept with the balloons (x0, y0, x1, y1: taken out, but for the kept balloons). */
@@ -87,7 +88,7 @@ const ERASE: Record<string, [number, number, number, number][]> = {
 const FAMILIES: Record<string, [number, number][][]> = {
   unicorn: [[[320, 360], [0, 25]], [[25, 75]], [[75, 165]], [[165, 245]], [[245, 320]]],
   // 2026-11-02: a shot per theme and balloon set (lib/balloonSets.ts), relit in neutral daylight. Each set's
-  // own order: Unicorn's pastel is its palette; its bright is peach, rose, green, lilac (the owner's Sempertex picks).
+  // own order: Unicorn's pastel is its palette; its bright is peach, Fashion 017 fuchsia, green, lilac (the owner's Sempertex picks).
   "unicorn-pastel": [[[320, 360], [0, 25]], [[25, 75]], [[75, 165]], [[165, 245]], [[245, 320]]],
   "unicorn-bright": [[[15, 60]], [[300, 360], [0, 15]], [[60, 200]], [[200, 300]]],
   // Frozen's: white, ice blue, lilac, silver, clear (pastel); white, royal blue, caribbean blue, violet, silver
@@ -160,7 +161,7 @@ const FAMILIES: Record<string, [number, number][][]> = {
       for (let y = top; y < H; y++) for (let x = x0; x <= x1; x++) if (y >= cy || Math.hypot(x - cx, y - cy) <= r) m[y * W + x] = 1;
       return m;
     }
-    if (!guide || sx < 0) return null;
+    if (!guide || sx < 0 || NO_GUIDE.has(setup)) return null;
     const m = new Uint8Array(N), gs = (i: number, j: number) => Math.abs(guide[i * 3] - guide[j * 3]) + Math.abs(guide[i * 3 + 1] - guide[j * 3 + 1]) + Math.abs(guide[i * 3 + 2] - guide[j * 3 + 2]);
     const stack = [sy * W + sx];
     m[stack[0]] = 1;
@@ -293,6 +294,7 @@ const FAMILIES: Record<string, [number, number][][]> = {
     return m;
   })() : null;
   if (RIM.has(setup)) SEEDS[setup].forEach(([sx, , bx0, by0, bx1, by1], b) => {
+    if (sx <= 0) return; // a sequin wall has no rim
     for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
       const i = y * W + x, r = at(i, 0), g = at(i, 1), bl = at(i, 2);
       if (near) {

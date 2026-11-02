@@ -80,6 +80,8 @@ export const SEMPERTEX_CATALOG: SempertexColor[] = [
   { id:"fashion-010-rosewood",          code:"010", brand:"Sempertex", colorName:"Rosewood",        finish:"Fashion",      family:"pink",    hex:"#DB7093", availableSizes:["11"] },
   { id:"fashion-059-tropical-coral",    code:"059", brand:"Sempertex", colorName:"Tropical Coral",  finish:"Fashion",      family:"pink",    hex:"#FF6B6B", availableSizes:["11"] },
   { id:"metallic-512-fuchsia",          code:"512", brand:"Sempertex", colorName:"Fuchsia",         finish:"Metallic",     family:"pink",    hex:"#E040FB", availableSizes:["11"] },
+  // 2026-11-02, named by the owner for Unicorn's bright set ("Sempertex Fashion 017 Fuchsia").
+  { id:"fashion-017-fuchsia",           code:"017", brand:"Sempertex", colorName:"Fuchsia",         finish:"Fashion",      family:"pink",    hex:"#E4007C", availableSizes:["11"] },
   { id:"fashion-012-fuchsia",           code:"012", brand:"Sempertex", colorName:"Fuchsia",         finish:"Fashion",      family:"pink",    hex:"#FF1DCE", availableSizes:["11"] },
   { id:"fashion-014-raspberry",         code:"014", brand:"Sempertex", colorName:"Raspberry",       finish:"Fashion",      family:"pink",    hex:"#E30B5C", availableSizes:["11"] },
   { id:"neon-212-fuchsia",              code:"212", brand:"Sempertex", colorName:"Fuchsia",         finish:"Neon",         family:"pink",    hex:"#FF10F0", availableSizes:["11"] },

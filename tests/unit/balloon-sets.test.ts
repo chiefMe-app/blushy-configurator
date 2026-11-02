@@ -8,8 +8,8 @@ import { UNICORN_ARCH_STYLE_REFERENCE, UNICORN_BRIGHT_ARCH_STYLE_REFERENCE } fro
 describe("balloon sets", () => {
   const u = themeBalloonSets("unicorn");
 
-  it("Unicorn's bright set is peach, rose, pastel green and pastel lilac", () => {
-    expect(u.bright).toEqual(["fashion-060-peach-blush", "pastel-dusk-110-rose", "pastel-matte-630-green", "pastel-matte-650-lilac"]);
+  it("Unicorn's bright set is peach, Fashion 017 fuchsia, pastel green and pastel lilac", () => {
+    expect(u.bright).toEqual(["fashion-060-peach-blush", "fashion-017-fuchsia", "pastel-matte-630-green", "pastel-matte-650-lilac"]);
   });
 
   it("tells the sets apart by their colours, though both are pale", () => {
