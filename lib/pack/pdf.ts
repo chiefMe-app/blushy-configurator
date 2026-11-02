@@ -138,7 +138,7 @@ export async function specificationPdf(spec: PackSpec, o: PdfOptions): Promise<U
   }
 
   w.sub("A3. Balloons");
-  w.rows([["Style", spec.balloons.style + (spec.balloons.florals ? ", with florals and greenery" : "") + (spec.balloons.ringStyle ? `; ring: ${spec.balloons.ringStyle}` : "")]]);
+  w.rows([["Style", spec.balloons.style + (spec.balloons.florals ? ", with florals and greenery" : "") + (spec.balloons.rainbows ? ", with rainbow balloons" : "") + (spec.balloons.ringStyle ? `; ring: ${spec.balloons.ringStyle}` : "")]]);
   for (const c of spec.balloons.colours) {
     w.need(16);
     w.swatch(c.hex, M);

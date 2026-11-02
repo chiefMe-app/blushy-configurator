@@ -1127,11 +1127,11 @@ exports[`golden layouts (drift guard) > soft-signature · Happy 1st Birthday / L
       "adjusted": false,
       "cap": 26.82,
       "origin": {
-        "x": 172.111,
+        "x": 181.48,
         "y": 213.864,
       },
       "role": "heading",
-      "size": 38.813,
+      "size": 36.065,
     },
     {
       "adjusted": false,
@@ -1144,7 +1144,7 @@ exports[`golden layouts (drift guard) > soft-signature · Happy 1st Birthday / L
       "size": 110.669,
     },
   ],
-  "hash": "5f69d194d4095e8b31c5eb4b1ae6c8675a8c3b89cece0b76f45d14873e405298",
+  "hash": "e945fa96e7e0b0927a3a38a9515f26b2616e438ac287c9cbba05bbdfe79c87cb",
 }
 `;
 
@@ -1155,11 +1155,11 @@ exports[`golden layouts (drift guard) > soft-signature · Happy 1st Birthday / L
       "adjusted": false,
       "cap": 30.183,
       "origin": {
-        "x": 193.694,
+        "x": 204.239,
         "y": 158.078,
       },
       "role": "heading",
-      "size": 43.68,
+      "size": 40.587,
     },
     {
       "adjusted": false,
@@ -1172,7 +1172,7 @@ exports[`golden layouts (drift guard) > soft-signature · Happy 1st Birthday / L
       "size": 124.548,
     },
   ],
-  "hash": "eef0d825b7a4deae213f3a8b2f64c716f4b6c716b90d43e39205ba75824775b4",
+  "hash": "28f76cdb58664e9dd85d861290362363a462817cc5786ec683192d6bc9bbb74f",
 }
 `;
 
@@ -1183,11 +1183,11 @@ exports[`golden layouts (drift guard) > soft-signature · Happy Birthday / Ayşe
       "adjusted": false,
       "cap": 26.82,
       "origin": {
-        "x": 190.678,
+        "x": 196.658,
         "y": 213.864,
       },
       "role": "heading",
-      "size": 38.813,
+      "size": 36.065,
     },
     {
       "adjusted": false,
@@ -1200,7 +1200,7 @@ exports[`golden layouts (drift guard) > soft-signature · Happy Birthday / Ayşe
       "size": 110.669,
     },
   ],
-  "hash": "f9d3e055b37060ca07b22cd7a9ddb15ec4f8b970bcbe385c7b7db63306034864",
+  "hash": "b742e97a75a4b0d39729e5bb46e200c9e3d21e09fef25311bdf92499518f635f",
 }
 `;
 
@@ -1211,11 +1211,11 @@ exports[`golden layouts (drift guard) > soft-signature · Happy Birthday / Ayşe
       "adjusted": false,
       "cap": 30.183,
       "origin": {
-        "x": 214.591,
+        "x": 221.32,
         "y": 158.078,
       },
       "role": "heading",
-      "size": 43.68,
+      "size": 40.587,
     },
     {
       "adjusted": false,
@@ -1228,7 +1228,7 @@ exports[`golden layouts (drift guard) > soft-signature · Happy Birthday / Ayşe
       "size": 124.548,
     },
   ],
-  "hash": "15fcf6eadd630cb82925a9396ed35063ee9439c0beebecf941143fa74b2ebbe8",
+  "hash": "d1684c6e3bbce20f4b95207e018972862b421014cda87e8f27905f287bcb6451",
 }
 `;
 
@@ -1239,11 +1239,11 @@ exports[`golden layouts (drift guard) > soft-signature · Welcome to / Malek · 
       "adjusted": false,
       "cap": 26.82,
       "origin": {
-        "x": 220.254,
+        "x": 230.618,
         "y": 213.864,
       },
       "role": "heading",
-      "size": 38.813,
+      "size": 36.065,
     },
     {
       "adjusted": false,
@@ -1256,7 +1256,7 @@ exports[`golden layouts (drift guard) > soft-signature · Welcome to / Malek · 
       "size": 110.669,
     },
   ],
-  "hash": "cdc1c936bd64cb29d707f9d5917c15e2cb311768869bc2475d853365f2b832df",
+  "hash": "24e5191bf30d8714f64693227ff455538deed6aff8ee43d9e03b429dcfd02ca4",
 }
 `;
 
@@ -1267,11 +1267,11 @@ exports[`golden layouts (drift guard) > soft-signature · Welcome to / Malek · 
       "adjusted": false,
       "cap": 30.183,
       "origin": {
-        "x": 247.875,
+        "x": 259.539,
         "y": 158.078,
       },
       "role": "heading",
-      "size": 43.68,
+      "size": 40.587,
     },
     {
       "adjusted": false,
@@ -1284,7 +1284,7 @@ exports[`golden layouts (drift guard) > soft-signature · Welcome to / Malek · 
       "size": 124.548,
     },
   ],
-  "hash": "ea2ae014844974688c002bb5fa362d5e63cd8005037b6810be16099c9a9e6474",
+  "hash": "f57d0751aa58ca622bc280b522ae82b28400665ce995e39fdbbb9cd933adf849",
 }
 `;
 
@@ -1295,11 +1295,11 @@ exports[`golden layouts (drift guard) > soft-signature · İyi ki doğdun / Ça�
       "adjusted": false,
       "cap": 26.82,
       "origin": {
-        "x": 212.22,
+        "x": 229.051,
         "y": 213.864,
       },
       "role": "heading",
-      "size": 38.813,
+      "size": 36.065,
     },
     {
       "adjusted": false,
@@ -1312,7 +1312,7 @@ exports[`golden layouts (drift guard) > soft-signature · İyi ki doğdun / Ça�
       "size": 110.669,
     },
   ],
-  "hash": "e87c991cf09fd2b8f903bf8524a1a51439647d59882392c7fd2d4067d3d5ccc9",
+  "hash": "d6fe3b0f2f8015abbb1dd1a65807c2de1f90cc1d95875695f8c7c0f2ed5b4070",
 }
 `;
 
@@ -1323,11 +1323,11 @@ exports[`golden layouts (drift guard) > soft-signature · İyi ki doğdun / Ça�
       "adjusted": false,
       "cap": 30.183,
       "origin": {
-        "x": 238.834,
+        "x": 257.776,
         "y": 158.078,
       },
       "role": "heading",
-      "size": 43.68,
+      "size": 40.587,
     },
     {
       "adjusted": false,
@@ -1340,7 +1340,7 @@ exports[`golden layouts (drift guard) > soft-signature · İyi ki doğdun / Ça�
       "size": 124.548,
     },
   ],
-  "hash": "2e40dd0bb6314a86616e5439546066ee9bc43ef875365a01703db451db75a25d",
+  "hash": "06afb765873dc407511bbb1e88afc94e58e4bfdaa0abaedf1b07db44e938fb1f",
 }
 `;
 

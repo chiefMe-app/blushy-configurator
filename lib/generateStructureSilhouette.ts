@@ -685,7 +685,7 @@ function customTextGuide(
     hasGraphicBelow?: boolean;
     /** Which side(s) of this panel the garland covers, so the lettering can
      *  be placed where the balloons are not. */
-    garlandSide?: "left" | "right" | "both" | "none" | "round" | "banner" | "lonearch" | "lonearchleft" | "shimmer" | "doublearch" | "triple";
+    garlandSide?: "left" | "right" | "both" | "none" | "round" | "banner" | "lonearch" | "lonearchleft" | "shimmer" | "doublearch" | "triple" | "wavy";
     fontStyle?: string;
     color?: string;
     /** 2026-10-24: the customer's lettering size. */
@@ -717,7 +717,8 @@ function customTextGuide(
   // quarters of its width, a little left of centre.
   // "lonearchleft": the same with the garland on the left (the solid arch
   // beside an open frame, garland on its outer side).
-  const loneArchClear = garlandSide === "lonearch" || garlandSide === "lonearchleft";
+  // 2026-11-02: the Wavy Backdrop's garland runs down its LEFT side and stands low on its right.
+  const loneArchClear = garlandSide === "lonearch" || garlandSide === "lonearchleft" || garlandSide === "wavy";
   // 2026-10-22: the Triple Arch's centre board has its top under the crown,
   // so its lettering sits lower.
   const tripleClear = garlandSide === "triple";
@@ -741,7 +742,11 @@ function customTextGuide(
     bannerClear ? pw * 0.38 :
     // Beside an open frame, a little smaller: it is laid over the render
     // there and must sit inside the board's clear face.
-    loneArchClear ? pw * (garlandSide === "lonearchleft" ? 0.54 : 0.64) :
+    // 2026-11-02: wider (0.64 -> 0.78, the Wavy's 0.80), "happy birthday large olmasına rağmen çok küçük
+    // duruyor": one line across a tall board is short however it is fitted, so it gets more of the board
+    // ("Happy Birthday" stays on one line, as messageLines keeps it).
+    garlandSide === "wavy" ? pw * 0.80 :
+    loneArchClear ? pw * (garlandSide === "lonearchleft" ? 0.54 : 0.78) :
     garlandSide === "shimmer" ? pw * 0.44 :
     garlandSide === "doublearch" ? pw * 0.66 :
     garlandSide === "triple" ? pw * 0.76 :
@@ -751,7 +756,8 @@ function customTextGuide(
   const shift =
     roundClear ? pw * 0.11 :
     bannerClear ? pw * 0.05 :
-    loneArchClear ? (garlandSide === "lonearchleft" ? pw * 0.06 : -pw * 0.09) :
+    garlandSide === "wavy" ? pw * 0.06 :
+    loneArchClear ? (garlandSide === "lonearchleft" ? pw * 0.06 : -pw * 0.05) :
     garlandSide === "left"  ?  pw * cover / 2 :
     garlandSide === "right" ? -pw * cover / 2 : 0;
   const tx = cx + shift;
@@ -1018,6 +1024,17 @@ function balloonRadiiPx(widthCm: number, widthPx: number): { X: number; L: numbe
   };
 }
 
+/**
+ * The guide's left margin: the scene, scaled to 80%, centred — and the Wavy Backdrop moved right of that
+ * (2026-11-02): its tall garland runs down its LEFT side, where the lone arch's runs down its right, so the
+ * board laid out for the arch's sits a tenth of the width further right to keep the whole setup centred.
+ * Every helper that maps the guide onto the render uses this, so composites land where the guide put things.
+ */
+export function guideMarginX(items: { type?: string }[], W: number): number {
+  const base = Math.round(W * (1 - 0.8) / 2);
+  return items.length === 1 && items[0]?.type === "wavy" ? base + Math.round(W * 0.1) : base;
+}
+
 export function generateStructureSilhouette(
   realBackdropItems: BackdropItem[],
   plinthSizes:      PlinthSize[],
@@ -1034,6 +1051,8 @@ export function generateStructureSilhouette(
   // objects belong in the guide.
   extras?: {
     florals?: boolean;
+    /** Rainbow foil balloons on cloud bunches, drawn into the garland (2026-11-02). */
+    rainbows?: boolean;
     numberLight?: { enabled: boolean; value: string; style?: "marquee" | "foil"; foilHex?: string };
     neonSign?: { enabled: boolean; text: string; panelIndex?: number };
     /** Balloon Ring dressing — "half" leaves the gold hoop bare on one side. */
@@ -1178,7 +1197,7 @@ export function generateStructureSilhouette(
   // on all sides. This ensures the full arch, plinth, and garland are fully visible
   // with no cropping, matching the wider camera angle requested in the Replicate prompt.
   const SCALE  = 0.80;
-  const marginX = Math.round(W * (1 - SCALE) / 2);
+  const marginX = guideMarginX(realBackdropItems, W);
   const marginY = Math.round(H * (1 - SCALE) / 2);
 
   // bg: full-canvas background only (not scaled)
@@ -1486,7 +1505,7 @@ export function generateStructureSilhouette(
       const bothArches = backdropItems.length === 2 && backdropItems.every((i) => i.type === "arch");
       const fullerTier = balloonStyle === "full" || balloonStyle === "premium";
       const meanCx     = layout.panels.reduce((sum, p) => sum + p.cx, 0) / layout.panels.length;
-      const garlandSide: "left" | "right" | "both" | "none" | "round" | "banner" | "lonearch" | "lonearchleft" | "shimmer" | "doublearch" | "triple" =
+      const garlandSide: "left" | "right" | "both" | "none" | "round" | "banner" | "lonearch" | "lonearchleft" | "shimmer" | "doublearch" | "triple" | "wavy" =
         balloonStyle === "none" ? "none"
           : layout.panels.length === 1 && shape === "round" ? "round"
           : layout.panels.length === 1 && shape === "banner" ? "banner"
@@ -1496,7 +1515,8 @@ export function generateStructureSilhouette(
           // 2026-10-22: centred on its board ("happy birthday yazisi backdropu
           // ortalasin") — the second board's garland only starts halfway down.
           : bothArches ? "doublearch"
-          : layout.panels.length === 1 && (shape === "arch" || shape === "wavy") ? (fullerTier ? "lonearch" : "right")
+          : layout.panels.length === 1 && shape === "wavy" ? "wavy"
+          : layout.panels.length === 1 && shape === "arch" ? (fullerTier ? "lonearch" : "right")
           : "none";
       const textGuide = customTextGuide(
         panel.cx, panel.pw, panel.apexY, panel.floorY, panelTextValue,
@@ -4486,7 +4506,16 @@ export function generateStructureSilhouette(
           // second pass: the reference is one specific arrangement, and
           // doubling it would stop being that arrangement.
           void drawLoneArchStatementGarland;
-          drawSingleArchRef(archPanels[0], "right");
+          if (backdropItems[archPanels[0].idx]?.drawAs === "wavy") {
+            // 2026-11-02, the Wavy Backdrop to the owner's unicorn reference ("wavy balon lokasyonu bu
+            // şekilde farklı olsun"): the garland over its top-left and down the whole LEFT side to the
+            // floor, and a second, lower cluster standing on the floor against the RIGHT side — the photo's
+            // own right-hand foot (its lower cascade), unmirrored.
+            drawSingleArchRef(archPanels[0], "left");
+            const m = archContourMap(archPanels[0], false, { l: 173, r: 650, top: 333, floor: 1270, spring: 470 },
+              SINGLE_ARCH_REF.filter(([x, y]) => x > 560 && x < 1000 && y > 820));
+            drawRefTable(m.table, idMap, idMap, m.s, { maxBottom: archPanels[0].floorY + plinthForwardPx * 1.5, keepClear: plinthKeepClear() });
+          } else drawSingleArchRef(archPanels[0], "right");
         } else {
           // Multi-panel fallback: right-side vertical garland from top-right corner to floor
           const outerOffset = Math.round(W * 0.055);
@@ -4562,6 +4591,54 @@ export function generateStructureSilhouette(
       cutoutPlaceholderHeightsCm.push(standee.heightCm);
       standeeBandRightPx = standeeBandStart;
       curRight = cx - widthPx / 2 - betweenGap;
+    }
+  }
+
+  // ── Rainbow balloons on cloud bunches (2026-11-02) ───────────────────────
+  // The owner's reference ("burdaki rainbow balonlarda eklenebilsin"): three
+  // rainbow foil balloons, each on a little bunch of white cloud balloons,
+  // tucked into the garland — drawn, like the florals, because a placed thing
+  // only shows when the guide has it. Puffs are ellipses and stripes paths, so
+  // the florals' balloon finder below never takes them for balloons.
+  if (extras?.rainbows && balloonStyle !== "none") {
+    const balloons = content
+      .map((el) => /<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([\d.]+)"/.exec(el))
+      .filter((m): m is RegExpExecArray => m !== null)
+      .map((m) => ({ x: +m[1], y: +m[2], r: +m[3] }));
+    if (balloons.length >= 6) {
+      const radii = balloons.map((b) => b.r).sort((a, b) => a - b);
+      // As big as the garland's big balloons, as in her reference: at the median balloon's size (x1.25) the
+      // render made them small foil charms lost in the garland (2026-11-02, a test render).
+      const R = radii[Math.floor(radii.length / 2)] * 2.6;
+      const byY = [...balloons].sort((a, b) => a.y - b.y);
+      const topY = byY[0].y, botY = byY[byY.length - 1].y;
+      const STRIPES = ["#F59AB0", "#FFC58A", "#FFEC8A", "#9EE2BC", "#9CCBF2", "#C7B2F0"];
+      const used: { x: number; y: number }[] = [];
+      for (const frac of [0.12, 0.45, 0.78]) {
+        const targetY = topY + (botY - topY) * frac;
+        // The balloon nearest that height, away from the ones already used.
+        const b = byY.filter((c) => used.every((u) => Math.hypot(u.x - c.x, u.y - c.y) > R * 3))
+          .sort((p1, p2) => Math.abs(p1.y - targetY) - Math.abs(p2.y - targetY))[0];
+        if (!b) continue;
+        used.push(b);
+        const cx = b.x, base = b.y + R * 0.15;
+        STRIPES.forEach((hex, i) => {
+          const ro = R * (1.1 - i * 0.13), ri = ro - R * 0.13;
+          content.push(
+            `<path d="M ${(cx - ro).toFixed(1)} ${base.toFixed(1)} A ${ro.toFixed(1)} ${ro.toFixed(1)} 0 0 1 ${(cx + ro).toFixed(1)} ${base.toFixed(1)} ` +
+            `L ${(cx + ri).toFixed(1)} ${base.toFixed(1)} A ${ri.toFixed(1)} ${ri.toFixed(1)} 0 0 0 ${(cx - ri).toFixed(1)} ${base.toFixed(1)} Z" ` +
+            `fill="${hex}" stroke="rgba(120,110,120,0.35)" stroke-width="0.8"/>`,
+          );
+        });
+        // The cloud: white puffs along the rainbow's foot, both ends and between.
+        for (const [dx, dy, k] of [[-0.95, 0.05, 0.36], [-0.6, 0.12, 0.42], [-0.2, 0.16, 0.46], [0.2, 0.16, 0.46], [0.6, 0.12, 0.42], [0.95, 0.05, 0.36]]) {
+          const px = cx + dx * R, py = base + dy * R, pr = k * R;
+          content.push(
+            `<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${pr.toFixed(1)}" ry="${(pr * 0.94).toFixed(1)}" ` +
+            `fill="#FFFFFF" stroke="rgba(150,150,160,0.55)" stroke-width="1"/>`,
+          );
+        }
+      }
     }
   }
 
@@ -5101,7 +5178,7 @@ export function computeShimmerWallMaskGeometry(
   if (!panel) return null;
 
   const SCALE   = 0.80;
-  const marginX = Math.round(W * (1 - SCALE) / 2);
+  const marginX = guideMarginX(backdropItems, W);
   const marginY = Math.round(H * (1 - SCALE) / 2);
 
   const toFrac = (xMin: number, xMax: number, yMin: number, yMax: number): RegionFraction => {
@@ -5206,7 +5283,7 @@ export function panelRectToFraction(
   const isMultiPanel     = backdropItems.length > 1;
   const W                = Wbase; void isMultiPanel;
   const SCALE   = 0.80;
-  const marginX = Math.round(W * (1 - SCALE) / 2);
+  const marginX = guideMarginX(backdropItems, W);
   const marginY = Math.round(H * (1 - SCALE) / 2);
   const outerLeft   = marginX + rect.xMin * SCALE;
   const outerRight  = marginX + rect.xMax * SCALE;
@@ -5250,7 +5327,7 @@ export function computeDoubleArchPlinthOverlayGeometry(
   if (!pl || layout.panels.length !== 2) return null;
 
   const SCALE   = 0.80;
-  const marginX = Math.round(W * (1 - SCALE) / 2);
+  const marginX = guideMarginX(backdropItems, W);
   const marginY = Math.round(H * (1 - SCALE) / 2);
   const toFrac = (xMin: number, xMax: number, yMin: number, yMax: number): RegionFraction => {
     const outerLeft   = marginX + xMin * SCALE;
@@ -5301,7 +5378,7 @@ export function computeBackdropGroupGeometry(
   if (layout.panels.length === 0) return null;
 
   const SCALE   = 0.80;
-  const marginX = Math.round(W * (1 - SCALE) / 2);
+  const marginX = guideMarginX(backdropItems, W);
   const marginY = Math.round(H * (1 - SCALE) / 2);
 
   const groupLeft  = Math.min(...layout.panels.map((p) => p.cx - p.pw / 2));

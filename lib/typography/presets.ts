@@ -2,7 +2,8 @@
 // fonts and how big the heading is against the name; once chosen, the heading
 // and the name are changed independently and the customer's colour and size
 // are kept. #5 Soft Signature is the default for new designs, #9 Modern
-// Editorial is featured beside it.
+// Editorial is featured beside it. 2026-11-02 (the owner: "sacramento olsun
+// default gelen font"): Soft Signature's heading is Sacramento.
 
 export interface LetteringPreset {
   id: string;
@@ -17,7 +18,7 @@ export interface LetteringPreset {
 }
 
 export const PRESETS: LetteringPreset[] = [
-  { id: "soft-signature", number: 5, name: "Soft Signature", featured: true, default: true, headingFont: { fontId: "bellefair", weight: 400 }, nameFont: { fontId: "italianno", weight: 400 }, headingRatio: 0.42 },
+  { id: "soft-signature", number: 5, name: "Soft Signature", featured: true, default: true, headingFont: { fontId: "sacramento", weight: 400 }, nameFont: { fontId: "italianno", weight: 400 }, headingRatio: 0.42 },
   { id: "modern-editorial", number: 9, name: "Modern Editorial", featured: true, headingFont: { fontId: "cormorant-garamond", weight: 600 }, nameFont: { fontId: "bodoni-moda", weight: 700 }, headingRatio: 0.42 },
   { id: "flowing-script", number: 2, name: "Flowing Script", headingFont: { fontId: "libre-caslon-text", weight: 400 }, nameFont: { fontId: "windsong", weight: 500 }, headingRatio: 0.42 },
   { id: "soft-romance", number: 3, name: "Soft Romance", headingFont: { fontId: "gilda-display", weight: 400 }, nameFont: { fontId: "allison", weight: 400 }, headingRatio: 0.42 },

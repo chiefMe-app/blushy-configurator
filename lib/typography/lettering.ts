@@ -31,7 +31,8 @@ export function letteringFromLegacy(t: Pick<BackdropItemText, "value" | "fontSty
   return {
     presetId: preset.id,
     basedOn: preset.id,
-    heading: line(heading, preset.headingFont, "medium"),
+    // Large (2026-11-02, the owner: "happy birthday large olmasına rağmen çok küçük duruyor").
+    heading: line(heading, preset.headingFont, "large"),
     name: line(name, preset.nameFont, "large"),
   };
 }

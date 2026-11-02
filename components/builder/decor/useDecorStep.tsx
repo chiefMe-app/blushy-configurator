@@ -23,6 +23,7 @@ import {
   type GraphicStyle,
 } from "@/lib/config";
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
+import { themeBalloonSets, matchingBalloonSet, type BalloonSetId } from "@/lib/balloonSets";
 import { letteringFromLegacy, letteringPatch } from "@/lib/typography/lettering";
 import { getThemeCatalogEntry, FALLBACK_GRAPHIC_PRESETS, getThemeCutoutPresets } from "@/lib/themeCatalog";
 import { inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
@@ -176,6 +177,16 @@ export function useDecorStep(props: DecorStepProps) {
   const resetToThemePalette = () => {
     setSempertexIds(getThemeDefault(config.theme));
     setSempertexManual(false);
+    setSempertexExceeded(false);
+  };
+  // 2026-11-02: the theme's two colour sets, Pastel tones and Bright colours ("onu seçince komple balon rengi
+  // değişsin heryerde"): a set is the whole palette, for every part of the party.
+  const balloonSets = useMemo(() => themeBalloonSets(config.theme, getThemeDefault(config.theme)), [config.theme]);
+  const activeBalloonSet = matchingBalloonSet(config.theme, sempertexIds, getThemeDefault(config.theme));
+  const chooseBalloonSet = (id: BalloonSetId) => {
+    const ids = balloonSets[id];
+    setSempertexIds(ids);
+    setSempertexManual(ids.join() !== getThemeDefault(config.theme).join());
     setSempertexExceeded(false);
   };
   const toggleCustomize = (id: string) =>
@@ -609,7 +620,7 @@ function clearAllStandees() {
     hasRender, generating, onContinue, setOpenCustomizeIds, showManualPieces, setShowManualPieces,
     showAllChars, setShowAllChars, sempertexIds, sempertexManual, showSempertexBrowser, setShowSempertexBrowser,
     sempertexQuery, setSempertexQuery, sempertexFilter, setSempertexFilter, sempertexExceeded, effectiveSempertexSelection,
-    toggleSempertex, resetToThemePalette, d, boardHasLettering, neonFreeBoards, theme, t, normalizedCut,
+    toggleSempertex, resetToThemePalette, balloonSets, activeBalloonSet, chooseBalloonSet, d, boardHasLettering, neonFreeBoards, theme, t, normalizedCut,
     cutoutPresetOptions, selectedCutoutAssets, toggleCutoutAsset, clearAllStandees, print, setPlinthCount,
     patchItem, patchItemText, patchItemGraphic, accent, card, nextCue, BackdropShapePreview, chip,
     toggleArchSize, toggleRound, toggleOtherType, applySetupTemplate, activeSetupTemplateId, TYPE_LABEL,

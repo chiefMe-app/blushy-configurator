@@ -35,7 +35,8 @@ const SEEDS: Record<string, [number, number, number, number, number, number][]> 
   round: [[640, 420, 175, 185, 850, 870]],
   // 2026-11-01: the Wavy Board (from the Single Arch photo) and the Fringe (from the Banner photo), made by one paid edit each.
   // Re-shot wider, on a coral rim (2026-11-01, the owner: "wavy daha geniş olmalı … border offset olmalı").
-  single_wavy: [[420, 500, 255, 80, 800, 890]],
+  // 2026-11-02: re-shot from a real render of its new garland (down the left from the top, low on the right).
+  single_wavy: [[520, 500, 330, 120, 730, 890]],
   single_fringe: [[0, 0, 70, 118, 885, 915]],
 };
 /** A round board's circle (px: centre and radius), past which nothing is board. */
@@ -84,6 +85,14 @@ const ERASE: Record<string, [number, number, number, number][]> = {
  *  255 marks a balloon of none of them, left as shot). Hue ranges in degrees. */
 const FAMILIES: Record<string, [number, number][][]> = {
   unicorn: [[[320, 360], [0, 25]], [[25, 75]], [[75, 165]], [[165, 245]], [[245, 320]]],
+  // 2026-11-02: a shot per theme and balloon set (lib/balloonSets.ts), relit in neutral daylight. Each set's
+  // own order: Unicorn's pastel is its palette; its bright is fuchsia, orange, yellow, mint, purple.
+  "unicorn-pastel": [[[320, 360], [0, 25]], [[25, 75]], [[75, 165]], [[165, 245]], [[245, 320]]],
+  "unicorn-bright": [[[300, 360], [0, 18]], [[18, 42]], [[42, 75]], [[75, 200]], [[200, 300]]],
+  // Frozen's: white, ice blue, lilac, silver, clear (pastel); white, royal blue, caribbean blue, violet, silver
+  // (bright). White, silver and clear have no hue: left as shot.
+  "frozen-pastel": [[], [[165, 245]], [[245, 330]], [], []],
+  "frozen-bright": [[], [[212, 250]], [[160, 212]], [[250, 330]], []],
 };
 
 (async () => {
@@ -126,7 +135,7 @@ const FAMILIES: Record<string, [number, number][][]> = {
   const lum = (i: number) => 0.299 * at(i, 0) + 0.587 * at(i, 1) + 0.114 * at(i, 2);
   const chroma = (i: number) => Math.max(at(i, 0), at(i, 1), at(i, 2)) - Math.min(at(i, 0), at(i, 1), at(i, 2));
   // A board: plain white, flat — flooded from a point inside it through each step too small to be an outline.
-  const boardLike = (i: number) => lum(i) > (LUM[setup] ?? 175) && chroma(i) < (process.env.CH ? +process.env.CH : CHROMA[setup] ?? 16);
+  const boardLike = (i: number) => lum(i) > (process.env.LUM ? +process.env.LUM : LUM[setup] ?? 175) && chroma(i) < (process.env.CH ? +process.env.CH : CHROMA[setup] ?? 16);
   const step = (i: number, j: number) => Math.abs(at(i, 0) - at(j, 0)) + Math.abs(at(i, 1) - at(j, 1)) + Math.abs(at(i, 2) - at(j, 2));
   const kept = new Float32Array(N);
   for (const [cx, cy, r] of KEEP[setup] ?? []) for (let y = Math.max(0, cy - r - 2); y <= Math.min(H - 1, cy + r + 2); y++) for (let x = Math.max(0, cx - r - 2); x <= Math.min(W - 1, cx + r + 2); x++) {
@@ -198,9 +207,26 @@ const FAMILIES: Record<string, [number, number][][]> = {
   }
   // The rim: strongly coral (no balloon is), in a board's box, next to nothing else; greyed to the board's white.
   const rim = new Int8Array(N).fill(-1);
-  if (RIM.has(setup)) SEEDS[setup].forEach(([, , bx0, by0, bx1, by1], b) => {
+  // 2026-11-02: a theme's re-shoot of the Wavy (a real render of its new garland) has a soft pink rim, as
+  // pink as some balloons: there the rim is the pink in a band hugging the board's right and top edges
+  // (its left one is behind the garland).
+  const near = theme && RIM.has(setup) ? (() => {
+    const m = new Uint8Array(N);
+    for (let i = 0; i < N; i++) if (filled[i] >= 0) m[i] = 1;
+    for (let k = 0; k < 18; k++) {
+      const prev = m.slice();
+      for (let i = 0; i < N; i++) if (!prev[i]) { const x = i % W; if ((x > 0 && prev[i - 1]) || (x < W - 1 && prev[i + 1]) || prev[i - W] || prev[i + W]) m[i] = 2; }
+    }
+    return m;
+  })() : null;
+  if (RIM.has(setup)) SEEDS[setup].forEach(([sx, , bx0, by0, bx1, by1], b) => {
     for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
       const i = y * W + x, r = at(i, 0), g = at(i, 1), bl = at(i, 2);
+      if (near) {
+        // Pink: red highest, blue past green (a pink balloon is too, so only in the band, right of the seed).
+        if (near[i] === 2 && x > sx - 60 && r > g + 14 && bl >= g - 4 && lum(i) > 120) rim[i] = b;
+        continue;
+      }
       // Coral: red past green past blue, its hue under ~28° (a yellow balloon's is ~55°, a pink one's past 330°).
       const hue = r > g && g >= bl ? (60 * (g - bl)) / (r - bl || 1) : 99;
       if (filled[i] < 0 && chroma(i) > 80 && hue < 28) rim[i] = b;
@@ -223,8 +249,7 @@ const FAMILIES: Record<string, [number, number][][]> = {
       if (part.length < 600) for (const k of part) rim[k] = -1;
     }
   }
-  const grownRim = grow(rim, 1, (i) => { const hue = at(i, 0) > at(i, 1) && at(i, 1) >= at(i, 2) ? (60 * (at(i, 1) - at(i, 2))) / (at(i, 0) - at(i, 2) || 1) : 99; return filled[i] < 0 && chroma(i) > 40 && hue < 32; });
-  rim.set(grownRim);
+  if (!near) rim.set(grow(rim, 1, (i) => { const hue = at(i, 0) > at(i, 1) && at(i, 1) >= at(i, 2) ? (60 * (at(i, 1) - at(i, 2))) / (at(i, 0) - at(i, 2) || 1) : 99; return filled[i] < 0 && chroma(i) > 40 && hue < 32; }));
   if (RIM.has(setup)) {
     let sl = 0, n = 0;
     for (let i = 0; i < N; i++) if (rim[i] >= 0) { sl += lum(i); n++; }

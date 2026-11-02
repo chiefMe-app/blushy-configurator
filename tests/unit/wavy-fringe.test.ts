@@ -51,12 +51,15 @@ describe("wavy and fringe backdrops", () => {
     }
   });
 
-  it("Unicorn has its own photographed sketch base for every setup (2026-11-01: real renders, cut out)", () => {
+  it("every setup is photographed per theme and balloon set (2026-11-02: re-lit real renders, never repainted as shot)", () => {
     const sk = path.join(process.cwd(), "public/design/sketch");
-    // The Customized Themed set is Frozen's own photo (Unicorn's comes from her reference).
+    // The Customized Themed set is Frozen's own photo, shown as it is.
     const frozen = readdirSync(sk).filter((f) => /-(room\.webp|balloons\.webp|families\.png|board-\d\.png)$/.test(f) && !f.startsWith("themed_set"));
     expect(frozen.length).toBeGreaterThan(40);
-    for (const f of frozen) expect(existsSync(path.join(sk, "unicorn", f.replace("round-board-mask", "round-board-0"))), f).toBe(true);
+    for (const set of ["unicorn-pastel", "unicorn-bright", "frozen-pastel", "frozen-bright"]) {
+      for (const f of frozen) expect(existsSync(path.join(sk, set, f.replace("round-board-mask", "round-board-0"))), `${set}/${f}`).toBe(true);
+      expect(existsSync(path.join(sk, set, "single_wavy-rim-0.png")), `${set} rim`).toBe(true);
+    }
   });
 
   it("give the wavy board an offset border, in the party's first colour unless one is picked", () => {

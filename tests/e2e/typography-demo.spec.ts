@@ -18,7 +18,7 @@ async function open(page: Page) {
   await expect.poll(() => hash(page), { timeout: 30_000 }).not.toBe("");
   return errors;
 }
-// The tab's accessible name is lowercase ("heading · Bellefair"); CSS capitalises it.
+// The tab's accessible name is lowercase ("heading · Sacramento"); CSS capitalises it.
 const tabButton = (page: Page, role: "Heading" | "Name") => page.getByRole("tab", { name: new RegExp(`^${role}`, "i") });
 const tab = (page: Page, role: "Heading" | "Name") => tabButton(page, role).click();
 /** A path's points relative to its first point: its shape without its position. */
@@ -39,7 +39,7 @@ test.describe.configure({ timeout: 60_000 });
 test("opens on #5 Soft Signature, big lettering, customer choices only, no console errors, fits the screen", async ({ page }) => {
   const errors = await open(page);
   await expect(page.getByRole("radio", { name: /Soft Signature/ })).toHaveAttribute("aria-checked", "true");
-  await expect(tabButton(page, "Heading")).toContainText("Bellefair");
+  await expect(tabButton(page, "Heading")).toContainText("Sacramento");
   await expect(tabButton(page, "Name")).toContainText("Italianno");
   const p = await paths(page);
   expect(Object.keys(p).sort()).toEqual(["heading", "name"]);

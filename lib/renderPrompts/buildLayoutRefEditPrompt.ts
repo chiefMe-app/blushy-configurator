@@ -245,7 +245,7 @@ export function buildLayoutRefEditPrompt(
       backdropDesc = sceneModel.balloonRingStyle === "none"
         ? `one freestanding circular hoop about ${p.widthCm}cm across, standing upright on the floor: a slim ` +
           `round WHITE METAL FRAME on a small flat base, bare polished tube all the way round with NO BALLOONS ` +
-          `on it anywhere. The CENTRE OF THE RING IS COMPLETELY OPEN and empty — the grey studio wall shows ` +
+          `on it anywhere. The CENTRE OF THE RING IS COMPLETELY OPEN and empty — the off-white wall shows ` +
           `straight through it. No backdrop board, no panel, no disc and no balloons of any kind, on the hoop ` +
           `or anywhere else in the scene.`
         : sceneModel.balloonRingStyle === "half"
@@ -254,11 +254,11 @@ export function buildLayoutRefEditPrompt(
           `with a dense organic balloon garland wrapped around the rest of it — up the left shoulder, over ` +
           `the top, down the right side and spilling into a pile of balloons on the floor at the bottom ` +
           `right. Roughly half the hoop is bare metal and half is covered in balloons. ` +
-          `The CENTRE OF THE RING IS COMPLETELY OPEN and empty — the grey studio wall shows straight through ` +
+          `The CENTRE OF THE RING IS COMPLETELY OPEN and empty — the off-white wall shows straight through ` +
           `it. No backdrop board, no panel, no disc and no balloons of any kind inside the opening.`
         : `one freestanding circular balloon ring about ${p.widthCm}cm across, standing upright on the floor: ` +
           `a thick hoop built entirely from balloons, packed shoulder to shoulder all the way round. ` +
-          `The CENTRE OF THE RING IS COMPLETELY OPEN and empty — the grey studio wall shows straight through it. ` +
+          `The CENTRE OF THE RING IS COMPLETELY OPEN and empty — the off-white wall shows straight through it. ` +
           `No backdrop board, no panel, no disc, no fabric and no balloons of any kind inside the opening. ` +
           `There is no board behind the ring. ` +
           `The hoop itself is dense and organic, mixing large and small balloons, thickest where it meets the floor.`;
@@ -906,6 +906,13 @@ export function buildLayoutRefEditPrompt(
       `reference shows them. Cream, white and blush blooms with sage eucalyptus foliage. `
     : "";
 
+  // 2026-11-02: rainbow balloons ("burdaki rainbow balonlarda eklenebilsin"), drawn in the guide like the florals.
+  const frontRainbowLine = sceneModel.rainbowBalloons && sceneModel.balloons.style !== "none"
+    ? `Rainbow balloons are part of this garland: wherever the layout reference shows a striped rainbow over ` +
+      `white puffs, there is a real rainbow-shaped foil balloon in soft rainbow stripes resting on a small bunch ` +
+      `of white cloud balloons, tucked into the garland. `
+    : "";
+
   // 2026-09-09: the backdrop SHAPE goes first when the scene carries floor
   // extras. Measured on the failing case — a round backdrop with a neon sign,
   // a marquee number and a cutout — the word "circular" did not appear until
@@ -924,9 +931,8 @@ export function buildLayoutRefEditPrompt(
     // "neutral daylight product photography with accurate white balance" and
     // "keep whites clean neutral white", which reverses the warm grade added on
     // 2026-09-10 for the pink reference.
-    ? `Neutral daylight product photography with accurate white balance: full natural colour saturation, ` +
-      `colours true and clean, and whites rendered as clean neutral white — no warm or yellow cast, ` +
-      `no colour tint, not hazy, not washed out. `
+    ? `Bright, cheerful daylight photography: full natural colour saturation, colours true, vivid and clean, ` +
+      `and whites rendered as clean white — no yellow or grey cast on the balloons, not hazy, not washed out, not dull. `
     : "";
 
   // 2026-09-09: the ROOM itself, front-loaded. On the non-flash model the wall
@@ -980,38 +986,37 @@ export function buildLayoutRefEditPrompt(
   // The usual room line with two changes only — a smooth studio wall for
   // the concrete, and no window. Rewritten whole ("catalogue product shot",
   // then a plainer version) it turned half the garland chrome on both seeds.
-  const roundRoomLine = `The room is a bright, neutral studio: a smooth, UNTEXTURED MID-GREY studio wall, a little ` +
-    `brighter in the middle — clearly darker than the ${backdropWordForRoom} standing against it, never white ` +
-    `— and a smooth pale-grey floor, LIGHTER than the wall, with a soft reflection. The light is SOFT, EVEN and ` +
-    `DIFFUSE across the whole picture — bright, clean and ` +
-    `consistent from side to side, with NO hard sunbeam, no bright pool or patch of light, no sharp-edged ` +
-    `or diagonal shadow cast across the backdrop, the wall or the floor, and no blown-out highlights. ` +
-    `Neutral white balance: the balloons and the board read as clean neutral white where they are white, ` +
-    `with no blue, golden or warm cast. No window, doorway, radiator or furniture is visible. `;
+  // 2026-11-02: the owner, "genel render ışığı çok cansız ruhsuz bir ortam var": every room is now the
+  // same bright, airy, sunny one — a warm light-cream plaster wall, a light oak floor, soft sunny daylight from
+  // a big window on the left — with the reference photos re-shot in it (see frozenStyleReferences.ts). The
+  // wall stays described against the board (darker than it), which is what keeps the two apart.
+  // 2026-11-02 (later), "çok sarı olmuş gibi duruyor ışık, bu kadar sarı sevmiyorum": the light is neutral
+  // white daylight and the wall soft off-white — no cream, no warm glow.
+  const roundRoomLine = `The room is bright, airy and joyful, full of clean, bright, neutral white daylight: a smooth soft off-white plaster wall ` +
+    `— clearly darker than the ${backdropWordForRoom} standing against it, never white — and a light natural oak ` +
+    `wooden floor with a soft sheen. Bright, soft daylight comes from a large window off to the left, out of the ` +
+    `frame, with a gentle bright glow on the wall and soft natural shadows behind the setup — fresh and clean, a ` +
+    `neutral white balance, not yellow, golden or orange, with no hard sunbeam or bright patch across the backdrop and no blown-out highlights. The balloons ` +
+    `look fresh, glossy and vivid. ` +
+    `No window, doorway, radiator or furniture is visible. `;
   // 2026-10-22: the Frozen lone arch, shot against its reference photo, gets
   // that photo's room: a warm light-greige wall in warm daylight from the
   // left, airy — "gun isigi biraz daha sicaklik var ... ferahligi yakalayalim".
   // Same shape as the usual line, words changed only where the rooms differ.
-  const archRefRoomLine = `The room is a bright, airy studio: a smooth, UNTEXTURED warm light-greige wall ` +
-    `— a little darker than the white backdrop standing against it — and a smooth pale-grey floor with a ` +
-    `soft reflection. The light is WARM, SOFT DAYLIGHT coming from a tall window off to the left, out of ` +
-    `the frame, falling gently across the wall — bright, clean and airy, with no hard sunbeam on the setup, ` +
-    `no harsh shadow and no blown-out highlights. The balloons and the board read as clean white where ` +
-    `they are white. No window, doorway, radiator or furniture is visible. `;
+  const archRefRoomLine = `The room is bright, airy and joyful, full of clean, bright, neutral white daylight: a smooth soft off-white plaster wall ` +
+    `— clearly darker than the ${backdropWordForRoom} standing against it, never white — and a light natural oak ` +
+    `wooden floor with a soft sheen. Bright, soft daylight comes from a large window off to the left, out of the ` +
+    `frame, with a gentle bright glow on the wall and soft natural shadows behind the setup — fresh and clean, a ` +
+    `neutral white balance, not yellow, golden or orange, with no hard sunbeam or bright patch across the backdrop and no blown-out highlights. The balloons ` +
+    `look fresh, glossy and vivid. ` +
+    `No window, doorway, radiator or furniture is visible. `;
   const loneRoundRoom = panelCount === 1 && sceneModel.panels[0]?.type === "round";
-  const frontRoomLine = `The room is a bright, neutral studio: a MID-GREY concrete wall with soft, fine texture ` +
-    `— clearly darker than the ${backdropWordForRoom} standing against it, never white, never flat ` +
-    `— and a smooth light-grey concrete floor with a soft reflection. The light is SOFT, EVEN and ` +
-    `DIFFUSE across the whole picture, like a large north-facing window far away — bright, clean and ` +
-    `consistent from side to side, with NO hard sunbeam, no bright pool or patch of light, no sharp-edged ` +
-    `or diagonal shadow cast across the backdrop, the wall or the floor, and no blown-out highlights. ` +
-    `Neutral white balance: the balloons and the board read as clean neutral white where they are white, ` +
-    `with no blue, golden or warm cast. ` +
-    // A sliver of window is wanted back. It was banned outright after a render
-    // flooded the setup with daylight, but the customer's own reference has a
-    // window edge at the frame border. The glare was the problem, not the
-    // window, so the window returns as an edge detail and the glare stays
-    // banned above.
+  const frontRoomLine = `The room is bright, airy and joyful, full of clean, bright, neutral white daylight: a smooth soft off-white plaster wall ` +
+    `— clearly darker than the ${backdropWordForRoom} standing against it, never white — and a light natural oak ` +
+    `wooden floor with a soft sheen. Bright, soft daylight comes from a large window off to the left, out of the ` +
+    `frame, with a gentle bright glow on the wall and soft natural shadows behind the setup — fresh and clean, a ` +
+    `neutral white balance, not yellow, golden or orange, with no hard sunbeam or bright patch across the backdrop and no blown-out highlights. The balloons ` +
+    `look fresh, glossy and vivid. ` +
     `At the very left edge of the frame a narrow slice of a tall window frame is visible as a quiet ` +
     `background detail — just the edge of it, never dominating, and no daylight or glare spilling from ` +
     `it onto the setup. No doorway, radiator or furniture is visible. `;
@@ -1683,7 +1688,18 @@ export function buildLayoutRefEditPrompt(
   // of the arch completely clean. The three size families and the "at least
   // five statement balloons" count are stated explicitly because the guide can
   // show a size hierarchy but cannot name it.
-  const archGarlandExtra = isLoneArchScene
+  // 2026-11-02: the Wavy Backdrop's own garland, from the owner's unicorn reference ("wavy balon
+  // lokasyonu bu şekilde farklı olsun"): down its LEFT side, and a lower cluster on its right.
+  const archGarlandExtra = isLoneArchScene && isWavy
+    ? ` The balloon garland is lush, organic, premium and hand-styled, in two parts, exactly as IMAGE 1 lays it out. ` +
+      `The main part starts with a DENSE CLUSTER OF LARGE BALLOONS over the TOP-LEFT of the wavy board, runs ` +
+      `down the whole LEFT OUTER EDGE with balloons of mixed sizes and pools in a big cluster on the floor at the ` +
+      `board's bottom-left corner. The second part is a lower cluster standing on the floor against the board's ` +
+      `RIGHT edge, rising about halfway up it. The top-right of the board stays clean. The garland is attached ` +
+      `directly to the board's edges with NO VISIBLE GAP, closely following its wavy outline. ` +
+      `Use exactly three balloon size families: several large 36 inch statement balloons, many 12 inch ` +
+      `standard balloons, and small 5 inch filler balloons. `
+    : isLoneArchScene
     ? ` One statement half-garland: a lush, organic, premium balloon garland, asymmetric and hand-styled, ` +
       `anchored by a DENSE CLUSTER OF LARGE BALLOONS at the TOP RIGHT CROWN of the arch, cascading down ` +
       `the RIGHT OUTER EDGE with gradually smaller balloons, and ending in a loose trailing cluster ` +
@@ -1873,6 +1889,9 @@ export function buildLayoutRefEditPrompt(
     : isDoubleArchScene
       ? `two mirrored organic half balloon garlands, one on each arch's own outer side, dense and premium, ` +
         `individual ${balloonColors} latex balloons cascading from each arch's own top outer corner to the floor`
+      : isWavy
+      ? `organic balloon garland, dense and premium, individual ${balloonColors} latex balloons cascading from ` +
+        `the top-left corner down the whole left side to the floor, with a second, lower cluster on the floor at the right`
       : `organic half balloon garland on the right side, dense and premium, ` +
         `individual ${balloonColors} latex balloons cascading from the top corner to the floor`;
 
@@ -2086,7 +2105,7 @@ export function buildLayoutRefEditPrompt(
   const neutralStyleClause = hasSempertexLock
     ? `Use neutral daylight product photography with accurate white balance. ` +
       `Keep whites clean neutral white. ` +
-      `Preserve true soft pastel color separation and natural diffuse balloon material. ` +
+      `Preserve true color separation and natural balloon material. ` +
       // 2026-07-20 product feedback: window daylight was visibly tinting the
       // balloons away from their selected Sempertex tones.
       `The window daylight must NOT tint the balloons: no blue, golden, or warm color cast from the ` +
@@ -2108,15 +2127,15 @@ export function buildLayoutRefEditPrompt(
   // even-light sentence below — which is what actually removes the single
   // arch's sunbeam — is applied to arch layouts only, for the same reason.
   const photographyOpening = isRoundScene
-    ? `Bright, sharp, premium studio photography with clean natural daylight from the left, ` +
-      `gray textured plaster or concrete studio wall, polished light concrete or stone floor, ` +
+    ? `Bright, sharp, premium event photography with clean, bright, neutral white daylight from the left, ` +
+      `soft off-white plaster wall, light natural oak wooden floor, ` +
       `crisp clean whites, natural accurate color, normal punchy contrast, well-lit and clear — ` +
       `NOT hazy, NOT desaturated, NOT grey-filtered, NOT washed out, NOT low-energy, NOT distant. ` +
       (hasSempertexLock
         ? `Color-accurate neutral rendering, accurate white balance. `
         : `fresh modern editorial event styling. `)
-    : `Cool neutral daylight studio photography with soft natural light from the left, ` +
-      `gray textured plaster or concrete studio wall, polished light concrete or stone floor, ` +
+    : `Bright, cheerful daylight event photography with soft, bright, neutral white daylight from a large window on the left, ` +
+      `soft off-white plaster wall, light natural oak wooden floor, ` +
       // 2026-09-09: the arch scenes carry the ROUND opening's colour clause now.
       // Measured on the customer's own two renders and on local repros: the arch
       // comes out at about a THIRD of the round's saturation (meanSat 0.046 vs
@@ -2244,7 +2263,8 @@ const cutoutClause = cutouts?.mode === "standees" && cutoutTotal > 0
 
 // Controlled setup layout template — locks panel arrangement and keeps the
 // garland organic and connected, especially for 2-backdrop scenes.
-const setupTemplateId = inferSetupLayoutTemplateIdFromBackdropItems(sceneModel.panels);
+// (The Wavy Backdrop, laid out as a lone arch, keeps its own garland: 2026-11-02.)
+const setupTemplateId = isWavy ? "single_wavy" : inferSetupLayoutTemplateIdFromBackdropItems(sceneModel.panels);
 const setupTemplate   = setupTemplateId ? getSetupLayoutTemplate(setupTemplateId) : undefined;
 const hasGarland      = sceneModel.balloons.style !== "none";
 // 2026-09-09: the Balloon Ring catalog entry says the hoop is "built entirely
@@ -2379,6 +2399,7 @@ const setupTemplateClause = setupTemplate
     frontRingHalfLine +
     frontOpenFrameLine +
     frontFloralsLine +
+    frontRainbowLine +
     frontShimmerLine +
     // (A foil number is said up front, right after the style line, instead.)
     (loneRoundForCutouts

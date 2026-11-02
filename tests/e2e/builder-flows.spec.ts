@@ -100,7 +100,7 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   // board opens on #5 Soft Signature with "Happy Birthday" as its heading.
   expect(order.decor.backdropItems[0].text).toMatchObject({
     enabled: true, value: "Happy Birthday",
-    lettering: { presetId: "soft-signature", heading: { text: "Happy Birthday", fontId: "bellefair" }, name: { text: "", fontId: "italianno" } },
+    lettering: { presetId: "soft-signature", heading: { text: "Happy Birthday", fontId: "sacramento" }, name: { text: "", fontId: "italianno" } },
   });
 });
 

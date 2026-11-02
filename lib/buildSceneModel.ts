@@ -143,6 +143,8 @@ export interface SceneModel {
   cutouts:    SceneCutouts;
   /** Florals and greenery worked into the balloon garland. */
   garlandFlorals: boolean;
+  /** Rainbow foil balloons on cloud bunches in the garland. */
+  rainbowBalloons: boolean;
   /** How the balloon ring is dressed — see BalloonRingStyleId. */
   balloonRingStyle: "full" | "half" | "none";
   /** Illuminated marquee number standing beside the backdrop. */
@@ -225,6 +227,7 @@ export function buildSceneModel(config: BuilderConfig): SceneModel {
     plinths,
     cutouts,
     garlandFlorals: d.garlandFlorals === true,
+    rainbowBalloons: d.rainbowBalloons === true,
     balloonRingStyle: d.balloonRingStyle === "half" ? "half"
       : d.balloonRingStyle === "none" ? "none" : "full",
     numberLight:    d.numberLight ?? { enabled: false, value: "1" },
@@ -304,6 +307,7 @@ export function buildSceneModelFromItems(
   plinths,
   cutouts,
   garlandFlorals: false,
+  rainbowBalloons: false,
   balloonRingStyle: "full",
   numberLight: { enabled: false, value: "1" },
   neonSign: { enabled: false, text: "Happy Birthday" },

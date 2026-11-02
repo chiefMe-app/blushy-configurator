@@ -71,10 +71,11 @@ describe("web fonts", () => {
 });
 
 describe("presets", () => {
-  it("#5 Soft Signature is the default: Bellefair heading, Italianno name", () => {
+  // 2026-11-02, the owner: "sacramento olsun default gelen font" — its heading is Sacramento (was Bellefair).
+  it("#5 Soft Signature is the default: Sacramento heading, Italianno name", () => {
     expect(DEFAULT_PRESET_ID).toBe("soft-signature");
     const p = presetById(DEFAULT_PRESET_ID)!;
-    expect({ n: p.number, def: p.default, h: p.headingFont, nm: p.nameFont }).toEqual({ n: 5, def: true, h: { fontId: "bellefair", weight: 400 }, nm: { fontId: "italianno", weight: 400 } });
+    expect({ n: p.number, def: p.default, h: p.headingFont, nm: p.nameFont }).toEqual({ n: 5, def: true, h: { fontId: "sacramento", weight: 400 }, nm: { fontId: "italianno", weight: 400 } });
   });
   it("#9 Modern Editorial is featured: Cormorant Garamond 600 heading, Bodoni Moda 700 name", () => {
     const p = presetById("modern-editorial")!;

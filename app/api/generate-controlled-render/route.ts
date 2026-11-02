@@ -766,6 +766,7 @@ async function generateLayoutReferencePng(
       cutoutGuideItems,
       sceneModel.shimmerColor ? SHIMMER_COLOR_HEX[sceneModel.shimmerColor as ShimmerColorId] : undefined,
       { florals: sceneModel.garlandFlorals,
+        rainbows: sceneModel.rainbowBalloons,
         numberLight: sceneModel.numberLight
           ? { ...sceneModel.numberLight, foilHex: foilColourFor(sceneModel.numberLight, selectedHexColors.length ? selectedHexColors : sceneModel.balloons.colors) }
           : sceneModel.numberLight,

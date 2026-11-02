@@ -20,6 +20,7 @@ import {
   type BoardLettering,
 } from "@/lib/config";
 import { useLetteringLayout } from "./useLetteringLayout";
+import { hexPaletteKind, setHexes, themeBalloonSets } from "@/lib/balloonSets";
 import { bannerPrintTheme } from "@/lib/bannerPrintThemes";
 import { wavyBoardPath, wavyFacePath, wavyBorderColor } from "@/lib/wavyBoard";
 
@@ -145,11 +146,12 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
   // photo, its board made a layered fringe of tissue and tinsel in a wooden frame, repainted with the balloons).
   wavy: {
     room: `${SK}/single_wavy-room.webp`, balloons: `${SK}/single_wavy-balloons.webp`, families: `${SK}/single_wavy-families.png`,
-    // Re-shot 2026-11-01 wider, on its offset rim ("wavy daha geniş olmalı … border offset olmalı"): the rim has its own mask.
-    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.2969, y0: 0.1436, x1: 0.6650, y1: 0.8350, text: { cx: 0.395, cy: 0.4, w: 0.17 } }],
-    plinth: { x: 0.37, y: 0.612, w: 0.1, h: 0.288 },
-    florals: fromPx([[300, 150], [420, 110], [540, 170], [620, 270], [650, 380], [680, 480], [690, 580], [680, 680], [650, 780], [640, 860]]),
-    numberX: 0.2, standeeX: [0.13, 0.9],
+    // Re-shot 2026-11-02 from a real render of its new garland ("wavy balon lokasyonu bu şekilde farklı olsun"):
+    // down the left from the top to the floor, a low cluster on the right; the offset rim has its own mask.
+    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.3662, y0: 0.2402, x1: 0.6445, y1: 0.8350, text: { cx: 0.52, cy: 0.42, w: 0.22 } }],
+    plinth: { x: 0.455, y: 0.582, w: 0.1, h: 0.288 },
+    florals: fromPx([[380, 90], [470, 60], [560, 80], [300, 250], [240, 380], [200, 500], [190, 620], [200, 740], [260, 860], [720, 660], [780, 760], [740, 860]]),
+    numberX: 0.5, standeeX: [0.06, 0.93],
   },
   fringe: {
     room: `${SK}/single_fringe-room.webp`, balloons: `${SK}/single_fringe-balloons.webp`, families: `${SK}/single_fringe-families.png`,
@@ -177,16 +179,33 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
   },
 };
 /**
- * Themes whose balloons were photographed for every setup (2026-11-01, the owner: "bunları gerçekten
- * render alıp sonra ordan kesmek lazım"): the same photos re-shot with the theme's balloons, in
- * /design/sketch/<theme>/, one family per theme colour (families.png holds its turn × 50, 255 left as shot).
+ * Every setup photographed per theme and balloon set (2026-11-02, the owner: "boyayarak yapma render al
+ * hepsini sonra ordan koy", "pastel tone opsiyon 1 … bright color opsiyon 2"): re-shot in bright neutral
+ * daylight, in /design/sketch/<theme>-<set>/, one family per set colour (families.png holds its turn × 50,
+ * 255 left as shot). A set as chosen shows as shot, never repainted; a mix of one's own is repainted on the
+ * nearest shot — its theme's own set of that kind, else Unicorn's (colours) or Frozen's (whites and silvers).
  */
-const THEME_SHOTS = new Set(["unicorn"]);
-function themeShot(base: PhotoBase, theme: string): PhotoBase {
-  const at = (u: string) => u.replace(`${SK}/`, `${SK}/${theme}/`).replace("round-board-mask", "round-board-0");
+const SET_SHOT_THEMES = new Set(["unicorn", "frozen"]);
+function setShot(themeId: string, palette: string[]): { folder: string; asShot: boolean } {
+  const kind = hexPaletteKind(palette);
+  if (SET_SHOT_THEMES.has(themeId)) {
+    const own = themeBalloonSets(themeId)[kind];
+    const themeDefault = themeById(themeId)?.balloonColors ?? [];
+    const asShot = sameColours(palette, setHexes(own)) || (hexPaletteKind(themeDefault) === kind && sameColours(palette, themeDefault.slice(0, 5)));
+    return { folder: `${themeId}-${kind}`, asShot };
+  }
+  const sat = (h: string) => { const [r, g, b] = hexRgb(h), mx = Math.max(r, g, b); return mx ? (mx - Math.min(r, g, b)) / mx : 0; };
+  const whites = palette.filter((h) => sat(h) < 0.15).length * 2 >= palette.length;
+  return { folder: `${whites ? "frozen" : "unicorn"}-${kind}`, asShot: false };
+}
+function themeShot(base: PhotoBase, folder: string): PhotoBase {
+  const at = (u: string) => u.replace(`${SK}/`, `${SK}/${folder}/`).replace("round-board-mask", "round-board-0");
   return { ...base, room: at(base.room), balloons: at(base.balloons), families: at(base.families), familyStep: 50,
     boards: base.boards.map((b) => ({ ...b, mask: b.mask && at(b.mask), rim: b.rim && at(b.rim) })) };
 }
+/** The rainbow balloon sprite (scripts/sketch/rainbow-sprite.mjs): its width in the sketch, and height / width. */
+const RAINBOW_W = 165;
+const RAINBOW_ASPECT = 0.558;
 /** The plinth cut from the same photo, used for every plinth in every sketch. */
 const PLINTH_SRC = "/design/sketch/plinth.webp";
 const PLINTH_ASPECT = 0.343; // width / height of the sprite (the XXL)
@@ -595,9 +614,10 @@ export default function LiveSketch({
   const fullRing = !items.some((i) => i.type === "balloon_ring") || (d.balloonRingStyle ?? "full") === "full";
   // The themed set is its photo, garland and all, whatever the balloon choice.
   const frozenBase = (balloonsOn && fullRing) || items.some((i) => i.type === "themed_set") ? PHOTO_BASES[items.map((i) => i.type).join(",")] ?? null : null;
-  // The theme's own photos when it has them (a palette changed from the theme's is repainted on them).
-  const shotTheme = frozenBase && !frozenBase.fixed && THEME_SHOTS.has(config.theme) ? config.theme : "frozen";
-  const base = useMemo(() => frozenBase && shotTheme !== "frozen" ? themeShot(frozenBase, shotTheme) : frozenBase, [frozenBase, shotTheme]);
+  const palette = d.balloonColors.length ? d.balloonColors : (theme?.balloonColors ?? ["#f7c5d8"]);
+  // The photo of the chosen theme and balloon set (a mix of one's own is repainted on the nearest).
+  const shot = frozenBase && !frozenBase.fixed ? setShot(config.theme, palette) : null;
+  const base = useMemo(() => frozenBase && shot ? themeShot(frozenBase, shot.folder) : frozenBase, [frozenBase, shot?.folder]);
   const { pieces, scale } = useMemo(() => {
     if (!base) return layoutPieces(items, { maxW: hasNumber || standees.length ? 640 : 760, maxH: 640 });
     const ps: Piece[] = base.boards.map((b, idx) => ({ item: items[idx], idx, x: b.x0 * VB, w: (b.x1 - b.x0) * VB, h: (b.y1 - b.y0) * VB, top: b.y0 * VB, curveLeft: b.x0 + b.x1 < 1 }));
@@ -607,9 +627,8 @@ export default function LiveSketch({
   }, [items, hasNumber, standees.length, base]);
   // Where things stand: the floor line, and how far in front of it the front row sits.
   const floorY = base ? (base.plinth.y + base.plinth.h) * VB : FLOOR;
-  const palette = d.balloonColors.length ? d.balloonColors : (theme?.balloonColors ?? ["#f7c5d8"]);
   const rimOf = (item: BackdropItem) => wavyBorderColor(item.borderColor, palette, accent);
-  const asShot = sameColours(palette, (themeById(shotTheme)?.balloonColors ?? []).slice(0, 5));
+  const asShot = !shot || shot.asShot;
   const baseBalloons = useRecoloredBase(base && !base.fixed ? base.balloons : null, base?.families ?? "", palette, asShot, base?.familyStep);
   const garlandSize = 18 + scale * 8;
   // How far the garland reaches past the boards' outer edges.
@@ -669,6 +688,12 @@ export default function LiveSketch({
     return out.sort((a, b) => a.y - b.y);
   }, [balloonsOn, pieces, palette, garlandSize, items.length, d.balloonRingStyle, base]);
 
+  // 2026-11-02 ("rainbow balonlar da eklenebilsin"): three foil rainbows on clouds tucked into the garland,
+  // low, middle and high along it, as the render guide places them.
+  const rainbowSpots = !(d.rainbowBalloons && balloonsOn) ? [] : base
+    ? [0.82, 0.5, 0.15].map((f) => base.florals[Math.min(base.florals.length - 1, Math.round(f * (base.florals.length - 1)))]).filter(Boolean)
+      .map(([x, y]) => ({ x: x * VB, y: y * VB }))
+    : [];
   // Florals on the base: tucked in along its garland.
   const baseFlorals = base && d.garlandFlorals
     ? base.florals.map(([x, y, a]) => ({ x: x * VB, y: y * VB, r: ROUND.r * VB * 0.104, a }))
@@ -896,6 +921,11 @@ export default function LiveSketch({
           <ellipse cx={f.x + f.r * 0.7} cy={f.y} rx={f.r * 0.9} ry={f.r * 0.32} fill="#93b98c" />
           {i % 3 === 0 && <circle cx={f.x} cy={f.y} r={f.r * 0.42} fill="#fff4f7" stroke="#f3b8cc" strokeWidth={2} />}
         </g>
+      ))}
+
+      {rainbowSpots.map((r, i) => (
+        <image key={`rb${i}`} href="/design/sketch/rainbow-cloud.webp" x={r.x - RAINBOW_W / 2} y={r.y - RAINBOW_W * RAINBOW_ASPECT / 2}
+          width={RAINBOW_W} height={RAINBOW_W * RAINBOW_ASPECT} data-testid="sketch-rainbow" />
       ))}
 
       {/* Balloon garland (drawn setups), florals tucked in */}

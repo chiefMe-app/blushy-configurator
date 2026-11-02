@@ -4,6 +4,8 @@
 // approved, listed reason.
 import type { BoardLettering, BuilderConfig } from "@/lib/config";
 import { applyPreset, letteringPatch } from "@/lib/typography/lettering";
+import { themeBalloonSets, type BalloonSetId } from "@/lib/balloonSets";
+import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
 import { finalize, frozen, withDecor, withSetup, withStandees, withText, withTheme } from "./builder";
 import { defaultConfig } from "@/lib/config";
 
@@ -33,6 +35,12 @@ const lettered = (setup: string, presetId: string, heading: string, name: string
     name: { text: name, fontId: "", weight: 0, size: "large" },
   };
   return withText(c, idx, { enabled: true, ...letteringPatch(applyPreset(base, presetId)), ...(color ? { color } : {}) });
+};
+
+/** A theme's balloon set as the Balloons tab sets it (decor.balloonColors and the Sempertex shades). */
+const balloonSet = (theme: string, set: BalloonSetId, extra: Record<string, unknown> = {}) => {
+  const cols = themeBalloonSets(theme)[set].map((id) => SEMPERTEX_CATALOG.find((c) => c.id === id)!);
+  return { balloonColors: cols.map((c) => c.hex), sempertexSelection: cols.map((c) => ({ code: c.code, colorName: c.colorName, finish: c.finish, family: c.family, hex: c.hex })), ...extra };
 };
 
 const list: Fixture[] = [
@@ -100,6 +108,8 @@ const list: Fixture[] = [
   { id: "N06-triple-overlay", note: "Soft Signature, Triple Arch (laid over the render)", config: lettered("triple_arch", "soft-signature", "Happy Birthday", "Arya") },
   { id: "N07-turkish", note: "Whisper Light, Turkish letters", config: lettered("single_round", "whisper-light", "İyi ki doğdun", "Ayşe Gül") },
   { id: "N08-open-frame-overlay", note: "Gallery, Arch + Open Frame (laid over the render)", config: lettered("arch_open_frame", "gallery", "Happy Birthday", "Noor") },
+  // 2026-11-02: the Bright colours set (lib/balloonSets.ts) with rainbow balloons, on its own bright photo.
+  { id: "E15-unicorn-bright-wavy-rainbow", note: "Unicorn Bright colours, Wavy, rainbow balloons", config: withDecor(withSetup(withTheme(defaultConfig(), "unicorn"), "single_wavy"), balloonSet("unicorn", "bright", { rainbowBalloons: true })) },
 ];
 
 export const FIXTURES: Fixture[] = list.map((f) => ({ ...f, config: finalize(f.config) }));

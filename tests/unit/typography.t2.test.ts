@@ -86,7 +86,8 @@ describe("preview, production SVG and cut file come from the same outlines", () 
   it("cut pieces: 'Malek' in Bodoni is five letters; dropped slivers are zero-area", () => {
     const name = cutElements(l).find((c) => c.role === "name")!;
     expect(name.pieces).toBe(5);
-    const heading = cutElements(layoutLettering(fromPreset("soft-signature", "Happy 1st Birthday", "Layla"))).find((c) => c.role === "heading")!;
+    // A separate-letter serif (Soft Signature's heading is a joined script since 2026-11-02).
+    const heading = cutElements(layoutLettering(fromPreset("modern-editorial", "Happy 1st Birthday", "Layla"))).find((c) => c.role === "heading")!;
     expect(heading.pieces).toBe(17); // H a p p y 1 s t B ı(stem) i-dot r t h d a y
   });
   it("merged cut rings do not cross themselves", () => {

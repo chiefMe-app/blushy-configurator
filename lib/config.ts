@@ -11,7 +11,7 @@ import { welcomePriceLines, type WelcomeBoard } from "./studio/welcomeBoard";
 
 /** What a backdrop's lettering says and how it looks until the customer changes it. */
 export const DEFAULT_TEXT_VALUE = "Happy Birthday";
-export const DEFAULT_TEXT_COLOR: TextColor = "silver";
+export const DEFAULT_TEXT_COLOR: TextColor = "gold";
 
 export type EventTypeId =
   | "birthday"
@@ -622,16 +622,11 @@ export const TEXT_COLOR_PRESET_HEX: Record<string, string> = {
 /**
  * 2026-10-22: the lettering colour follows the theme ("yazinin rengi theme e
  * gore degismeli"). Every one is a mirror-polished metal, like the customer's
- * reference lettering; Frozen's is silver.
+ * reference lettering.
  */
-export const THEME_TEXT_COLOR: Record<string, TextColor> = {
-  frozen: "silver", unicorn: "rose_gold", dinosaur: "gold", safari: "gold",
-  princess: "rose_gold", superhero: "silver", barbie: "rose_gold", bluey: "silver",
-  pokemon: "gold", stitch: "silver", mermaid: "rose_gold", space: "silver",
-  football: "gold", lego: "gold", kpop: "silver", encanto: "gold", cocomelon: "gold",
-  minecraft: "gold", star_wars: "silver",
-  butterfly_fairy: "rose_gold", vehicles: "silver", under_the_sea: "silver", circus: "gold", ballerina: "rose_gold", pirates: "gold",
-};
+// 2026-11-02 (the owner: "font gold ya da pembe olabilir"): gold on every theme, which reads on a white board
+// where silver and rose gold looked faint; the customer can still pick another.
+export const THEME_TEXT_COLOR: Record<string, TextColor> = {};
 export function themeTextColor(themeId: string | undefined): TextColor {
   return (themeId && THEME_TEXT_COLOR[themeId]) || DEFAULT_TEXT_COLOR;
 }
@@ -841,6 +836,11 @@ export interface DecorConfig {
    */
   garlandFlorals?: boolean;
   /**
+   * 2026-11-02 (the owner, of her reference: "burdaki rainbow balonlarda eklenebilsin"): rainbow foil
+   * balloons on little white cloud bunches, tucked into the garland. Only meaningful with a garland.
+   */
+  rainbowBalloons?: boolean;
+  /**
    * 2026-09-09: how the Balloon Ring is dressed.
    * "full"  — balloons all the way round, the metal frame hidden (the original).
    * "half"  — a bare gold metal hoop with the garland covering roughly half of
@@ -951,6 +951,8 @@ export function foilNumberColour(palette: string[]): string {
 }
 /** Florals and greenery worked through the garland (placeholder price, 2026-10-25). */
 export const GARLAND_FLORALS_PRICE = 120;
+/** Rainbow balloons on cloud bunches, three in the garland (placeholder price, 2026-11-02). */
+export const RAINBOW_BALLOONS_PRICE = 90;
 
 export interface SempertexSelection {
   code: string;
@@ -1503,6 +1505,9 @@ export function priceBreakdown(config: BuilderConfig): {
   // 2026-10-25: the Extras, which were shown without a price and not charged.
   if (d.garlandFlorals && normalizeBalloonStyle(d.balloonStyle) !== "none") {
     lines.push({ label: "Florals & greenery", amount: GARLAND_FLORALS_PRICE, section: "design" });
+  }
+  if (d.rainbowBalloons && normalizeBalloonStyle(d.balloonStyle) !== "none") {
+    lines.push({ label: "Rainbow balloons", amount: RAINBOW_BALLOONS_PRICE, section: "design" });
   }
   if (d.neonSign?.enabled && (d.neonSign.text ?? "").trim()) {
     lines.push({ label: "Neon LED sign", amount: NEON_SIGN_PRICE, section: "design" });

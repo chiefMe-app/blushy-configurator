@@ -2034,6 +2034,52 @@ exports[`pricing golden > E14-unicorn-wavy 1`] = `
 }
 `;
 
+exports[`pricing golden > E15-unicorn-bright-wavy-rainbow 1`] = `
+{
+  "breakdown": {
+    "lines": [
+      {
+        "amount": 250,
+        "label": "Design Only",
+        "section": "package",
+      },
+      {
+        "amount": 50,
+        "label": "Unicorn theme",
+        "section": "design",
+      },
+      {
+        "amount": 350,
+        "label": "Wavy Backdrop",
+        "section": "design",
+      },
+      {
+        "amount": 250,
+        "label": "Balloons - Balloon Garland",
+        "section": "design",
+      },
+      {
+        "amount": 110,
+        "label": "Plinths (1)",
+        "section": "design",
+      },
+      {
+        "amount": 80,
+        "label": "Lettering",
+        "section": "design",
+      },
+      {
+        "amount": 90,
+        "label": "Rainbow balloons",
+        "section": "design",
+      },
+    ],
+    "total": 1180,
+  },
+  "total": 1180,
+}
+`;
+
 exports[`pricing golden > N01-soft-signature-round 1`] = `
 {
   "breakdown": {

@@ -1,8 +1,9 @@
 // Decor step · Balloons tab (tab 03), moved unchanged from DecorStep in
 // app/builder/page.tsx (Phase 0.1). Everything it reads comes from the
 // step's shared state (useDecorStep).
-import { BALLOON_STYLES } from "@/lib/config";
+import { BALLOON_STYLES, RAINBOW_BALLOONS_PRICE } from "@/lib/config";
 import { SEMPERTEX_CATALOG } from "@/lib/sempertexCatalog";
+import { BALLOON_SETS, setHexes } from "@/lib/balloonSets";
 import { Dash } from "@/components/builder/ui";
 import type { DecorCtx } from "@/components/builder/decor/useDecorStep";
 
@@ -10,7 +11,7 @@ export default function BalloonsTab({ ctx }: { ctx: DecorCtx }) {
   const {
     patchDecor, sempertexIds, sempertexManual, showSempertexBrowser, setShowSempertexBrowser, sempertexQuery,
     setSempertexQuery, sempertexFilter, setSempertexFilter, sempertexExceeded, effectiveSempertexSelection,
-    toggleSempertex, resetToThemePalette, d, theme, card, nextCue, chip,
+    toggleSempertex, resetToThemePalette, balloonSets, activeBalloonSet, chooseBalloonSet, d, theme, card, nextCue, chip,
   } = ctx;
   return (
     <div>
@@ -70,6 +71,26 @@ export default function BalloonsTab({ ctx }: { ctx: DecorCtx }) {
       )}
       {d.balloonStyle === "none" && <p className="bz-bl-muted">Pick a garland above to choose balloon colours.</p>}
 
+      {/* 2026-11-02: the theme's colours as two sets — "pastel tone opsiyon 1 … bright color opsiyon 2 … onu
+          seçince komple balon rengi değişsin heryerde". A set is the whole party's balloons. */}
+      <div className="bz-bl-sets" role="radiogroup" aria-label="Balloon colour set">
+        {BALLOON_SETS.filter((s) => s.id === "pastel" || balloonSets.bright.join() !== balloonSets.pastel.join()).map((s) => {
+          const on = activeBalloonSet === s.id;
+          return (
+            <button key={s.id} type="button" role="radio" aria-checked={on} className={`bz-bl-set ${on ? "on" : ""}`}
+              onClick={() => chooseBalloonSet(s.id)}>
+              <span className="opt">Option {s.option}</span>
+              <strong>{s.label}</strong>
+              <span className="balls" aria-hidden="true">
+                {setHexes(balloonSets[s.id]).map((h, i) => <i key={i} style={{ ["--c" as string]: h } as React.CSSProperties} />)}
+              </span>
+              <small>{s.blurb}</small>
+              {on && <span className="bz-st-tick" aria-hidden="true">✓</span>}
+            </button>
+          );
+        })}
+      </div>
+
       <div style={{ marginBottom: 12 }}>
         {/* Chips — rendered directly from effectiveSempertexSelection (single source of truth).
             Tapping one removes it, as before. */}
@@ -104,6 +125,16 @@ export default function BalloonsTab({ ctx }: { ctx: DecorCtx }) {
       </div>
 
       <div className="bz-bl-tip"><span aria-hidden="true">💡</span> These are the exact Sempertex shades our team will inflate on the day.</div>
+
+      {/* 2026-11-02: rainbow balloons on cloud bunches, from the owner's reference. */}
+      <label className={`bz-bl-rainbow ${d.rainbowBalloons ? "on" : ""}`} style={{ opacity: d.balloonStyle === "none" ? 0.55 : 1 }}>
+        <input type="checkbox" checked={!!d.rainbowBalloons} disabled={d.balloonStyle === "none"}
+          onChange={() => patchDecor({ rainbowBalloons: !d.rainbowBalloons })} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/design/sketch/rainbow-cloud.webp" alt="" />
+        <span className="txt"><strong>Add rainbow balloons</strong><small>Three rainbows on little white cloud bunches, tucked into the garland.</small></span>
+        <em>+AED {RAINBOW_BALLOONS_PRICE}</em>
+      </label>
 
       {/* Expandable catalogue browser */}
       {showSempertexBrowser && (

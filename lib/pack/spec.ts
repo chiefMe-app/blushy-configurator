@@ -82,7 +82,7 @@ export interface PackSpec {
   setup: string;
   eventType: string;
   boards: BoardSpec[];
-  balloons: { style: string; colours: { code: string; name: string; finish: string; hex: string }[]; florals: boolean; ringStyle: string | null };
+  balloons: { style: string; colours: { code: string; name: string; finish: string; hex: string }[]; florals: boolean; rainbows: boolean; ringStyle: string | null };
   plinths: { label: string; diameterMm: number; heightMm: number }[];
   standees: { label: string; large: number; medium: number; small: number }[];
   extras: string[];
@@ -142,7 +142,7 @@ function letteringPlacements(config: BuilderConfig) {
   const items = config.decor.backdropItems.map((item, i) => ({ ...item, color: scene.panels[i]?.color || item.color }));
   const guide = generateStructureSilhouette(
     items, scene.plinths.map((p) => p.size), scene.balloons.style, scene.balloons.colors, [], undefined,
-    { florals: scene.garlandFlorals, numberLight: scene.numberLight, neonSign: scene.neonSign, ringStyle: scene.balloonRingStyle },
+    { florals: scene.garlandFlorals, rainbows: scene.rainbowBalloons, numberLight: scene.numberLight, neonSign: scene.neonSign, ringStyle: scene.balloonRingStyle },
   );
   return guide.letteringPlacements;
 }
@@ -196,6 +196,7 @@ export function buildPackSpec(config: BuilderConfig): PackSpec {
       style: BALLOON_STYLES.find((b) => b.id === scene.balloons.style)?.label ?? scene.balloons.style,
       colours,
       florals: scene.garlandFlorals,
+      rainbows: scene.rainbowBalloons,
       ringStyle: d.backdropItems.some((i) => i.type === "balloon_ring") ? scene.balloonRingStyle : null,
     },
     plinths: scene.plinths.map((p) => ({ label: PLINTH_SIZES.find((s) => s.id === p.size)?.label ?? p.size, diameterMm: p.diameterCm * 10, heightMm: p.heightCm * 10 })),

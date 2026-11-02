@@ -162,7 +162,8 @@ export const SETUP_LAYOUT_TEMPLATES: SetupLayoutTemplate[] = [
     badge: "New",
     miniPreview: ["wavy", "balloons"],
     panelInstruction: "A single freestanding solid board with a soft wavy outline, centred in the scene. No second backdrop.",
-    garlandInstruction: "Balloon design: one statement half-garland anchored by a dense cluster of large balloons at the top-right corner of the wavy board, cascading down its right edge with gradually smaller balloons, ending in a loose cluster on the floor at its base. The left side stays clean.",
+    // 2026-11-02 (the owner's unicorn reference: "wavy balon lokasyonu bu şekilde farklı olsun").
+    garlandInstruction: "Balloon design: a statement garland over the top-left of the wavy board and down its whole left edge to a big cluster on the floor, and a second, lower cluster standing on the floor against its right edge, about halfway up it. The top-right of the board stays clean.",
     plinthInstruction: "Place cylinder plinths on the left/front side of the board, clear of the garland.",
     standeeZones: ZONES_STANDARD,
   },
