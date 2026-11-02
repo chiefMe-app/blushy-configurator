@@ -36,8 +36,10 @@ const SEEDS: Record<string, [number, number, number, number, number, number][]> 
   // 2026-11-01: the Wavy Board (from the Single Arch photo) and the Fringe (from the Banner photo), made by one paid edit each.
   // Re-shot wider, on a coral rim (2026-11-01, the owner: "wavy daha geniş olmalı … border offset olmalı").
   // 2026-11-02: re-shot from a real render of its new garland (down the left from the top, low on the right).
-  single_wavy: [[520, 500, 330, 120, 730, 890]],
-  single_fringe: [[0, 0, 70, 118, 885, 915]],
+  single_wavy: [[540, 520, 380, 230, 705, 875]],
+  // 2026-11-02: re-shot from a real render of the owner's second fringe photo ("bunun gibi olmali"): wide
+  // vertical colour blocks with tinsel panels, in its frame.
+  single_fringe: [[0, 0, 218, 258, 802, 848]],
 };
 /** A round board's circle (px: centre and radius), past which nothing is board. */
 const CIRCLE: Record<string, [number, number, number]> = { round: [512, 528, 333] };
@@ -45,7 +47,7 @@ const CIRCLE: Record<string, [number, number, number]> = { round: [512, 528, 333
 const PATCHES = new Set(["round", "double_arch", "arch_shimmer", "arch_open_frame"]);
 /** Parts of the photo that are all foreground though the cut-out missed some (a fringe's busy strands):
  *  px x0, y0, x1, y1. The Fringe's frame and its tiers, re-shot 2026-11-01 ("o frame'in içinde olsun"). */
-const SOLID: Record<string, [number, number, number, number]> = { single_fringe: [138, 150, 830, 912] };
+const SOLID: Record<string, [number, number, number, number]> = { single_fringe: [218, 258, 802, 848] };
 /** Boards photographed on a coral rim (the offset border): the rim's own mask (<setup>-rim-<i>.png), made
  *  neutral so its colour is laid on it like a board's. */
 const RIM = new Set(["single_wavy"]);
@@ -86,9 +88,9 @@ const ERASE: Record<string, [number, number, number, number][]> = {
 const FAMILIES: Record<string, [number, number][][]> = {
   unicorn: [[[320, 360], [0, 25]], [[25, 75]], [[75, 165]], [[165, 245]], [[245, 320]]],
   // 2026-11-02: a shot per theme and balloon set (lib/balloonSets.ts), relit in neutral daylight. Each set's
-  // own order: Unicorn's pastel is its palette; its bright is fuchsia, orange, yellow, mint, purple.
+  // own order: Unicorn's pastel is its palette; its bright is rose, peach, mint, lavender.
   "unicorn-pastel": [[[320, 360], [0, 25]], [[25, 75]], [[75, 165]], [[165, 245]], [[245, 320]]],
-  "unicorn-bright": [[[300, 360], [0, 18]], [[18, 42]], [[42, 75]], [[75, 200]], [[200, 300]]],
+  "unicorn-bright": [[[300, 360], [0, 15]], [[15, 60]], [[60, 200]], [[200, 300]]],
   // Frozen's: white, ice blue, lilac, silver, clear (pastel); white, royal blue, caribbean blue, violet, silver
   // (bright). White, silver and clear have no hue: left as shot.
   "frozen-pastel": [[], [[165, 245]], [[245, 330]], [], []],

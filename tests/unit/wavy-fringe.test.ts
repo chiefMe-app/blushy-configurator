@@ -71,10 +71,12 @@ describe("wavy and fringe backdrops", () => {
     expect(buildLayoutRefEditPrompt(buildSceneModel(withSetup(withTheme(defaultConfig(), "unicorn"), "single_wavy")))).toContain("offset border");
   });
 
-  it("hang the fringe in a frame, in tiers, down to the floor", () => {
+  it("hang the fringe in a frame, in solid vertical colour blocks, down to the floor", () => {
     const fringe = buildLayoutRefEditPrompt(buildSceneModel(withSetup(withTheme(defaultConfig(), "unicorn"), "single_fringe")));
     expect(fringe).toContain("wooden frame");
-    expect(fringe).toContain("touches the floor");
+    expect(fringe).toContain("vertical colour blocks");
+    expect(fringe).toContain("the wall never shows through");
+    expect(fringe).toContain("touch the floor");
   });
 
   it("describe their own shape in the render prompt", () => {

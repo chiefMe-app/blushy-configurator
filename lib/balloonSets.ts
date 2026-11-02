@@ -10,13 +10,15 @@ import { getThemeCatalogEntry } from "./themeCatalog";
 export type BalloonSetId = "pastel" | "bright";
 export const BALLOON_SETS: { id: BalloonSetId; option: number; label: string; blurb: string }[] = [
   { id: "pastel", option: 1, label: "Pastel tones", blurb: "Soft, dreamy matte shades" },
-  { id: "bright", option: 2, label: "Bright colours", blurb: "Vivid, joyful party shades" },
+  { id: "bright", option: 2, label: "Bright colours", blurb: "Rich, cheerful matte shades" },
 ];
 
 /** Sets chosen by hand: a theme's photographed sets (see LiveSketch's THEME_SHOTS), kept as shot. */
 const BY_HAND: Record<string, Partial<Record<BalloonSetId, string[]>>> = {
-  // Her reference (a wavy unicorn board): hot pink, orange, sunny yellow, mint and purple.
-  unicorn: { bright: ["fashion-012-fuchsia", "fashion-061-orange", "fashion-020-yellow", "satin-430-green", "fashion-050-lilac"] },
+  // Her reference (a wavy unicorn board): rose pink, peach, mint and lavender. 2026-11-02, the first pick
+  // (fuchsia, orange, yellow, green, lilac) was too loud: "bright colors bunu demek istemedim, burdaki renkler
+  // gibi olsun" — rich, cheerful matte shades, not neon-bright ones.
+  unicorn: { bright: ["fashion-010-rosewood", "pastel-matte-663-melon", "satin-430-green", "fashion-050-lilac"] },
   frozen: { bright: ["fashion-005-white", "fashion-041-royal-blue", "fashion-038-caribbean-blue", "reflex-951-violet", "reflex-981-silver"] },
 };
 
@@ -53,11 +55,12 @@ export function paletteKind(ids: string[]): BalloonSetId {
   return cols.filter(isPastel).length * 2 >= cols.length ? "pastel" : "bright";
 }
 
-/** The same for colours given as hex (a scene's balloons): pastel when most of its coloured ones are pale. */
+/** The same for colours given as hex (a scene's balloons): pastel when most of its coloured ones are pale.
+ *  Paler than isPastel's line: Unicorn's bright set is peach and lavender as well as rose and mint. */
 export function hexPaletteKind(hexes: string[]): BalloonSetId {
   const cols = hexes.filter((h) => /^#[0-9a-f]{6}$/i.test(h)).map(hsl).filter((c) => c.s >= 0.15);
   if (!cols.length) return "pastel";
-  return cols.filter((c) => c.l >= 0.72).length * 2 >= cols.length ? "pastel" : "bright";
+  return cols.filter((c) => c.l >= 0.78).length * 2 >= cols.length ? "pastel" : "bright";
 }
 
 /** A theme's two sets, as Sempertex ids. */

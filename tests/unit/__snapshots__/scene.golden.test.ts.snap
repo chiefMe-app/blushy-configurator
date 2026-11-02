@@ -4600,9 +4600,8 @@ exports[`scene golden > E15-unicorn-bright-wavy-rainbow 1`] = `
   "balloonRingStyle": "full",
   "balloons": {
     "colors": [
-      "#FF1DCE",
-      "#FF8C00",
-      "#FFD700",
+      "#DB7093",
+      "#FDBA74",
       "#6EE7B7",
       "#C084FC",
     ],
@@ -4649,7 +4648,7 @@ exports[`scene golden > E15-unicorn-bright-wavy-rainbow 1`] = `
   },
   "panels": [
     {
-      "borderColor": "#FF1DCE",
+      "borderColor": "#DB7093",
       "color": "#FFFFFF",
       "graphic": {
         "assetId": undefined,

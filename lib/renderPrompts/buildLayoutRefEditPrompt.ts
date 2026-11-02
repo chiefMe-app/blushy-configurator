@@ -269,10 +269,15 @@ export function buildLayoutRefEditPrompt(
       backdropDesc =
         `a square layered fringe backdrop, exactly ${p.widthCm}cm wide x ${p.heightCm}cm tall — a perfect square: ` +
         `a slim freestanding rectangular frame of thin light natural wood standing on the floor, and hanging inside it, ` +
-        `filling the whole frame, a full fluffy fringe of long matte tissue-paper streamers in several overlapping ` +
-        `tiers, each tier mostly one of the balloon colours, with strands of shiny iridescent and glitter tinsel mixed ` +
-        `in between. Each upper tier hangs over the next with a soft uneven hem; the lowest tier reaches all the way ` +
-        `down and touches the floor. Clearly freestanding in front of the wall. ` +
+        // 2026-11-02, the owner's second fringe photo ("fringe neden boyle gozukuyor bunun gibi olmali"): the thin,
+        // see-through foil curtain was wrong — it is a dense, full fringe in bold colour blocks, the wall never
+        // showing through, with panels of metallic tinsel laid over it at different heights.
+        `filling the whole frame edge to edge, a dense, full, thick fringe of long matte crepe-paper streamers hung ` +
+        `side by side in wide vertical colour blocks, each block one of the balloon colours, the colours repeating ` +
+        `across. Over them hang panels of shiny metallic foil tinsel — gold and a metallic shade of the balloon ` +
+        `colours — some from the top bar, some starting lower down, ending at different heights, like layered tiers. ` +
+        `The streamers are packed so thick that the wall never shows through anywhere; their hems are soft and ` +
+        `uneven, and the lowest reach all the way down and touch the floor. Clearly freestanding in front of the wall. ` +
         `Nothing is printed and nothing is written on it. NOT a painted striped board, NOT a sequin wall, NOT a door curtain, ` +
         `NOT an arch, NOT a circle. ` +
         `NO extra base of any kind beneath or around it — the floor beneath and around it is completely ` +

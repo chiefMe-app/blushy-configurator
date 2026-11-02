@@ -1402,13 +1402,32 @@ export function generateStructureSilhouette(
       const matte = (balloonColors ?? []).slice(0, 5)
         .filter((h) => !chromeHexSet.has(String(h).toLowerCase()) && !clearHex.has(String(h).toLowerCase()));
       const cols = matte.length ? matte : ["#F8BBD0", "#DDD6FE", "#BAE6FD"];
-      const tiers = 5, th = panelH / tiers, parts: string[] = [];
-      for (let t = tiers - 1; t >= 0; t--) {
-        const y0 = fp.apexY + t * th;
-        for (let x = 0, k = 0; x < fp.pw; x += 3.5, k++) {
-          const glitter = (k * 7 + t * 3) % 6 === 0;
-          const len = t === tiers - 1 ? fp.floorY - y0 : th * (1.15 + ((k * 13 + t * 5) % 9) * 0.04);
-          parts.push(`<line x1="${(left + x).toFixed(1)}" y1="${y0.toFixed(1)}" x2="${(left + x).toFixed(1)}" y2="${Math.min(fp.floorY, y0 + len).toFixed(1)}" stroke="${glitter ? "#ECEAF4" : cols[t % cols.length]}" stroke-width="${glitter ? 1.5 : 4}"/>`);
+      // 2026-11-02, the owner's second fringe photo ("fringe neden boyle gozukuyor bunun gibi olmali"): the
+      // colours run in wide VERTICAL blocks side by side, packed solid to the floor, and panels of metallic
+      // tinsel hang over them from different heights. Drawn as horizontal tiers, the render came back as a
+      // striped rainbow curtain.
+      const parts: string[] = [];
+      const blocks = 9, bw = fp.pw / blocks;
+      for (let b = 0; b < blocks; b++) {
+        const hex = cols[b % cols.length];
+        for (let x = b * bw, k = 0; x < (b + 1) * bw; x += 3, k++) {
+          const hem = fp.floorY - ((k * 13 + b * 7) % 9) * panelH * 0.006;
+          parts.push(`<line x1="${(left + x).toFixed(1)}" y1="${fp.apexY.toFixed(1)}" x2="${(left + x).toFixed(1)}" y2="${hem.toFixed(1)}" stroke="${hex}" stroke-width="4"/>`);
+        }
+      }
+      // The tinsel panels: gold, and a deeper metallic shade of a balloon colour, in light and dark strands
+      // so they read shiny. [left edge, width, top, length] as fractions of the curtain.
+      const shade = (hex: string, k: number) => "#" + [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * k).toString(16).padStart(2, "0")).join("");
+      const metal = cols.find((h) => /^#[0-9a-f]{6}$/i.test(h)) ?? "#F8BBD0";
+      const PANELS: [number, number, number, number, boolean][] = [
+        [0.03, 0.07, 0.22, 0.42, true], [0.2, 0.06, 0.0, 0.55, false], [0.37, 0.07, 0.35, 0.5, true],
+        [0.55, 0.06, 0.12, 0.4, false], [0.7, 0.07, 0.3, 0.6, true], [0.86, 0.07, 0.05, 0.45, false],
+      ];
+      for (const [fx, fw, ft, fl, gold] of PANELS) {
+        const [lite, dark] = gold ? ["#F3D98B", "#B8902E"] : [shade(metal, 1.0), shade(metal, 0.62)];
+        for (let x = fx * fp.pw, k = 0; x < (fx + fw) * fp.pw; x += 2, k++) {
+          const y0 = fp.apexY + ft * panelH, y1 = y0 + fl * panelH * (0.92 + ((k * 7) % 5) * 0.03);
+          parts.push(`<line x1="${(left + x).toFixed(1)}" y1="${y0.toFixed(1)}" x2="${(left + x).toFixed(1)}" y2="${Math.min(fp.floorY, y1).toFixed(1)}" stroke="${k % 2 ? dark : lite}" stroke-width="2"/>`);
         }
       }
       content.push(`<g>${parts.join("")}</g>` +
@@ -3210,6 +3229,39 @@ export function generateStructureSilhouette(
           [1312, 792, 16, "S"], [1124, 772, 16, "S"],
           [1012, 282, 20, "F"], [1196, 334, 64, "F"], [1336, 740, 52, "F"], [1112, 530, 28, "F"],
         ];
+        // 2026-11-02: the Wavy Backdrop REPLAYS the owner's unicorn reference
+        // (600 px photo; the board runs x 212..423, y 118..497). Its orange is
+        // W, pink B, lilac L and mint C, so each colour run stays one colour.
+        const WAVY_REF_BOARD = { l: 212, r: 423, top: 118, floor: 497 };
+        const WAVY_REF: RefItem[] = [
+          // over the top, from the left shoulder to near the right one
+          [179, 116, 39, "W"], [187, 150, 19, "W"], [206, 140, 12, "W"], [225, 112, 12, "W"],
+          [215, 160, 14, "W"], [256,  92, 28, "L"], [278, 103, 13, "L"], [290,  95, 13, "L"],
+          [287, 112, 12, "L"], [270, 115, 12, "L"], [362,  56, 30, "B"], [319,  66, 19, "B"],
+          [356, 100, 22, "B"], [316, 100, 17, "B"], [331,  62,  9, "B"], [347,  72,  9, "B"],
+          [334,  81,  9, "B"], [300,  85, 12, "B"],
+          // down the left side
+          [144, 200, 28, "C"], [166, 166,  9, "C"], [160, 180, 14, "C"], [197, 200, 22, "W"],
+          [215, 215, 14, "B"], [141, 247, 25, "B"], [184, 266, 16, "B"], [212, 256, 16, "B"],
+          [187, 240, 16, "B"], [160, 240, 12, "B"], [200, 284, 12, "B"], [162, 278, 16, "B"],
+          [220, 280, 12, "B"], [116, 303, 25, "L"], [150, 320, 20, "W"], [200, 337, 16, "L"],
+          [219, 322, 14, "L"], [219, 359, 16, "L"], [181, 312, 14, "L"], [175, 350,  9, "L"],
+          [156, 353,  9, "L"], [200, 360, 12, "L"], [137, 400, 34, "W"], [191, 387, 19, "W"],
+          [ 87, 400, 12, "W"], [100, 375, 16, "W"], [203, 419, 12, "W"], [169, 416, 18, "W"],
+          [200, 400, 12, "W"],
+          // the foot, out over the floor to the left
+          [ 69, 459, 22, "B"], [109, 441, 16, "B"], [ 47, 487, 12, "B"], [ 41, 509, 11, "B"],
+          [ 59, 519, 11, "B"], [ 95, 455, 12, "B"], [170, 455, 20, "W"], [122, 487, 22, "L"],
+          [ 97, 525, 22, "L"], [144, 528, 24, "L"], [ 75, 484, 12, "L"], [150, 500, 12, "L"],
+          [166, 506, 12, "L"], [103, 469, 14, "L"], [219, 453, 16, "C"], [250, 459, 20, "C"],
+          [228, 494, 20, "C"], [253, 503, 19, "C"], [194, 491, 16, "C"], [206, 512, 11, "C"],
+          // the right-hand cluster
+          [431, 337, 19, "B"], [425, 369, 19, "B"], [462, 369, 20, "B"], [444, 341, 12, "B"],
+          [419, 403, 16, "L"], [441, 394, 14, "L"], [459, 406, 14, "L"], [419, 431, 14, "L"],
+          [447, 428, 14, "L"], [431, 415, 10, "L"], [459, 441, 16, "C"], [484, 481, 34, "C"],
+          [431, 484, 20, "C"], [431, 462, 12, "C"], [419, 456,  9, "C"], [494, 437, 16, "W"],
+          [509, 450, 12, "W"], [481, 428,  9, "W"],
+        ];
         // A photo board rect mapped onto one of ours: its two side edges onto
         // our side edges, its floor onto our floor, and the height scale for
         // everything outside the board and for the balloon sizes. `mirror`
@@ -4507,14 +4559,13 @@ export function generateStructureSilhouette(
           // doubling it would stop being that arrangement.
           void drawLoneArchStatementGarland;
           if (backdropItems[archPanels[0].idx]?.drawAs === "wavy") {
-            // 2026-11-02, the Wavy Backdrop to the owner's unicorn reference ("wavy balon lokasyonu bu
-            // şekilde farklı olsun"): the garland over its top-left and down the whole LEFT side to the
-            // floor, and a second, lower cluster standing on the floor against the RIGHT side — the photo's
-            // own right-hand foot (its lower cascade), unmirrored.
-            drawSingleArchRef(archPanels[0], "left");
-            const m = archContourMap(archPanels[0], false, { l: 173, r: 650, top: 333, floor: 1270, spring: 470 },
-              SINGLE_ARCH_REF.filter(([x, y]) => x > 560 && x < 1000 && y > 820));
-            drawRefTable(m.table, idMap, idMap, m.s, { maxBottom: archPanels[0].floorY + plinthForwardPx * 1.5, keepClear: plinthKeepClear() });
+            // 2026-11-02, the Wavy Backdrop REPLAYS the owner's unicorn reference ("wavy backdrop balon
+            // lokasyonlari ve genisligi ayni olsun burdakiyle"): a wide column down the whole LEFT side,
+            // over the top as far as its right shoulder, and a cluster on the floor against the RIGHT side
+            // from about 40% down. The Single Arch's garland mirrored put the crown across the whole top
+            // and the right cluster too low and too wide.
+            const m = refBoardMapFit(archPanels[0], false, WAVY_REF_BOARD, WAVY_REF);
+            drawRefTable(WAVY_REF, m.x, m.y, m.s, { maxBottom: archPanels[0].floorY + plinthForwardPx * 1.5, keepClear: plinthKeepClear() });
           } else drawSingleArchRef(archPanels[0], "right");
         } else {
           // Multi-panel fallback: right-side vertical garland from top-right corner to floor

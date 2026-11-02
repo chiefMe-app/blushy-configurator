@@ -146,18 +146,21 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
   // photo, its board made a layered fringe of tissue and tinsel in a wooden frame, repainted with the balloons).
   wavy: {
     room: `${SK}/single_wavy-room.webp`, balloons: `${SK}/single_wavy-balloons.webp`, families: `${SK}/single_wavy-families.png`,
-    // Re-shot 2026-11-02 from a real render of its new garland ("wavy balon lokasyonu bu şekilde farklı olsun"):
-    // down the left from the top to the floor, a low cluster on the right; the offset rim has its own mask.
-    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.3662, y0: 0.2402, x1: 0.6445, y1: 0.8350, text: { cx: 0.52, cy: 0.42, w: 0.22 } }],
-    plinth: { x: 0.455, y: 0.582, w: 0.1, h: 0.288 },
-    florals: fromPx([[380, 90], [470, 60], [560, 80], [300, 250], [240, 380], [200, 500], [190, 620], [200, 740], [260, 860], [720, 660], [780, 760], [740, 860]]),
+    // Re-shot 2026-11-02 from a real render of its garland as in the owner's unicorn photo ("wavy backdrop balon
+    // lokasyonlari ve genisligi ayni olsun burdakiyle"): a wide column down the left, over the top to the right
+    // shoulder, a cluster on the right from halfway down; the offset rim has its own mask.
+    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.376, y0: 0.2529, x1: 0.6553, y1: 0.8398, text: { cx: 0.54, cy: 0.42, w: 0.2 } }],
+    plinth: { x: 0.46, y: 0.615, w: 0.1, h: 0.28 },
+    florals: fromPx([[430, 170], [520, 120], [620, 140], [300, 250], [240, 350], [220, 460], [200, 560], [180, 680], [150, 780], [120, 860], [700, 600], [780, 700], [760, 820]]),
     numberX: 0.5, standeeX: [0.06, 0.93],
   },
   fringe: {
     room: `${SK}/single_fringe-room.webp`, balloons: `${SK}/single_fringe-balloons.webp`, families: `${SK}/single_fringe-families.png`,
-    boards: [{ mask: `${SK}/single_fringe-board-0.png`, x0: 0.0654, y0: 0.1123, x1: 0.8652, y1: 0.8965, text: { cx: 0.42, cy: 0.42, w: 0.36 } }],
-    plinth: { x: 0.452, y: 0.65, w: 0.143, h: 0.273 },
-    florals: fromPx([[300, 70], [420, 40], [560, 90], [680, 170], [800, 230], [880, 330], [900, 450], [880, 560], [860, 680], [820, 800], [760, 880]]),
+    // Re-shot 2026-11-02 from a real render, to the owner's second fringe photo ("fringe neden boyle gozukuyor
+    // bunun gibi olmali"): wide vertical colour blocks, tinsel panels over them, packed solid to the floor.
+    boards: [{ mask: `${SK}/single_fringe-board-0.png`, x0: 0.2129, y0: 0.252, x1: 0.7832, y1: 0.8281, text: { cx: 0.41, cy: 0.45, w: 0.32 } }],
+    plinth: { x: 0.446, y: 0.61, w: 0.108, h: 0.27 },
+    florals: fromPx([[400, 250], [470, 200], [560, 215], [650, 250], [760, 300], [840, 380], [860, 480], [840, 600], [860, 720], [780, 820], [690, 830]]),
     numberX: 0.2, standeeX: [0.06, 0.96],
   },
   // 2026-11-01: the Customized Themed set (Frozen), the owner's photo re-made with generic art and no name;
@@ -388,17 +391,20 @@ function piecePath(p: Piece, floor = FLOOR): string | null {
 }
 
 /** The fringe's strands (2026-11-01, the owner's fringe references: "o frame'in içinde olsun … yere değmeli,
- *  aralarda glitter renkler de ok"): tiers of tissue streamers in the party's colours, one over the next, with
- *  glitter tinsel between, the lowest to the floor. Bottom tier first, so each upper one hangs in front. */
+ *  aralarda glitter renkler de ok"; 2026-11-02, her second photo, "bunun gibi olmali"): wide vertical blocks of
+ *  tissue streamers in the party's colours, packed to the floor, with panels of gold tinsel hung over them from
+ *  different heights. */
 function fringeStrands(x: number, top: number, w: number, h: number, palette: string[], seed: number): { x: number; y0: number; y1: number; w: number; hex: string }[] {
   const rnd = seeded(seed * 31 + 7), cols = palette.length ? palette : ["#f7c5d8"];
-  const tiers = 5, th = h / tiers, out: { x: number; y0: number; y1: number; w: number; hex: string }[] = [];
-  for (let t = tiers - 1; t >= 0; t--) {
-    const hex = cols[t % cols.length], y0 = top + t * th;
-    for (let sx = x; sx < x + w; sx += 3.2) {
-      const glitter = rnd() < 0.16;
-      const len = t === tiers - 1 ? top + h - y0 : th * (1.15 + rnd() * 0.35);
-      out.push({ x: sx + rnd() * 2, y0, y1: Math.min(top + h, y0 + len), w: glitter ? 1.4 : 3.4, hex: glitter ? "#e9e7f2" : hex });
+  const blocks = 9, bw = w / blocks, out: { x: number; y0: number; y1: number; w: number; hex: string }[] = [];
+  for (let b = 0; b < blocks; b++) {
+    for (let sx = x + b * bw; sx < x + (b + 1) * bw; sx += 3) {
+      out.push({ x: sx + rnd(), y0: top, y1: top + h - rnd() * h * 0.04, w: 3.4, hex: cols[b % cols.length] });
+    }
+  }
+  for (const [fx, fw, ft, fl] of [[0.03, 0.07, 0.22, 0.42], [0.37, 0.07, 0.35, 0.5], [0.7, 0.07, 0.3, 0.6]]) {
+    for (let sx = x + fx * w, k = 0; sx < x + (fx + fw) * w; sx += 2, k++) {
+      out.push({ x: sx, y0: top + ft * h, y1: Math.min(top + h, top + (ft + fl * (0.92 + rnd() * 0.1)) * h), w: 1.6, hex: k % 2 ? "#b8902e" : "#f3d98b" });
     }
   }
   return out;
