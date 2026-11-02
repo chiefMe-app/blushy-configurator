@@ -211,7 +211,7 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
  * nearest shot — its theme's own set of that kind, else Unicorn's (colours) or Frozen's (whites and silvers).
  */
 const SET_SHOT_THEMES = new Set(["unicorn", "frozen"]);
-function setShot(themeId: string, palette: string[]): { folder: string; asShot: boolean } {
+export function setShot(themeId: string, palette: string[]): { folder: string; asShot: boolean } {
   const kind = sceneBalloonSet(themeId, palette);
   if (SET_SHOT_THEMES.has(themeId)) {
     const own = themeBalloonSets(themeId)[kind];
@@ -301,7 +301,7 @@ function loadBase(src: string, familiesSrc: string, step = 100): Promise<BaseDat
  * was taken with) shows the photo untouched — "purple kaybolmus" came from
  * repainting Frozen's own lilac a paler lilac.
  */
-function useRecoloredBase(src: string | null, familiesSrc: string, palette: string[], asShot: boolean, familyStep?: number): string | null {
+export function useRecoloredBase(src: string | null, familiesSrc: string, palette: string[], asShot: boolean, familyStep?: number): string | null {
   // Kept with the base it was made for: on another setup's room a previous
   // setup's balloons must not show while its own are repainted.
   const [got, setGot] = useState<{ src: string | null; url: string | null }>({ src: null, url: null });

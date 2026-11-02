@@ -1204,7 +1204,8 @@ export function useSetupPreview(config: BuilderConfig) {
 // Preview component
 // ---------------------------------------------------------------------------
 
-export type FinalRenderState = { hasRender: boolean; isStale: boolean; generating: boolean };
+/** `imageUrl`: the render itself (2026-11-02: the finished designs show it, and save it as a JPEG). */
+export type FinalRenderState = { hasRender: boolean; isStale: boolean; generating: boolean; imageUrl?: string | null };
 
 export default function SetupPreview({
   config, status, imageUrl, isIncremental = false, onRegenerate, showControls = true,
@@ -1297,7 +1298,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
   const showSketch = canSketch && (viewPick === "sketch" || (viewPick === "auto" && (!finalUrl || isStale)) || !hasPicture);
 
   useEffect(() => {
-    onFinalRenderStateChange?.({ hasRender: !!finalUrl, isStale, generating: finalIsLoading });
+    onFinalRenderStateChange?.({ hasRender: !!finalUrl, isStale, generating: finalIsLoading, imageUrl: finalUrl });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalUrl, isStale, finalIsLoading]);
 

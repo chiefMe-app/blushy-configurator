@@ -185,6 +185,9 @@
 .bz-decor-cta { border: 0; border-radius: 999px; background: var(--bz-pink); color: #fff; font: 400 18px var(--bz-hand); padding: 10px 22px 7px; cursor: pointer;
   box-shadow: 0 5px 0 rgba(255,13,102,.13), 0 11px 25px rgba(255,13,102,.15); }
 .bz-decor-cta:disabled { opacity: .55; cursor: default; }
+/* 2026-11-02: "Finish the backdrop → Table setup" on every tab (in .bz-decor-actions); a short label on phones. */
+.bz-decor-cta .short { display: none; }
+@media (max-width: 520px) { .bz-decor-cta .full { display: none; } .bz-decor-cta .short { display: inline; } .bz-decor-cta { font-size: 16px; padding: 9px 16px 6px; } }
 
 /* Backdrop icon cards */
 .bz-layout-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
@@ -793,7 +796,10 @@
   .bz-decor-head { padding: 0 0 8px; }
   .bz-decor-tabbar { margin-bottom: 10px; }
   .bz-decor-tab { padding: 8px 5px; }
-  .bz-decor-panel-head, .bz-decor-footer, .bz-decor-note { display: none; }
+  .bz-decor-panel-head, .bz-decor-note { display: none; }
+  /* Only the footer's Finish button: the bottom bar's Next already names the next tab. */
+  .bz-decor-footer { justify-content: flex-end; margin-top: 10px; }
+  .bz-decor-footer > span:first-child, .bz-decor-footer .bz-decor-hint { display: none; }
   .bz-layout-grid { gap: 8px; }
   .bz-layout { min-height: 0; padding: 6px 6px 7px; }
   .bz-layout .art { height: 74px; }
@@ -1319,6 +1325,12 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-finish p { margin: 0; flex: 1 1 220px; font-size: 13.5px; color: var(--bz-muted); }
 .bz-tb-finish.done { border-style: solid; border-color: #bfe5c9; background: #f1fbf4; }
 .bz-tb-finish.done p { color: #2f7a46; font-weight: 600; }
+/* 2026-11-02: on to the welcome board from any part of a table; the grown-ups' table skipped at any time. */
+.bz-tb-finish .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+.bz-tb-ahead { display: flex; justify-content: flex-end; margin-top: 12px; }
+.bz-tb-jump { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 14px; border-radius: 16px; border: 1.5px dashed var(--bz-pink-soft); background: var(--bz-pink-fog); }
+.bz-tb-jump span { font-size: 13px; color: var(--bz-muted); }
+.bz-tb-jump .bz-back { padding: 8px 14px 5px; font-size: 16px; }
 .bz-tb-tables { display: flex; gap: 6px; margin: 0 0 14px; padding: 4px; border-radius: 999px; background: #fbf4f7; width: fit-content; max-width: 100%; }
 .bz-tb-tables button { border: 0; background: transparent; border-radius: 999px; padding: 8px 16px; font: 700 13.5px var(--bz-sans); color: var(--bz-muted); cursor: pointer; }
 .bz-tb-tables button.on { background: #fff; color: var(--bz-pink); box-shadow: 0 3px 10px rgba(103,44,71,.1); }
@@ -1330,3 +1342,27 @@ div.bz-stale-banner { cursor: default; }
 .bz-md-card.welcome .sketch { display: grid; place-items: center; background: #fbf7f4; }
 .bz-md-card.welcome .sketch > svg { height: 92%; width: auto; max-width: 100%; }
 .bz-tb-place[data-mode="six"] { aspect-ratio: auto; }
+
+/* ---------- Finished designs (2026-11-02): each piece as a JPEG, on Package and Review ---------- */
+.bz-finished { margin-bottom: 18px; }
+.bz-finished .head h2 { margin: 0 0 2px; font: 400 26px var(--bz-hand); }
+.bz-finished .head p { margin: 0 0 12px; color: var(--bz-muted); font-size: 13.5px; }
+.bz-finished .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.bz-finished-card { margin: 0; border: 1px solid var(--bz-border); border-radius: 22px; padding: 12px; background: #fff; box-shadow: 0 10px 30px rgba(103,44,71,.06); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.bz-finished-card figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bz-finished-card .title { font: 400 19px var(--bz-hand); white-space: nowrap; }
+.bz-finished-card .state { font-size: 11px; font-weight: 700; color: #947e8d; white-space: nowrap; }
+.bz-finished-card .state.done { color: #2f7a46; }
+/* A square for every piece, the picture fitted in it: the card keeps its size while its JPEG is made. */
+.bz-finished-card .pic { position: relative; overflow: hidden; border-radius: 14px; background: #fbf4f7; aspect-ratio: 1 / 1; display: grid; place-items: center; }
+.bz-finished-card .pic.live { aspect-ratio: auto; }
+.bz-finished-card .pic > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.bz-finished-card .making { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--bz-muted); }
+.bz-finished-card .making .bz-spinner { border-color: rgba(255,13,102,.2); border-top-color: var(--bz-pink); }
+/* Drawn off-screen at a set width while its JPEG is made; in the card itself if it can't be. */
+.bz-finished-card .stage { position: absolute; left: -12000px; top: 0; width: 800px; pointer-events: none; }
+.bz-finished-card .stage.shown { position: static; width: 100%; pointer-events: auto; }
+.bz-finished-card .stage .art { background: #fff; }
+.bz-finished-card .stage .art > svg { display: block; width: 100% !important; height: auto !important; max-width: none; }
+.bz-finished-save { align-self: flex-start; font-weight: 800; color: var(--bz-pink); font-size: 13px; text-decoration: none; }
+.bz-finished-save:hover { text-decoration: underline; }

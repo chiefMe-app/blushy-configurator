@@ -59,10 +59,12 @@ export interface DecorStepProps {
   hasRender: boolean;
   generating: boolean;
   onContinue: () => void;
+  /** An arch without its size can't be finished yet (the page's Next waits for it too). */
+  continueBlocked?: boolean;
 }
 
 export function useDecorStep(props: DecorStepProps) {
-  const { config, patchDecor, decorTab, setDecorTab, stylePieceId, setStylePieceId, onGenerate, renderReady, hasRender, generating, onContinue } = props;
+  const { config, patchDecor, decorTab, setDecorTab, stylePieceId, setStylePieceId, onGenerate, renderReady, hasRender, generating, onContinue, continueBlocked } = props;
   const [printFile, setPrintFile] = useState<File | null>(null);
   const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
   const [openCustomizeIds, setOpenCustomizeIds] = useState<Set<string>>(new Set());
@@ -633,7 +635,7 @@ function clearAllStandees() {
 
   return {
     config, patchDecor, decorTab, setDecorTab, stylePieceId, setStylePieceId, onGenerate, renderReady,
-    hasRender, generating, onContinue, setOpenCustomizeIds, showManualPieces, setShowManualPieces,
+    hasRender, generating, onContinue, continueBlocked, setOpenCustomizeIds, showManualPieces, setShowManualPieces,
     showAllChars, setShowAllChars, sempertexIds, sempertexManual, showSempertexBrowser, setShowSempertexBrowser,
     sempertexQuery, setSempertexQuery, sempertexFilter, setSempertexFilter, sempertexExceeded, effectiveSempertexSelection,
     toggleSempertex, resetToThemePalette, balloonSets, activeBalloonSet, chooseBalloonSet, d, boardHasLettering, neonFreeBoards, theme, t, normalizedCut,

@@ -9,10 +9,12 @@ import { adultColours, AdultGlyph } from "@/components/studio/table/AdultTableSk
 
 const unitLabel = (o: AdultOption) => `AED ${formatAED(o.price)} ${o.unit === "per_guest" ? "each" : "a table"}`;
 
-export default function AdultTableStep({ config, setAdultTable, onFinish }: {
+export default function AdultTableStep({ config, setAdultTable, onFinish, onSkip }: {
   config: BuilderConfig;
   setAdultTable: (a: AdultTable) => void;
   onFinish: () => void;
+  /** 2026-11-02 (owner: "adult table setup skip edemiyorum"): no grown-ups' table, on to the welcome board — asked or not. */
+  onSkip: () => void;
 }) {
   const theme = themeById(config.theme) ?? THEMES[0];
   const a = config.adultTable;
@@ -25,7 +27,7 @@ export default function AdultTableStep({ config, setAdultTable, onFinish }: {
         <p>A dressed table for the parents and guests — charger plates, glasses, a runner and flowers, in your {theme.name} colours. The price adds to your party.</p>
         <div className="actions">
           <button type="button" className="bz-next" onClick={() => setAdultTable({ ...defaultAdultTable(theme), ...(a ? { ...a, enabled: true, done: false } : {}) })}>Yes, design it ✦</button>
-          {!a && <button type="button" className="bz-back" onClick={() => setAdultTable({ ...defaultAdultTable(theme), enabled: false })}>No thanks, skip</button>}
+          <button type="button" className="bz-back" data-testid="skip-adult-table" onClick={onSkip}>No thanks, skip →</button>
         </div>
         {a && !a.enabled && <p className="skipped">You skipped the grown-ups&apos; table — it isn&apos;t in your total.</p>}
       </div>
@@ -73,6 +75,10 @@ export default function AdultTableStep({ config, setAdultTable, onFinish }: {
 
   return (
     <div className="bz-tb" data-testid="adult-table">
+      <div className="bz-tb-jump">
+        <span>Changed your mind?</span>
+        <button type="button" className="bz-back" data-testid="skip-adult-table" onClick={onSkip}>Skip the grown-ups&apos; table →</button>
+      </div>
       <div className="bz-tb-item">
         <h3>How many grown-ups?</h3>
         <div className="bz-ts-row">
@@ -89,6 +95,7 @@ export default function AdultTableStep({ config, setAdultTable, onFinish }: {
         <section key={section.name} className="bz-tb-section" aria-label={section.name}>
           <h2>{section.name}</h2>
           {section.items.map(item)}
+          <SkipAhead onClick={onFinish} testId="adult-to-welcome" />
         </section>
       ))}
 
@@ -102,14 +109,31 @@ export default function AdultTableStep({ config, setAdultTable, onFinish }: {
   );
 }
 
-/** The end of a part: Finish, then on to the next part (2026-10-31, the owner: "finalize etmek için bir butona basıp"). */
-export function FinishBar({ done, what, next, onFinish, testId }: { done?: boolean; what: string; next: string; onFinish: () => void; testId: string }) {
+/** The end of a part: Finish, then on to the next part (2026-10-31, the owner: "finalize etmek için bir butona basıp");
+ *  and, on the kids' table, straight on to the welcome board too (`onSkipAhead`, 2026-11-02). */
+export function FinishBar({ done, what, next, onFinish, onSkipAhead, testId }: { done?: boolean; what: string; next: string; onFinish: () => void; onSkipAhead?: () => void; testId: string }) {
   return (
     <div className={`bz-tb-finish ${done ? "done" : ""}`}>
       <p>{done ? <>✓ Your {what} is finished. Changes are still kept.</> : <>Happy with every choice? Finish the {what} — next comes the {next.toLowerCase()}.</>}</p>
-      <button type="button" className="bz-next" data-testid={testId} onClick={onFinish}>
-        {done ? `Next: ${next} →` : `Finish the ${what} ✓`}
-      </button>
+      <div className="actions">
+        {onSkipAhead && <SkipAhead onClick={onSkipAhead} testId={`${testId}-to-welcome`} bare />}
+        <button type="button" className="bz-next" data-testid={testId} onClick={onFinish}>
+          {done ? `Next: ${next} →` : `Finish the ${what} ✓`}
+        </button>
+      </div>
     </div>
   );
+}
+
+/**
+ * "Finish the table setup → Welcome board" (2026-11-02, the owner: "her seçim sonrası finalize the backdrop and
+ * skip to table setup, sonrasında da welcome board için olmalı aynı şekilde buton"): after every part of a table.
+ */
+export function SkipAhead({ onClick, testId, bare }: { onClick: () => void; testId: string; bare?: boolean }) {
+  const button = (
+    <button type="button" className="bz-decor-cta" data-testid={testId} onClick={onClick}>
+      <span className="full">Finish the table setup → Welcome board</span><span className="short" aria-hidden="true">Finish → Welcome board</span>
+    </button>
+  );
+  return bare ? button : <div className="bz-tb-ahead">{button}</div>;
 }

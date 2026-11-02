@@ -303,6 +303,54 @@ const labAB = (r: number, g: number, b: number) => {
   });
   let filled = grow(board, 2, (i) => boardLike(i) && !kept[i]);
   filled = grow(filled, 1, (i) => !kept[i]);
+  // The flat-foot boards' SAM 2 segments (<setup>-segs.png, id = R + G * 256): a white balloon in front of the
+  // board's foot is as white as its paint, so the guide lets the flood in ("blue border neden var?", 2026-11-02:
+  // the board's colour was laid on half of it). A balloon-sized segment mostly off the board is no board.
+  const segsFile = path.join(dir, `${setup}-segs.png`);
+  const segId = theme && EXACT_GUIDE.has(setup) && existsSync(segsFile) ? await (async () => {
+    const sg = await sharp(segsFile).removeAlpha().resize(W, H, { kernel: "nearest" }).raw().toBuffer();
+    return Uint32Array.from({ length: N }, (_, i) => sg[i * 3] + sg[i * 3 + 1] * 256);
+  })() : null;
+  /** A balloon-sized segment's points with under `share` of them in `inside`. */
+  const offSegments = (inside: (i: number) => boolean, share: number) => {
+    const size = new Map<number, number>(), inn = new Map<number, number>(), out = new Uint8Array(N);
+    for (let i = 0; i < N; i++) {
+      const s0 = segId![i];
+      if (!s0) continue;
+      size.set(s0, (size.get(s0) ?? 0) + 1);
+      if (inside(i)) inn.set(s0, (inn.get(s0) ?? 0) + 1);
+    }
+    for (let i = 0; i < N; i++) {
+      const s0 = segId![i], n = size.get(s0) ?? 0;
+      if (s0 && n < 40000 && (inn.get(s0) ?? 0) < n * share) out[i] = 1;
+    }
+    return out;
+  };
+  if (segId) {
+    const off = offSegments((i) => filled[i] >= 0, 0.6);
+    for (let i = 0; i < N; i++) if (off[i] && filled[i] >= 0 && chroma(i) < 16) filled[i] = -1;
+  }
+  // Specks the flood skipped inside a flat-foot board (a glint on its paint): small holes ringed by board are board.
+  if (theme && EXACT_GUIDE.has(setup)) {
+    // Each pixel marked with the search that reached it: one reached by an earlier, bigger search is open space.
+    const seen = new Int32Array(N);
+    for (let i = 0, run = 0; i < N; i++) {
+      if (seen[i] || filled[i] >= 0) continue;
+      const part = [i], stack = [i], ring = new Set<number>();
+      let open = false;
+      seen[i] = ++run;
+      while (stack.length && part.length <= 400 && !open) {
+        const k = stack.pop()!, x = k % W;
+        if (x === 0 || x === W - 1 || k < W || k >= N - W) { open = true; break; }
+        for (const j of [k - 1, k + 1, k - W, k + W]) {
+          if (filled[j] >= 0) { ring.add(filled[j]); continue; }
+          if (seen[j] && seen[j] !== run) { open = true; break; }
+          if (!seen[j]) { seen[j] = run; part.push(j); stack.push(j); }
+        }
+      }
+      if (!open && !stack.length && ring.size === 1) { const b = ring.values().next().value as number; for (const k of part) filled[k] = b; }
+    }
+  }
   if (NEUTRAL.has(setup)) for (let i = 0; i < N; i++) if (filled[i] >= 0) {
     const l = Math.round(lum(i));
     px[i * 3] = px[i * 3 + 1] = px[i * 3 + 2] = Math.min(255, l + 6);
@@ -315,12 +363,23 @@ const labAB = (r: number, g: number, b: number) => {
   const near = theme && RIM.has(setup) ? (() => {
     const m = new Uint8Array(N);
     for (let i = 0; i < N; i++) if (filled[i] >= 0) m[i] = 1;
-    for (let k = 0; k < 18; k++) {
-      const prev = m.slice();
-      for (let i = 0; i < N; i++) if (!prev[i]) { const x = i % W; if ((x > 0 && prev[i - 1]) || (x < W - 1 && prev[i + 1]) || prev[i - W] || prev[i + W]) m[i] = 2; }
+    // 26 px for the flat-foot boards (their rim, dark outline to outer edge, is up to 25 px wide).
+    // Diagonal steps every other turn for those, so the band is as wide at the corners.
+    const exact = EXACT_GUIDE.has(setup);
+    for (let k = 0; k < (exact ? 26 : 18); k++) {
+      const prev = m.slice(), diag = exact && k % 2 === 1;
+      for (let i = 0; i < N; i++) if (!prev[i]) {
+        const x = i % W;
+        if ((x > 0 && prev[i - 1]) || (x < W - 1 && prev[i + 1]) || prev[i - W] || prev[i + W]) m[i] = 2;
+        else if (diag && ((x > 0 && (prev[i - W - 1] || prev[i + W - 1])) || (x < W - 1 && (prev[i - W + 1] || prev[i + W + 1])))) m[i] = 2;
+      }
     }
     return m;
   })() : null;
+  // 2026-11-02 (later: "blue border neden var?"): the flat-foot boards' master shot has a blue rim, outlined dark,
+  // on a warm wall (chroma ~19, as coloured as a pale rim): the rim is what is bluer than red in the band, less any
+  // balloon's points (a SAM 2 segment mostly outside the band).
+  const notBalloon = near && segId ? offSegments((i) => near[i] > 0, 0.5) : null;
   if (RIM.has(setup)) SEEDS[setup].forEach(([sx, , bx0, by0, bx1, by1], b) => {
     if (sx <= 0) return; // a sequin wall has no rim
     for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
@@ -329,7 +388,8 @@ const labAB = (r: number, g: number, b: number) => {
         // Coloured, as the wall never is: pink, peach or blue by the set (a balloon is too, so only in the band,
         // right of the seed).
         // Over 11: Frozen Pastel's pale arctic-blue rim reads 12–24 where the window lights it (the wall 1–4).
-        if (near[i] === 2 && x > sx - 60 && chroma(i) > 11 && lum(i) > 100) rim[i] = b;
+        if (notBalloon) { if (near[i] === 2 && !notBalloon[i] && bl - r > 8 && lum(i) > 55) rim[i] = b; }
+        else if (near[i] === 2 && x > sx - 60 && chroma(i) > 11 && lum(i) > 100) rim[i] = b;
         continue;
       }
       // Coral: red past green past blue, its hue under ~28° (a yellow balloon's is ~55°, a pink one's past 330°).
@@ -355,6 +415,28 @@ const labAB = (r: number, g: number, b: number) => {
     }
   }
   if (!near) rim.set(grow(rim, 1, (i) => { const hue = at(i, 0) > at(i, 1) && at(i, 1) >= at(i, 2) ? (60 * (at(i, 1) - at(i, 2))) / (at(i, 0) - at(i, 2) || 1) : 99; return filled[i] < 0 && chroma(i) > 40 && hue < 32; }));
+  // The Wavy + Shimmer's board face runs out to its rim, wider than its guide (a white band showed between the
+  // board's colour and the rim's, 2026-11-02): what the board and its rim close in is board.
+  if (notBalloon && near) {
+    const wall = rim.slice();
+    for (let k = 0; k < 2; k++) wall.set(grow(wall, 1, () => true));
+    const shut = (i: number) => filled[i] >= 0 || wall[i] >= 0;
+    const out = new Uint8Array(N), stack: number[] = [];
+    for (let i = 0; i < N; i++) if (!near[i] && !shut(i)) { out[i] = 1; stack.push(i); }
+    while (stack.length) {
+      const k = stack.pop()!, x = k % W;
+      for (const j of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, k - W, k + W]) {
+        if (j < 0 || j >= N || out[j] || shut(j)) continue;
+        out[j] = 1; stack.push(j);
+      }
+    }
+    let n = 0;
+    for (let i = 0; i < N; i++) if (near[i] === 2 && !out[i] && !shut(i) && !notBalloon[i]) {
+      // The board whose rim is nearest (the rim's own index).
+      filled[i] = rim.find((v) => v >= 0) ?? 0; n++;
+    }
+    console.log(`board face out to its rim: ${n} px`);
+  }
   if (RIM.has(setup)) {
     let sl = 0, n = 0;
     for (let i = 0; i < N; i++) if (rim[i] >= 0) { sl += lum(i); n++; }
@@ -381,7 +463,6 @@ const labAB = (r: number, g: number, b: number) => {
   // Balloon by balloon (a SAM 2 segmentation next to the shot, <setup>-segs.png, id = R + G * 256): each balloon
   // takes the family most of its points have, highlights and shade too, so no balloon is repainted in patches
   // (2026-11-02, later: the AI-recoloured Wavy shots). Segments too big for a balloon (wall, floor, board) are left.
-  const segsFile = path.join(dir, `${setup}-segs.png`);
   if (theme && existsSync(segsFile)) {
     const sg = await sharp(segsFile).removeAlpha().resize(W, H, { kernel: "nearest" }).raw().toBuffer();
     const id = (i: number) => sg[i * 3] + sg[i * 3 + 1] * 256;

@@ -40,6 +40,7 @@ import TableStep from "@/components/builder/table/TableStep";
 import BackdropIntro from "@/components/builder/decor/BackdropIntro";
 import TablePreview, { type TableRenderJob } from "@/components/builder/table/TablePreview";
 import AdultTableStep from "@/components/builder/table/AdultTableStep";
+import FinishedDesigns from "@/components/builder/FinishedDesigns";
 import WelcomeStep from "@/components/builder/welcome/WelcomeStep";
 import AdultTableSketch from "@/components/studio/table/AdultTableSketch";
 import WelcomePreview from "@/components/builder/welcome/WelcomePreview";
@@ -378,6 +379,15 @@ export default function ConfigurePage() {
     setDecorPart("welcome");
   };
   const finishAdults = () => { if (config.adultTable) setAdultTable({ ...config.adultTable, done: true }); toWelcome(); };
+  // 2026-11-02 (owner: "adult table setup skip edemiyorum"): no grown-ups' table, asked or not, kept to come back to.
+  const skipAdults = () => { setAdultTable({ ...(config.adultTable ?? defaultAdultTable(themeById(config.theme) ?? THEMES[0])), enabled: false, done: false }); setDecorPart("welcome"); };
+  // The whole table setup finished from anywhere in it, on to the welcome board ("finalize … sonrasında da
+  // welcome board için olmalı aynı şekilde buton"): the kids' table finished, the grown-ups' too or skipped.
+  const finishTables = () => {
+    if (config.table?.enabled) setTable({ ...config.table, done: true });
+    if (config.adultTable?.enabled) setAdultTable({ ...config.adultTable, done: true });
+    toWelcome();
+  };
   const toPackage = () => {
     if (!config.welcomeBoard) setWelcomeBoard({ ...defaultWelcomeBoard(themeById(config.theme) ?? THEMES[0]), enabled: false });
     goToStep(3);
@@ -640,7 +650,7 @@ export default function ConfigurePage() {
                 stylePieceId={stylePieceId} setStylePieceId={setStylePieceId}
                 onGenerate={triggerDecorGenerateRender} renderReady={decorRenderReady}
                 hasRender={finalRenderState.hasRender} generating={finalRenderState.generating}
-                onContinue={() => setDecorPart("table")} />
+                onContinue={() => setDecorPart("table")} continueBlocked={archUnsized} />
             )}
             {onTable && (
               // The two tables, the grown-ups' only once the kids' is finished or skipped.
@@ -655,11 +665,14 @@ export default function ConfigurePage() {
               </div>
             )}
             {onKids && (
-              <TableStep config={config} setTable={setTable} onFinish={finishKids} />
+              <TableStep config={config} setTable={setTable} onFinish={finishKids} onFinishTables={finishTables} />
             )}
-            {onAdults && <AdultTableStep config={config} setAdultTable={setAdultTable} onFinish={finishAdults} />}
+            {onAdults && <AdultTableStep config={config} setAdultTable={setAdultTable} onFinish={finishAdults} onSkip={skipAdults} />}
             {onWelcome && <WelcomeStep config={config} setWelcomeBoard={setWelcomeBoard} onFinish={finishWelcome} />}
 
+            {/* 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
+            {(step === 3 || step === 6) && <FinishedDesigns config={config}
+              renderUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl : null} />}
             {step === 3 && <PackageStep config={config} setServicePackage={setServicePackage} />}
 
             {step === 4 && <AddOnsStep config={config} toggleAddOn={toggleAddOn} setAddOnOption={setAddOnOption} />}

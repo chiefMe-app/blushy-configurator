@@ -16,7 +16,8 @@ import { useId, useLayoutEffect, useRef, useState } from "react";
 import PIECES from "@/lib/studio/welcomePieces.json";
 import { tableFont, fontCss, asPrinted } from "@/lib/studio/tableFonts";
 import { boardArt, boardFace, boardWordsColour, type WelcomeBoard } from "@/lib/studio/welcomeBoard";
-import { GARLAND_LAYERS, balloonBody, garlandColours } from "@/lib/studio/welcomeGarland";
+import { setShot, useRecoloredBase } from "@/components/design/LiveSketch";
+import { wavyBoardPath, wavyBorderColor, wavyFacePath } from "@/lib/wavyBoard";
 
 const rgb = (hex: string) => { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
 const isLight = (hex: string) => { const [r, g, b] = rgb(hex); return (0.3 * r + 0.59 * g + 0.11 * b) / 255 > 0.75; };
@@ -247,35 +248,6 @@ function Roses({ x, y, width, turn, mirror }: { x: number; y: number; width: num
   );
 }
 
-/**
- * A garland layer (grey light and shade, its balloons' own colour at BODY) in a colour: multiplied by it, its
- * shine kept white. `grey` first takes the colour out (the chrome, photographed with the room's tints in it).
- */
-/** How light a balloon's own colour may be, its shine above it (the photo's white balloons are at 0.88). */
-const MAX_BODY = 0.88;
-function GarlandTint({ id, colour: picked, gain = 1 / 0.86, grey }: { id: string; colour: string; gain?: number; grey?: boolean }) {
-  const colour = grey ? picked : balloonBody(picked);
-  // How white its shine goes: a dark balloon's shine is small (whitened as much as a pale one's, it went grey).
-  const [r, g, b] = rgb(colour), lum = (0.3 * r + 0.59 * g + 0.11 * b) / 255, a = (0.55 / 0.14) * (0.25 + 0.75 * lum);
-  // A white or near-white balloon is photographed a little grey, its shine the only white (at white itself,
-  // a balloon's whole lit half was flat white, with a hard edge).
-  const k = Math.min(1, MAX_BODY / Math.max(lum, 0.01)), body = `rgb(${[r, g, b].map((v) => Math.round(v * k)).join(",")})`;
-  // And its shade softer: a pale balloon's shadows as deep as a lilac one's read as grey, or as silver.
-  const soft = grey ? 1 : 1 - 0.35 * Math.min(1, Math.max(0, (lum - 0.6) / 0.35)), m = gain * soft, o = gain * (1 - soft) * 0.86;
-  return (
-    <filter id={id} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
-      {grey && <feColorMatrix in="SourceGraphic" type="saturate" values="0" result="src" />}
-      <feColorMatrix in={grey ? "src" : "SourceGraphic"} type="matrix" values={`${f3(m)} 0 0 0 ${f3(o)} 0 ${f3(m)} 0 0 ${f3(o)} 0 0 ${f3(m)} 0 ${f3(o)} 0 0 0 1 0`} result="lit" />
-      <feFlood floodColor={grey ? colour : body} result="c" />
-      <feComposite in="c" in2="lit" operator="arithmetic" k1={1} k2={0} k3={0} k4={0} result="t" />
-      {/* Its shine: lighter than the balloon's own colour, a little whiter, smoothly (a sharp cut showed as pale patches). */}
-      <feColorMatrix in={grey ? "src" : "SourceGraphic"} type="matrix" values={`0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 ${f3(0.299 * a)} ${f3(0.587 * a)} ${f3(0.114 * a)} 0 ${f3(-0.86 * a)}`} result="hi" />
-      <feComposite in="hi" in2="t" operator="over" result="all" />
-      <feComposite in="all" in2="SourceAlpha" operator="in" />
-    </filter>
-  );
-}
-
 /** A line's size measured at its nominal font size: width, and how far it reaches above and below its baseline. */
 interface Metric { w: number; asc: number; desc: number }
 
@@ -323,15 +295,22 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
   const garland = board.garnish === "balloons" || board.garnish === "both";
   const flowers = board.garnish === "flowers" || board.garnish === "both";
   const palette = [theme.accent, ...(theme.balloonColors ?? []), ...(theme.backdropColors ?? [])];
+  // The party's balloons, as the backdrop's sketch reads them.
+  const palette0 = balloons?.length ? balloons : theme.balloonColors ?? [];
 
-  const shape = board.shape === "arch"
+  // A wavy board (2026-11-02): the Wavy Backdrop's outline, its face printed inside a rim in the rim's colour.
+  const wavy = board.shape === "wavy";
+  const outline = board.shape === "arch"
     ? `M0,${top + h}L0,${top + w / 2}A${w / 2},${w / 2} 0 0 1 ${w},${top + w / 2}L${w},${top + h}Z`
     : board.shape === "round"
       ? `M0,${cy}A${w / 2},${w / 2} 0 1 1 ${w},${cy}A${w / 2},${w / 2} 0 1 1 0,${cy}Z`
-      : `M0,${top}H${w}V${top + h}H0Z`;
+      : wavy ? wavyBoardPath(0, top, w, h) : `M0,${top}H${w}V${top + h}H0Z`;
+  const shape = wavy ? wavyFacePath(0, top, w, h) : outline;
+  const rim = wavy ? wavyBorderColor(board.rimColor, balloons?.length ? balloons : theme.balloonColors ?? [], theme.accent) : null;
   // Where the words may go: inside the shape, clear of the corners (and of a garland).
   const space = board.shape === "round"
     ? { y0: top + h * 0.27, y1: top + h * 0.75, maxW: w * 0.66 }
+    : wavy ? { y0: top + h * 0.2, y1: top + h * 0.8, maxW: w * 0.72 }
     : board.shape === "arch"
       ? { y0: top + w * 0.4, y1: top + h * 0.84, maxW: w * 0.8 }
       : { y0: top + h * 0.2, y1: top + h * 0.82, maxW: w * 0.8 };
@@ -339,6 +318,7 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
   // The roses: where their fullest point sits on each corner, and the way they trail along the edge.
   const corner = board.shape === "rectangle"
     ? { tl: [3 * u, top + 3 * u, 8], br: [w - 3 * u, top + h - 4 * u, -8] }
+    : wavy ? { tl: [w * 0.13, top + w * 0.13, 8], br: [w * 0.87, top + h - w * 0.13, -8] }
     : board.shape === "arch"
       ? { tl: [cx - w * 0.33, top + w * 0.16, -42], br: [w - 3 * u, top + h - 4 * u, -8] }
       : { tl: [cx - w * 0.36, cy - w * 0.33, -45], br: [cx + w * 0.38, cy + w * 0.34, -45] };
@@ -399,11 +379,16 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
   // The garland (2026-10-31, the owner: "burdaki balonlar iyi gözüküyordu"): the one in the step's own "Balloon
   // garland" photo, lifted out of it — from the floor up the board's right side and arching over its top, where
   // that photo has it: its top two fifths of the board's width above the board, the board's right edge 47% across it.
-  const gp = PIECES["garland-pastel"];
-  // In the party's own balloon colours (2026-11-01): the photo's balloons, each colour tinted live.
-  const tints = garlandColours(balloons?.length ? balloons : theme.balloonColors ?? []);
+  // 2026-11-02 (the owner: "balon renkleri doğru değil silver yoktu ve boyanmış gibi duruyor", "backdropta ne
+  // seçildiyse balon welcomeboardda da aynı olmalı"): the backdrop's own balloons — the Single Arch's garland
+  // from its balloon set's photo (scripts/welcome/garland-sets.ts), repainted to the party's colours exactly as
+  // the backdrop's sketch is, from the floor up the board's right edge and arching over its top.
+  const shot = setShot(theme.id, palette0);
+  const gName = `garland-${shot.folder}` as keyof typeof PIECES;
+  const gp = PIECES[gName] as { w: number; h: number; edge: number };
+  const gSrc = useRecoloredBase(garland ? piece(gName) : null, `/design/welcome/pieces/${gName}-families.png`, palette0, shot.asShot, 50);
   const gTop = top - w * 0.4, gH = floor + 2 - gTop, gW = (gH * gp.w) / gp.h;
-  const gX = w * (board.shape === "round" ? 0.97 : 1) - gW * 0.468;
+  const gX = w * (board.shape === "round" ? 0.97 : 1) - gW * gp.edge;
   const right = garland ? Math.max(w + 22, gX + gW + 3) : w + 22;
   const bottom = Math.min(floor + 8, photoY + photoH);
   // The garland rises above the photo: the picture starts higher, and the photo's own wall reaches up to it.
@@ -419,8 +404,6 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
         {/* The garland's soft shadow on the wall behind it. */}
         <filter id={`${uid}-wall`} x="-20%" y="-10%" width="140%" height="120%"><feDropShadow dx={1.6} dy={1.2} stdDeviation={1.8} floodColor="#4a3328" floodOpacity={0.22} /></filter>
         <filter id={`${uid}-soft`} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation={1.6} /></filter>
-        {garland && GARLAND_LAYERS.map((l) => <GarlandTint key={l.id} id={`${uid}-g-${l.id}`} colour={tints.latex[l.id]} />)}
-        {garland && tints.chrome && <GarlandTint id={`${uid}-g-chrome`} colour={tints.chrome} gain={1.25} grey />}
         <linearGradient id={`${uid}-gloss`} x1="0" y1="0" x2="1" y2="0.6">
           <stop offset="0.18" stopColor="#FFFFFF" stopOpacity={0} />
           <stop offset="0.26" stopColor="#FFFFFF" stopOpacity={0.38} />
@@ -458,7 +441,7 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
         <rect x={0} y={top} width={w} height={h} fill={art || board.design === "corners" ? "#FFFFFF" : board.colour} />
         {art && (
           // eslint-disable-next-line jsx-a11y/alt-text
-          <image data-part="art" href={art} x={cx - h / 2} y={cy - w / 2} width={h} height={w} preserveAspectRatio="xMidYMid slice" transform={`rotate(90 ${cx} ${cy})`} />
+          <image data-part="art" href={art} x={0} y={top} width={w} height={h} preserveAspectRatio="xMidYMid slice" />
         )}
         {board.design === "corners" && <PaintedCorners w={w} h={h} top={top} shape={board.shape} inks={paintInks(palette)} motif={cornerMotif(theme.id)} uid={uid} />}
       </g>
@@ -467,29 +450,27 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
         {texts[1] && <text ref={refs[1]} x={cx} y={f1(fit.base[1])} fontSize={f1(fit.size[1])} opacity={faded(board.name)} data-word="name" style={{ fontFamily: `${fontCss(font)}, Georgia, serif`, fontWeight: font.weight }}>{texts[1]}</text>}
         {texts[2] && <text ref={refs[2]} x={cx} y={f1(fit.base[2])} fontSize={f1(fit.size[2])} letterSpacing={f1(fit.size[2] * 0.11)} opacity={faded(board.line)} data-word="line" style={{ fontFamily: "var(--bz-sans), 'DM Sans', sans-serif", fontWeight: 600 }}>{texts[2]}</text>}
       </g>
-      {shine && <path d={shape} fill={`url(#${uid}-gloss)`} pointerEvents="none" />}
+      {/* A wavy board's rim (photographed white, as its face): in its colour, its light and shade through it. */}
+      {rim && <path data-part="rim" d={`${outline} ${shape}`} fillRule="evenodd" fill={rim} style={{ mixBlendMode: "multiply" }} />}
+      {shine && <path d={outline} fill={`url(#${uid}-gloss)`} pointerEvents="none" />}
       {flowers && <>
         <Roses x={corner.tl[0]} y={corner.tl[1]} width={w * 0.46} turn={corner.tl[2]} />
         {!garland && <Roses x={corner.br[0]} y={corner.br[1]} width={w * 0.4} turn={corner.br[2]} mirror />}
       </>}
       {garland && (
         <g data-part="balloons">
-          <ellipse cx={gX + gW * 0.66} cy={floor + 0.5} rx={gW * 0.36} ry={2.2} fill="#3b2a22" opacity={0.14} filter={`url(#${uid}-soft)`} />
-          {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <g data-part="garland" data-colours={GARLAND_LAYERS.map((l) => tints.latex[l.id]).join(" ")} filter={`url(#${uid}-wall)`}>
-            {[...GARLAND_LAYERS.map((l) => l.id), "chrome" as const].map((l) => (
-              // eslint-disable-next-line jsx-a11y/alt-text
-              <image key={l} href={piece(`garland-pastel-${l}`)} x={f1(gX)} y={f1(gTop)} width={f1(gW)} height={f1(gH)}
-                filter={l !== "chrome" || tints.chrome ? `url(#${uid}-g-${l})` : undefined} />
-            ))}
-          </g>
-          {/* With flowers too: roses tucked in at the arch's end and halfway down, as in the step's "Balloons & flowers" photo. */}
-          {flowers && [[0.03, 0.05], [0.36, 0.58]].map(([fx, fy], i) => (
+          <ellipse cx={gX + gW * 0.66} cy={floor + 0.5} rx={gW * 0.3} ry={2.2} fill="#3b2a22" opacity={0.14} filter={`url(#${uid}-soft)`} />
+          {gSrc && (
             // eslint-disable-next-line jsx-a11y/alt-text
-            <image key={i} data-part="garland-roses" href={piece("roses-trio")} x={f1(gX + gW * fx)} y={f1(gTop + gH * fy)} width={f1(w * 0.22)} height={f1((w * 0.22 * PIECES["roses-trio"].h) / PIECES["roses-trio"].w)} />
-          ))}
+            <image data-part="garland" data-set={shot.folder} href={gSrc} x={f1(gX)} y={f1(gTop)} width={f1(gW)} height={f1(gH)} filter={`url(#${uid}-wall)`} />
+          )}
         </g>
       )}
+      {/* With flowers too: roses tucked in at the arch's end and halfway down, as in the step's "Balloons & flowers" photo. */}
+      {garland && flowers && [[0.04, 0.04], [0.5, 0.55]].map(([fx, fy], i) => (
+        // eslint-disable-next-line jsx-a11y/alt-text
+        <image key={i} data-part="garland-roses" href={piece("roses-trio")} x={f1(gX + gW * fx)} y={f1(gTop + gH * fy)} width={f1(w * 0.22)} height={f1((w * 0.22 * PIECES["roses-trio"].h) / PIECES["roses-trio"].w)} />
+      ))}
     </svg>
   );
 }

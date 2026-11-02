@@ -8,9 +8,8 @@ import { fromDraft, toDraft } from "@/lib/draft";
 import { NONE } from "@/lib/studio/tableCatalog";
 import { defaultTableSetup, readTableSetup } from "@/lib/studio/tableSetup";
 import { ADULT_ITEMS, ADULT_SECTIONS, adultCounts, adultPriceLines, adultTotal, defaultAdultTable, readAdultTable } from "@/lib/studio/adultTable";
-import { boardArt, boardFace, cleanBoardText, defaultWelcomeBoard, readWelcomeBoard, welcomePriceLines, welcomeTotal } from "@/lib/studio/welcomeBoard";
+import { BOARD_DESIGNS, BOARD_SHAPES, boardArt, boardFace, cleanBoardText, defaultWelcomeBoard, readWelcomeBoard, welcomePriceLines, welcomeTotal } from "@/lib/studio/welcomeBoard";
 import { paintInks, stackWords } from "@/components/studio/WelcomeBoardArt";
-import { GARLAND_LAYERS, balloonBody, garlandColours } from "@/lib/studio/welcomeGarland";
 import PIECES from "@/lib/studio/welcomePieces.json";
 import { designCards, joinParty, readStoredTable, splitDesign, TABLE_ITEM, WELCOME_ITEM, type SavedItem } from "@/lib/savedDesigns";
 
@@ -94,11 +93,11 @@ describe("the welcome board", () => {
     expect(paintInks(["#FFFFFF", "#C7C9C7"])).toHaveLength(3);
   });
   it("uses the theme's own art, or none for a plain board or painted corners", () => {
-    expect(boardArt({ design: "watercolour" }, "frozen")).toBe("/design/table/placemats/frozen/watercolour.webp");
+    expect(boardArt({ design: "watercolour" }, "frozen")).toBe("/design/table/placemats/frozen/watercolour-portrait.webp");
     expect(boardArt({ design: "plain" }, "frozen")).toBeNull();
     expect(boardArt({ design: "corners" }, "frozen")).toBeNull();
-    // Every theme has both pictures.
-    for (const t of THEMES) for (const design of ["watercolour", "sparkle"] as const) expect(existsSync(`public${boardArt({ design }, t.id)}`), `${t.id} ${design}`).toBe(true);
+    // Every theme has its upright picture (the Sparkle design is gone, 2026-11-02).
+    for (const t of THEMES) for (const design of ["watercolour"] as const) expect(existsSync(`public${boardArt({ design }, t.id)}`), `${t.id} ${design}`).toBe(true);
   });
   it("keeps the words clean and short, and reads back safely", () => {
     expect(cleanBoardText("<b>Arya's</b>   party")).toBe("bArya'sb party");
@@ -120,35 +119,29 @@ describe("the welcome board's photo pieces", () => {
       expect(floor!).toBeGreaterThan(y1);
       expect(floor!).toBeLessThan(1);
     }
-    // One garland for every theme: the one in the step's own "Balloon garland" photo (the owner, 2026-10-31).
-    expect(all["garland-pastel"].h).toBeGreaterThan(all["garland-pastel"].w);
-    // Split into its four latex colours and its chrome, to be tinted to the party's colours (2026-11-01).
-    expect(Object.keys(all).filter((k) => k.startsWith("garland-"))).toEqual(["garland-pastel", ...[...GARLAND_LAYERS.map((l) => l.id), "chrome"].sort().map((l) => `garland-pastel-${l}`)]);
+    // The wavy board's scenes too (2026-11-02), drawn where its guide put it.
+    expect(all["scene-wavy-easel"].face).toEqual(all["scene-wavy-easel"].face!.map((v) => +v.toFixed(4)));
+    // The garland is the backdrop's own (2026-11-02, "backdropta ne seçildiyse balon welcomeboardda da aynı
+    // olmalı"): the Single Arch's, one per balloon-set shot, each with its families map, the board's edge in it.
+    const sets = ["frozen-bright", "frozen-pastel", "unicorn-bright", "unicorn-pastel"];
+    expect(Object.keys(all).filter((k) => k.startsWith("garland-"))).toEqual(sets.map((s) => `garland-${s}`));
+    for (const s of sets) {
+      const g = all[`garland-${s}`] as { w: number; h: number; edge: number };
+      expect(g.h).toBeGreaterThan(g.w);
+      expect(g.edge > 0.3 && g.edge < 0.6, s).toBe(true);
+      expect(existsSync(`public/design/welcome/pieces/garland-${s}-families.png`), s).toBe(true);
+    }
   });
-  it("the garland takes the party's balloon colours: pastels where they were, the chrome gold only with gold", () => {
-    const frozen = garlandColours(themeById("frozen")!.balloonColors);
-    expect(Object.values(frozen.latex).every((c) => themeById("frozen")!.balloonColors.includes(c))).toBe(true);
-    expect(frozen.latex.white).toMatch(/^#(FFFFFF|F0F4F8)$/);
-    expect(frozen.chrome).toBeNull();
-    // Its white and its ice white are one colour: once white, not half the garland (2026-11-01).
-    expect(Object.values(frozen.latex).filter((c) => c === "#FFFFFF" || c === "#F0F4F8")).toHaveLength(1);
-    // Its three colours spread evenly: no colour on more than two of the four layers.
-    for (const c of Object.values(frozen.latex)) expect(Object.values(frozen.latex).filter((x) => x === c).length).toBeLessThanOrEqual(2);
-    // Pale pastels drawn as deep as the photo's balloons, so each reads apart (2026-11-01); white, creams and
-    // darker colours as they are.
-    expect(balloonBody("#BAE6FD")).toBe("#A8D7F0");
-    expect(balloonBody("#DCD7F2")).toBe("#BCB2E6");
-    for (const c of ["#FFFFFF", "#F0F4F8", "#F5EDD6", "#FEF08A", "#EF4444", "#C7C9C7"]) expect(balloonBody(c)).toBe(c);
-    // The theme's pastels where the photo has them.
-    expect(garlandColours(["#FFFFFF", "#F8BBD0", "#BAE6FD", "#DDD6FE"]).latex).toEqual({ white: "#FFFFFF", pink: "#F8BBD0", blue: "#BAE6FD", lilac: "#DDD6FE" });
-    // The customer's own picks: every colour used, a short list going round again; gold chrome when picked.
-    const dino = garlandColours(["#15803D", "#84CC16", "#D4A017"]);
-    expect(new Set(Object.values(dino.latex))).toEqual(new Set(["#15803D", "#84CC16"]));
-    expect(dino.chrome).toBe("#D4A017");
-    expect(new Set(Object.values(garlandColours(["#EF4444"]).latex))).toEqual(new Set(["#EF4444"]));
-    // Silver chrome stays as photographed; nothing usable falls back to the photo's own colours.
-    expect(garlandColours(["#C7C9C7", "#FF1DCE"]).chrome).toBeNull();
-    expect(garlandColours([]).latex.pink).toBe("#EFB2B9");
+  it("the wavy board is a shape like the others, in every size, its rim colour kept", () => {
+    expect(BOARD_SHAPES.map((s) => s.id)).toContain("wavy");
+    const b = readWelcomeBoard({ shape: "wavy", size: "large", rimColor: "#FFD1A4" }, frozen)!;
+    expect(b).toMatchObject({ shape: "wavy", size: "large", rimColor: "#FFD1A4" });
+    expect(boardFace(b)).toMatchObject({ w: 80, h: 120 });
+    expect(readWelcomeBoard({ shape: "wavy", rimColor: "pink" }, frozen)!.rimColor).toBeUndefined();
+    expect(welcomePriceLines({ ...b, enabled: true })[0].label).toBe("Welcome board, wavy Large 80 × 120 cm");
+    // The Sparkle face is gone (2026-11-02, "sparkle versiyonunu beğenmedim"): a stored one reads back as the default.
+    expect(BOARD_DESIGNS.map((d) => d.id)).not.toContain("sparkle");
+    expect(readWelcomeBoard({ design: "sparkle" }, frozen)!.design).toBe("plain");
   });
 });
 

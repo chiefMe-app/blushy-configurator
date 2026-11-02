@@ -8,6 +8,7 @@ import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
 import { BOARD_DESIGNS, BOARD_GARNISHES, BOARD_MATERIALS, BOARD_SHAPES, BOARD_SIZES, BOARD_STANDS, MAX_BOARD_TEXT, boardArt, boardFace, boardWordsColour, cleanBoardText, defaultWelcomeBoard, welcomePhoto, welcomeTotal, type WelcomeBoard } from "@/lib/studio/welcomeBoard";
 import { PaintedCorners, cornerMotif, paintInks } from "@/components/studio/WelcomeBoardArt";
+import { wavyBoardPath, wavyBorderColor } from "@/lib/wavyBoard";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
 
 export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
@@ -78,7 +79,9 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
             {BOARD_SIZES.map((s) => {
               const face = boardFace({ size: s.id, shape: b.shape });
               return card(b.size === s.id, () => set({ size: s.id }),
-                <svg viewBox="0 0 100 130" aria-hidden="true">{b.shape === "round"
+                <svg viewBox="0 0 100 130" aria-hidden="true">{b.shape === "wavy"
+                  ? <path d={wavyBoardPath(50 - face.w * 0.45, 125 - face.h * 0.95, face.w * 0.9, face.h * 0.95)} fill="#fff" stroke="#5a4950" strokeWidth={1.5} />
+                  : b.shape === "round"
                   ? <circle cx={50} cy={125 - face.h * 0.475} r={face.w * 0.45} fill="#fff" stroke="#5a4950" strokeWidth={1.5} />
                   : <rect x={50 - face.w * 0.45} y={125 - face.h * 0.95} width={face.w * 0.9} height={face.h * 0.95} rx={b.shape === "arch" ? face.w * 0.45 : 2} fill="#fff" stroke="#5a4950" strokeWidth={1.5} />}</svg>,
                 s.name, face.note, `AED ${formatAED(s.price)}`, s.id);
@@ -88,6 +91,9 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
         <div className="bz-tb-item">
           <h3>Shape</h3>
           {photoCards("Board shape", "shape", BOARD_SHAPES, b.shape, (shape) => set({ shape }), "welcome-shape")}
+          {/* The wavy board's rim, as the Wavy Backdrop's: the party's first balloon colour until one is picked. */}
+          {b.shape === "wavy" && swatchRow("Rim colour", wavyBorderColor(b.rimColor, config.decor.balloonColors ?? [], theme.accent),
+            Array.from(new Set([...(config.decor.balloonColors ?? []).map((h) => h.toUpperCase()), ...swatches])), (hex) => set({ rimColor: hex }), "welcome-rim-colour")}
         </div>
       </section>
 

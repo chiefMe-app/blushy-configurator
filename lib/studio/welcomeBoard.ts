@@ -21,6 +21,9 @@ export const BOARD_SHAPES = [
   { id: "rectangle", name: "Rectangle", note: "Straight edges" },
   { id: "arch", name: "Arch top", note: "A rounded top" },
   { id: "round", name: "Round", note: "A circle" },
+  // 2026-11-02 (the owner: "wavy shape koyalım welcome boarda backdroptaki aynı wavynin a1 size ve diğer
+  // sizelarını yapalım"): the Wavy Backdrop's board, in the board sizes, on its coloured rim.
+  { id: "wavy", name: "Wavy", note: "Waves on a coloured rim, like the Wavy Backdrop" },
 ] as const;
 export type BoardShape = (typeof BOARD_SHAPES)[number]["id"];
 
@@ -28,7 +31,6 @@ export type BoardShape = (typeof BOARD_SHAPES)[number]["id"];
 export const BOARD_DESIGNS = [
   { id: "corners", name: "Painted corners", note: "Soft painted shapes in the corners, on white" },
   { id: "watercolour", name: "Watercolour", note: "The theme's soft wash, shapes in the corners" },
-  { id: "sparkle", name: "Sparkle", note: "The theme's glittering design" },
   { id: "plain", name: "Plain colour", note: "One colour you pick" },
 ] as const;
 export type BoardDesign = (typeof BOARD_DESIGNS)[number]["id"];
@@ -74,6 +76,8 @@ export interface WelcomeBoard {
   font: string;
   /** The words' colour, once the customer picks one; the theme's accent until then. */
   textColor?: string;
+  /** A wavy board's rim colour, once the customer picks one; the party's first balloon colour until then (as the Wavy Backdrop's). */
+  rimColor?: string;
   /** The customer pressed Finish (they may still change it). */
   done?: boolean;
 }
@@ -106,8 +110,12 @@ export function boardFace(b: Pick<WelcomeBoard, "size" | "shape">) {
   return b.shape === "round" ? { w: s.w, h: s.w, note: `Ø ${s.w} cm` } : { w: s.w, h: s.h, note: s.note };
 }
 export const boardWordsColour = (b: Pick<WelcomeBoard, "textColor">, theme: { accent: string }) => b.textColor ?? theme.accent;
-/** The theme's art for the board's face, if it has one (painted corners are drawn, not a picture). */
-export const boardArt = (b: Pick<WelcomeBoard, "design">, themeId: string) => (b.design === "plain" || b.design === "corners" ? null : `/design/table/placemats/${themeId}/${b.design}.webp`);
+/**
+ * The theme's art for the board's face, if it has one (painted corners are drawn, not a picture): the placemat's
+ * watercolour laid out upright for a portrait board (scripts/welcome/portrait-art.ts; 2026-11-02, the owner:
+ * "rainbowlar saat yönünün tersine 90 derece dönmesi lazım" — turned a quarter, its pictures lay on their sides).
+ */
+export const boardArt = (b: Pick<WelcomeBoard, "design">, themeId: string) => (b.design === "plain" || b.design === "corners" ? null : `/design/table/placemats/${themeId}/${b.design}-portrait.webp`);
 
 export function welcomePriceLines(b: WelcomeBoard): { label: string; amount: number }[] {
   if (!b.enabled) return [];
@@ -115,7 +123,7 @@ export function welcomePriceLines(b: WelcomeBoard): { label: string; amount: num
   const material = BOARD_MATERIALS.find((m) => m.id === b.material)!;
   const stand = BOARD_STANDS.find((s) => s.id === b.stand)!;
   const garnish = BOARD_GARNISHES.find((g) => g.id === b.garnish) ?? BOARD_GARNISHES[0];
-  const lines = [{ label: `Welcome board, ${b.shape === "round" ? "round" : size.name} ${boardFace(b).note}`, amount: size.price }];
+  const lines = [{ label: `Welcome board, ${b.shape === "round" ? "round" : b.shape === "wavy" ? `wavy ${size.name}` : size.name} ${boardFace(b).note}`, amount: size.price }];
   if (material.extra) lines.push({ label: `${material.name} board`, amount: material.extra });
   if (stand.extra) lines.push({ label: stand.name, amount: stand.extra });
   if (garnish.extra) lines.push({ label: `${garnish.name} on the board`, amount: garnish.extra });
@@ -146,6 +154,7 @@ export function readWelcomeBoard(raw: unknown, theme: { backdropColors: string[]
     line: cleanBoardText(r.line),
     font: oneOf(TABLE_FONTS, r.font, base.font),
     ...(typeof r.textColor === "string" && HEX.test(r.textColor) ? { textColor: r.textColor } : {}),
+    ...(typeof r.rimColor === "string" && HEX.test(r.rimColor) ? { rimColor: r.rimColor } : {}),
     ...(r.done === true ? { done: true } : {}),
   };
 }

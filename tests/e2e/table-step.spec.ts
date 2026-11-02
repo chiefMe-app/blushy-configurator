@@ -169,7 +169,7 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   await page.getByRole("radiogroup", { name: "Board design" }).getByRole("radio", { name: /Painted corners/ }).click();
   await expect(board.locator("[data-part=painted-corners]")).toHaveCount(1);
   await page.getByRole("radiogroup", { name: "Board design" }).getByRole("radio", { name: /Watercolour/ }).click();
-  await expect(board.locator("[data-part=art]")).toHaveAttribute("href", "/design/table/placemats/frozen/watercolour.webp");
+  await expect(board.locator("[data-part=art]")).toHaveAttribute("href", "/design/table/placemats/frozen/watercolour-portrait.webp");
   await page.getByRole("radiogroup", { name: "Board design" }).getByRole("radio", { name: /Plain colour/ }).click();
   await expect(board.locator("[data-part=art]")).toHaveCount(0);
   await expect(page.getByTestId("welcome-colour")).toBeVisible();
@@ -186,12 +186,13 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   await expect(board.locator("[data-part=flowers]")).toHaveCount(1);
   // A real photo of the board on its easel, the print laid onto it, the real garland with roses in it (2026-10-31).
   await expect(board.locator("[data-part=scene]")).toHaveAttribute("href", /scene-round-easel/);
-  // In the party's balloon colours, each of the photo's four latex colours tinted live (2026-11-01).
-  await expect(board.locator("[data-part=garland] image")).toHaveCount(5);
-  await expect(board.locator("[data-part=garland] image").first()).toHaveAttribute("href", /garland-pastel-white/);
-  expect((await board.locator("[data-part=garland]").getAttribute("data-colours"))!.split(" ").every((c) => /^#[0-9A-F]{6}$/i.test(c))).toBe(true);
+  // The backdrop's own balloons (2026-11-02): the Single Arch's garland from the party's balloon-set shot.
+  await expect(board.locator("[data-part=garland]")).toHaveCount(1);
+  await expect(board.locator("[data-part=garland]")).toHaveAttribute("data-set", /^(unicorn|frozen)-(pastel|bright)$/);
   await expect(board.locator("[data-part=garland-roses]")).toHaveCount(2);
   for (const src of await board.locator("image").evaluateAll((l) => Array.from(new Set(l.map((i) => i.getAttribute("href")!))))) {
+    // A repainted garland is drawn from a blob made in the page.
+    if (src.startsWith("blob:")) continue;
     expect((await page.request.get(src)).status(), src).toBe(200);
   }
   expect(aed(await page.getByTestId("welcome-total").locator("b").textContent())).toBe(sum + (320 - 180) + 150 + (380 - 250));

@@ -47,8 +47,11 @@ async function scene(name: string, file: string) {
   };
   // Left and right edges along the board's middle; its top across its middle (an arch's or circle's top point).
   const mid: [number, number] = [py(TOP + face.h * 0.35), py(TOP + face.h * 0.65)];
-  const x0 = edge(px(0), mid, true), x1 = edge(px(face.w), mid, true);
-  const y0 = edge(py(TOP), [px(face.w * 0.4), px(face.w * 0.6)], false);
+  // A wavy board's edges wave across the search, and its face layer's edge is as strong as its own (2026-11-02):
+  // it is where the drawing put it (Seedream keeps the drawing's geometry; checked on the photos).
+  const wavy = shape === "wavy";
+  const x0 = wavy ? px(0) : edge(px(0), mid, true), x1 = wavy ? px(face.w) : edge(px(face.w), mid, true);
+  const y0 = wavy ? py(TOP) : edge(py(TOP), [px(face.w * 0.4), px(face.w * 0.6)], false);
   const y1 = y0 + ((x1 - x0) * face.h) / face.w;
   writeFileSync(path.join(OUT, `${name}.webp`), await sharp(data, { raw: { width: W, height: H, channels: 3 } }).webp({ quality: 84 }).toBuffer());
   // And where the floor is that the easel (or a garland) stands on.

@@ -1,32 +1,23 @@
 {
- "garland-pastel": {
-  "w": 589,
-  "h": 900
+ "garland-frozen-bright": {
+  "w": 575,
+  "h": 891,
+  "edge": 0.4383
  },
- "garland-pastel-blue": {
-  "w": 589,
-  "h": 900,
-  "share": 0.0847
+ "garland-frozen-pastel": {
+  "w": 575,
+  "h": 891,
+  "edge": 0.4383
  },
- "garland-pastel-chrome": {
-  "w": 589,
-  "h": 900,
-  "share": 0.0527
+ "garland-unicorn-bright": {
+  "w": 575,
+  "h": 891,
+  "edge": 0.4383
  },
- "garland-pastel-lilac": {
-  "w": 589,
-  "h": 900,
-  "share": 0.0828
- },
- "garland-pastel-pink": {
-  "w": 589,
-  "h": 900,
-  "share": 0.1107
- },
- "garland-pastel-white": {
-  "w": 589,
-  "h": 900,
-  "share": 0.1286
+ "garland-unicorn-pastel": {
+  "w": 575,
+  "h": 891,
+  "edge": 0.4383
  },
  "roses-spray": {
   "w": 720,
@@ -99,6 +90,28 @@
    0.31,
    0.6614,
    0.6964
+  ],
+  "floor": 0.8667
+ },
+ "scene-wavy-easel": {
+  "w": 1400,
+  "h": 1400,
+  "face": [
+   0.2778,
+   0.0889,
+   0.6667,
+   0.6444
+  ],
+  "floor": 0.8667
+ },
+ "scene-wavy-none": {
+  "w": 1400,
+  "h": 1400,
+  "face": [
+   0.2778,
+   0.1444,
+   0.6667,
+   0.7
   ],
   "floor": 0.8667
  }

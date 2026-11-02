@@ -12,9 +12,17 @@ import ExtrasTab from "@/components/builder/decor/ExtrasTab";
 export default function DecorStep(props: DecorStepProps) {
   const ctx = useDecorStep(props);
   const {
-    decorTab, setDecorTab, onGenerate, renderReady, hasRender, generating, onContinue, d, theme,
+    decorTab, setDecorTab, onGenerate, renderReady, hasRender, generating, onContinue, continueBlocked, d, theme,
     activeSetupTemplateId,
   } = ctx;
+  // 2026-11-02 (owner: "her seçim sonrası finalize the backdrop and skip to table setup"): on every tab, not
+  // only after Extras — the backdrop is finished when she says so; the tabs she skips keep their defaults.
+  const finish = (
+    <button type="button" className="bz-decor-cta" onClick={onContinue} disabled={continueBlocked} data-testid="finish-backdrop"
+      title={continueBlocked ? "Pick your arch's size first" : undefined}>
+      <span className="full">Finish the backdrop → Table setup</span><span className="short" aria-hidden="true">Finish → Table setup</span>
+    </button>
+  );
   return (
     <div>
       {/* == Compact decor head + the four tabs (2026-10-22 redesign) == */}
@@ -65,9 +73,12 @@ export default function DecorStep(props: DecorStepProps) {
       <div className="bz-decor-footer">
         <span>✓ Saved as you go</span>
         {decorTab < DECOR_TABS.length - 1 ? (
-          <button type="button" className="bz-decor-hint" onClick={() => setDecorTab(decorTab + 1)}>
-            Next up: {DECOR_TABS[decorTab + 1].name} →
-          </button>
+          <span className="bz-decor-actions">
+            <button type="button" className="bz-decor-hint" onClick={() => setDecorTab(decorTab + 1)}>
+              Next up: {DECOR_TABS[decorTab + 1].name} →
+            </button>
+            {finish}
+          </span>
         ) : (
           <span className="bz-decor-actions">
             {/* The Customized Themed set is its real photo: no render is made of it. */}
@@ -77,7 +88,7 @@ export default function DecorStep(props: DecorStepProps) {
                 {generating ? "Generating…" : hasRender ? "Regenerate render ✨" : "Generate render ✨"}
               </button>
             )}
-            <button type="button" className="bz-decor-cta" onClick={onContinue}>Next: Table setup →</button>
+            {finish}
           </span>
         )}
       </div>

@@ -3,12 +3,15 @@
 // değişebilir"): each board shape on its easel or on the wall, its face left
 // blank, in an empty room — the builder prints the customer's design and words
 // onto that face live. Each rendered once; scripts/welcome/scene-prepare.ts
-// finds the board in each scene. (The garland: scripts/welcome/garland-lift.mjs.)
+// finds the board in each scene. (The garland: scripts/welcome/garland-sets.ts.)
 // Paid (Seedream, $0.035 a picture): run only with the owner's approval.
 // node scripts/welcome/scene-render.mjs <projectDir> <outDir> [name,name…]
 import fs from "node:fs"; import path from "node:path";
 import sharp from "sharp";
 import { sceneFace, sceneFrame, TOP } from "./scene-geometry.mjs";
+// The wavy board's own outline (run with `npx tsx`, which reads the TypeScript).
+import wavyBoard from "../../lib/wavyBoard.ts";
+const { wavyBoardPath, wavyFacePath } = wavyBoard;
 const [dir, out, only] = process.argv.slice(2);
 const env = fs.readFileSync(path.join(path.resolve(dir), ".env.local"), "utf8");
 const key = (env.match(/^FAL_KEY\s*=\s*"?([^"\r\n]+)"?/m) || [])[1];
@@ -19,7 +22,8 @@ function guide(shape, stand) {
   const wall = f.floor - (stand === "easel" ? 10 : 0);
   const board = shape === "arch"
     ? `M0,${TOP + h}L0,${TOP + w / 2}A${w / 2},${w / 2} 0 0 1 ${w},${TOP + w / 2}L${w},${TOP + h}Z`
-    : shape === "round" ? `M0,${TOP + h / 2}A${w / 2},${w / 2} 0 1 1 ${w},${TOP + h / 2}A${w / 2},${w / 2} 0 1 1 0,${TOP + h / 2}Z` : `M0,${TOP}H${w}V${TOP + h}H0Z`;
+    : shape === "round" ? `M0,${TOP + h / 2}A${w / 2},${w / 2} 0 1 1 ${w},${TOP + h / 2}A${w / 2},${w / 2} 0 1 1 0,${TOP + h / 2}Z`
+    : shape === "wavy" ? wavyBoardPath(0, TOP, w, h) : `M0,${TOP}H${w}V${TOP + h}H0Z`;
   const cx = w / 2;
   const easel = stand === "easel" ? `<g stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"><path d="M${cx},${TOP - 8}L${cx - 24},${f.floor}M${cx},${TOP - 8}L${cx + 24},${f.floor}M${cx},${TOP - 8}L${cx},${f.floor - 6}" /></g>` : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="1536" viewBox="${f.x} ${f.y} ${f.size} ${f.size}">
@@ -28,10 +32,13 @@ function guide(shape, stand) {
     <rect x="${f.x}" y="${wall - 3}" width="${f.size}" height="3" fill="#F7F3EF" />
     ${easel}
     <path d="${board}" fill="#FFFFFF" stroke="#BDB3AA" stroke-width="0.4" />
+    ${shape === "wavy" ? `<path d="${wavyFacePath(0, TOP, w, h)}" fill="#FFFFFF" stroke="#C9BFB5" stroke-width="0.35" />` : ""}
     ${stand === "easel" ? `<rect x="${cx - 30}" y="${TOP + h - 1}" width="60" height="4" fill="#FFFFFF" stroke="#C9BFB5" stroke-width="0.3" />` : ""}
   </svg>`;
 }
-const SHAPE_WORDS = { rectangle: "rectangular, portrait-format", arch: "arch-topped (a tall rectangle with a fully rounded top)", round: "perfectly round" };
+// 2026-11-02 (the owner: "wavy shape koyalım welcome boarda backdroptaki aynı wavynin"): the Wavy Backdrop's board, small.
+const SHAPE_WORDS = { rectangle: "rectangular, portrait-format", arch: "arch-topped (a tall rectangle with a fully rounded top)", round: "perfectly round",
+  wavy: "portrait-format wavy-edged (its sides and top running in soft, even, rounded waves, its bottom edge straight), two-layer (a slightly bigger white back layer showing as an even raised rim all round the face, exactly as drawn)" };
 const scenePrompt = (shape, stand) => [
   "Turn this flat drawing into a real photograph, keeping every shape exactly where it is and exactly as big as it is, the frame unchanged.",
   `The white shape is a blank welcome sign: a ${SHAPE_WORDS[shape]} smooth matt white foam board with a thin, crisp white edge; its face completely blank, plain pure white — nothing printed, painted or written on it.`,
@@ -41,7 +48,7 @@ const scenePrompt = (shape, stand) => [
 ].join(" ");
 
 const jobs = [];
-for (const shape of ["rectangle", "arch", "round"]) for (const stand of ["easel", "none"]) {
+for (const shape of ["rectangle", "arch", "round", "wavy"]) for (const stand of ["easel", "none"]) {
   jobs.push({ name: `scene-${shape}-${stand}`, size: "square_hd", prompt: scenePrompt(shape, stand), image: async () => sharp(Buffer.from(guide(shape, stand))).jpeg({ quality: 92 }).toBuffer() });
 }
 const pick = jobs.filter((j) => !only || only.split(",").includes(j.name));
