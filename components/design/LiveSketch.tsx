@@ -120,13 +120,15 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     room: `${SK}/wavy_shimmer-room.webp`, balloons: `${SK}/wavy_shimmer-balloons.webp`, families: `${SK}/wavy_shimmer-families.png`,
     // The wavy board stands in front of its garland, on its rim ("backdrop önde olması lazım").
     boards: [
-      // Re-shot in the owner's wavy board ("bunun aynısını yap şekil olarak"): waves on all four edges.
-      { mask: `${SK}/wavy_shimmer-board-0.png`, rim: `${SK}/wavy_shimmer-rim-0.png`, x0: 0.221, y0: 0.324, x1: 0.459, y1: 0.784, text: { cx: 0.34, cy: 0.465, w: 0.15 } },
-      { mask: `${SK}/wavy_shimmer-board-1.png`, x0: 0.4561, y0: 0.373, x1: 0.6865, y1: 0.7773, text: { cx: 0.571, cy: 0.5, w: 0.17 } },
+      // Re-shot in the owner's wavy board ("bunun aynısını yap şekil olarak"): waves on all four edges. Then
+      // ("yere değmeli", "görüntü kalitesi çok düşük … aşırı uzak"): a straight foot on the floor, the shot
+      // upscaled 4x (aura-sr) and cropped 1.2x closer — every point below moved with the crop.
+      { mask: `${SK}/wavy_shimmer-board-0.png`, rim: `${SK}/wavy_shimmer-rim-0.png`, x0: 0.164, y0: 0.223, x1: 0.46, y1: 0.788, text: { cx: 0.312, cy: 0.393, w: 0.18 } },
+      { mask: `${SK}/wavy_shimmer-board-1.png`, x0: 0.4526, y0: 0.2836, x1: 0.7292, y1: 0.769, text: { cx: 0.591, cy: 0.436, w: 0.204 } },
     ],
-    plinth: { x: 0.4275, y: 0.636, w: 0.059, h: 0.172 },
-    florals: fromPx([[189, 340], [760, 340], [179, 410], [840, 410], [805, 480], [182, 550], [801, 550], [155, 620], [875, 620], [152, 690], [766, 690], [145, 760], [903, 760]]),
-    numberX: 0.6, standeeX: [0.04, 0.97],
+    plinth: { x: 0.4183, y: 0.5994, w: 0.0708, h: 0.2065 },
+    florals: fromPx([[130, 240], [815, 240], [118, 324], [911, 324], [869, 408], [121, 492], [864, 492], [89, 576], [953, 576], [85, 660], [822, 660], [77, 744], [987, 744]]),
+    numberX: 0.625, standeeX: [0.04, 0.96],
   },
   banner: {
     room: `${SK}/single_banner-room.webp`, balloons: `${SK}/single_banner-balloons.webp`, families: `${SK}/single_banner-families.png`,
@@ -164,10 +166,12 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     // shoulder, a cluster on the right from halfway down; the offset rim has its own mask.
     // 2026-11-02 (later): re-shot wavier ("daha wavy olmalı"), the board in front of a garland on both sides, the
     // words in its middle ("text ortada olmalı"). Then in the board she sent ("bunun aynısını yap şekil olarak"):
-    // waves on all four edges, the foot too.
-    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.357, y0: 0.27, x1: 0.66, y1: 0.82, text: { cx: 0.51, cy: 0.44, w: 0.19 } }],
+    // waves on all four edges, the foot too. Then ("yere değmeli … soldaki balonlar çok dağılmış gibi"): a straight
+    // foot flat on the floor, a tight column down the left, a low cluster on the right; one master shot, its board
+    // drawn from lib/wavyBoard's outline and its balloons recoloured per set.
+    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.349, y0: 0.256, x1: 0.661, y1: 0.865, text: { cx: 0.505, cy: 0.44, w: 0.195 } }],
     plinth: { x: 0.462, y: 0.635, w: 0.084, h: 0.245 },
-    florals: fromPx([[443, 60], [573, 130], [577, 200], [324, 270], [280, 410], [275, 550], [231, 620], [719, 620], [312, 690], [755, 690], [321, 760], [136, 830], [788, 830]]),
+    florals: fromPx([[527, 130], [588, 200], [347, 200], [303, 340], [297, 410], [305, 480], [310, 550], [706, 550], [283, 620], [741, 690], [213, 760], [803, 760], [218, 830], [804, 830]]),
     numberX: 0.5, standeeX: [0.06, 0.93],
   },
   fringe: {
@@ -224,9 +228,11 @@ function themeShot(base: PhotoBase, folder: string): PhotoBase {
   return { ...base, room: at(base.room), balloons: at(base.balloons), families: at(base.families), familyStep: 50,
     boards: base.boards.map((b) => ({ ...b, mask: b.mask && at(b.mask), rim: b.rim && at(b.rim) })) };
 }
-/** The rainbow balloon sprite (scripts/sketch/rainbow-sprite.mjs): its width in the sketch, and height / width. */
-const RAINBOW_W = 165;
-const RAINBOW_ASPECT = 0.558;
+/** The rainbow balloon sprite: its width in the sketch, and height / width. Since 2026-11-02 (later, "rainbow
+ *  balloons kötü duruyor referanstakine benzer olsun") a real balloon rainbow — pastel modelling balloons bent into
+ *  arcs, a cloud of white balloons at each end — a fresh text-to-image render, cut out. */
+const RAINBOW_W = 240;
+const RAINBOW_ASPECT = 0.621;
 /** The plinth cut from the same photo, used for every plinth in every sketch. */
 const PLINTH_SRC = "/design/sketch/plinth.webp";
 const PLINTH_CM: Record<string, { h: number; d: number }> = { large: { h: 90, d: 40 }, medium: { h: 75, d: 36 }, small: { h: 60, d: 33 } };
@@ -247,7 +253,7 @@ const tintHex = (t: [number, number, number], l: number) => "#" + t.map((k) =>
     .toString(16).padStart(2, "0")).join("");
 const isWhite = (h: string) => { const [r, g, b] = hexRgb(h || "#ffffff"); return r > 246 && g > 246 && b > 246; };
 
-type BaseData = { img: ImageData; fam: Uint8Array; means: { rgb: Rgb; l: number }[]; neutral: boolean };
+type BaseData = { img: ImageData; fam: Uint8Array; means: { rgb: Rgb; l: number; n: number }[]; neutral: boolean };
 const AS_SHOT = 255;
 const baseCache = new Map<string, Promise<BaseData>>();
 const pixelsOf = (src: string, w?: number, h?: number) => new Promise<ImageData>((resolve, reject) => {
@@ -280,7 +286,7 @@ function loadBase(src: string, familiesSrc: string, step = 100): Promise<BaseDat
       }
       const means = sum.map(([r, g, b, n]) => {
         const rgb: Rgb = n ? [r / n, g / n, b / n] : [235, 235, 235];
-        return { rgb, l: lum(...rgb) };
+        return { rgb, l: lum(...rgb), n };
       });
       return { img, fam, means, neutral: step === 100 };
     });
@@ -320,12 +326,23 @@ function useRecoloredBase(src: string | null, familiesSrc: string, palette: stri
       const sat = (c: Rgb) => { const mx = Math.max(...c), mn = Math.min(...c); return mx ? (mx - mn) / mx : 0; };
       const neutralK = cols.map((c, k) => ({ c, k })).filter(({ c }) => sat(c) < 0.12).sort((a, b) => lum(...b.c) - lum(...a.c))[0];
       if (neutral && neutralK) { target[0] = neutralK.c; used.add(neutralK.k); }
-      // The rest: greedy nearest match, each chosen colour used once while any are left.
-      const pairs = means.flatMap((m, f) => cols.map((c, k) => ({ f, k, dd: dist(m.rgb, c) }))).sort((a, b) => a.dd - b.dd);
-      for (const pr of pairs) {
-        if (target[pr.f] || (used.has(pr.k) && used.size < cols.length)) continue;
-        target[pr.f] = cols[pr.k]; used.add(pr.k);
-      }
+      // The rest: the pairing of families and chosen colours closest in all (each colour used once while any are
+      // left), then any family over takes its nearest. Not greedy: a greedy match gave a peach family the rose
+      // (a little nearer) and so the fuchsia family the peach, darkened to brown; and a family the photo hasn't
+      // (a four-colour set's fifth turn) took a colour from one it has.
+      const fams = means.map((m, f) => f).filter((f) => !target[f] && means[f].n > 0);
+      const free = cols.map((c, k) => k).filter((k) => !used.has(k));
+      let best: number[] = [], bestD = Infinity;
+      const pick = (fi: number, taken: number[], d: number) => {
+        if (d >= bestD) return;
+        if (fi === fams.length || taken.filter((k) => k >= 0).length === free.length) { bestD = d; best = [...taken]; return; }
+        for (const k of free) if (!taken.includes(k)) pick(fi + 1, [...taken, k], d + dist(means[fams[fi]].rgb, cols[k]));
+        // With more families than colours, a family may wait for the nearest-colour pass.
+        if (fams.length - fi > free.length - taken.filter((k) => k >= 0).length) pick(fi + 1, [...taken, -1], d);
+      };
+      pick(0, [], 0);
+      best.forEach((k, i) => { if (k >= 0) target[fams[i]] = cols[k]; });
+      for (const f of fams) if (!target[f] && cols.length) target[f] = [...cols].sort((a, b) => dist(means[f].rgb, a) - dist(means[f].rgb, b))[0];
       const out = new ImageData(new Uint8ClampedArray(img.data), img.width, img.height);
       const px = out.data;
       const keep = target.map((t, f) => !t || dist(t, means[f].rgb) < 24 || (neutral && f === 0 && sat(t) < 0.12 && lum(...t) > 170));
@@ -715,12 +732,16 @@ export default function LiveSketch({
     return out.sort((a, b) => a.y - b.y);
   }, [balloonsOn, pieces, palette, garlandSize, items.length, d.balloonRingStyle, base]);
 
-  // 2026-11-02 ("rainbow balonlar da eklenebilsin"): three foil rainbows on clouds tucked into the garland,
-  // low, middle and high along it, as the render guide places them.
-  const rainbowSpots = !(d.rainbowBalloons && balloonsOn) ? [] : base
-    ? [0.82, 0.5, 0.15].map((f) => base.florals[Math.min(base.florals.length - 1, Math.round(f * (base.florals.length - 1)))]).filter(Boolean)
-      .map(([x, y]) => ({ x: x * VB, y: y * VB }))
-    : [];
+  // 2026-11-02 ("rainbow balonlar da eklenebilsin"): balloon rainbows tucked into the garland. Later, to her
+  // reference: two big ones, one on each side at mid height, as the render guide places them.
+  const rainbowSpots = !(d.rainbowBalloons && balloonsOn) || !base ? [] : (() => {
+    const ys = base.florals.map(([, y]) => y), top = Math.min(...ys), bot = Math.max(...ys);
+    return ([[-1, 0.42], [1, 0.58]] as const).map(([side, f]) => {
+      const onSide = base.florals.filter(([x]) => (x - 0.5) * side > 0);
+      const pool = onSide.length ? onSide : base.florals, ty = top + (bot - top) * f;
+      return [...pool].sort((p, q) => Math.abs(p[1] - ty) - Math.abs(q[1] - ty))[0];
+    }).filter(Boolean).map(([x, y]) => ({ x: x * VB, y: y * VB }));
+  })();
   // Florals on the base: tucked in along its garland.
   const baseFlorals = base && d.garlandFlorals
     ? base.florals.map(([x, y, a]) => ({ x: x * VB, y: y * VB, r: ROUND.r * VB * 0.104, a }))
@@ -1014,7 +1035,8 @@ export default function LiveSketch({
       ))}
 
       {/* The piece being styled */}
-      {activeId && pieces.length > 1 && pieces.filter((p) => p.item.id === activeId).map((p) => {
+      {/* Not on a photo: its board is the photo's, and a drawn outline missed it ("neden böyle dashed lines var?"). */}
+      {activeId && !base && pieces.length > 1 && pieces.filter((p) => p.item.id === activeId).map((p) => {
         const floor = base ? p.top + p.h : FLOOR;
         const path = piecePath(p, floor) ?? `M ${p.x} ${floor} V ${p.top} H ${p.x + p.w} V ${floor} Z`;
         return <path key="active" d={path} fill="none" stroke="#ff0d66" strokeWidth={6} strokeDasharray="16 10" strokeLinejoin="round" />;

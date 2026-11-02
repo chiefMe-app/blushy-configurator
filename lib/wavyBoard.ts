@@ -11,14 +11,14 @@ const WAVE = 0.4;
  * A rounded rectangle in the box whose four sides all run in waves, a crest on every corner, as a smooth
  * closed SVG path. `n` is the waves along the top/bottom and down each side.
  */
-function wavyRect(x: number, top: number, w: number, h: number, amp: number, r: number, n: { across: number; down: number }): string {
+function wavyRect(x: number, top: number, w: number, h: number, amp: number, r: number, n: { across: number; down: number }, foot = n.across): string {
   const x0 = x + amp, y0 = top + amp, x1 = x + w - amp, y1 = top + h - amp;
   const a = (r * Math.PI) / 4;
   // Clockwise from the top-left corner's middle: each run goes corner middle to corner middle.
   const runs = [
     { c0: [x0 + r, y0 + r], t0: 225, from: [x0 + r, y0], dir: [1, 0], len: x1 - x0 - 2 * r, c1: [x1 - r, y0 + r], waves: n.across },
     { c0: [x1 - r, y0 + r], t0: 315, from: [x1, y0 + r], dir: [0, 1], len: y1 - y0 - 2 * r, c1: [x1 - r, y1 - r], waves: n.down },
-    { c0: [x1 - r, y1 - r], t0: 45, from: [x1 - r, y1], dir: [-1, 0], len: x1 - x0 - 2 * r, c1: [x0 + r, y1 - r], waves: n.across },
+    { c0: [x1 - r, y1 - r], t0: 45, from: [x1 - r, y1], dir: [-1, 0], len: x1 - x0 - 2 * r, c1: [x0 + r, y1 - r], waves: foot },
     { c0: [x0 + r, y1 - r], t0: 135, from: [x0, y1 - r], dir: [0, -1], len: y1 - y0 - 2 * r, c1: [x0 + r, y0 + r], waves: n.down },
   ];
   const pts: number[][] = [];
@@ -67,7 +67,9 @@ export function wavyBoardPath(x: number, top: number, w: number, h: number): str
   // the bottom too, about 4% of the width deep; four waves down each side and two across the top and the
   // foot of a 120 x 220 board, a crest on every corner. The crests touch the box: the board is its full
   // 120 cm at its widest (earlier: "birebir aynı backdrop genişliği 120cm mi?").
-  return wavyRect(x, top, w, h, w * AMP, w * CORNER, waveCounts(w, h));
+  // Then: "yere değmeli wavy backdrop" — its foot is straight, flat on the floor (no waves: a crest at the
+  // corners all along it), the sides and top still waving.
+  return wavyRect(x, top, w, h, w * AMP, w * CORNER, waveCounts(w, h), 0);
 }
 
 /**
@@ -79,7 +81,7 @@ export const WAVY_BORDER = 0.07;
 /** The face of a wavy board in the box (x, top, w, h): the same waves, inset by the rim all round (her photo's rim runs under the foot too). */
 export function wavyFacePath(x: number, top: number, w: number, h: number): string {
   const b = w * WAVY_BORDER;
-  return wavyRect(x + b, top + b, w - 2 * b, h - 2 * b, w * AMP, w * CORNER * 0.6, waveCounts(w, h));
+  return wavyRect(x + b, top + b, w - 2 * b, h - 2 * b, w * AMP, w * CORNER * 0.6, waveCounts(w, h), 0);
 }
 
 /** The rim's colour: the one picked, else the party's first balloon colour that isn't white, silver or clear. */

@@ -337,7 +337,7 @@ export function buildLayoutRefEditPrompt(
       // wants ("bunun aynısını yap şekil olarak"): waves on all four edges, the foot too.
       backdropDesc =
         `single wavy-edged backdrop board, ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
-        `a tall solid filled freestanding board with a fully opaque surface, all four of its edges — both long sides, the top and the bottom — running in even, rounded, clearly visible waves, four down each side and two across the top and the bottom, with a rounded lobe on every corner, like a wavy mirror, broad — a little over half as wide as it is tall. The entire face is one continuous solid board, seamless matte ${backdropColorLabel(p.color)} surface, ` +
+        `a tall solid filled freestanding board with a fully opaque surface, both long sides and the top running in even, rounded, clearly visible waves, four down each side and two across the top, with a rounded lobe on each top corner, like a wavy mirror, and a straight bottom edge standing flat on the floor, broad — a little over half as wide as it is tall. The entire face is one continuous solid board, seamless matte ${backdropColorLabel(p.color)} surface, ` +
         `no cut-out opening, no hollow doorway. NOT a plain rounded arch, NOT a rectangle with straight sides.` +
         // 2026-11-01 (the owner: "wavy de border offset olmalı örnekteki gibi"): two layers, the face on a coloured one.
         (p.borderColor
@@ -430,7 +430,7 @@ export function buildLayoutRefEditPrompt(
               `is butted flat against the centre board with no gap. It is NOT a full arch, NOT symmetrical, ` +
               `NOT rounded on both top corners`
           : isWavyP
-            ? `tall solid freestanding board with all four of its edges — both long sides, the top and the bottom — running in even, rounded, clearly visible waves, four down each side and two across the top and the bottom, with a rounded lobe on every corner, like a wavy mirror` +
+            ? `tall solid freestanding board with both long sides and the top running in even, rounded, clearly visible waves, four down each side and two across the top, with a rounded lobe on each top corner, like a wavy mirror, and a straight bottom edge standing flat on the floor` +
               `, seamless matte ${pColor} face` +
               (real?.borderColor ? ` on a slightly larger wavy board of the same outline in matte ${backdropColorLabel(real.borderColor)}, ` +
                 `showing as an even rim about 6 cm wide all round the face` : "") +
@@ -945,8 +945,10 @@ export function buildLayoutRefEditPrompt(
   // 2026-11-02: rainbow balloons ("burdaki rainbow balonlarda eklenebilsin"), drawn in the guide like the florals.
   const frontRainbowLine = sceneModel.rainbowBalloons && sceneModel.balloons.style !== "none"
     ? `Rainbow balloons are part of this garland: wherever the layout reference shows a striped rainbow over ` +
-      `white puffs, there is a real rainbow-shaped foil balloon in soft rainbow stripes resting on a small bunch ` +
-      `of white cloud balloons, tucked into the garland. `
+      // "rainbow balloons kötü duruyor referanstakine benzer olsun": a balloon rainbow, not a foil one.
+      `white puffs, there is a big BALLOON RAINBOW: five long modelling balloons in soft pastel pink, yellow, mint, ` +
+      `blue and lilac, bent into nested arcs side by side like a rainbow, each end tucked into a puffy cloud of ` +
+      `small round white balloons, set into the face of the garland as one of its features. `
     : "";
 
   // 2026-09-09: the backdrop SHAPE goes first when the scene carries floor
@@ -1299,7 +1301,7 @@ export function buildLayoutRefEditPrompt(
     // asked for it to be 2 metres across and to meet the ground ("2metre
     // gensiliginde olmali yere degmeli").
     if (t === "round")  return `The backdrop is ONE round disc, a full circle 2 metres across, standing on the floor. `;
-    if (isWavy)         return `The backdrop is ONE tall board whose four edges all run in rounded waves, on a coloured rim. `;
+    if (isWavy)         return `The backdrop is ONE tall board whose sides and top run in rounded waves, its straight foot flat on the floor, on a coloured rim. `;
     if (isFringe)       return `The backdrop is ONE square wooden frame filled with layered tiers of tissue and tinsel fringe down to the floor. `;
     if (t === "arch")   return `The backdrop is ONE arch board. `;
     if (t === "banner") return `The backdrop is ONE square board. `;
@@ -1730,9 +1732,10 @@ export function buildLayoutRefEditPrompt(
   // lokasyonu bu şekilde farklı olsun"): down its LEFT side, and a lower cluster on its right.
   const archGarlandExtra = isLoneArchScene && isWavy
     ? ` The balloon garland is lush, organic, premium and hand-styled, in two parts, exactly as IMAGE 1 lays it out. ` +
-      `The main part starts with a DENSE CLUSTER OF LARGE BALLOONS over the TOP-LEFT of the wavy board, runs ` +
-      `down the whole LEFT OUTER EDGE with balloons of mixed sizes and pools in a big cluster on the floor at the ` +
-      `board's bottom-left corner. The second part is a lower cluster standing on the floor against the board's ` +
+      // 2026-11-02 (later): "soldaki balonlar çok dağılmış gibi … wavy+shimmer'daki soldaki balonlar gibi yap".
+      `The main part starts with a DENSE CLUSTER OF LARGE BALLOONS over the TOP-LEFT of the wavy board and runs ` +
+      `down the whole LEFT OUTER EDGE as ONE tight, dense, even column hugging the board, about half the board's ` +
+      `width, straight down to the floor — no loose bunches, no gaps, nothing spreading out over the floor to the left. The second part is a lower cluster standing on the floor against the board's ` +
       `RIGHT edge, rising about halfway up it. The top-right of the board stays clean. The garland stands ` +
       `directly BEHIND the board's edges with NO VISIBLE GAP, closely following its wavy outline: the board and ` +
       `its coloured rim stand IN FRONT, and the balloons only peek out past its sides and top, never covering its face ` +

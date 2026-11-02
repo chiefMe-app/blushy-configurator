@@ -39,10 +39,12 @@ const SEEDS: Record<string, [number, number, number, number, number, number][]> 
   round: [[600, 550, 175, 185, 850, 870]],
   // 2026-11-02 (later): the wavy board stands in front now, its left rim in sight: seeded left of centre so the rim
   // test (right of the seed less 60 px) takes in both sides.
-  single_wavy: [[420, 520, 360, 220, 700, 880]],
+  // Later still ("yere değmeli"): the flat-foot board, re-drawn on one master shot recoloured per set.
+  single_wavy: [[410, 560, 345, 250, 690, 895]],
   single_fringe: [[0, 0, 218, 258, 806, 850]],
   // The Wavy + Shimmer (new 2026-11-02): laid out as the Arch + Shimmer, the wavy board in front on its rim.
-  wavy_shimmer: [[280, 550, 215, 290, 480, 805], [0, 0, 470, 385, 700, 795]],
+  // Later ("yere değmeli", "aşırı uzak"): its flat-foot board drawn from its outline, the shot cropped 1.2x closer.
+  wavy_shimmer: [[225, 500, 160, 215, 480, 815], [0, 0, 467, 294, 743, 786]],
 };
 /** A round board's circle (px: centre and radius), past which nothing is board. */
 const CIRCLE: Record<string, [number, number, number]> = { round: [505, 560, 300] };
@@ -54,6 +56,9 @@ const SOLID: Record<string, [number, number, number, number]> = { single_fringe:
 /** Boards photographed on a coral rim (the offset border): the rim's own mask (<setup>-rim-<i>.png), made
  *  neutral so its colour is laid on it like a board's. */
 const RIM = new Set(["single_wavy", "wavy_shimmer"]);
+/** Boards drawn on the shot from the very outline of their guide (the flat-foot wavy board, 2026-11-02 later,
+ *  "yere değmeli"): held to it within 3 px, so a looser flood fills the board's shaded foot. */
+const EXACT_GUIDE = new Set(["single_wavy", "wavy_shimmer"]);
 /** Shot on an earlier photo, not on its route guide: no guide to hold the boards to. */
 const NO_GUIDE = new Set(["single_shimmer", "arch_shimmer", "triple_arch"]);
 /** Boards that aren't flat paint (a sequin wall, a fringe curtain): the whole box, but for the balloons in front. */
@@ -98,6 +103,22 @@ const FAMILIES: Record<string, [number, number][][]> = {
   "frozen-pastel": [[], [[165, 245]], [[245, 330]], [], []],
   "frozen-bright": [[], [[212, 250]], [[160, 212]], [[250, 330]], []],
 };
+/** Sets whose balloons are told apart by their nearest colour (Lab a/b, so light and shade alike) rather than by
+ *  hue bands: Unicorn's bright peach shades to under 15° (read as fuchsia) and its pastel mint is too pale for the
+ *  chroma cut, and the pastel set's pale yellow, mint and blue cross their bands — the AI-recoloured Wavy shots came
+ *  out patchy (2026-11-02, later). The set's balloons as its Single Arch shot has them, in FAMILIES' order. */
+const LAB_REFS: Record<string, [number, number, number][]> = {
+  "unicorn-bright": [[224, 172, 147], [188, 75, 111], [162, 177, 149], [172, 152, 184]],
+  // Its pastel: pink, yellow, mint, icy blue, lilac, as her liked Single Arch photo has them.
+  "unicorn-pastel": [[209, 156, 155], [203, 181, 97], [162, 187, 160], [137, 166, 192], [167, 148, 192]],
+};
+const labAB = (r: number, g: number, b: number) => {
+  const lin = (v: number) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  const f = (t: number) => (t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116);
+  const R = lin(r), G = lin(g), B = lin(b);
+  const x = f((0.4124 * R + 0.3576 * G + 0.1805 * B) / 0.95047), y = f(0.2126 * R + 0.7152 * G + 0.0722 * B), z = f((0.0193 * R + 0.1192 * G + 0.9505 * B) / 1.08883);
+  return [500 * (x - y), 200 * (y - z)];
+};
 
 (async () => {
   const [dir, setup, theme] = process.argv.slice(2);
@@ -105,6 +126,9 @@ const FAMILIES: Record<string, [number, number][][]> = {
   const shot = theme ? (existsSync(path.join(dir, `${setup}-u2.png`)) ? `${setup}-u2.png` : `${setup}-u1.png`) : `${setup}-e1.png`;
   // A re-shoot: a fresh photo of the cleaned square, its balloons elsewhere (so none of the hand fixes).
   if (theme) for (const fix of [FILL, BAND, KEEP, ERASE]) delete fix[setup];
+  // For LAB_REFS sets: the photo softened, so a point's family is its neighbourhood's colour (a pale balloon's
+  // pixels drift between mint and icy blue one by one).
+  const soft = theme && LAB_REFS[theme] ? await sharp(path.join(dir, shot)).removeAlpha().resize(1024, 1024).blur(5).raw().toBuffer() : null;
   // Its boards are shot white (the tinted Open Frame was the first photo's).
   if (theme) { NEUTRAL.delete(setup); delete CHROMA[setup]; }
   const e1 = await sharp(path.join(dir, shot)).removeAlpha().resize(1024, 1024).raw().toBuffer({ resolveWithObject: true });
@@ -179,7 +203,7 @@ const FAMILIES: Record<string, [number, number][][]> = {
     let out = m;
     // A board on a coloured rim is held by its rim, so it may drift further from its guide (2026-11-02, the
     // four-sided Wavy came out 25 px wider than its guide; held at 10 px its face missed its right rim).
-    for (let k = 0; k < (RIM.has(setup) ? 30 : 10); k++) {
+    for (let k = 0; k < (EXACT_GUIDE.has(setup) ? 3 : RIM.has(setup) ? 30 : 10); k++) {
       const prev = out.slice();
       for (let i = 0; i < N; i++) if (!prev[i]) { const x = i % W; if ((x > 0 && prev[i - 1]) || (x < W - 1 && prev[i + 1]) || prev[i - W] || prev[i + W]) out[i] = 1; }
     }
@@ -232,7 +256,7 @@ const FAMILIES: Record<string, [number, number][][]> = {
       const i = stack.pop()!, x = i % W;
       for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) {
         const jx = j % W, jy = (j - jx) / W;
-        if (j < 0 || j >= N || board[j] >= 0 || kept[j] > 0 || !boardLike(j) || step(i, j) > (process.env.ST ? +process.env.ST : 5) || jx < bx0 || jx > bx1 || jy < by0 || jy > by1 || (clamps[b] && !clamps[b]![j])) continue;
+        if (j < 0 || j >= N || board[j] >= 0 || kept[j] > 0 || !boardLike(j) || step(i, j) > (process.env.ST ? +process.env.ST : EXACT_GUIDE.has(setup) ? 8 : 5) || jx < bx0 || jx > bx1 || jy < by0 || jy > by1 || (clamps[b] && !clamps[b]![j])) continue;
         board[j] = b; stack.push(j);
       }
     }
@@ -347,8 +371,36 @@ const FAMILIES: Record<string, [number, number][][]> = {
     const r = at(i, 0), g = at(i, 1), b = at(i, 2), mx = Math.max(r, g, b), d = chroma(i);
     let h = d === 0 ? 0 : mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
     h = (h * 60 + 360) % 360;
-    if (theme) fam[i] = d < 22 || mx < 50 ? 255 : Math.max(0, FAMILIES[theme].findIndex((rs) => rs.some(([a, b]) => h >= a && h < b)));
+    if (theme && LAB_REFS[theme]) {
+      const [pa, pb] = labAB(soft![i * 3], soft![i * 3 + 1], soft![i * 3 + 2]), refs = LAB_REFS[theme].map(([rr, rg, rb]) => labAB(rr, rg, rb));
+      const dists = refs.map(([qa, qb]) => Math.hypot(pa - qa, pb - qb)), k = dists.indexOf(Math.min(...dists));
+      fam[i] = Math.hypot(pa, pb) < 6 || mx < 50 ? 255 : k;
+    } else if (theme) fam[i] = d < 22 || mx < 50 ? 255 : Math.max(0, FAMILIES[theme].findIndex((rs) => rs.some(([a, b]) => h >= a && h < b)));
     else fam[i] = d < 22 || mx < 50 ? 0 : h >= 165 && h < 245 ? 1 : h >= 245 && h < 330 ? 2 : 0;
+  }
+  // Balloon by balloon (a SAM 2 segmentation next to the shot, <setup>-segs.png, id = R + G * 256): each balloon
+  // takes the family most of its points have, highlights and shade too, so no balloon is repainted in patches
+  // (2026-11-02, later: the AI-recoloured Wavy shots). Segments too big for a balloon (wall, floor, board) are left.
+  const segsFile = path.join(dir, `${setup}-segs.png`);
+  if (theme && existsSync(segsFile)) {
+    const sg = await sharp(segsFile).removeAlpha().resize(W, H, { kernel: "nearest" }).raw().toBuffer();
+    const id = (i: number) => sg[i * 3] + sg[i * 3 + 1] * 256;
+    const votes = new Map<number, Map<number, number>>(), size = new Map<number, number>();
+    for (let i = 0; i < N; i++) {
+      const s0 = id(i);
+      if (!s0) continue;
+      size.set(s0, (size.get(s0) ?? 0) + 1);
+      if (balloons[i * 4 + 3] < 128 || fam[i] === 255) continue;
+      const v = votes.get(s0) ?? new Map<number, number>();
+      v.set(fam[i], (v.get(fam[i]) ?? 0) + 1);
+      votes.set(s0, v);
+    }
+    const major = new Map<number, number>();
+    for (const [s0, v] of Array.from(votes)) {
+      const [f, n] = Array.from(v).sort((p: [number, number], q: [number, number]) => q[1] - p[1])[0];
+      if ((size.get(s0) ?? 0) < 40000 && n > (size.get(s0) ?? 0) * 0.3) major.set(s0, f);
+    }
+    for (let i = 0; i < N; i++) { const f = major.get(id(i)); if (f !== undefined && balloons[i * 4 + 3] > 0) fam[i] = f; }
   }
   // Crumbs of board left loose (a few hundred points, apart from every balloon) go.
   const seen = new Uint8Array(N);

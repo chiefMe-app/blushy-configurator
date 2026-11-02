@@ -97,7 +97,7 @@ describe("wavy and fringe backdrops", () => {
 
   it("describe their own shape in the render prompt", () => {
     const wavy = buildLayoutRefEditPrompt(buildSceneModel(withSetup(withTheme(defaultConfig(), "frozen"), "single_wavy")));
-    expect(wavy).toContain("whose four edges all run in rounded waves");
+    expect(wavy).toContain("whose sides and top run in rounded waves, its straight foot flat on the floor");
     expect(wavy).not.toContain("ONE arch board");
     const fringe = buildLayoutRefEditPrompt(buildSceneModel(withSetup(withTheme(defaultConfig(), "unicorn"), "single_fringe")));
     expect(fringe).toContain("tinsel");

@@ -3247,7 +3247,11 @@ export function generateStructureSilhouette(
         // (600 px photo; the board runs x 212..423, y 118..497). Its orange is
         // W, pink B, lilac L and mint C, so each colour run stays one colour.
         const WAVY_REF_BOARD = { l: 212, r: 423, top: 118, floor: 497 };
-        const WAVY_REF: RefItem[] = [
+        // 2026-11-02 (later): "soldaki balonlar çok dağılmış gibi … wavy+shimmer'daki soldaki balonlar gibi yap" —
+        // the left of the board (its side and its foot out over the floor) drawn in to a tight column, 0.55 as wide.
+        const squeezeLeft = (items: RefItem[]): RefItem[] =>
+          items.map(([x, y, r, c]) => (x < WAVY_REF_BOARD.l ? [WAVY_REF_BOARD.l - (WAVY_REF_BOARD.l - x) * 0.55, y, r, c] : [x, y, r, c]));
+        const WAVY_REF: RefItem[] = squeezeLeft([
           // over the top, from the left shoulder to near the right one
           [179, 116, 39, "W"], [187, 150, 19, "W"], [206, 140, 12, "W"], [225, 112, 12, "W"],
           [215, 160, 14, "W"], [256,  92, 28, "L"], [278, 103, 13, "L"], [290,  95, 13, "L"],
@@ -3275,7 +3279,7 @@ export function generateStructureSilhouette(
           [447, 428, 14, "L"], [431, 415, 10, "L"], [459, 441, 16, "C"], [484, 481, 34, "C"],
           [431, 484, 20, "C"], [431, 462, 12, "C"], [419, 456,  9, "C"], [494, 437, 16, "W"],
           [509, 450, 12, "W"], [481, 428,  9, "W"],
-        ];
+        ]);
         // A photo board rect mapped onto one of ours: its two side edges onto
         // our side edges, its floor onto our floor, and the height scale for
         // everything outside the board and for the balloon sizes. `mirror`
@@ -4677,29 +4681,34 @@ export function generateStructureSilhouette(
       const radii = balloons.map((b) => b.r).sort((a, b) => a - b);
       // As big as the garland's big balloons, as in her reference: at the median balloon's size (x1.25) the
       // render made them small foil charms lost in the garland (2026-11-02, a test render).
-      const R = radii[Math.floor(radii.length / 2)] * 2.6;
+      // 2026-11-02 (later): "rainbow balloons kötü duruyor referanstakine benzer olsun" — her reference has two
+      // big balloon rainbows, one on each side of the garland at mid height, a cloud of white balloons at each end.
+      const R = radii[Math.floor(radii.length / 2)] * 3.4;
       const byY = [...balloons].sort((a, b) => a.y - b.y);
       const topY = byY[0].y, botY = byY[byY.length - 1].y;
-      const STRIPES = ["#F59AB0", "#FFC58A", "#FFEC8A", "#9EE2BC", "#9CCBF2", "#C7B2F0"];
+      const midX = (Math.min(...balloons.map((c) => c.x)) + Math.max(...balloons.map((c) => c.x))) / 2;
+      const STRIPES = ["#F59AB0", "#FFEC8A", "#9EE2BC", "#9CCBF2", "#C7B2F0"];
       const used: { x: number; y: number }[] = [];
-      for (const frac of [0.12, 0.45, 0.78]) {
+      for (const [side, frac] of [[-1, 0.42], [1, 0.58]] as const) {
         const targetY = topY + (botY - topY) * frac;
-        // The balloon nearest that height, away from the ones already used.
-        const b = byY.filter((c) => used.every((u) => Math.hypot(u.x - c.x, u.y - c.y) > R * 3))
-          .sort((p1, p2) => Math.abs(p1.y - targetY) - Math.abs(p2.y - targetY))[0];
+        // The balloon nearest that height on its side (else anywhere), away from the one already used.
+        const free = byY.filter((c) => used.every((u) => Math.hypot(u.x - c.x, u.y - c.y) > R * 3));
+        const onSide = free.filter((c) => (c.x - midX) * side > 0);
+        const b = (onSide.length ? onSide : free).sort((p1, p2) => Math.abs(p1.y - targetY) - Math.abs(p2.y - targetY))[0];
         if (!b) continue;
         used.push(b);
         const cx = b.x, base = b.y + R * 0.15;
         STRIPES.forEach((hex, i) => {
-          const ro = R * (1.1 - i * 0.13), ri = ro - R * 0.13;
+          const ro = R * (1.1 - i * 0.15), ri = ro - R * 0.14;
           content.push(
             `<path d="M ${(cx - ro).toFixed(1)} ${base.toFixed(1)} A ${ro.toFixed(1)} ${ro.toFixed(1)} 0 0 1 ${(cx + ro).toFixed(1)} ${base.toFixed(1)} ` +
             `L ${(cx + ri).toFixed(1)} ${base.toFixed(1)} A ${ri.toFixed(1)} ${ri.toFixed(1)} 0 0 0 ${(cx - ri).toFixed(1)} ${base.toFixed(1)} Z" ` +
             `fill="${hex}" stroke="rgba(120,110,120,0.35)" stroke-width="0.8"/>`,
           );
         });
-        // The cloud: white puffs along the rainbow's foot, both ends and between.
-        for (const [dx, dy, k] of [[-0.95, 0.05, 0.36], [-0.6, 0.12, 0.42], [-0.2, 0.16, 0.46], [0.2, 0.16, 0.46], [0.6, 0.12, 0.42], [0.95, 0.05, 0.36]]) {
+        // The clouds: a bunch of white puffs at each end of the rainbow.
+        for (const [dx, dy, k] of [[-1.15, 0.02, 0.3], [-0.85, 0.04, 0.34], [-0.98, -0.2, 0.28], [-1.0, 0.24, 0.26],
+          [1.15, 0.02, 0.3], [0.85, 0.04, 0.34], [0.98, -0.2, 0.28], [1.0, 0.24, 0.26]]) {
           const px = cx + dx * R, py = base + dy * R, pr = k * R;
           content.push(
             `<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${pr.toFixed(1)}" ry="${(pr * 0.94).toFixed(1)}" ` +
