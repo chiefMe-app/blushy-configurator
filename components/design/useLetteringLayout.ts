@@ -29,6 +29,12 @@ export function useLetteringLayout(lettering: BoardLettering | undefined): Lette
     const hit = cache.get(key);
     if (hit) { setDrawing(hit); return; }
     const id = ++seq.current;
+    // How many layouts are on their way (window.__letteringPending): screenshot tests wait for none, as the
+    // last drawing stays up meanwhile (2026-11-02, a shot caught the lettering mid-change under load).
+    const w = window as unknown as { __letteringPending?: number };
+    let open = true;
+    const done = () => { if (open) { open = false; w.__letteringPending = (w.__letteringPending ?? 1) - 1; } };
+    w.__letteringPending = (w.__letteringPending ?? 0) + 1;
     const t = setTimeout(async () => {
       try {
         const res = await fetch("/api/typography/layout", { method: "POST", headers: { "content-type": "application/json" }, body: key });
@@ -37,9 +43,9 @@ export function useLetteringLayout(lettering: BoardLettering | undefined): Lette
         if (cache.size > 200) cache.clear();
         cache.set(key, json);
         if (id === seq.current) setDrawing(json);
-      } catch { /* offline: keep the last drawing */ }
+      } catch { /* offline: keep the last drawing */ } finally { done(); }
     }, DELAY_MS);
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); done(); };
   }, [key]);
 
   return drawing;

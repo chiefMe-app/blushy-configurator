@@ -292,10 +292,12 @@ export async function settle(page: Page) {
     await Promise.all(Array.from(document.images).filter((i) => !i.complete && inView(i)).map((i) => new Promise((r) => { i.onload = i.onerror = r; })));
     const frame = () => new Promise((r) => requestAnimationFrame(() => r(null)));
     const marks = () => Array.from(document.querySelectorAll("h1,h2,h3,button")).slice(0, 80).reduce((s, el) => s + Math.round(el.getBoundingClientRect().top), 0);
-    const state = () => `${window.scrollY}|${document.documentElement.scrollHeight}|${marks()}`;
+    // A lettering layout on its way changes the sketch when it lands (components/design/useLetteringLayout.ts).
+    const pending = () => (window as unknown as { __letteringPending?: number }).__letteringPending ?? 0;
+    const state = () => `${window.scrollY}|${document.documentElement.scrollHeight}|${marks()}|${pending()}`;
     let last = state(), still = 0;
     const until = performance.now() + 5000;
-    while (still < 6 && performance.now() < until) { await frame(); const s = state(); still = s === last ? still + 1 : 0; last = s; }
+    while ((still < 6 || pending() > 0) && performance.now() < until) { await frame(); const s = state(); still = s === last ? still + 1 : 0; last = s; }
   });
 }
 

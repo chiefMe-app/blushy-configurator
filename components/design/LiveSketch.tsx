@@ -120,11 +120,12 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     room: `${SK}/wavy_shimmer-room.webp`, balloons: `${SK}/wavy_shimmer-balloons.webp`, families: `${SK}/wavy_shimmer-families.png`,
     // The wavy board stands in front of its garland, on its rim ("backdrop önde olması lazım").
     boards: [
-      { mask: `${SK}/wavy_shimmer-board-0.png`, rim: `${SK}/wavy_shimmer-rim-0.png`, x0: 0.2275, y0: 0.3389, x1: 0.4453, y1: 0.7598, text: { cx: 0.34, cy: 0.465, w: 0.15 } },
+      // Re-shot in the owner's wavy board ("bunun aynısını yap şekil olarak"): waves on all four edges.
+      { mask: `${SK}/wavy_shimmer-board-0.png`, rim: `${SK}/wavy_shimmer-rim-0.png`, x0: 0.221, y0: 0.324, x1: 0.459, y1: 0.784, text: { cx: 0.34, cy: 0.465, w: 0.15 } },
       { mask: `${SK}/wavy_shimmer-board-1.png`, x0: 0.4561, y0: 0.373, x1: 0.6865, y1: 0.7773, text: { cx: 0.571, cy: 0.5, w: 0.17 } },
     ],
     plinth: { x: 0.4275, y: 0.636, w: 0.059, h: 0.172 },
-    florals: fromPx([[194, 340], [168, 410], [732, 410], [843, 410], [806, 480], [799, 550], [146, 620], [759, 620], [158, 690], [893, 690], [119, 760], [248, 760], [903, 760]]),
+    florals: fromPx([[189, 340], [760, 340], [179, 410], [840, 410], [805, 480], [182, 550], [801, 550], [155, 620], [875, 620], [152, 690], [766, 690], [145, 760], [903, 760]]),
     numberX: 0.6, standeeX: [0.04, 0.97],
   },
   banner: {
@@ -162,10 +163,11 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     // lokasyonlari ve genisligi ayni olsun burdakiyle"): a wide column down the left, over the top to the right
     // shoulder, a cluster on the right from halfway down; the offset rim has its own mask.
     // 2026-11-02 (later): re-shot wavier ("daha wavy olmalı"), the board in front of a garland on both sides, the
-    // words in its middle ("text ortada olmalı").
-    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.357, y0: 0.276, x1: 0.651, y1: 0.82, text: { cx: 0.504, cy: 0.44, w: 0.19 } }],
+    // words in its middle ("text ortada olmalı"). Then in the board she sent ("bunun aynısını yap şekil olarak"):
+    // waves on all four edges, the foot too.
+    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.357, y0: 0.27, x1: 0.66, y1: 0.82, text: { cx: 0.51, cy: 0.44, w: 0.19 } }],
     plinth: { x: 0.462, y: 0.635, w: 0.084, h: 0.245 },
-    florals: fromPx([[443, 60], [561, 130], [571, 200], [642, 270], [715, 340], [730, 410], [272, 550], [271, 620], [195, 690], [756, 690], [300, 760], [298, 830], [780, 830]]),
+    florals: fromPx([[443, 60], [573, 130], [577, 200], [324, 270], [280, 410], [275, 550], [231, 620], [719, 620], [312, 690], [755, 690], [321, 760], [136, 830], [788, 830]]),
     numberX: 0.5, standeeX: [0.06, 0.93],
   },
   fringe: {

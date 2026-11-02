@@ -177,7 +177,9 @@ const FAMILIES: Record<string, [number, number][][]> = {
     }
     if (n < 2000 || n > N * 0.4) { console.log(`guide ${setup}: no outline at the seed (${n})`); return null; }
     let out = m;
-    for (let k = 0; k < 10; k++) {
+    // A board on a coloured rim is held by its rim, so it may drift further from its guide (2026-11-02, the
+    // four-sided Wavy came out 25 px wider than its guide; held at 10 px its face missed its right rim).
+    for (let k = 0; k < (RIM.has(setup) ? 30 : 10); k++) {
       const prev = out.slice();
       for (let i = 0; i < N; i++) if (!prev[i]) { const x = i % W; if ((x > 0 && prev[i - 1]) || (x < W - 1 && prev[i + 1]) || prev[i - W] || prev[i + W]) out[i] = 1; }
     }
@@ -302,7 +304,8 @@ const FAMILIES: Record<string, [number, number][][]> = {
       if (near) {
         // Coloured, as the wall never is: pink, peach or blue by the set (a balloon is too, so only in the band,
         // right of the seed).
-        if (near[i] === 2 && x > sx - 60 && chroma(i) > 16 && lum(i) > 100) rim[i] = b;
+        // Over 11: Frozen Pastel's pale arctic-blue rim reads 12–24 where the window lights it (the wall 1–4).
+        if (near[i] === 2 && x > sx - 60 && chroma(i) > 11 && lum(i) > 100) rim[i] = b;
         continue;
       }
       // Coral: red past green past blue, its hue under ~28° (a yellow balloon's is ~55°, a pink one's past 330°).
