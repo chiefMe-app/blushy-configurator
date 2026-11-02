@@ -37,7 +37,9 @@ const SEEDS: Record<string, [number, number, number, number, number, number][]> 
   triple_arch: [[340, 650, 180, 440, 380, 790], [512, 650, 370, 375, 655, 790], [690, 650, 645, 440, 850, 790]],
   balloon_ring: [],
   round: [[600, 550, 175, 185, 850, 870]],
-  single_wavy: [[540, 520, 380, 220, 700, 880]],
+  // 2026-11-02 (later): the wavy board stands in front now, its left rim in sight: seeded left of centre so the rim
+  // test (right of the seed less 60 px) takes in both sides.
+  single_wavy: [[420, 520, 360, 220, 700, 880]],
   single_fringe: [[0, 0, 218, 258, 806, 850]],
   // The Wavy + Shimmer (new 2026-11-02): laid out as the Arch + Shimmer, the wavy board in front on its rim.
   wavy_shimmer: [[280, 550, 215, 290, 480, 805], [0, 0, 470, 385, 700, 795]],

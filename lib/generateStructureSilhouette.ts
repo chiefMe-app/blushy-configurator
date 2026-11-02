@@ -755,7 +755,9 @@ function customTextGuide(
   const shift =
     roundClear ? pw * 0.11 :
     bannerClear ? pw * 0.05 :
-    garlandSide === "wavy" ? pw * 0.06 :
+    // 2026-11-02 (later): the Wavy board stands in front of its garland, so nothing covers its face: the words
+    // in the middle ("text ortada olmalı"; they sat right of it, clear of a garland that covered its left).
+    garlandSide === "wavy" ? 0 :
     loneArchClear ? (garlandSide === "lonearchleft" ? pw * 0.06 : -pw * 0.05) :
     garlandSide === "left"  ?  pw * cover / 2 :
     garlandSide === "right" ? -pw * cover / 2 : 0;

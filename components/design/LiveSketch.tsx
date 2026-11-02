@@ -78,7 +78,7 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
   },
   arch: {
     room: `${SK}/single_arch-room.webp`, balloons: `${SK}/single_arch-balloons.webp`, families: `${SK}/single_arch-families.png`,
-    boards: [{ mask: `${SK}/single_arch-board-0.png`, x0: 0.2783, y0: 0.237, x1: 0.62, y1: 0.835, text: { cx: 0.4336, cy: 0.42, w: 0.266 } }],
+    boards: [{ mask: `${SK}/single_arch-board-0.png`, x0: 0.2783, y0: 0.237, x1: 0.62, y1: 0.835, text: { cx: 0.445, cy: 0.42, w: 0.266 } }],
     plinth: { x: 0.426, y: 0.65, w: 0.084, h: 0.245 },
     florals: fromPx([[442, 60], [462, 130], [582, 130], [485, 200], [551, 270], [662, 270], [680, 410], [758, 480], [708, 550], [667, 690], [644, 760], [761, 760], [773, 830]]),
     numberX: 0.2, standeeX: [0.13, 0.9],
@@ -129,8 +129,8 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
   },
   banner: {
     room: `${SK}/single_banner-room.webp`, balloons: `${SK}/single_banner-balloons.webp`, families: `${SK}/single_banner-families.png`,
-    // The garland covers the banner's top right: the words sit a little left of centre.
-    boards: [{ mask: `${SK}/single_banner-board-0.png`, x0: 0.209, y0: 0.249, x1: 0.8, y1: 0.83, text: { cx: 0.47, cy: 0.45, w: 0.3 } }],
+    // 2026-11-02: "text ortada olmalı" — the words in the middle (the garland's top right clears them).
+    boards: [{ mask: `${SK}/single_banner-board-0.png`, x0: 0.209, y0: 0.249, x1: 0.8, y1: 0.83, text: { cx: 0.505, cy: 0.45, w: 0.3 } }],
     plinth: { x: 0.46, y: 0.66, w: 0.079, h: 0.23 },
     florals: fromPx([[395, 130], [384, 200], [634, 200], [439, 270], [744, 270], [649, 340], [705, 410], [821, 410], [783, 550], [808, 690], [841, 760], [607, 830], [845, 830]]),
     numberX: 0.14, standeeX: [0.08, 0.95],
@@ -161,16 +161,18 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     // Re-shot 2026-11-02 from a real render of its garland as in the owner's unicorn photo ("wavy backdrop balon
     // lokasyonlari ve genisligi ayni olsun burdakiyle"): a wide column down the left, over the top to the right
     // shoulder, a cluster on the right from halfway down; the offset rim has its own mask.
-    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.408, y0: 0.279, x1: 0.652, y1: 0.831, text: { cx: 0.55, cy: 0.436, w: 0.175 } }],
-    plinth: { x: 0.488, y: 0.646, w: 0.084, h: 0.245 },
-    florals: fromPx([[413, 130], [403, 200], [478, 270], [298, 340], [306, 480], [353, 550], [369, 620], [204, 690], [685, 690], [361, 760], [804, 760], [404, 830], [796, 830]]),
+    // 2026-11-02 (later): re-shot wavier ("daha wavy olmalı"), the board in front of a garland on both sides, the
+    // words in its middle ("text ortada olmalı").
+    boards: [{ mask: `${SK}/single_wavy-board-0.png`, rim: `${SK}/single_wavy-rim-0.png`, x0: 0.357, y0: 0.276, x1: 0.651, y1: 0.82, text: { cx: 0.504, cy: 0.44, w: 0.19 } }],
+    plinth: { x: 0.462, y: 0.635, w: 0.084, h: 0.245 },
+    florals: fromPx([[443, 60], [561, 130], [571, 200], [642, 270], [715, 340], [730, 410], [272, 550], [271, 620], [195, 690], [756, 690], [300, 760], [298, 830], [780, 830]]),
     numberX: 0.5, standeeX: [0.06, 0.93],
   },
   fringe: {
     room: `${SK}/single_fringe-room.webp`, balloons: `${SK}/single_fringe-balloons.webp`, families: `${SK}/single_fringe-families.png`,
     // Re-shot 2026-11-02 from a real render, to the owner's second fringe photo ("fringe neden boyle gozukuyor
     // bunun gibi olmali"): wide vertical colour blocks, tinsel panels over them, packed solid to the floor.
-    boards: [{ mask: `${SK}/single_fringe-board-0.png`, x0: 0.213, y0: 0.252, x1: 0.787, y1: 0.83, text: { cx: 0.41, cy: 0.45, w: 0.32 } }],
+    boards: [{ mask: `${SK}/single_fringe-board-0.png`, x0: 0.213, y0: 0.252, x1: 0.787, y1: 0.83, text: { cx: 0.45, cy: 0.45, w: 0.32 } }],
     plinth: { x: 0.456, y: 0.635, w: 0.0875, h: 0.255 },
     florals: fromPx([[400, 250], [470, 200], [560, 215], [650, 250], [760, 300], [840, 380], [860, 480], [840, 600], [860, 720], [780, 820], [690, 830]]),
     numberX: 0.2, standeeX: [0.06, 0.96],

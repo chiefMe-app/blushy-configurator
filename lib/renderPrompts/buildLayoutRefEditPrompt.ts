@@ -332,11 +332,12 @@ export function buildLayoutRefEditPrompt(
         `bare except for the balloon garland.`;
     } else if (isWavy) {
       // The owner's wavy board photo: a tall solid board whose sides run in a
-      // few soft waves and whose top is softly scalloped, like a wavy mirror.
+      // few waves and whose top is softly scalloped, like a wavy mirror. 2026-11-02: "daha wavy olmalı" —
+      // three deep waves to a side (lib/wavyBoard.ts), the words to match.
       backdropDesc =
         `single wavy-edged backdrop board, ${p.widthCm}cm wide by ${p.heightCm}cm tall — ` +
         `a tall solid filled freestanding board with a fully opaque surface, its two long sides running in ` +
-        `soft gentle waves from top to bottom and its top edge softly scalloped with rounded corners, like a ` +
+        `three deep, clearly visible S-curve waves from top to bottom and its top edge softly scalloped with rounded corners, like a ` +
         `wavy mirror, broad — a little over half as wide as it is tall. The entire face is one continuous solid board, seamless matte ${backdropColorLabel(p.color)} surface, ` +
         `no cut-out opening, no hollow doorway. NOT a plain rounded arch, NOT a rectangle with straight sides.` +
         // 2026-11-01 (the owner: "wavy de border offset olmalı örnekteki gibi"): two layers, the face on a coloured one.
@@ -430,7 +431,7 @@ export function buildLayoutRefEditPrompt(
               `is butted flat against the centre board with no gap. It is NOT a full arch, NOT symmetrical, ` +
               `NOT rounded on both top corners`
           : isWavyP
-            ? `tall solid freestanding board whose two long sides run in soft gentle waves from top to bottom and whose ` +
+            ? `tall solid freestanding board whose two long sides run in three deep, clearly visible S-curve waves from top to bottom and whose ` +
               `top edge is softly scalloped with rounded corners, like a wavy mirror, seamless matte ${pColor} face` +
               (real?.borderColor ? ` on a slightly larger wavy board of the same outline in matte ${backdropColorLabel(real.borderColor)}, ` +
                 `showing as an even rim about 6 cm wide all round the face` : "") +
@@ -1299,7 +1300,7 @@ export function buildLayoutRefEditPrompt(
     // asked for it to be 2 metres across and to meet the ground ("2metre
     // gensiliginde olmali yere degmeli").
     if (t === "round")  return `The backdrop is ONE round disc, a full circle 2 metres across, standing on the floor. `;
-    if (isWavy)         return `The backdrop is ONE tall board with softly wavy sides and a scalloped top, on a coloured rim. `;
+    if (isWavy)         return `The backdrop is ONE tall board with boldly wavy sides and a scalloped top, on a coloured rim. `;
     if (isFringe)       return `The backdrop is ONE square wooden frame filled with layered tiers of tissue and tinsel fringe down to the floor. `;
     if (t === "arch")   return `The backdrop is ONE arch board. `;
     if (t === "banner") return `The backdrop is ONE square board. `;
