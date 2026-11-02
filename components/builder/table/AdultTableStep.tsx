@@ -95,7 +95,6 @@ export default function AdultTableStep({ config, setAdultTable, onFinish, onSkip
         <section key={section.name} className="bz-tb-section" aria-label={section.name}>
           <h2>{section.name}</h2>
           {section.items.map(item)}
-          <SkipAhead onClick={onFinish} testId="adult-to-welcome" />
         </section>
       ))}
 
@@ -109,16 +108,17 @@ export default function AdultTableStep({ config, setAdultTable, onFinish, onSkip
   );
 }
 
-/** The end of a part: Finish, then on to the next part (2026-10-31, the owner: "finalize etmek için bir butona basıp");
- *  and, on the kids' table, straight on to the welcome board too (`onSkipAhead`, 2026-11-02). */
+/** The end of a part: Finalize, then on to the next part (2026-10-31, the owner: "finalize etmek için bir butona basıp");
+ *  and, on the kids' table, straight on to the welcome board too (`onSkipAhead`, 2026-11-02). Only here, at the
+ *  end of the part (2026-11-02, later: "hep son aşamalarda olsun"). */
 export function FinishBar({ done, what, next, onFinish, onSkipAhead, testId }: { done?: boolean; what: string; next: string; onFinish: () => void; onSkipAhead?: () => void; testId: string }) {
   return (
     <div className={`bz-tb-finish ${done ? "done" : ""}`}>
-      <p>{done ? <>✓ Your {what} is finished. Changes are still kept.</> : <>Happy with every choice? Finish the {what} — next comes the {next.toLowerCase()}.</>}</p>
+      <p>{done ? <>✓ Your {what} is finished. Changes are still kept.</> : <>Happy with every choice? Finalize the {what} — next comes the {next.toLowerCase()}.</>}</p>
       <div className="actions">
-        {onSkipAhead && <SkipAhead onClick={onSkipAhead} testId={`${testId}-to-welcome`} bare />}
-        <button type="button" className="bz-next" data-testid={testId} onClick={onFinish}>
-          {done ? `Next: ${next} →` : `Finish the ${what} ✓`}
+        {onSkipAhead && <SkipAhead onClick={onSkipAhead} testId={`${testId}-to-welcome`} />}
+        <button type="button" className="bz-next" data-testid={testId} onClick={onFinish} aria-label={done ? undefined : `Finalize the ${what} → ${next}`}>
+          {done ? `Next: ${next} →` : <><span className="full">Finalize the {what} → {next}</span><span className="short" aria-hidden="true">Finalize → {next}</span></>}
         </button>
       </div>
     </div>
@@ -126,14 +126,13 @@ export function FinishBar({ done, what, next, onFinish, onSkipAhead, testId }: {
 }
 
 /**
- * "Finish the table setup → Welcome board" (2026-11-02, the owner: "her seçim sonrası finalize the backdrop and
- * skip to table setup, sonrasında da welcome board için olmalı aynı şekilde buton"): after every part of a table.
+ * "Finalize the table setup → Welcome board" (2026-11-02, the owner: "sonrasında da welcome board için olmalı aynı
+ * şekilde buton"): at the end of the kids' table, beside finalizing it, past the grown-ups' table.
  */
-export function SkipAhead({ onClick, testId, bare }: { onClick: () => void; testId: string; bare?: boolean }) {
-  const button = (
-    <button type="button" className="bz-decor-cta" data-testid={testId} onClick={onClick}>
-      <span className="full">Finish the table setup → Welcome board</span><span className="short" aria-hidden="true">Finish → Welcome board</span>
+export function SkipAhead({ onClick, testId }: { onClick: () => void; testId: string }) {
+  return (
+    <button type="button" className="bz-decor-cta" data-testid={testId} onClick={onClick} aria-label="Finalize the table setup → Welcome board">
+      <span className="full">Finalize the table setup → Welcome board</span><span className="short" aria-hidden="true">Finalize → Welcome board</span>
     </button>
   );
-  return bare ? button : <div className="bz-tb-ahead">{button}</div>;
 }

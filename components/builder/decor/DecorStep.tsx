@@ -15,14 +15,15 @@ export default function DecorStep(props: DecorStepProps) {
     decorTab, setDecorTab, onGenerate, renderReady, hasRender, generating, onContinue, continueBlocked, d, theme,
     activeSetupTemplateId,
   } = ctx;
-  // 2026-11-02 (owner: "her seçim sonrası finalize the backdrop and skip to table setup"): on every tab, not
-  // only after Extras — the backdrop is finished when she says so; the tabs she skips keep their defaults.
+  // 2026-11-02 (owner, later: "her stepe koyalım demek istemedim, extras'tan sonra … öncesinde 'first generate
+  // render to see final design' … 'finalize the backdrop to table setup' desin"): only on the last tab, Extras.
   const finish = (
     <button type="button" className="bz-decor-cta" onClick={onContinue} disabled={continueBlocked} data-testid="finish-backdrop"
       title={continueBlocked ? "Pick your arch's size first" : undefined}>
-      <span className="full">Finish the backdrop → Table setup</span><span className="short" aria-hidden="true">Finish → Table setup</span>
+      <span className="full">Finalize the backdrop → Table setup</span><span className="short" aria-hidden="true">Finalize → Table setup</span>
     </button>
   );
+  const offerRender = !renderReady && !d.backdropItems.some((i) => i.type === "themed_set");
   return (
     <div>
       {/* == Compact decor head + the four tabs (2026-10-22 redesign) == */}
@@ -77,12 +78,12 @@ export default function DecorStep(props: DecorStepProps) {
             <button type="button" className="bz-decor-hint" onClick={() => setDecorTab(decorTab + 1)}>
               Next up: {DECOR_TABS[decorTab + 1].name} →
             </button>
-            {finish}
           </span>
         ) : (
           <span className="bz-decor-actions">
+            {offerRender && <span className="bz-decor-first" data-testid="render-first-hint">First <b>Generate render</b> to see your final design.</span>}
             {/* The Customized Themed set is its real photo: no render is made of it. */}
-            {!renderReady && !d.backdropItems.some((i) => i.type === "themed_set") && (
+            {offerRender && (
               <button type="button" className="bz-decor-hint" onClick={onGenerate} data-testid="generate-render"
                 disabled={generating || d.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}>
                 {generating ? "Generating…" : hasRender ? "Regenerate render ✨" : "Generate render ✨"}

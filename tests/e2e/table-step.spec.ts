@@ -101,11 +101,11 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await expect(page.getByTestId("chairs-colour").getByRole("radio")).toHaveCount(3); // white, pink, light blue
   await page.getByTestId("chairs-colour").getByRole("radio", { name: "pastel pink" }).click();
   await expect(chairs.getByRole("radio", { name: /Colour chair for kids/ }).locator("img")).toHaveAttribute("src", "/design/table/chairs/blue_kids/f8bbd0.webp");
-  await expect(next(page)).toHaveText(/Finish the kids' table/);
+  await expect(next(page)).toHaveText(/Finalize the kids' table/);
   await expect(page.getByRole("radiogroup", { name: "Party hats", exact: true }).getByRole("radio")).toHaveCount(2); // None + the cone hat (2026-10-29)
   await page.getByRole("radiogroup", { name: "Party hats", exact: true }).getByRole("radio", { name: /None/ }).click();
   // 2026-10-31 (owner): Finish the table, then the grown-ups' table is asked — not Package.
-  await expect(next(page)).toHaveText(/Finish the kids' table/);
+  await expect(next(page)).toHaveText(/Finalize the kids' table/);
   await next(page).click();
   await expect(page.getByTestId("adult-intro")).toBeVisible();
   expect(guard.blocked).toEqual([]);
@@ -134,7 +134,7 @@ test("K10 the grown-ups' table: asked only once the kids' table is finished, the
   await page.getByRole("tab", { name: /Kids' table/ }).click();
   await expect(page.getByTestId("finish-kids-table")).toHaveText(/Next: Grown-ups' table/);
   await page.getByRole("tab", { name: /Grown-ups' table/ }).click();
-  await expect(next(page)).toHaveText(/Finish the grown-ups' table/);
+  await expect(next(page)).toHaveText(/Finalize the grown-ups' table/);
   await next(page).click();
   await expect(page.getByTestId("welcome-intro")).toBeVisible();
   await expect(page.getByRole("tab", { name: /Table setup/ }).locator(".n")).toHaveText("✓");
@@ -205,7 +205,7 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
       return h.y + h.height <= n.y + 0.01 && n.y + n.height <= l.y + 0.01;
     })).toBe(true);
   }
-  await expect(next(page)).toHaveText(/Finish the welcome board/);
+  await expect(next(page)).toHaveText(/Finalize the welcome board/);
   await next(page).click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   await page.getByRole("button", { name: "← Back" }).click();

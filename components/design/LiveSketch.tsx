@@ -22,6 +22,7 @@ import {
 import { useLetteringLayout } from "./useLetteringLayout";
 import { hexPaletteKind, sceneBalloonSet, setHexes, themeBalloonSets } from "@/lib/balloonSets";
 import { bannerPrintTheme } from "@/lib/bannerPrintThemes";
+import { asPhotographed, labToRgb, recolourPixel, rgbToLab, type Lab } from "@/lib/balloonRecolour";
 import { wavyBoardPath, wavyFacePath, wavyBorderColor } from "@/lib/wavyBoard";
 
 const VB = 1000;
@@ -253,7 +254,14 @@ const tintHex = (t: [number, number, number], l: number) => "#" + t.map((k) =>
     .toString(16).padStart(2, "0")).join("");
 const isWhite = (h: string) => { const [r, g, b] = hexRgb(h || "#ffffff"); return r > 246 && g > 246 && b > 246; };
 
-type BaseData = { img: ImageData; fam: Uint8Array; means: { rgb: Rgb; l: number; n: number }[]; neutral: boolean };
+/** `lab` is the family's mean in Lab, its lightness what its repaint keeps each pixel's light relative to. */
+type BaseData = { img: ImageData; fam: Uint8Array; means: { rgb: Rgb; lab: Lab; n: number }[]; neutral: boolean };
+/** The set colours a set shot (/design/sketch/<theme>-<set>/…, or a welcome garland cut from one) was taken
+ *  with, in family order; null for any other base. */
+function shotColours(src: string): string[] | null {
+  const m = src.match(/\b(unicorn|frozen)-(pastel|bright)\b/);
+  return m ? setHexes(themeBalloonSets(m[1])[m[2] as "pastel" | "bright"]) : null;
+}
 const AS_SHOT = 255;
 const baseCache = new Map<string, Promise<BaseData>>();
 const pixelsOf = (src: string, w?: number, h?: number) => new Promise<ImageData>((resolve, reject) => {
@@ -277,16 +285,18 @@ function loadBase(src: string, familiesSrc: string, step = 100): Promise<BaseDat
       const px = img.data;
       const fam = new Uint8Array(img.width * img.height);
       const last = Math.round(200 / step);
-      const sum = Array.from({ length: last + 1 }, () => [0, 0, 0, 0]);
+      const sum = Array.from({ length: last + 1 }, () => [0, 0, 0, 0, 0, 0, 0]);
       for (let k = 0, i = 0; i < px.length; k++, i += 4) {
         const f = step < 100 && map.data[i] > 230 ? AS_SHOT : Math.min(last, Math.round(map.data[i] / step));
         fam[k] = f;
         if (f === AS_SHOT || px[i + 3] < 128) continue;
+        const [L, a, b] = rgbToLab(px[i], px[i + 1], px[i + 2]);
         sum[f][0] += px[i]; sum[f][1] += px[i + 1]; sum[f][2] += px[i + 2]; sum[f][3]++;
+        sum[f][4] += L; sum[f][5] += a; sum[f][6] += b;
       }
-      const means = sum.map(([r, g, b, n]) => {
+      const means = sum.map(([r, g, b, n, L, A, B]) => {
         const rgb: Rgb = n ? [r / n, g / n, b / n] : [235, 235, 235];
-        return { rgb, l: lum(...rgb), n };
+        return { rgb, lab: (n ? [L / n, A / n, B / n] : rgbToLab(...rgb)) as Lab, n };
       });
       return { img, fam, means, neutral: step === 100 };
     });
@@ -330,30 +340,42 @@ export function useRecoloredBase(src: string | null, familiesSrc: string, palett
       // left), then any family over takes its nearest. Not greedy: a greedy match gave a peach family the rose
       // (a little nearer) and so the fuchsia family the peach, darkened to brown; and a family the photo hasn't
       // (a four-colour set's fifth turn) took a colour from one it has.
+      // A set shot's families are matched by the colour each was shot as, not as the photo renders it (darker
+      // and greyer than its swatch, so Green 630 chosen on the Green 630 family was repainted, in the raw swatch).
+      const shotHexes = shotColours(src);
+      const ref = means.map((m, f) => (shotHexes?.[f] ? hexRgb(shotHexes[f]) : m.rgb));
       const fams = means.map((m, f) => f).filter((f) => !target[f] && means[f].n > 0);
-      const free = cols.map((c, k) => k).filter((k) => !used.has(k));
+      // A chosen colour the shot shows as photographed (its silver and clear) is there already: it takes no
+      // family (on Frozen's pastel shot, Silver took the blue family and the Royal Blue chosen never showed).
+      const shown = (k: number) => !!shotHexes?.some((h, f) => !means[f]?.n && h.toLowerCase() === palette[k].toLowerCase());
+      const own = cols.some((c, k) => !shown(k));
+      const free = cols.map((c, k) => k).filter((k) => !used.has(k) && !(own && shown(k)));
       let best: number[] = [], bestD = Infinity;
       const pick = (fi: number, taken: number[], d: number) => {
         if (d >= bestD) return;
         if (fi === fams.length || taken.filter((k) => k >= 0).length === free.length) { bestD = d; best = [...taken]; return; }
-        for (const k of free) if (!taken.includes(k)) pick(fi + 1, [...taken, k], d + dist(means[fams[fi]].rgb, cols[k]));
+        for (const k of free) if (!taken.includes(k)) pick(fi + 1, [...taken, k], d + dist(ref[fams[fi]], cols[k]));
         // With more families than colours, a family may wait for the nearest-colour pass.
         if (fams.length - fi > free.length - taken.filter((k) => k >= 0).length) pick(fi + 1, [...taken, -1], d);
       };
       pick(0, [], 0);
       best.forEach((k, i) => { if (k >= 0) target[fams[i]] = cols[k]; });
-      for (const f of fams) if (!target[f] && cols.length) target[f] = [...cols].sort((a, b) => dist(means[f].rgb, a) - dist(means[f].rgb, b))[0];
+      const spare = cols.filter((c, k) => !(own && shown(k)));
+      for (const f of fams) if (!target[f] && spare.length) target[f] = [...spare].sort((a, b) => dist(ref[f], a) - dist(ref[f], b))[0];
       const out = new ImageData(new Uint8ClampedArray(img.data), img.width, img.height);
       const px = out.data;
-      const keep = target.map((t, f) => !t || dist(t, means[f].rgb) < 24 || (neutral && f === 0 && sat(t) < 0.12 && lum(...t) > 170));
+      const keep = target.map((t, f) => !t || dist(t, ref[f]) < 24 || (neutral && f === 0 && sat(t) < 0.12 && lum(...t) > 170));
+      // Repainted in Lab, light and shade kept whatever the target's lightness (lib/balloonRecolour): mapped
+      // per channel in RGB, a dark fuchsia family turned a pale rose went flat and muddy ("boyanmış gibi"). On a
+      // set shot the chosen colour is first made as the shot renders its own set colours.
+      const shot = (shotHexes ?? []).flatMap((h, f) => (means[f]?.n ? [{ swatch: rgbToLab(...hexRgb(h)), photo: means[f].lab }] : []));
+      const targetLab = target.map((t) => t && asPhotographed(rgbToLab(...t), shot));
       for (let k = 0, i = 0; i < px.length; k++, i += 4) {
         if (px[i + 3] === 0) continue;
         const f = fam[k];
         if (f === AS_SHOT || keep[f]) continue;
-        const t = target[f]!, lb = means[f].l, l = lum(px[i], px[i + 1], px[i + 2]);
-        for (let c = 0; c < 3; c++) {
-          px[i + c] = l <= lb ? t[c] * (l / lb) : t[c] + (255 - t[c]) * ((l - lb) / (255 - lb));
-        }
+        const o = labToRgb(...recolourPixel(rgbToLab(px[i], px[i + 1], px[i + 2]), means[f].lab[0], targetLab[f]!));
+        px[i] = o[0]; px[i + 1] = o[1]; px[i + 2] = o[2];
       }
       const cv = document.createElement("canvas");
       cv.width = out.width; cv.height = out.height;

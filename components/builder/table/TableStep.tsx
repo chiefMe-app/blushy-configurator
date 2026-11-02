@@ -8,7 +8,7 @@ import { CHAIR_COLOURS, FOILS, NONE, THEMED_ITEMS, isThemed, PLAIN_COLOURS, PLAT
 import { TABLE_FONTS, fontCss, tableFont, type TableFont } from "@/lib/studio/tableFonts";
 import { COLOUR_OF, FONT_OF, nameColour, wordsColour, MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, WORDS_ITEMS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup, type WordsKey } from "@/lib/studio/tableSetup";
 import { GlyphDefs, glyph, scallop, type GlyphColours } from "@/components/studio/table/glyphs";
-import { FinishBar, SkipAhead } from "@/components/builder/table/AdultTableStep";
+import { FinishBar } from "@/components/builder/table/AdultTableStep";
 
 /** The printed words in their colour, with a shadow that keeps light words readable on the design. */
 export function wordsStyle(hex: string, font?: TableFont) {
@@ -255,7 +255,6 @@ export default function TableStep({ config, setTable, onFinish, onFinishTables }
         <section key={section.name} className="bz-tb-section" aria-label={section.name}>
           <h2>{section.name}</h2>
           {section.items.map(item)}
-          <SkipAhead onClick={onFinishTables} testId="kids-to-welcome" />
         </section>
       ))}
 

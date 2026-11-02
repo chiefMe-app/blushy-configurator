@@ -916,16 +916,16 @@ export function buildLayoutRefEditPrompt(
   // lines below (a separate name has produced a second plinth).
   const frontOpenFrameSentence = hasOpenFramePair
     ? `Two pieces side by side: a solid white arch board on the ${solidSide}, and on the ${openFrameSide} an OPEN ` +
-      `arch frame — a thick white arch-shaped band with a hollow middle you see the grey wall through, its two legs standing apart on the floor with nothing joining them at the bottom, and its garland coming over its top and down its OUTER side to the floor, the opening left clear` +
+      `arch frame — a thick white arch-shaped band with a hollow middle you see the grey wall through, its two legs standing apart on the floor with nothing joining them at the bottom, and its garland coming up over its top and cascading down its FRONT, through the opening, to the floor, where it spreads into a full cluster, with a small cluster on the floor by its other leg` +
       (sceneModel.plinths.length > 0 ? `, with the one white cylindrical pedestal column on the floor in front, between them. ` : `. `)
     : "";
   // Said in frontShapeLine now, at the very start.
   const frontOpenFrameLine = "";
   // Superseded 2026-10-21: no cluster on the frame's face any more.
   const openFrameDetailLine = hasOpenFramePair
-    // 2026-10-23: down the outer side, the opening clear (the customer's photo;
-    // 10-22 to 10-23 it came down through the opening).
-    ? `The frame's garland comes over its crown and down its outer side to the floor; nothing stands in the opening. ` +
+    // 2026-10-23 to 11-02 down the outer side, the opening clear; since 2026-11-02 (her photo of a garland
+    // flowing down an arch's face) down the front, through the opening.
+    ? `The frame's garland comes over its crown and flows down the frame's FRONT, through the middle of the opening, to the floor — a thick, full garland, the grey wall still showing through the opening beside it. ` +
       (sceneModel.panels.some((p) => p.text.enabled || p.graphic.enabled)
         ? `No lettering and no artwork on the ${openFrameSide}-hand backdrop — any text or illustration ` +
           `belongs on the ${solidSide}-hand one only. `

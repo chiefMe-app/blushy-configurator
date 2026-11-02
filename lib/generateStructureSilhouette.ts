@@ -3191,19 +3191,36 @@ export function generateStructureSilhouette(
           [342, 426, 43, "F"], [152, 630, 65, "F"], [348, 725, 52, "F"], [ 96, 825, 43, "F"],
           [287, 851, 39, "F"], [322, 938, 43, "F"],
         ];
+        // 2026-11-02 (the owner, with her photo of a garland on an arch: "open arch'tan gelen balonlar böyle
+        // olsun referanstaki gibi", and asked: through the opening, not down the outer side): the frame's
+        // garland comes up over its left shoulder and across its crown, then down its FRONT through the
+        // opening to the floor, where it spreads into a full cluster; a small cluster stands by its left leg.
+        // Laid out along that path (scratch frametable.cjs) in the same photo pixels as before.
         const ARCH_FRAME_FRAME_REF: RefItem[] = [
-          [ 875, 267, 59, "B"], [ 788, 295, 45, "C"], [ 970, 322, 36, "S"], [1015, 304, 16, "S"],
-          [1015, 285, 45, "W"], [1093, 299, 50, "C"], [1061, 381, 59, "L"], [ 870, 358, 36, "B"],
-          [ 761, 385, 36, "W"], [1184, 476, 68, "B"], [1115, 440, 22, "W"], [1156, 576, 59, "W"],
-          [1111, 531, 20, "W"], [1148, 600, 56, "W"], [1144, 664, 32, "S"], [1212, 692, 48, "L"],
-          [1160, 708, 16, "B"], [1184, 732, 16, "B"], [1136, 772, 44, "B"], [1104, 820, 20, "S"],
-          [1176, 856, 52, "L"], [1232, 916, 60, "B"], [1096, 852, 16, "S"], [1140, 952, 20, "S"],
-          [1148, 920, 16, "W"],
-          [ 984, 217, 64, "F"], [ 793, 335, 50, "F"], [1147, 385, 41, "F"], [1129, 490, 50, "F"],
-          [1216, 764, 60, "F"], [1104, 912, 40, "F"],
-          // (2026-10-22 to 10-23 a pile also came through the lower opening and
-          // out over the floor. Removed 2026-10-23: the customer circled it and
-          // asked for their photo, where the opening is clear.)
+          [677, 489, 42, "W"], [659, 486, 27, "B"], [731, 486, 31, "L"], [696, 486, 18, "B"], [708, 466, 44, "F"], [713, 446, 37, "W"],
+          [660, 439, 33, "C"], [752, 425, 27, "L"], [730, 449, 18, "S"], [719, 416, 56, "B"], [676, 397, 32, "W"], [756, 390, 24, "L"],
+          [712, 393, 20, "W"], [742, 386, 55, "B"], [704, 370, 28, "L"], [784, 376, 23, "B"], [765, 357, 16, "W"], [756, 360, 56, "C"],
+          [717, 342, 26, "L"], [804, 350, 26, "S"], [752, 357, 18, "B"], [783, 355, 46, "W"], [741, 348, 29, "L"], [839, 343, 30, "W"],
+          [822, 338, 18, "B"], [780, 346, 44, "F"], [817, 327, 53, "L"], [771, 315, 31, "B"], [861, 327, 22, "W"], [796, 356, 15, "C"],
+          [830, 316, 45, "F"], [858, 326, 56, "L"], [801, 352, 32, "S"], [908, 347, 24, "B"], [822, 324, 14, "W"], [865, 346, 41, "L"],
+          [835, 342, 30, "W"], [925, 358, 23, "B"], [877, 363, 15, "L"], [907, 352, 56, "B"], [860, 384, 20, "W"], [961, 355, 34, "C"],
+          [912, 376, 16, "L"], [920, 383, 48, "S"], [894, 402, 30, "B"], [980, 391, 20, "W"], [905, 412, 15, "L"], [950, 437, 37, "W"],
+          [888, 439, 34, "B"], [998, 435, 26, "L"], [925, 436, 19, "B"], [937, 414, 44, "F"], [969, 460, 44, "W"], [903, 468, 25, "C"],
+          [1006, 455, 23, "L"], [941, 482, 20, "S"], [961, 473, 49, "F"], [941, 499, 39, "B"], [905, 497, 31, "W"], [1011, 494, 23, "L"],
+          [950, 478, 18, "W"], [954, 533, 47, "B"], [900, 526, 31, "L"], [992, 523, 28, "B"], [933, 542, 16, "W"], [938, 572, 45, "C"],
+          [909, 578, 32, "L"], [1008, 584, 30, "S"], [982, 544, 19, "B"], [950, 611, 56, "W"], [905, 589, 21, "L"], [988, 587, 20, "W"],
+          [953, 626, 15, "B"], [931, 631, 51, "L"], [901, 639, 34, "B"], [998, 647, 31, "W"], [940, 636, 14, "C"], [932, 653, 50, "F"],
+          [934, 689, 47, "L"], [905, 665, 28, "S"], [996, 660, 24, "B"], [961, 680, 17, "W"], [980, 660, 44, "F"], [947, 698, 36, "L"],
+          [903, 697, 23, "W"], [1020, 724, 31, "B"], [950, 731, 20, "L"], [976, 754, 49, "B"], [909, 746, 27, "W"], [1017, 752, 30, "C"],
+          [974, 756, 18, "L"], [981, 796, 58, "S"], [904, 785, 33, "B"], [1032, 780, 21, "W"], [948, 805, 18, "L"], [974, 836, 53, "W"],
+          [907, 812, 31, "B"], [1012, 839, 31, "L"], [973, 833, 17, "B"], [958, 867, 48, "W"], [882, 847, 30, "C"], [1027, 852, 23, "L"],
+          [970, 842, 19, "S"], [986, 849, 47, "F"], [843, 924, 31, "B"], [849, 942, 15, "W"], [859, 930, 69, "L"], [873, 938, 16, "W"],
+          [894, 883, 29, "B"], [874, 929, 14, "L"], [916, 890, 38, "B"], [899, 935, 20, "W"], [944, 893, 35, "C"], [943, 928, 20, "L"],
+          [961, 925, 59, "S"], [963, 937, 19, "B"], [979, 916, 36, "W"], [988, 925, 16, "L"], [1017, 928, 37, "W"], [1006, 926, 19, "B"],
+          [1039, 924, 41, "L"], [1033, 925, 17, "B"], [1065, 876, 70, "W"], [1070, 924, 16, "C"], [1087, 921, 28, "L"], [1096, 923, 14, "S"],
+          [1099, 913, 41, "B"], [1119, 923, 16, "W"], [1126, 930, 34, "L"], [1134, 939, 17, "W"], [617, 922, 27, "B"], [604, 946, 19, "L"],
+          [640, 881, 38, "B"], [641, 934, 17, "W"], [665, 870, 38, "C"], [677, 933, 19, "L"], [692, 926, 27, "S"], [693, 935, 17, "B"],
+          [710, 911, 34, "W"], [698, 946, 15, "L"],
         ];
         // See the Triple Arch branch for how this is mapped.
         const TRIPLE_ARCH_REF: RefItem[] = [
@@ -4171,8 +4188,9 @@ export function generateStructureSilhouette(
         } else if (framePanel && archPanels.length === 1) {
           // 2026-10-21, customer reference: a solid arch with its garland down
           // its OUTER edge, and an OPEN arch frame — a thick white hollow arch
-          // you see the wall through — standing beside it with ITS garland down
-          // its outer edge, the plinth centred between. Both are the approved
+          // you see the wall through — standing beside it (its garland: since
+          // 2026-11-02 down its front through the opening, ARCH_FRAME_FRAME_REF),
+          // the plinth centred between. Both are the approved
           // Single Arch statement garland. The old version packed the frame's
           // opening with a balloon cluster, which rendered as a wall of
           // balloons ("arch+open frame diyince bu cikti yanlis").

@@ -185,7 +185,7 @@
 .bz-decor-cta { border: 0; border-radius: 999px; background: var(--bz-pink); color: #fff; font: 400 18px var(--bz-hand); padding: 10px 22px 7px; cursor: pointer;
   box-shadow: 0 5px 0 rgba(255,13,102,.13), 0 11px 25px rgba(255,13,102,.15); }
 .bz-decor-cta:disabled { opacity: .55; cursor: default; }
-/* 2026-11-02: "Finish the backdrop → Table setup" on every tab (in .bz-decor-actions); a short label on phones. */
+/* 2026-11-02: "Finalize the backdrop → Table setup" (in .bz-decor-actions); a short label on phones. */
 .bz-decor-cta .short { display: none; }
 @media (max-width: 520px) { .bz-decor-cta .full { display: none; } .bz-decor-cta .short { display: inline; } .bz-decor-cta { font-size: 16px; padding: 9px 16px 6px; } }
 
@@ -1139,6 +1139,9 @@ div.bz-stale-banner { cursor: default; }
 .bz-land-pack b { color: var(--bz-pink); }
 .bz-md-pack { margin: 0 0 20px; }
 .bz-decor-actions { display: inline-flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; align-items: center; }
+/* 2026-11-02: before finalizing the backdrop, a nudge to see the render first. */
+.bz-decor-first { flex: 1 0 100%; text-align: right; font-size: 13px; color: var(--bz-muted); }
+.bz-decor-first b { color: var(--bz-pink); }
 
 /* ===== Table Setup studio (Phase 3, 2026-10-27) ===== */
 .bz-ts { min-height: 100vh; background: #fff; }
@@ -1325,9 +1328,11 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-finish p { margin: 0; flex: 1 1 220px; font-size: 13.5px; color: var(--bz-muted); }
 .bz-tb-finish.done { border-style: solid; border-color: #bfe5c9; background: #f1fbf4; }
 .bz-tb-finish.done p { color: #2f7a46; font-weight: 600; }
-/* 2026-11-02: on to the welcome board from any part of a table; the grown-ups' table skipped at any time. */
-.bz-tb-finish .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
-.bz-tb-ahead { display: flex; justify-content: flex-end; margin-top: 12px; }
+/* 2026-11-02: at the end of the kids' table, on to the welcome board too; the grown-ups' table skipped at any time. */
+.bz-tb-finish .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: flex-end; max-width: 100%; }
+/* On a phone the long "Finalize the kids' table → Grown-ups' table" ran off the screen: the short one there. */
+.bz-tb-finish .bz-next .short { display: none; }
+@media (max-width: 520px) { .bz-tb-finish .bz-next .full { display: none; } .bz-tb-finish .bz-next .short { display: inline; } }
 .bz-tb-jump { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 14px; border-radius: 16px; border: 1.5px dashed var(--bz-pink-soft); background: var(--bz-pink-fog); }
 .bz-tb-jump span { font-size: 13px; color: var(--bz-muted); }
 .bz-tb-jump .bz-back { padding: 8px 14px 5px; font-size: 16px; }

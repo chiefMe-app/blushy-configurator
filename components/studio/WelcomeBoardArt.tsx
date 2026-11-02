@@ -17,7 +17,7 @@ import PIECES from "@/lib/studio/welcomePieces.json";
 import { tableFont, fontCss, asPrinted } from "@/lib/studio/tableFonts";
 import { boardArt, boardFace, boardWordsColour, type WelcomeBoard } from "@/lib/studio/welcomeBoard";
 import { setShot, useRecoloredBase } from "@/components/design/LiveSketch";
-import { wavyBoardPath, wavyBorderColor, wavyFacePath } from "@/lib/wavyBoard";
+import { WAVY_BORDER, wavyBoardPath, wavyBorderColor, wavyFacePath } from "@/lib/wavyBoard";
 
 const rgb = (hex: string) => { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
 const isLight = (hex: string) => { const [r, g, b] = rgb(hex); return (0.3 * r + 0.59 * g + 0.11 * b) / 255 > 0.75; };
@@ -306,6 +306,8 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
       ? `M0,${cy}A${w / 2},${w / 2} 0 1 1 ${w},${cy}A${w / 2},${w / 2} 0 1 1 0,${cy}Z`
       : wavy ? wavyBoardPath(0, top, w, h) : `M0,${top}H${w}V${top + h}H0Z`;
   const shape = wavy ? wavyFacePath(0, top, w, h) : outline;
+  /** How far the art is set in from the board's edge: a wavy board's rim and half its waves. */
+  const artIn = wavy ? w * (WAVY_BORDER + 0.02) : 0;
   const rim = wavy ? wavyBorderColor(board.rimColor, balloons?.length ? balloons : theme.balloonColors ?? [], theme.accent) : null;
   // Where the words may go: inside the shape, clear of the corners (and of a garland).
   const space = board.shape === "round"
@@ -440,8 +442,10 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
       <g clipPath={`url(#${uid}-clip)`} style={{ mixBlendMode: "multiply" }} data-part="print">
         <rect x={0} y={top} width={w} height={h} fill={art || board.design === "corners" ? "#FFFFFF" : board.colour} />
         {art && (
+          // On a wavy board the art sits inside the rim and the waves (2026-11-02, "rainbowlar gözükmüyor": laid
+          // over the whole board, its corner pictures were under the rim).
           // eslint-disable-next-line jsx-a11y/alt-text
-          <image data-part="art" href={art} x={0} y={top} width={w} height={h} preserveAspectRatio="xMidYMid slice" />
+          <image data-part="art" href={art} x={f1(artIn)} y={f1(top + artIn)} width={f1(w - 2 * artIn)} height={f1(h - 2 * artIn)} preserveAspectRatio="xMidYMid slice" />
         )}
         {board.design === "corners" && <PaintedCorners w={w} h={h} top={top} shape={board.shape} inks={paintInks(palette)} motif={cornerMotif(theme.id)} uid={uid} />}
       </g>

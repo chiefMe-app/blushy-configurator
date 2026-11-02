@@ -431,18 +431,18 @@ export default function ConfigurePage() {
   // A long label and a short one for phones (blushy.css).
   const label = (full: string, short: string) => <><span className="full">{full}</span><span className="short" aria-hidden="true">{short}</span></>;
   if (onKids) {
-    if (config.table?.enabled && !config.table.done) { nextLabel = label("Finish the kids' table ✓", "Finish ✓"); onNext = finishKids; }
+    if (config.table?.enabled && !config.table.done) { nextLabel = label("Finalize the kids' table ✓", "Finalize ✓"); onNext = finishKids; }
     else if (!config.table) {
       nextLabel = label("Skip the kids' table →", "Skip →");
       onNext = () => { setTable({ ...defaultTableSetup(themeById(config.theme) ?? THEMES[0]), enabled: false }); setTableView("adults"); };
     } else { nextLabel = label("Next: Grown-ups' table →", "Next →"); onNext = () => setTableView("adults"); }
   }
   if (onAdults) {
-    if (config.adultTable?.enabled && !config.adultTable.done) { nextLabel = label("Finish the grown-ups' table ✓", "Finish ✓"); onNext = finishAdults; }
+    if (config.adultTable?.enabled && !config.adultTable.done) { nextLabel = label("Finalize the grown-ups' table ✓", "Finalize ✓"); onNext = finishAdults; }
     else { nextLabel = config.adultTable ? label("Next: Welcome board →", "Next →") : label("Skip to Welcome board →", "Skip →"); onNext = toWelcome; }
   }
   if (onWelcome) {
-    if (config.welcomeBoard?.enabled && !config.welcomeBoard.done) { nextLabel = label("Finish the welcome board ✓", "Finish ✓"); onNext = finishWelcome; }
+    if (config.welcomeBoard?.enabled && !config.welcomeBoard.done) { nextLabel = label("Finalize the welcome board ✓", "Finalize ✓"); onNext = finishWelcome; }
     else { nextLabel = config.welcomeBoard ? label("Continue to Package →", "Package →") : label("Skip to Package →", "Skip →"); onNext = toPackage; }
   }
   // Back walks the parts and tabs of Decor before leaving it.

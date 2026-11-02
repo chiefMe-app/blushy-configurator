@@ -1,23 +1,23 @@
 {
  "garland-frozen-bright": {
-  "w": 575,
+  "w": 492,
   "h": 891,
-  "edge": 0.4383
+  "edge": 0.5122
  },
  "garland-frozen-pastel": {
-  "w": 575,
+  "w": 484,
   "h": 891,
-  "edge": 0.4383
+  "edge": 0.5207
  },
  "garland-unicorn-bright": {
-  "w": 575,
+  "w": 489,
   "h": 891,
-  "edge": 0.4383
+  "edge": 0.5153
  },
  "garland-unicorn-pastel": {
-  "w": 575,
+  "w": 495,
   "h": 891,
-  "edge": 0.4383
+  "edge": 0.5091
  },
  "roses-spray": {
   "w": 720,
