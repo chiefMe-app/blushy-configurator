@@ -56,6 +56,7 @@ import { usePieceRender } from "@/components/builder/usePieceRender";
 import { nodeJpeg, svgLayers } from "@/components/builder/nodeJpeg";
 
 import Sprinkles from "@/components/design/Sprinkles";
+import { REQUIRE_RENDER } from "@/lib/renderGate";
 
 type View = "configure" | "success";
 
@@ -457,7 +458,8 @@ export default function ConfigurePage() {
   // A backdrop the customer is designing is finished with its render (2026-11-03); the Customized Themed set
   // is its own photo, and no render is made of it.
   const themedSet = config.decor.backdropItems.some((i) => i.type === "themed_set");
-  const backdropFinished = config.decor.backdropChoice !== "yes" || themedSet || decorRenderReady;
+  // Off until release (lib/renderGate.ts): the render offered, not waited for.
+  const backdropFinished = !REQUIRE_RENDER || config.decor.backdropChoice !== "yes" || themedSet || decorRenderReady;
   const onTable = step === 2 && decorPart === "table";
   const onWelcome = step === 2 && decorPart === "welcome";
   const onGiveaways = step === 2 && decorPart === "giveaways";

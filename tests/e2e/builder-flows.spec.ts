@@ -44,10 +44,10 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
     if ((page.viewportSize()?.width ?? 1000) >= 768) await expect(page.getByTestId("sketch-lettering").locator("path").first()).toBeAttached();
     await shot(page, `f1-04-decor-${tab.toLowerCase()}`);
   }
-  // The Extras tab ends in Finalize the backdrop, not a footer Next, and only once rendered (2026-11-03: "finalize
-  // the backdrop çıksın, next table setup çıkmasın … generate render yapmadan finalize basılamasın").
+  // The Extras tab ends in Finalize the backdrop, not a footer Next (2026-11-03: "finalize the backdrop çıksın,
+  // next table setup çıkmasın"); the render is offered, not waited for until release (lib/renderGate.ts).
   await expect(next(page)).toHaveCount(0);
-  await expect(page.getByTestId("finish-backdrop")).toBeDisabled();
+  await expect(page.getByTestId("finish-backdrop")).toBeEnabled();
   // Generate render, signed out (2026-10-27: renders need an account): the
   // sign-in window, and no render asked for.
   await renderButton(page).click();
@@ -280,15 +280,14 @@ test("F12 renders still running from the same connection: says so, and Retry sta
   await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
 });
 
-test("F13 a designed backdrop is finalized only with its render; the next parts wait for it", async ({ page, guard }) => {
+test("F13 a designed backdrop can be finalized without its render, which stays offered", async ({ page, guard }) => {
   await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Extras");
-  // 2026-11-03 (the owner: "generate render yapmadan finalize render butonuna basılamasın").
+  // 2026-11-03 (the owner: "şimdilik generate render'a zorlamayı kapayalım, release ederken koyarız").
   await expect(renderButton(page)).toBeVisible();
   await expect(next(page)).toHaveCount(0);
-  await expect(page.getByTestId("finish-backdrop")).toBeDisabled();
-  await expect(page.getByRole("tab", { name: /Table setup/ })).toBeDisabled();
-  await expect(page.getByRole("tab", { name: /Welcome board/ })).toBeDisabled();
+  await expect(page.getByTestId("finish-backdrop")).toBeEnabled();
+  await expect(page.getByRole("tab", { name: /Table setup/ })).toBeEnabled();
   expect(guard.blocked.some((r) => r.url().includes("/api/generate-controlled-render"))).toBe(false);
   expect(guard.supabase.requests).toEqual([]); // nor any sign-in asked for
 });

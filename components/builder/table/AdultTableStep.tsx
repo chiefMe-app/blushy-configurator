@@ -6,6 +6,7 @@ import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { NONE, PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import { ADULT_COLOUR_OF, ADULT_SECTIONS, MAX_GUESTS, MIN_GUESTS, adultCounts, adultItem, adultTotal, clampGuests, defaultAdultTable, type AdultItemKey, type AdultOption, type AdultTable } from "@/lib/studio/adultTable";
 import { adultColours, AdultGlyph } from "@/components/studio/table/AdultTableSketch";
+import { REQUIRE_RENDER } from "@/lib/renderGate";
 
 const unitLabel = (o: AdultOption) => `AED ${formatAED(o.price)} ${o.unit === "per_guest" ? "each" : "a table"}`;
 
@@ -117,15 +118,17 @@ export interface FinishRender { ready: boolean; stale: boolean; loading: boolean
  *  end of the part (2026-11-02, later: "hep son aşamalarda olsun"). With a render, first the render ("First
  *  Generate render to see your final design"), as the backdrop's Extras tab. */
 export function FinishBar({ done, what, next, onFinish, onSkipAhead, onSkip, testId, render }: { done?: boolean; what: string; next: string; onFinish: () => void; onSkipAhead?: () => void; onSkip?: () => void; testId: string; render?: FinishRender }) {
-  const waiting = !!render && !render.ready;
+  // Offered while unrendered; waited for only when REQUIRE_RENDER is on (off until release, 2026-11-03).
+  const unrendered = !!render && !render.ready;
+  const waiting = REQUIRE_RENDER && unrendered;
   return (
     <div className={`bz-tb-finish ${done ? "done" : ""}`}>
       <p>{done ? <>✓ Your {what} is finished. Changes are still kept.</> : <>Happy with every choice? Finalize the {what} — next comes the {next.toLowerCase()}.</>}</p>
-      {waiting && (
+      {unrendered && (
         <div className="render" data-testid={`${testId}-render`}>
           <span className="bz-decor-first">{render.stale
             ? <>You changed it since your render — <b>Regenerate</b> to finalize this design.</>
-            : <>First <b>Generate render</b> to see your final design.</>}</span>
+            : waiting ? <>First <b>Generate render</b> to see your final design.</> : <><b>Generate render</b> to see your final design.</>}</span>
           <button type="button" className="bz-decor-hint" onClick={render.onGenerate} disabled={render.loading} data-testid={`${testId}-generate`}>
             {render.loading ? "Generating…" : render.stale ? "Regenerate render ✨" : "Generate render ✨"}
           </button>

@@ -20,9 +20,9 @@ async function toTable(page: Page) {
   await expect(page.getByTestId("table-place")).toBeVisible();
 }
 
-/** The kids' table's top-view render (a stand-in, guard.fakeRender), which finalizing it waits for. */
+/** The kids' table's top-view render (a stand-in, guard.fakeRender), offered, not waited for (lib/renderGate.ts). */
 async function renderKids(page: Page) {
-  await expect(page.getByTestId("finish-kids-table")).toBeDisabled();
+  await expect(page.getByTestId("finish-kids-table")).toBeEnabled();
   await page.getByTestId("finish-kids-table-generate").click();
   await expect(page.getByTestId("finish-kids-table")).toBeEnabled();
 }
@@ -229,9 +229,9 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
       return h.y + h.height <= n.y + 0.01 && n.y + n.height <= l.y + 0.01;
     })).toBe(true);
   }
-  // Finalized once rendered (2026-11-03, the owner: "burda da rendera zorlasın").
+  // The render offered; finalizing waits for it only at release (lib/renderGate.ts).
   await expect(next(page)).toHaveCount(0);
-  await expect(page.getByTestId("finish-welcome")).toBeDisabled();
+  await expect(page.getByTestId("finish-welcome")).toBeEnabled();
   await page.getByTestId("finish-welcome-generate").click();
   await expect(page.getByTestId("welcome-render")).toBeVisible();
   await expect(page.getByTestId("finish-welcome")).toBeEnabled();
@@ -253,7 +253,7 @@ test("W3 a welcome board begun can still be skipped, with no render", async ({ p
   await next(page).click();
   const before = aed(await total(page).textContent());
   await page.getByRole("button", { name: /Yes, design the board/ }).click();
-  await expect(page.getByTestId("finish-welcome")).toBeDisabled();
+  await expect(page.getByTestId("finish-welcome-generate")).toBeVisible();
   await page.getByTestId("finish-welcome-skip").click();
   await expect(page.getByTestId("giveaways-intro")).toBeVisible();
   expect(aed(await total(page).textContent())).toBe(before);
@@ -318,9 +318,9 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   // The box close up, above the render.
   await expect(page.getByTestId("giveaway-box-card").locator("[data-part=giveaway-box]")).toHaveCount(1);
   await expect(page.getByTestId("giveaway-box-card")).toContainText("Inside: Playdough · Bubbles · Stickers · Themed items");
-  // Finalized once rendered.
+  // The render offered, not waited for.
   await expect(next(page)).toHaveCount(0);
-  await expect(page.getByTestId("finish-giveaways")).toBeDisabled();
+  await expect(page.getByTestId("finish-giveaways")).toBeEnabled();
   await page.getByTestId("finish-giveaways-generate").click();
   await expect(page.getByTestId("giveaways-render")).toBeVisible();
   const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/giveaway-render"))!.postData()!);
