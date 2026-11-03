@@ -48,13 +48,14 @@ export const MAX_BOXES = 60;
 /**
  * The box's background (2026-11-03, the owner: "plain box color ve bunun gibi birkaç örnek background box color
  * ekleyelim, temaya uygun, her tema için"): a plain colour, or one of the theme's own printed designs — every theme
- * has the three (public/design/table/placemats/<theme>/<id>.webp, the placemats').
+ * has both (public/design/table/placemats/<theme>/<id>.webp, the placemats').
  */
 export const BOX_PRINTS = [
   { id: "pattern", name: "Pattern", note: "The theme's little prints all over" },
   { id: "watercolour", name: "Watercolour", note: "Soft watercolour, the theme at the corners" },
-  { id: "sparkle", name: "Sparkle", note: "Glitter and the theme's picture" },
-  { id: "plain", name: "Plain colour", note: "One colour of your choice" },
+  // The whole box in one colour, nothing of the theme on it (later the same day: "plain'de box'un her yeri bu renk
+  // olacak, plain deyince hiç theme olmasın"; Sparkle dropped: "sparkle beğenmedim").
+  { id: "plain", name: "Plain colour", note: "The whole box in one colour" },
 ] as const;
 export type BoxPrint = (typeof BOX_PRINTS)[number]["id"];
 
@@ -95,7 +96,7 @@ export interface Giveaways {
 export function defaultGiveaways(seed: { kids?: number; name?: string } = {}): Giveaways {
   return {
     enabled: true, count: clampCount(seed.kids ?? 10), place: "table", contents: ["playdough", "bubbles", "candy", "stickers", "themed"],
-    name: cleanBoardText(seed.name ?? ""), font: "archivo-black", ink: "", boxPrint: "pattern", boxColour: "#FFFFFF", boardColour: "#FFFFFF", boardLine: "Thank you for coming",
+    name: cleanBoardText(seed.name ?? ""), font: "nunito", ink: "", boxPrint: "pattern", boxColour: "#FFFFFF", boardColour: "#FFFFFF", boardLine: "Thank you for coming",
     boardFont: "sacramento", boardInk: "", boardLineFont: "archivo-black", boardGarland: false,
   };
 }

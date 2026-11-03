@@ -18,7 +18,7 @@ const FAMILIES = [
   "bodonimoda", "dmserifdisplay", "gloock", "instrumentserif", "playfairdisplay",
   "librecaslontext", "librecaslondisplay", "librebaskerville", "marcellus",
   "fraunces", "youngserif", "birthstonebounce",
-  "archivoblack",
+  "archivoblack", "nunito",
 ];
 const ROOT = path.resolve(import.meta.dirname, "../../assets/fonts");
 const LOCK = path.join(ROOT, "fonts.lock.json");

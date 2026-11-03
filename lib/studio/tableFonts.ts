@@ -27,6 +27,8 @@ export const TABLE_FONTS: TableFont[] = [
   { id: "italianno", name: "Calligraphy", weight: 400, hand: true, scale: 1.75, words: "an elegant calligraphy script" },
   // 2026-11-03 (the owner, of the giveaway box: "daha kalın bold yazı olsun").
   { id: "archivo-black", name: "Bold", weight: 400, hand: false, scale: 0.8, words: "a heavy bold sans-serif" },
+  // 2026-11-03 (the owner, of her example box "Olivia's 5th birthday": "text benim örnekte koyduğum gibi olsun").
+  { id: "nunito", name: "Rounded", weight: 800, hand: false, scale: 0.9, words: "a rounded friendly bold sans-serif" },
 ];
 
 export const DEFAULT_TABLE_FONT = TABLE_FONTS[0].id;

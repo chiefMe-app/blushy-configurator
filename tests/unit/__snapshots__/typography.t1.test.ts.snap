@@ -41,5 +41,6 @@ exports[`registry and measurements > measurement table (drift guard) 1`] = `
   "birthstone-bounce@400 thin/cap=0.0221 median/cap=0.0507 mono=0.489 neon=false",
   "birthstone-bounce@500 thin/cap=0.0339 median/cap=0.064 mono=0.571 neon=false",
   "archivo-black@400 thin/cap=0.1421 median/cap=0.2907 mono=0.635 neon=false",
+  "nunito@800 thin/cap=0.119 median/cap=0.208 mono=0.741 neon=true",
 ]
 `;

@@ -46,7 +46,7 @@ describe("the giveaways", () => {
     expect(readGiveaways(null)).toBeUndefined();
     const g = readGiveaways({ enabled: true, count: 999, place: "roof", contents: ["candy", "bombs"], name: "  Arya  ", font: "nope", boardColour: "red", boardLine: 5,
       render: { key: "k1", path: "https://evil.example/a.jpg" } })!;
-    expect(g).toMatchObject({ count: 60, place: "table", contents: ["candy"], font: "archivo-black", boardColour: "#FFFFFF", boardLine: "Thank you for coming" });
+    expect(g).toMatchObject({ count: 60, place: "table", contents: ["candy"], font: "nunito", boardColour: "#FFFFFF", boardLine: "Thank you for coming" });
     expect(g.render).toBeUndefined();
     expect(readGiveaways({ boardFont: "nope", boardInk: "red", boardGarland: "yes", boardLineFont: "nope" })).toMatchObject({ boardFont: "sacramento", boardInk: "", boardGarland: false, boardLineFont: "archivo-black" });
     expect(readGiveaways({ boardLineFont: "sacramento" })).toMatchObject({ boardLineFont: "sacramento" });

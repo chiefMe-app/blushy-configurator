@@ -297,12 +297,14 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   await expect(boxWords).toHaveAttribute("fill", "#2B2B2B");
   // The box's background: the theme's designs, or a plain colour (2026-11-03: "plain box color … her tema için").
   const prints = page.getByTestId("giveaways-box-print");
-  await expect(prints.getByRole("radio")).toHaveCount(4);
+  await expect(prints.getByRole("radio")).toHaveCount(3);
   await prints.getByRole("radio", { name: /Watercolour/ }).click();
-  await expect(page.getByTestId("giveaway-box-card").locator("image").nth(1)).toHaveAttribute("href", /frozen\/watercolour\.webp$/);
+  await expect(page.getByTestId("giveaway-box-card").locator('image[href$="frozen/watercolour.webp"]')).toHaveCount(1);
   await prints.getByRole("radio", { name: /Plain colour/ }).click();
   await page.getByTestId("giveaways-box-colour").getByRole("radio").nth(3).click();
   await expect(page.getByTestId("giveaway-box-card").locator("[data-part=box-colour]")).toHaveCount(1);
+  // Plain: nothing of the theme on it (2026-11-03: "plain deyince hiç theme olmasın").
+  await expect(page.getByTestId("giveaway-box-card").locator('image[href*="themes-v2"]')).toHaveCount(0);
   await prints.getByRole("radio", { name: /Pattern/ }).click();
   // What is inside is a list, each priced a box.
   const contents = page.getByTestId("giveaways-contents");

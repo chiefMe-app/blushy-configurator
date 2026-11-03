@@ -85,7 +85,7 @@ test("the heading's text and font change only the heading", async ({ page }) => 
   expect(p1.heading.d).not.toBe(p0.heading.d);
   expect(p1.name.d).toBe(p0.name.d);
   h = await hash(page);
-  await page.getByRole("button", { name: "All fonts (25)" }).click();
+  await page.getByRole("button", { name: "All fonts (26)" }).click();
   await page.getByRole("radio", { name: "Libre Baskerville" }).click();
   await waitForNewLayout(page, h);
   const p2 = await paths(page);

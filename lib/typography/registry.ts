@@ -99,6 +99,8 @@ export const FONTS: RegistryFont[] = [
   { id: "birthstone-bounce", family: "Birthstone Bounce", dir: "birthstonebounce", category: "playful", weights: [{ weight: 400, file: "BirthstoneBounce-Regular.ttf" }, { weight: 500, file: "BirthstoneBounce-Medium.ttf" }], defaultWeight: 500, bestFor: ["name"], promptDescriptor: "a bouncy playful handwritten script" },
   // Kept for existing designs only (today's "Bold" lettering).
   { id: "archivo-black", family: "Archivo Black", dir: "archivoblack", category: "modern_serif", weights: one("ArchivoBlack-Regular.ttf"), defaultWeight: 400, bestFor: ["heading"], promptDescriptor: "a bold heavy sans-serif", legacyOnly: true },
+  // The giveaway box's lettering (2026-11-03, her example box "Olivia's 5th birthday"): a rounded sans.
+  { id: "nunito", family: "Nunito", dir: "nunito", category: "playful", weights: vf("Nunito[wght].ttf", [800]), defaultWeight: 800, bestFor: ["name"], promptDescriptor: "a rounded friendly sans-serif", legacyOnly: true },
 ];
 
 export const fontById = (id: string) => FONTS.find((f) => f.id === id);

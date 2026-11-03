@@ -1216,6 +1216,41 @@
           }
         }
       }
+    },
+    "nunito": {
+      "licence": {
+        "ofl": true,
+        "lockMatch": true
+      },
+      "weights": {
+        "800": {
+          "axes": {
+            "wght": 800
+          },
+          "coverage": {
+            "ok": true,
+            "missing": ""
+          },
+          "capHeightEm": 0.714,
+          "stroke": {
+            "thinOfCap": 0.119,
+            "thin10OfCap": 0.1541,
+            "medianOfCap": 0.208,
+            "monoline": 0.741
+          },
+          "pieces": {
+            "Layla": 5,
+            "Arya": 4,
+            "Malek": 5,
+            "Ayşe": 4
+          },
+          "shaping": {
+            "widthDiffMax": 0.0034,
+            "f1Min": 1,
+            "pass": true
+          }
+        }
+      }
     }
   }
 }
