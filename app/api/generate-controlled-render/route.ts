@@ -57,6 +57,8 @@ import { getVisualLabel, renderSafeBalloonLabel } from "@/lib/renderPrompts/colo
 import { buildNegativePrompt } from "@/lib/renderPrompts/buildNegativePrompt";
 import { buildStrictCorrectionPrompt } from "@/lib/renderPrompts/buildStrictCorrectionPrompt";
 import { buildLayoutRefEditPrompt } from "@/lib/renderPrompts/buildLayoutRefEditPrompt";
+import { backdropPhotoPrompt } from "@/lib/renderPrompts/backdropPhotoPrompt";
+import { finishSketchRender } from "@/lib/sketchRenderFinish";
 
 // ── Model routing ────────────────────────────────────────────────────────
 // AI_RENDER_MODEL_MODE controls cost: turbo (default, cheapest) | dev | pro.
@@ -269,6 +271,10 @@ type RenderMode = "first_generate" | "edit_existing";
 interface RequestBody {
   promptInput:             PromptInput;
   sceneModel:              SceneModel;
+  /** 2026-11-03: the live sketch as a JPEG data URI — a first render is made from it (sketchRender). */
+  sketchPreview?:          string;
+  /** 2026-11-03: the sketch's words alone, a clear PNG of the same square — laid flat on the render afterwards. */
+  sketchWords?:            string;
   controlImageBase64?:     string;      // reserved for future ControlNet; not used for t2i
   previousFinalRenderUrl?: string;
   renderMode:              RenderMode;
@@ -852,6 +858,7 @@ export async function POST(req: NextRequest) {
   const raw = await req.text();
   let freePreview = false;
   let sceneHash = "";
+  let sketch: { jpeg: Buffer; scene: SceneModel; words?: Buffer } | null = null;
   try {
     const b = JSON.parse(raw) as Partial<RequestBody>;
     freePreview = b?.debugLayoutReferenceOnly === true && b?.renderMode !== "edit_existing";
@@ -860,6 +867,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "The Customized Themed set is shown as its photo; there is no render of it." }, { status: 400 });
     }
     sceneHash = typeof b?.currentSceneHash === "string" ? b.currentSceneHash : "";
+    // 2026-11-03: a first render sent with the live sketch is made from it (sketchRender below).
+    const shot = typeof b?.sketchPreview === "string" ? b.sketchPreview.match(/^data:image\/(?:jpeg|png);base64,([A-Za-z0-9+/=]+)$/)?.[1] : undefined;
+    if (shot && b?.renderMode === "first_generate" && b?.sceneModel && !freePreview && process.env.BACKDROP_FROM_SKETCH !== "0") {
+      const jpeg = Buffer.from(shot, "base64");
+      if (jpeg.length > MAX_SKETCH_BYTES) return NextResponse.json({ error: "The preview is too big." }, { status: 413 });
+      const wordsB64 = typeof b?.sketchWords === "string" ? b.sketchWords.match(/^data:image\/png;base64,([A-Za-z0-9+/=]+)$/)?.[1] : undefined;
+      const words = wordsB64 ? Buffer.from(wordsB64, "base64") : undefined;
+      if (words && words.length > MAX_SKETCH_BYTES) return NextResponse.json({ error: "The preview is too big." }, { status: 413 });
+      sketch = { jpeg, scene: b.sceneModel as SceneModel, words };
+    }
   } catch { /* handleRender answers invalid JSON */ }
   const inner = new NextRequest(req.url, { method: "POST", headers: req.headers, body: raw });
   if (freePreview) return handleRender(inner);
@@ -877,7 +894,7 @@ export async function POST(req: NextRequest) {
     // Counted last, so a refusal above uses none of the customer's renders.
     const taken = await takeAccountRender(user);
     if (!taken.ok) return NextResponse.json({ error: taken.error, signin: taken.signin, limited: taken.limited }, { status: taken.status });
-    const res = await handleRender(inner);
+    const res = sketch ? await sketchRender(sketch) : await handleRender(inner);
     // 0.5c: keep the finished render in the customer's account.
     if (res.status !== 200 || !user.client || !user.userId || !sceneHash) return res;
     const data = await res.json();
@@ -885,6 +902,46 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(stored ? { ...data, storedRender: stored } : data);
   } finally {
     slot.release();
+  }
+}
+
+// 2026-11-03 (the owner: "live sketch ve render farklı oldu düzeltelim … text renderda çok kabarık duruyor flat
+// olsun vinyl olacak çünkü … rainbow balonlar düzgün değil ve grafik çıkmamış"): the first render of a backdrop is
+// made from the live sketch the builder sends — already a real photograph of the set-up with her words, the theme's
+// print, the standees and the balloon rainbows laid on it (lib/renderPrompts/backdropPhotoPrompt.ts) — by FLUX.2
+// [dev] edit at the sketch's own size, as the welcome board's is. The layout-guide pipeline below stays for
+// "Ask for a change" edits, and for a first render when BACKDROP_FROM_SKETCH is "0".
+const SKETCH_MODEL = process.env.BACKDROP_SKETCH_MODEL || "fal-ai/flux-2/edit";
+const MAX_SKETCH_BYTES = 4 * 1024 * 1024;
+
+async function sketchRender({ jpeg, scene, words }: { jpeg: Buffer; scene: SceneModel; words?: Buffer }): Promise<NextResponse> {
+  const falKey = process.env.FAL_KEY;
+  if (!falKey) return NextResponse.json({ error: "Renders are not available right now." }, { status: 503 });
+  try {
+    const sharp = (await import("sharp")).default;
+    // A picture, and only one: re-encoded here, at most 1408 px long, its sides in steps of 16.
+    const img = await sharp(jpeg).resize({ width: 1408, height: 1408, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 90 }).toBuffer({ resolveWithObject: true });
+    const side = (n: number) => Math.max(512, Math.round(n / 16) * 16);
+    fal.config({ credentials: falKey });
+    const result = await fal.subscribe(SKETCH_MODEL, {
+      input: {
+        prompt: backdropPhotoPrompt(scene, { wordsAfter: !!words }), image_urls: [`data:image/jpeg;base64,${img.data.toString("base64")}`], num_images: 1, output_format: "jpeg",
+        image_size: { width: side(img.info.width), height: side(img.info.height) }, seed: 777,
+      } as never,
+      abortSignal: AbortSignal.timeout(130_000),
+    });
+    const url = (result.data as { images?: { url?: string }[] })?.images?.[0]?.url;
+    if (!url) throw new Error("no backdrop image");
+    // In the answer itself: the owner's network could not look up fal's picture hosts (2026-10-27).
+    const made = await (await import("@/lib/renderStore")).renderJpeg(url);
+    if (!made) throw new Error("the backdrop render could not be read");
+    // Its colours brought back to the sketch's, and her words laid flat on it (lib/sketchRenderFinish.ts).
+    const out = await finishSketchRender(made, img.data, words);
+    return NextResponse.json({ imageUrl: `data:image/jpeg;base64,${out.toString("base64")}`, fromSketch: true, model: SKETCH_MODEL });
+  } catch (err) {
+    console.error("[generate-controlled-render] sketch render", err);
+    const status = (err as { status?: number })?.status;
+    return NextResponse.json({ error: status === 401 || status === 403 ? "Renders are paused for a moment — please try again later." : "The render didn't come out — please try again." }, { status: 502 });
   }
 }
 

@@ -45,7 +45,9 @@ const SEEDS: Record<string, [number, number, number, number, number, number][]> 
   // The Wavy + Shimmer (new 2026-11-02): laid out as the Arch + Shimmer, the wavy board in front on its rim.
   // Later ("yere değmeli", "aşırı uzak"): its flat-foot board drawn from its outline, the shot cropped 1.2x closer.
   // 2026-11-03 ("wavy + shimmer hâlâ kalitesiz"): re-shot whole with the full model, not upscaled or cropped.
-  wavy_shimmer: [[330, 600, 185, 320, 480, 860], [0, 0, 479, 379, 776, 854]],
+  // 2026-11-03 (later, "shimmer wall bozulmuş, ikinci görseldeki gibi olsun"): the Arch + Shimmer shots, the arch
+  // board swapped for the wavy one by a local edit — its light, floor and sequin wall kept.
+  wavy_shimmer: [[400, 600, 230, 250, 520, 830], [600, 600, 440, 370, 770, 820]],
 };
 /** A round board's circle (px: centre and radius), past which nothing is board. */
 const CIRCLE: Record<string, [number, number, number]> = { round: [505, 560, 300] };

@@ -35,7 +35,12 @@ for (const c of cases) {
     await signIn(page); // renders need an account
     await openDecor(page, "Ice Princess", c.setup);
     if (c.steps) await c.steps(page);
-    const sent = comparableBody(await captureRenderBody(page, guard));
+    const body = await captureRenderBody(page, guard);
+    // The live sketch goes with it, as a picture: the render is made from it (2026-11-03).
+    expect(String(body.sketchPreview)).toMatch(/^data:image\/jpeg;base64,/);
+    // Her words go alone, a clear PNG of the same square, to be laid flat on the render.
+    if (c.fixture === "B01-hb-arya-script") expect(String(body.sketchWords)).toMatch(/^data:image\/png;base64,/);
+    const sent = comparableBody(body);
     const expected = comparableBody(renderBody(withBuilderLettering(fixtureById(c.fixture).config)) as Record<string, unknown>);
     expect(sent).toEqual(expected);
   });

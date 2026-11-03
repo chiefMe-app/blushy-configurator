@@ -34,6 +34,7 @@ export function renderBody(config: BuilderConfig) {
 
 /** A body as JSON would carry it (undefined dropped), minus the cache hashes. */
 export function comparableBody(body: Record<string, unknown>) {
-  const { currentSceneHash: _a, structureHash: _b, ...rest } = body;
+  // The live sketch's pictures (2026-11-03, the render made from them) are the browser's drawing, not the fixture's.
+  const { currentSceneHash: _a, structureHash: _b, sketchPreview: _c, sketchWords: _d, ...rest } = body;
   return JSON.parse(JSON.stringify(rest));
 }

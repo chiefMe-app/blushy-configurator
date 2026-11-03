@@ -25,6 +25,7 @@ import DesignChangePrompt from "./DesignChangePrompt";
 const ASK_FOR_A_CHANGE_ENABLED = false;
 import type { ChangeType } from "@/lib/generatePrompt";
 import LiveSketch from "./design/LiveSketch";
+import { sketchJpegWithoutWords, sketchWordsPng } from "./builder/nodeJpeg";
 import { accountToken } from "./account/useAccount";
 import { computeSceneHash, renderKey, RENDER_BUCKET } from "@/lib/renderKey";
 import { loadClient } from "./account/useAccount";
@@ -536,6 +537,30 @@ const THEME_SHAPES: Partial<Record<ThemeId, ThemeShapes>> = {
 const GENERIC_FLOOR: ArtFn[]   = [StarShape, HeartShape, FlowerShape, CrownShape, StarShape, HeartShape];
 const GENERIC_MOUNTED: ArtFn[] = [StarShape, FlowerShape, HeartShape, StarShape, FlowerShape, HeartShape];
 
+/**
+ * The live sketch as pictures, to be rendered from (2026-11-03): without its words, and its words alone — laid flat
+ * on the render afterwards. Taken once the boards' lettering is drawn: that comes after its fonts load, and a render
+ * that starts by itself (after signing in) would otherwise go without. At most 4 s.
+ */
+async function sketchPictures(config: BuilderConfig): Promise<{ sketchPreview?: string; sketchWords?: string }> {
+  const lettered = config.decor.backdropItems.filter((i) => i.text?.enabled && (i.text.value ?? "").trim() && i.text.lettering && i.type !== "open_arch_frame").length;
+  const node = () => document.querySelector<SVGSVGElement>(".bz-sketch-wrap svg.bz-sketch");
+  for (let t = 0; t < 40 && (node()?.querySelectorAll('[data-testid="sketch-lettering"]').length ?? lettered) < lettered; t++) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  const n = node();
+  if (!n) return {};
+  try {
+    const [sketchPreview, sketchWords] = await Promise.all([
+      sketchJpegWithoutWords(n, 1408),
+      sketchWordsPng(n, 1408),
+    ]);
+    return { sketchPreview, ...(sketchWords ? { sketchWords } : {}) };
+  } catch {
+    return {};
+  }
+}
+
 function getShapes(themeId: ThemeId, isMounted: boolean): ArtFn[] {
   const entry = THEME_SHAPES[themeId];
   if (entry) return isMounted ? entry.mounted : entry.floor;
@@ -917,6 +942,9 @@ export function useFinalRender(config: BuilderConfig, opts: {
   async function runFirstGenerate(liveConfig: BuilderConfig, liveHash: string, liveStructureHash: string) {
     const auth = await authHeaders();
     if (!auth) return;
+    // 2026-11-03 ("live sketch ve render farklı oldu düzeltelim"): the sketch as it is shown is what is rendered —
+    // drawn before the wait takes its place.
+    const sketch = await sketchPictures(liveConfig);
     setStatus("loading");
     try {
       // Edge-only structure map (reserved for future ControlNet use).
@@ -962,6 +990,7 @@ export function useFinalRender(config: BuilderConfig, opts: {
         body: JSON.stringify({
           promptInput,
           sceneModel,
+          ...sketch,
           renderAspectRatio:   falImageSize,   // dynamic image_size for fal.ai
           renderMode:          "first_generate",
           force:               true,

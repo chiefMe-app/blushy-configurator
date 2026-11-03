@@ -210,6 +210,8 @@ export function tablePhotoPrompt(t: TableSetup): string {
     "Turn image 1 into one real photograph of the very same place: the same camera, looking straight down from directly above, and the same framing, edge to edge — not tilted, not from the side, not zoomed out.",
     "Keep every piece exactly where image 1 has it, at the same size and turned the same way, in the same colours, finishes, patterns and prints — the same pieces and the same number of each.",
     "The table top round the placemat stays exactly as image 1 has it: plain, with nothing printed on it — the placemat's print stays on the placemat alone.",
+    // 2026-11-03 (the owner: "placematın grafiği taşmış paperın dışına"): the print ran past the sheet's edge.
+    "The placemat is one flat sheet of paper with clean, straight, square-cut edges, exactly the size image 1 shows; its printed design ends at those edges and never runs past them onto the table.",
     "Add nothing: no chair, no chair back, no table edge, no floor, no people, no balloons, no flowers, no confetti, no other plates, cups, cutlery, napkins, name cards, tags or labels. Leave nothing out.",
     band,
     words.length ? `Keep the words exactly as image 1 letters them, letter for letter, in the same lettering, size and place: ${words.map((w) => `"${w}"`).join(" and ")}. No other words or letters anywhere.` : "No words or letters anywhere.",

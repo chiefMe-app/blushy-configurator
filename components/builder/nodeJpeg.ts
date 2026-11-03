@@ -42,12 +42,71 @@ async function fontCssFor(node: HTMLElement): Promise<string> {
  * The node drawn as a JPEG data URI, `width` px wide, its lettering in its own fonts. An SVG too (2026-11-03,
  * the kids' table's one place), which has no offset size; square-cornered, as a photo to be rendered is.
  */
-export async function nodeJpeg(node: HTMLElement | SVGSVGElement, width: number): Promise<string> {
+export async function nodeJpeg(node: HTMLElement | SVGSVGElement, width: number, { square = false } = {}): Promise<string> {
   await document.fonts.ready;
-  const box = node.getBoundingClientRect();
+  const rect = node.getBoundingClientRect();
+  // A square drawing (the backdrop's sketch, its viewBox square) drawn at its own square, without the bands its box adds.
+  const side = Math.min(rect.width, rect.height);
+  const box = square ? { width: side, height: side } : rect;
   const options = { quality: 0.92, backgroundColor: "#FFFFFF", width: box.width, height: box.height, pixelRatio: width / box.width,
     style: { borderRadius: "0" }, fontEmbedCSS: await fontCssFor(node as HTMLElement) };
   // Twice: some browsers (Safari) draw the first picture before its fonts are in.
   await toJpeg(node as HTMLElement, options);
   return toJpeg(node as HTMLElement, options);
+}
+
+/** A part of the live sketch that is its boards' words (LiveSketch's `data-sketch-words` groups). */
+export const isSketchWords = (n: Node) => n instanceof Element && n.hasAttribute("data-sketch-words");
+
+/**
+ * Only the live sketch's words, on a clear ground, `size` px square — its viewBox square, as nodeJpeg's square
+ * picture of it (2026-11-03: laid flat on the backdrop's render afterwards, as flat cut vinyl). Without the sketch's
+ * soft shadow. Null when it has none.
+ */
+export async function sketchWordsPng(svg: SVGSVGElement, size: number): Promise<string | null> {
+  const words = Array.from(svg.children).filter(isSketchWords);
+  if (!words.length) return null;
+  const out = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  out.setAttribute("viewBox", svg.getAttribute("viewBox") ?? `0 0 ${size} ${size}`);
+  out.setAttribute("width", String(size));
+  out.setAttribute("height", String(size));
+  for (const w of words) {
+    const c = w.cloneNode(true) as Element;
+    c.removeAttribute("filter");
+    out.appendChild(c);
+  }
+  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(out)], { type: "image/svg+xml" }));
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = size;
+    canvas.getContext("2d")!.drawImage(img, 0, 0, size, size);
+    return canvas.toDataURL("image/png");
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/**
+ * The live sketch as nodeJpeg's square picture, without its words (html-to-image copies an SVG whole, so they are
+ * taken out of a copy of it, drawn off screen at the sketch's size).
+ */
+export async function sketchJpegWithoutWords(svg: SVGSVGElement, width: number): Promise<string> {
+  const bare = svg.cloneNode(true) as SVGSVGElement;
+  bare.querySelectorAll("[data-sketch-words]").forEach((e) => e.remove());
+  const r = svg.getBoundingClientRect();
+  // Off screen by its holder, at the sketch's size (the sketch fills its frame): html-to-image draws the copy with
+  // its own computed position.
+  const holder = document.createElement("div");
+  Object.assign(holder.style, { position: "fixed", left: "-10000px", top: "0", width: `${r.width}px`, height: `${r.height}px`, pointerEvents: "none" });
+  holder.setAttribute("aria-hidden", "true");
+  holder.appendChild(bare);
+  (svg.parentElement ?? document.body).appendChild(holder);
+  try {
+    return await nodeJpeg(bare, width, { square: true });
+  } finally {
+    holder.remove();
+  }
 }

@@ -122,14 +122,17 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     // The wavy board stands in front of its garland, on its rim ("backdrop önde olması lazım").
     boards: [
       // Re-shot in the owner's wavy board ("bunun aynısını yap şekil olarak"): waves on all four edges, a
-      // straight foot on the floor. 2026-11-03 ("wavy + shimmer hâlâ kalitesiz … balonlarda görüntü kalitesi
-      // düşük"): shot again whole with the full model, its own rim per set — not upscaled, not cropped.
-      { mask: `${SK}/wavy_shimmer-board-0.png`, rim: `${SK}/wavy_shimmer-rim-0.png`, x0: 0.207, y0: 0.342, x1: 0.467, y1: 0.806, text: { cx: 0.337, cy: 0.48, w: 0.16 } },
-      { mask: `${SK}/wavy_shimmer-board-1.png`, x0: 0.4648, y0: 0.3672, x1: 0.7607, y1: 0.8369, text: { cx: 0.605, cy: 0.513, w: 0.2 } },
+      // straight foot on the floor. 2026-11-03 (later, "bu sahnenin ışığında bi sıkıntı var ve shimmer wall
+      // bozulmuş, ikinci görseldeki gibi olsun"): the Arch + Shimmer shots she liked, their arch board swapped for
+      // the wavy one by a local edit — the same light, floor and sequin wall — so laid out as the Arch + Shimmer.
+      // The room is the Arch + Shimmer photo itself outside the board, the sequin wall its mask behind the board
+      // (scratchpad rebuild: face, rim and foot read from the edit's pink rim).
+      { mask: `${SK}/wavy_shimmer-board-0.png`, rim: `${SK}/wavy_shimmer-rim-0.png`, x0: 0.2744, y0: 0.3584, x1: 0.458, y1: 0.7656, text: { cx: 0.372, cy: 0.5, w: 0.1 } },
+      { mask: `${SK}/wavy_shimmer-board-1.png`, x0: 0.4365, y0: 0.3975, x1: 0.7061, y1: 0.7793, text: { cx: 0.571, cy: 0.51, w: 0.19 } },
     ],
-    plinth: { x: 0.4345, y: 0.648, w: 0.061, h: 0.178 },
-    florals: fromPx([[150, 330], [800, 340], [90, 430], [900, 440], [180, 500], [780, 520], [60, 560], [930, 600], [150, 640], [830, 680], [40, 700], [950, 760], [130, 780]]),
-    numberX: 0.625, standeeX: [0.04, 0.96],
+    plinth: { x: 0.464, y: 0.647, w: 0.0573, h: 0.167 },
+    florals: fromPx([[253, 410], [794, 410], [252, 480], [261, 550], [831, 550], [215, 620], [834, 620], [172, 690], [281, 690], [840, 690], [268, 760], [779, 760], [893, 760]]),
+    numberX: 0.6, standeeX: [0.04, 0.97],
   },
   banner: {
     room: `${SK}/single_banner-room.webp`, balloons: `${SK}/single_banner-balloons.webp`, families: `${SK}/single_banner-families.png`,
@@ -634,7 +637,7 @@ function SketchLettering({ lettering, spot, fill, metal, gid }: {
   const s = w / drawing.box.widthMm, h = drawing.box.heightMm * s;
   const at = spot(h * 0.62);
   return (
-    <g transform={`translate(${at.cx - w / 2} ${at.cy - h / 2}) scale(${s})`} filter="url(#skSoft)" data-testid="sketch-lettering" data-hash={drawing.hash}>
+    <g transform={`translate(${at.cx - w / 2} ${at.cy - h / 2}) scale(${s})`} filter="url(#skSoft)" data-testid="sketch-lettering" data-hash={drawing.hash} data-sketch-words="">
       {metal && (
         <defs>
           <linearGradient id={gid} x1="0" y1="0" x2="0.25" y2="1">
@@ -978,7 +981,7 @@ export default function LiveSketch({
         const metal = METAL_TINT[p.item.text.color];
         const gid = `skMetal${uid}${p.idx}`;
         return (
-          <g key={`t${p.item.id}`} transform={script ? `rotate(-2 ${at.cx} ${at.cy})` : undefined} filter="url(#skSoft)">
+          <g key={`t${p.item.id}`} transform={script ? `rotate(-2 ${at.cx} ${at.cy})` : undefined} filter="url(#skSoft)" data-sketch-words="">
             {metal && (
               <defs>
                 <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1={at.cx} y1={at.cy - blockH / 2} x2={at.cx + blockH * 0.25} y2={at.cy + blockH / 2}>
