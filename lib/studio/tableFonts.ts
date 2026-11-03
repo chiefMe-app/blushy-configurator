@@ -25,6 +25,8 @@ export const TABLE_FONTS: TableFont[] = [
   { id: "birthstone-bounce", name: "Bouncy", weight: 500, hand: true, scale: 1.45, words: "a bouncy playful handwritten script" },
   { id: "sacramento", name: "Handwritten", weight: 400, hand: true, scale: 1.5, words: "a thin flowing handwritten script" },
   { id: "italianno", name: "Calligraphy", weight: 400, hand: true, scale: 1.75, words: "an elegant calligraphy script" },
+  // 2026-11-03 (the owner, of the giveaway box: "daha kalın bold yazı olsun").
+  { id: "archivo-black", name: "Bold", weight: 400, hand: false, scale: 0.8, words: "a heavy bold sans-serif" },
 ];
 
 export const DEFAULT_TABLE_FONT = TABLE_FONTS[0].id;

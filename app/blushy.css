@@ -1372,6 +1372,7 @@ div.bz-stale-banner { cursor: default; }
 .bz-gv-count { display: flex; align-items: center; gap: 10px; }
 .bz-gv-count input { width: 72px; padding: 8px 10px; border: 1.5px solid var(--bz-line, #eadfe3); border-radius: 10px; font-size: 15px; }
 .bz-gv-count small { color: var(--bz-muted); font-size: 12.5px; }
+.bz-tb-sub { display: block; margin-top: 14px; font-size: 13px; font-weight: 700; color: var(--bz-ink); }
 .bz-tb-option .art .swatch-big { width: 60%; height: 70%; border-radius: 8px; border: 1px solid #d9c9cf; display: block; }
 .bz-md-card.welcome .sketch { display: grid; place-items: center; background: #fbf7f4; }
 .bz-md-card.welcome .sketch > svg { height: 92%; width: auto; max-width: 100%; }

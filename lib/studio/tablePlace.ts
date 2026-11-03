@@ -115,7 +115,9 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
   // The cone hat on its side, top-left, in the customer's colour (2026-10-29).
   // Above the plate, a little to the left: the centrepieces stand between the places, clear of it (2026-10-30).
   // Its pompom a real white one, whatever the hat's colour (2026-10-31: "pompomu gerçek pompom ve beyaz olsun").
-  if (ch.partyHats === "cone") nodes.push({ k: "img", src: piece("hat-cone"), x: -6, y: -19, w: (11 * PIECES["hat-cone"].w) / PIECES["hat-cone"].h, h: 11, tint: colour("partyHats") ?? t.hatColor, keep: HAT_POMPOM, lift: 2, id: `${id}-hat` });
+  // At the far left, over the napkin, the top of the place left to the giveaway box (2026-11-03, the owner: "cone
+  // hat en sola gitsin, giveaways daha büyüsün").
+  if (ch.partyHats === "cone") nodes.push({ k: "img", src: piece("hat-cone"), x: -17, y: -19, w: (11 * PIECES["hat-cone"].w) / PIECES["hat-cone"].h, h: 11, tint: colour("partyHats") ?? t.hatColor, keep: HAT_POMPOM, lift: 2, id: `${id}-hat` });
   return nodes;
 }
 

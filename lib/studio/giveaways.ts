@@ -28,10 +28,20 @@ export type GiveawayPlace = (typeof GIVEAWAY_PLACES)[number]["id"];
 export const BOX_PRICE = 18;
 /** The shelved arch board, 60 × 150 cm (placeholder). */
 export const GIVEAWAY_BOARD_PRICE = 350;
-/** A balloon garland up the board and over its top, in the party's balloon colours (placeholder). */
+/** A balloon garland up the board's side, in the party's balloon colours (placeholder). */
 export const GIVEAWAY_GARLAND_PRICE = 250;
 /** Boxes the board's four shelves show (three a shelf). */
 export const BOARD_SHOWS = 12;
+/**
+ * The boxes on each shelf, top shelf first: three a shelf, and never one on its own (2026-11-03, the owner: "tek
+ * box kalmasın hiçbir shelfte, 2'li olsun minimum"): ten are 3, 3, 2, 2.
+ */
+export function shelfCounts(count: number): number[] {
+  const shown = Math.min(Math.max(0, count), BOARD_SHOWS);
+  const rows = Array.from({ length: Math.ceil(shown / 3) }, (_, i) => Math.min(3, shown - i * 3));
+  if (rows.length > 1 && rows[rows.length - 1] === 1) { rows[rows.length - 2] = 2; rows[rows.length - 1] = 2; }
+  return rows;
+}
 export const MAX_BOXES = 60;
 
 export interface Giveaways {
@@ -41,11 +51,9 @@ export interface Giveaways {
   count: number;
   place: GiveawayPlace;
   contents: GiveawayContent[];
-  /** On the box's name plate, and on the board. */
+  /** On the box, printed on its picture, and on the board. (No age: 2026-11-03, the owner: "age kısmını kaldıralım".) */
   name: string;
-  /** The big number on the box. */
-  age: string;
-  /** The name's lettering (lib/studio/tableFonts.ts). */
+  /** The name's lettering on the box (lib/studio/tableFonts.ts). */
   font: string;
   /** The board's colour. */
   boardColour: string;
@@ -55,6 +63,8 @@ export interface Giveaways {
    *  name's lettering, and the words' colour ("" = the theme's, or white on a dark board). */
   boardFont: string;
   boardInk: string;
+  /** The line's lettering (2026-11-03: "thank you for coming'in fontunu seçemiyoruz"). */
+  boardLineFont: string;
   /** A balloon garland on the board ("balon garland opsiyonu olsun"). */
   boardGarland: boolean;
   /** The customer pressed Finish (they may still change it). */
@@ -63,17 +73,15 @@ export interface Giveaways {
   render?: { key: string; path: string };
 }
 
-export function defaultGiveaways(seed: { kids?: number; name?: string; age?: string } = {}): Giveaways {
+export function defaultGiveaways(seed: { kids?: number; name?: string } = {}): Giveaways {
   return {
     enabled: true, count: clampCount(seed.kids ?? 10), place: "table", contents: ["playdough", "bubbles", "candy", "stickers", "themed"],
-    name: cleanBoardText(seed.name ?? ""), age: cleanAge(seed.age ?? ""), font: "sacramento", boardColour: "#FFFFFF", boardLine: "Thank you for coming",
-    boardFont: "sacramento", boardInk: "", boardGarland: false,
+    name: cleanBoardText(seed.name ?? ""), font: "archivo-black", boardColour: "#FFFFFF", boardLine: "Thank you for coming",
+    boardFont: "sacramento", boardInk: "", boardLineFont: "archivo-black", boardGarland: false,
   };
 }
 
 export const clampCount = (n: unknown) => Math.max(1, Math.min(MAX_BOXES, Math.round(Number(n) || 1)));
-/** One or two digits. */
-export const cleanAge = (v: unknown) => (typeof v === "string" ? v.replace(/\D/g, "").slice(0, 2) : "");
 
 export function giveawayPriceLines(g: Giveaways): { label: string; amount: number }[] {
   if (!g.enabled) return [];
@@ -101,12 +109,12 @@ export function readGiveaways(raw: unknown): Giveaways | undefined {
     place: GIVEAWAY_PLACES.find((p) => p.id === r.place)?.id ?? base.place,
     contents: Array.isArray(r.contents) ? GIVEAWAY_CONTENTS.filter((c) => (r.contents as unknown[]).includes(c.id)).map((c) => c.id) : base.contents,
     name: cleanBoardText(r.name),
-    age: cleanAge(r.age),
     font: TABLE_FONTS.find((f) => f.id === r.font)?.id ?? base.font,
     boardColour: typeof r.boardColour === "string" && HEX.test(r.boardColour) ? r.boardColour : base.boardColour,
     boardLine: typeof r.boardLine === "string" ? cleanBoardText(r.boardLine) : base.boardLine,
     boardFont: TABLE_FONTS.find((f) => f.id === r.boardFont)?.id ?? base.boardFont,
     boardInk: typeof r.boardInk === "string" && HEX.test(r.boardInk) ? r.boardInk : "",
+    boardLineFont: TABLE_FONTS.find((f) => f.id === r.boardLineFont)?.id ?? base.boardLineFont,
     boardGarland: r.boardGarland === true,
     ...(r.done === true ? { done: true } : {}),
     ...(kept && typeof kept === "object" && typeof kept.key === "string" && /^[a-z0-9]{1,13}$/.test(kept.key) && typeof kept.path === "string" && RENDER_PATH.test(kept.path)
@@ -117,8 +125,8 @@ export function readGiveaways(raw: unknown): Giveaways | undefined {
 /** Changes whenever anything that shows in the picture changes (on the table, the table too: its key). */
 export function giveawaysRenderKey(g: Giveaways, themeId: string, tableKey = "", balloons: string[] = []): string {
   // The count and the contents do not show (one box a place; what is inside is a list).
-  const board = { boardColour: g.boardColour, boardLine: g.boardLine, boardFont: g.boardFont, boardInk: g.boardInk, boardGarland: g.boardGarland, ...(g.boardGarland ? { balloons } : {}) };
-  const shown = { place: g.place, name: g.name, age: g.age, font: g.font, ...(g.place === "board" ? board : { tableKey }) };
+  const board = { boardColour: g.boardColour, boardLine: g.boardLine, boardFont: g.boardFont, boardInk: g.boardInk, boardLineFont: g.boardLineFont, boardGarland: g.boardGarland, ...(g.boardGarland ? { balloons } : {}) };
+  const shown = { place: g.place, name: g.name, font: g.font, ...(g.place === "board" ? board : { tableKey }) };
   const s = JSON.stringify([themeId, shown]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);

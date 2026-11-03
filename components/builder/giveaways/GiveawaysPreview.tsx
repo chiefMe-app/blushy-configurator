@@ -6,12 +6,12 @@
 // giveaways waits for.
 import { useEffect, useState } from "react";
 import { themeById, THEMES, type BuilderConfig } from "@/lib/config";
-import { BOARD_PHOTO, BOARD_SHOWS, BOX_PHOTO, GIVEAWAY_CONTENTS, boardOutline, type Giveaways } from "@/lib/studio/giveaways";
-import PIECES from "@/lib/studio/welcomePieces.json";
+import { BOARD_PHOTO, BOARD_SHOWS, GIVEAWAY_CONTENTS, boardOutline, shelfCounts, type Giveaways } from "@/lib/studio/giveaways";
+import COLUMNS from "@/lib/studio/giveawayGarland.json";
 import { setShot, useRecoloredBase } from "@/components/design/LiveSketch";
 import { fontCss, tableFont } from "@/lib/studio/tableFonts";
 import TablePlace from "@/components/studio/table/TablePlace";
-import GiveawayBox, { type BoxLook } from "@/components/studio/GiveawayBox";
+import GiveawayBox, { boxLines, type BoxLook } from "@/components/studio/GiveawayBox";
 import { THEME_GROUPS } from "@/components/builder/constants";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
@@ -19,46 +19,49 @@ import type { PieceRender } from "@/components/builder/usePieceRender";
 /** The box's look in a theme: its placemat print and its picture (the theme list's crayon icon). */
 export function boxLook(g: Giveaways, theme: { id: string; accent: string }): BoxLook {
   const icon = THEME_GROUPS.flatMap((gr) => gr.items).find((i) => i.id === theme.id)?.icon ?? "unicorn";
-  return { print: `/design/table/placemats/${theme.id}/pattern.webp`, sticker: `/design/themes-v2/${icon}.webp`, accent: theme.accent, name: g.name, age: g.age, font: g.font };
+  return { print: `/design/table/placemats/${theme.id}/pattern.webp`, sticker: `/design/themes-v2/${icon}.webp`, accent: theme.accent, name: g.name, font: g.font };
 }
 
 /** The shelved board, its boxes on the shelves, the name on its arch and, if she wants one, a balloon garland. */
 export function GiveawayBoardArt({ g, theme, balloons, className }: { g: Giveaways; theme: { id: string; accent: string; balloonColors?: string[] }; balloons?: string[]; className?: string }) {
   const look = boxLook(g, theme);
-  const { w: W, h: H, board, shelves, boxH } = BOARD_PHOTO;
-  // The garland (2026-11-03, the owner: "balon garland opsiyonu olsun"): the welcome board's — the backdrop's own
-  // Single Arch set photo, repainted to the party's balloons — from the floor up the board's right edge and over
-  // its top; the words move left, clear of it.
+  const { w: W, h: H, board, shelves, boxH, words } = BOARD_PHOTO;
+  const face = tableFont(g.boardFont), lineFace = tableFont(g.boardLineFont);
+  const name = g.name.trim();
+  const line = g.boardLine.trim() ? (lineFace.hand ? g.boardLine.trim() : g.boardLine.trim().toUpperCase()) : "";
+  // The garland (2026-11-03, the owner: "balon garland opsiyonu olsun"; later: "üste doğru ilerlemesin, thank you
+  // for coming'in hizasında bitsin"): a column of balloons on the floor beside the board's right edge, its top
+  // level with the line — a photo of the balloon set's column, ending in whole balloons
+  // (scripts/giveaways/garland-column.ts), repainted to the party's balloons.
   const palette = balloons?.length ? balloons : theme.balloonColors ?? [];
   const shot = setShot(theme.id, palette);
-  const gName = `garland-${shot.folder}` as keyof typeof PIECES;
-  const gp = PIECES[gName] as { w: number; h: number; edge: number };
-  const gSrc = useRecoloredBase(g.boardGarland ? `/design/welcome/pieces/${gName}.webp` : null, `/design/welcome/pieces/${gName}-families.png`, palette, shot.asShot, 50);
-  // The board is tall and narrow: drawn at its height the garland's arch would cover the whole top. So it is drawn
-  // smaller, its arch over the board's top right shoulder, and again below it for the rest of its column down to
-  // the floor — the first without its foot, the second only its column and foot.
-  const gW = 380, gH = (gW * gp.h) / gp.w, gX = board.x1 - gW * gp.edge, gTop = 70;
-  const floorY = board.bottom + 6, gTop2 = floorY - gH;
-  // The upper one fades out over its last stretch of column, over the lower one's (below its own arch).
-  const fadeTo = gTop + gH * 0.82, fadeFrom = fadeTo - 60, cutB = gTop2 + gH * 0.25;
-  // Up there the arch curves in: the words kept a little inside its left edge, and clear of the balloons.
-  const wordsX0 = board.x0 + (board.x1 - board.x0) * 0.07;
-  const words = g.boardGarland ? { ...BOARD_PHOTO.words, cx: (wordsX0 + gX) / 2 + 6, w: gX - wordsX0 - 40 } : BOARD_PHOTO.words;
-  const boxW = (boxH * BOX_PHOTO.w) / BOX_PHOTO.h;
-  const shown = Math.min(g.count, BOARD_SHOWS);
-  const span = board.x1 - board.x0;
-  const white = g.boardColour.toUpperCase() === "#FFFFFF";
-  const face = tableFont(g.boardFont);
-  const name = g.name.trim();
-  // A handwritten face draws small for its size: its own scale, as the box's plate (GiveawayBox).
-  const line = g.boardLine.trim().toUpperCase();
-  const lineBox = g.boardGarland ? { cx: (board.x0 + board.x1 - 70) / 2, w: board.x1 - 70 - board.x0 - 30 } : { cx: words.cx, w: words.w };
-  const lineSize = Math.min(24, lineBox.w / Math.max(6, line.length * 0.78));
-  // As wide as the space lets it, and clear of the line under it (a script's tails hang below the line it sits on).
-  const byWidth = (words.w / Math.max(2.6, name.length * 0.52)) * (face.hand ? face.scale ?? 1 : 0.8);
-  const nameSize = Math.min(byWidth, (words.bottom - 8 - lineSize - 6 - words.top) / (face.hand ? 1.15 : 0.95));
+  const gName = `garland-${shot.folder}` as keyof typeof COLUMNS;
+  const gp = COLUMNS[gName] ?? COLUMNS["garland-unicorn-pastel"];
+  const gSrc = useRecoloredBase(g.boardGarland ? `/design/giveaways/${gName}-column.webp` : null, `/design/giveaways/${gName}-column-families.png`, palette, shot.asShot, 50);
+  const lineSize0 = 24;
+  const floorY = board.bottom + 6, gTop = words.bottom - 8 - lineSize0 - 4;
+  const gH = floorY - gTop, gW = (gH * gp.w) / gp.h;
+  // A fifth of it over the board's edge, hugging it.
+  const gX = board.x1 - gW * 0.2;
+  // The boxes and the line keep clear of it.
+  const right = g.boardGarland ? Math.min(board.x1, gX + 6) : board.x1;
+  const span = right - board.x0;
+  const lineBox = { cx: (board.x0 + right) / 2 + (g.boardGarland ? 4 : 0), w: span - 40 };
+  const perChar = (f: typeof face) => (f.hand ? 0.36 / (f.scale ?? 1) : f.id === "archivo-black" ? 0.86 : 0.74);
+  const lineSize = Math.min(lineSize0 * (lineFace.hand ? lineFace.scale ?? 1 : 1), lineBox.w / (Math.max(6, line.length) * perChar(lineFace)));
+  // The name as wide as the arch lets it, a long one on two lines as on the box, and clear of the line under it
+  // (a script's tails hang below its line).
+  const nameLines = boxLines(face.hand ? name : name.toUpperCase());
+  const longest = Math.max(2.6, ...nameLines.map((l) => l.length * 0.52));
+  const byWidth = (words.w / longest) * (face.hand ? face.scale ?? 1 : 0.8);
+  const nameRoom = words.bottom - 8 - lineSize0 - 6 - words.top;
+  const nameGap = face.hand ? 0.82 : 1.0;
+  const nameSize = Math.min(byWidth, nameRoom / ((face.hand ? 1.15 : 0.95) + (nameLines.length - 1) * nameGap));
   // Her colour, or: the darker the board, the lighter the words.
   const ink = g.boardInk || (isDark(g.boardColour) ? "#FFFFFF" : theme.accent);
+  const white = g.boardColour.toUpperCase() === "#FFFFFF";
+  // Three to a shelf, never one on its own (shelfCounts), spread along it.
+  const rows = shelfCounts(g.count);
   return (
     <svg className={className} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Your giveaway board" data-testid="giveaway-board-art" data-garland={g.boardGarland ? "yes" : "no"}>
       <defs>
@@ -68,27 +71,20 @@ export function GiveawayBoardArt({ g, theme, balloons, className }: { g: Giveawa
       {/* The board's colour, over its photographed light and shade. */}
       {!white && <path d={boardOutline()} fill={g.boardColour} style={{ mixBlendMode: "multiply" }} data-part="board-colour" />}
       {/* Her words on the arch, flat cut vinyl. */}
-      {name && <text x={words.cx} y={words.top + nameSize * 0.8} fontSize={nameSize} textAnchor="middle" fill={ink}
-        style={{ fontFamily: `${fontCss(face)}, Georgia, serif`, fontWeight: face.weight }}>{face.hand ? name : name.toUpperCase()}</text>}
-      {line && <text x={lineBox.cx} y={words.bottom - 8} fontSize={lineSize} textAnchor="middle" fill={ink} letterSpacing={lineSize * 0.08}
-        style={{ fontFamily: "var(--font-sans), Arial, sans-serif", fontWeight: 600 }}>{line}</text>}
-      {/* Three boxes to a shelf, top shelf first. */}
-      {Array.from({ length: shown }, (_, i) => {
-        const shelf = Math.floor(i / 3), col = i % 3;
-        const x = board.x0 + span * ((col + 0.5) / 3);
-        return <GiveawayBox key={i} look={look} x={x} y={shelves[shelf] - boxH / 2 + 2} h={boxH} uid={`gvb-${i}`} />;
-      })}
+      {nameLines.map((l, i) => (
+        <text key={i} x={words.cx} y={words.top + nameSize * 0.8 + i * nameSize * nameGap} fontSize={nameSize} textAnchor="middle" fill={ink}
+          data-word="name" style={{ fontFamily: `${fontCss(face)}, Georgia, serif`, fontWeight: face.weight }}>{l}</text>
+      ))}
+      {line && <text x={lineBox.cx} y={words.bottom - 8} fontSize={lineSize} textAnchor="middle" fill={ink} letterSpacing={lineFace.hand ? 0 : lineSize * 0.06}
+        data-word="line" style={{ fontFamily: `${fontCss(lineFace)}, Georgia, serif`, fontWeight: lineFace.weight }}>{line}</text>}
+      {rows.flatMap((n, shelf) => Array.from({ length: n }, (_, col) => {
+        const x = board.x0 + span * ((col + 0.5) / 3) + (span / 3) * ((3 - n) / 2);
+        return <GiveawayBox key={`${shelf}-${col}`} look={look} x={x} y={shelves[shelf] - boxH / 2 + 2} h={boxH} uid={`gvb-${shelf}-${col}`} />;
+      }))}
       {g.boardGarland && gSrc && (
         <g data-part="garland" data-set={shot.folder} filter="url(#gvb-wall)">
-          <clipPath id="gvb-col"><rect x={gX - 10} y={cutB} width={gW + 20} height={floorY + 20 - cutB} /></clipPath>
-          <linearGradient id="gvb-fade" gradientUnits="userSpaceOnUse" x1="0" y1={fadeFrom} x2="0" y2={fadeTo}><stop offset="0" stopColor="#fff" /><stop offset="1" stopColor="#000" /></linearGradient>
-          <mask id="gvb-arch" maskUnits="userSpaceOnUse" x={gX - 10} y={gTop - 10} width={gW + 20} height={fadeTo - gTop + 10}>
-            <rect x={gX - 10} y={gTop - 10} width={gW + 20} height={fadeTo - gTop + 10} fill="url(#gvb-fade)" />
-          </mask>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <image href={gSrc} x={gX} y={gTop2} width={gW} height={gH} clipPath="url(#gvb-col)" />
-          {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <image href={gSrc} x={gX} y={gTop} width={gW} height={gH} mask="url(#gvb-arch)" />
+          <image href={gSrc} x={gX} y={gTop} width={gW} height={gH} />
         </g>
       )}
     </svg>
@@ -147,7 +143,7 @@ export default function GiveawaysPreview({ config, render, onGenerate }: { confi
           <div className={render.loading ? "bz-wb-wait on" : "bz-wb-wait"}>
             {onTable
               ? <TablePlace table={config.table!} theme={theme} className="bz-tb-place bz-gv-art"
-                  atPlace={(id) => <GiveawayBox look={boxLook(g, theme)} x={5} y={-17.5} h={10.5} rot={-6} uid={`gvt-${id}`} />} />
+                  atPlace={(id) => <GiveawayBox look={boxLook(g, theme)} x={2} y={-17.8} h={14} rot={-4} uid={`gvt-${id}`} />} />
               : <GiveawayBoardArt g={g} theme={theme} balloons={config.decor.balloonColors} className="bz-gv-art bz-gv-board" />}
             {render.loading && (
               <div className="veil" role="status" data-testid="giveaways-render-wait">

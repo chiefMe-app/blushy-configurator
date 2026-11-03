@@ -288,7 +288,6 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   await page.getByTestId("giveaways-count").fill("30");
   await expect(board.locator("[data-part=giveaway-box]")).toHaveCount(12);
   await page.getByTestId("giveaways-name").fill("Arya");
-  await page.getByTestId("giveaways-age").fill("6");
   await expect(board).toContainText("Arya");
   // What is inside is a list, each priced a box.
   const contents = page.getByTestId("giveaways-contents");
@@ -309,7 +308,10 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   const withoutGarland = aed(await page.getByTestId("giveaways-total").locator("b").textContent());
   await page.getByTestId("giveaways-board-garland").getByRole("radio", { name: /Balloon garland/ }).click();
   await expect(board).toHaveAttribute("data-garland", "yes");
-  await expect(board.locator("[data-part=garland] image")).toHaveCount(2);
+  await expect(board.locator("[data-part=garland] image")).toHaveCount(1);
+  // The line in its own lettering (2026-11-03: "thank you for coming'in fontunu seçemiyoruz").
+  await page.getByTestId("giveaways-board-line-font").getByRole("radio", { name: /Handwritten/ }).click();
+  await expect(board.locator("[data-word=line]")).toHaveText("Thank you for coming");
   expect(aed(await page.getByTestId("giveaways-total").locator("b").textContent())).toBe(withoutGarland + 250);
   for (const src of await board.locator("image").evaluateAll((l) => Array.from(new Set(l.map((i) => i.getAttribute("href")!))))) {
     if (src.startsWith("blob:")) continue; // the garland, repainted in the page
@@ -325,7 +327,8 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   await expect(page.getByTestId("giveaways-render")).toBeVisible();
   const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/giveaway-render"))!.postData()!);
   expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
-  expect(sent.giveaways).toMatchObject({ name: "Arya", age: "6", place: "board", count: 30 });
+  expect(sent.giveaways).toMatchObject({ name: "Arya", place: "board", count: 30 });
+  expect(sent.giveaways).not.toHaveProperty("age");
   // The boxes go on their own, laid on the render afterwards (the engine, given them, redrew them).
   expect(sent.boxes).toMatch(/^data:image\/png;base64,/);
   // The backdrop's own preview is not shown on this part.

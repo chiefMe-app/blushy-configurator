@@ -1,25 +1,24 @@
 // The Decor step's fourth part (2026-11-03, the owner: "giveaways … her temaya göre bir tasarımı olsun … boxın
 // içindekileri görsel olarak değil şimdilik liste olarak verelim, playdough, bubble, candy, sticker, themed items
 // … bu box'ı masaya mı yoksa giveaway board mu istiyor onun seçimini yapsın … board rengi vs customizable"):
-// a yes / skip first, then on one page — where the boxes go, how many and what is in them, the name and age on
+// a yes / skip first, then on one page — where the boxes go, how many and what is in them, the name on
 // them, and the board's colour and words (lib/studio/giveaways.ts).
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
 import { MAX_BOARD_TEXT, cleanBoardText } from "@/lib/studio/welcomeBoard";
-import { BOX_PRICE, GIVEAWAY_BOARD_PRICE, GIVEAWAY_GARLAND_PRICE, GIVEAWAY_CONTENTS, GIVEAWAY_PLACES, MAX_BOXES, clampCount, cleanAge, defaultGiveaways, giveawaysTotal, type Giveaways } from "@/lib/studio/giveaways";
+import { BOX_PRICE, GIVEAWAY_BOARD_PRICE, GIVEAWAY_GARLAND_PRICE, GIVEAWAY_CONTENTS, GIVEAWAY_PLACES, MAX_BOXES, clampCount, defaultGiveaways, giveawaysTotal, type Giveaways } from "@/lib/studio/giveaways";
 import { clampKids } from "@/lib/studio/tableSetup";
 import GiveawayBox from "@/components/studio/GiveawayBox";
 import { boxLook } from "./GiveawaysPreview";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 
-/** What the boxes start from: one a child at the kids' table, the name and age the party already has. */
+/** What the boxes start from: one a child at the kids' table, the name the party already has. */
 export function giveawaysSeed(config: BuilderConfig) {
   const kids = config.table?.enabled ? clampKids(config.table.kids) : 10;
   const name = (config.welcomeBoard?.enabled && config.welcomeBoard.name.replace(/['’]s$/i, "")) || "";
-  const age = config.decor.numberLight?.enabled ? config.decor.numberLight.value ?? "" : "";
-  return { kids, name, age };
+  return { kids, name };
 }
 
 export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, render, onGenerate }: {
@@ -39,7 +38,7 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
     return (
       <div className="bz-tb-intro" data-testid="giveaways-intro">
         <h2>Add giveaway boxes?</h2>
-        <p>A gable box for every child, dressed in your {theme.name} theme with their name and age — on the table or on a giveaway board. The price adds to your party.</p>
+        <p>A gable box for every child, dressed in your {theme.name} theme with their name — on the table or on a giveaway board. The price adds to your party.</p>
         <div className="actions">
           <button type="button" className="bz-next" onClick={() => setGiveaways({ ...defaultGiveaways(giveawaysSeed(config)), ...(tableKept ? {} : { place: "board" as const }), ...(g ? { ...g, enabled: true, done: false } : {}) })}>Yes, add giveaways ✦</button>
           {!g && <button type="button" className="bz-back" onClick={() => setGiveaways({ ...defaultGiveaways(giveawaysSeed(config)), enabled: false })}>No thanks, skip</button>}
@@ -70,7 +69,7 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
           <h3>Your {theme.name} box</h3>
           <div className="bz-tb-options" role="radiogroup" aria-label="Giveaway box">
             {card(true, () => {}, <svg className="photo" viewBox="0 0 120 130" aria-hidden="true"><GiveawayBox look={look} x={60} y={65} h={124} uid="gv-card" /></svg>,
-              "Gable box", "Your theme's print, a sticker, a name plate and the age", `AED ${formatAED(BOX_PRICE)} a box`, "gable")}
+              "Gable box", "Your theme's print and picture, the name printed on it", `AED ${formatAED(BOX_PRICE)} a box`, "gable")}
           </div>
         </div>
         <div className="bz-tb-item">
@@ -100,16 +99,12 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
         </div>
       </section>
 
-      <section className="bz-tb-section" aria-label="Name and age">
-        <h2>Name &amp; age</h2>
+      <section className="bz-tb-section" aria-label="Name">
+        <h2>The name</h2>
         <div className="bz-tb-item">
           <label className="bz-tb-words">
-            <span>The name on the plate</span>
+            <span>The name on the box</span>
             <input type="text" value={g.name} maxLength={MAX_BOARD_TEXT} placeholder="e.g. Arya" data-testid="giveaways-name" onChange={(e) => set({ name: cleanBoardText(e.target.value) })} />
-          </label>
-          <label className="bz-tb-words">
-            <span>Age</span>
-            <input type="text" inputMode="numeric" value={g.age} maxLength={2} placeholder="e.g. 6" data-testid="giveaways-age" onChange={(e) => set({ age: cleanAge(e.target.value) })} />
           </label>
           <div className="bz-tb-fonts" role="radiogroup" aria-label="Name lettering" data-testid="giveaways-font">
             {TABLE_FONTS.map((f) => (
@@ -152,10 +147,21 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
               <input type="text" value={g.boardLine} maxLength={MAX_BOARD_TEXT} placeholder="e.g. Thank you for coming" data-testid="giveaways-board-line" onChange={(e) => set({ boardLine: cleanBoardText(e.target.value) })} />
             </label>
             {/* 2026-11-03 (the owner: "board'un üstüne yazılan yazı font renk customized olsun"). */}
+            <span className="bz-tb-sub">The name</span>
             <div className="bz-tb-fonts" role="radiogroup" aria-label="Board lettering" data-testid="giveaways-board-font">
               {TABLE_FONTS.map((f) => (
                 <button key={f.id} type="button" role="radio" aria-checked={g.boardFont === f.id} className={g.boardFont === f.id ? "on" : ""} onClick={() => set({ boardFont: f.id })}>
                   <span style={{ fontFamily: `${fontCss(f)}, Georgia, serif`, fontWeight: f.weight, textTransform: f.hand ? "none" : "uppercase", "--fscale": f.scale } as React.CSSProperties}>{g.name || "Arya"}</span>
+                  <small>{f.name}</small>
+                </button>
+              ))}
+            </div>
+            {/* 2026-11-03 (the owner: "thank you for coming'in fontunu seçemiyoruz"). */}
+            <span className="bz-tb-sub">The line</span>
+            <div className="bz-tb-fonts" role="radiogroup" aria-label="Line lettering" data-testid="giveaways-board-line-font">
+              {TABLE_FONTS.map((f) => (
+                <button key={f.id} type="button" role="radio" aria-checked={g.boardLineFont === f.id} className={g.boardLineFont === f.id ? "on" : ""} onClick={() => set({ boardLineFont: f.id })}>
+                  <span style={{ fontFamily: `${fontCss(f)}, Georgia, serif`, fontWeight: f.weight, textTransform: f.hand ? "none" : "uppercase", "--fscale": f.scale } as React.CSSProperties}>{g.boardLine || "Thank you"}</span>
                   <small>{f.name}</small>
                 </button>
               ))}

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import sharp from "sharp";
 import { defaultConfig, priceBreakdown } from "@/lib/config";
-import { BOX_PRICE, GIVEAWAY_BOARD_PRICE, GIVEAWAY_GARLAND_PRICE, defaultGiveaways, giveawayPriceLines, giveawaysRenderKey, giveawaysTotal, readGiveaways } from "@/lib/studio/giveaways";
+import { BOX_PRICE, GIVEAWAY_BOARD_PRICE, GIVEAWAY_GARLAND_PRICE, defaultGiveaways, giveawayPriceLines, giveawaysRenderKey, giveawaysTotal, readGiveaways, shelfCounts } from "@/lib/studio/giveaways";
 import { boardShelves, giveawayPrompt } from "@/lib/studio/giveawayRender";
 import { fromDraft, toDraft } from "@/lib/draft";
 import { resetRenderGuard } from "@/lib/renderGuard";
@@ -23,7 +23,7 @@ const USER = "00000000-0000-4000-8000-0000000000a1";
 
 describe("the giveaways", () => {
   it("a box a child, its contents added to each box, the board once", () => {
-    const g = { ...defaultGiveaways({ kids: 12, name: "Arya", age: "6" }) };
+    const g = { ...defaultGiveaways({ kids: 12, name: "Arya" }) };
     const each = BOX_PRICE + 6 + 5 + 6 + 4 + 12;
     expect(giveawaysTotal(g)).toBe(each * 12);
     expect(giveawaysTotal({ ...g, place: "board" })).toBe(each * 12 + GIVEAWAY_BOARD_PRICE);
@@ -44,11 +44,14 @@ describe("the giveaways", () => {
 
   it("are read back over the defaults, never with what does not belong", () => {
     expect(readGiveaways(null)).toBeUndefined();
-    const g = readGiveaways({ enabled: true, count: 999, place: "roof", contents: ["candy", "bombs"], name: "  Arya  ", age: "6a7", font: "nope", boardColour: "red", boardLine: 5,
+    const g = readGiveaways({ enabled: true, count: 999, place: "roof", contents: ["candy", "bombs"], name: "  Arya  ", font: "nope", boardColour: "red", boardLine: 5,
       render: { key: "k1", path: "https://evil.example/a.jpg" } })!;
-    expect(g).toMatchObject({ count: 60, place: "table", contents: ["candy"], age: "67", font: "sacramento", boardColour: "#FFFFFF", boardLine: "Thank you for coming" });
+    expect(g).toMatchObject({ count: 60, place: "table", contents: ["candy"], font: "archivo-black", boardColour: "#FFFFFF", boardLine: "Thank you for coming" });
     expect(g.render).toBeUndefined();
-    expect(readGiveaways({ boardFont: "nope", boardInk: "red", boardGarland: "yes" })).toMatchObject({ boardFont: "sacramento", boardInk: "", boardGarland: false });
+    expect(readGiveaways({ boardFont: "nope", boardInk: "red", boardGarland: "yes", boardLineFont: "nope" })).toMatchObject({ boardFont: "sacramento", boardInk: "", boardGarland: false, boardLineFont: "archivo-black" });
+    expect(readGiveaways({ boardLineFont: "sacramento" })).toMatchObject({ boardLineFont: "sacramento" });
+    // No age any more (2026-11-03: "age kısmını kaldıralım").
+    expect(readGiveaways({ age: "6" })).not.toHaveProperty("age");
     expect(readGiveaways({ boardFont: "playfair-display", boardInk: "#112233", boardGarland: true })).toMatchObject({ boardInk: "#112233", boardGarland: true });
     expect(readGiveaways({ render: { key: "k1", path: `${USER}/g1.jpg` } })!.render).toEqual({ key: "k1", path: `${USER}/g1.jpg` });
   });
@@ -73,6 +76,7 @@ describe("the giveaways", () => {
     // Its words' lettering and colour, and a garland in the party's balloons.
     expect(giveawaysRenderKey({ ...b, boardInk: "#000000" }, "frozen")).not.toBe(giveawaysRenderKey(b, "frozen"));
     expect(giveawaysRenderKey({ ...b, boardFont: "playfair-display" }, "frozen")).not.toBe(giveawaysRenderKey(b, "frozen"));
+    expect(giveawaysRenderKey({ ...b, boardLineFont: "sacramento" }, "frozen")).not.toBe(giveawaysRenderKey(b, "frozen"));
     const gl = { ...b, boardGarland: true };
     expect(giveawaysRenderKey(gl, "frozen")).not.toBe(giveawaysRenderKey(b, "frozen"));
     expect(giveawaysRenderKey(gl, "frozen", "", ["#FFFFFF"])).not.toBe(giveawaysRenderKey(gl, "frozen", "", ["#000000"]));
@@ -80,22 +84,25 @@ describe("the giveaways", () => {
   });
 
   it("the prompt keeps the boxes' words, the board's flat vinyl and neutral light", () => {
-    const p = giveawayPrompt({ ...defaultGiveaways({ name: "Arya", age: "6" }), place: "board" });
-    expect(p).toContain('"Arya" and "6"');
+    const p = giveawayPrompt({ ...defaultGiveaways({ name: "Arya" }), place: "board" });
+    expect(p).toContain('the same name "Arya"');
+    expect(p).toMatch(/no sticker, no label/);
     expect(p).toMatch(/flat cut vinyl/);
     expect(p).toMatch(/never yellow or orange/);
     // Every box drawn, shelf by shelf (the test render dropped two of ten).
     expect(p).toContain("Exactly 10 gift boxes");
-    expect(boardShelves(10)).toBe("three on the top shelf, three on the second shelf, three on the third shelf, one on the bottom shelf");
+    // Never one box on its own on a shelf (2026-11-03, the owner: "tek box kalmasın hiçbir shelfte").
+    expect(boardShelves(10)).toBe("three on the top shelf, three on the second shelf, two on the third shelf, two on the bottom shelf");
+    expect([1, 2, 4, 5, 7, 10, 12, 30].map(shelfCounts)).toEqual([[1], [2], [2, 2], [3, 2], [3, 2, 2], [3, 3, 2, 2], [3, 3, 3, 3], [3, 3, 3, 3]]);
     expect(boardShelves(40)).toMatch(/three on the bottom shelf$/);
     expect(giveawayPrompt(defaultGiveaways({ name: "Arya" }))).toMatch(/seen from straight above/);
     // With the boxes laid on afterwards, the engine is told the shelves stay empty and never to draw characters.
-    const after = giveawayPrompt({ ...defaultGiveaways({ name: "Arya", age: "6" }), place: "board" }, { boxesAfter: true });
+    const after = giveawayPrompt({ ...defaultGiveaways({ name: "Arya" }), place: "board" }, { boxesAfter: true });
     expect(after).toMatch(/EMPTY: nothing on them/);
     expect(after).toMatch(/no faces, no characters/);
     expect(after).not.toMatch(/gift boxes on its shelves/);
     expect(after).not.toMatch(/balloon garland/);
-    expect(giveawayPrompt({ ...defaultGiveaways({ name: "Arya" }), place: "board", boardGarland: true }, { boxesAfter: true })).toMatch(/Keep the balloon garland exactly/);
+    expect(giveawayPrompt({ ...defaultGiveaways({ name: "Arya" }), place: "board", boardGarland: true }, { boxesAfter: true })).toMatch(/Keep the balloon garland exactly where it is.*ending level with the board's words, never over its top/);
   });
 });
 
@@ -115,7 +122,7 @@ describe("the route", () => {
   it("one picture of the preview to FLUX.2 edit, at its own size", async () => {
     subscribe.mockImplementation(async () => ({ data: { images: [{ url: "https://fal.example/x.jpg" }] } }));
     const drawn = await sharp({ create: { width: 1400, height: 1800, channels: 3, background: "#eeeeee" } }).jpeg().toBuffer();
-    const g = { ...defaultGiveaways({ name: "Arya", age: "6" }), place: "board" as const };
+    const g = { ...defaultGiveaways({ name: "Arya" }), place: "board" as const };
     const got = await lines(await post({ giveaways: g, theme: "frozen", preview: `data:image/jpeg;base64,${drawn.toString("base64")}` }));
     expect(got[0]).toEqual({ url: PICTURE });
     expect(got.at(-1)).toMatchObject({ done: true });
