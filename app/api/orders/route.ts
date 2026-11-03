@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readGiveaways } from "@/lib/studio/giveaways";
+import { readPinata } from "@/lib/studio/pinata";
 import { randomUUID } from "node:crypto";
 import { getSupabase } from "@/lib/supabase";
 import {
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
     venue: { ...body.venue, photos: [] },
     // Read over the defaults, so a malformed one cannot break the sum.
     giveaways: readGiveaways(body.giveaways),
+    pinata: readPinata(body.pinata),
   } as unknown as BuilderConfig;
   const total = computeTotal(pricingConfig);
 
@@ -75,6 +77,7 @@ export async function POST(req: NextRequest) {
     adultTable: body.adultTable,
     welcomeBoard: body.welcomeBoard,
     giveaways: pricingConfig.giveaways,
+    pinata: pricingConfig.pinata,
     addOns: body.addOns,
     venue: body.venue,
   };

@@ -7,6 +7,7 @@ import { tablePriceLines, type TableSetup } from "./studio/tableSetup";
 import { adultPriceLines, type AdultTable } from "./studio/adultTable";
 import { welcomePriceLines, type WelcomeBoard } from "./studio/welcomeBoard";
 import { giveawayPriceLines, type Giveaways } from "./studio/giveaways";
+import { pinataPriceLines, type Pinata } from "./studio/pinata";
 
 // =====================  STEP - EVENT TYPE  =================================
 
@@ -1338,6 +1339,8 @@ export interface BuilderConfig {
   welcomeBoard?: WelcomeBoard;
   /** 2026-11-03: the giveaway boxes, the Decor step's fourth part; absent until visited. */
   giveaways?: Giveaways;
+  /** 2026-11-03: the piñata, the Decor step's fifth part; absent until visited. */
+  pinata?: Pinata;
   addOns: SelectedAddOn[];
   venue: VenueDetails;
   customer: CustomerDetails;
@@ -1405,7 +1408,7 @@ export interface PriceLine {
   label:   string;
   amount:  number;
   /** Groups lines for display in the pricing breakdown. */
-  section: "design" | "table" | "adults" | "welcome" | "giveaways" | "package" | "addons";
+  section: "design" | "table" | "adults" | "welcome" | "giveaways" | "pinata" | "package" | "addons";
 }
 
 /**
@@ -1544,6 +1547,7 @@ export function priceBreakdown(config: BuilderConfig): {
   if (config.welcomeBoard) for (const l of welcomePriceLines(config.welcomeBoard)) lines.push({ ...l, section: "welcome" });
   // -- The giveaways (2026-11-03) ----------------------------------------------
   if (config.giveaways) for (const l of giveawayPriceLines(config.giveaways)) lines.push({ ...l, section: "giveaways" });
+  if (config.pinata) for (const l of pinataPriceLines(config.pinata)) lines.push({ ...l, section: "pinata" });
 
   // -- Add-ons -------------------------------------------------------------
   // Available for all service packages - never cleared by package selection.

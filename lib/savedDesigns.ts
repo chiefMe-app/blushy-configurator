@@ -53,8 +53,8 @@ export const hasWelcome = (config: Pick<BuilderConfig, "welcomeBoard">) => !!con
  */
 export const hasBackdrop = (config: BuilderConfig) =>
   config.decor.backdropChoice === "yes" || (config.decor.backdropChoice !== "skip" && !hasTable(config) && !hasWelcome(config));
-/** The giveaways (2026-11-03) are kept with the backdrop's design, so a party with them keeps that item. */
-const hasGiveaways = (config: Pick<BuilderConfig, "giveaways">) => !!config.giveaways?.enabled;
+/** The giveaways and the piñata (2026-11-03) are kept with the backdrop's design, so a party with them keeps that item. */
+const hasGiveaways = (config: Pick<BuilderConfig, "giveaways" | "pinata">) => !!config.giveaways?.enabled || !!config.pinata?.enabled;
 
 const tablesTotal = (t: Pick<BuilderConfig, "table" | "adultTable">) =>
   (t.table ? tablePriceLines(t.table).reduce((s, l) => s + l.amount, 0) : 0) + (t.adultTable ? adultTotal(t.adultTable) : 0);

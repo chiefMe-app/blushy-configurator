@@ -1356,6 +1356,8 @@ div.bz-stale-banner { cursor: default; }
 .bz-wb-art { width: 100%; max-height: 560px; display: block; }
 /* Giveaways (2026-11-03): the board or the table's place with its box; the contents as a checklist. */
 .bz-gv-art { width: 100%; display: block; }
+/* The room photo whole, as tall as 640 px at most: as wide as that lets it. */
+.bz-pn-art { width: 100%; max-width: 556px; height: auto; display: block; margin: 0 auto; }
 .bz-gv-board { max-height: 600px; }
 /* The box close up, above the render (2026-11-03). */
 .bz-gv-close { margin-bottom: 14px; }

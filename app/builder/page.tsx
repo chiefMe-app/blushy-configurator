@@ -47,6 +47,9 @@ import WelcomePreview from "@/components/builder/welcome/WelcomePreview";
 import GiveawaysStep, { giveawaysSeed } from "@/components/builder/giveaways/GiveawaysStep";
 import GiveawaysPreview from "@/components/builder/giveaways/GiveawaysPreview";
 import { defaultGiveaways, giveawaysRenderKey } from "@/lib/studio/giveaways";
+import PinataStep, { pinataSeed } from "@/components/builder/pinata/PinataStep";
+import PinataPreview from "@/components/builder/pinata/PinataPreview";
+import { defaultPinata, pinataRenderKey } from "@/lib/studio/pinata";
 import type { AfterSignInAction } from "@/lib/account";
 import { adultCounts, defaultAdultTable } from "@/lib/studio/adultTable";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
@@ -80,7 +83,7 @@ export default function ConfigurePage() {
   // table (then, in turn, welcome board, giveaways and helium balloons).
   // 2026-10-31: the table part holds the kids' table, then (once that is
   // finished or skipped) the grown-ups' table; the welcome board comes after.
-  const [decorPart, setDecorPart] = useState<"backdrop" | "table" | "welcome" | "giveaways">("backdrop");
+  const [decorPart, setDecorPart] = useState<"backdrop" | "table" | "welcome" | "giveaways" | "pinata">("backdrop");
   const [tableView, setTableView] = useState<"kids" | "adults">("kids");
   const shownPart = useRef(`${decorPart}:${tableView}`);
   useEffect(() => {
@@ -140,6 +143,7 @@ export default function ConfigurePage() {
   const [tableRenderOnArrival, setTableRenderOnArrival] = useState(false);
   const [welcomeRenderOnArrival, setWelcomeRenderOnArrival] = useState(false);
   const [giveawaysRenderOnArrival, setGiveawaysRenderOnArrival] = useState(false);
+  const [pinataRenderOnArrival, setPinataRenderOnArrival] = useState(false);
   useEffect(() => {
     // After the device copy is restored (useLocalDraft, above), in the same pass.
     const then = takeAfterSignIn();
@@ -148,6 +152,7 @@ export default function ConfigurePage() {
     if (then === "table-render") { setDecorPart("table"); setTableRenderOnArrival(true); }
     if (then === "welcome-render") { setDecorPart("welcome"); setWelcomeRenderOnArrival(true); }
     if (then === "giveaways-render") { setDecorPart("giveaways"); setGiveawaysRenderOnArrival(true); }
+    if (then === "pinata-render") { setDecorPart("pinata"); setPinataRenderOnArrival(true); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const startOver = () => {
@@ -230,6 +235,17 @@ export default function ConfigurePage() {
     onKept: (render) => setConfig((c) => (c.giveaways ? { ...c, giveaways: { ...c.giveaways, render } } : c)),
     onSignInNeeded: () => askSignIn("giveaways-render"),
   });
+  // The piñata (2026-11-03): hung on its stand, rendered as the welcome board is.
+  const pinataKey = config.pinata?.enabled ? pinataRenderKey(config.pinata, config.theme) : "";
+  const pinataRender = usePieceRender({
+    endpoint: "/api/pinata-render", partKey: pinataKey, kept: config.pinata?.render,
+    body: async () => {
+      const node = document.querySelector<SVGSVGElement>("#pinata-preview-card svg.bz-pn-art");
+      return { pinata: config.pinata, theme: config.theme, preview: node ? await nodeJpeg(node, 1200) : null };
+    },
+    onKept: (render) => setConfig((c) => (c.pinata ? { ...c, pinata: { ...c.pinata, render } } : c)),
+    onSignInNeeded: () => askSignIn("pinata-render"),
+  });
   // Back from signing in for one of them: it starts.
   useEffect(() => {
     if (!tableRenderOnArrival || !tableKey) return;
@@ -253,6 +269,14 @@ export default function ConfigurePage() {
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [giveawaysRenderOnArrival, giveawaysKey]);
+  useEffect(() => {
+    if (!pinataRenderOnArrival || !pinataKey) return;
+    setPinataRenderOnArrival(false);
+    const t = setTimeout(() => void pinataRender.make(), 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pinataRenderOnArrival, pinataKey]);
+  const makePinataRender = () => { document.getElementById("pinata-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" }); void pinataRender.make(); };
   const makeGiveawaysRender = () => { document.getElementById("giveaways-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" }); void giveawaysRender.make(); };
   const makeWelcomeRender = () => { document.getElementById("welcome-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" }); void welcomeRender.make(); };
 
@@ -289,6 +313,7 @@ export default function ConfigurePage() {
       ...(config.adultTable ? { adultTable: config.adultTable } : {}),
       ...(config.welcomeBoard ? { welcomeBoard: config.welcomeBoard } : {}),
       ...(config.giveaways ? { giveaways: config.giveaways } : {}),
+      ...(config.pinata ? { pinata: config.pinata } : {}),
       addOns: config.addOns,
       venue: {
         ...config.venue,
@@ -463,6 +488,7 @@ export default function ConfigurePage() {
   const onTable = step === 2 && decorPart === "table";
   const onWelcome = step === 2 && decorPart === "welcome";
   const onGiveaways = step === 2 && decorPart === "giveaways";
+  const onPinata = step === 2 && decorPart === "pinata";
   const openTable = () => { goToStep(2); setDecorPart("table"); setTableView("kids"); };
   // The grown-ups' table is asked once the kids' table is finished or skipped (2026-10-31).
   const kidsDecided = !!config.table && (!config.table.enabled || !!config.table.done);
@@ -472,6 +498,7 @@ export default function ConfigurePage() {
   const setAdultTable = (adultTable: NonNullable<typeof config.adultTable>) => setConfig((c) => ({ ...c, adultTable }));
   const setWelcomeBoard = (welcomeBoard: NonNullable<typeof config.welcomeBoard>) => setConfig((c) => ({ ...c, welcomeBoard }));
   const setGiveaways = (giveaways: NonNullable<typeof config.giveaways>) => setConfig((c) => ({ ...c, giveaways }));
+  const setPinata = (pinata: NonNullable<typeof config.pinata>) => setConfig((c) => ({ ...c, pinata }));
   const finishKids = () => { if (config.table) setTable({ ...config.table, done: true }); setTableView("adults"); };
   // 2026-11-03 (the owner: "kids table skipable olsun, default böyle gelsin"): the table opens designed, in
   // the theme's own pieces, with a way to skip it.
@@ -499,13 +526,22 @@ export default function ConfigurePage() {
   const toPackage = () => {
     if (!config.welcomeBoard) setWelcomeBoard({ ...defaultWelcomeBoard(themeById(config.theme) ?? THEMES[0]), enabled: false });
     if (!config.giveaways) setGiveaways({ ...defaultGiveaways(giveawaysSeed(config)), enabled: false });
+    if (!config.pinata) setPinata({ ...defaultPinata(pinataSeed(config)), enabled: false });
     goToStep(3);
   };
+  // After the giveaways, the piñata (2026-11-03, the owner: "şimdi piñata studio'ya geçelim").
+  const toPinata = () => {
+    if (!config.welcomeBoard) setWelcomeBoard({ ...defaultWelcomeBoard(themeById(config.theme) ?? THEMES[0]), enabled: false });
+    if (!config.giveaways) setGiveaways({ ...defaultGiveaways(giveawaysSeed(config)), enabled: false });
+    setDecorPart("pinata");
+  };
   const finishWelcome = () => { if (config.welcomeBoard) setWelcomeBoard({ ...config.welcomeBoard, done: true }); toGiveaways(); };
-  const finishGiveaways = () => { if (config.giveaways) setGiveaways({ ...config.giveaways, done: true }); toPackage(); };
+  const finishGiveaways = () => { if (config.giveaways) setGiveaways({ ...config.giveaways, done: true }); toPinata(); };
+  const finishPinata = () => { if (config.pinata) setPinata({ ...config.pinata, done: true }); toPackage(); };
   // Skipped from inside the part, no render needed (2026-11-03, the owner: "welcome board skip yapabilmeliyim").
   const skipWelcome = () => { if (config.welcomeBoard) setWelcomeBoard({ ...config.welcomeBoard, enabled: false, done: false }); setDecorPart("giveaways"); };
-  const skipGiveaways = () => { if (config.giveaways) setGiveaways({ ...config.giveaways, enabled: false, done: false }); toPackage(); };
+  const skipGiveaways = () => { if (config.giveaways) setGiveaways({ ...config.giveaways, enabled: false, done: false }); toPinata(); };
+  const skipPinata = () => { if (config.pinata) setPinata({ ...config.pinata, enabled: false, done: false }); toPackage(); };
   // The backdrop is a choice too: asked first, and skippable.
   const backdropAsked = config.decor.backdropChoice === "yes";
   const onBackdropQuestion = step === 2 && decorPart === "backdrop" && !backdropAsked;
@@ -517,6 +553,8 @@ export default function ConfigurePage() {
     ? { eyebrow: "DECOR · PART 3 · WELCOME BOARD", heading: ["Greet your", "guests"] as [string, string], description: "A printed board at the entrance, with your words.", progress: "Size, design, words and stand" }
     : onGiveaways
     ? { eyebrow: "DECOR · PART 4 · GIVEAWAYS", heading: ["Something to", "take home"] as [string, string], description: "A themed box for every child, on the table or on a board.", progress: "Box, contents, name and place" }
+    : onPinata
+    ? { eyebrow: "DECOR · PART 5 · PIÑATA", heading: ["Break it", "open"] as [string, string], description: "A fringe piñata for the big moment, filled and hung on its stand.", progress: "Shape, colours, opening and filling" }
     : (step === 2 && DECOR_STEP_COPY[decorTab]) || STEP_COPY[step];
   const total = priceBreakdown(config).total;
 
@@ -560,10 +598,15 @@ export default function ConfigurePage() {
   }
   if (onGiveaways) {
     if (config.giveaways?.enabled) hideNext = true;
-    else { nextLabel = config.giveaways ? label("Continue to Package →", "Package →") : label("Skip to Package →", "Skip →"); onNext = toPackage; }
+    else { nextLabel = config.giveaways ? label("Next: Piñata →", "Next →") : label("Skip to Piñata →", "Skip →"); onNext = toPinata; }
+  }
+  if (onPinata) {
+    if (config.pinata?.enabled) hideNext = true;
+    else { nextLabel = config.pinata ? label("Continue to Package →", "Package →") : label("Skip to Package →", "Skip →"); onNext = toPackage; }
   }
   // Back walks the parts and tabs of Decor before leaving it.
   const onBack = () => {
+    if (onPinata) { setDecorPart("giveaways"); return; }
     if (onGiveaways) { setDecorPart("welcome"); return; }
     if (onWelcome) { setDecorPart("table"); setTableView(kidsDecided ? "adults" : "kids"); return; }
     if (onAdults) { setTableView("kids"); return; }
@@ -571,8 +614,8 @@ export default function ConfigurePage() {
       setDecorPart("backdrop"); setDecorTab(DECOR_TABS.length - 1);
       return;
     }
-    // Back from Package lands on the giveaways.
-    if (step === 3) { goToStep(2); setDecorPart("giveaways"); return; }
+    // Back from Package lands on the piñata.
+    if (step === 3) { goToStep(2); setDecorPart("pinata"); return; }
     goToStep(step - 1);
   };
   if (step === 5) nextLabel = "See my party →";
@@ -638,6 +681,7 @@ export default function ConfigurePage() {
           )}
           {onWelcome && <WelcomePreview config={config} render={welcomeRender} onGenerate={makeWelcomeRender} />}
           {onGiveaways && <GiveawaysPreview config={config} render={giveawaysRender} onGenerate={makeGiveawaysRender} />}
+          {onPinata && <PinataPreview config={config} render={pinataRender} onGenerate={makePinataRender} />}
           <div hidden={!onKids}>
             <TablePreview config={config} render={tableRender} onGenerate={makeTableRender} placeShot={tablePlaceShot} />
           </div>
@@ -653,11 +697,11 @@ export default function ConfigurePage() {
             </div>
           ) : (
             <>
-              {!onTable && !onWelcome && !onGiveaways && config.decor.backdropChoice === "skip" && (
+              {!onTable && !onWelcome && !onGiveaways && !onPinata && config.decor.backdropChoice === "skip" && (
                 <div className="bz-tb-preview"><div className="empty">No backdrop in this party — add one any time.</div></div>
               )}
               {/* The backdrop's preview stays mounted (its render is kept) while the table is on show. */}
-              <div hidden={onTable || onWelcome || onGiveaways || config.decor.backdropChoice === "skip"}>
+              <div hidden={onTable || onWelcome || onGiveaways || onPinata || config.decor.backdropChoice === "skip"}>
               <SetupPreview
                 config={config}
                 status={preview.status}
@@ -685,7 +729,7 @@ export default function ConfigurePage() {
                 sketchActiveId={isDecorStep && decorTab === 1 && sketchItems.length > 1 ? sketchActiveId : null}
                 sketchCutouts={sketchCutouts}
               />
-              {isDecorStep && !onTable && !onWelcome && !onGiveaways && !finalRenderState.hasRender && (
+              {isDecorStep && !onTable && !onWelcome && !onGiveaways && !onPinata && !finalRenderState.hasRender && (
                 <div className="bz-little-note">
                   <svg viewBox="0 0 35 28" aria-hidden="true"><path d="M3 4Q6 23 29 16M21 11L30 16L23 23" /></svg>
                   <span>See it for real: tap <b>Generate render</b> on the Extras tab — your backdrop is finalized with its render.</span>
@@ -741,13 +785,14 @@ export default function ConfigurePage() {
               <div className="bz-parts-wrap">
                 <span className="label">Your party, piece by piece</span>
                 <div className="bz-parts" role="tablist" aria-label="Decor parts">
-                  {([["backdrop", "Backdrop"], ["table", "Table setup"], ["welcome", "Welcome board"], ["giveaways", "Giveaways"]] as const).map(([id, name], i) => {
+                  {([["backdrop", "Backdrop"], ["table", "Table setup"], ["welcome", "Welcome board"], ["giveaways", "Giveaways"], ["pinata", "Piñata"]] as const).map(([id, name], i) => {
                     const tablesDone = kidsDecided && !!config.adultTable && (!config.adultTable.enabled || !!config.adultTable.done);
                     const welcomeDone = !!config.welcomeBoard && (!config.welcomeBoard.enabled || !!config.welcomeBoard.done);
+                    const giveawaysDone = !!config.giveaways && (!config.giveaways.enabled || !!config.giveaways.done);
                     const done = id === "table" ? tablesDone : id === "welcome" ? welcomeDone
-                      : id === "giveaways" ? !!config.giveaways && (!config.giveaways.enabled || !!config.giveaways.done) : false;
+                      : id === "giveaways" ? giveawaysDone : id === "pinata" ? !!config.pinata && (!config.pinata.enabled || !!config.pinata.done) : false;
                     // 2026-11-03 ("render almadan o aşamaya geçemesin"): a part opens once the ones before it are finalized.
-                    const open = id === "backdrop" || (backdropFinished && (id === "table" || (tablesDone && (id === "welcome" || welcomeDone))));
+                    const open = id === "backdrop" || (backdropFinished && (id === "table" || (tablesDone && (id === "welcome" || (welcomeDone && (id === "giveaways" || giveawaysDone))))));
                     return (
                       <span key={id} style={{ display: "contents" }}>
                         {i > 0 && <span className="arrow" aria-hidden="true">→</span>}
@@ -793,11 +838,12 @@ export default function ConfigurePage() {
             {onAdults && <AdultTableStep config={config} setAdultTable={setAdultTable} onFinish={finishAdults} onSkip={skipAdults} />}
             {onWelcome && <WelcomeStep config={config} setWelcomeBoard={setWelcomeBoard} onFinish={finishWelcome} onSkip={skipWelcome} render={welcomeRender} onGenerate={makeWelcomeRender} />}
             {onGiveaways && <GiveawaysStep config={config} setGiveaways={setGiveaways} onFinish={finishGiveaways} onSkip={skipGiveaways} render={giveawaysRender} onGenerate={makeGiveawaysRender} />}
+            {onPinata && <PinataStep config={config} setPinata={setPinata} onFinish={finishPinata} onSkip={skipPinata} render={pinataRender} onGenerate={makePinataRender} />}
 
             {/* 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
             {(step === 3 || step === 6) && <FinishedDesigns config={config}
               renderUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl : null}
-              tableRenderUrl={tableRender.url} welcomeRenderUrl={welcomeRender.url} giveawaysRenderUrl={giveawaysRender.url} />}
+              tableRenderUrl={tableRender.url} welcomeRenderUrl={welcomeRender.url} giveawaysRenderUrl={giveawaysRender.url} pinataRenderUrl={pinataRender.url} />}
             {step === 3 && <PackageStep config={config} setServicePackage={setServicePackage} />}
 
             {step === 4 && <AddOnsStep config={config} toggleAddOn={toggleAddOn} setAddOnOption={setAddOnOption} />}

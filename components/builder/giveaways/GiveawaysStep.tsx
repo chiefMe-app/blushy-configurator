@@ -25,7 +25,7 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
   config: BuilderConfig;
   setGiveaways: (g: Giveaways) => void;
   onFinish: () => void;
-  /** No giveaways after all: skipped, on to Package. */
+  /** No giveaways after all: skipped, on to the piñata. */
   onSkip: () => void;
   render: PieceRender;
   onGenerate: () => void;
@@ -226,7 +226,7 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
         <b>AED {formatAED(giveawaysTotal(g))}</b>
         <button type="button" className="bz-restart" onClick={() => setGiveaways({ ...g, enabled: false, done: false })}>Remove the giveaways</button>
       </div>
-      <FinishBar done={g.done} what="giveaways" next="Package" onFinish={onFinish} onSkip={onSkip} testId="finish-giveaways" render={{ ...render, onGenerate }} />
+      <FinishBar done={g.done} what="giveaways" next="Piñata" onFinish={onFinish} onSkip={onSkip} testId="finish-giveaways" render={{ ...render, onGenerate }} />
     </div>
   );
 }

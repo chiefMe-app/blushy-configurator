@@ -257,9 +257,12 @@ test("W3 a welcome board begun can still be skipped, with no render", async ({ p
   await page.getByTestId("finish-welcome-skip").click();
   await expect(page.getByTestId("giveaways-intro")).toBeVisible();
   expect(aed(await total(page).textContent())).toBe(before);
-  // The giveaways the same way, on to Package.
+  // The giveaways and the piñata the same way, on to Package.
   await page.getByRole("button", { name: /Yes, add giveaways/ }).click();
   await page.getByTestId("finish-giveaways-skip").click();
+  await expect(page.getByTestId("pinata-intro")).toBeVisible();
+  await page.getByRole("button", { name: /Yes, add a piñata/ }).click();
+  await page.getByTestId("finish-pinata-skip").click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   expect(aed(await total(page).textContent())).toBe(before);
 });
@@ -274,7 +277,7 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   await next(page).click(); // the grown-ups' table skipped
   await next(page).click(); // the welcome board skipped
   await expect(page.getByTestId("giveaways-intro")).toBeVisible();
-  await expect(next(page)).toHaveText(/Skip to Package/);
+  await expect(next(page)).toHaveText(/Skip to Piñata/);
   const before = aed(await total(page).textContent());
   await page.getByRole("button", { name: /Yes, add giveaways/ }).click();
   // No kids' table: the boxes go on the board.
@@ -353,11 +356,83 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   // The backdrop's own preview is not shown on this part.
   await expect(page.getByText("Your party preview").locator("visible=true")).toHaveCount(0);
   await page.getByTestId("finish-giveaways").click();
+  // Then the piñata (2026-11-03), skipped here.
+  await expect(page.getByTestId("pinata-intro")).toBeVisible();
+  await expect(next(page)).toHaveText(/Skip to Package/);
+  await next(page).click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   await expect(page.getByTestId("finished-giveaways-jpeg").or(page.getByTestId("finished-designs").getByAltText("Your giveaways"))).toBeVisible();
   await page.getByRole("button", { name: "← Back" }).click();
-  await expect(page.getByTestId("finish-giveaways")).toHaveText(/Next: Package/);
+  await expect(page.getByTestId("pinata-intro")).toContainText("You skipped the piñata");
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(page.getByTestId("finish-giveaways")).toHaveText(/Next: Piñata/);
   expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/giveaway-render"]);
+});
+
+test("P1 the piñata: the age in her colours or a theme shape, how it opens, what's inside; rendered, then on to Package", async ({ page, guard }) => {
+  // 2026-11-03 (the owner: "şimdi piñata studio'ya geçelim"; number or theme shape, pull strings or a stick, on a stand).
+  guard.fakeRender = true;
+  await signIn(page);
+  await toTable(page);
+  await page.getByTestId("skip-kids-table").click();
+  await next(page).click(); // the grown-ups' table skipped
+  await next(page).click(); // the welcome board skipped
+  await next(page).click(); // the giveaways skipped
+  await expect(page.getByTestId("pinata-intro")).toBeVisible();
+  const before = aed(await total(page).textContent());
+  await page.getByRole("button", { name: /Yes, add a piñata/ }).click();
+  const art = page.getByTestId("pinata-art");
+  await expect(art.locator("[data-part=pinata] > g")).toHaveCount(1); // the one digit, 5
+  await expect(art.locator("[data-part=pinata-strings] path")).toHaveCount(9);
+  const sum = page.getByTestId("pinata-total");
+  const one = aed(await sum.textContent());
+  expect(aed(await total(page).textContent())).toBe(before + one);
+  // Two digits, the second one priced.
+  await page.getByTestId("pinata-number").fill("10");
+  await expect(art.locator("[data-part=pinata] > g")).toHaveCount(2);
+  expect(aed(await sum.textContent())).toBe(one + 150);
+  // Her colours, in the order picked: one taken off, one more on.
+  const colours = page.getByTestId("pinata-colours").getByRole("button");
+  const picked = page.getByTestId("pinata-colours").locator("button[aria-pressed=true]");
+  const n0 = await picked.count();
+  await picked.first().click();
+  await expect(picked).toHaveCount(n0 - 1);
+  await colours.last().click();
+  await expect(picked).toHaveCount(n0);
+  await expect(art.locator("[data-part=pinata-colours]").first().locator("rect")).toHaveCount(n0);
+  // The stick instead of the strings.
+  await page.getByTestId("pinata-opening").getByRole("radio", { name: /Stick/ }).click();
+  await expect(art.locator("[data-part=pinata-stick]")).toHaveCount(1);
+  await expect(art.locator("[data-part=pinata-strings]")).toHaveCount(0);
+  // A theme shape: the theme's own first (Ice Princess: a snowflake).
+  await page.getByTestId("pinata-kind").getByRole("radio", { name: /Theme shape/ }).click();
+  const shapes = page.getByTestId("pinata-shape").getByRole("radio");
+  await expect(shapes).toHaveCount(20);
+  await expect(shapes.first()).toContainText("Snowflake");
+  await expect(shapes.first()).toHaveAttribute("aria-checked", "true");
+  await expect(art.locator('image[href$="snowflake.webp"]')).toHaveCount(1);
+  await shapes.filter({ hasText: "Rocket" }).click();
+  await expect(art.locator('image[href$="rocket.webp"]')).toHaveCount(1);
+  // What's inside: a list, in the price.
+  const sum1 = aed(await sum.textContent());
+  await page.getByTestId("pinata-fillings").getByText("Chocolates", { exact: true }).click();
+  expect(aed(await sum.textContent())).toBe(sum1 + 55);
+  await expect(page.getByTestId("pinata-preview")).toContainText("Chocolates");
+  // The render offered, not waited for; then made again as it is.
+  await expect(next(page)).toHaveCount(0);
+  await expect(page.getByTestId("finish-pinata")).toBeEnabled();
+  await page.getByTestId("finish-pinata-generate").click();
+  await expect(page.getByTestId("pinata-render")).toBeVisible();
+  await expect(page.getByTestId("pinata-render-again").getByRole("button", { name: /Regenerate render/ })).toBeVisible();
+  const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/pinata-render"))!.postData()!);
+  expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
+  expect(sent.pinata).toMatchObject({ kind: "shape", shape: "rocket", opening: "stick", number: "10" });
+  await page.getByTestId("finish-pinata").click();
+  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  await expect(page.getByTestId("finished-designs")).toContainText("Piñata");
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(page.getByTestId("finish-pinata")).toHaveText(/Next: Package/);
+  expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/pinata-render"]);
 });
 
 test("W2 on a phone, a change to the welcome board brings it into sight, and Back returns to the choices", async ({ page }, info) => {
