@@ -18,6 +18,7 @@ import TablePerspective from "@/components/studio/table/TablePerspective";
 import TablePlace from "@/components/studio/table/TablePlace";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
+import RenderAgain from "@/components/builder/RenderAgain";
 
 // 2026-10-31 (owner): one place first, then six places, a part of the table; the render once there is one.
 type View = "place" | "six" | "perspective" | "top" | "render";
@@ -105,6 +106,7 @@ export default function TablePreview({ config, render, onGenerate, placeShot }: 
               {render.error && <p className="error" role="alert">{render.error}</p>}
             </div>
           )}
+          <RenderAgain render={render} onGenerate={onGenerate} testId="table-render-again" />
         </>
       )}
     </div>

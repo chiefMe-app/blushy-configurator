@@ -30,7 +30,8 @@ export const BOX_PRICE = 18;
 export const GIVEAWAY_BOARD_PRICE = 350;
 /** A balloon garland up the board's side, in the party's balloon colours (placeholder). */
 export const GIVEAWAY_GARLAND_PRICE = 250;
-/** Boxes the board's four shelves show (three a shelf). */
+/** Boxes the board's four shelves hold (three a shelf); more are kept beside it (2026-11-03, the owner: "12
+ *  giveaways sığsın bir board'a en fazla, daha fazla olursa onu başka yerde saklasınlar ama bunu belirtebiliriz"). */
 export const BOARD_SHOWS = 12;
 /**
  * The boxes on each shelf, top shelf first: three a shelf, and never one on its own (2026-11-03, the owner: "tek
@@ -44,6 +45,19 @@ export function shelfCounts(count: number): number[] {
 }
 export const MAX_BOXES = 60;
 
+/**
+ * The box's background (2026-11-03, the owner: "plain box color ve bunun gibi birkaç örnek background box color
+ * ekleyelim, temaya uygun, her tema için"): a plain colour, or one of the theme's own printed designs — every theme
+ * has the three (public/design/table/placemats/<theme>/<id>.webp, the placemats').
+ */
+export const BOX_PRINTS = [
+  { id: "pattern", name: "Pattern", note: "The theme's little prints all over" },
+  { id: "watercolour", name: "Watercolour", note: "Soft watercolour, the theme at the corners" },
+  { id: "sparkle", name: "Sparkle", note: "Glitter and the theme's picture" },
+  { id: "plain", name: "Plain colour", note: "One colour of your choice" },
+] as const;
+export type BoxPrint = (typeof BOX_PRINTS)[number]["id"];
+
 export interface Giveaways {
   /** false: the customer skipped them. */
   enabled: boolean;
@@ -55,6 +69,11 @@ export interface Giveaways {
   name: string;
   /** The name's lettering on the box (lib/studio/tableFonts.ts). */
   font: string;
+  /** The box's background, and its colour when plain. */
+  boxPrint: BoxPrint;
+  boxColour: string;
+  /** The name's colour on the box, "" = the theme's (2026-11-03, the owner: "yazının rengini değiştirebilmeliyim"). */
+  ink: string;
   /** The board's colour. */
   boardColour: string;
   /** The line under the name on the board. */
@@ -76,7 +95,7 @@ export interface Giveaways {
 export function defaultGiveaways(seed: { kids?: number; name?: string } = {}): Giveaways {
   return {
     enabled: true, count: clampCount(seed.kids ?? 10), place: "table", contents: ["playdough", "bubbles", "candy", "stickers", "themed"],
-    name: cleanBoardText(seed.name ?? ""), font: "archivo-black", boardColour: "#FFFFFF", boardLine: "Thank you for coming",
+    name: cleanBoardText(seed.name ?? ""), font: "archivo-black", ink: "", boxPrint: "pattern", boxColour: "#FFFFFF", boardColour: "#FFFFFF", boardLine: "Thank you for coming",
     boardFont: "sacramento", boardInk: "", boardLineFont: "archivo-black", boardGarland: false,
   };
 }
@@ -110,6 +129,9 @@ export function readGiveaways(raw: unknown): Giveaways | undefined {
     contents: Array.isArray(r.contents) ? GIVEAWAY_CONTENTS.filter((c) => (r.contents as unknown[]).includes(c.id)).map((c) => c.id) : base.contents,
     name: cleanBoardText(r.name),
     font: TABLE_FONTS.find((f) => f.id === r.font)?.id ?? base.font,
+    ink: typeof r.ink === "string" && HEX.test(r.ink) ? r.ink : "",
+    boxPrint: BOX_PRINTS.find((p) => p.id === r.boxPrint)?.id ?? base.boxPrint,
+    boxColour: typeof r.boxColour === "string" && HEX.test(r.boxColour) ? r.boxColour : base.boxColour,
     boardColour: typeof r.boardColour === "string" && HEX.test(r.boardColour) ? r.boardColour : base.boardColour,
     boardLine: typeof r.boardLine === "string" ? cleanBoardText(r.boardLine) : base.boardLine,
     boardFont: TABLE_FONTS.find((f) => f.id === r.boardFont)?.id ?? base.boardFont,
@@ -124,9 +146,10 @@ export function readGiveaways(raw: unknown): Giveaways | undefined {
 
 /** Changes whenever anything that shows in the picture changes (on the table, the table too: its key). */
 export function giveawaysRenderKey(g: Giveaways, themeId: string, tableKey = "", balloons: string[] = []): string {
-  // The count and the contents do not show (one box a place; what is inside is a list).
+  // The contents do not show (a list); the count only on the board, up to the twelve it holds (2026-11-03: a changed
+  // count offered no new render).
   const board = { boardColour: g.boardColour, boardLine: g.boardLine, boardFont: g.boardFont, boardInk: g.boardInk, boardLineFont: g.boardLineFont, boardGarland: g.boardGarland, ...(g.boardGarland ? { balloons } : {}) };
-  const shown = { place: g.place, name: g.name, font: g.font, ...(g.place === "board" ? board : { tableKey }) };
+  const shown = { place: g.place, name: g.name, font: g.font, ink: g.ink, boxPrint: g.boxPrint, ...(g.boxPrint === "plain" ? { boxColour: g.boxColour } : {}), ...(g.place === "board" ? { ...board, shown: Math.min(g.count, BOARD_SHOWS) } : { tableKey }) };
   const s = JSON.stringify([themeId, shown]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);

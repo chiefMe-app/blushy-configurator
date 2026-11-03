@@ -7,7 +7,7 @@ import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
 import { MAX_BOARD_TEXT, cleanBoardText } from "@/lib/studio/welcomeBoard";
-import { BOX_PRICE, GIVEAWAY_BOARD_PRICE, GIVEAWAY_GARLAND_PRICE, GIVEAWAY_CONTENTS, GIVEAWAY_PLACES, MAX_BOXES, clampCount, defaultGiveaways, giveawaysTotal, type Giveaways } from "@/lib/studio/giveaways";
+import { BOARD_SHOWS, BOX_PRICE, BOX_PRINTS, GIVEAWAY_BOARD_PRICE, GIVEAWAY_GARLAND_PRICE, GIVEAWAY_CONTENTS, GIVEAWAY_PLACES, MAX_BOXES, clampCount, defaultGiveaways, giveawaysTotal, type Giveaways } from "@/lib/studio/giveaways";
 import { clampKids } from "@/lib/studio/tableSetup";
 import GiveawayBox from "@/components/studio/GiveawayBox";
 import { boxLook } from "./GiveawaysPreview";
@@ -72,6 +72,23 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
               "Gable box", "Your theme's print and picture, the name printed on it", `AED ${formatAED(BOX_PRICE)} a box`, "gable")}
           </div>
         </div>
+        {/* 2026-11-03 (the owner: "plain box color ve bunun gibi birkaç örnek background box color ekleyelim"). */}
+        <div className="bz-tb-item">
+          <h3>Box design</h3>
+          <div className="bz-tb-options" role="radiogroup" aria-label="Box design" data-testid="giveaways-box-print">
+            {BOX_PRINTS.map((p) => card(g.boxPrint === p.id, () => set({ boxPrint: p.id }),
+              <svg className="photo" viewBox="0 0 120 130" aria-hidden="true"><GiveawayBox look={boxLook({ ...g, boxPrint: p.id }, theme)} x={60} y={65} h={124} uid={`gv-print-${p.id}`} /></svg>,
+              p.name, p.note, "", p.id))}
+          </div>
+          {g.boxPrint === "plain" && (
+            <div className="bz-ts-swatches" role="radiogroup" aria-label="Box colour" data-testid="giveaways-box-colour">
+              {swatches.map((hex) => (
+                <button key={hex} type="button" role="radio" aria-checked={hex === g.boxColour.toUpperCase()} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
+                  className={hex === g.boxColour.toUpperCase() ? "on" : ""} style={{ background: hex }} onClick={() => set({ boxColour: hex })} />
+              ))}
+            </div>
+          )}
+        </div>
         <div className="bz-tb-item">
           <h3>Boxes</h3>
           <label className="bz-gv-count">
@@ -79,6 +96,11 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
               onChange={(e) => set({ count: clampCount(e.target.value) })} />
             <small>One a child{tableKept ? ` — ${clampKids(config.table!.kids)} at your kids' table` : ""}.</small>
           </label>
+          {g.place === "board" && g.count > BOARD_SHOWS && (
+            <p className="bz-tb-sub" data-testid="giveaways-board-full" style={{ fontWeight: 400 }}>
+              A board holds {BOARD_SHOWS} boxes. The other {g.count - BOARD_SHOWS} are kept beside it, and the shelves are filled up again as they go.
+            </p>
+          )}
         </div>
       </section>
 
@@ -112,6 +134,15 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
                 <span style={{ fontFamily: `${fontCss(f)}, Georgia, serif`, fontWeight: f.weight, textTransform: f.hand ? "none" : "uppercase", "--fscale": f.scale } as React.CSSProperties}>{g.name || "Arya"}</span>
                 <small>{f.name}</small>
               </button>
+            ))}
+          </div>
+          {/* 2026-11-03 (the owner: "yazının rengini değiştirebilmeliyim"). */}
+          <div className="bz-ts-swatches" role="radiogroup" aria-label="Name colour" data-testid="giveaways-ink">
+            <button type="button" role="radio" aria-checked={!g.ink} className={`auto ${!g.ink ? "on" : ""}`} aria-label="Theme colour" title="Theme colour"
+              style={{ background: theme.accent }} onClick={() => set({ ink: "" })}>A</button>
+            {inks.map((hex) => (
+              <button key={hex} type="button" role="radio" aria-checked={hex === g.ink.toUpperCase()} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
+                className={hex === g.ink.toUpperCase() ? "on" : ""} style={{ background: hex }} onClick={() => set({ ink: hex })} />
             ))}
           </div>
         </div>

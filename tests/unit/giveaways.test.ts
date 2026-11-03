@@ -50,6 +50,10 @@ describe("the giveaways", () => {
     expect(g.render).toBeUndefined();
     expect(readGiveaways({ boardFont: "nope", boardInk: "red", boardGarland: "yes", boardLineFont: "nope" })).toMatchObject({ boardFont: "sacramento", boardInk: "", boardGarland: false, boardLineFont: "archivo-black" });
     expect(readGiveaways({ boardLineFont: "sacramento" })).toMatchObject({ boardLineFont: "sacramento" });
+    expect(readGiveaways({ ink: "#112233" })).toMatchObject({ ink: "#112233" });
+    expect(readGiveaways({ ink: "purple" })).toMatchObject({ ink: "" });
+    expect(readGiveaways({ boxPrint: "nope", boxColour: "red" })).toMatchObject({ boxPrint: "pattern", boxColour: "#FFFFFF" });
+    expect(readGiveaways({ boxPrint: "plain", boxColour: "#F4B6C2" })).toMatchObject({ boxPrint: "plain", boxColour: "#F4B6C2" });
     // No age any more (2026-11-03: "age kısmını kaldıralım").
     expect(readGiveaways({ age: "6" })).not.toHaveProperty("age");
     expect(readGiveaways({ boardFont: "playfair-display", boardInk: "#112233", boardGarland: true })).toMatchObject({ boardInk: "#112233", boardGarland: true });
@@ -77,6 +81,14 @@ describe("the giveaways", () => {
     expect(giveawaysRenderKey({ ...b, boardInk: "#000000" }, "frozen")).not.toBe(giveawaysRenderKey(b, "frozen"));
     expect(giveawaysRenderKey({ ...b, boardFont: "playfair-display" }, "frozen")).not.toBe(giveawaysRenderKey(b, "frozen"));
     expect(giveawaysRenderKey({ ...b, boardLineFont: "sacramento" }, "frozen")).not.toBe(giveawaysRenderKey(b, "frozen"));
+    // On the board the count shows, up to the twelve it holds.
+    expect(giveawaysRenderKey({ ...b, count: 7 }, "frozen")).not.toBe(giveawaysRenderKey({ ...b, count: 8 }, "frozen"));
+    expect(giveawaysRenderKey({ ...b, count: 20 }, "frozen")).toBe(giveawaysRenderKey({ ...b, count: 30 }, "frozen"));
+    expect(giveawaysRenderKey({ ...g, ink: "#000000" }, "frozen", "t1")).not.toBe(k);
+    expect(giveawaysRenderKey({ ...g, boxPrint: "watercolour" }, "frozen", "t1")).not.toBe(k);
+    // The plain colour counts only on a plain box.
+    expect(giveawaysRenderKey({ ...g, boxColour: "#000000" }, "frozen", "t1")).toBe(k);
+    expect(giveawaysRenderKey({ ...g, boxPrint: "plain", boxColour: "#000000" }, "frozen", "t1")).not.toBe(giveawaysRenderKey({ ...g, boxPrint: "plain" }, "frozen", "t1"));
     const gl = { ...b, boardGarland: true };
     expect(giveawaysRenderKey(gl, "frozen")).not.toBe(giveawaysRenderKey(b, "frozen"));
     expect(giveawaysRenderKey(gl, "frozen", "", ["#FFFFFF"])).not.toBe(giveawaysRenderKey(gl, "frozen", "", ["#000000"]));

@@ -287,8 +287,23 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   await expect(board.locator("[data-part=giveaway-box]")).toHaveCount(8);
   await page.getByTestId("giveaways-count").fill("30");
   await expect(board.locator("[data-part=giveaway-box]")).toHaveCount(12);
+  // Twelve to a board, the rest kept beside it, and said so (2026-11-03).
+  await expect(page.getByTestId("giveaways-board-full")).toContainText("The other 18 are kept beside it");
   await page.getByTestId("giveaways-name").fill("Arya");
   await expect(board).toContainText("Arya");
+  // The box's words in her colour (2026-11-03: "yazının rengini değiştirebilmeliyim").
+  const boxWords = page.getByTestId("giveaway-box-card").locator("[data-part=giveaway-box] text").first();
+  await page.getByTestId("giveaways-ink").getByRole("radio").nth(2).click(); // the dark one
+  await expect(boxWords).toHaveAttribute("fill", "#2B2B2B");
+  // The box's background: the theme's designs, or a plain colour (2026-11-03: "plain box color … her tema için").
+  const prints = page.getByTestId("giveaways-box-print");
+  await expect(prints.getByRole("radio")).toHaveCount(4);
+  await prints.getByRole("radio", { name: /Watercolour/ }).click();
+  await expect(page.getByTestId("giveaway-box-card").locator("image").nth(1)).toHaveAttribute("href", /frozen\/watercolour\.webp$/);
+  await prints.getByRole("radio", { name: /Plain colour/ }).click();
+  await page.getByTestId("giveaways-box-colour").getByRole("radio").nth(3).click();
+  await expect(page.getByTestId("giveaway-box-card").locator("[data-part=box-colour]")).toHaveCount(1);
+  await prints.getByRole("radio", { name: /Pattern/ }).click();
   // What is inside is a list, each priced a box.
   const contents = page.getByTestId("giveaways-contents");
   await expect(contents.getByRole("checkbox")).toHaveCount(5);
@@ -325,6 +340,8 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   await expect(page.getByTestId("finish-giveaways")).toBeEnabled();
   await page.getByTestId("finish-giveaways-generate").click();
   await expect(page.getByTestId("giveaways-render")).toBeVisible();
+  // Rendered, it can be made again as it is (2026-11-03: "regenerate render çıkmıyor").
+  await expect(page.getByTestId("giveaways-render-again").getByRole("button", { name: /Regenerate render/ })).toBeVisible();
   const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/giveaway-render"))!.postData()!);
   expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
   expect(sent.giveaways).toMatchObject({ name: "Arya", place: "board", count: 30 });

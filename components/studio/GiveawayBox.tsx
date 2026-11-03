@@ -5,11 +5,14 @@
 // sits in uses: `h` tall, centred on x, y.
 import { BOX_PHOTO } from "@/lib/studio/giveaways";
 import { fontCss, tableFont } from "@/lib/studio/tableFonts";
+import FitText from "./FitText";
 
 export interface BoxLook {
-  /** The theme's print and its picture. */
-  print: string;
+  /** The theme's print (none: a plain box, in `colour`) and its picture. */
+  print?: string;
+  colour?: string;
   sticker: string;
+  /** The name's colour: hers, or the theme's. */
   accent: string;
   name: string;
   font: string;
@@ -48,12 +51,13 @@ export default function GiveawayBox({ look, x, y, h, rot = 0, uid }: { look: Box
       </defs>
       <image href={BOX_PHOTO.src} width={W} height={H} />
       <g clipPath={`url(#${uid}-panel)`}>
-        <image href={look.print} x={p.x} y={p.y} width={p.w} height={p.h} preserveAspectRatio="xMidYMid slice" />
+        {look.print ? <image href={look.print} x={p.x} y={p.y} width={p.w} height={p.h} preserveAspectRatio="xMidYMid slice" />
+          : <rect x={p.x} y={p.y} width={p.w} height={p.h} fill={look.colour ?? "#FFFFFF"} data-part="box-colour" />}
         {/* The theme's picture printed on it: its white ground takes the print's colour. */}
         <image href={look.sticker} x={p.x + p.w / 2 - pic / 2} y={p.y + p.h * 0.06} width={pic} height={pic} preserveAspectRatio="xMidYMid meet" style={{ mixBlendMode: "multiply" }} />
         {lines.map((l, i) => (
-          <text key={i} x={p.x + p.w / 2} y={mid + (i - (lines.length - 1) / 2) * gap + size * 0.34} fontSize={size} textAnchor="middle" fill={look.accent}
-            stroke={look.accent} strokeWidth={stroke} strokeLinejoin="round" paintOrder="stroke" style={{ fontFamily: family, fontWeight: face.weight }}>{l}</text>
+          <FitText key={i} x={p.x + p.w / 2} y={mid + (i - (lines.length - 1) / 2) * gap + size * 0.34} fontSize={size} maxWidth={across} textAnchor="middle" fill={look.accent}
+            stroke={look.accent} strokeWidth={stroke} strokeLinejoin="round" paintOrder="stroke" style={{ fontFamily: family, fontWeight: face.weight }}>{l}</FitText>
         ))}
         {/* The box's own light and shade over the print: the photo brightened so its grey panel reads white
             (scripts: sharp linear ×1.26), or the print turns muddy. */}

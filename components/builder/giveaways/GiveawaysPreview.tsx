@@ -12,14 +12,19 @@ import { setShot, useRecoloredBase } from "@/components/design/LiveSketch";
 import { fontCss, tableFont } from "@/lib/studio/tableFonts";
 import TablePlace from "@/components/studio/table/TablePlace";
 import GiveawayBox, { boxLines, type BoxLook } from "@/components/studio/GiveawayBox";
+import FitText from "@/components/studio/FitText";
 import { THEME_GROUPS } from "@/components/builder/constants";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
+import RenderAgain from "@/components/builder/RenderAgain";
 
 /** The box's look in a theme: its placemat print and its picture (the theme list's crayon icon). */
 export function boxLook(g: Giveaways, theme: { id: string; accent: string }): BoxLook {
   const icon = THEME_GROUPS.flatMap((gr) => gr.items).find((i) => i.id === theme.id)?.icon ?? "unicorn";
-  return { print: `/design/table/placemats/${theme.id}/pattern.webp`, sticker: `/design/themes-v2/${icon}.webp`, accent: theme.accent, name: g.name, font: g.font };
+  const plain = g.boxPrint === "plain";
+  // On a dark plain box, white words unless she picks a colour.
+  const ink = g.ink || (plain && isDark(g.boxColour) ? "#FFFFFF" : theme.accent);
+  return { print: plain ? undefined : `/design/table/placemats/${theme.id}/${g.boxPrint ?? "pattern"}.webp`, colour: g.boxColour ?? "#FFFFFF", sticker: `/design/themes-v2/${icon}.webp`, accent: ink, name: g.name, font: g.font };
 }
 
 /** The shelved board, its boxes on the shelves, the name on its arch and, if she wants one, a balloon garland. */
@@ -62,6 +67,11 @@ export function GiveawayBoardArt({ g, theme, balloons, className }: { g: Giveawa
   const white = g.boardColour.toUpperCase() === "#FFFFFF";
   // Three to a shelf, never one on its own (shelfCounts), spread along it.
   const rows = shelfCounts(g.count);
+  // The board's width at a height: its top is a half circle.
+  const archWidth = (y: number) => {
+    const r = (board.x1 - board.x0) / 2, dy = board.top + r - y;
+    return dy <= 0 ? 2 * r : 2 * Math.sqrt(Math.max(0, r * r - dy * dy));
+  };
   return (
     <svg className={className} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Your giveaway board" data-testid="giveaway-board-art" data-garland={g.boardGarland ? "yes" : "no"}>
       <defs>
@@ -71,12 +81,13 @@ export function GiveawayBoardArt({ g, theme, balloons, className }: { g: Giveawa
       {/* The board's colour, over its photographed light and shade. */}
       {!white && <path d={boardOutline()} fill={g.boardColour} style={{ mixBlendMode: "multiply" }} data-part="board-colour" />}
       {/* Her words on the arch, flat cut vinyl. */}
-      {nameLines.map((l, i) => (
-        <text key={i} x={words.cx} y={words.top + nameSize * 0.8 + i * nameSize * nameGap} fontSize={nameSize} textAnchor="middle" fill={ink}
-          data-word="name" style={{ fontFamily: `${fontCss(face)}, Georgia, serif`, fontWeight: face.weight }}>{l}</text>
-      ))}
-      {line && <text x={lineBox.cx} y={words.bottom - 8} fontSize={lineSize} textAnchor="middle" fill={ink} letterSpacing={lineFace.hand ? 0 : lineSize * 0.06}
-        data-word="line" style={{ fontFamily: `${fontCss(lineFace)}, Georgia, serif`, fontWeight: lineFace.weight }}>{line}</text>}
+      {nameLines.map((l, i) => {
+        const y = words.top + nameSize * 0.8 + i * nameSize * nameGap;
+        return <FitText key={i} x={words.cx} y={y} fontSize={nameSize} maxWidth={archWidth(y - nameSize * 0.75) - 28} textAnchor="middle" fill={ink}
+          data-word="name" style={{ fontFamily: `${fontCss(face)}, Georgia, serif`, fontWeight: face.weight }}>{l}</FitText>;
+      })}
+      {line && <FitText x={lineBox.cx} y={words.bottom - 8} fontSize={lineSize} maxWidth={Math.min(lineBox.w, archWidth(words.bottom - 8 - lineSize * 0.75) - 28)} textAnchor="middle" fill={ink}
+        letterSpacing={lineFace.hand ? 0 : lineSize * 0.06} data-word="line" style={{ fontFamily: `${fontCss(lineFace)}, Georgia, serif`, fontWeight: lineFace.weight }}>{line}</FitText>}
       {rows.flatMap((n, shelf) => Array.from({ length: n }, (_, col) => {
         const x = board.x0 + span * ((col + 0.5) / 3) + (span / 3) * ((3 - n) / 2);
         return <GiveawayBox key={`${shelf}-${col}`} look={look} x={x} y={shelves[shelf] - boxH / 2 + 2} h={boxH} uid={`gvb-${shelf}-${col}`} />;
@@ -156,7 +167,8 @@ export default function GiveawaysPreview({ config, render, onGenerate }: { confi
         )}
         <p className="note">{showRender ? "Your render — this picture, made into one photograph."
           : onTable ? `One box at each place — ${g.count} in all. What's inside is listed under the choices.`
-          : `Your board — ${Math.min(g.count, BOARD_SHOWS)} of your ${g.count} boxes on its shelves.`}</p>
+          : g.count > BOARD_SHOWS ? `Your board holds ${BOARD_SHOWS} boxes — the other ${g.count - BOARD_SHOWS} are kept beside it, and the shelves are filled up again as they go.`
+          : `Your board — all ${g.count} of your boxes on its shelves.`}</p>
         {backTo !== null && <button type="button" className="bz-tb-back" data-testid="giveaways-back-to-choices" onClick={back}>↑ Back to your choices</button>}
         {!render.ready && !render.loading && (
           <div className="bz-tb-render" data-testid="giveaways-render-box">
@@ -165,6 +177,7 @@ export default function GiveawaysPreview({ config, render, onGenerate }: { confi
             {render.error && <p className="error" role="alert">{render.error}</p>}
           </div>
         )}
+        <RenderAgain render={render} onGenerate={onGenerate} testId="giveaways-render-again" />
       </> : <div className="empty">Add giveaways to see them here.</div>}
     </div>
   </>);

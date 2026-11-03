@@ -40,7 +40,7 @@ export function giveawayPrompt(g: Pick<Giveaways, "place" | "name" | "boardLine"
       ? "Image 1 is a preview of a giveaway board for a children's birthday party: a tall arch board with shelves, standing in a room, white gable gift boxes on its shelves."
       : "Image 1 is a preview of one place at a children's birthday party table, seen from straight above: the placemat, plates, cup, cutlery and a white gable gift box lying at the top of the place.",
     "Make it one real, natural photograph of exactly this scene, from the same camera position and with the same framing.",
-    "Keep every gift box exactly: a white card gable box with a handle, its front printed all over with the same pattern, the same picture and the same name" + (plate ? ` ${plate}` : "") + " letter for letter, in the same lettering, colour and place, printed straight on the card — no sticker, no label.",
+    "Keep every gift box exactly: a white card gable box with a handle, its front printed with the same design, the same picture and the same name" + (plate ? ` ${plate}` : "") + " letter for letter, in the same lettering, colour and place, printed straight on the card — no sticker, no label.",
     board
       ? `Exactly ${shown} gift box${shown > 1 ? "es" : ""}, each where image 1 has it and the same size: ${boardShelves(g.count)}. Keep the board exactly: its arch shape, its colour, its shelves, and its words` + (boardWords ? ` (${boardWords})` : "") + " letter for letter as flat cut vinyl on the board — never puffy or raised."
       : "Exactly one gift box, where image 1 has it and the same size. Keep the table exactly as it is: every piece in its place, colour and size, the printed placemat flat on the table.",

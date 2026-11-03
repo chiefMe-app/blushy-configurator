@@ -12,6 +12,7 @@ import { themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import WelcomeBoardArt from "@/components/studio/WelcomeBoardArt";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
+import RenderAgain from "@/components/builder/RenderAgain";
 
 export default function WelcomePreview({ config, render, onGenerate }: { config: BuilderConfig; render: PieceRender; onGenerate: () => void }) {
   const theme = themeById(config.theme) ?? THEMES[0];
@@ -60,6 +61,7 @@ export default function WelcomePreview({ config, render, onGenerate }: { config:
             {render.error && <p className="error" role="alert">{render.error}</p>}
           </div>
         )}
+        <RenderAgain render={render} onGenerate={onGenerate} testId="welcome-render-again" />
       </> : <div className="empty">Add a welcome board to see it here.</div>}
     </div>
   );
