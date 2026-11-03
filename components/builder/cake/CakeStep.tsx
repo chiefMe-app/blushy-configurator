@@ -6,11 +6,13 @@ import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import {
   CAKE_FLAVOURS, CAKE_SPRINKLES, CAKE_STYLES, CAKE_TIERS, FIGURE_KINDS, RAINBOW_PRICE, RAINBOW_TIERS, rainbowOf, MAX_CAKE_DECOS, MAX_CAKE_FIGURES, TOPPER_CARDS, TOPPER_COLOURS, TOPPER_PLACES, TOPPER_PRICE,
-  CAKE_FIGURES, THEME_CAKE_CUTOUTS, addItem, cakeDesigns, cakeFiguresFor, cakePrice, cakeTotal, defaultCake, figureKind, figurePicture, roomFor, themeFigures,
+  CAKE_FIGURES, THEME_CAKE_CUTOUTS, addItem, cakeDesigns, cakeFiguresFor, cakePrice, cakeTotal, defaultCake, figureKind, figurePicture, roomFor, themeFigures, topperColour as topperLook,
   type Cake, type CakeFigure, type CakeSeed,
 } from "@/lib/studio/cake";
 import { cleanAge } from "@/lib/studio/pinata";
-import { CAKE_SWEETS, CART_BALLOONS_PRICE, CART_PRICE, PLINTHS_PRICE, SPRINKLE_PRICE, SWEET_COUNTS, sweetPicture, sweetPrice, type CakeSweet } from "@/lib/studio/cakeSweets";
+import {
+  CAKE_SWEETS, CART_BALLOONS_PRICE, CART_PRICE, CUPCAKE_FOILS, PLINTHS_PRICE, SPRINKLE_PRICE, SWEET_COUNTS, SWEET_FLAVOURS, sweetFlavour, sweetPicture, sweetPrice, type CakeSweet,
+} from "@/lib/studio/cakeSweets";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
 import { CakeThumb } from "./CakePreview";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
@@ -71,7 +73,8 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
   // Where the design puts the topper and on what (a card, the front) comes with it.
   const designTopper = (d: (typeof designs)[number]): Cake["topper"] => {
     const { on, at, x, up, y, s, card } = d.cake.topper;
-    return { name: k.topper.name, age: k.topper.age, font: k.topper.font, colour: k.topper.colour, on, at, x, up, y, s, card, ...(card && k.topper.cardColour ? { cardColour: k.topper.cardColour } : {}) };
+    const { cardColour, cardBorder } = k.topper;
+    return { name: k.topper.name, age: k.topper.age, font: k.topper.font, colour: k.topper.colour, on, at, x, up, y, s, card, ...(card && cardColour ? { cardColour } : {}), ...(card && cardBorder ? { cardBorder } : {}) };
   };
   const pickDesign = (d: (typeof designs)[number]) => set({ ...d.cake, topper: designTopper(d), flavour: k.flavour });
   const swatches = Array.from(new Set(["#FFFFFF", ...theme.balloonColors, ...theme.backdropColors, ...PLAIN_COLOURS.map((c) => c.hex)].map((h) => h.toUpperCase())));
@@ -257,6 +260,19 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
                   );
                 })}
               </div>
+              {/* 2026-11-03 (the owner: "card color beyaz seçtim ama dışında pembe border oldu, onu da seçtirsin"). */}
+              <h3 style={{ marginTop: 12 }}>Its border</h3>
+              <div className="bz-ts-swatches" role="radiogroup" aria-label="Card border" data-testid="cake-topper-card-border">
+                {[{ id: undefined, name: "Like the letters" }, { id: "none", name: "No border" }, ...swatches.map((hex) => ({ id: hex, name: PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? (hex === "#FFFFFF" ? "white" : hex) }))].map((b) => {
+                  const on = k.topper.cardBorder === b.id;
+                  const like = topperLook(k.topper.colour);
+                  return (
+                    <button key={b.id ?? "letters"} type="button" role="radio" aria-checked={on} aria-label={b.name} title={b.name} className={on ? "on" : ""}
+                      style={{ background: b.id === undefined ? `linear-gradient(160deg, ${like.light}, ${like.hex} 60%, ${like.light})` : b.id === "none" ? "repeating-linear-gradient(135deg, #fff 0 5px, #f1d6df 5px 7px)" : b.id }}
+                      onClick={() => setTopper({ cardBorder: b.id })}>{on ? "✓" : b.id === "none" ? "∅" : ""}</button>
+                  );
+                })}
+              </div>
             </>}
           </div>}
           <div className="bz-tb-item">
@@ -306,7 +322,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
       {/* 2026-11-03 (the owner: "cupcake, cookie, cake pops opsiyonları da olmalı … ve donut"): on the table beside the cake. */}
       <section className="bz-tb-section" aria-label="Sweets">
         <h2>Sweets</h2>
-        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>{k.cart ? "On the cart's counter" : "On the table"} beside the cake, in your colours.</p>
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>{k.cart ? "On the cart's counter beside the cake" : k.plinths ? "Each on a plinth of its own beside the cake" : "On the table beside the cake"}, in your colours.</p>
         {CAKE_SWEETS.map((kind) => {
           const sw = k.sweets?.find((x) => x.id === kind.id);
           const setSweet = (next: CakeSweet | null) => set({ sweets: CAKE_SWEETS.flatMap((x) => (x.id === kind.id ? (next ? [next] : []) : (k.sweets ?? []).filter((y) => y.id === x.id))) });
@@ -346,11 +362,31 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
                     })}
                   </div>
                 )}
+                {/* 2026-11-03 (the owner: "cupcake kağıdının rengini de seçebilsin"): gold or silver foil, or paper in a colour. */}
+                {kind.id === "cupcakes" && <>
+                  <h3 style={{ marginTop: 10 }}>Liners</h3>
+                  <div className="bz-ts-swatches" role="radiogroup" aria-label="Cupcake liners" data-testid="cake-cupcake-liner">
+                    {[...CUPCAKE_FOILS.map((f) => ({ id: f.id, name: f.name, bg: `linear-gradient(160deg, ${f.light}, ${f.hex} 60%, ${f.light})` })),
+                      ...swatches.map((hex) => ({ id: hex, name: `${PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? (hex === "#FFFFFF" ? "White" : hex)} paper`, bg: hex }))].map((l) => {
+                      const on = (sw.liner ?? "gold") === l.id;
+                      return <button key={l.id} type="button" role="radio" aria-checked={on} aria-label={l.name} title={l.name} className={on ? "on" : ""}
+                        style={{ background: l.bg }} onClick={() => setSweet({ ...sw, liner: l.id === "gold" ? undefined : l.id })}>{on ? "✓" : ""}</button>;
+                    })}
+                  </div>
+                </>}
+                {/* 2026-11-03 (the owner: "flavour her sweet için ayrı seçilsin"). */}
+                <div className="bz-ck-counts" role="radiogroup" aria-label={`${kind.name} flavour`} data-testid={`cake-sweet-flavour-${kind.id}`}>
+                  {SWEET_FLAVOURS[kind.id].map((f) => {
+                    const on = sweetFlavour(sw).id === f.id;
+                    return <button key={f.id} type="button" role="radio" aria-checked={on} className={on ? "on" : ""}
+                      onClick={() => setSweet({ ...sw, flavour: f.id === SWEET_FLAVOURS[kind.id][0].id ? undefined : f.id })}>{f.name}</button>;
+                  })}
+                </div>
                 <label className="bz-ck-check">
                   <input type="checkbox" checked={!!sw.sprinkles} onChange={() => setSweet({ ...sw, sprinkles: !sw.sprinkles || undefined })} />
                   <span>Rainbow sprinkles · +AED {formatAED(SPRINKLE_PRICE)} each</span>
                 </label>
-                <p className="bz-tb-sub" style={{ fontWeight: 400 }}>{sw.count} {kind.name.toLowerCase()} · AED {formatAED(sweetPrice(sw))}</p>
+                <p className="bz-tb-sub" style={{ fontWeight: 400 }}>{sw.count} {sweetFlavour(sw).name.toLowerCase()} {kind.name.toLowerCase()} · AED {formatAED(sweetPrice(sw))}</p>
               </>}
             </div>
           );
@@ -370,7 +406,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
             ].map((o) => (
               <label key={o.id} className={o.on ? "on" : ""}>
                 <input type="radio" name="cake-display" checked={o.on}
-                  onChange={() => set({ cart: o.id === "cart" ? { awning: "#FFFFFF" } : undefined, plinths: o.id === "plinths" || undefined })} />
+                  onChange={() => set({ cart: o.id === "cart" ? { roof: "#FFFFFF" } : undefined, plinths: o.id === "plinths" || undefined })} />
                 <span><b>{o.name}</b><small>{o.note}</small></span>
               </label>
             ))}
@@ -381,8 +417,8 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
             <h3>The roof&apos;s colour</h3>
             <div className="bz-ts-swatches" role="radiogroup" aria-label="Roof colour" data-testid="cake-awning">
               {swatches.map((hex) => (
-                <button key={hex} type="button" role="radio" aria-checked={k.cart!.awning === hex} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? (hex === "#FFFFFF" ? "white" : hex)}
-                  className={k.cart!.awning === hex ? "on" : ""} style={{ background: hex }} onClick={() => set({ cart: { ...k.cart!, awning: hex } })}>{k.cart!.awning === hex ? "✓" : ""}</button>
+                <button key={hex} type="button" role="radio" aria-checked={k.cart!.roof === hex} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? (hex === "#FFFFFF" ? "white" : hex)}
+                  className={k.cart!.roof === hex ? "on" : ""} style={{ background: hex }} onClick={() => set({ cart: { ...k.cart!, roof: hex } })}>{k.cart!.roof === hex ? "✓" : ""}</button>
               ))}
             </div>
             {/* 2026-11-03 (the owner: "burdaki gibi balon seçeneği olsun"): a garland up its side, in the party's balloons. */}

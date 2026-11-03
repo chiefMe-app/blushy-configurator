@@ -106,6 +106,36 @@ function icing(d: Buffer, W: number, H: number) {
   return m;
 }
 
+/**
+ * The cupcakes' liners (2026-11-03, the owner: "cupcake kağıdının rengini de seçebilsin"): the gold foil inside each
+ * cupcake's liner — a trapezoid measured by eye in the kept picture's pixels: its top's ends and height, its bottom's
+ * — so the gold stand they stand on is left out; the pale cake and the icing are not gold enough.
+ */
+const CUPCAKE_LINERS = [
+  [48, 166, 158, 75, 155, 238], [156, 286, 188, 172, 272, 266], [282, 418, 163, 305, 396, 250],
+  [158, 178, 120, 160, 176, 146], [258, 302, 124, 262, 298, 166],
+  [0, 102, 343, 10, 88, 424], [77, 202, 378, 90, 194, 468], [175, 242, 298, 185, 234, 380], [293, 332, 286, 297, 330, 348],
+  [201, 332, 408, 214, 322, 480], [323, 432, 378, 334, 422, 455], [418, 468, 326, 424, 452, 398],
+];
+function liners(d: Buffer, W: number, H: number) {
+  const m = Buffer.alloc(W * H * 4);
+  const inside = (x: number, y: number) => CUPCAKE_LINERS.some(([a, b, t, c, e, u]) => {
+    if (y < t || y > u) return false;
+    const f = (y - t) / (u - t);
+    return x >= a + (c - a) * f && x <= b + (e - b) * f;
+  });
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4;
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), sat = max ? (max - min) / max : 0;
+    let hue = 0;
+    if (max > min) hue = ((max === r ? ((g - b) / (max - min)) % 6 : max === g ? (b - r) / (max - min) + 2 : (r - g) / (max - min) + 4) * 60 + 360) % 360;
+    m[i] = m[i + 1] = m[i + 2] = 255;
+    m[i + 3] = d[i + 3] > 100 && sat > 0.52 && hue > 22 && hue < 66 && max > 35 && inside(x, y) ? 255 : 0;
+  }
+  return m;
+}
+
 fs.mkdirSync(OUT, { recursive: true });
 const manifest: {
   tiers: Record<string, { w: number; h: number; top: number; bottom: number }>;
@@ -177,6 +207,9 @@ for (const f of fs.readdirSync(SRC).filter((n) => n.endsWith(".png")).sort()) {
     const mask = icing(px, w, h);
     await sharp(out.data).webp({ quality: 86, alphaQuality: 90 }).toFile(path.join(OUT, `${name}.webp`));
     await sharp(mask, { raw: { width: w, height: h, channels: 4 } }).webp({ quality: 80, alphaQuality: 80 }).toFile(path.join(OUT, `${name}-icing.webp`));
+    if (name === "sweet-cupcakes") {
+      await sharp(liners(px, w, h), { raw: { width: w, height: h, channels: 4 } }).blur(0.6).webp({ quality: 80, alphaQuality: 80 }).toFile(path.join(OUT, `${name}-liner.webp`));
+    }
     manifest.sweets[name.slice(6)] = { w, h };
     console.log(name.padEnd(16), w, "x", h);
     continue;

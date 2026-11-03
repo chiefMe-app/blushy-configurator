@@ -3,7 +3,7 @@
 // part of it (the owner: "cake'e basacağız sadece cake, sonra cookies'e basacağız yakından cookies … bide uzaktan
 // cartın üstündeyken genel"): the whole table or cart, the cake close up, or a sweet close up.
 import { CAKE_FIGURES, CAKE_SPRINKLES, TOPPER_CARDS, cakeWords, holderOf, rainbowOf, tierColours, topperColour, topperShows, type Cake, type CakeView, type FigureKind } from "./cake";
-import { CAKE_SWEETS, colourWords } from "./cakeSweets";
+import { CAKE_SWEETS, colourWords, linerWords } from "./cakeSweets";
 import { fontWords, tableFont } from "./tableFonts";
 
 const TIER_NAMES: Record<number, string[]> = { 1: ["the cake"], 2: ["the bottom tier", "the top tier"], 3: ["the bottom tier", "the middle tier", "the top tier"] };
@@ -29,6 +29,8 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
   const words = [t.name.trim(), t.age].filter(Boolean).map((w) => `"${w}"`).join(" and ");
   const lettering = fontWords(tableFont(t.font)).replace(", all capitals", "");
   const card = t.card ? TOPPER_CARDS.find((c) => c.id === t.card)!.words.replace("white", t.cardColour ? colourWords(t.cardColour) : "white") : "";
+  // Its border (2026-11-03): the letters' colour, hers, or none.
+  const border = t.cardBorder === "none" ? " with no border" : ` with a thin ${t.cardBorder ? colourWords(t.cardBorder) : tc.name.toLowerCase()} border`;
   // On the front or the board the name is real cake lettering, as in the owner's examples (2026-11-03: "renderda
   // yapay çıkmasın, pastanın üstünde bu örneklerdeki gibi olsun"): letters cut from sugar paste, with a thickness and
   // a shadow — painted with a metal's shine, or in her colour. On top, on sticks, acrylic.
@@ -38,8 +40,8 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
     : t.at === "board"
       ? `On the ${onBoard ? "cake board" : "cake stand's plate"} at the foot of the cake, in front of it, keep the name exactly where image 1 has it: ${sugar} reading ${words}, ${lettering}, standing upright and leaning lightly against the bottom tier — ${real}; the same letters in the same colour as image 1.`
       : t.at === "front"
-        ? `On the front of the cake keep the name exactly where image 1 has it: ${card ? `${card} with a thin ${tc.name.toLowerCase()} border pressed flat onto the buttercream, with ${sugar} reading ${words}, ${lettering}, on it` : `${sugar} reading ${words}, ${lettering}, pressed onto the buttercream`} — ${real}; the same letters in the same colour as image 1.`
-        : `Keep the cake topper exactly: ${card ? `${card} with a thin ${tc.name.toLowerCase()} border on two thin white sticks pushed into the top, with ${tc.words} printed letters reading ${words}, ${lettering}, on it` : `${tc.words} acrylic letters reading ${words}, ${lettering}, on two thin sticks pushed into the top`}, the same letters in the same colour as image 1.`;
+        ? `On the front of the cake keep the name exactly where image 1 has it: ${card ? `${card}${border} pressed flat onto the buttercream, with ${sugar} reading ${words}, ${lettering}, on it` : `${sugar} reading ${words}, ${lettering}, pressed onto the buttercream`} — ${real}; the same letters in the same colour as image 1.`
+        : `Keep the cake topper exactly: ${card ? `${card}${border} on two thin white sticks pushed into the top, with ${tc.words} printed letters reading ${words}, ${lettering}, on it` : `${tc.words} acrylic letters reading ${words}, ${lettering}, on two thin sticks pushed into the top`}, the same letters in the same colour as image 1.`;
   const colours = tierColours(k);
   const rainbow = colours.flatMap((c, i) => (rainbowOf(c) ? [`${TIER_NAMES[k.tiers][i]} in ${rainbowOf(c)!.words}`] : []));
   const sprinkles = CAKE_SPRINKLES.find((s) => s.id === k.sprinkles);
@@ -49,13 +51,15 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
     const kind = CAKE_SWEETS.find((x) => x.id === id), sw = k.sweets?.find((x) => x.id === id);
     if (!kind || !sw) return "";
     const top = sw.topper ? `, each topped with a little ${said(sw.topper)!.kind === "cutout" ? "printed card" : "sugar-paste"} ${said(sw.topper)!.name.toLowerCase()}` : "";
-    const print = sw.print ? `, each printed with ${sw.print === "age" ? `the number "${t.age || "1"}"` : `a little ${said(sw.print)!.name.toLowerCase()}`}` : "";
-    return `${kind.words(colourWords(sw.colour))}${top}${print}${sw.sprinkles ? ", with rainbow sprinkles" : ""}`;
+    // A cookie's print as big as its iced face, inside its edge (2026-11-03, the owner: "o yuvarlak büyüklüğünde olsun, taşmasın").
+    const print = sw.print ? `, each printed with ${sw.print === "age" ? `a big number "${t.age || "1"}"` : `a big ${said(sw.print)!.name.toLowerCase()}`} filling its iced face nearly to the edge but never over it` : "";
+    // The cupcakes' liners in hers (2026-11-03, the owner: "cupcake kağıdının rengini de seçebilsin").
+    return `${kind.words(colourWords(sw.colour)).replace("gold foil", linerWords(sw.liner))}${top}${print}${sw.sprinkles ? ", with rainbow sprinkles" : ""}`;
   };
   const sweets = CAKE_SWEETS.map((s) => sweetWords(s.id)).filter(Boolean);
   // On the sweet cart: the cake and the sweets on its counter, under its flat wooden roof (2026-11-03, the owner:
   // "stripe olmasın artık"), and her balloons up its side if she wants them.
-  const roof = `a flat ${colourWords(k.cart?.awning ?? "#FFFFFF")} wooden roof with a scalloped trim`;
+  const roof = `a flat ${colourWords(k.cart?.roof ?? "#FFFFFF")} wooden roof with a scalloped trim`;
   const cart = k.cart ? `a white wooden sweet cart with ${roof}` : "";
   const balloons = k.cart?.balloons?.length
     ? `a full organic garland of real matte latex balloons in ${Array.from(new Set(k.cart.balloons.map(colourWords))).join(", ")}, of mixed sizes, rising from the floor up the cart's left side and over the left of its roof`

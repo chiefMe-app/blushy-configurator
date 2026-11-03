@@ -190,6 +190,8 @@ export interface CakeTopper {
   card?: Exclude<TopperCard, "none">;
   /** The card's colour, a hex (2026-11-03, the owner: "yazının arkasındaki cloud kartın rengini seçebilsin"); unset: white. */
   cardColour?: string;
+  /** Its border (2026-11-03, the owner: "dışında pembe border oldu, onu da seçtirsin"): a hex, or none; unset: the letters' colour. */
+  cardBorder?: string;
 }
 
 export interface Cake {
@@ -205,7 +207,7 @@ export interface Cake {
   sprinkles?: CakeSprinkles;
   /** The sweets on the table beside it: cupcakes, cake pops, cookies, donuts (lib/studio/cakeSweets.ts). */
   sweets?: CakeSweet[];
-  /** Shown on a sweet cart instead of a table, its awning in a colour (lib/studio/cakeSweets.ts CAKE_CART). */
+  /** Shown on a sweet cart instead of a table, its roof in a colour (lib/studio/cakeSweets.ts CAKE_CART). */
   cart?: CakeCart;
   /** Shown on a display of white plinths instead (lib/studio/cakeSweets.ts CAKE_PLINTHS); never with the cart. */
   plinths?: boolean;
@@ -408,6 +410,7 @@ export function readCake(raw: unknown): Cake | undefined {
       ...(Number.isNaN(tx) ? {} : { x: tx }), ...(Number.isNaN(up) ? {} : { up }), ...(Number.isNaN(ts) ? {} : { s: ts }),
       ...(card ? { card } : {}),
       ...(card && typeof t.cardColour === "string" && HEX.test(t.cardColour) ? { cardColour: t.cardColour.toUpperCase() } : {}),
+      ...(card && t.cardBorder === "none" ? { cardBorder: "none" } : card && typeof t.cardBorder === "string" && HEX.test(t.cardBorder) ? { cardBorder: t.cardBorder.toUpperCase() } : {}),
     },
     flavour: CAKE_FLAVOURS.find((f) => f.id === r.flavour)?.id ?? base.flavour,
     ...(r.done === true ? { done: true } : {}),
@@ -420,11 +423,11 @@ export function readCake(raw: unknown): Cake | undefined {
 export function cakeRenderKey(k: Cake, themeId: string, view: CakeView = "whole"): string {
   const r2 = (v: number | undefined) => (v === undefined ? null : Math.round(v * 100) / 100);
   const t = k.topper;
-  const topper = topperShows(k) ? [t.name, t.age, t.font, t.colour, r2(t.x), r2(t.up), r2(t.s), t.at ?? "top", r2(t.y), t.card ?? "none", t.card ? t.cardColour ?? null : null] : null;
+  const topper = topperShows(k) ? [t.name, t.age, t.font, t.colour, r2(t.x), r2(t.up), r2(t.s), t.at ?? "top", r2(t.y), t.card ?? "none", t.card ? t.cardColour ?? null : null, t.card ? t.cardBorder ?? null : null] : null;
   const figures = k.figures.map((f) => [f.id, f.on, r2(f.x), r2(f.y), r2(f.s)]);
   // The sweets as they show (not how many: the picture has a few of each).
-  const sweets = (k.sweets ?? []).map((x) => [x.id, x.colour, !!x.sprinkles, x.topper ?? null, x.print ?? null]);
-  const s = JSON.stringify([themeId, k.tiers, k.style, tierColours(k), figures, topper, ...(k.sprinkles ? [k.sprinkles] : []), ...(sweets.length ? [sweets] : []), ...(k.cart ? [["cart", k.cart.awning, k.cart.balloons ?? null]] : k.plinths ? [["plinths"]] : [])]);
+  const sweets = (k.sweets ?? []).map((x) => [x.id, x.colour, !!x.sprinkles, x.topper ?? null, x.print ?? null, ...(x.liner ? [x.liner] : [])]);
+  const s = JSON.stringify([themeId, k.tiers, k.style, tierColours(k), figures, topper, ...(k.sprinkles ? [k.sprinkles] : []), ...(sweets.length ? [sweets] : []), ...(k.cart ? [["cart", k.cart.roof, k.cart.balloons ?? null]] : k.plinths ? [["plinths"]] : [])]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
   // A close-up is its own picture of the same cake.

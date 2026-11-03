@@ -24,6 +24,26 @@ export type SweetId = (typeof CAKE_SWEETS)[number]["id"];
 /** How many: by the half dozen. */
 export const SWEET_COUNTS = [6, 12, 24] as const;
 
+/** What each tastes of (2026-11-03, the owner: "flavour her sweet için ayrı seçilsin"), the first unless she picks one; not shown. */
+export const SWEET_FLAVOURS: Record<SweetId, readonly { id: string; name: string }[]> = {
+  cupcakes: [{ id: "vanilla", name: "Vanilla" }, { id: "chocolate", name: "Chocolate" }, { id: "red-velvet", name: "Red velvet" }, { id: "lemon", name: "Lemon" }, { id: "caramel", name: "Salted caramel" }],
+  cakepops: [{ id: "vanilla", name: "Vanilla" }, { id: "chocolate", name: "Chocolate" }, { id: "red-velvet", name: "Red velvet" }, { id: "funfetti", name: "Birthday funfetti" }],
+  cookies: [{ id: "vanilla", name: "Vanilla butter" }, { id: "chocolate", name: "Chocolate" }, { id: "lemon", name: "Lemon" }, { id: "cinnamon", name: "Cinnamon" }],
+  donuts: [{ id: "classic", name: "Classic" }, { id: "chocolate", name: "Chocolate" }, { id: "strawberry", name: "Strawberry jam filled" }, { id: "custard", name: "Vanilla custard filled" }],
+  macarons: [{ id: "vanilla", name: "Vanilla" }, { id: "raspberry", name: "Raspberry" }, { id: "pistachio", name: "Pistachio" }, { id: "chocolate", name: "Chocolate" }, { id: "caramel", name: "Salted caramel" }, { id: "lemon", name: "Lemon" }],
+};
+export const sweetFlavour = (s: Pick<CakeSweet, "id" | "flavour">) => SWEET_FLAVOURS[s.id].find((f) => f.id === s.flavour) ?? SWEET_FLAVOURS[s.id][0];
+
+/**
+ * The cupcakes' liners (2026-11-03, the owner: "cupcake kağıdının rengini de seçebilsin"): gold foil as in the photo,
+ * silver foil, or paper in a colour (a hex) — its pleats kept, repainted through the liners' mask.
+ */
+export const CUPCAKE_FOILS = [
+  { id: "gold", name: "Gold foil", hex: "#C9A13B", light: "#F3DC8A" },
+  { id: "silver", name: "Silver foil", hex: "#A3A9B3", light: "#EEF1F5" },
+] as const;
+export const linerWords = (liner?: string) => (!liner || liner === "gold" ? "gold foil" : liner === "silver" ? "shiny silver foil" : `${colourWords(liner)} paper`);
+
 export interface CakeSweet {
   id: SweetId;
   count: (typeof SWEET_COUNTS)[number];
@@ -34,6 +54,10 @@ export interface CakeSweet {
   topper?: CakeFigure;
   /** Cookies: a picture or the age printed on each. */
   print?: CakeFigure | "age";
+  /** What it tastes of (SWEET_FLAVOURS; none: the first). */
+  flavour?: string;
+  /** Cupcakes: their liners, silver foil or paper in a colour (a hex; none: gold foil). */
+  liner?: string;
 }
 
 export const SPRINKLE_PRICE = 1;
@@ -41,20 +65,24 @@ export const sweetOf = (id: SweetId) => CAKE_SWEETS.find((s) => s.id === id)!;
 
 /** Each sweet's photo and its icing's, and the size of them. */
 export const sweetPicture = (id: SweetId) => ({
-  src: `/design/cake/sweet-${id}.webp`, icing: `/design/cake/sweet-${id}-icing.webp`, ...(PARTS.sweets as Record<string, { w: number; h: number }>)[id],
+  src: `/design/cake/sweet-${id}.webp`, icing: `/design/cake/sweet-${id}-icing.webp`, liner: `/design/cake/sweet-${id}-liner.webp`, ...(PARTS.sweets as Record<string, { w: number; h: number }>)[id],
 });
 
 /**
  * Where each piece's top is in its photo, as fractions of it (measured by eye: the icing runs together): a cupcake's
- * swirl tip (a topper stands there); a cookie's middle and how wide its face is (its print).
+ * swirl tip (a topper stands there); a cookie's middle and how wide the part of its face in sight is (its print, as
+ * big as that and inside it — 2026-11-03, the owner: "cookies'de daha büyümeli şekiller, o yuvarlak büyüklüğünde olsun,
+ * taşmasın"). The faces are seen from above as ovals COOKIE_FACE as deep as they are wide.
  */
+export const COOKIE_FACE = 0.6;
 export const SWEET_SPOTS: Partial<Record<SweetId, { x: number; y: number; w: number }[]>> = {
   cupcakes: [
     { x: 0.33, y: 0.03, w: 0.16 }, { x: 0.55, y: 0.04, w: 0.16 }, { x: 0.2, y: 0.09, w: 0.17 }, { x: 0.76, y: 0.12, w: 0.17 }, { x: 0.46, y: 0.17, w: 0.18 },
     { x: 0.12, y: 0.53, w: 0.17 }, { x: 0.82, y: 0.58, w: 0.17 }, { x: 0.31, y: 0.6, w: 0.18 }, { x: 0.56, y: 0.62, w: 0.18 },
   ],
   cookies: [
-    { x: 0.505, y: 0.235, w: 0.36 }, { x: 0.84, y: 0.36, w: 0.26 }, { x: 0.195, y: 0.59, w: 0.3 }, { x: 0.73, y: 0.63, w: 0.38 }, { x: 0.395, y: 0.74, w: 0.36 },
+    { x: 0.504, y: 0.208, w: 0.4 }, { x: 0.222, y: 0.21, w: 0.12 }, { x: 0.844, y: 0.275, w: 0.24 }, { x: 0.11, y: 0.545, w: 0.17 },
+    { x: 0.736, y: 0.608, w: 0.42 }, { x: 0.348, y: 0.68, w: 0.31 },
   ],
 };
 
@@ -74,7 +102,7 @@ export const SWEET_PLACES: Record<SweetId, { x: number; foot: number; tall: numb
  * The sweet cart (2026-11-03, the owner: "cake cart opsiyonu da olabilir"; later "stripe olmasın artık, bu şekilde
  * olsun … fiyonkları yapma", her photo of a white wooden cart): a photo of an empty white wooden cart, a flat roof with
  * a scalloped trim, its own empty cake stand on the counter (scripts/cake/sources/cart.png, a flux-2 shot), the roof
- * in a colour (`awning`: white unless she picks one). The cake and the sweets are drawn in the stand photo's pixels
+ * in a colour (`roof`: white unless she picks one). The cake and the sweets are drawn in the stand photo's pixels
  * and set onto it: the stand photo's plate (CAKE_STAND) onto the cart's, `scale` and then (`x`, `y`). `room`: how
  * high anything may stand, in the stand photo's pixels — under the roof. `view`: the picture, in the cart photo's
  * pixels. Its roof raised (scripts/cake/build-parts.mts RAISE) so a three-tier cake and its topper stand clear of it.
@@ -89,8 +117,8 @@ export const CAKE_CART = {
 /** Placeholders: the cart's hire, set up and taken back; a balloon garland on it. */
 export const CART_PRICE = 450;
 export const CART_BALLOONS_PRICE = 350;
-/** `balloons`: a garland on it, in these colours (the party's balloons when she turned it on). */
-export interface CakeCart { awning: string; balloons?: string[] }
+/** `roof`: its colour; `balloons`: a garland on it, in these colours (the party's balloons when she turned it on). */
+export interface CakeCart { roof: string; balloons?: string[] }
 /** The sweets on the cart's counter, between its posts, in the stand photo's pixels (as SWEET_PLACES). */
 export const CART_SWEET_PLACES: Record<SweetId, { x: number; foot: number; tall: number }> = {
   cupcakes: { x: 165, foot: 1045, tall: 228 },
@@ -132,7 +160,8 @@ export const readCart = (raw: unknown): CakeCart | undefined => {
   const o = (raw && typeof raw === "object" ? raw : null) as Record<string, unknown> | null;
   if (!o) return undefined;
   const balloons = Array.isArray(o.balloons) ? o.balloons.filter((h): h is string => typeof h === "string" && HEX.test(h)).map((h) => h.toUpperCase()).slice(0, 8) : [];
-  return { awning: typeof o.awning === "string" && HEX.test(o.awning) ? o.awning.toUpperCase() : "#FFFFFF", ...(balloons.length ? { balloons } : {}) };
+  // The striped awning's colour (kept before 2026-11-03 as `awning`) is not the wooden roof's: that starts white.
+  return { roof: typeof o.roof === "string" && HEX.test(o.roof) ? o.roof.toUpperCase() : "#FFFFFF", ...(balloons.length ? { balloons } : {}) };
 };
 
 export const sweetPrice = (s: CakeSweet) => s.count * (sweetOf(s.id).each + (s.sprinkles ? SPRINKLE_PRICE : 0));
@@ -140,7 +169,7 @@ export const sweetPrice = (s: CakeSweet) => s.count * (sweetOf(s.id).each + (s.s
 export function sweetPriceLines(sweets: CakeSweet[] = []): { label: string; amount: number }[] {
   return CAKE_SWEETS.flatMap((k) => {
     const s = sweets.find((x) => x.id === k.id);
-    return s ? [{ label: `${k.name} ×${s.count}${s.sprinkles ? ", sprinkles" : ""}`, amount: sweetPrice(s) }] : [];
+    return s ? [{ label: `${k.name} ×${s.count}, ${sweetFlavour(s).name.toLowerCase()}${s.sprinkles ? ", sprinkles" : ""}`, amount: sweetPrice(s) }] : [];
   });
 }
 
@@ -160,6 +189,8 @@ export function readSweets(raw: unknown): CakeSweet[] | undefined {
       ...(o.sprinkles === true ? { sprinkles: true } : {}),
       ...(k.topper === "figure" && isFigure(o.topper) ? { topper: o.topper } : {}),
       ...(k.topper === "print" && (o.print === "age" || isFigure(o.print)) ? { print: o.print as CakeSweet["print"] } : {}),
+      ...(SWEET_FLAVOURS[k.id].some((f) => f.id === o.flavour) ? { flavour: o.flavour as string } : {}),
+      ...(k.id === "cupcakes" && o.liner === "silver" ? { liner: "silver" } : k.id === "cupcakes" && typeof o.liner === "string" && HEX.test(o.liner) ? { liner: o.liner.toUpperCase() } : {}),
     });
   }
   return out;

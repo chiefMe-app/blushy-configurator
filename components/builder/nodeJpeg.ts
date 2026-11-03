@@ -52,9 +52,18 @@ export async function nodeJpeg(node: HTMLElement | SVGSVGElement, width: number,
     style: { borderRadius: "0" }, fontEmbedCSS: await fontCssFor(node as HTMLElement),
     // What is only there to edit the drawing (the cake's chosen figure, its frame) stays out of the picture.
     filter: (n: Node) => !(n instanceof Element && n.hasAttribute("data-no-capture")) };
-  // Twice: some browsers (Safari) draw the first picture before its fonts are in.
-  await toJpeg(node as HTMLElement, options);
-  return toJpeg(node as HTMLElement, options);
+  // An SVG is copied whole, past the filter (2026-11-03: the cake's dashed frame came out in its render), so what is
+  // only there to edit it is hidden on the page while it is drawn.
+  const editing = Array.from(node.querySelectorAll<SVGElement | HTMLElement>("[data-no-capture]"));
+  const was = editing.map((e) => e.style.display);
+  editing.forEach((e) => { e.style.display = "none"; });
+  try {
+    // Twice: some browsers (Safari) draw the first picture before its fonts are in.
+    await toJpeg(node as HTMLElement, options);
+    return await toJpeg(node as HTMLElement, options);
+  } finally {
+    editing.forEach((e, i) => { e.style.display = was[i]; });
+  }
 }
 
 /** A part of the live sketch that is its boards' words (LiveSketch's `data-sketch-words` groups). */

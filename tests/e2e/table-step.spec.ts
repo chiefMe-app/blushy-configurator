@@ -558,6 +558,13 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
     return "#" + [r, g, bl].map((n) => n.toString(16).padStart(2, "0")).join("").toUpperCase();
   });
   await expect(topper.locator(`[data-part=cake-topper-card] [fill="${cardHex}"]`).first()).toBeAttached();
+  // Its border the letters' colour, hers or none (the owner: "dışında pembe border oldu, onu da seçtirsin").
+  const border = page.getByTestId("cake-topper-card-border").getByRole("radio");
+  await expect(border.first()).toHaveAttribute("aria-checked", "true");
+  await page.getByTestId("cake-topper-card-border").getByRole("radio", { name: "No border" }).click();
+  await expect(topper.locator("[data-part=cake-topper-card]")).toHaveAttribute("data-border", "none");
+  await border.first().click();
+  await expect(topper.locator("[data-part=cake-topper-card]")).not.toHaveAttribute("data-border", "none");
   const s2 = aed(await sum.textContent());
   await page.getByTestId("cake-cutouts").getByRole("button", { name: /Add Holographic star/ }).click();
   await page.getByTestId("cake-decos").getByRole("button", { name: /Add Mirror ball/ }).click();
@@ -573,6 +580,14 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   const cupcakes = page.getByTestId("cake-sweet-cupcakes");
   await cupcakes.getByRole("radio", { name: "12", exact: true }).click();
   await expect(art.locator("[data-sweet=cupcakes] [data-part=cake-sweet-topper]").first()).toBeVisible();
+  // Their liners and their flavour (the owner: "cupcake kağıdının rengini de seçebilsin … flavour her sweet için ayrı seçilsin").
+  await cupcakes.getByTestId("cake-cupcake-liner").getByRole("radio", { name: "Silver foil" }).click();
+  await expect(art.locator("[data-sweet=cupcakes] [data-part=cake-sweet-liner]")).toHaveAttribute("data-liner", "silver");
+  const cupFlavour = page.getByTestId("cake-sweet-flavour-cupcakes").getByRole("radio");
+  await expect(cupFlavour.first()).toHaveAttribute("aria-checked", "true");
+  await cupFlavour.filter({ hasText: "Chocolate" }).click();
+  await expect(cupFlavour.filter({ hasText: "Chocolate" })).toHaveAttribute("aria-checked", "true");
+  await expect(cupcakes).toContainText("12 chocolate cupcakes");
   const cookies = page.getByTestId("cake-sweet-cookies");
   await cookies.getByRole("radio", { name: "6", exact: true }).click();
   await cookies.getByRole("radio", { name: /The age/ }).click();

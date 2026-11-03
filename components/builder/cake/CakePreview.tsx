@@ -11,7 +11,7 @@ import {
   figureKind, figurePicture, holderOf, itemAt, placeItem, rainbowOf, roomFor, tierAt, tierColours, topperColour, topperShows, type Cake, type CakeView,
 } from "@/lib/studio/cake";
 import { asPrinted, fontCss, tableFont } from "@/lib/studio/tableFonts";
-import { CAKE_CART, CAKE_PLINTHS, CAKE_SWEETS, SWEET_PLACES, SWEET_SPOTS, sceneMap, sceneOf, sweetPicture, sweetPlaces, type CakeSweet } from "@/lib/studio/cakeSweets";
+import { CAKE_CART, CAKE_PLINTHS, CAKE_SWEETS, COOKIE_FACE, SWEET_PLACES, SWEET_SPOTS, sceneMap, sceneOf, sweetPicture, sweetPlaces, type CakeSweet } from "@/lib/studio/cakeSweets";
 import FitText from "@/components/studio/FitText";
 import PIECES from "@/lib/studio/welcomePieces.json";
 import { setShot, useRecoloredBase } from "@/components/design/LiveSketch";
@@ -133,18 +133,44 @@ function SweetPiece({ s, k, uid, places, onTap }: { s: CakeSweet; k: Cake; uid: 
   const spots = (SWEET_SPOTS[s.id] ?? []).map((p) => ({ x: x + p.x * w, y: y + p.y * h, w: p.w * w }));
   const face = tableFont(k.topper.font);
   const print = s.print && s.print !== "age" ? figurePicture(s.print) : null;
+  // The foil's grey made a little brighter and cooler (silver), or much lighter, for paper in her colour.
+  const lift = s.liner === "silver" ? { slope: 1.15, by: 0.08, blue: 0.03 } : { slope: 0.4, by: 0.6, blue: 0 };
+  // The age printed on a cookie, its figures inside the face's oval (two of them smaller).
+  const ageSize = (across: number) => across * ((k.topper.age || "1").length > 1 ? 0.56 : 0.72);
   return (
     <g data-part="cake-sweet" data-sweet={s.id} style={onTap ? { cursor: "zoom-in" } : undefined} onPointerDown={onTap ? (e) => { e.stopPropagation(); onTap(); } : undefined}>
       <defs><mask id={id} style={{ maskType: "alpha" }}><image href={pic.icing} x={x} y={y} width={w} height={h} /></mask></defs>
       <image href={pic.src} x={x} y={y} width={w} height={h} />
       {s.colour.toUpperCase() !== WHITE && <rect mask={`url(#${id})`} style={{ mixBlendMode: "multiply" }} x={x} y={y} width={w} height={h} fill={s.colour} />}
+      {/* The liners in hers (2026-11-03, the owner: "cupcake kağıdının rengini de seçebilsin"): the gold foil made grey,
+          its pleats kept — silver foil as it is, paper lighter and in her colour. */}
+      {s.liner && (
+        <g data-part="cake-sweet-liner" data-liner={s.liner}>
+          <defs>
+            <mask id={`${id}-liner`} style={{ maskType: "alpha" }}><image href={pic.liner} x={x} y={y} width={w} height={h} /></mask>
+            <filter id={`${id}-paper`} colorInterpolationFilters="sRGB">
+              <feColorMatrix type="saturate" values="0" />
+              <feComponentTransfer>
+                <feFuncR type="linear" slope={lift.slope} intercept={lift.by} />
+                <feFuncG type="linear" slope={lift.slope} intercept={lift.by} />
+                <feFuncB type="linear" slope={lift.slope} intercept={lift.by + lift.blue} />
+              </feComponentTransfer>
+            </filter>
+          </defs>
+          <g mask={`url(#${id}-liner)`}>
+            <image href={pic.src} x={x} y={y} width={w} height={h} filter={`url(#${id}-paper)`} />
+            {s.liner !== "silver" && s.liner !== WHITE && <rect style={{ mixBlendMode: "multiply" }} x={x} y={y} width={w} height={h} fill={s.liner} />}
+          </g>
+        </g>
+      )}
       {s.sprinkles && <Sprinkles id={id} t={{ x, y, w, h, top: y, bottom: y + h }} kind="scatter" seed={s.id.length} top size={w / 300} many={2.2} />}
       {s.print && spots.map((p, i) => s.print === "age"
-        ? <text key={i} x={p.x} y={p.y + p.w * 0.16} fontSize={p.w * 0.5} textAnchor="middle" fill={topperColour(k.topper.colour).hex} transform={`translate(0 ${p.y * 0.38}) scale(1 0.62)`}
+        // Lying flat on the cookie: as wide, less tall; as big as its face (2026-11-03, the owner: "o yuvarlak büyüklüğünde olsun, taşmasın").
+        ? <text key={i} x={p.x} y={(p.y + ageSize(p.w) * 0.21) / COOKIE_FACE} fontSize={ageSize(p.w)} textAnchor="middle" fill={topperColour(k.topper.colour).hex} transform={`scale(1 ${COOKIE_FACE})`}
           style={{ fontFamily: `${fontCss(face)}, Georgia, serif`, fontWeight: face.weight }} data-part="cake-sweet-print">{k.topper.age || "1"}</text>
         : print && (() => {
-          // Lying flat on the cookie: as wide, less tall.
-          const pw = p.w * 0.62, ph = ((pw * print.h) / print.w) * 0.62;
+          // Its longer side across 86% of the face: a picture's corners are clear, so it keeps inside the oval.
+          const a = print.h / print.w, pw = (p.w * 0.86) / Math.max(1, a), ph = pw * a * COOKIE_FACE;
           return <image key={i} href={print.src} x={p.x - pw / 2} y={p.y - ph / 2} width={pw} height={ph} preserveAspectRatio="none" data-part="cake-sweet-print" />;
         })())}
       {s.topper && spots.map((p, i) => {
@@ -155,7 +181,7 @@ function SweetPiece({ s, k, uid, places, onTap }: { s: CakeSweet; k: Cake; uid: 
   );
 }
 
-/** The card the name is printed on, its border in the topper's colour: drawn twice, the border under the white. */
+/** The card the name is printed on, its border (the letters' colour unless she picked one, or none): drawn twice, the border under the card. */
 function TopperCardShape({ kind, box, border, fill }: { kind: NonNullable<Cake["topper"]["card"]>; box: { x: number; y: number; w: number; h: number }; border: string; fill: string }) {
   const { x, y, w, h } = box;
   const shapes = (paint: string, grow: number) => {
@@ -169,7 +195,7 @@ function TopperCardShape({ kind, box, border, fill }: { kind: NonNullable<Cake["
     </g>;
   };
   const bw = Math.max(3, h * 0.04);
-  return <g data-part="cake-topper-card">{shapes(border, bw)}{shapes(fill, 0)}</g>;
+  return <g data-part="cake-topper-card" data-border={border}>{border !== "none" && shapes(border, bw)}{shapes(fill, 0)}</g>;
 }
 
 /** What she has hold of: a figure (its place in the list) or the topper. */
@@ -230,7 +256,8 @@ export function CakePiece({ k, uid, grab, onTier }: { k: Cake; uid: string; grab
             <path key={dx} d={`M ${words.x + dx * words.w} ${ageY - words.age * 0.1} L ${words.stickX + dx * words.w * 0.9} ${words.plane + 6}`}
               stroke={k.topper.card ? "#F4F1EA" : paint} strokeWidth={4} strokeLinecap="round" />
           ))}
-          {k.topper.card && <TopperCardShape kind={k.topper.card} box={L.topperBox} border={tc.hex} fill={k.topper.cardColour ?? (k.topper.colour === "white" ? "#F7B6D2" : WHITE)} />}
+          {k.topper.card && <TopperCardShape kind={k.topper.card} box={L.topperBox} border={k.topper.cardBorder ?? tc.hex}
+            fill={k.topper.cardColour ?? (k.topper.colour === "white" ? "#F7B6D2" : WHITE)} />}
           {/* Something to take hold of between the letters. */}
           {grab && <rect x={L.topperBox.x} y={L.topperBox.y} width={L.topperBox.w} height={L.topperBox.h} fill="transparent" />}
           {words.board ? letters([name, k.topper.age].filter(Boolean).join(" "), words.x, ageY, words.line, words.w, 0.03) : <>
@@ -414,10 +441,10 @@ export function CakeArt({ k, className, edit, view = "whole", onView, themeId = 
       onPointerMove={drag ? (e) => { if (e.pointerId === drag.id) setDrag({ ...drag, at: point(e) }); } : undefined}
       onPointerUp={letGo} onPointerCancel={letGo}>
       {cart ? <>
-        {/* The cart, its awning's stripes in her colour. */}
+        {/* The cart, its roof in her colour. */}
         <defs><mask id="ck-awning" style={{ maskType: "alpha" }}><image href={CAKE_CART.awning} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} /></mask></defs>
         <image href={board ? CART_BOARD.src : CAKE_CART.src} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} />
-        <rect mask="url(#ck-awning)" style={{ mixBlendMode: "multiply" }} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} fill={cart.awning} data-part="cake-awning" />
+        <rect mask="url(#ck-awning)" style={{ mixBlendMode: "multiply" }} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} fill={cart.roof} data-part="cake-awning" />
       </> : scene === "plinths" ? <image href={board ? CAKE_PLINTHS.board : CAKE_PLINTHS.src} x={0} y={0} width={CAKE_PLINTHS.w} height={CAKE_PLINTHS.h} />
         : <image href={board ? CAKE_BOARD.src : CAKE_STAND.src} x={0} y={0} width={W} height={H} />}
       <g ref={layer} transform={map ? `translate(${map.x} ${map.y}) scale(${map.scale})` : undefined}>
@@ -558,7 +585,8 @@ export default function CakePreview({ config, setCake, render, onGenerate, view 
             {render.loading && (
               <div className="veil" role="status" data-testid="cake-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>
-                <b>Rendering your cake</b>
+                {/* What it is rendering (2026-11-03, the owner: "rendering your sweet desin"). */}
+                <b>Rendering your {view === "whole" ? (k.sweets?.length ? "cake & sweets" : "cake") : view === "cake" ? "cake" : viewName(k, view).toLowerCase()}</b>
                 <span>From this preview — about 15 seconds.</span>
               </div>
             )}
