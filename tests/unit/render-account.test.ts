@@ -8,10 +8,11 @@ import { renderUser, takeAccountRender, resetAccountRenderFallback, LIMIT_REACHE
 const { getUser } = vi.hoisted(() => ({ getUser: vi.fn() }));
 vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ auth: { getUser } }) }));
 
-const ENV = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "VERCEL_ENV", "RENDER_LIMIT_PER_USER_DAY"];
+const ENV = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "VERCEL_ENV", "RENDER_LIMIT_PER_USER_DAY", "RENDER_LIMITS"];
 const saved: Record<string, string | undefined> = {};
 beforeEach(() => {
   for (const k of ENV) { saved[k] = process.env[k]; delete process.env[k]; }
+  process.env.RENDER_LIMITS = "1"; // the limits as they will be at release
   getUser.mockReset();
   resetAccountRenderFallback();
 });
@@ -69,6 +70,12 @@ describe("the daily limit per account", () => {
     expect(await takeAccountRender(c.user)).toEqual({ ok: true, left: 1 });
     expect(await takeAccountRender(c.user)).toEqual({ ok: true, left: 0 });
     expect(await takeAccountRender(c.user)).toMatchObject({ ok: false, status: 429, limited: true });
+  });
+  it("before release (RENDER_LIMITS not set): not counted, nothing is ever refused", async () => {
+    delete process.env.RENDER_LIMITS;
+    const c = client({ data: -2, error: null });
+    expect(await takeAccountRender(c.user)).toEqual({ ok: true, left: 20 });
+    expect(c.rpc).not.toHaveBeenCalled();
   });
   it("no database here: nothing to count", async () => {
     expect(await takeAccountRender({ userId: null, client: null })).toEqual({ ok: true, left: 20 });

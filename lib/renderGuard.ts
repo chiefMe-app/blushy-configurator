@@ -9,9 +9,17 @@
 //   the next UTC day;
 // - RENDERS_DISABLED=1 switches renders off at once (kill switch).
 //
+// 2026-11-03 (the owner: "şimdilik açık sınırsız olacak şekilde, release öncesi düzeltilecekler arasına not al"):
+// until release the per-IP limits and the per-account daily limit (lib/renderAccount.ts) are off; RENDER_LIMITS=1
+// on Vercel turns them back on (RELEASE_CHECKLIST.md). The kill switch, the daily cap for everyone and the
+// renders-at-a-time per IP stay on: they guard against a runaway loop, not against her.
+//
 // The counts live in the server instance's memory, so they bound each
 // instance, not the whole deployment. A durable, shared limit comes with the
 // database (Phase 0.5); this stops casual abuse and runaway loops today.
+
+/** Whether the per-IP and per-account limits apply: off until release. */
+export const renderLimitsOn = () => process.env.RENDER_LIMITS === "1";
 
 const num = (v: string | undefined, d: number) => (v && Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : d);
 const WINDOW_MS = 10 * 60_000;
@@ -56,11 +64,11 @@ export function acquireRender(ip: string, now = Date.now()): GuardResult {
   const u = usage.get(ip) ?? { recent: [], day, dayCount: 0 };
   if (u.day !== day) { u.day = day; u.dayCount = 0; }
   u.recent = u.recent.filter((t) => now - t < WINDOW_MS);
-  if (u.dayCount >= num(process.env.RENDER_LIMIT_PER_IP_DAY, 40)) {
+  if (renderLimitsOn() && u.dayCount >= num(process.env.RENDER_LIMIT_PER_IP_DAY, 40)) {
     usage.set(ip, u);
     return { ok: false, status: 429, error: "You've reached today's render limit — you can render again tomorrow.", retryAfter: secondsToMidnightUtc(now) };
   }
-  if (u.recent.length >= num(process.env.RENDER_LIMIT_PER_IP_10MIN, 10)) {
+  if (renderLimitsOn() && u.recent.length >= num(process.env.RENDER_LIMIT_PER_IP_10MIN, 10)) {
     usage.set(ip, u);
     const wait = Math.ceil((WINDOW_MS - (now - u.recent[0])) / 1000);
     return { ok: false, status: 429, error: `You've reached your render limit — you can render again in ${Math.max(1, Math.ceil(wait / 60))} min.`, retryAfter: wait };

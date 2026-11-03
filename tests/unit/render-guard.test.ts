@@ -9,11 +9,12 @@ import { acquireRender, resetRenderGuard } from "@/lib/renderGuard";
 const call = (body: unknown, ip = "203.0.113.5") => POST(new NextRequest("http://localhost/api/generate-controlled-render", {
   method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": ip }, body: JSON.stringify(body),
 }));
-const ENV = ["FAL_KEY", "RENDERS_DISABLED", "RENDER_DAILY_CAP", "RENDER_LIMIT_PER_IP_10MIN", "RENDER_LIMIT_PER_IP_DAY"];
+const ENV = ["FAL_KEY", "RENDERS_DISABLED", "RENDER_DAILY_CAP", "RENDER_LIMIT_PER_IP_10MIN", "RENDER_LIMIT_PER_IP_DAY", "RENDER_LIMITS"];
 const saved: Record<string, string | undefined> = {};
 
 beforeEach(() => {
   for (const k of ENV) { saved[k] = process.env[k]; delete process.env[k]; }
+  process.env.RENDER_LIMITS = "1"; // the limits as they will be at release
   resetRenderGuard();
 });
 afterEach(() => { for (const k of ENV) { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; } });
@@ -98,6 +99,13 @@ describe("render guard", () => {
     for (let i = 0; i < 3; i++) acquireRender("203.0.113.5");
     const json = await (await call({ renderMode: "first_generate" })).json();
     expect(json).toEqual({ error: expect.stringMatching(/still being made/), busy: true });
+  });
+
+  it("before release (RENDER_LIMITS not set): no limit per IP, the daily cap for everyone still holds", () => {
+    delete process.env.RENDER_LIMITS;
+    for (let i = 0; i < 60; i++) { const r = acquireRender("203.0.113.9"); expect(r.ok).toBe(true); if (r.ok) r.release(); }
+    process.env.RENDER_DAILY_CAP = "60";
+    expect(acquireRender("203.0.113.9")).toMatchObject({ ok: false, status: 503 });
   });
 
   it("a new UTC day starts the counts again", () => {

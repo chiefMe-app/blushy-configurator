@@ -7,7 +7,9 @@
 //
 // The browser sends the customer's session token (Authorization: Bearer);
 // the server checks it with Supabase and counts the render as that customer.
+// Until release the daily limit is off (sign-in still needed): RENDER_LIMITS=1 turns it on (lib/renderGuard.ts).
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { renderLimitsOn } from "./renderGuard";
 
 const num = (v: string | undefined, d: number) => (v && Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : d);
 export const userDailyLimit = () => num(process.env.RENDER_LIMIT_PER_USER_DAY, 20);
@@ -55,7 +57,7 @@ export type TakeResult = { ok: true; left: number } | { ok: false; status: 401 |
 /** Counts one render for the customer, or says why not. */
 export async function takeAccountRender(user: { userId: string | null; client: SupabaseClient | null }, now = Date.now()): Promise<TakeResult> {
   const limit = userDailyLimit();
-  if (!user.client || !user.userId) return { ok: true, left: limit };
+  if (!user.client || !user.userId || !renderLimitsOn()) return { ok: true, left: limit };
   const { data, error } = await user.client.rpc("take_render", { p_daily_limit: limit });
   let left: number;
   if (error || typeof data !== "number") {
