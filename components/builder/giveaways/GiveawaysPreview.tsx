@@ -133,6 +133,10 @@ export default function GiveawaysPreview({ config, render, onGenerate }: { confi
   useEffect(() => { if (render.url) setLive(false); }, [render.url]);
   const showRender = !!render.url && !live;
   const onTable = g?.place === "table" && !!config.table?.enabled;
+  const art = !g?.enabled ? null : onTable
+    ? <TablePlace table={config.table!} theme={theme} className="bz-tb-place bz-gv-art"
+        atPlace={(id) => <GiveawayBox look={boxLook(g, theme)} x={2} y={-17.8} h={14} rot={-4} uid={`gvt-${id}`} />} />
+    : <GiveawayBoardArt g={g} theme={theme} balloons={config.decor.balloonColors} className="bz-gv-art bz-gv-board" />;
   return (<>
     {g?.enabled && <><link rel="stylesheet" href="/fonts/typography/fonts.css" /><GiveawayBoxCard g={g} theme={theme} /></>}
     <div className="bz-tb-preview" data-testid="giveaways-preview" id="giveaways-preview-card">
@@ -147,15 +151,14 @@ export default function GiveawaysPreview({ config, render, onGenerate }: { confi
       </div>
       {g?.enabled ? <>
         <link rel="stylesheet" href="/fonts/typography/fonts.css" />
-        {showRender ? (
-          // eslint-disable-next-line @next/next/no-img-element
+        {showRender ? <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="bz-tb-photo" data-testid="giveaways-render" src={render.url!} alt="Your giveaways, rendered" />
-        ) : (
+          {/* The live picture stays in the page, out of sight, for a new render of it to be taken from (Regenerate). */}
+          <div className="bz-live-hidden" aria-hidden="true"><div className="bz-wb-wait">{art}</div></div>
+        </> : (
           <div className={render.loading ? "bz-wb-wait on" : "bz-wb-wait"}>
-            {onTable
-              ? <TablePlace table={config.table!} theme={theme} className="bz-tb-place bz-gv-art"
-                  atPlace={(id) => <GiveawayBox look={boxLook(g, theme)} x={2} y={-17.8} h={14} rot={-4} uid={`gvt-${id}`} />} />
-              : <GiveawayBoardArt g={g} theme={theme} balloons={config.decor.balloonColors} className="bz-gv-art bz-gv-board" />}
+            {art}
             {render.loading && (
               <div className="veil" role="status" data-testid="giveaways-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>

@@ -5,7 +5,7 @@
 // step's sixth part, after the piñata. Pure data and sums.
 import PARTS from "./cakeParts.json";
 import { cleanAge } from "./pinata";
-import { CART_PRICE, readCart, readSweets, sweetPriceLines, type CakeCart, type CakeSweet } from "./cakeSweets";
+import { CAKE_SWEETS, CART_PRICE, colourWords, readCart, readSweets, sweetPriceLines, type CakeCart, type CakeSweet, type SweetId } from "./cakeSweets";
 
 /** How it is decorated, every tier alike (public/design/cake/tier-<id>.webp, scripts/cake/build-parts.mts). */
 export const CAKE_STYLES = [
@@ -59,6 +59,10 @@ export const CAKE_FIGURES = [
   { id: "shark", name: "Shark", kind: "sugar" }, { id: "rocket", name: "Rocket", kind: "sugar" }, { id: "lightning", name: "Lightning bolt", kind: "sugar" },
   { id: "football", name: "Football", kind: "sugar" }, { id: "car", name: "Race car", kind: "sugar" }, { id: "treasure", name: "Treasure chest", kind: "sugar" },
   { id: "roses", name: "Sugar roses", kind: "sugar" }, { id: "pineapple", name: "Pineapple", kind: "sugar" },
+  // 2026-11-03 (the owner: "örneklerdeki gibi unicorn face olsun … sugar unicorn figure olsun"): a unicorn's face on a
+  // tier — sleepy eyes and a mane of flowers under the horn — and two sugar unicorns, sitting and peeking over an edge.
+  { id: "sugar-unicorn", name: "Sitting unicorn", kind: "sugar" }, { id: "peeking-unicorn", name: "Peeking unicorn", kind: "sugar" },
+  { id: "unicorn-lashes", name: "Sleepy eyes", kind: "sugar" }, { id: "flower-mane", name: "Flower mane", kind: "sugar" },
   { id: "idols", name: "Pop star trio", kind: "cutout" }, { id: "idol-singer", name: "Pop star singer", kind: "cutout" },
   { id: "microphone", name: "Microphone", kind: "cutout" }, { id: "music-notes", name: "Music notes", kind: "cutout" },
   { id: "holo-star", name: "Holographic star", kind: "cutout" }, { id: "light-stick", name: "Heart light stick", kind: "cutout" },
@@ -97,7 +101,7 @@ export interface CakeItem { id: CakeFigure; on: "top" | "side"; x: number; y: nu
 
 /** Each theme's own figures, its best first; a theme of a licensed character gets plain ones that suit it. */
 export const THEME_CAKE_FIGURES: Record<string, CakeFigure[]> = {
-  frozen: ["snowflake", "crown", "star"], unicorn: ["unicorn", "rainbow", "star"], dinosaur: ["dinosaur", "star"], safari: ["lion", "star"],
+  frozen: ["snowflake", "crown", "star"], unicorn: ["unicorn", "rainbow", "star", "sugar-unicorn", "peeking-unicorn", "unicorn-lashes", "flower-mane"], dinosaur: ["dinosaur", "star"], safari: ["lion", "star"],
   princess: ["crown", "heart", "roses"], superhero: ["lightning", "star"], barbie: ["heart", "crown", "roses"], bluey: ["puppy", "heart"],
   pokemon: ["lightning", "star"], stitch: ["star", "pineapple"], mermaid: ["mermaid", "shark", "star"], space: ["rocket", "star"],
   football: ["football", "star"], lego: ["star", "heart"], kpop: ["star", "heart"], encanto: ["butterfly", "roses", "star"],
@@ -138,7 +142,8 @@ export const TOPPER_COLOURS = [
   { id: "white", name: "White", hex: "#F4F4F4", light: "#FFFFFF", words: "white" },
   { id: "black", name: "Black", hex: "#1F1F1F", light: "#4A4A4A", words: "glossy black" },
 ] as const;
-export type TopperColour = (typeof TOPPER_COLOURS)[number]["id"];
+/** One of the shiny colours, or any colour as a hex (2026-11-03, the owner: "name text her renkte olabilsin"). */
+export type TopperColour = (typeof TOPPER_COLOURS)[number]["id"] | string;
 
 /** The name as letters alone, or printed on a card of a shape (2026-11-03, the owner's cloud-card example). */
 export const TOPPER_CARDS = [
@@ -148,10 +153,14 @@ export const TOPPER_CARDS = [
   { id: "plaque", name: "Plaque", words: "a white rounded plaque" },
 ] as const;
 export type TopperCard = (typeof TOPPER_CARDS)[number]["id"];
-/** Where the name goes: over the top on sticks, or on the cake's front (2026-11-03, the owner: "pastanın önüne de yazılabilir"). */
+/**
+ * Where the name goes: over the top on sticks, on the cake's front (2026-11-03, the owner: "pastanın önüne de
+ * yazılabilir"), or on the board at its foot (2026-11-03, the owner: "name on board or name on cake opsiyonu olsun").
+ */
 export const TOPPER_PLACES = [
   { id: "top", name: "On top", note: "On two sticks" },
   { id: "front", name: "On the front", note: "Pressed onto a tier" },
+  { id: "board", name: "On the board", note: "Sugar letters at its foot" },
 ] as const;
 
 /** Sugar figures (FIGURE_KINDS). */
@@ -169,8 +178,9 @@ export interface CakeTopper {
   /**
    * Where she moved it. On top: across the top tier (−0.4 to 0.4) and how high its words stand over the top, in px
    * (none: put by itself). On the front: across the tier there (−0.3 to 0.3) and y its middle up the cake (0 to 1).
+   * On the board: across the board (−0.3 to 0.3), standing on it in front of the cake.
    */
-  at?: "front";
+  at?: "front" | "board";
   x?: number;
   up?: number;
   y?: number;
@@ -203,7 +213,19 @@ export interface Cake {
   done?: boolean;
   /** The last render, kept in the customer's folder: cakeRenderKey of what it shows. */
   render?: { key: string; path: string };
+  /** The close-ups' renders (CakeView), each kept the same way. */
+  views?: Partial<Record<Exclude<CakeView, "whole">, { key: string; path: string }>>;
 }
+
+/**
+ * What a render shows (2026-11-03, the owner: "cart ile render alınca birkaç çeşit görüntü olsun … cake'e basacağız
+ * sadece cake, sonra cookies'e basacağız yakından cookies … bide uzaktan cartın üstündeyken genel"): the whole
+ * table or cart, the cake close up, or one of the sweets close up.
+ */
+export type CakeView = "whole" | "cake" | SweetId;
+export const isCakeView = (v: unknown): v is CakeView => v === "whole" || v === "cake" || CAKE_SWEETS.some((s) => s.id === v);
+/** The views there are of this cake: a close-up only of what is on it. */
+export const cakeViews = (k: Pick<Cake, "sweets">): CakeView[] => ["whole", "cake", ...CAKE_SWEETS.filter((s) => k.sweets?.some((x) => x.id === s.id)).map((s) => s.id)];
 
 const HEX = /^#[0-9A-F]{6}$/i;
 const RENDER_PATH = /^[0-9a-z-]{1,64}\/[0-9a-z]{1,40}\.jpg$/i;
@@ -248,7 +270,32 @@ export function cakeDesigns(seed: CakeSeed): { id: string; name: string; note: s
     { id: "ruffle", name: `${theme} ruffles`, note: "Two tiers of frilly ruffles", cake: { ...base, design: "ruffle", tiers: 2, style: "ruffles", colours: [b === WHITE ? a : b, WHITE, c], figures: figs(1, 2, "ruffles") } },
     { id: "grand", name: `${theme} grand`, note: "Three tiers of rosettes", cake: { ...base, design: "grand", tiers: 3, style: "rosettes", colours: [a, b, c], figures: figs(3, 3, "rosettes") } },
     ...(cutoutDesign ? [cutoutDesign] : []),
+    ...(seed.themeId === "unicorn" ? unicornDesigns(base, topper, a, b) : []),
     { id: "plain", name: "Plain cake", note: "White and simple — make it yours", cake: { ...base, design: "plain", tiers: 1, style: "smooth", colours: [WHITE, WHITE, WHITE], figures: [], topper: { ...topper, on: false } } },
+  ];
+}
+
+/**
+ * The unicorn's own two (2026-11-03, the owner's examples): its face on a white top tier — the horn and ears, sleepy
+ * eyes, a mane of flowers down its side — over a pink tier with a rainbow, the name on the board; and a sitting
+ * sugar unicorn on a mint tier, another peeking over the pink one's edge, a rainbow and the name on the front.
+ */
+function unicornDesigns(base: { topper: CakeTopper; flavour: CakeFlavour }, topper: CakeTopper, a: string, b: string) {
+  const st = cakeStack({ tiers: 2, style: "smooth" });
+  const [low, high] = st.tiers;
+  // A side figure's middle at a height of a tier (0 its foot, 1 its top edge), as the cake's measure.
+  const up = (t: { top: number; bottom: number }, f: number) => (st.base - (t.bottom - f * (t.bottom - t.top))) / (st.base - st.top);
+  const side = (id: CakeFigure, x: number, y: number, s: number): CakeItem => ({ id, on: "side", x, y: Math.round(y * 100) / 100, s });
+  const pink = a === WHITE ? "#F8BBD0" : a;
+  return [
+    { id: "face", name: "Unicorn face", note: "Sleepy eyes, a flower mane, the name on the board", cake: { ...base, design: "face", tiers: 2 as const, style: "smooth" as const, colours: [pink, WHITE, b],
+      topper: { ...topper, at: "board" as const },
+      figures: [{ id: "unicorn" as const, on: "top" as const, x: 0, y: 0.1, s: 1.55 }, side("unicorn-lashes", 0, up(high, 0.42), 0.24),
+        side("flower-mane", 0.34, up(high, 0.5), 1.4), side("rainbow", 0, up(low, 0.45), 0.95)] } },
+    { id: "sweet", name: "Sugar unicorns", note: "A sitting unicorn on top, one peeking over, a rainbow", cake: { ...base, design: "sweet", tiers: 2 as const, style: "smooth" as const, colours: [pink, "#BBF7D0", b],
+      topper: { ...topper, at: "front" as const, y: Math.round(up(low, 0.38) * 100) / 100 },
+      figures: [{ id: "sugar-unicorn" as const, on: "top" as const, x: -0.05, y: 0.35, s: 1.35 }, { id: "star" as const, on: "top" as const, x: 0.36, y: 0.2, s: 0.42 },
+        side("peeking-unicorn", 0.14, up(low, 0.88), 1.2), side("rainbow", -0.3, up(low, 0.62), 0.6), side("star", 0.36, up(high, 0.5), 0.3), side("star", -0.34, up(high, 0.3), 0.26)] } },
   ];
 }
 
@@ -260,7 +307,16 @@ export function defaultCake(seed: CakeSeed = {}): Cake {
 export const tierColours = (k: Pick<Cake, "tiers" | "colours">) => Array.from({ length: k.tiers }, (_, i) => k.colours[i] ?? k.colours[0] ?? WHITE);
 
 export const cakeStyle = (id: CakeStyle) => CAKE_STYLES.find((s) => s.id === id) ?? CAKE_STYLES[0];
-export const topperColour = (id: TopperColour) => TOPPER_COLOURS.find((c) => c.id === id) ?? TOPPER_COLOURS[0];
+/** A colour's look: one of the shiny ones, or a hex as itself with a little light on it. */
+export function topperColour(id: TopperColour): { id: string; name: string; hex: string; light: string; words: string; shiny: boolean } {
+  const c = TOPPER_COLOURS.find((x) => x.id === id);
+  if (c) return { ...c, shiny: c.id !== "white" };
+  if (!HEX.test(id)) return { ...TOPPER_COLOURS[0], shiny: true };
+  const hex = id.toUpperCase();
+  const light = "#" + [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * 0.55 + 255 * 0.45).toString(16).padStart(2, "0")).join("").toUpperCase();
+  const words = colourWords(hex);
+  return { id: hex, name: words.replace(/^./, (l) => l.toUpperCase()), hex, light, words, shiny: false };
+}
 /** The cake itself: its tiers and its decoration on each. */
 export const cakePrice = (k: Pick<Cake, "tiers" | "style">) => (CAKE_TIERS.find((t) => t.n === k.tiers)?.price ?? CAKE_TIERS[0].price) + cakeStyle(k.style).price * k.tiers;
 /** The topper shows when it is on and says something. */
@@ -286,12 +342,21 @@ export function cakePriceLines(k: Cake): { label: string; amount: number }[] {
 }
 export const cakeTotal = (k: Cake) => cakePriceLines(k).reduce((s, l) => s + l.amount, 0);
 
+/** A kept render read back: its key and where it is. */
+function keptRender(raw: unknown): { key: string; path: string } | null {
+  const o = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
+  return o && typeof o.key === "string" && /^[a-z0-9]{1,13}(?::[a-z]{1,10})?$/.test(o.key) && typeof o.path === "string" && RENDER_PATH.test(o.path) ? { key: o.key, path: o.path } : null;
+}
+
 /** A stored cake read back over the defaults. */
 export function readCake(raw: unknown): Cake | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const r = raw as Record<string, unknown>;
   const base = defaultCake();
-  const kept = r.render as Record<string, unknown> | null;
+  const kept = r.render;
+  const viewsIn = (r.views && typeof r.views === "object" ? r.views : {}) as Record<string, unknown>;
+  const viewList = Object.entries(viewsIn).flatMap(([v, x]) => (isCakeView(v) && v !== "whole" && keptRender(x) ? [[v, keptRender(x)!] as const] : []));
+  const views = viewList.length ? (Object.fromEntries(viewList) as Cake["views"]) : undefined;
   const t = (r.topper && typeof r.topper === "object" ? r.topper : {}) as Record<string, unknown>;
   const colours = Array.isArray(r.colours)
     ? r.colours.filter((h): h is string => typeof h === "string" && (HEX.test(h) || !!rainbowOf(h))).slice(0, 3).map((h) => (rainbowOf(h) ? h : h.toUpperCase())) : [];
@@ -310,10 +375,10 @@ export function readCake(raw: unknown): Cake | undefined {
       const o = (f && typeof f === "object" ? f : {}) as Record<string, unknown>;
       if (!isFigure(o.id) || roomFor(kept, o.id) <= 0) return kept;
       const top = o.on !== "side";
-      return [...kept, { id: o.id, on: top ? "top" as const : "side" as const, x: num(o.x, -0.5, 0.5, 0), y: top ? num(o.y, -1, 1, 0.4) : num(o.y, 0, 1, 0.5), s: num(o.s, 0.3, 2.5, 0.8) }];
+      return [...kept, { id: o.id, on: top ? "top" as const : "side" as const, x: num(o.x, -0.5, 0.5, 0), y: top ? num(o.y, -1, 1, 0.4) : num(o.y, 0, 1, 0.5), s: num(o.s, 0.15, 2.5, 0.8) }];
     }, []);
-  const front = t.at === "front";
-  const up = front ? NaN : num(t.up, 0, 400, NaN), tx = num(t.x, front ? -0.3 : -0.4, front ? 0.3 : 0.4, NaN), ts = num(t.s, 0.6, 1.6, NaN);
+  const front = t.at === "front", onBoard = t.at === "board";
+  const up = front || onBoard ? NaN : num(t.up, 0, 400, NaN), tx = num(t.x, front || onBoard ? -0.3 : -0.4, front || onBoard ? 0.3 : 0.4, NaN), ts = num(t.s, 0.6, 1.6, NaN);
   const ty = front ? num(t.y, 0.05, 0.95, 0.5) : NaN;
   const card = TOPPER_CARDS.find((c) => c.id !== "none" && c.id === t.card)?.id as CakeTopper["card"];
   return {
@@ -331,20 +396,20 @@ export function readCake(raw: unknown): Cake | undefined {
       name: typeof t.name === "string" ? t.name.replace(/[<>]/g, "").trim().slice(0, 18) : base.topper.name,
       age: t.age === "" ? "" : cleanAge(t.age) || base.topper.age,
       font: typeof t.font === "string" && /^[a-z0-9-]{1,40}$/.test(t.font) ? t.font : base.topper.font,
-      colour: TOPPER_COLOURS.find((c) => c.id === t.colour)?.id ?? base.topper.colour,
-      ...(front ? { at: "front" as const, y: ty } : {}),
+      colour: TOPPER_COLOURS.find((c) => c.id === t.colour)?.id ?? (typeof t.colour === "string" && HEX.test(t.colour) ? t.colour.toUpperCase() : base.topper.colour),
+      ...(front ? { at: "front" as const, y: ty } : onBoard ? { at: "board" as const } : {}),
       ...(Number.isNaN(tx) ? {} : { x: tx }), ...(Number.isNaN(up) ? {} : { up }), ...(Number.isNaN(ts) ? {} : { s: ts }),
       ...(card ? { card } : {}),
     },
     flavour: CAKE_FLAVOURS.find((f) => f.id === r.flavour)?.id ?? base.flavour,
     ...(r.done === true ? { done: true } : {}),
-    ...(kept && typeof kept === "object" && typeof kept.key === "string" && /^[a-z0-9]{1,13}$/.test(kept.key) && typeof kept.path === "string" && RENDER_PATH.test(kept.path)
-      ? { render: { key: kept.key, path: kept.path } } : {}),
+    ...(keptRender(kept) ? { render: keptRender(kept)! } : {}),
+    ...(views ? { views } : {}),
   };
 }
 
 /** Changes whenever anything that shows in the picture changes (the flavour is inside: it does not show). */
-export function cakeRenderKey(k: Cake, themeId: string): string {
+export function cakeRenderKey(k: Cake, themeId: string, view: CakeView = "whole"): string {
   const r2 = (v: number | undefined) => (v === undefined ? null : Math.round(v * 100) / 100);
   const t = k.topper;
   const topper = topperShows(k) ? [t.name, t.age, t.font, t.colour, r2(t.x), r2(t.up), r2(t.s), t.at ?? "top", r2(t.y), t.card ?? "none"] : null;
@@ -354,7 +419,8 @@ export function cakeRenderKey(k: Cake, themeId: string): string {
   const s = JSON.stringify([themeId, k.tiers, k.style, tierColours(k), figures, topper, ...(k.sprinkles ? [k.sprinkles] : []), ...(sweets.length ? [sweets] : []), ...(k.cart ? [["cart", k.cart.awning]] : [])]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
-  return (h >>> 0).toString(36);
+  // A close-up is its own picture of the same cake.
+  return (h >>> 0).toString(36) + (view === "whole" ? "" : `:${view}`);
 }
 
 /** A tier's picture, its size and where its top and bottom circles' middles are (public/design/cake). */
@@ -366,12 +432,25 @@ export const figurePicture = (id: CakeFigure) => ({ src: `/design/cake/fig-${id}
  * how wide it is — and the bottom of the view, below the stand's foot.
  */
 export const CAKE_STAND = { src: "/design/cake/stand.webp", w: 896, h: 1392, plate: { x: 447, y: 906, w: 377 }, bottom: 1170 };
+/**
+ * A three-tier cake stands on a flat cake board instead (2026-11-03, the owner: "3 katlı olunca alttaki cake holder'ın
+ * ayaksızı olsun"): the same table with the board on its cloth (board.webp, measured by eye), and on the cart, its
+ * board in the stand photo's pixels (lib/studio/cakeSweets.ts CAKE_CART maps them onto the cart). `ry`: how deep its
+ * top's oval is for its half width.
+ */
+export const CAKE_BOARD = { src: "/design/cake/board.webp", plate: { x: 444, y: 1095, w: 411 }, ry: 0.15, bottom: 1190 };
+export const CART_BOARD = { src: "/design/cake/cart-board.webp", plate: { x: 472, y: 1030, w: 596 }, ry: 0.175 };
+/** What the cake stands on: the stand, or for three tiers a board, on the table or on the cart. */
+export function holderOf(k: Pick<Cake, "tiers"> & { cart?: unknown }) {
+  if (k.tiers !== 3) return { board: false, plate: CAKE_STAND.plate, ry: 0.125, bottom: CAKE_STAND.bottom };
+  return k.cart ? { board: true, ...CART_BOARD, bottom: CART_BOARD.plate.y + 60 } : { board: true, ...CAKE_BOARD };
+}
 /** How wide each tier is on the stand, the bottom one first, by how many there are. */
 export const TIER_WIDTHS: Record<CakeTierCount, number[]> = { 1: [280], 2: [305, 220], 3: [300, 225, 160] };
 
 /** The cake stacked on the stand: each tier's box and the circles it stands on and ends in, and its top's. */
-export function cakeStack(k: Pick<Cake, "tiers" | "style">) {
-  const { plate } = CAKE_STAND;
+export function cakeStack(k: Pick<Cake, "tiers" | "style"> & { cart?: unknown }) {
+  const { plate } = holderOf(k);
   const pic = tierPicture(k.style);
   const widths = TIER_WIDTHS[k.tiers];
   const k0 = widths[0] / pic.w;
@@ -386,7 +465,7 @@ export function cakeStack(k: Pick<Cake, "tiers" | "style">) {
     return t;
   });
   const last = tiers[tiers.length - 1];
-  return { pic, tiers, base: plate.y, top: last.top, topW: last.w, depth };
+  return { pic, tiers, base: plate.y, top: last.top, topW: last.w, depth, cx: plate.x, plate };
 }
 export type CakeStack = ReturnType<typeof cakeStack>;
 
@@ -405,11 +484,11 @@ export function placeItem(it: CakeItem, st: CakeStack) {
   const h = FIGURE_TALL * it.s, w = (f.w / f.h) * h;
   if (it.on === "top") {
     const foot = st.top + it.y * st.depth, lift = liftOf(it.id, h);
-    const x = CAKE_STAND.plate.x + it.x * st.topW - w / 2;
+    const x = st.cx + it.x * st.topW - w / 2;
     return { x, y: foot - lift - h, w, h, ...(lift ? { stick: { x: x + w / 2, y1: foot - lift - h * 0.3, y2: foot + 4 } } : {}) };
   }
   const mid = st.base - it.y * (st.base - st.top);
-  return { x: CAKE_STAND.plate.x + it.x * tierAt(st, mid).w - w / 2, y: mid - h / 2, w, h };
+  return { x: st.cx + it.x * tierAt(st, mid).w - w / 2, y: mid - h / 2, w, h };
 }
 
 /** A figure moved so its middle is at (cx, cy): on the top when its foot is on it, else stuck on the side there. */
@@ -417,7 +496,7 @@ export function itemAt(it: CakeItem, st: CakeStack, cx: number, cy: number): Cak
   const h = FIGURE_TALL * it.s;
   const foot = cy + h / 2 + liftOf(it.id, h);
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-  const dx = cx - CAKE_STAND.plate.x;
+  const dx = cx - st.cx;
   if (foot <= st.top + st.depth) {
     return { ...it, on: "top", x: clamp(dx / st.topW, -0.5, 0.5), y: clamp((foot - st.top) / st.depth, -1, 1) };
   }
@@ -442,7 +521,7 @@ export function topItems(ids: CakeFigure[], st: CakeStack): CakeItem[] {
 }
 
 /** One more figure: on the top where there is room, else on the bottom tier's front; a ball round the foot of the cake. */
-export function addItem(k: Pick<Cake, "tiers" | "style" | "figures">, id: CakeFigure): CakeItem[] {
+export function addItem(k: Pick<Cake, "tiers" | "style" | "figures"> & { cart?: unknown }, id: CakeFigure): CakeItem[] {
   if (roomFor(k.figures, id) <= 0) return k.figures;
   const st = cakeStack(k);
   const f = figurePicture(id);

@@ -52,7 +52,7 @@ import PinataPreview from "@/components/builder/pinata/PinataPreview";
 import { defaultPinata, pinataRenderKey } from "@/lib/studio/pinata";
 import CakeStep, { cakeSeed } from "@/components/builder/cake/CakeStep";
 import CakePreview from "@/components/builder/cake/CakePreview";
-import { cakeRenderKey, defaultCake } from "@/lib/studio/cake";
+import { cakeRenderKey, cakeViews, defaultCake, type CakeView } from "@/lib/studio/cake";
 import type { AfterSignInAction } from "@/lib/account";
 import { adultCounts, defaultAdultTable } from "@/lib/studio/adultTable";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
@@ -252,14 +252,23 @@ export default function ConfigurePage() {
     onSignInNeeded: () => askSignIn("pinata-render"),
   });
   // The cake (2026-11-03): on its stand, close up, rendered as the piñata is.
-  const cakeKey = config.cake?.enabled ? cakeRenderKey(config.cake, config.theme) : "";
+  // 2026-11-03: the whole table or cart, or a close-up of the cake or a sweet — each its own render.
+  const [cakeViewPicked, setCakeView] = useState<CakeView>("whole");
+  // Away from the cake part (the finished designs show it), the whole picture.
+  const cakeView: CakeView = step === 2 && decorPart === "cake" && config.cake?.enabled && cakeViews(config.cake).includes(cakeViewPicked) ? cakeViewPicked : "whole";
+  const cakeKey = config.cake?.enabled ? cakeRenderKey(config.cake, config.theme, cakeView) : "";
   const cakeRender = usePieceRender({
-    endpoint: "/api/cake-render", partKey: cakeKey, kept: config.cake?.render,
+    endpoint: "/api/cake-render", partKey: cakeKey, kept: cakeView === "whole" ? config.cake?.render : config.cake?.views?.[cakeView],
     body: async () => {
       const node = document.querySelector<SVGSVGElement>("#cake-preview-card svg.bz-ck-art");
-      return { cake: config.cake, theme: config.theme, preview: node ? await nodeJpeg(node, 1200) : null };
+      return { cake: config.cake, theme: config.theme, view: cakeView, preview: node ? await nodeJpeg(node, 1200) : null };
     },
-    onKept: (render) => setConfig((c) => (c.cake ? { ...c, cake: { ...c.cake, render } } : c)),
+    // Kept as what it shows: its key ends in its view when it is a close-up.
+    onKept: (render) => setConfig((c) => {
+      if (!c.cake) return c;
+      const v = render.key.split(":")[1] as Exclude<CakeView, "whole"> | undefined;
+      return { ...c, cake: v ? { ...c.cake, views: { ...c.cake.views, [v]: render } } : { ...c.cake, render } };
+    }),
     onSignInNeeded: () => askSignIn("cake-render"),
   });
   // Back from signing in for one of them: it starts.
@@ -727,7 +736,7 @@ export default function ConfigurePage() {
           {onWelcome && <WelcomePreview config={config} render={welcomeRender} onGenerate={makeWelcomeRender} />}
           {onGiveaways && <GiveawaysPreview config={config} render={giveawaysRender} onGenerate={makeGiveawaysRender} />}
           {onPinata && <PinataPreview config={config} render={pinataRender} onGenerate={makePinataRender} />}
-          {onCake && <CakePreview config={config} setCake={setCake} render={cakeRender} onGenerate={makeCakeRender} />}
+          {onCake && <CakePreview config={config} setCake={setCake} render={cakeRender} onGenerate={makeCakeRender} view={cakeView} setView={setCakeView} />}
           <div hidden={!onKids}>
             <TablePreview config={config} render={tableRender} onGenerate={makeTableRender} placeShot={tablePlaceShot} />
           </div>
@@ -891,7 +900,7 @@ export default function ConfigurePage() {
             {/* 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
             {(step === 3 || step === 6) && <FinishedDesigns config={config}
               renderUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl : null}
-              tableRenderUrl={tableRender.url} welcomeRenderUrl={welcomeRender.url} giveawaysRenderUrl={giveawaysRender.url} pinataRenderUrl={pinataRender.url} cakeRenderUrl={cakeRender.url} />}
+              tableRenderUrl={tableRender.url} welcomeRenderUrl={welcomeRender.url} giveawaysRenderUrl={giveawaysRender.url} pinataRenderUrl={pinataRender.url} cakeRenderUrl={config.cake?.enabled ? cakeRender.urlOf(cakeRenderKey(config.cake, config.theme)) : null} />}
             {step === 3 && <PackageStep config={config} setServicePackage={setServicePackage} />}
 
             {step === 4 && <AddOnsStep config={config} toggleAddOn={toggleAddOn} setAddOnOption={setAddOnOption} />}

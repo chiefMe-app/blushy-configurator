@@ -196,7 +196,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
           <div className="bz-gv-contents" data-testid="cake-topper">
             <label className={k.topper.on ? "on" : ""}>
               <input type="checkbox" checked={k.topper.on} onChange={() => setTopper({ on: !k.topper.on })} />
-              <span><b>A topper with the name and age</b><small>Mirror acrylic letters or a printed card, on top or on the front · +AED {formatAED(TOPPER_PRICE)}</small></span>
+              <span><b>A topper with the name and age</b><small>Mirror acrylic letters or a printed card on top, or sugar letters on the front or the board · +AED {formatAED(TOPPER_PRICE)}</small></span>
             </label>
           </div>
         </div>
@@ -222,14 +222,14 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
                 return (
                   <label key={p.id} className={on ? "on" : ""}>
                     <input type="radio" name="cake-topper-place" checked={on}
-                      onChange={() => setTopper({ at: p.id === "front" ? "front" : undefined, x: undefined, up: undefined, y: p.id === "front" ? 0.5 : undefined })} />
+                      onChange={() => setTopper({ at: p.id === "top" ? undefined : p.id, x: undefined, up: undefined, y: p.id === "front" ? 0.5 : undefined, ...(p.id === "board" ? { card: undefined } : {}) })} />
                     <span><b>{p.name}</b><small>{p.note}</small></span>
                   </label>
                 );
               })}
             </div>
           </div>
-          <div className="bz-tb-item">
+          {k.topper.at !== "board" && <div className="bz-tb-item">
             <h3>Letters or a card</h3>
             <div className="bz-tb-fonts" role="radiogroup" aria-label="Topper card" data-testid="cake-topper-card">
               {TOPPER_CARDS.map((c) => {
@@ -243,7 +243,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
                 );
               })}
             </div>
-          </div>
+          </div>}
           <div className="bz-tb-item">
             <h3>Lettering</h3>
             <div className="bz-tb-fonts" role="radiogroup" aria-label="Topper lettering" data-testid="cake-topper-font">
@@ -263,7 +263,13 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
                   className={k.topper.colour === c.id ? "on" : ""} style={{ background: `linear-gradient(160deg, ${c.light}, ${c.hex} 60%, ${c.light})` }}
                   onClick={() => setTopper({ colour: c.id })}>{k.topper.colour === c.id ? "✓" : ""}</button>
               ))}
+              {/* 2026-11-03 (the owner: "name text her renkte olabilsin"): or any of the party's colours. */}
+              {swatches.filter((hex) => hex !== "#FFFFFF").map((hex) => (
+                <button key={hex} type="button" role="radio" aria-checked={k.topper.colour === hex} aria-label={`${PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex} sugar paste`}
+                  className={k.topper.colour === hex ? "on" : ""} style={{ background: hex }} onClick={() => setTopper({ colour: hex })}>{k.topper.colour === hex ? "✓" : ""}</button>
+              ))}
             </div>
+            <p className="bz-tb-sub" style={{ fontWeight: 400 }}>The first five shine like metal; the rest are sugar paste in that colour.</p>
           </div>
         </>}
       </section>

@@ -108,9 +108,17 @@ for (const f of fs.readdirSync(SRC).filter((n) => n.endsWith(".png")).sort()) {
     console.log("cart", ci.width, "x", ci.height);
     continue;
   }
-  if (name === "stand") {
-    // More wall above it, its top row carried up, for a tall cake and its topper.
-    await sharp(path.join(SRC, f)).extend({ top: STAND_ABOVE, extendWith: "copy" }).webp({ quality: 84 }).toFile(path.join(OUT, "stand.webp"));
+  if (name === "stand" || name === "stand-board") {
+    // More wall above it, its top row carried up, for a tall cake and its topper. The board (2026-11-03, the owner:
+    // "3 katlı olunca alttaki cake holder'ın ayaksızı olsun"): the same photo, a flux-2 edit, a flat cake board on the
+    // tablecloth where the stand was.
+    await sharp(path.join(SRC, f)).extend({ top: STAND_ABOVE, extendWith: "copy" }).webp({ quality: 84 }).toFile(path.join(OUT, name === "stand" ? "stand.webp" : "board.webp"));
+    continue;
+  }
+  if (name === "cart-board") {
+    // The cart with a flat cake board on its counter instead of its stand: only the counter taken from a flux-2 edit,
+    // feathered, so the awning (and its mask) is the cart's own.
+    await sharp(path.join(SRC, f)).webp({ quality: 84 }).toFile(path.join(OUT, "cart-board.webp"));
     continue;
   }
   const { data, info } = await sharp(path.join(SRC, f)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });

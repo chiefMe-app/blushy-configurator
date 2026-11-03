@@ -108,6 +108,7 @@ export default function PinataPreview({ config, render, onGenerate }: { config: 
   const [live, setLive] = useState(false);
   useEffect(() => { if (render.url) setLive(false); }, [render.url]);
   const showRender = !!render.url && !live;
+  const art = p?.enabled ? <PinataArt p={p} theme={theme} className="bz-pn-art" /> : null;
   const inside = p ? PINATA_FILLINGS.filter((f) => p.fillings.includes(f.id)) : [];
   return (
     <div className="bz-tb-preview" data-testid="pinata-preview" id="pinata-preview-card">
@@ -121,12 +122,14 @@ export default function PinataPreview({ config, render, onGenerate }: { config: 
         )}
       </div>
       {p?.enabled ? <>
-        {showRender ? (
-          // eslint-disable-next-line @next/next/no-img-element
+        {showRender ? <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="bz-tb-photo" data-testid="pinata-render" src={render.url!} alt="Your piñata, rendered" />
-        ) : (
+          {/* The live picture stays in the page, out of sight, for a new render of it to be taken from (Regenerate). */}
+          <div className="bz-live-hidden" aria-hidden="true"><div className="bz-wb-wait">{art}</div></div>
+        </> : (
           <div className={render.loading ? "bz-wb-wait on" : "bz-wb-wait"}>
-            <PinataArt p={p} theme={theme} className="bz-pn-art" />
+            {art}
             {render.loading && (
               <div className="veil" role="status" data-testid="pinata-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>

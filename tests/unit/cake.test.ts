@@ -6,13 +6,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { THEMES, priceBreakdown, defaultConfig } from "@/lib/config";
 import {
+  CAKE_BOARD, CART_BOARD, CAKE_STAND, cakeViews, holderOf, topperColour,
   CAKE_FIGURES, CAKE_STYLES, FIGURE_PRICE, MAX_CAKE_DECOS, MAX_CAKE_FIGURES, RAINBOW_PRICE, THEME_CAKE_CUTOUTS, THEME_CAKE_FIGURES, TOPPER_PRICE,
   addItem, cakeDesigns, cakeFiguresFor, cakePriceLines, cakeRenderKey, cakeStack, cakeTotal, defaultCake, figureKind, figurePicture, itemAt, placeItem,
   readCake, roomFor, tierColours, tierPicture, type Cake, type CakeFigure, type CakeItem,
 } from "@/lib/studio/cake";
 import { cakePrompt } from "@/lib/studio/cakeRender";
 import { CAKE_CART, CAKE_SWEETS, CART_PRICE, CART_SWEET_PLACES, SWEET_PLACES, colourWords, readSweets, sweetPicture } from "@/lib/studio/cakeSweets";
-import { cakeLayout, viewOf } from "@/components/builder/cake/CakePreview";
+import { cakeLayout, viewBoxOf, viewOf } from "@/components/builder/cake/CakePreview";
 import { fromDraft, toDraft } from "@/lib/draft";
 import { resetRenderGuard } from "@/lib/renderGuard";
 import { readNdjson } from "@/lib/ndjson";
@@ -41,7 +42,9 @@ describe("cake", () => {
       const d = cakeDesigns({ themeId: t.id, themeName: t.name, colours: t.balloonColors });
       // A theme with printed cutouts of its own (K-pop, Unicorn) gets a cake of them too.
       const cut = THEME_CAKE_CUTOUTS[t.id] ? ["cutouts"] : [];
-      expect(d.map((x) => x.id)).toEqual(["classic", "drip", "ruffle", "grand", ...cut, "plain"]);
+      // The unicorn's face and its sugar unicorns (2026-11-03).
+      const own = t.id === "unicorn" ? ["face", "sweet"] : [];
+      expect(d.map((x) => x.id)).toEqual(["classic", "drip", "ruffle", "grand", ...cut, ...own, "plain"]);
       expect(new Set(d.slice(0, 4).map((x) => `${x.cake.tiers}-${x.cake.style}`)).size).toBe(4);
       expect(THEME_CAKE_FIGURES[t.id], t.id).toBeDefined();
       expect(cakeFiguresFor(t.id)[0].own).toBe(true);
@@ -63,7 +66,7 @@ describe("cake", () => {
   });
 
   it("stacks its tiers on the stand, each narrower, its topper above its figures, all in the photo", () => {
-    for (const d of cakeDesigns(seed).filter((x) => x.id !== "cutouts")) {
+    for (const d of cakeDesigns(seed).filter((x) => !["cutouts", "face", "sweet"].includes(x.id))) {
       const L = cakeLayout({ ...d.cake, topper: { ...d.cake.topper, on: true } });
       expect(L.tiers).toHaveLength(d.cake.tiers);
       L.tiers.forEach((t, i) => { if (i) expect(t.w).toBeLessThan(L.tiers[i - 1].w); });
@@ -271,6 +274,14 @@ describe("the cake kept and rendered", () => {
     expect(input.image_urls).toHaveLength(1);
     expect(input.image_size).toEqual({ width: 1120, height: 1408 });
     expect(input.prompt).toBe(cakePrompt(k));
+    // A close-up of what is on it: its own words and its own key; a view of what is not there is the whole picture.
+    subscribe.mockClear();
+    const sweet: Cake = { ...k, sweets: [{ id: "cookies", count: 6, colour: "#F8BBD0", print: "age" }] };
+    await lines(await post({ cake: sweet, theme: "unicorn", view: "cookies", preview: `data:image/jpeg;base64,${drawn.toString("base64")}` }));
+    expect((subscribe.mock.calls[0] as [string, { input: { prompt: string } }])[1].input.prompt).toBe(cakePrompt(sweet, "cookies"));
+    subscribe.mockClear();
+    await lines(await post({ cake: k, theme: "unicorn", view: "donuts", preview: `data:image/jpeg;base64,${drawn.toString("base64")}` }));
+    expect((subscribe.mock.calls[0] as [string, { input: { prompt: string } }])[1].input.prompt).toBe(cakePrompt(k));
   }, 30_000);
 
   it("refuses a missing or skipped cake, or no preview, without calling fal", async () => {
@@ -345,5 +356,71 @@ describe("the sweet cart", () => {
     expect(readCake({ cart: { awning: "#bae6fd" } })!.cart).toEqual({ awning: "#BAE6FD" });
     expect(readCake({ cart: { awning: "blue" } })!.cart).toEqual({ awning: "#F8BBD0" });
     expect(readCake({})!.cart).toBeUndefined();
+  });
+});
+
+describe("the board, the lettering and the close-ups", () => {
+  // 2026-11-03 (the owner: "3 katlı olunca alttaki cake holder'ın ayaksızı olsun … name text her renkte olabilsin …
+  // name on board or name on cake … unicorn face … sugar unicorn figure … cart ile render alınca birkaç çeşit görüntü").
+  it("stands a three-tier cake on a flat board, on the table or the cart", () => {
+    const k: Cake = { ...defaultCake(seed), tiers: 3 };
+    expect(fs.existsSync(path.join("public", CAKE_BOARD.src))).toBe(true);
+    expect(fs.existsSync(path.join("public", CART_BOARD.src))).toBe(true);
+    expect(holderOf(defaultCake(seed))).toMatchObject({ board: false, plate: CAKE_STAND.plate });
+    expect(cakeStack(k).base).toBe(CAKE_BOARD.plate.y);
+    expect(cakeStack({ ...k, cart: { awning: "#F8BBD0" } }).base).toBe(CART_BOARD.plate.y);
+    expect(cakePrompt(k)).toMatch(/standing on a wide round white cake board on a table/);
+    expect(cakePrompt(defaultCake(seed))).toMatch(/standing on a white cake stand on a table/);
+  });
+
+  it("has the unicorn's face and its sugar unicorns", () => {
+    const d = cakeDesigns(seed);
+    const face = d.find((x) => x.id === "face")!.cake, sweet = d.find((x) => x.id === "sweet")!.cake;
+    expect(face.figures.map((f) => [f.id, f.on])).toEqual([["unicorn", "top"], ["unicorn-lashes", "side"], ["flower-mane", "side"], ["rainbow", "side"]]);
+    expect(face.topper.at).toBe("board");
+    expect(sweet.figures.map((f) => f.id)).toEqual(expect.arrayContaining(["sugar-unicorn", "peeking-unicorn"]));
+    // Read back as they are: the thin sleepy eyes keep their size.
+    expect(readCake(face)!.figures).toEqual(face.figures);
+    expect(cakePrompt({ ...face, enabled: true })).toMatch(/stuck flat on the sides.*rainbow, sleepy eyes, flower mane/);
+  });
+
+  it("puts the name on the board, in any colour, as real sugar letters", () => {
+    const k: Cake = { ...defaultCake(seed), topper: { ...defaultCake(seed).topper, at: "board", colour: "#f8bbd0", card: "cloud" } };
+    const back = readCake(k)!;
+    expect(back.topper).toMatchObject({ at: "board", colour: "#F8BBD0" });
+    const L = cakeLayout(back);
+    expect(L.words.board).toBe(true);
+    // Its letters' foot just in front of the cake's foot; not above the cake.
+    expect(L.words.bottom).toBeGreaterThan(L.st.base);
+    expect(L.contentTop).toBe(cakeLayout({ ...back, topper: { ...back.topper, on: false } }).contentTop);
+    expect(topperColour("#F8BBD0")).toMatchObject({ shiny: false, words: "pink" });
+    expect(topperColour("gold").shiny).toBe(true);
+    const words = cakePrompt(back);
+    expect(words).toMatch(/On the cake stand's plate at the foot of the cake.*pink sugar-paste letters reading "Olivia" and "6"/);
+    expect(words).toMatch(/never flat print/);
+    expect(cakePrompt({ ...back, topper: { ...back.topper, at: "front", colour: "gold" } })).toMatch(/gold-painted sugar-paste letters with a soft metallic shine/);
+    expect(readCake({ topper: { colour: "nope" } })!.topper.colour).toBe("gold");
+  });
+
+  it("has a close-up of the cake and of each sweet on it, each its own picture", () => {
+    const k: Cake = { ...defaultCake(seed), cart: { awning: "#F8BBD0" }, sweets: [{ id: "cookies", count: 12, colour: "#F8BBD0", print: "age" }] };
+    expect(cakeViews(k)).toEqual(["whole", "cake", "cookies"]);
+    expect(cakeRenderKey(k, "unicorn", "cookies")).toBe(`${cakeRenderKey(k, "unicorn")}:cookies`);
+    for (const v of cakeViews(k)) {
+      const b = viewBoxOf(k, v);
+      expect(b.x).toBeGreaterThanOrEqual(0);
+      expect(b.y).toBeGreaterThanOrEqual(0);
+      expect(b.x + b.w).toBeLessThanOrEqual(1024 + 0.01);
+      expect(b.y + b.h).toBeLessThanOrEqual(1280 + 0.01);
+      if (v !== "whole") expect(b.w / b.h).toBeCloseTo(0.8, 2);
+    }
+    // A close-up is nearer than the whole cart.
+    expect(viewBoxOf(k, "cake").w).toBeLessThan(viewBoxOf(k, "whole").w);
+    expect(cakePrompt(k, "cookies")).toMatch(/^Image 1 is a close-up preview of round sugar cookies.*printed with the number "6"/);
+    expect(cakePrompt(k, "cake")).toMatch(/close-up preview of a birthday cake.*softly out of focus/);
+    expect(cakePrompt(k)).toMatch(/the whole sweet cart in view, never zoomed in or cropped/);
+    // The close-ups' renders are kept, and read back only when they are a close-up's.
+    const kept = readCake({ ...k, views: { cookies: { key: "abc123:cookies", path: "u1/k1.jpg" }, whole: { key: "x", path: "u1/k2.jpg" }, nope: { key: "y", path: "u1/k3.jpg" } } })!;
+    expect(kept.views).toEqual({ cookies: { key: "abc123:cookies", path: "u1/k1.jpg" } });
   });
 });

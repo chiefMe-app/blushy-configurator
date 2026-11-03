@@ -7,11 +7,11 @@
 import { useEffect, useRef, useState } from "react";
 import { type BuilderConfig } from "@/lib/config";
 import {
-  CAKE_FIGURES, CAKE_FLAVOURS, CAKE_STAND, MAX_CAKE_DECOS, MAX_CAKE_FIGURES, TIER_WIDTHS, cakeStack, cakeStyle, figureKind, figurePicture, itemAt, placeItem,
-  rainbowOf, roomFor, tierAt, tierColours, topperColour, topperShows, type Cake,
+  CAKE_BOARD, CAKE_FIGURES, CAKE_FLAVOURS, CAKE_STAND, CART_BOARD, MAX_CAKE_DECOS, MAX_CAKE_FIGURES, TIER_WIDTHS, cakeRenderKey, cakeStack, cakeStyle, cakeViews,
+  figureKind, figurePicture, holderOf, itemAt, placeItem, rainbowOf, roomFor, tierAt, tierColours, topperColour, topperShows, type Cake, type CakeView,
 } from "@/lib/studio/cake";
 import { asPrinted, fontCss, tableFont } from "@/lib/studio/tableFonts";
-import { CAKE_CART, CART_SWEET_PLACES, SWEET_PLACES, SWEET_SPOTS, sweetPicture, type CakeSweet } from "@/lib/studio/cakeSweets";
+import { CAKE_CART, CAKE_SWEETS, CART_SWEET_PLACES, SWEET_PLACES, SWEET_SPOTS, sweetPicture, type CakeSweet } from "@/lib/studio/cakeSweets";
 import FitText from "@/components/studio/FitText";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
@@ -19,36 +19,42 @@ import RenderAgain from "@/components/builder/RenderAgain";
 
 const WHITE = "#FFFFFF";
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+/** A colour a little darker: a sugar letter's cut edge. */
+const darker = (hex: string, f = 0.72) => "#" + [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * f).toString(16).padStart(2, "0")).join("");
 
 /** Where everything goes, in the stand photo's pixels: the tiers bottom first, the figures, the topper's words. */
-export function cakeLayout(k: Pick<Cake, "tiers" | "style" | "figures" | "topper">) {
-  const { plate } = CAKE_STAND;
+export function cakeLayout(k: Pick<Cake, "tiers" | "style" | "figures" | "topper"> & { cart?: unknown }) {
   const st = cakeStack(k);
+  const { plate } = st;
   const figures = k.figures.map((it) => ({ ...placeItem(it, st), src: figurePicture(it.id).src }));
   const t = k.topper;
-  const front = t.at === "front";
+  const front = t.at === "front", board = t.at === "board";
   const face = tableFont(t.font);
   // On top: the words over what stands on the top (unless she moved it), on two sticks down into the cake.
-  // On the front: across the tier there, pressed onto it.
+  // On the front: across the tier there, pressed onto it. On the board: in a line, standing at the cake's foot.
   const mid = st.base - (t.y ?? 0.5) * (st.base - st.top);
   const tier = tierAt(st, mid);
-  const tw = (front ? Math.min(200, tier.w * 0.62) : Math.min(240, Math.max(150, st.topW * 1.15))) * (t.s ?? 1);
+  const tw = (front ? Math.min(200, tier.w * 0.62) : board ? Math.min(250, plate.w * 0.62) : Math.min(240, Math.max(150, st.topW * 1.15))) * (t.s ?? 1);
   const age = tw * 0.46, name = tw * 0.24 * (face.hand ? face.scale : 1);
   // The age's line at the bottom, the name's over it; a script's tall letters reach higher (from the age's line).
   const nameUp = t.age ? age * 0.82 : 0;
   const textUp = t.name.trim() ? nameUp + name * (face.hand ? 0.95 : 0.8) : age * 0.75;
-  const card = t.card ? Math.max(10, tw * 0.09) : 0;
+  const card = t.card && !board ? Math.max(10, tw * 0.09) : 0;
   const boxH = textUp + age * 0.12 + card * 2;
   const onTop = figures.filter((_, i) => k.figures[i].on === "top");
   const lift = t.up ?? (onTop.length ? Math.max(...onTop.map((f) => st.top - f.y)) + 8 : tw * 0.22) + card;
   const bottom = front ? mid + boxH / 2 - card - age * 0.12 : st.top - lift;
-  const x = plate.x + (t.x ?? 0) * (front ? tier.w : st.topW);
-  const words = { x, bottom, w: tw, name, age, nameY: bottom - nameUp, plane: st.top, stickX: plate.x + (t.x ?? 0) * st.topW * 0.9, front };
+  const x = plate.x + (t.x ?? 0) * (front ? tier.w : board ? plate.w : st.topW);
+  // On the board: its letters' foot on the board's top just in front of the cake, as tall as a third of the bottom tier.
+  const line = Math.min(tw * 0.26 * (face.hand ? face.scale : 1), (st.tiers[0].bottom - st.tiers[0].top) * 0.34);
+  const foot = st.base + (plate.w / 2) * holderOf(k).ry * 0.8;
+  const words = { x, bottom: board ? foot : bottom, w: tw, name, age, nameY: board ? foot : bottom - nameUp, plane: st.top, stickX: plate.x + (t.x ?? 0) * st.topW * 0.9, front, board, line };
   const shows = topperShows(k);
   // Its box (the card's, when it is on one), to take hold of it; how far its foot is under the age's line.
   const pad = card ? card * 1.2 : 0;
-  const topperBox = shows ? { x: x - tw / 2 - pad, y: bottom - textUp - card, w: tw + pad * 2, h: boxH, foot: card + age * 0.12 } : null;
-  const contentTop = Math.min(shows && !front ? topperBox!.y : st.top, ...figures.map((f) => f.y), st.tiers[st.tiers.length - 1].y);
+  const topperBox = !shows ? null : board ? { x: x - tw / 2 - 4, y: foot - line * 0.92, w: tw + 8, h: line * 1.08, foot: line * 0.16 }
+    : { x: x - tw / 2 - pad, y: bottom - textUp - card, w: tw + pad * 2, h: boxH, foot: card + age * 0.12 };
+  const contentTop = Math.min(shows && !front && !board ? topperBox!.y : st.top, ...figures.map((f) => f.y), st.tiers[st.tiers.length - 1].y);
   return { st, tiers: st.tiers, figures, words, topperBox, contentTop, pic: st.pic };
 }
 
@@ -117,7 +123,7 @@ function Sprinkles({ id, t, kind, seed, top, size, many = 1 }: { id: string; t: 
  * its icing in her colour (multiplied through the icing's mask), sprinkles on the icing, a little figure on each
  * cupcake, a print on each cookie.
  */
-function SweetPiece({ s, k, uid, places }: { s: CakeSweet; k: Cake; uid: string; places: typeof SWEET_PLACES }) {
+function SweetPiece({ s, k, uid, places, onTap }: { s: CakeSweet; k: Cake; uid: string; places: typeof SWEET_PLACES; onTap?: () => void }) {
   const pic = sweetPicture(s.id), at = places[s.id];
   const h = at.tall, w = (pic.w / pic.h) * h, x = at.x - w / 2, y = at.foot - h;
   const id = `${uid}-${s.id}`;
@@ -125,7 +131,7 @@ function SweetPiece({ s, k, uid, places }: { s: CakeSweet; k: Cake; uid: string;
   const face = tableFont(k.topper.font);
   const print = s.print && s.print !== "age" ? figurePicture(s.print) : null;
   return (
-    <g data-part="cake-sweet" data-sweet={s.id}>
+    <g data-part="cake-sweet" data-sweet={s.id} style={onTap ? { cursor: "zoom-in" } : undefined} onPointerDown={onTap ? (e) => { e.stopPropagation(); onTap(); } : undefined}>
       <defs><mask id={id} style={{ maskType: "alpha" }}><image href={pic.icing} x={x} y={y} width={w} height={h} /></mask></defs>
       <image href={pic.src} x={x} y={y} width={w} height={h} />
       {s.colour.toUpperCase() !== WHITE && <rect mask={`url(#${id})`} style={{ mixBlendMode: "multiply" }} x={x} y={y} width={w} height={h} fill={s.colour} />}
@@ -167,7 +173,7 @@ function TopperCardShape({ kind, box, border, fill }: { kind: NonNullable<Cake["
 export type CakePick = number | "topper";
 
 /** The cake on its own, drawn in the stand photo's pixels (wrap it in a viewBox). */
-export function CakePiece({ k, uid, grab }: { k: Cake; uid: string; grab?: (e: React.PointerEvent, what: CakePick) => void }) {
+export function CakePiece({ k, uid, grab, onTier }: { k: Cake; uid: string; grab?: (e: React.PointerEvent, what: CakePick) => void; onTier?: () => void }) {
   const L = cakeLayout(k);
   const colours = tierColours(k);
   const tc = topperColour(k.topper.colour);
@@ -176,19 +182,34 @@ export function CakePiece({ k, uid, grab }: { k: Cake; uid: string; grab?: (e: R
   const name = asPrinted(k.topper.name.trim(), face);
   const { words } = L;
   const ageY = words.bottom, nameY = words.nameY;
-  const paint = `url(#${uid}-gold)`;
+  // A shiny colour catches the light; any other is sugar paste in that colour.
+  const paint = tc.shiny ? `url(#${uid}-gold)` : tc.hex;
+  const edge = tc.shiny ? tc.hex : darker(tc.hex);
   const held = grab ? ({ cursor: "grab", touchAction: "none" } as React.CSSProperties) : undefined;
+  // On the front or the board the letters are cut from sugar paste: each has its thickness and a soft shadow.
+  const flat = words.front || words.board;
+  const letters = (text: string, x: number, y: number, size: number, maxWidth: number, stroke: number) => (
+    <g filter={flat ? `url(#${uid}-lift)` : undefined}>
+      {flat && <FitText x={x} y={y + size * 0.05} fontSize={size} maxWidth={maxWidth} textAnchor="middle" fill={darker(tc.hex, 0.62)}
+        style={{ fontFamily: family, fontWeight: face.weight }} aria-hidden="true">{text}</FitText>}
+      <FitText x={x} y={y} fontSize={size} maxWidth={maxWidth} textAnchor="middle" fill={paint}
+        stroke={edge} strokeWidth={size * stroke} paintOrder="stroke" style={{ fontFamily: family, fontWeight: face.weight }}>{text}</FitText>
+    </g>
+  );
   return (
     <g data-part="cake">
       <defs>
         <linearGradient id={`${uid}-gold`} x1="0" y1="0" x2="0.3" y2="1">
           <stop offset="0" stopColor={tc.light} /><stop offset="0.55" stopColor={tc.hex} /><stop offset="1" stopColor={tc.light} />
         </linearGradient>
+        <filter id={`${uid}-lift`} x="-10%" y="-20%" width="120%" height="150%">
+          <feDropShadow dx="0" dy={words.line * 0.06} stdDeviation={words.line * 0.04} floodColor="#3a2430" floodOpacity="0.35" />
+        </filter>
       </defs>
       {L.tiers.map((t, i) => {
         const id = `${uid}-t${i}`;
         return (
-          <g key={i} data-part="cake-tier">
+          <g key={i} data-part="cake-tier" style={onTier ? { cursor: "zoom-in" } : undefined} onPointerDown={onTier ? (e) => { e.stopPropagation(); onTier(); } : undefined}>
             <defs><mask id={id} style={{ maskType: "alpha" }}><image href={L.pic.src} x={t.x} y={t.y} width={t.w} height={t.h} preserveAspectRatio="none" /></mask></defs>
             <image href={L.pic.src} x={t.x} y={t.y} width={t.w} height={t.h} preserveAspectRatio="none" />
             {/* Its colour under the tier's own light and shade: one, or a rainbow's patches. */}
@@ -201,18 +222,18 @@ export function CakePiece({ k, uid, grab }: { k: Cake; uid: string; grab?: (e: R
         );
       })}
       {L.topperBox && (
-        <g data-part="cake-topper" data-at={words.front ? "front" : "top"} style={held} onPointerDown={grab ? (e) => grab(e, "topper") : undefined}>
-          {!words.front && [-0.17, 0.17].map((dx) => (
+        <g data-part="cake-topper" data-at={words.board ? "board" : words.front ? "front" : "top"} style={held} onPointerDown={grab ? (e) => grab(e, "topper") : undefined}>
+          {!flat && [-0.17, 0.17].map((dx) => (
             <path key={dx} d={`M ${words.x + dx * words.w} ${ageY - words.age * 0.1} L ${words.stickX + dx * words.w * 0.9} ${words.plane + 6}`}
               stroke={k.topper.card ? "#F4F1EA" : paint} strokeWidth={4} strokeLinecap="round" />
           ))}
           {k.topper.card && <TopperCardShape kind={k.topper.card} box={L.topperBox} border={tc.hex} fill={k.topper.colour === "white" ? "#F7B6D2" : WHITE} />}
           {/* Something to take hold of between the letters. */}
           {grab && <rect x={L.topperBox.x} y={L.topperBox.y} width={L.topperBox.w} height={L.topperBox.h} fill="transparent" />}
-          {name && <FitText x={words.x} y={nameY} fontSize={words.name} maxWidth={words.w} textAnchor="middle" fill={paint}
-            stroke={tc.hex} strokeWidth={words.name * 0.03} paintOrder="stroke" style={{ fontFamily: family, fontWeight: face.weight }}>{name}</FitText>}
-          {k.topper.age && <FitText x={words.x} y={ageY} fontSize={words.age} maxWidth={words.w * 0.8} textAnchor="middle" fill={paint}
-            stroke={tc.hex} strokeWidth={words.age * 0.02} paintOrder="stroke" style={{ fontFamily: family, fontWeight: face.weight }}>{k.topper.age}</FitText>}
+          {words.board ? letters([name, k.topper.age].filter(Boolean).join(" "), words.x, ageY, words.line, words.w, 0.03) : <>
+            {name && letters(name, words.x, nameY, words.name, words.w, 0.03)}
+            {k.topper.age && letters(k.topper.age, words.x, ageY, words.age, words.w * 0.8, 0.02)}
+          </>}
         </g>
       )}
       {L.figures.map((f, i) => (
@@ -229,7 +250,7 @@ export function CakePiece({ k, uid, grab }: { k: Cake; uid: string; grab?: (e: R
 /** A small picture of a cake alone (the option cards): its own box, a soft shadow under it. */
 export function CakeThumb({ k, uid }: { k: Cake; uid: string }) {
   const L = cakeLayout(k);
-  const { plate } = CAKE_STAND;
+  const { plate } = L.st;
   const half = Math.max(TIER_WIDTHS[k.tiers][0] / 2 + 10, 120);
   const top = L.contentTop - 10, bottom = plate.y + 40;
   const h = bottom - top, w = Math.max(half * 2, h * (4 / 3));
@@ -250,12 +271,41 @@ export function viewOf(k: Cake) {
   const { w: W } = CAKE_STAND;
   const sweets = !!k.sweets?.length;
   // With sweets on the table: the whole table, to its front edge.
-  const bottom = sweets ? 1262 : CAKE_STAND.bottom;
+  const bottom = sweets ? 1262 : holderOf(k).bottom;
   const room = cakeLayout({ ...k, topper: { ...k.topper, at: undefined, x: undefined, up: undefined, y: undefined, s: 1.25 } }).contentTop;
   const top = Math.max(0, Math.min(room - 50, cakeLayout(k).contentTop - 20, sweets ? bottom - W / 0.8 : Infinity));
   const h = bottom - top;
   const w = Math.min(W, h * 0.8);
-  return { x: Math.max(0, Math.min(W - w, CAKE_STAND.plate.x - w / 2)), y: top, w, h };
+  return { x: Math.max(0, Math.min(W - w, holderOf(k).plate.x - w / 2)), y: top, w, h };
+}
+
+/**
+ * The picture's box for a view (2026-11-03, the owner: "cake'e basacağız sadece cake … cookies'e basacağız yakından
+ * cookies … uzaktan cartın üstündeyken genel"), in the picture's own pixels (the cart photo's on a cart): the whole
+ * table or cart, the cake close up, or a sweet close up — four wide to five tall, inside the photo.
+ */
+export function viewBoxOf(k: Cake, view: CakeView) {
+  const cart = !!k.cart;
+  if (view === "whole" || !cakeViews(k).includes(view)) return cart ? CAKE_CART.view : viewOf(k);
+  let box: { x: number; y: number; w: number; h: number };
+  if (view === "cake") {
+    // The cake and its topper's room, down to the stand's foot or the board's front.
+    const L = cakeLayout(k), holder = holderOf(k);
+    const room = cakeLayout({ ...k, topper: { ...k.topper, at: undefined, x: undefined, up: undefined, y: undefined, s: 1.25 } }).contentTop;
+    const top = Math.min(room - 30, L.contentTop - 24), bottom = holder.bottom + 10;
+    const w = Math.max(L.tiers[0].w * 1.45, (bottom - top) * 0.8);
+    box = { x: holder.plate.x - w / 2, y: bottom - w / 0.8, w, h: w / 0.8 };
+  } else {
+    const at = (cart ? CART_SWEET_PLACES : SWEET_PLACES)[view], pic = sweetPicture(view);
+    const sw = (pic.w / pic.h) * at.tall;
+    const h = Math.max(at.tall * 2.1, (sw * 1.6) / 0.8), w = h * 0.8;
+    box = { x: at.x - w / 2, y: at.foot - at.tall / 2 - h * 0.55, w, h };
+  }
+  // On a cart, into the cart photo's pixels; then kept inside the photo.
+  const b = cart ? { x: box.x * CAKE_CART.scale + CAKE_CART.x, y: box.y * CAKE_CART.scale + CAKE_CART.y, w: box.w * CAKE_CART.scale, h: box.h * CAKE_CART.scale } : box;
+  const W = cart ? CAKE_CART.w : CAKE_STAND.w, H = cart ? CAKE_CART.h : CAKE_STAND.h;
+  const f = Math.min(1, W / b.w, H / b.h), w = b.w * f, h = b.h * f;
+  return { x: clamp(b.x + (b.w - w) / 2, 0, W - w), y: clamp(b.y + (b.h - h) / 2, 0, H - h), w, h };
 }
 
 /** The middle of what she holds. */
@@ -278,31 +328,38 @@ function moved(k: Cake, what: CakePick, cx: number, cy: number, view: { y: numbe
   const st = cakeStack(k);
   if (what !== "topper") return { ...k, figures: k.figures.map((it, i) => (i === what ? itemAt(it, st, cx, cy) : it)) };
   const { at: _at, y: _y, up: _up, x: _x, ...rest } = k.topper;
+  // Down at the foot of the cake: standing on the board.
+  if (cy > st.base - (st.base - st.top) * 0.03) return { ...k, topper: { ...rest, at: "board", x: clamp((cx - st.cx) / st.plate.w, -0.3, 0.3) } };
   if (cy > st.top + st.depth) {
     const y = clamp((st.base - cy) / (st.base - st.top), 0.08, 0.92);
     const tier = tierAt(st, st.base - y * (st.base - st.top));
-    return { ...k, topper: { ...rest, at: "front", y, x: clamp((cx - CAKE_STAND.plate.x) / tier.w, -0.3, 0.3) } };
+    return { ...k, topper: { ...rest, at: "front", y, x: clamp((cx - st.cx) / tier.w, -0.3, 0.3) } };
   }
   const L = cakeLayout({ ...k, topper: rest });
   const box = L.topperBox!;
   // Its words' line, the box's middle moved there.
   const bottom = cy + box.h / 2 - box.foot;
-  return { ...k, topper: { ...rest, x: clamp((cx - CAKE_STAND.plate.x) / st.topW, -0.4, 0.4), up: clamp(st.top - bottom, 0, Math.max(0, maxUp(k, view))) } };
+  return { ...k, topper: { ...rest, x: clamp((cx - st.cx) / st.topW, -0.4, 0.4), up: clamp(st.top - bottom, 0, Math.max(0, maxUp(k, view))) } };
 }
 
 /**
  * The stand, close up, with the cake on it. With `edit`, the figures and the topper are taken hold of and moved:
  * the cake changes when she lets go (while she drags, only the picture follows her, its view held still).
  */
-export function CakeArt({ k, className, edit }: {
+export function CakeArt({ k, className, edit, view = "whole", onView }: {
   k: Cake; className?: string;
   edit?: { picked: CakePick | null; onPick: (p: CakePick | null) => void; onChange: (k: Cake) => void };
+  /** What it shows: the whole table or cart, or a close-up (viewBoxOf). */
+  view?: CakeView;
+  /** A tap on the cake or a sweet, in the whole picture: its close-up. */
+  onView?: (v: CakeView) => void;
 }) {
   const { w: W, h: H } = CAKE_STAND;
   const svg = useRef<SVGSVGElement>(null);
   // The cake's own pixels (the stand photo's): on a cart, set onto its counter.
   const layer = useRef<SVGGElement>(null);
-  type Drag = { what: CakePick; from: { x: number; y: number }; at: { x: number; y: number }; mid: { x: number; y: number }; view: ReturnType<typeof viewOf>; id: number };
+  type Box = { x: number; y: number; w: number; h: number };
+  type Drag = { what: CakePick; from: { x: number; y: number }; at: { x: number; y: number }; mid: { x: number; y: number }; room: { y: number }; box: Box; id: number };
   const [drag, setDrag] = useState<Drag | null>(null);
   const point = (e: React.PointerEvent) => {
     const m = layer.current?.getScreenCTM();
@@ -310,15 +367,14 @@ export function CakeArt({ k, className, edit }: {
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
     return { x: p.x, y: p.y };
   };
-  const shown = drag ? moved(k, drag.what, drag.mid.x + drag.at.x - drag.from.x, drag.mid.y + drag.at.y - drag.from.y, roomOf(k, drag.view)) : k;
-  const view = drag?.view ?? viewOf(k);
+  const shown = drag ? moved(k, drag.what, drag.mid.x + drag.at.x - drag.from.x, drag.mid.y + drag.at.y - drag.from.y, drag.room) : k;
   const grab = edit ? (e: React.PointerEvent, what: CakePick) => {
     e.stopPropagation();
     e.preventDefault();
     // Held while she drags, even off the picture (a pointer the browser no longer knows is let be).
     try { svg.current?.setPointerCapture(e.pointerId); } catch { /* followed while over the picture */ }
     const p = point(e);
-    setDrag({ what, from: p, at: p, mid: middleOf(k, what), view: viewOf(k), id: e.pointerId });
+    setDrag({ what, from: p, at: p, mid: middleOf(k, what), room: roomOf(k, viewOf(k)), box: viewBoxOf(k, view), id: e.pointerId });
     edit.onPick(what);
   } : undefined;
   const letGo = (e: React.PointerEvent) => {
@@ -330,22 +386,25 @@ export function CakeArt({ k, className, edit }: {
   const L = edit && edit.picked !== null ? cakeLayout(shown) : null;
   const frame = L ? (edit!.picked === "topper" ? L.topperBox : L.figures[edit!.picked as number]) : null;
   const cart = k.cart;
-  const box = cart ? CAKE_CART.view : view;
+  // While she drags, the picture holds still.
+  const box = drag?.box ?? viewBoxOf(k, view);
+  const board = holderOf(k).board;
+  const zoom = onView && view === "whole" ? onView : undefined;
   return (
     <svg ref={svg} className={className} viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} role="img" aria-label={cart ? "Your cake on a sweet cart" : "Your cake on its stand"} data-testid="cake-art"
-      data-scene={cart ? "cart" : "table"} style={drag ? { touchAction: "none" } : undefined}
+      data-scene={cart ? "cart" : "table"} data-view={view} data-holder={board ? "board" : "stand"} style={drag ? { touchAction: "none" } : undefined}
       onPointerDown={edit ? () => edit.onPick(null) : undefined}
       onPointerMove={drag ? (e) => { if (e.pointerId === drag.id) setDrag({ ...drag, at: point(e) }); } : undefined}
       onPointerUp={letGo} onPointerCancel={letGo}>
       {cart ? <>
         {/* The cart, its awning's stripes in her colour. */}
         <defs><mask id="ck-awning" style={{ maskType: "alpha" }}><image href={CAKE_CART.awning} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} /></mask></defs>
-        <image href={CAKE_CART.src} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} />
+        <image href={board ? CART_BOARD.src : CAKE_CART.src} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} />
         <rect mask="url(#ck-awning)" style={{ mixBlendMode: "multiply" }} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} fill={cart.awning} data-part="cake-awning" />
-      </> : <image href={CAKE_STAND.src} x={0} y={0} width={W} height={H} />}
+      </> : <image href={board ? CAKE_BOARD.src : CAKE_STAND.src} x={0} y={0} width={W} height={H} />}
       <g ref={layer} transform={cart ? `translate(${CAKE_CART.x} ${CAKE_CART.y}) scale(${CAKE_CART.scale})` : undefined}>
-        {(k.sweets ?? []).map((sw) => <SweetPiece key={sw.id} s={sw} k={k} uid="ck-sw" places={cart ? CART_SWEET_PLACES : SWEET_PLACES} />)}
-        <CakePiece k={shown} uid="ck-stand" grab={grab} />
+        {(k.sweets ?? []).map((sw) => <SweetPiece key={sw.id} s={sw} k={k} uid="ck-sw" places={cart ? CART_SWEET_PLACES : SWEET_PLACES} onTap={zoom && (() => zoom(sw.id))} />)}
+        <CakePiece k={shown} uid="ck-stand" grab={grab} onTier={zoom && (() => zoom("cake"))} />
         {frame && <rect data-no-capture="" data-testid="cake-picked" x={frame.x - 6} y={frame.y - 6} width={frame.w + 12} height={frame.h + 12} rx={10}
           fill="none" stroke="#FF0D66" strokeWidth={3} strokeDasharray="10 7" vectorEffect="non-scaling-stroke" pointerEvents="none" />}
       </g>
@@ -366,7 +425,8 @@ function PickedTools({ k, picked, setCake, onPick }: { k: Cake; picked: CakePick
     // Bigger while it fits: on top, inside the picture's room over the cake; on the front, on its tier.
     const bigger = { ...k, topper: { ...k.topper, s: clamp(s * 1.12, 0.6, 1.6) } };
     const L = cakeLayout(bigger), view = roomOf(k, viewOf(k));
-    const fits = k.topper.at === "front" ? L.topperBox!.w <= tierAt(L.st, L.topperBox!.y + L.topperBox!.h / 2).w * 0.95 : L.topperBox!.y >= view.y + 8;
+    const fits = k.topper.at === "front" ? L.topperBox!.w <= tierAt(L.st, L.topperBox!.y + L.topperBox!.h / 2).w * 0.95
+      : k.topper.at === "board" ? L.topperBox!.w <= L.st.plate.w * 0.95 : L.topperBox!.y >= view.y + 8;
     return (
       <div className="bz-ck-tools" role="toolbar" aria-label="The topper" data-testid="cake-tools">
         <b>Topper</b>
@@ -412,7 +472,14 @@ function PickedTools({ k, picked, setCake, onPick }: { k: Cake; picked: CakePick
   );
 }
 
-export default function CakePreview({ config, setCake, render, onGenerate }: { config: BuilderConfig; setCake: (k: Cake) => void; render: PieceRender; onGenerate: () => void }) {
+/** A view's name on its chip. */
+const viewName = (k: Cake, v: CakeView) => (v === "whole" ? (k.cart ? "Whole cart" : "Whole table") : v === "cake" ? "Cake" : CAKE_SWEETS.find((s) => s.id === v)!.name);
+
+export default function CakePreview({ config, setCake, render, onGenerate, view = "whole", setView }: {
+  config: BuilderConfig; setCake: (k: Cake) => void; render: PieceRender; onGenerate: () => void;
+  /** What the picture and its render show (2026-11-03: the whole table or cart, or a close-up). */
+  view?: CakeView; setView?: (v: CakeView) => void;
+}) {
   const k = config.cake;
   // On a phone, a choice brings the preview into sight — not a figure moved in it.
   const changeKey = k?.enabled ? JSON.stringify({ ...k, figures: k.figures.map((f) => f.id), topper: { ...k.topper, at: undefined, x: undefined, up: undefined, y: undefined, s: undefined }, done: undefined, render: undefined }) : "";
@@ -423,6 +490,12 @@ export default function CakePreview({ config, setCake, render, onGenerate }: { c
   // Nothing held that is not there any more.
   const pick = k && picked !== null && (picked === "topper" ? topperShows(k) : picked < k.figures.length) ? picked : null;
   const showRender = !!render.url && !live;
+  // Views to choose from when there is more than the cake to see: the sweets beside it, or the cart.
+  const views = k?.enabled ? cakeViews(k) : [];
+  const choose = k?.enabled && setView && (views.length > 2 || !!k.cart) ? setView : undefined;
+  const rendered = (v: CakeView) => !!k && render.keys.includes(cakeRenderKey(k, config.theme, v));
+  // A render of this view before a change (not of another view).
+  const staleHere = !!k && !render.ready && render.keys.some((key) => (key.split(":")[1] ?? "whole") === view);
   return (
     <div className="bz-tb-preview" data-testid="cake-preview" id="cake-preview-card">
       <div className="head">
@@ -435,12 +508,23 @@ export default function CakePreview({ config, setCake, render, onGenerate }: { c
         )}
       </div>
       {k?.enabled ? <>
-        {showRender ? (
-          // eslint-disable-next-line @next/next/no-img-element
+        {choose && (
+          <div className="bz-ck-views" role="tablist" aria-label="What the picture shows" data-testid="cake-views">
+            {views.map((v) => (
+              <button key={v} type="button" role="tab" aria-selected={view === v} className={view === v ? "on" : ""} onClick={() => { setPicked(null); choose(v); }}>
+                {viewName(k, v)}{rendered(v) && <i aria-label="rendered"> ✨</i>}
+              </button>
+            ))}
+          </div>
+        )}
+        {showRender ? <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="bz-tb-photo" data-testid="cake-render" src={render.url!} alt="Your cake, rendered" />
-        ) : <>
+          {/* The live picture stays in the page, out of sight, for a new render of it to be taken from. */}
+          <div className="bz-live-hidden" aria-hidden="true"><CakeArt k={k} className="bz-ck-art" view={view} /></div>
+        </> : <>
           <div className={render.loading ? "bz-wb-wait on" : "bz-wb-wait"}>
-            <CakeArt k={k} className="bz-ck-art" edit={render.loading ? undefined : { picked: pick, onPick: setPicked, onChange: setCake }} />
+            <CakeArt k={k} className="bz-ck-art" view={view} onView={choose} edit={render.loading ? undefined : { picked: pick, onPick: setPicked, onChange: setCake }} />
             {render.loading && (
               <div className="veil" role="status" data-testid="cake-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>
@@ -453,12 +537,13 @@ export default function CakePreview({ config, setCake, render, onGenerate }: { c
         </>}
         <p className="note">{showRender ? "Your render — this picture, made into one photograph."
           : <>{["", "One tier", "Two tiers", "Three tiers"][k.tiers]}, {cakeStyle(k.style).name.toLowerCase()} · {CAKE_FLAVOURS.find((f) => f.id === k.flavour)?.name} inside.
-            {(k.figures.length > 0 || topperShows(k)) && <> Drag the figures and the topper anywhere on the cake — tap one to copy, resize or remove it.</>}</>}</p>
+            {(k.figures.length > 0 || topperShows(k)) && <> Drag the figures and the topper anywhere on the cake — tap one to copy, resize or remove it.</>}
+            {choose && view === "whole" && <> Tap the cake or a sweet to see it close up.</>}</>}</p>
         {backTo !== null && <button type="button" className="bz-tb-back" data-testid="cake-back-to-choices" onClick={back}>↑ Back to your choices</button>}
         {!render.ready && !render.loading && (
           <div className="bz-tb-render" data-testid="cake-render-box">
-            <button type="button" className="bz-next" onClick={onGenerate}>{render.stale ? "Regenerate render ✨" : "Generate render ✨"}</button>
-            <p className="hint">{render.stale ? "You changed the cake since your render." : "This preview made into one photo-real picture."} Needs a free account.</p>
+            <button type="button" className="bz-next" onClick={onGenerate}>{staleHere ? "Regenerate render ✨" : view === "whole" ? "Generate render ✨" : `Render the ${viewName(k, view).toLowerCase()} close up ✨`}</button>
+            <p className="hint">{staleHere ? "You changed the cake since your render." : view === "whole" ? "This preview made into one photo-real picture." : "This close-up made into one photo-real picture."} Needs a free account.</p>
             {render.error && <p className="error" role="alert">{render.error}</p>}
           </div>
         )}

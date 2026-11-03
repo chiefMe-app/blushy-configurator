@@ -489,7 +489,7 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   // Figures: each card adds one (three on top already, so the fourth goes on a tier's side), priced each.
   // 2026-11-03 (the owner: "sürükle bırak … duplicate … her yere yapıştırabilsin", up to 8).
   const figures = page.getByTestId("cake-figures").getByRole("button");
-  await expect(figures).toHaveCount(20);
+  await expect(figures).toHaveCount(24); // four of them the unicorn's own sugar figures (2026-11-03)
   const placed = art.locator("[data-part=cake-figure]");
   const s0 = aed(await sum.textContent());
   await expect(placed).toHaveCount(3);
@@ -531,7 +531,7 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await page.getByTestId("cake-topper-age").fill("7");
   await expect(art.locator("[data-part=cake-topper]")).toContainText("Arya");
   await expect(art.locator("[data-part=cake-topper]")).toContainText("7");
-  await page.getByTestId("cake-topper-colour").getByRole("radio", { name: "Silver" }).click();
+  await page.getByTestId("cake-topper-colour").getByRole("radio", { name: "Silver", exact: true }).click();
   const s1 = aed(await sum.textContent());
   await page.getByTestId("cake-topper").getByText("A topper with the name and age").click();
   await expect(art.locator("[data-part=cake-topper]")).toHaveCount(0);
@@ -584,6 +584,31 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   }));
   await expect(art.locator("[data-part=cake-sweet]")).toHaveCount(1);
   expect(aed(await sum.textContent())).toBe(s4 + 450);
+  // Close up (the owner: "cake'e basacağız sadece cake … cookies'e basacağız yakından cookies"): a tap on a sweet or the cake.
+  const views = page.getByTestId("cake-views");
+  await expect(views.getByRole("tab")).toHaveText(["Whole cart", "Cake", "Iced cookies"]);
+  await art.locator("[data-sweet=cookies]").dispatchEvent("pointerdown");
+  await expect(art).toHaveAttribute("data-view", "cookies");
+  await views.getByRole("tab", { name: "Cake" }).click();
+  await expect(art).toHaveAttribute("data-view", "cake");
+  await expect(page.getByTestId("cake-render-box").getByRole("button")).toHaveText(/Render the cake close up/);
+  await views.getByRole("tab", { name: "Whole cart" }).click();
+  await expect(art).toHaveAttribute("data-view", "whole");
+  // Three tiers stand on a flat board (the owner: "3 katlı olunca … ayaksızı olsun"); the name on the board, in any colour.
+  await page.getByTestId("cake-tiers").getByRole("radio", { name: /Three tiers/ }).click();
+  await expect(art).toHaveAttribute("data-holder", "board");
+  await page.getByTestId("cake-topper-place").getByText("On the board", { exact: true }).click();
+  await expect(art.locator("[data-part=cake-topper]")).toHaveAttribute("data-at", "board");
+  await expect(page.getByTestId("cake-topper-card")).toHaveCount(0);
+  const letterColour = page.getByTestId("cake-topper-colour").getByRole("radio").nth(6);
+  await letterColour.click();
+  await expect(letterColour).toHaveAttribute("aria-checked", "true");
+  // Back as it was: silver letters on top, two tiers.
+  await page.getByTestId("cake-topper-colour").getByRole("radio", { name: "Silver", exact: true }).click();
+  await page.getByTestId("cake-topper-place").getByText("On top", { exact: true }).click();
+  await expect(art.locator("[data-part=cake-topper]")).not.toHaveAttribute("data-at", "board");
+  await page.getByTestId("cake-tiers").getByRole("radio", { name: /Two tiers/ }).click();
+  await expect(art).toHaveAttribute("data-holder", "stand");
   await page.getByTestId("cake-display").getByText("On a table", { exact: true }).click();
   await expect(art).toHaveAttribute("data-scene", "table");
   expect(aed(await sum.textContent())).toBe(s4);
@@ -601,13 +626,19 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await expect(page.getByTestId("cake-render-again").getByRole("button", { name: /Regenerate render/ })).toBeVisible();
   const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/cake-render"))!.postData()!);
   expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
+  expect(sent.view).toBe("whole");
+  // Made again while the render shows: still from the live picture.
+  await page.getByTestId("cake-render-again").getByRole("button", { name: /Regenerate render/ }).click();
+  await expect.poll(() => guard.blocked.filter((r) => r.url().includes("/api/cake-render")).length).toBe(2);
+  expect(JSON.parse(guard.blocked.filter((r) => r.url().includes("/api/cake-render"))[1].postData()!).preview).toMatch(/^data:image\/jpeg;base64,/);
+  await expect(page.getByTestId("cake-render")).toBeVisible();
   expect(sent.cake).toMatchObject({ design: "drip", tiers: 2, style: "drip", topper: { name: "Arya", age: "7", colour: "silver" }, flavour: "red-velvet" });
   await page.getByTestId("finish-cake").click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   await expect(page.getByTestId("finished-designs")).toContainText("Cake");
   await page.getByRole("button", { name: "← Back" }).click();
   await expect(page.getByTestId("finish-cake")).toHaveText(/Next: Package/);
-  expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/cake-render"]);
+  expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/cake-render", "/api/cake-render"]);
 });
 
 test("W2 on a phone, a change to the welcome board brings it into sight, and Back returns to the choices", async ({ page }, info) => {

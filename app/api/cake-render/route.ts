@@ -11,7 +11,7 @@ import { renderUser, takeAccountRender } from "@/lib/renderAccount";
 import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
 import { finishSketchRender } from "@/lib/sketchRenderFinish";
-import { cakeRenderKey, readCake } from "@/lib/studio/cake";
+import { cakeRenderKey, cakeViews, isCakeView, readCake } from "@/lib/studio/cake";
 import { cakePrompt } from "@/lib/studio/cakeRender";
 
 export const runtime = "nodejs";
@@ -24,12 +24,14 @@ const MODEL = process.env.CAKE_RENDER_MODEL || "fal-ai/flux-2/edit";
 const MAX_PREVIEW_BYTES = 4 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
-  let body: { cake?: unknown; theme?: unknown; preview?: unknown };
+  let body: { cake?: unknown; theme?: unknown; preview?: unknown; view?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
   const theme = typeof body?.theme === "string" ? themeById(body.theme) : undefined;
   const p = readCake(body?.cake);
   const preview = typeof body?.preview === "string" ? body.preview.match(/^data:image\/(?:jpeg|png);base64,([A-Za-z0-9+/=]+)$/)?.[1] : undefined;
   if (!theme || !p?.enabled || !preview) return NextResponse.json({ error: "Missing cake, theme or preview." }, { status: 400 });
+  // What the picture shows (2026-11-03): the whole table or cart, or a close-up of the cake or one of its sweets.
+  const view = isCakeView(body.view) && cakeViews(p).includes(body.view) ? body.view : "whole";
   const bytes = Buffer.from(preview, "base64");
   if (bytes.length > MAX_PREVIEW_BYTES) return NextResponse.json({ error: "The preview is too big." }, { status: 413 });
   const falKey = process.env.FAL_KEY;
@@ -61,7 +63,7 @@ export async function POST(req: NextRequest) {
           const side = (n: number) => (seedream ? Math.round(n * k) : Math.max(512, Math.round(n / 16) * 16));
           const result = await fal.subscribe(MODEL, {
             input: {
-              prompt: cakePrompt(p),
+              prompt: cakePrompt(p, view),
               image_urls: [`data:image/jpeg;base64,${image.data.toString("base64")}`], num_images: 1, output_format: "jpeg",
               image_size: { width: side(width), height: side(height) }, ...(seedream ? {} : { seed: 777 }),
             } as never,
@@ -75,7 +77,7 @@ export async function POST(req: NextRequest) {
           // step never loses the paid render.
           const jpeg = await finishSketchRender(made, image.data).catch(() => made);
           send({ url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
-          const key = cakeRenderKey(p, theme.id);
+          const key = cakeRenderKey(p, theme.id, view);
           // Without a database (local development) nothing is kept.
           let render: { key: string; path: string } | undefined;
           if (user.client && user.userId) {

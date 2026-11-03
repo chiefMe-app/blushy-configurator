@@ -24,6 +24,7 @@ export default function WelcomePreview({ config, render, onGenerate }: { config:
   const [live, setLive] = useState(false);
   useEffect(() => { if (render.url) setLive(false); }, [render.url]);
   const showRender = !!render.url && !live;
+  const art = b?.enabled ? <WelcomeBoardArt board={b} theme={theme} balloons={config.decor.balloonColors} className="bz-wb-art" /> : null;
   return (
     <div className="bz-tb-preview" data-testid="welcome-preview" id="welcome-preview-card">
       <div className="head">
@@ -37,12 +38,14 @@ export default function WelcomePreview({ config, render, onGenerate }: { config:
       </div>
       {b?.enabled ? <>
         <link rel="stylesheet" href="/fonts/typography/fonts.css" />
-        {showRender ? (
-          // eslint-disable-next-line @next/next/no-img-element
+        {showRender ? <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="bz-tb-photo" data-testid="welcome-render" src={render.url!} alt="Your welcome board, rendered" />
-        ) : (
+          {/* The live picture stays in the page, out of sight, for a new render of it to be taken from (Regenerate). */}
+          <div className="bz-live-hidden" aria-hidden="true"><div className="bz-wb-wait">{art}</div></div>
+        </> : (
           <div className={render.loading ? "bz-wb-wait on" : "bz-wb-wait"}>
-            <WelcomeBoardArt board={b} theme={theme} balloons={config.decor.balloonColors} className="bz-wb-art" />
+            {art}
             {render.loading && (
               <div className="veil" role="status" data-testid="welcome-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>

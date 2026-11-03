@@ -1359,6 +1359,14 @@ div.bz-stale-banner { cursor: default; }
 /* The room photo whole, as tall as 640 px at most: as wide as that lets it. */
 .bz-pn-art { width: 100%; max-width: 556px; height: auto; display: block; margin: 0 auto; }
 .bz-ck-art { width: 100%; max-width: 556px; height: auto; display: block; margin: 0 auto; }
+/* The cake's views (2026-11-03): the whole table or cart, or a close-up of the cake or a sweet. */
+.bz-ck-views { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.bz-ck-views button { border: 1px solid #f1dbe5; background: #fff; border-radius: 999px; padding: 6px 12px; font: 700 12px var(--bz-sans); color: var(--bz-muted); cursor: pointer; }
+.bz-ck-views button.on { border-color: var(--bz-pink); color: var(--bz-pink); background: #fff5f9; }
+.bz-ck-views button i { font-style: normal; }
+/* The live picture kept in the page while a part's render shows, for a new render of it (Regenerate). */
+.bz-tb-preview { position: relative; }
+.bz-live-hidden { position: absolute; left: 0; top: 0; width: 100%; opacity: 0; pointer-events: none; z-index: -1; overflow: hidden; }
 .bz-ck-words { display: grid; grid-template-columns: minmax(0, 1fr) 88px; gap: 10px; }
 .bz-ck-words input { min-width: 0; width: 100%; box-sizing: border-box; }
 .bz-ck-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px auto 0; max-width: 556px; padding: 8px 10px; background: #fff5f9; border: 1.5px solid #f6c9dc; border-radius: 14px; }

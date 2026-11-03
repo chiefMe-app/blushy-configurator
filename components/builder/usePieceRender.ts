@@ -21,6 +21,10 @@ export interface PieceRender {
   loading: boolean;
   error: string | null;
   make: () => Promise<void>;
+  /** The keys of the pictures made or kept here (2026-11-03: the cake's close-ups are pictures of their own). */
+  keys: string[];
+  /** The picture made for a key, if any. */
+  urlOf: (key: string) => string | null;
 }
 
 const FAILED = "The render didn't come out — please try again.";
@@ -36,7 +40,8 @@ export function usePieceRender({ endpoint, partKey, kept, body, onKept, onSignIn
   onKept?: (k: KeptRender) => void;
   onSignInNeeded: () => void;
 }): PieceRender {
-  const [shown, setShown] = useState<{ key: string; url: string } | null>(null);
+  // Every picture made or kept, by its key: a part with several (the cake's close-ups) keeps each.
+  const [shown, setShown] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const busy = useRef(false);
@@ -45,13 +50,13 @@ export function usePieceRender({ endpoint, partKey, kept, body, onKept, onSignIn
 
   // A kept render (back on the page, or the design reopened): a new signed link.
   useEffect(() => {
-    if (!kept || shown?.key === kept.key) return;
+    if (!kept || shown[kept.key]) return;
     let cancelled = false;
     void (async () => {
       const sb = await loadClient();
       const { data } = (await sb?.storage.from(RENDER_BUCKET).createSignedUrls([kept.path], 3600).catch(() => null)) ?? { data: null };
       const url = data?.[0]?.signedUrl;
-      if (!cancelled && url) setShown({ key: kept.key, url });
+      if (!cancelled && url) setShown((m) => ({ ...m, [kept.key]: url }));
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,7 +86,7 @@ export function usePieceRender({ endpoint, partKey, kept, body, onKept, onSignIn
       let end: { done?: boolean; error?: string; render?: KeptRender } | null = null;
       await readNdjson(res.body, (line) => {
         const l = line as { url?: string; done?: boolean; error?: string; render?: KeptRender };
-        if (typeof l.url === "string") setShown({ key, url: l.url });
+        if (typeof l.url === "string") setShown((m) => ({ ...m, [key]: l.url! }));
         else if (l.done || l.error) end = l;
       });
       const result = end as { done?: boolean; error?: string; render?: KeptRender } | null; // set inside the callback
@@ -95,6 +100,7 @@ export function usePieceRender({ endpoint, partKey, kept, body, onKept, onSignIn
     }
   }
 
-  const ready = !!shown && !!partKey && shown.key === partKey;
-  return { url: ready ? shown!.url : null, ready, stale: !!shown && !ready, loading, error, make };
+  const ready = !!partKey && !!shown[partKey];
+  const keys = Object.keys(shown);
+  return { url: ready ? shown[partKey] : null, ready, stale: keys.length > 0 && !ready, loading, error, make, keys, urlOf: (k: string) => shown[k] ?? null };
 }
