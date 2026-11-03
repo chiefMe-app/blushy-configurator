@@ -6,12 +6,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { THEMES, priceBreakdown, defaultConfig } from "@/lib/config";
 import {
-  CAKE_FIGURES, CAKE_STYLES, FIGURE_PRICE, MAX_CAKE_FIGURES, THEME_CAKE_FIGURES, TOPPER_PRICE, addItem, cakeDesigns, cakeFiguresFor,
-  cakePriceLines, cakeRenderKey, cakeStack, cakeTotal, defaultCake, figurePicture, itemAt, placeItem, readCake, tierColours, tierPicture,
-  type CakeFigure, type CakeItem,
+  CAKE_FIGURES, CAKE_STYLES, FIGURE_PRICE, MAX_CAKE_DECOS, MAX_CAKE_FIGURES, RAINBOW_PRICE, THEME_CAKE_CUTOUTS, THEME_CAKE_FIGURES, TOPPER_PRICE,
+  addItem, cakeDesigns, cakeFiguresFor, cakePriceLines, cakeRenderKey, cakeStack, cakeTotal, defaultCake, figureKind, figurePicture, itemAt, placeItem,
+  readCake, roomFor, tierColours, tierPicture, type Cake, type CakeFigure, type CakeItem,
 } from "@/lib/studio/cake";
 import { cakePrompt } from "@/lib/studio/cakeRender";
-import { cakeLayout } from "@/components/builder/cake/CakePreview";
+import { cakeLayout, viewOf } from "@/components/builder/cake/CakePreview";
 import { fromDraft, toDraft } from "@/lib/draft";
 import { resetRenderGuard } from "@/lib/renderGuard";
 import { readNdjson } from "@/lib/ndjson";
@@ -38,11 +38,14 @@ describe("cake", () => {
   it("has four designs for every theme, each its own tiers and decoration, and a plain cake", () => {
     for (const t of THEMES) {
       const d = cakeDesigns({ themeId: t.id, themeName: t.name, colours: t.balloonColors });
-      expect(d.map((x) => x.id)).toEqual(["classic", "drip", "ruffle", "grand", "plain"]);
+      // A theme with printed cutouts of its own (K-pop, Unicorn) gets a cake of them too.
+      const cut = THEME_CAKE_CUTOUTS[t.id] ? ["cutouts"] : [];
+      expect(d.map((x) => x.id)).toEqual(["classic", "drip", "ruffle", "grand", ...cut, "plain"]);
       expect(new Set(d.slice(0, 4).map((x) => `${x.cake.tiers}-${x.cake.style}`)).size).toBe(4);
       expect(THEME_CAKE_FIGURES[t.id], t.id).toBeDefined();
       expect(cakeFiguresFor(t.id)[0].own).toBe(true);
-      expect(cakeFiguresFor(t.id)).toHaveLength(CAKE_FIGURES.length);
+      expect(cakeFiguresFor(t.id)).toHaveLength(CAKE_FIGURES.filter((f) => f.kind === "sugar").length);
+      if (cut.length) expect(cakeFiguresFor(t.id, "cutout")[0]).toMatchObject({ own: true, kind: "cutout" });
     }
     const plain = cakeDesigns(seed).at(-1)!.cake;
     expect(plain).toMatchObject({ figures: [], colours: ["#FFFFFF", "#FFFFFF", "#FFFFFF"], topper: { on: false } });
@@ -59,7 +62,7 @@ describe("cake", () => {
   });
 
   it("stacks its tiers on the stand, each narrower, its topper above its figures, all in the photo", () => {
-    for (const d of cakeDesigns(seed)) {
+    for (const d of cakeDesigns(seed).filter((x) => x.id !== "cutouts")) {
       const L = cakeLayout({ ...d.cake, topper: { ...d.cake.topper, on: true } });
       expect(L.tiers).toHaveLength(d.cake.tiers);
       L.tiers.forEach((t, i) => { if (i) expect(t.w).toBeLessThan(L.tiers[i - 1].w); });
@@ -100,7 +103,7 @@ describe("cake", () => {
     // Moved figures read back in their places, kept to the cake, eight at most.
     const moved = readCake({ figures: [{ id: "heart", on: "side", x: 9, y: -2, s: 40 }, { id: "nope" }, ...Array(10).fill({ id: "star", on: "top", x: 0.1, y: 0.2, s: 1 })] })!;
     expect(moved.figures[0]).toEqual({ id: "heart", on: "side", x: 0.5, y: 0, s: 2.5 });
-    expect(moved.figures).toHaveLength(MAX_CAKE_FIGURES - 1);
+    expect(moved.figures).toHaveLength(MAX_CAKE_FIGURES);
     expect(readCake({ topper: { x: 3, up: 50, s: 9 } })!.topper).toMatchObject({ x: 0.4, up: 50, s: 1.6 });
     expect(k.colours[0]).toBe("#112233");
     expect(k.colours).toHaveLength(3);
@@ -176,6 +179,65 @@ describe("the figures moved on the cake", () => {
     // The three on the top apart from each other.
     const xs = k.figures.slice(0, 3).map((f) => f.x).sort((a, b) => a - b);
     expect(xs[1] - xs[0]).toBeGreaterThan(0.18);
+  });
+});
+
+describe("cutouts, balls, the name on the front, rainbows and sprinkles", () => {
+  // 2026-11-03 (the owner: "cutout topperlar … kpop'ta çıkmalı, unicorn için de"; "pastanın önüne de yazılabilir";
+  // "topperı bigger smaller yapınca bütün pasta büyüyüp küçülüyor"; "sprinkles ve rainbow color seçenekleri").
+  const st = cakeStack({ tiers: 1, style: "smooth" });
+  it("stands a printed cutout on a stick on the top, and puts a ball round the foot; each kind priced and kept apart", () => {
+    let k: Cake = { ...defaultCake(seed), figures: [] };
+    k = { ...k, figures: addItem(k, "idols") };
+    const at = placeItem(k.figures[0], st);
+    expect(at.stick).toBeDefined();
+    expect(at.y + at.h).toBeLessThan(st.top); // lifted over the top on its stick
+    expect(itemAt(k.figures[0], st, at.x + at.w / 2, at.y + at.h / 2)).toMatchObject({ on: "top" });
+    k = { ...k, figures: addItem(k, "disco-ball") };
+    expect(k.figures[1]).toMatchObject({ on: "side" });
+    expect(k.figures[1].y).toBeLessThan(0.1);
+    expect(cakePriceLines(k)).toEqual(expect.arrayContaining([{ label: "Cake cutout: pop star trio", amount: 30 }, { label: "Cake decoration: mirror ball", amount: 15 }]));
+    for (let i = 0; i < 12; i++) k = { ...k, figures: addItem(k, "silver-ball") };
+    expect(k.figures.filter((f) => figureKind(f.id) === "deco")).toHaveLength(MAX_CAKE_DECOS);
+    expect(roomFor(k.figures, "heart")).toBe(MAX_CAKE_FIGURES - 1);
+  });
+
+  it("has a K-pop cake of pop stars with the name on the front, and a Unicorn one with the name on a cloud", () => {
+    const kpop = cakeDesigns({ themeId: "kpop", themeName: "K-Pop" }).find((d) => d.id === "cutouts")!.cake;
+    expect(kpop.figures.map((f) => f.id)).toContain("idols");
+    expect(kpop.topper).toMatchObject({ at: "front" });
+    const L = cakeLayout(kpop);
+    expect(L.words.bottom).toBeGreaterThan(st.top); // on the cake's face
+    expect(L.words.bottom).toBeLessThan(st.base);
+    const uni = cakeDesigns(seed).find((d) => d.id === "cutouts")!.cake;
+    expect(uni.topper.card).toBe("cloud");
+    expect(cakePrompt({ ...uni, enabled: true })).toMatch(/white cloud-shaped card .*on two thin white sticks/);
+    expect(cakePrompt({ ...kpop, enabled: true, topper: { ...kpop.topper, name: "Arya" } })).toMatch(/On the front of the cake keep the name/);
+    expect(cakePrompt({ ...kpop, enabled: true })).toMatch(/printed card cutout toppers exactly: pop star trio/);
+  });
+
+  it("keeps the picture's view when the topper is made bigger, smaller or moved", () => {
+    const k = defaultCake(seed);
+    const v = viewOf(k);
+    expect(viewOf({ ...k, topper: { ...k.topper, s: 0.7 } })).toEqual(v);
+    expect(viewOf({ ...k, topper: { ...k.topper, s: 1.2 } })).toEqual(v);
+    expect(viewOf({ ...k, topper: { ...k.topper, at: "front", y: 0.5 } })).toEqual(v);
+  });
+
+  it("reads back the topper's place and card, rainbow tiers and sprinkles, and prices them", () => {
+    const k = readCake({ tiers: 2, colours: ["rainbow-pastel", "rainbow-nope", "#ffffff"], sprinkles: "base", topper: { on: true, name: "Arya", age: "4", at: "front", y: 3, x: -2, card: "cloud", up: 50 } })!;
+    expect(k.colours[0]).toBe("rainbow-pastel");
+    expect(k.colours[1]).toBe("#FFFFFF");
+    expect(k.sprinkles).toBe("base");
+    expect(k.topper).toMatchObject({ at: "front", y: 0.95, x: -0.3, card: "cloud" });
+    expect(k.topper.up).toBeUndefined();
+    expect(readCake({ sprinkles: "glitter", topper: { card: "square" } })).not.toHaveProperty("sprinkles");
+    expect(cakePriceLines(k)).toEqual(expect.arrayContaining([{ label: "Cake: rainbow buttercream ×1 tier", amount: RAINBOW_PRICE }, { label: "Cake sprinkles: a band at the foot", amount: 30 }]));
+    const words = cakePrompt(k);
+    expect(words).toMatch(/the bottom tier in smoothed patches of pastel/);
+    expect(words).toMatch(/thick band of rainbow sprinkles/);
+    expect(words).not.toMatch(/no sprinkles/);
+    expect(cakeRenderKey(k, "unicorn")).not.toBe(cakeRenderKey({ ...k, sprinkles: undefined }, "unicorn"));
   });
 });
 

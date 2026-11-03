@@ -5,8 +5,8 @@
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import {
-  CAKE_FLAVOURS, CAKE_STYLES, CAKE_TIERS, FIGURE_PRICE, MAX_CAKE_FIGURES, TOPPER_COLOURS, TOPPER_PRICE,
-  addItem, cakeDesigns, cakeFiguresFor, cakePrice, cakeTotal, defaultCake, figurePicture, type Cake, type CakeSeed,
+  CAKE_FLAVOURS, CAKE_SPRINKLES, CAKE_STYLES, CAKE_TIERS, FIGURE_KINDS, RAINBOW_PRICE, RAINBOW_TIERS, rainbowOf, MAX_CAKE_DECOS, MAX_CAKE_FIGURES, TOPPER_CARDS, TOPPER_COLOURS, TOPPER_PLACES, TOPPER_PRICE,
+  addItem, cakeDesigns, cakeFiguresFor, cakePrice, cakeTotal, defaultCake, figureKind, figurePicture, roomFor, type Cake, type CakeSeed,
 } from "@/lib/studio/cake";
 import { cleanAge } from "@/lib/studio/pinata";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
@@ -64,10 +64,14 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
   const seed = cakeSeed(config);
   const designs = cakeDesigns(seed);
   // A design is where the cake starts: the name, age and lettering she typed stay, and the flavour.
-  const pickDesign = (d: (typeof designs)[number]) => set({ ...d.cake, topper: { ...k.topper, on: d.cake.topper.on }, flavour: k.flavour });
+  // Where the design puts the topper and on what (a card, the front) comes with it.
+  const designTopper = (d: (typeof designs)[number]): Cake["topper"] => {
+    const { on, at, x, up, y, s, card } = d.cake.topper;
+    return { name: k.topper.name, age: k.topper.age, font: k.topper.font, colour: k.topper.colour, on, at, x, up, y, s, card };
+  };
+  const pickDesign = (d: (typeof designs)[number]) => set({ ...d.cake, topper: designTopper(d), flavour: k.flavour });
   const swatches = Array.from(new Set(["#FFFFFF", ...theme.balloonColors, ...theme.backdropColors, ...PLAIN_COLOURS.map((c) => c.hex)].map((h) => h.toUpperCase())));
-  const figures = cakeFiguresFor(theme.id);
-  const full = k.figures.length >= MAX_CAKE_FIGURES;
+  const full = k.figures.filter((f) => figureKind(f.id) !== "deco").length >= MAX_CAKE_FIGURES;
   const setTopper = (patch: Partial<Cake["topper"]>) => set({ topper: { ...k.topper, ...patch } });
   const fontSample = k.topper.name.trim() || "Olivia";
 
@@ -79,7 +83,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
         <p className="bz-tb-sub" style={{ fontWeight: 400 }}>Start from one of these — then change anything below.</p>
         <div className="bz-tb-item">
           <div className="bz-tb-options" role="radiogroup" aria-label="Cake design" data-testid="cake-design">
-            {designs.map((d) => card(k.design === d.id, () => pickDesign(d), <CakeThumb k={{ ...d.cake, enabled: true, topper: { ...k.topper, on: d.cake.topper.on } }} uid={`ck-d-${d.id}`} />,
+            {designs.map((d) => card(k.design === d.id, () => pickDesign(d), <CakeThumb k={{ ...d.cake, enabled: true, topper: designTopper(d) }} uid={`ck-d-${d.id}`} />,
               d.name, d.note, `From AED ${formatAED(cakeTotal({ ...d.cake, enabled: true, flavour: "vanilla" }))}`, d.id))}
           </div>
         </div>
@@ -110,46 +114,76 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
       <section className="bz-tb-section" aria-label="Colours">
         <h2>Colours</h2>
         {TIER_NAMES[k.tiers].map((label, i) => {
-          const now = (k.colours[i] ?? "#FFFFFF").toUpperCase();
+          const c = k.colours[i] ?? "#FFFFFF";
+          const now = rainbowOf(c) ? c : c.toUpperCase();
+          const pick = (v: string) => set({ colours: [0, 1, 2].map((j) => (j === i ? v : k.colours[j] ?? "#FFFFFF")) });
           return (
             <div className="bz-tb-item" key={i}>
               <h3>{label}</h3>
               <div className="bz-ts-swatches" role="radiogroup" aria-label={`${label} colour`} data-testid={`cake-colour-${i}`}>
+                {/* 2026-11-03 (the owner: "rainbow color seçenekleri de ekleyelim"). */}
+                {RAINBOW_TIERS.map((r) => (
+                  <button key={r.id} type="button" role="radio" aria-checked={now === r.id} aria-label={r.name} title={`${r.name} · +AED ${formatAED(RAINBOW_PRICE)}`}
+                    className={now === r.id ? "on" : ""} style={{ background: `linear-gradient(135deg, ${r.hexes.join(", ")})` }}
+                    onClick={() => pick(r.id)}>{now === r.id ? "✓" : ""}</button>
+                ))}
                 {swatches.map((hex) => (
                   <button key={hex} type="button" role="radio" aria-checked={now === hex} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
                     className={now === hex ? "on" : ""} style={{ background: hex }}
-                    onClick={() => set({ colours: [0, 1, 2].map((j) => (j === i ? hex : k.colours[j] ?? "#FFFFFF")) })}>{now === hex ? "✓" : ""}</button>
+                    onClick={() => pick(hex)}>{now === hex ? "✓" : ""}</button>
                 ))}
               </div>
             </div>
           );
         })}
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>The first two are rainbow buttercream — pastel patches or a bright watercolour, +AED {formatAED(RAINBOW_PRICE)} a tier.</p>
+      </section>
+
+      <section className="bz-tb-section" aria-label="Sprinkles">
+        <h2>Sprinkles</h2>
+        <div className="bz-tb-item">
+          <div className="bz-gv-contents" role="radiogroup" aria-label="Sprinkles" data-testid="cake-sprinkles">
+            {CAKE_SPRINKLES.map((s) => {
+              const on = (k.sprinkles ?? "none") === s.id;
+              return (
+                <label key={s.id} className={on ? "on" : ""}>
+                  <input type="radio" name="cake-sprinkles" checked={on} onChange={() => set({ sprinkles: s.id === "none" ? undefined : s.id })} />
+                  <span><b>{s.name}</b><small>{[s.note, s.price ? `+AED ${formatAED(s.price)}` : ""].filter(Boolean).join(" · ")}</small></span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
       </section>
 
       <section className="bz-tb-section" aria-label="On top">
         <h2>On top</h2>
         {/* 2026-11-03 (the owner: "sürükle bırak … duplicate … her yere yapıştırabilsin", up to 8). */}
         <p className="bz-tb-sub" style={{ fontWeight: 400 }} data-testid="cake-figures-note">
-          Handmade sugar figures, +AED {formatAED(FIGURE_PRICE)} each — tap one to add it, then drag it anywhere on the cake, on top or on a tier.
-          {" "}{full ? `That's the most — ${MAX_CAKE_FIGURES} figures.` : `Up to ${MAX_CAKE_FIGURES}, copies too.`}
+          Tap one to add it, then drag it anywhere on the cake, on top or on a tier.
+          {" "}{full ? `That's the most — ${MAX_CAKE_FIGURES} figures and cutouts.` : `Up to ${MAX_CAKE_FIGURES} figures and cutouts, copies too, and ${MAX_CAKE_DECOS} balls.`}
         </p>
-        <div className="bz-tb-item">
-          <div className="bz-tb-options" role="group" aria-label="Figures" data-testid="cake-figures">
-            {figures.map((f) => {
-              const n = k.figures.filter((x) => x.id === f.id).length;
-              return (
-                <button key={f.id} type="button" aria-pressed={n > 0} aria-label={`Add ${f.name}${n ? ` (${n} on the cake)` : ""}`} disabled={full}
-                  className={`bz-tb-option ${n ? "on" : ""}`} onClick={() => set({ figures: addItem(k, f.id) })}>
-                  {n > 0 && <span className="tick">{n > 1 ? `×${n}` : "✓"}</span>}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <span className="art"><img className="photo cutout" style={{ objectFit: "contain" }} src={figurePicture(f.id).src} alt="" loading="lazy" /></span>
-                  <b>{f.name}</b>{f.own && <small>Your {theme.name} theme</small>}
-                </button>
-              );
-            })}
+        {/* 2026-11-03 (the owner: "cutout topperlar da koyabilmeliyiz … kpop'ta çıkmalı, unicorn için de … sadece şeker hamuru değil"). */}
+        {FIGURE_KINDS.map((kind) => (
+          <div className="bz-tb-item" key={kind.id}>
+            <h3>{kind.name} <small style={{ fontWeight: 400 }}>· {kind.note} · +AED {formatAED(kind.price)} each</small></h3>
+            <div className="bz-tb-options" role="group" aria-label={kind.name} data-testid={{ sugar: "cake-figures", cutout: "cake-cutouts", deco: "cake-decos" }[kind.id]}>
+              {cakeFiguresFor(theme.id, kind.id).map((f) => {
+                const n = k.figures.filter((x) => x.id === f.id).length;
+                return (
+                  <button key={f.id} type="button" aria-pressed={n > 0} aria-label={`Add ${f.name}${n ? ` (${n} on the cake)` : ""}`} disabled={roomFor(k.figures, f.id) <= 0}
+                    className={`bz-tb-option ${n ? "on" : ""}`} onClick={() => set({ figures: addItem(k, f.id) })}>
+                    {n > 0 && <span className="tick">{n > 1 ? `×${n}` : "✓"}</span>}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <span className="art"><img className="photo cutout" style={{ objectFit: "contain" }} src={figurePicture(f.id).src} alt="" loading="lazy" /></span>
+                    <b>{f.name}</b>{f.own && <small>Your {theme.name} theme</small>}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          {k.figures.length > 0 && <button type="button" className="bz-restart" onClick={() => set({ figures: [] })}>Take all the figures off</button>}
-        </div>
+        ))}
+        {k.figures.length > 0 && <div className="bz-tb-item"><button type="button" className="bz-restart" onClick={() => set({ figures: [] })}>Take all the figures off</button></div>}
       </section>
 
       <section className="bz-tb-section" aria-label="Topper">
@@ -158,7 +192,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
           <div className="bz-gv-contents" data-testid="cake-topper">
             <label className={k.topper.on ? "on" : ""}>
               <input type="checkbox" checked={k.topper.on} onChange={() => setTopper({ on: !k.topper.on })} />
-              <span><b>A topper with the name and age</b><small>Mirror acrylic on two sticks · +AED {formatAED(TOPPER_PRICE)}</small></span>
+              <span><b>A topper with the name and age</b><small>Mirror acrylic letters or a printed card, on top or on the front · +AED {formatAED(TOPPER_PRICE)}</small></span>
             </label>
           </div>
         </div>
@@ -174,6 +208,37 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
               <input type="text" inputMode="numeric" maxLength={2} value={k.topper.age} data-testid="cake-topper-age" aria-label="The age on the topper"
                 onFocus={(e) => e.target.select()} onChange={(e) => setTopper({ age: cleanAge(e.target.value) })} />
             </label>
+          </div>
+          {/* 2026-11-03 (the owner: "name topper pastanın önüne de yazılabilir"; her cloud-card example). */}
+          <div className="bz-tb-item">
+            <h3>Where it goes</h3>
+            <div className="bz-gv-contents" role="radiogroup" aria-label="Where the topper goes" data-testid="cake-topper-place">
+              {TOPPER_PLACES.map((p) => {
+                const on = (k.topper.at ?? "top") === p.id;
+                return (
+                  <label key={p.id} className={on ? "on" : ""}>
+                    <input type="radio" name="cake-topper-place" checked={on}
+                      onChange={() => setTopper({ at: p.id === "front" ? "front" : undefined, x: undefined, up: undefined, y: p.id === "front" ? 0.5 : undefined })} />
+                    <span><b>{p.name}</b><small>{p.note}</small></span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+          <div className="bz-tb-item">
+            <h3>Letters or a card</h3>
+            <div className="bz-tb-fonts" role="radiogroup" aria-label="Topper card" data-testid="cake-topper-card">
+              {TOPPER_CARDS.map((c) => {
+                const on = (k.topper.card ?? "none") === c.id;
+                return (
+                  <button key={c.id} type="button" role="radio" aria-checked={on} className={on ? "on" : ""}
+                    onClick={() => setTopper({ card: c.id === "none" ? undefined : c.id })}>
+                    <span aria-hidden="true" style={{ fontSize: 20 }}>{{ none: "Aa", cloud: "☁", circle: "◯", plaque: "▭" }[c.id]}</span>
+                    <small>{c.name}</small>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="bz-tb-item">
             <h3>Lettering</h3>

@@ -541,6 +541,23 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await page.getByTestId("cake-flavour").getByText("Red velvet", { exact: true }).click();
   expect(aed(await sum.textContent())).toBe(s1 + 40);
   await expect(page.getByTestId("cake-preview")).toContainText("Red velvet");
+  // 2026-11-03 (the owner: "name topper pastanın önüne de yazılabilir"; cutouts, not only sugar paste; "sprinkles ve
+  // rainbow color"): the name on the front on a cloud card, a printed cutout and a mirror ball, a rainbow tier, sprinkles.
+  const topper = art.locator("[data-part=cake-topper]");
+  await page.getByTestId("cake-topper-place").getByText("On the front", { exact: true }).click();
+  await expect(topper).toHaveAttribute("data-at", "front");
+  await page.getByTestId("cake-topper-card").getByRole("radio", { name: "Cloud card" }).click();
+  await expect(topper.locator("[data-part=cake-topper-card]")).toHaveCount(1);
+  const s2 = aed(await sum.textContent());
+  await page.getByTestId("cake-cutouts").getByRole("button", { name: /Add Holographic star/ }).click();
+  await page.getByTestId("cake-decos").getByRole("button", { name: /Add Mirror ball/ }).click();
+  await expect(art.locator("[data-part=cake-figure][data-kind=cutout]")).toHaveCount(1);
+  await expect(art.locator("[data-part=cake-figure][data-kind=deco]")).toHaveCount(1);
+  await page.getByTestId("cake-colour-0").getByRole("radio", { name: "Pastel rainbow" }).click();
+  await expect(art.locator("[data-rainbow=rainbow-pastel]")).toHaveCount(1);
+  await page.getByTestId("cake-sprinkles").getByText("A band at the foot", { exact: true }).click();
+  await expect(art.locator("[data-part=cake-sprinkles]")).toHaveCount(2); // on both tiers
+  expect(aed(await sum.textContent())).toBe(s2 + 30 + 15 + 30 + 30);
   // A plain cake: white, nothing on top.
   await designs.filter({ hasText: "Plain cake" }).click();
   await expect(art.locator("[data-part=cake-figure]")).toHaveCount(0);

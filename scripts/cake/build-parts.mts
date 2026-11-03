@@ -1,7 +1,8 @@
 // The cake's pictures (2026-11-03, the owner: "piñatadan sonra cake studio'ya geçelim"; on a cake stand, close
 // up): scripts/cake/sources/*.png are flux-2 product shots, four to a picture, then a birefnet cutout and cut apart —
 // one white tier for each decoration (smooth, drip, ruffles, rosettes), stacked and coloured in the builder, and the
-// fondant figures that go on top, in their own colours. The stand (stand.png) is the photo they sit in, with more wall above it.
+// fondant figures that go on top, in their own colours; since 2026-11-03 also the printed card cutouts (K-pop, Unicorn —
+// original pop stars, never a film's or band's) and the mirror, glitter and bubble balls, named fig-<id> the same way. The stand (stand.png) is the photo they sit in, with more wall above it.
 // Each piece is cleaned (bits of its neighbours dropped) and trimmed; a tier's light is evened out so its white
 // reads white (a colour multiplied over it then reads true) and where its top and bottom circles lie is measured.
 // Written to public/design/cake/<name>.webp and lib/studio/cakeParts.json.

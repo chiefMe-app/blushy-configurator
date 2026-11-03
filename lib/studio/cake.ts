@@ -15,6 +15,28 @@ export const CAKE_STYLES = [
 ] as const;
 export type CakeStyle = (typeof CAKE_STYLES)[number]["id"];
 
+/**
+ * A tier in rainbow buttercream instead of one colour (2026-11-03, the owner: "bu tarz sprinkles ve rainbow color
+ * seçenekleri de ekleyelim"): smoothed pastel patches, or a bright watercolour. Kept in the tier's colour.
+ */
+export const RAINBOW_TIERS = [
+  { id: "rainbow-pastel", name: "Pastel rainbow", hexes: ["#F8BBD0", "#FEF08A", "#BBF7D0", "#BAE6FD", "#DDD6FE"], blend: false,
+    words: "smoothed patches of pastel pink, yellow, mint, baby blue and lilac buttercream" },
+  { id: "rainbow-bright", name: "Watercolour rainbow", hexes: ["#F472B6", "#FB923C", "#FDE047", "#4ADE80", "#38BDF8", "#A78BFA"], blend: true,
+    words: "bright rainbow watercolour buttercream, pink, orange, yellow, green, blue and violet softly blended into each other" },
+] as const;
+export const RAINBOW_PRICE = 30;
+export const rainbowOf = (colour: string) => RAINBOW_TIERS.find((r) => r.id === colour);
+
+/** Sprinkles over the whole cake (the owner's examples: scattered, a thick band round the foot, little hearts). */
+export const CAKE_SPRINKLES = [
+  { id: "none", name: "No sprinkles", note: "", words: "", price: 0 },
+  { id: "scatter", name: "Scattered", note: "Rainbow sprinkles over the tiers", words: "rainbow sprinkles scattered over the tiers and the top", price: 20 },
+  { id: "base", name: "A band at the foot", note: "Sprinkles and stars pressed round the bottom", words: "a thick band of rainbow sprinkles and little white star sprinkles pressed round the bottom of each tier, a few scattered above it", price: 30 },
+  { id: "hearts", name: "Little hearts", note: "Heart sprinkles in bright colours", words: "little heart-shaped sprinkles in bright pink, orange, yellow, green and blue scattered over the tiers and the top", price: 20 },
+] as const;
+export type CakeSprinkles = Exclude<(typeof CAKE_SPRINKLES)[number]["id"], "none">;
+
 /** The tiers: the cake by how many (placeholders), and how many it serves. */
 export const CAKE_TIERS = [
   { n: 1, name: "One tier", note: "About 12 slices", price: 380 },
@@ -23,19 +45,46 @@ export const CAKE_TIERS = [
 ] as const;
 export type CakeTierCount = (typeof CAKE_TIERS)[number]["n"];
 
-/** The handmade sugar-paste figures that go on top (public/design/cake/fig-<id>.webp). */
+/**
+ * What goes on the cake (public/design/cake/fig-<id>.webp): the handmade sugar-paste figures; printed card cutouts
+ * on a stick, or stuck flat on a side (2026-11-03, the owner: "cutout topperlar da koyabilmeliyiz … kpop'ta çıkmalı,
+ * unicorn için de" — original pop stars, never a film's or band's); and the balls and sparkle round it.
+ */
 export const CAKE_FIGURES = [
-  { id: "unicorn", name: "Unicorn horn & ears" }, { id: "star", name: "Gold star" }, { id: "snowflake", name: "Snowflake" },
-  { id: "crown", name: "Crown" }, { id: "heart", name: "Heart" }, { id: "rainbow", name: "Rainbow" },
-  { id: "butterfly", name: "Butterfly" }, { id: "mermaid", name: "Mermaid tail" }, { id: "dinosaur", name: "Dinosaur" },
-  { id: "lion", name: "Lion" }, { id: "puppy", name: "Puppy" }, { id: "kitten", name: "Kitten" },
-  { id: "shark", name: "Shark" }, { id: "rocket", name: "Rocket" }, { id: "lightning", name: "Lightning bolt" },
-  { id: "football", name: "Football" }, { id: "car", name: "Race car" }, { id: "treasure", name: "Treasure chest" },
-  { id: "roses", name: "Sugar roses" }, { id: "pineapple", name: "Pineapple" },
+  { id: "unicorn", name: "Unicorn horn & ears", kind: "sugar" }, { id: "star", name: "Gold star", kind: "sugar" }, { id: "snowflake", name: "Snowflake", kind: "sugar" },
+  { id: "crown", name: "Crown", kind: "sugar" }, { id: "heart", name: "Heart", kind: "sugar" }, { id: "rainbow", name: "Rainbow", kind: "sugar" },
+  { id: "butterfly", name: "Butterfly", kind: "sugar" }, { id: "mermaid", name: "Mermaid tail", kind: "sugar" }, { id: "dinosaur", name: "Dinosaur", kind: "sugar" },
+  { id: "lion", name: "Lion", kind: "sugar" }, { id: "puppy", name: "Puppy", kind: "sugar" }, { id: "kitten", name: "Kitten", kind: "sugar" },
+  { id: "shark", name: "Shark", kind: "sugar" }, { id: "rocket", name: "Rocket", kind: "sugar" }, { id: "lightning", name: "Lightning bolt", kind: "sugar" },
+  { id: "football", name: "Football", kind: "sugar" }, { id: "car", name: "Race car", kind: "sugar" }, { id: "treasure", name: "Treasure chest", kind: "sugar" },
+  { id: "roses", name: "Sugar roses", kind: "sugar" }, { id: "pineapple", name: "Pineapple", kind: "sugar" },
+  { id: "idols", name: "Pop star trio", kind: "cutout" }, { id: "idol-singer", name: "Pop star singer", kind: "cutout" },
+  { id: "microphone", name: "Microphone", kind: "cutout" }, { id: "music-notes", name: "Music notes", kind: "cutout" },
+  { id: "holo-star", name: "Holographic star", kind: "cutout" }, { id: "light-stick", name: "Heart light stick", kind: "cutout" },
+  { id: "rock-hand", name: "Rock-on hand", kind: "cutout" }, { id: "holo-bolt", name: "Glitter lightning", kind: "cutout" },
+  { id: "paper-unicorn", name: "Paper unicorn", kind: "cutout" }, { id: "paper-rainbow", name: "Rainbow & clouds", kind: "cutout" },
+  { id: "leaping-unicorn", name: "Leaping unicorn", kind: "cutout" }, { id: "baby-unicorn", name: "Baby unicorn", kind: "cutout" },
+  { id: "disco-ball", name: "Mirror ball", kind: "deco" }, { id: "silver-ball", name: "Silver glitter ball", kind: "deco" },
+  { id: "gold-ball", name: "Gold glitter ball", kind: "deco" }, { id: "bubble-ball", name: "Bubble ball", kind: "deco" },
 ] as const;
 export type CakeFigure = (typeof CAKE_FIGURES)[number]["id"];
-/** 2026-11-03 (the owner: "her yere yapıştırabilsin", up to 8): figures anywhere on the cake, copies too. */
+export type FigureKind = (typeof CAKE_FIGURES)[number]["kind"];
+/** Each kind, how it shows in the list and the price, and how it is said in the render. */
+export const FIGURE_KINDS = [
+  { id: "sugar", name: "Sugar figures", note: "Handmade sugar paste", price: 45 },
+  { id: "cutout", name: "Printed cutouts", note: "Glossy card, on a stick or stuck on a side", price: 30 },
+  { id: "deco", name: "Balls & sparkle", note: "Mirror, glitter and bubble balls", price: 15 },
+] as const;
+export const figureKind = (id: CakeFigure): FigureKind => CAKE_FIGURES.find((f) => f.id === id)?.kind ?? "sugar";
+export const figurePrice = (id: CakeFigure) => FIGURE_KINDS.find((k) => k.id === figureKind(id))!.price;
+/** 2026-11-03 (the owner: "her yere yapıştırabilsin", up to 8): figures and cutouts anywhere on the cake, copies too; the balls apart. */
 export const MAX_CAKE_FIGURES = 8;
+export const MAX_CAKE_DECOS = 10;
+/** How many more of this kind fit. */
+export const roomFor = (figures: CakeItem[], id: CakeFigure) => {
+  const deco = figureKind(id) === "deco";
+  return (deco ? MAX_CAKE_DECOS : MAX_CAKE_FIGURES) - figures.filter((f) => (figureKind(f.id) === "deco") === deco).length;
+};
 
 /**
  * A figure where she put it (2026-11-03, the owner: "sürükle bırak … duplicate"): standing on the top, or stuck
@@ -58,10 +107,16 @@ export const THEME_CAKE_FIGURES: Record<string, CakeFigure[]> = {
   dollhouse_kitties: ["kitten", "heart"], luxury_neutral: ["roses", "star"],
 };
 export const themeFigures = (themeId: string): CakeFigure[] => THEME_CAKE_FIGURES[themeId] ?? ["star", "heart"];
-/** The figures in the order shown: the theme's own, then the rest. */
-export function cakeFiguresFor(themeId: string) {
-  const own = themeFigures(themeId);
-  return [...own.map((id) => ({ ...CAKE_FIGURES.find((f) => f.id === id)!, own: true })), ...CAKE_FIGURES.filter((f) => !own.includes(f.id)).map((f) => ({ ...f, own: false }))];
+/** The themes with printed cutouts of their own, the best first. */
+export const THEME_CAKE_CUTOUTS: Record<string, CakeFigure[]> = {
+  kpop: ["idols", "idol-singer", "microphone", "music-notes", "holo-star", "light-stick", "rock-hand", "holo-bolt"],
+  unicorn: ["paper-unicorn", "paper-rainbow", "leaping-unicorn", "baby-unicorn"],
+};
+/** One kind's pieces in the order shown: the theme's own, then the rest. */
+export function cakeFiguresFor(themeId: string, kind: FigureKind = "sugar") {
+  const own: CakeFigure[] = kind === "sugar" ? themeFigures(themeId) : kind === "cutout" ? THEME_CAKE_CUTOUTS[themeId] ?? [] : [];
+  const all = CAKE_FIGURES.filter((f) => f.kind === kind);
+  return [...own.map((id) => ({ ...CAKE_FIGURES.find((f) => f.id === id)!, own: true })), ...all.filter((f) => !own.includes(f.id)).map((f) => ({ ...f, own: false }))];
 }
 
 /** What it tastes of, by name (not shown). Placeholder prices a cake. */
@@ -84,6 +139,21 @@ export const TOPPER_COLOURS = [
 ] as const;
 export type TopperColour = (typeof TOPPER_COLOURS)[number]["id"];
 
+/** The name as letters alone, or printed on a card of a shape (2026-11-03, the owner's cloud-card example). */
+export const TOPPER_CARDS = [
+  { id: "none", name: "Letters", words: "" },
+  { id: "cloud", name: "Cloud card", words: "a white cloud-shaped card" },
+  { id: "circle", name: "Circle card", words: "a white round card" },
+  { id: "plaque", name: "Plaque", words: "a white rounded plaque" },
+] as const;
+export type TopperCard = (typeof TOPPER_CARDS)[number]["id"];
+/** Where the name goes: over the top on sticks, or on the cake's front (2026-11-03, the owner: "pastanın önüne de yazılabilir"). */
+export const TOPPER_PLACES = [
+  { id: "top", name: "On top", note: "On two sticks" },
+  { id: "front", name: "On the front", note: "Pressed onto a tier" },
+] as const;
+
+/** Sugar figures (FIGURE_KINDS). */
 export const FIGURE_PRICE = 45;
 export const TOPPER_PRICE = 60;
 
@@ -95,11 +165,18 @@ export interface CakeTopper {
   /** A lettering font (lib/studio/tableFonts.ts). */
   font: string;
   colour: TopperColour;
-  /** Where she moved it: across the top tier (−0.4 to 0.4) and how high its words stand over the top, in px (none: put by itself). */
+  /**
+   * Where she moved it. On top: across the top tier (−0.4 to 0.4) and how high its words stand over the top, in px
+   * (none: put by itself). On the front: across the tier there (−0.3 to 0.3) and y its middle up the cake (0 to 1).
+   */
+  at?: "front";
   x?: number;
   up?: number;
+  y?: number;
   /** Its size (1: as drawn). */
   s?: number;
+  /** On a card (none: letters alone). */
+  card?: Exclude<TopperCard, "none">;
 }
 
 export interface Cake {
@@ -109,8 +186,10 @@ export interface Cake {
   design: string;
   tiers: CakeTierCount;
   style: CakeStyle;
-  /** Each tier's colour, the bottom one first (three kept; as many as it has tiers used). */
+  /** Each tier's colour, the bottom one first (three kept; as many as it has tiers used): a hex or a rainbow (RAINBOW_TIERS). */
   colours: string[];
+  /** Sprinkles over it (none: no sprinkles). */
+  sprinkles?: CakeSprinkles;
   /** The figures, the back one first (0 to 8). */
   figures: CakeItem[];
   topper: CakeTopper;
@@ -146,11 +225,24 @@ export function cakeDesigns(seed: CakeSeed): { id: string; name: string; note: s
   const topper = seedTopper(seed);
   const theme = seed.themeName ?? "Theme";
   const base = { topper, flavour: "vanilla" as CakeFlavour };
+  const cutouts = THEME_CAKE_CUTOUTS[seed.themeId ?? ""] ?? [];
+  // A theme with printed cutouts gets a cake of them, as in the owner's examples: one tall tier, the cutout on top.
+  const one = cakeStack({ tiers: 1, style: "smooth" });
+  const ball = (id: CakeFigure, on: "top" | "side", x: number, y: number, s: number): CakeItem => ({ id, on, x, y, s });
+  const cutoutDesign = seed.themeId === "kpop"
+    ? { id: "cutouts", name: `${theme} pop stars`, note: "Printed pop stars on top, mirror balls, the name on the front", cake: { ...base, design: "cutouts", tiers: 1 as const, style: "smooth" as const, colours: [b === WHITE ? a : b, a, c],
+      topper: { ...topper, colour: "silver" as const, at: "front" as const, y: 0.5 },
+      figures: [ball("disco-ball", "top", -0.4, 0.5, 0.42), ball("silver-ball", "top", 0.42, 0.3, 0.34), ...topItems([cutouts[0]], one),
+        ball("disco-ball", "side", -0.45, 0.07, 0.4), ball("silver-ball", "side", -0.32, 0.04, 0.3), ball("disco-ball", "side", 0.44, 0.06, 0.36)] } }
+    : cutouts.length ? { id: "cutouts", name: `${theme} cutouts`, note: "White and simple, a printed cutout, the name on a cloud", cake: { ...base, design: "cutouts", tiers: 1 as const, style: "smooth" as const, colours: [WHITE, WHITE, WHITE],
+      topper: { ...topper, colour: "rose-gold" as const, card: "cloud" as const, x: 0.34, up: 30, s: 0.62 },
+      figures: [{ ...topItems([cutouts[0]], one)[0], x: -0.3, s: 1.3 }] } } : null;
   return [
     { id: "classic", name: `${theme} classic`, note: "One tier, smooth, its figure on top", cake: { ...base, design: "classic", tiers: 1, style: "smooth", colours: [a, b, c], figures: figs(1, 1, "smooth") } },
     { id: "drip", name: `${theme} drip`, note: "Two tiers with a chocolate drip", cake: { ...base, design: "drip", tiers: 2, style: "drip", colours: [a, b, c], figures: figs(2, 2, "drip") } },
     { id: "ruffle", name: `${theme} ruffles`, note: "Two tiers of frilly ruffles", cake: { ...base, design: "ruffle", tiers: 2, style: "ruffles", colours: [b === WHITE ? a : b, WHITE, c], figures: figs(1, 2, "ruffles") } },
     { id: "grand", name: `${theme} grand`, note: "Three tiers of rosettes", cake: { ...base, design: "grand", tiers: 3, style: "rosettes", colours: [a, b, c], figures: figs(3, 3, "rosettes") } },
+    ...(cutoutDesign ? [cutoutDesign] : []),
     { id: "plain", name: "Plain cake", note: "White and simple — make it yours", cake: { ...base, design: "plain", tiers: 1, style: "smooth", colours: [WHITE, WHITE, WHITE], figures: [], topper: { ...topper, on: false } } },
   ];
 }
@@ -172,10 +264,15 @@ export const topperShows = (k: Pick<Cake, "topper">) => k.topper.on && !!(k.topp
 export function cakePriceLines(k: Cake): { label: string; amount: number }[] {
   if (!k.enabled) return [];
   const lines = [{ label: `Cake: ${CAKE_TIERS.find((t) => t.n === k.tiers)!.name.toLowerCase()}, ${cakeStyle(k.style).name.toLowerCase()}`, amount: cakePrice(k) }];
+  const rainbow = tierColours(k).filter((c) => rainbowOf(c)).length;
+  if (rainbow) lines.push({ label: `Cake: rainbow buttercream${k.tiers > 1 ? ` ×${rainbow} ${rainbow > 1 ? "tiers" : "tier"}` : ""}`, amount: rainbow * RAINBOW_PRICE });
+  const sprinkles = CAKE_SPRINKLES.find((s) => s.id === k.sprinkles);
+  if (sprinkles?.price) lines.push({ label: `Cake sprinkles: ${sprinkles.name.toLowerCase()}`, amount: sprinkles.price });
   // Each figure on it, its copies counted.
+  const said = { sugar: "Cake figure", cutout: "Cake cutout", deco: "Cake decoration" };
   for (const f of CAKE_FIGURES) {
     const n = k.figures.filter((i) => i.id === f.id).length;
-    if (n) lines.push({ label: `Cake figure: ${f.name.toLowerCase()}${n > 1 ? ` ×${n}` : ""}`, amount: n * FIGURE_PRICE });
+    if (n) lines.push({ label: `${said[f.kind]}: ${f.name.toLowerCase()}${n > 1 ? ` ×${n}` : ""}`, amount: n * figurePrice(f.id) });
   }
   if (topperShows(k)) lines.push({ label: "Cake topper with the name", amount: TOPPER_PRICE });
   const flavour = CAKE_FLAVOURS.find((x) => x.id === k.flavour)!;
@@ -191,28 +288,34 @@ export function readCake(raw: unknown): Cake | undefined {
   const base = defaultCake();
   const kept = r.render as Record<string, unknown> | null;
   const t = (r.topper && typeof r.topper === "object" ? r.topper : {}) as Record<string, unknown>;
-  const colours = Array.isArray(r.colours) ? r.colours.filter((h): h is string => typeof h === "string" && HEX.test(h)).slice(0, 3).map((h) => h.toUpperCase()) : [];
+  const colours = Array.isArray(r.colours)
+    ? r.colours.filter((h): h is string => typeof h === "string" && (HEX.test(h) || !!rainbowOf(h))).slice(0, 3).map((h) => (rainbowOf(h) ? h : h.toUpperCase())) : [];
+  const sprinkles = CAKE_SPRINKLES.find((s) => s.id !== "none" && s.id === r.sprinkles)?.id as CakeSprinkles | undefined;
   const tiers = CAKE_TIERS.find((x) => x.n === r.tiers)?.n ?? base.tiers;
   const style = CAKE_STYLES.find((s) => s.id === r.style)?.id ?? base.style;
   const isFigure = (f: unknown): f is CakeFigure => CAKE_FIGURES.some((x) => x.id === f);
   const num = (v: unknown, lo: number, hi: number, d: number) => (typeof v === "number" && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
-  const list = Array.isArray(r.figures) ? r.figures.slice(0, MAX_CAKE_FIGURES) : null;
+  const list = Array.isArray(r.figures) ? r.figures.slice(0, MAX_CAKE_FIGURES + MAX_CAKE_DECOS) : null;
   // A cake kept before the figures could be moved (a list of names): set on top, as they were.
   const figures = !list ? base.figures : list.every((f) => typeof f === "string")
     ? topItems(Array.from(new Set(list.filter(isFigure))).slice(0, 3), cakeStack({ tiers, style }))
-    : list.flatMap((f) => {
+    : list.reduce<CakeItem[]>((kept, f) => {
       const o = (f && typeof f === "object" ? f : {}) as Record<string, unknown>;
-      if (!isFigure(o.id)) return [];
+      if (!isFigure(o.id) || roomFor(kept, o.id) <= 0) return kept;
       const top = o.on !== "side";
-      return [{ id: o.id, on: top ? "top" as const : "side" as const, x: num(o.x, -0.5, 0.5, 0), y: top ? num(o.y, -1, 1, 0.4) : num(o.y, 0, 1, 0.5), s: num(o.s, 0.3, 2.5, 0.8) }];
-    });
-  const up = num(t.up, 0, 400, NaN), tx = num(t.x, -0.4, 0.4, NaN), ts = num(t.s, 0.6, 1.6, NaN);
+      return [...kept, { id: o.id, on: top ? "top" as const : "side" as const, x: num(o.x, -0.5, 0.5, 0), y: top ? num(o.y, -1, 1, 0.4) : num(o.y, 0, 1, 0.5), s: num(o.s, 0.3, 2.5, 0.8) }];
+    }, []);
+  const front = t.at === "front";
+  const up = front ? NaN : num(t.up, 0, 400, NaN), tx = num(t.x, front ? -0.3 : -0.4, front ? 0.3 : 0.4, NaN), ts = num(t.s, 0.6, 1.6, NaN);
+  const ty = front ? num(t.y, 0.05, 0.95, 0.5) : NaN;
+  const card = TOPPER_CARDS.find((c) => c.id !== "none" && c.id === t.card)?.id as CakeTopper["card"];
   return {
     enabled: r.enabled !== false,
     design: typeof r.design === "string" && /^[a-z]{1,16}$/.test(r.design) ? r.design : base.design,
     tiers,
     style,
     colours: colours.length ? [...colours, ...base.colours].slice(0, 3) : base.colours,
+    ...(sprinkles ? { sprinkles } : {}),
     figures,
     topper: {
       on: typeof t.on === "boolean" ? t.on : base.topper.on,
@@ -220,7 +323,9 @@ export function readCake(raw: unknown): Cake | undefined {
       age: t.age === "" ? "" : cleanAge(t.age) || base.topper.age,
       font: typeof t.font === "string" && /^[a-z0-9-]{1,40}$/.test(t.font) ? t.font : base.topper.font,
       colour: TOPPER_COLOURS.find((c) => c.id === t.colour)?.id ?? base.topper.colour,
+      ...(front ? { at: "front" as const, y: ty } : {}),
       ...(Number.isNaN(tx) ? {} : { x: tx }), ...(Number.isNaN(up) ? {} : { up }), ...(Number.isNaN(ts) ? {} : { s: ts }),
+      ...(card ? { card } : {}),
     },
     flavour: CAKE_FLAVOURS.find((f) => f.id === r.flavour)?.id ?? base.flavour,
     ...(r.done === true ? { done: true } : {}),
@@ -232,9 +337,10 @@ export function readCake(raw: unknown): Cake | undefined {
 /** Changes whenever anything that shows in the picture changes (the flavour is inside: it does not show). */
 export function cakeRenderKey(k: Cake, themeId: string): string {
   const r2 = (v: number | undefined) => (v === undefined ? null : Math.round(v * 100) / 100);
-  const topper = topperShows(k) ? [k.topper.name, k.topper.age, k.topper.font, k.topper.colour, r2(k.topper.x), r2(k.topper.up), r2(k.topper.s)] : null;
+  const t = k.topper;
+  const topper = topperShows(k) ? [t.name, t.age, t.font, t.colour, r2(t.x), r2(t.up), r2(t.s), t.at ?? "top", r2(t.y), t.card ?? "none"] : null;
   const figures = k.figures.map((f) => [f.id, f.on, r2(f.x), r2(f.y), r2(f.s)]);
-  const s = JSON.stringify([themeId, k.tiers, k.style, tierColours(k), figures, topper]);
+  const s = JSON.stringify([themeId, k.tiers, k.style, tierColours(k), figures, topper, ...(k.sprinkles ? [k.sprinkles] : [])]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
   return (h >>> 0).toString(36);
@@ -277,15 +383,19 @@ export type CakeStack = ReturnType<typeof cakeStack>;
 export const FIGURE_TALL = 100;
 
 /** The tier at a height (its side), or the nearest. */
-const tierAt = (st: CakeStack, y: number) => st.tiers.find((t) => y >= t.top && y <= t.bottom) ?? (y < st.top ? st.tiers[st.tiers.length - 1] : st.tiers[0]);
+export const tierAt = (st: CakeStack, y: number) => st.tiers.find((t) => y >= t.top && y <= t.bottom) ?? (y < st.top ? st.tiers[st.tiers.length - 1] : st.tiers[0]);
 
-/** Where a figure is drawn, in the stand photo's pixels. */
+/** How high a piece stands over its foot: a printed cutout on top is on a stick. */
+const liftOf = (id: CakeFigure, h: number) => (figureKind(id) === "cutout" ? h * 0.22 : 0);
+
+/** Where a figure is drawn, in the stand photo's pixels; a cutout on top, its stick down into the cake. */
 export function placeItem(it: CakeItem, st: CakeStack) {
   const f = figurePicture(it.id);
   const h = FIGURE_TALL * it.s, w = (f.w / f.h) * h;
   if (it.on === "top") {
-    const foot = st.top + it.y * st.depth;
-    return { x: CAKE_STAND.plate.x + it.x * st.topW - w / 2, y: foot - h, w, h };
+    const foot = st.top + it.y * st.depth, lift = liftOf(it.id, h);
+    const x = CAKE_STAND.plate.x + it.x * st.topW - w / 2;
+    return { x, y: foot - lift - h, w, h, ...(lift ? { stick: { x: x + w / 2, y1: foot - lift - h * 0.3, y2: foot + 4 } } : {}) };
   }
   const mid = st.base - it.y * (st.base - st.top);
   return { x: CAKE_STAND.plate.x + it.x * tierAt(st, mid).w - w / 2, y: mid - h / 2, w, h };
@@ -294,7 +404,7 @@ export function placeItem(it: CakeItem, st: CakeStack) {
 /** A figure moved so its middle is at (cx, cy): on the top when its foot is on it, else stuck on the side there. */
 export function itemAt(it: CakeItem, st: CakeStack, cx: number, cy: number): CakeItem {
   const h = FIGURE_TALL * it.s;
-  const foot = cy + h / 2;
+  const foot = cy + h / 2 + liftOf(it.id, h);
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
   const dx = cx - CAKE_STAND.plate.x;
   if (foot <= st.top + st.depth) {
@@ -320,23 +430,29 @@ export function topItems(ids: CakeFigure[], st: CakeStack): CakeItem[] {
   });
 }
 
-/** One more figure: on the top where there is room, else on the bottom tier's front. */
+/** One more figure: on the top where there is room, else on the bottom tier's front; a ball round the foot of the cake. */
 export function addItem(k: Pick<Cake, "tiers" | "style" | "figures">, id: CakeFigure): CakeItem[] {
-  if (k.figures.length >= MAX_CAKE_FIGURES) return k.figures;
+  if (roomFor(k.figures, id) <= 0) return k.figures;
   const st = cakeStack(k);
   const f = figurePicture(id);
-  const free = (spots: number[], taken: number[]) => spots.find((x) => taken.every((t) => Math.abs(t - x) > 0.18)) ?? spots[k.figures.length % spots.length];
-  const top = k.figures.filter((i) => i.on === "top");
+  const r2 = (v: number) => Math.round(v * 100) / 100;
+  const free = (spots: number[], taken: number[]) => spots.find((x) => taken.every((t) => Math.abs(t - x) > 0.1)) ?? spots[k.figures.length % spots.length];
+  const kind = figureKind(id);
+  if (kind === "deco") {
+    const low = k.figures.filter((i) => i.on === "side" && figureKind(i.id) === "deco");
+    return [...k.figures, { id, on: "side", x: free([-0.45, 0.45, -0.33, 0.33, -0.2, 0.2, 0], low.map((i) => i.x)), y: 0.06, s: 0.38 }];
+  }
+  const top = k.figures.filter((i) => i.on === "top" && figureKind(i.id) !== "deco");
   if (top.length < 3) {
-    const ref = Math.max(st.topW, 210);
-    const s = Math.min(ref * 0.5, (ref * 0.5 * f.h) / f.w) / FIGURE_TALL;
-    return [...k.figures, { id, on: "top", x: free([0, -0.32, 0.32], top.map((i) => i.x)), y: 0.4, s: Math.round(s * 100) / 100 }];
+    const ref = Math.max(st.topW, 210), big = kind === "cutout" ? 0.62 : 0.5;
+    const s = Math.min(ref * big, (ref * big * f.h) / f.w) / FIGURE_TALL;
+    return [...k.figures, { id, on: "top", x: free([0, -0.32, 0.32], top.map((i) => i.x)), y: 0.4, s: r2(s) }];
   }
   const t0 = st.tiers[0];
   const y = (st.base - (t0.top + t0.bottom) / 2) / (st.base - st.top);
-  const side = k.figures.filter((i) => i.on === "side");
+  const side = k.figures.filter((i) => i.on === "side" && figureKind(i.id) !== "deco");
   const s = Math.min(t0.h * 0.42, (t0.w * 0.22 * f.h) / f.w) / FIGURE_TALL;
-  return [...k.figures, { id, on: "side", x: free([0, -0.28, 0.28, -0.14, 0.14], side.map((i) => i.x)), y, s: Math.round(s * 100) / 100 }];
+  return [...k.figures, { id, on: "side", x: free([0, -0.28, 0.28, -0.14, 0.14], side.map((i) => i.x)), y, s: r2(s) }];
 }
 
 /** The cake's words for the render. */
