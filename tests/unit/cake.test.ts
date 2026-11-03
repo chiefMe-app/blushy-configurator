@@ -12,7 +12,10 @@ import {
   readCake, roomFor, tierColours, tierPicture, type Cake, type CakeFigure, type CakeItem,
 } from "@/lib/studio/cake";
 import { cakePrompt } from "@/lib/studio/cakeRender";
-import { CAKE_CART, CAKE_SWEETS, CART_PRICE, CART_SWEET_PLACES, SWEET_PLACES, colourWords, readSweets, sweetPicture } from "@/lib/studio/cakeSweets";
+import {
+  CAKE_CART, CAKE_PLINTHS, CAKE_SWEETS, CART_BALLOONS_PRICE, CART_PRICE, CART_SWEET_PLACES, PLINTH_SPOTS, PLINTHS_PRICE, SWEET_PLACES, colourWords, readSweets,
+  sweetPicture, sweetPlaces,
+} from "@/lib/studio/cakeSweets";
 import { cakeLayout, viewBoxOf, viewOf } from "@/components/builder/cake/CakePreview";
 import { fromDraft, toDraft } from "@/lib/draft";
 import { resetRenderGuard } from "@/lib/renderGuard";
@@ -144,7 +147,9 @@ describe("cake", () => {
     expect(p).toContain("unicorn horn & ears, gold star");
     expect(p).toContain("stuck flat on the sides of the tiers exactly where image 1 has them: heart ×2");
     expect(p).toContain('reading "Olivia" and "6"');
-    expect(p).toMatch(/never yellow/);
+    // The light (2026-11-03, the owner: "çok sarı, kaliteli durmuyor hiç"): clean white, and the tiers counted.
+    expect(p).toMatch(/never cream, ivory, beige, yellow or orange/);
+    expect(p).toMatch(/exactly two tiers stacked, never more and never fewer/);
     expect(cakePrompt({ ...k, topper: { ...k.topper, on: false } })).not.toContain("topper");
     expect(cakePrompt({ ...k, figures: [] })).not.toContain("sugar-paste figures");
   });
@@ -270,7 +275,7 @@ describe("the cake kept and rendered", () => {
     expect(got[0]).toEqual({ url: PICTURE });
     expect(got.at(-1)).toMatchObject({ done: true });
     const [model, { input }] = subscribe.mock.calls[0] as [string, { input: { prompt: string; image_urls: string[]; image_size: { width: number; height: number } } }];
-    expect(model).toBe("fal-ai/flux-2/edit");
+    expect(model).toBe("fal-ai/flux-2-pro/edit");
     expect(input.image_urls).toHaveLength(1);
     expect(input.image_size).toEqual({ width: 1120, height: 1408 });
     expect(input.prompt).toBe(cakePrompt(k));
@@ -333,29 +338,104 @@ describe("the sweets beside the cake", () => {
 });
 
 describe("the sweet cart", () => {
-  // 2026-11-03 (the owner: "cake cart opsiyonu da olabilir"): the cake and the sweets on a white cart, its awning in her colour.
-  it("has its photo and awning, prices the cart, and says it in the render", () => {
+  // 2026-11-03 (the owner: "cake cart opsiyonu da olabilir"; later "stripe olmasın artık, bu şekilde olsun … fiyonkları
+  // yapma … burdaki gibi balon seçeneği olsun"): a white wooden cart, its roof white or in her colour, balloons if she likes.
+  it("has its photo and roof, prices the cart, and says it in the render", () => {
     expect(fs.existsSync(path.join("public", CAKE_CART.src))).toBe(true);
     expect(fs.existsSync(path.join("public", CAKE_CART.awning))).toBe(true);
     // The sweets stand between the cart's posts, on its counter.
     for (const s of CAKE_SWEETS) {
       const x = CART_SWEET_PLACES[s.id].x * CAKE_CART.scale + CAKE_CART.x;
-      expect(x, s.id).toBeGreaterThan(240);
-      expect(x, s.id).toBeLessThan(755);
+      expect(x, s.id).toBeGreaterThan(258);
+      expect(x, s.id).toBeLessThan(752);
     }
-    const k: Cake = { ...defaultCake(seed), cart: { awning: "#F8BBD0" } };
-    expect(cakePriceLines(k)).toContainEqual({ label: "Sweet cart with a striped awning", amount: CART_PRICE });
+    const k: Cake = { ...defaultCake(seed), cart: { awning: "#FFFFFF" } };
+    expect(cakePriceLines(k)).toContainEqual({ label: "Sweet cart", amount: CART_PRICE });
     expect(cakeTotal(k)).toBe(cakeTotal(defaultCake(seed)) + CART_PRICE);
-    expect(cakePrompt(k)).toMatch(/on the counter of a white wooden sweet cart with a pink and white striped awning/);
+    expect(cakePrompt(k)).toMatch(/on the counter of a white wooden sweet cart with a flat white wooden roof with a scalloped trim/);
+    expect(cakePrompt(k)).not.toMatch(/stripe|balloon/);
+    expect(cakePrompt({ ...k, cart: { awning: "#F8BBD0" } })).toMatch(/a flat pink wooden roof/);
     expect(cakePrompt(defaultCake(seed))).not.toMatch(/cart/);
     expect(cakeRenderKey(k, "unicorn")).not.toBe(cakeRenderKey(defaultCake(seed), "unicorn"));
     expect(cakeRenderKey({ ...k, cart: { awning: "#BAE6FD" } }, "unicorn")).not.toBe(cakeRenderKey(k, "unicorn"));
   });
 
-  it("reads the cart back, its colour or pink", () => {
+  it("stands a three-tier cake clear of the roof", () => {
+    // Anything on the cake stands under the roof (its scalloped edge at y 250 in the cart photo).
+    expect(CAKE_CART.room * CAKE_CART.scale + CAKE_CART.y).toBeLessThan(380);
+    expect(CAKE_CART.room * CAKE_CART.scale + CAKE_CART.y).toBeGreaterThan(250);
+    for (const d of cakeDesigns(seed)) {
+      const L = cakeLayout({ ...d.cake, tiers: 3, cart: { awning: "#FFFFFF" } });
+      // The cake itself a good way under it.
+      expect(L.st.top * CAKE_CART.scale + CAKE_CART.y, d.id).toBeGreaterThan(330);
+    }
+  });
+
+  it("puts a balloon garland on it, in the party's balloons, priced and said", () => {
+    const k: Cake = { ...defaultCake(seed), cart: { awning: "#FFFFFF", balloons: ["#F8BBD0", "#BAE6FD", "#FEF08A"] } };
+    expect(cakePriceLines(k)).toContainEqual({ label: "Balloon garland on the cart", amount: CART_BALLOONS_PRICE });
+    expect(cakeTotal(k)).toBe(cakeTotal(defaultCake(seed)) + CART_PRICE + CART_BALLOONS_PRICE);
+    expect(cakePrompt(k)).toMatch(/garland of real matte latex balloons in pink, baby blue, yellow/);
+    expect(cakeRenderKey(k, "unicorn")).not.toBe(cakeRenderKey({ ...k, cart: { awning: "#FFFFFF" } }, "unicorn"));
+    expect(cakeRenderKey(k, "unicorn")).not.toBe(cakeRenderKey({ ...k, cart: { awning: "#FFFFFF", balloons: ["#FFFFFF"] } }, "unicorn"));
+  });
+
+  it("reads the cart back: its colour or white, its balloons", () => {
     expect(readCake({ cart: { awning: "#bae6fd" } })!.cart).toEqual({ awning: "#BAE6FD" });
-    expect(readCake({ cart: { awning: "blue" } })!.cart).toEqual({ awning: "#F8BBD0" });
+    expect(readCake({ cart: { awning: "blue" } })!.cart).toEqual({ awning: "#FFFFFF" });
+    expect(readCake({ cart: { awning: "#FFFFFF", balloons: ["#f8bbd0", "nope", 3] } })!.cart).toEqual({ awning: "#FFFFFF", balloons: ["#F8BBD0"] });
+    expect(readCake({ cart: { awning: "#FFFFFF", balloons: [] } })!.cart).toEqual({ awning: "#FFFFFF" });
     expect(readCake({})!.cart).toBeUndefined();
+  });
+});
+
+describe("the plinths", () => {
+  // 2026-11-03 (the owner: "pastayı plinth üzerinde de görmek isteyebilir … diğer sweet'leri seçtiyse onlar da diğer
+  // plinth'lerde olacak").
+  it("stands the cake on the tall middle plinth and each sweet on a plinth of its own", () => {
+    expect(fs.existsSync(path.join("public", CAKE_PLINTHS.src))).toBe(true);
+    expect(fs.existsSync(path.join("public", CAKE_PLINTHS.board))).toBe(true);
+    const all: Cake = { ...defaultCake(seed), plinths: true, sweets: CAKE_SWEETS.map((s) => ({ id: s.id, count: 12, colour: "#F8BBD0" })) };
+    const at = sweetPlaces(all);
+    expect(new Set(CAKE_SWEETS.map((s) => `${at[s.id].x},${at[s.id].foot}`)).size).toBe(5);
+    expect(CAKE_SWEETS.map((s) => ({ x: at[s.id].x, foot: at[s.id].foot }))).toEqual(PLINTH_SPOTS);
+    // Two sweets: the plinths beside the cake.
+    const two: Cake = { ...all, sweets: all.sweets!.filter((s) => s.id === "cookies" || s.id === "macarons") };
+    expect([sweetPlaces(two).cookies, sweetPlaces(two).macarons].map((p) => ({ x: p.x, foot: p.foot }))).toEqual(PLINTH_SPOTS.slice(0, 2));
+    expect(cakePriceLines(all)).toContainEqual({ label: "Plinth display", amount: PLINTHS_PRICE });
+    const words = cakePrompt(all);
+    expect(words).toMatch(/standing on a white cake stand on top of a tall round white plinth/);
+    expect(words).toMatch(/On the other plinths, each on its own, keep the sweets/);
+    expect(words).toMatch(/the five white round plinths exactly as image 1 has them/);
+    expect(cakePrompt(all, "cookies")).toMatch(/on a round white plinth/);
+    expect(cakeRenderKey(all, "unicorn")).not.toBe(cakeRenderKey({ ...all, plinths: undefined }, "unicorn"));
+    // Three tiers on a board there; the whole display in view, inside its photo.
+    expect(holderOf({ tiers: 3, plinths: true }).board).toBe(true);
+    expect(cakeStack({ ...all, tiers: 3 }).base).toBe(holderOf({ tiers: 3, plinths: true }).plate.y);
+    expect(viewBoxOf(all, "whole")).toEqual(CAKE_PLINTHS.view);
+    const b = viewBoxOf(all, "cake");
+    expect(b.y + b.h).toBeLessThanOrEqual(CAKE_PLINTHS.h + 0.01);
+  });
+
+  it("is read back only without the cart", () => {
+    expect(readCake({ plinths: true })!.plinths).toBe(true);
+    expect(readCake({ plinths: true, cart: { awning: "#FFFFFF" } })!.plinths).toBeUndefined();
+    expect(readCake({ plinths: "yes" })!.plinths).toBeUndefined();
+  });
+});
+
+describe("the card behind the name", () => {
+  // 2026-11-03 (the owner: "yazının arkasındaki cloud kartın rengini seçebilsin").
+  it("is white or in her colour, read back, said and kept apart in the render", () => {
+    const k: Cake = { ...defaultCake(seed), topper: { ...defaultCake(seed).topper, card: "cloud", cardColour: "#bae6fd" } };
+    const back = readCake(k)!;
+    expect(back.topper.cardColour).toBe("#BAE6FD");
+    expect(cakePrompt(back)).toMatch(/a baby blue cloud-shaped card/);
+    expect(cakePrompt({ ...back, topper: { ...back.topper, cardColour: undefined } })).toMatch(/a white cloud-shaped card/);
+    expect(cakeRenderKey(back, "unicorn")).not.toBe(cakeRenderKey({ ...back, topper: { ...back.topper, cardColour: undefined } }, "unicorn"));
+    // No card, no card colour.
+    expect(readCake({ ...k, topper: { ...k.topper, card: undefined } })!.topper.cardColour).toBeUndefined();
+    expect(readCake({ ...k, topper: { ...k.topper, cardColour: "nope" } })!.topper.cardColour).toBeUndefined();
   });
 });
 
@@ -410,8 +490,8 @@ describe("the board, the lettering and the close-ups", () => {
       const b = viewBoxOf(k, v);
       expect(b.x).toBeGreaterThanOrEqual(0);
       expect(b.y).toBeGreaterThanOrEqual(0);
-      expect(b.x + b.w).toBeLessThanOrEqual(1024 + 0.01);
-      expect(b.y + b.h).toBeLessThanOrEqual(1280 + 0.01);
+      expect(b.x + b.w).toBeLessThanOrEqual(CAKE_CART.w + 0.01);
+      expect(b.y + b.h).toBeLessThanOrEqual(CAKE_CART.h + 0.01);
       if (v !== "whole") expect(b.w / b.h).toBeCloseTo(0.8, 2);
     }
     // A close-up is nearer than the whole cart.

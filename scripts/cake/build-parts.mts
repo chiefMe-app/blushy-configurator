@@ -57,8 +57,33 @@ function bbox(d: Buffer, W: number, H: number) {
   return { left: x0, top: y0, width: x1 - x0 + 1, height: y1 - y0 + 1 };
 }
 
-/** Where the cart photo's awning is (measured by eye), its stripes looked for inside it. */
-const AWNING = { x0: 160, x1: 825, y0: 165, y1: 395 };
+/**
+ * Where the cart photo's roof is (measured by eye): white wood with a scalloped trim (2026-11-03, the owner: "stripe
+ * olmasın artık, bu şekilde olsun … fiyonkları yapma"), its colour multiplied through it; the posts' tops under it
+ * left out.
+ */
+const ROOF = { x0: 125, x1: 900, y0: 80, y1: 300, posts: [[180, 258], [752, 840]] as const, postsFrom: 276 };
+/**
+ * The roof raised (2026-11-03, the owner: "cart'taki 3 katlı pasta tentenin altına neredeyse değmesin, ona göre
+ * ayarla tenteyi"): the photo given EXTRA rows of wall on top, then everything over the posts' plain middle moved
+ * up by `by` and that middle (`band`: wall and posts only) stretched to fill; the counter and all under it only
+ * moved down by EXTRA (lib/studio/cakeSweets.ts CAKE_CART).
+ */
+const RAISE = { extra: 60, band: [380, 480] as const, by: 100 };
+async function raised(img: Buffer, W: number, H: number, ch: number) {
+  const E = RAISE.extra, H2 = H + E, row = W * ch;
+  const src = (y: number) => Math.max(0, y - E);
+  const b0 = RAISE.band[0] + E, b1 = RAISE.band[1] + E;
+  const out = Buffer.alloc(W * H2 * ch);
+  for (let y = 0; y < H2; y++) {
+    const from = y < b0 - RAISE.by ? y + RAISE.by
+      : y < b1 ? Math.min(b1 - 1, Math.round(b0 + ((y - (b0 - RAISE.by)) * (b1 - b0)) / (b1 - b0 + RAISE.by)))
+        : y;
+    const f = src(from);
+    img.copy(out, y * row, f * row, f * row + row);
+  }
+  return sharp(out, { raw: { width: W, height: H2, channels: ch as 4 } });
+}
 /** How tall a sweet's picture is kept. */
 const SWEET_TALL = 480;
 
@@ -90,22 +115,22 @@ const manifest: {
 for (const f of fs.readdirSync(SRC).filter((n) => n.endsWith(".png")).sort()) {
   const name = f.replace(/\.png$/, "");
   if (name === "cart") {
-    // The sweet cart (2026-11-03, the owner: "cake cart opsiyonu da olabilir"): its photo, and its awning's grey
-    // stripes as a mask her colour is multiplied through (only inside the awning: the cart's own shade stays white).
+    // The sweet cart (2026-11-03, the owner: "cake cart opsiyonu da olabilir"): its photo (a flux-2 shot), and its
+    // roof as a mask a colour is multiplied through.
     const { data: c, info: ci } = await sharp(path.join(SRC, f)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    // The cart alone (a birefnet cut-out of the same photo): the wall round the awning is left as it is.
+    // The cart alone (a birefnet cut-out of the same photo): the wall round the roof is left as it is.
     const { data: cut } = await sharp(path.join(SRC, "cart-cut.png.keep")).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     const m = Buffer.alloc(ci.width * ci.height * 4);
     for (let y = 0; y < ci.height; y++) for (let x = 0; x < ci.width; x++) {
       const i = (y * ci.width + x) * 4;
       m[i] = m[i + 1] = m[i + 2] = 255;
-      if (x < AWNING.x0 || x > AWNING.x1 || y < AWNING.y0 || y > AWNING.y1) continue;
-      const lum = (c[i] + c[i + 1] + c[i + 2]) / 3;
-      m[i + 3] = Math.round(Math.max(0, Math.min(1, (236 - lum) / 22)) * cut[i + 3]);
+      if (x < ROOF.x0 || x > ROOF.x1 || y < ROOF.y0 || y > ROOF.y1) continue;
+      if (y >= ROOF.postsFrom && ROOF.posts.some(([a, b]) => x >= a && x <= b)) continue;
+      m[i + 3] = cut[i + 3];
     }
-    await sharp(path.join(SRC, f)).webp({ quality: 84 }).toFile(path.join(OUT, "cart.webp"));
-    await sharp(m, { raw: { width: ci.width, height: ci.height, channels: 4 } }).blur(1).webp({ quality: 80, alphaQuality: 80 }).toFile(path.join(OUT, "cart-awning.webp"));
-    console.log("cart", ci.width, "x", ci.height);
+    await (await raised(c, ci.width, ci.height, 4)).removeAlpha().webp({ quality: 84 }).toFile(path.join(OUT, "cart.webp"));
+    await (await raised(m, ci.width, ci.height, 4)).blur(1).webp({ quality: 80, alphaQuality: 80 }).toFile(path.join(OUT, "cart-awning.webp"));
+    console.log("cart", ci.width, "x", ci.height + RAISE.extra);
     continue;
   }
   if (name === "stand" || name === "stand-board") {
@@ -115,10 +140,18 @@ for (const f of fs.readdirSync(SRC).filter((n) => n.endsWith(".png")).sort()) {
     await sharp(path.join(SRC, f)).extend({ top: STAND_ABOVE, extendWith: "copy" }).webp({ quality: 84 }).toFile(path.join(OUT, name === "stand" ? "stand.webp" : "board.webp"));
     continue;
   }
+  if (name === "plinths" || name === "plinths-board") {
+    // The plinth display (2026-11-03, the owner: "pastayı plinth üzerinde de görmek isteyebilir … diğer sweet'leri
+    // seçtiyse onlar da diğer plinth'lerde olacak"): a flux-2 shot of five white plinths, an empty cake stand on the
+    // tall middle one; and the same with a flat cake board there instead (the edit's plinth top, colour matched).
+    await sharp(path.join(SRC, f)).webp({ quality: 86 }).toFile(path.join(OUT, `${name}.webp`));
+    continue;
+  }
   if (name === "cart-board") {
     // The cart with a flat cake board on its counter instead of its stand: only the counter taken from a flux-2 edit,
-    // feathered, so the awning (and its mask) is the cart's own.
-    await sharp(path.join(SRC, f)).webp({ quality: 84 }).toFile(path.join(OUT, "cart-board.webp"));
+    // feathered, so the roof (and its mask) is the cart's own.
+    const { data: b, info: bi } = await sharp(path.join(SRC, f)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    await (await raised(b, bi.width, bi.height, 4)).removeAlpha().webp({ quality: 84 }).toFile(path.join(OUT, "cart-board.webp"));
     continue;
   }
   const { data, info } = await sharp(path.join(SRC, f)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });

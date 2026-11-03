@@ -5,7 +5,7 @@
 // step's sixth part, after the piñata. Pure data and sums.
 import PARTS from "./cakeParts.json";
 import { cleanAge } from "./pinata";
-import { CAKE_SWEETS, CART_PRICE, colourWords, readCart, readSweets, sweetPriceLines, type CakeCart, type CakeSweet, type SweetId } from "./cakeSweets";
+import { CAKE_PLINTHS, CAKE_SWEETS, CART_BALLOONS_PRICE, CART_PRICE, PLINTHS_PRICE, colourWords, readCart, readSweets, sweetPriceLines, type CakeCart, type CakeSweet, type SweetId } from "./cakeSweets";
 
 /** How it is decorated, every tier alike (public/design/cake/tier-<id>.webp, scripts/cake/build-parts.mts). */
 export const CAKE_STYLES = [
@@ -188,6 +188,8 @@ export interface CakeTopper {
   s?: number;
   /** On a card (none: letters alone). */
   card?: Exclude<TopperCard, "none">;
+  /** The card's colour, a hex (2026-11-03, the owner: "yazının arkasındaki cloud kartın rengini seçebilsin"); unset: white. */
+  cardColour?: string;
 }
 
 export interface Cake {
@@ -205,6 +207,8 @@ export interface Cake {
   sweets?: CakeSweet[];
   /** Shown on a sweet cart instead of a table, its awning in a colour (lib/studio/cakeSweets.ts CAKE_CART). */
   cart?: CakeCart;
+  /** Shown on a display of white plinths instead (lib/studio/cakeSweets.ts CAKE_PLINTHS); never with the cart. */
+  plinths?: boolean;
   /** The figures, the back one first (0 to 8). */
   figures: CakeItem[];
   topper: CakeTopper;
@@ -338,7 +342,9 @@ export function cakePriceLines(k: Cake): { label: string; amount: number }[] {
   if (topperShows(k)) lines.push({ label: "Cake topper with the name", amount: TOPPER_PRICE });
   const flavour = CAKE_FLAVOURS.find((x) => x.id === k.flavour)!;
   if (flavour.price) lines.push({ label: `Cake flavour: ${flavour.name.toLowerCase()}`, amount: flavour.price });
-  return [...lines, ...sweetPriceLines(k.sweets), ...(k.cart ? [{ label: "Sweet cart with a striped awning", amount: CART_PRICE }] : [])];
+  return [...lines, ...sweetPriceLines(k.sweets), ...(k.cart ? [{ label: "Sweet cart", amount: CART_PRICE }] : []),
+    ...(k.cart?.balloons ? [{ label: "Balloon garland on the cart", amount: CART_BALLOONS_PRICE }] : []),
+    ...(k.plinths && !k.cart ? [{ label: "Plinth display", amount: PLINTHS_PRICE }] : [])];
 }
 export const cakeTotal = (k: Cake) => cakePriceLines(k).reduce((s, l) => s + l.amount, 0);
 
@@ -390,6 +396,7 @@ export function readCake(raw: unknown): Cake | undefined {
     ...(sprinkles ? { sprinkles } : {}),
     ...(sweets?.length ? { sweets } : {}),
     ...(cart ? { cart } : {}),
+    ...(!cart && r.plinths === true ? { plinths: true } : {}),
     figures,
     topper: {
       on: typeof t.on === "boolean" ? t.on : base.topper.on,
@@ -400,6 +407,7 @@ export function readCake(raw: unknown): Cake | undefined {
       ...(front ? { at: "front" as const, y: ty } : onBoard ? { at: "board" as const } : {}),
       ...(Number.isNaN(tx) ? {} : { x: tx }), ...(Number.isNaN(up) ? {} : { up }), ...(Number.isNaN(ts) ? {} : { s: ts }),
       ...(card ? { card } : {}),
+      ...(card && typeof t.cardColour === "string" && HEX.test(t.cardColour) ? { cardColour: t.cardColour.toUpperCase() } : {}),
     },
     flavour: CAKE_FLAVOURS.find((f) => f.id === r.flavour)?.id ?? base.flavour,
     ...(r.done === true ? { done: true } : {}),
@@ -412,11 +420,11 @@ export function readCake(raw: unknown): Cake | undefined {
 export function cakeRenderKey(k: Cake, themeId: string, view: CakeView = "whole"): string {
   const r2 = (v: number | undefined) => (v === undefined ? null : Math.round(v * 100) / 100);
   const t = k.topper;
-  const topper = topperShows(k) ? [t.name, t.age, t.font, t.colour, r2(t.x), r2(t.up), r2(t.s), t.at ?? "top", r2(t.y), t.card ?? "none"] : null;
+  const topper = topperShows(k) ? [t.name, t.age, t.font, t.colour, r2(t.x), r2(t.up), r2(t.s), t.at ?? "top", r2(t.y), t.card ?? "none", t.card ? t.cardColour ?? null : null] : null;
   const figures = k.figures.map((f) => [f.id, f.on, r2(f.x), r2(f.y), r2(f.s)]);
   // The sweets as they show (not how many: the picture has a few of each).
   const sweets = (k.sweets ?? []).map((x) => [x.id, x.colour, !!x.sprinkles, x.topper ?? null, x.print ?? null]);
-  const s = JSON.stringify([themeId, k.tiers, k.style, tierColours(k), figures, topper, ...(k.sprinkles ? [k.sprinkles] : []), ...(sweets.length ? [sweets] : []), ...(k.cart ? [["cart", k.cart.awning]] : [])]);
+  const s = JSON.stringify([themeId, k.tiers, k.style, tierColours(k), figures, topper, ...(k.sprinkles ? [k.sprinkles] : []), ...(sweets.length ? [sweets] : []), ...(k.cart ? [["cart", k.cart.awning, k.cart.balloons ?? null]] : k.plinths ? [["plinths"]] : [])]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
   // A close-up is its own picture of the same cake.
@@ -439,17 +447,20 @@ export const CAKE_STAND = { src: "/design/cake/stand.webp", w: 896, h: 1392, pla
  * top's oval is for its half width.
  */
 export const CAKE_BOARD = { src: "/design/cake/board.webp", plate: { x: 444, y: 1095, w: 411 }, ry: 0.15, bottom: 1190 };
-export const CART_BOARD = { src: "/design/cake/cart-board.webp", plate: { x: 472, y: 1030, w: 596 }, ry: 0.175 };
-/** What the cake stands on: the stand, or for three tiers a board, on the table or on the cart. */
-export function holderOf(k: Pick<Cake, "tiers"> & { cart?: unknown }) {
-  if (k.tiers !== 3) return { board: false, plate: CAKE_STAND.plate, ry: 0.125, bottom: CAKE_STAND.bottom };
-  return k.cart ? { board: true, ...CART_BOARD, bottom: CART_BOARD.plate.y + 60 } : { board: true, ...CAKE_BOARD };
+export const CART_BOARD = { src: "/design/cake/cart-board.webp", plate: { x: 444, y: 1001, w: 506 }, ry: 0.12 };
+export const PLINTH_BOARD = { src: CAKE_PLINTHS.board, plate: { x: 437, y: 1046, w: 447 }, ry: 0.113 };
+/** What the cake stands on: the stand, or for three tiers a board, on the table, the cart or the middle plinth. */
+export function holderOf(k: Pick<Cake, "tiers"> & { cart?: unknown; plinths?: boolean }) {
+  // The plinths' own stand is lower than the table's, seen a little more from the side.
+  if (k.tiers !== 3) return { board: false, plate: CAKE_STAND.plate, ...(k.plinths && !k.cart ? { ry: 0.08, bottom: 1050 } : { ry: 0.125, bottom: CAKE_STAND.bottom }) };
+  if (k.cart) return { board: true, ...CART_BOARD, bottom: CART_BOARD.plate.y + 60 };
+  return k.plinths ? { board: true, ...PLINTH_BOARD, bottom: PLINTH_BOARD.plate.y + 40 } : { board: true, ...CAKE_BOARD };
 }
 /** How wide each tier is on the stand, the bottom one first, by how many there are. */
 export const TIER_WIDTHS: Record<CakeTierCount, number[]> = { 1: [280], 2: [305, 220], 3: [300, 225, 160] };
 
 /** The cake stacked on the stand: each tier's box and the circles it stands on and ends in, and its top's. */
-export function cakeStack(k: Pick<Cake, "tiers" | "style"> & { cart?: unknown }) {
+export function cakeStack(k: Pick<Cake, "tiers" | "style"> & { cart?: unknown; plinths?: boolean }) {
   const { plate } = holderOf(k);
   const pic = tierPicture(k.style);
   const widths = TIER_WIDTHS[k.tiers];
@@ -521,7 +532,7 @@ export function topItems(ids: CakeFigure[], st: CakeStack): CakeItem[] {
 }
 
 /** One more figure: on the top where there is room, else on the bottom tier's front; a ball round the foot of the cake. */
-export function addItem(k: Pick<Cake, "tiers" | "style" | "figures"> & { cart?: unknown }, id: CakeFigure): CakeItem[] {
+export function addItem(k: Pick<Cake, "tiers" | "style" | "figures"> & { cart?: unknown; plinths?: boolean }, id: CakeFigure): CakeItem[] {
   if (roomFor(k.figures, id) <= 0) return k.figures;
   const st = cakeStack(k);
   const f = figurePicture(id);

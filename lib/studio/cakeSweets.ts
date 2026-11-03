@@ -71,30 +71,68 @@ export const SWEET_PLACES: Record<SweetId, { x: number; foot: number; tall: numb
 };
 
 /**
- * The sweet cart (2026-11-03, the owner: "cake cart opsiyonu da olabilir", her photos of a white cart with a striped
- * awning): a photo of an empty white cart with its own empty cake stand on the counter (scripts/cake/sources/cart.png),
- * its awning's grey stripes in her colour. The cake and the sweets are drawn in the stand photo's pixels and set onto
- * it: the stand photo's plate (CAKE_STAND) onto the cart's, `scale` and then (`x`, `y`). `room`: how high anything may
- * stand, in the stand photo's pixels — under the awning. `view`: the picture, in the cart photo's pixels.
+ * The sweet cart (2026-11-03, the owner: "cake cart opsiyonu da olabilir"; later "stripe olmasın artık, bu şekilde
+ * olsun … fiyonkları yapma", her photo of a white wooden cart): a photo of an empty white wooden cart, a flat roof with
+ * a scalloped trim, its own empty cake stand on the counter (scripts/cake/sources/cart.png, a flux-2 shot), the roof
+ * in a colour (`awning`: white unless she picks one). The cake and the sweets are drawn in the stand photo's pixels
+ * and set onto it: the stand photo's plate (CAKE_STAND) onto the cart's, `scale` and then (`x`, `y`). `room`: how
+ * high anything may stand, in the stand photo's pixels — under the roof. `view`: the picture, in the cart photo's
+ * pixels. Its roof raised (scripts/cake/build-parts.mts RAISE) so a three-tier cake and its topper stand clear of it.
+ * `garland`: her balloons (the welcome board's garland, mirrored) from the floor up the cart's left side and over its
+ * roof — its foot, its top and how far across it the cart's left edge is.
  */
 export const CAKE_CART = {
-  src: "/design/cake/cart.webp", awning: "/design/cake/cart-awning.webp", w: 1024, h: 1280,
-  scale: 0.517, x: 261, y: 129.6, room: 504, view: { x: 40, y: 70, w: 944, h: 1180 },
+  src: "/design/cake/cart.webp", awning: "/design/cake/cart-awning.webp", w: 1024, h: 1340,
+  scale: 0.589, x: 241.7, y: 116.4, room: 250, view: { x: 0, y: 30, w: 1024, h: 1280 },
+  garland: { foot: 1262, top: 200, edge: 0.44, left: 150 },
 };
-/** A placeholder: the cart's hire, set up and taken back. */
+/** Placeholders: the cart's hire, set up and taken back; a balloon garland on it. */
 export const CART_PRICE = 450;
-export interface CakeCart { awning: string }
+export const CART_BALLOONS_PRICE = 350;
+/** `balloons`: a garland on it, in these colours (the party's balloons when she turned it on). */
+export interface CakeCart { awning: string; balloons?: string[] }
 /** The sweets on the cart's counter, between its posts, in the stand photo's pixels (as SWEET_PLACES). */
 export const CART_SWEET_PLACES: Record<SweetId, { x: number; foot: number; tall: number }> = {
-  cupcakes: { x: 110, foot: 1050, tall: 228 },
-  cakepops: { x: 800, foot: 1050, tall: 205 },
-  cookies: { x: 150, foot: 1118, tall: 100 },
-  donuts: { x: 770, foot: 1120, tall: 120 },
-  macarons: { x: 448, foot: 1122, tall: 72 },
+  cupcakes: { x: 165, foot: 1045, tall: 228 },
+  cakepops: { x: 800, foot: 1045, tall: 205 },
+  cookies: { x: 190, foot: 1068, tall: 100 },
+  donuts: { x: 770, foot: 1068, tall: 120 },
+  macarons: { x: 448, foot: 1070, tall: 72 },
 };
+/**
+ * The plinth display (2026-11-03, the owner: "pastayı plinth üzerinde de görmek isteyebilir … diğer sweet'leri
+ * seçtiyse onlar da diğer plinth'lerde olacak"): a photo of five white round plinths before a plain wall, an empty
+ * cake stand on the tall middle one (scripts/cake/sources/plinths.png; `board`: a flat cake board there instead), the
+ * cake set onto it as onto the cart. Each sweet on a plinth of its own (PLINTH_SPOTS, in the stand photo's pixels):
+ * the two beside the cake first, then the two low ones in front, then the middle plinth's front.
+ */
+export const CAKE_PLINTHS = {
+  src: "/design/cake/plinths.webp", board: "/design/cake/plinths-board.webp", w: 1024, h: 1280,
+  scale: 0.515, x: 277.9, y: 36.4, view: { x: 40, y: 60, w: 944, h: 1180 },
+};
+export const PLINTH_SPOTS = [{ x: -93, foot: 1157 }, { x: 979, foot: 1155 }, { x: -48, foot: 1553 }, { x: 936, foot: 1560 }, { x: 447, foot: 1082 }];
+/** A placeholder: the plinths' hire, set up and taken back. */
+export const PLINTHS_PRICE = 300;
+export type CakeScene = "table" | "cart" | "plinths";
+export const sceneOf = (k: { cart?: unknown; plinths?: boolean }): CakeScene => (k.cart ? "cart" : k.plinths ? "plinths" : "table");
+/** The photo the cake is set onto (the cart's or the plinths'), from the stand photo's pixels; none on the table. */
+export const sceneMap = (k: { cart?: unknown; plinths?: boolean }) => (k.cart ? CAKE_CART : k.plinths ? CAKE_PLINTHS : null);
+/** Where each sweet stands, in the stand photo's pixels: beside the stand, on the cart's counter, or on its plinth. */
+export function sweetPlaces(k: { cart?: unknown; plinths?: boolean; sweets?: CakeSweet[] }): Record<SweetId, { x: number; foot: number; tall: number }> {
+  if (k.cart) return CART_SWEET_PLACES;
+  if (!k.plinths) return SWEET_PLACES;
+  const ids = CAKE_SWEETS.map((s) => s.id).filter((id) => k.sweets?.some((x) => x.id === id));
+  return Object.fromEntries(CAKE_SWEETS.map((s) => {
+    const i = ids.indexOf(s.id), at = PLINTH_SPOTS[i < 0 ? 0 : i];
+    // A little bigger than beside the stand: a plinth's top is wide, and they fill it.
+    return [s.id, { ...at, tall: SWEET_PLACES[s.id].tall * 1.3 }];
+  })) as Record<SweetId, { x: number; foot: number; tall: number }>;
+}
 export const readCart = (raw: unknown): CakeCart | undefined => {
   const o = (raw && typeof raw === "object" ? raw : null) as Record<string, unknown> | null;
-  return o ? { awning: typeof o.awning === "string" && HEX.test(o.awning) ? o.awning.toUpperCase() : "#F8BBD0" } : undefined;
+  if (!o) return undefined;
+  const balloons = Array.isArray(o.balloons) ? o.balloons.filter((h): h is string => typeof h === "string" && HEX.test(h)).map((h) => h.toUpperCase()).slice(0, 8) : [];
+  return { awning: typeof o.awning === "string" && HEX.test(o.awning) ? o.awning.toUpperCase() : "#FFFFFF", ...(balloons.length ? { balloons } : {}) };
 };
 
 export const sweetPrice = (s: CakeSweet) => s.count * (sweetOf(s.id).each + (s.sprinkles ? SPRINKLE_PRICE : 0));

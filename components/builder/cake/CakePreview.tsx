@@ -11,11 +11,14 @@ import {
   figureKind, figurePicture, holderOf, itemAt, placeItem, rainbowOf, roomFor, tierAt, tierColours, topperColour, topperShows, type Cake, type CakeView,
 } from "@/lib/studio/cake";
 import { asPrinted, fontCss, tableFont } from "@/lib/studio/tableFonts";
-import { CAKE_CART, CAKE_SWEETS, CART_SWEET_PLACES, SWEET_PLACES, SWEET_SPOTS, sweetPicture, type CakeSweet } from "@/lib/studio/cakeSweets";
+import { CAKE_CART, CAKE_PLINTHS, CAKE_SWEETS, SWEET_PLACES, SWEET_SPOTS, sceneMap, sceneOf, sweetPicture, sweetPlaces, type CakeSweet } from "@/lib/studio/cakeSweets";
 import FitText from "@/components/studio/FitText";
+import PIECES from "@/lib/studio/welcomePieces.json";
+import { setShot, useRecoloredBase } from "@/components/design/LiveSketch";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 import RenderAgain from "@/components/builder/RenderAgain";
+import ZoomPhoto from "@/components/builder/ZoomPhoto";
 
 const WHITE = "#FFFFFF";
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -23,7 +26,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 const darker = (hex: string, f = 0.72) => "#" + [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * f).toString(16).padStart(2, "0")).join("");
 
 /** Where everything goes, in the stand photo's pixels: the tiers bottom first, the figures, the topper's words. */
-export function cakeLayout(k: Pick<Cake, "tiers" | "style" | "figures" | "topper"> & { cart?: unknown }) {
+export function cakeLayout(k: Pick<Cake, "tiers" | "style" | "figures" | "topper"> & { cart?: unknown; plinths?: boolean }) {
   const st = cakeStack(k);
   const { plate } = st;
   const figures = k.figures.map((it) => ({ ...placeItem(it, st), src: figurePicture(it.id).src }));
@@ -227,7 +230,7 @@ export function CakePiece({ k, uid, grab, onTier }: { k: Cake; uid: string; grab
             <path key={dx} d={`M ${words.x + dx * words.w} ${ageY - words.age * 0.1} L ${words.stickX + dx * words.w * 0.9} ${words.plane + 6}`}
               stroke={k.topper.card ? "#F4F1EA" : paint} strokeWidth={4} strokeLinecap="round" />
           ))}
-          {k.topper.card && <TopperCardShape kind={k.topper.card} box={L.topperBox} border={tc.hex} fill={k.topper.colour === "white" ? "#F7B6D2" : WHITE} />}
+          {k.topper.card && <TopperCardShape kind={k.topper.card} box={L.topperBox} border={tc.hex} fill={k.topper.cardColour ?? (k.topper.colour === "white" ? "#F7B6D2" : WHITE)} />}
           {/* Something to take hold of between the letters. */}
           {grab && <rect x={L.topperBox.x} y={L.topperBox.y} width={L.topperBox.w} height={L.topperBox.h} fill="transparent" />}
           {words.board ? letters([name, k.topper.age].filter(Boolean).join(" "), words.x, ageY, words.line, words.w, 0.03) : <>
@@ -285,8 +288,8 @@ export function viewOf(k: Cake) {
  * table or cart, the cake close up, or a sweet close up — four wide to five tall, inside the photo.
  */
 export function viewBoxOf(k: Cake, view: CakeView) {
-  const cart = !!k.cart;
-  if (view === "whole" || !cakeViews(k).includes(view)) return cart ? CAKE_CART.view : viewOf(k);
+  const map = sceneMap(k);
+  if (view === "whole" || !cakeViews(k).includes(view)) return map ? map.view : viewOf(k);
   let box: { x: number; y: number; w: number; h: number };
   if (view === "cake") {
     // The cake and its topper's room, down to the stand's foot or the board's front.
@@ -296,14 +299,14 @@ export function viewBoxOf(k: Cake, view: CakeView) {
     const w = Math.max(L.tiers[0].w * 1.45, (bottom - top) * 0.8);
     box = { x: holder.plate.x - w / 2, y: bottom - w / 0.8, w, h: w / 0.8 };
   } else {
-    const at = (cart ? CART_SWEET_PLACES : SWEET_PLACES)[view], pic = sweetPicture(view);
+    const at = sweetPlaces(k)[view], pic = sweetPicture(view);
     const sw = (pic.w / pic.h) * at.tall;
     const h = Math.max(at.tall * 2.1, (sw * 1.6) / 0.8), w = h * 0.8;
     box = { x: at.x - w / 2, y: at.foot - at.tall / 2 - h * 0.55, w, h };
   }
-  // On a cart, into the cart photo's pixels; then kept inside the photo.
-  const b = cart ? { x: box.x * CAKE_CART.scale + CAKE_CART.x, y: box.y * CAKE_CART.scale + CAKE_CART.y, w: box.w * CAKE_CART.scale, h: box.h * CAKE_CART.scale } : box;
-  const W = cart ? CAKE_CART.w : CAKE_STAND.w, H = cart ? CAKE_CART.h : CAKE_STAND.h;
+  // On a cart or the plinths, into that photo's pixels; then kept inside the photo.
+  const b = map ? { x: box.x * map.scale + map.x, y: box.y * map.scale + map.y, w: box.w * map.scale, h: box.h * map.scale } : box;
+  const W = map ? map.w : CAKE_STAND.w, H = map ? map.h : CAKE_STAND.h;
   const f = Math.min(1, W / b.w, H / b.h), w = b.w * f, h = b.h * f;
   return { x: clamp(b.x + (b.w - w) / 2, 0, W - w), y: clamp(b.y + (b.h - h) / 2, 0, H - h), w, h };
 }
@@ -346,8 +349,10 @@ function moved(k: Cake, what: CakePick, cx: number, cy: number, view: { y: numbe
  * The stand, close up, with the cake on it. With `edit`, the figures and the topper are taken hold of and moved:
  * the cake changes when she lets go (while she drags, only the picture follows her, its view held still).
  */
-export function CakeArt({ k, className, edit, view = "whole", onView }: {
+export function CakeArt({ k, className, edit, view = "whole", onView, themeId = "unicorn" }: {
   k: Cake; className?: string;
+  /** The party's theme: whose balloon photo a garland on the cart is repainted from. */
+  themeId?: string;
   edit?: { picked: CakePick | null; onPick: (p: CakePick | null) => void; onChange: (k: Cake) => void };
   /** What it shows: the whole table or cart, or a close-up (viewBoxOf). */
   view?: CakeView;
@@ -386,13 +391,25 @@ export function CakeArt({ k, className, edit, view = "whole", onView }: {
   const L = edit && edit.picked !== null ? cakeLayout(shown) : null;
   const frame = L ? (edit!.picked === "topper" ? L.topperBox : L.figures[edit!.picked as number]) : null;
   const cart = k.cart;
+  const scene = sceneOf(k), map = sceneMap(k);
   // While she drags, the picture holds still.
   const box = drag?.box ?? viewBoxOf(k, view);
   const board = holderOf(k).board;
   const zoom = onView && view === "whole" ? onView : undefined;
+  const places = sweetPlaces(k);
+  const sweets = (k.sweets ?? []).map((sw) => <SweetPiece key={sw.id} s={sw} k={k} uid="ck-sw" places={places} onTap={zoom && (() => zoom(sw.id))} />);
+  // Her balloons on the cart (2026-11-03, the owner: "burdaki gibi balon seçeneği olsun"): the welcome board's garland
+  // of the party's balloon set, repainted as the backdrop's are, mirrored — from the floor up the cart's left side and
+  // arching over its roof.
+  const palette = cart?.balloons ?? [];
+  const shot = setShot(themeId, palette);
+  const gName = `garland-${shot.folder}` as keyof typeof PIECES;
+  const gp = (PIECES[gName] ?? PIECES["garland-unicorn-pastel"]) as { w: number; h: number };
+  const gSrc = useRecoloredBase(palette.length ? `/design/welcome/pieces/${gName}.webp` : null, `/design/welcome/pieces/${gName}-families.png`, palette, shot.asShot, 50);
+  const G = CAKE_CART.garland, gH = G.foot - G.top, gW = (gH * gp.w) / gp.h, gX = G.left - G.edge * gW;
   return (
-    <svg ref={svg} className={className} viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} role="img" aria-label={cart ? "Your cake on a sweet cart" : "Your cake on its stand"} data-testid="cake-art"
-      data-scene={cart ? "cart" : "table"} data-view={view} data-holder={board ? "board" : "stand"} style={drag ? { touchAction: "none" } : undefined}
+    <svg ref={svg} className={className} viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} role="img" aria-label={cart ? "Your cake on a sweet cart" : scene === "plinths" ? "Your cake on a plinth" : "Your cake on its stand"} data-testid="cake-art"
+      data-scene={scene} data-view={view} data-holder={board ? "board" : "stand"} style={drag ? { touchAction: "none" } : undefined}
       onPointerDown={edit ? () => edit.onPick(null) : undefined}
       onPointerMove={drag ? (e) => { if (e.pointerId === drag.id) setDrag({ ...drag, at: point(e) }); } : undefined}
       onPointerUp={letGo} onPointerCancel={letGo}>
@@ -401,13 +418,27 @@ export function CakeArt({ k, className, edit, view = "whole", onView }: {
         <defs><mask id="ck-awning" style={{ maskType: "alpha" }}><image href={CAKE_CART.awning} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} /></mask></defs>
         <image href={board ? CART_BOARD.src : CAKE_CART.src} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} />
         <rect mask="url(#ck-awning)" style={{ mixBlendMode: "multiply" }} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} fill={cart.awning} data-part="cake-awning" />
-      </> : <image href={board ? CAKE_BOARD.src : CAKE_STAND.src} x={0} y={0} width={W} height={H} />}
-      <g ref={layer} transform={cart ? `translate(${CAKE_CART.x} ${CAKE_CART.y}) scale(${CAKE_CART.scale})` : undefined}>
-        {(k.sweets ?? []).map((sw) => <SweetPiece key={sw.id} s={sw} k={k} uid="ck-sw" places={cart ? CART_SWEET_PLACES : SWEET_PLACES} onTap={zoom && (() => zoom(sw.id))} />)}
+      </> : scene === "plinths" ? <image href={board ? CAKE_PLINTHS.board : CAKE_PLINTHS.src} x={0} y={0} width={CAKE_PLINTHS.w} height={CAKE_PLINTHS.h} />
+        : <image href={board ? CAKE_BOARD.src : CAKE_STAND.src} x={0} y={0} width={W} height={H} />}
+      <g ref={layer} transform={map ? `translate(${map.x} ${map.y}) scale(${map.scale})` : undefined}>
+        {/* On the plinths each sweet stands on a plinth of its own, the middle one's in front of the cake. */}
+        {scene !== "plinths" && sweets}
         <CakePiece k={shown} uid="ck-stand" grab={grab} onTier={zoom && (() => zoom("cake"))} />
+        {scene === "plinths" && sweets}
         {frame && <rect data-no-capture="" data-testid="cake-picked" x={frame.x - 6} y={frame.y - 6} width={frame.w + 12} height={frame.h + 12} rx={10}
           fill="none" stroke="#FF0D66" strokeWidth={3} strokeDasharray="10 7" vectorEffect="non-scaling-stroke" pointerEvents="none" />}
       </g>
+      {cart && palette.length > 0 && (
+        <g data-part="cart-balloons" data-set={shot.folder} pointerEvents="none">
+          <defs>
+            <filter id="ck-gl-soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation={6} /></filter>
+            <filter id="ck-gl-wall" x="-20%" y="-10%" width="140%" height="120%"><feDropShadow dx={-5} dy={4} stdDeviation={6} floodColor="#3b2a22" floodOpacity={0.2} /></filter>
+          </defs>
+          <ellipse cx={gX + gW * 0.3} cy={G.foot - 4} rx={gW * 0.28} ry={9} fill="#3b2a22" opacity={0.18} filter="url(#ck-gl-soft)" />
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
+          {gSrc && <image href={gSrc} x={-(gX + gW)} y={G.top} width={gW} height={gH} transform="scale(-1 1)" filter="url(#ck-gl-wall)" />}
+        </g>
+      )}
     </svg>
   );
 }
@@ -473,7 +504,7 @@ function PickedTools({ k, picked, setCake, onPick }: { k: Cake; picked: CakePick
 }
 
 /** A view's name on its chip. */
-const viewName = (k: Cake, v: CakeView) => (v === "whole" ? (k.cart ? "Whole cart" : "Whole table") : v === "cake" ? "Cake" : CAKE_SWEETS.find((s) => s.id === v)!.name);
+const viewName = (k: Cake, v: CakeView) => (v === "whole" ? (k.cart ? "Whole cart" : k.plinths ? "Whole display" : "Whole table") : v === "cake" ? "Cake" : CAKE_SWEETS.find((s) => s.id === v)!.name);
 
 export default function CakePreview({ config, setCake, render, onGenerate, view = "whole", setView }: {
   config: BuilderConfig; setCake: (k: Cake) => void; render: PieceRender; onGenerate: () => void;
@@ -492,7 +523,7 @@ export default function CakePreview({ config, setCake, render, onGenerate, view 
   const showRender = !!render.url && !live;
   // Views to choose from when there is more than the cake to see: the sweets beside it, or the cart.
   const views = k?.enabled ? cakeViews(k) : [];
-  const choose = k?.enabled && setView && (views.length > 2 || !!k.cart) ? setView : undefined;
+  const choose = k?.enabled && setView && (views.length > 2 || !!k.cart || !!k.plinths) ? setView : undefined;
   const rendered = (v: CakeView) => !!k && render.keys.includes(cakeRenderKey(k, config.theme, v));
   // A render of this view before a change (not of another view).
   const staleHere = !!k && !render.ready && render.keys.some((key) => (key.split(":")[1] ?? "whole") === view);
@@ -518,13 +549,12 @@ export default function CakePreview({ config, setCake, render, onGenerate, view 
           </div>
         )}
         {showRender ? <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="bz-tb-photo" data-testid="cake-render" src={render.url!} alt="Your cake, rendered" />
+          <ZoomPhoto testId="cake-render" src={render.url!} alt="Your cake, rendered" />
           {/* The live picture stays in the page, out of sight, for a new render of it to be taken from. */}
-          <div className="bz-live-hidden" aria-hidden="true"><CakeArt k={k} className="bz-ck-art" view={view} /></div>
+          <div className="bz-live-hidden" aria-hidden="true"><CakeArt k={k} className="bz-ck-art" view={view} themeId={config.theme} /></div>
         </> : <>
           <div className={render.loading ? "bz-wb-wait on" : "bz-wb-wait"}>
-            <CakeArt k={k} className="bz-ck-art" view={view} onView={choose} edit={render.loading ? undefined : { picked: pick, onPick: setPicked, onChange: setCake }} />
+            <CakeArt k={k} className="bz-ck-art" view={view} themeId={config.theme} onView={choose} edit={render.loading ? undefined : { picked: pick, onPick: setPicked, onChange: setCake }} />
             {render.loading && (
               <div className="veil" role="status" data-testid="cake-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>

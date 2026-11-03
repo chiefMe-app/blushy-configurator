@@ -13,6 +13,7 @@ import WelcomeBoardArt from "@/components/studio/WelcomeBoardArt";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 import RenderAgain from "@/components/builder/RenderAgain";
+import ZoomPhoto from "@/components/builder/ZoomPhoto";
 
 export default function WelcomePreview({ config, render, onGenerate }: { config: BuilderConfig; render: PieceRender; onGenerate: () => void }) {
   const theme = themeById(config.theme) ?? THEMES[0];
@@ -39,8 +40,7 @@ export default function WelcomePreview({ config, render, onGenerate }: { config:
       {b?.enabled ? <>
         <link rel="stylesheet" href="/fonts/typography/fonts.css" />
         {showRender ? <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="bz-tb-photo" data-testid="welcome-render" src={render.url!} alt="Your welcome board, rendered" />
+          <ZoomPhoto testId="welcome-render" src={render.url!} alt="Your welcome board, rendered" />
           {/* The live picture stays in the page, out of sight, for a new render of it to be taken from (Regenerate). */}
           <div className="bz-live-hidden" aria-hidden="true"><div className="bz-wb-wait">{art}</div></div>
         </> : (

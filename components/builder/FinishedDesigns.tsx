@@ -105,7 +105,7 @@ export default function FinishedDesigns({ config, renderUrl, tableRenderUrl, wel
       case "pinata": if (pinataRenderUrl) return { imageUrl: pinataRenderUrl, redraw: pinataRenderUrl };
         return { drawing: <div className="art"><PinataArt p={config.pinata!} theme={theme} /></div>, redraw: JSON.stringify([config.theme, config.pinata]) };
       case "cake": if (cakeRenderUrl) return { imageUrl: cakeRenderUrl, redraw: cakeRenderUrl };
-        return { drawing: <div className="art"><CakeArt k={config.cake!} /></div>, redraw: JSON.stringify([config.theme, config.cake]) };
+        return { drawing: <div className="art"><CakeArt k={config.cake!} themeId={config.theme} /></div>, redraw: JSON.stringify([config.theme, config.cake]) };
     }
   };
   return (

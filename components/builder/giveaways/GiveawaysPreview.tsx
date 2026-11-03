@@ -17,6 +17,7 @@ import { THEME_GROUPS } from "@/components/builder/constants";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 import RenderAgain from "@/components/builder/RenderAgain";
+import ZoomPhoto from "@/components/builder/ZoomPhoto";
 
 /** The box's look in a theme: its placemat print and its picture (the theme list's crayon icon). */
 export function boxLook(g: Giveaways, theme: { id: string; accent: string }): BoxLook {
@@ -152,8 +153,7 @@ export default function GiveawaysPreview({ config, render, onGenerate }: { confi
       {g?.enabled ? <>
         <link rel="stylesheet" href="/fonts/typography/fonts.css" />
         {showRender ? <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="bz-tb-photo" data-testid="giveaways-render" src={render.url!} alt="Your giveaways, rendered" />
+          <ZoomPhoto testId="giveaways-render" src={render.url!} alt="Your giveaways, rendered" />
           {/* The live picture stays in the page, out of sight, for a new render of it to be taken from (Regenerate). */}
           <div className="bz-live-hidden" aria-hidden="true"><div className="bz-wb-wait">{art}</div></div>
         </> : (

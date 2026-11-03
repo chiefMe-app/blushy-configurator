@@ -8,6 +8,7 @@ import { PINATA_FILLINGS, PINATA_ROOM, digitPicture, pinataSize, shapePicture, t
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 import RenderAgain from "@/components/builder/RenderAgain";
+import ZoomPhoto from "@/components/builder/ZoomPhoto";
 
 /** The piñata on its own, `tall` high, its top centred on x, top: the shape's photo, or the digits in her bands. */
 export function PinataPiece({ p, x, top, tall, uid, maxW = 380 }: { p: Pinata; x: number; top: number; tall: number; uid: string; maxW?: number }) {
@@ -123,8 +124,7 @@ export default function PinataPreview({ config, render, onGenerate }: { config: 
       </div>
       {p?.enabled ? <>
         {showRender ? <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="bz-tb-photo" data-testid="pinata-render" src={render.url!} alt="Your piñata, rendered" />
+          <ZoomPhoto testId="pinata-render" src={render.url!} alt="Your piñata, rendered" />
           {/* The live picture stays in the page, out of sight, for a new render of it to be taken from (Regenerate). */}
           <div className="bz-live-hidden" aria-hidden="true"><div className="bz-wb-wait">{art}</div></div>
         </> : (

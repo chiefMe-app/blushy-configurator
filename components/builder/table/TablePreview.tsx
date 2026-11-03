@@ -19,6 +19,7 @@ import TablePlace from "@/components/studio/table/TablePlace";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 import RenderAgain from "@/components/builder/RenderAgain";
+import ZoomPhoto from "@/components/builder/ZoomPhoto";
 
 // 2026-10-31 (owner): one place first, then six places, a part of the table; the render once there is one.
 type View = "place" | "six" | "perspective" | "top" | "render";
@@ -72,8 +73,7 @@ export default function TablePreview({ config, render, onGenerate, placeShot }: 
       ) : (
         <>
           {shown === "render" && render.url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img className="bz-tb-photo" data-testid="table-render" src={render.url} alt="Your kids' table, one place from above" />
+            <ZoomPhoto testId="table-render" src={render.url} alt="Your kids' table, one place from above" />
           ) : (
             <div className={shown === "render" ? "bz-tb-wait on" : "bz-tb-wait"}>
               {shown === "place" || shown === "six" || shown === "render" ? <TablePlace table={table} theme={theme} mode={shown === "six" ? "six" : "one"} className="bz-tb-place" />

@@ -548,6 +548,16 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await expect(topper).toHaveAttribute("data-at", "front");
   await page.getByTestId("cake-topper-card").getByRole("radio", { name: "Cloud card" }).click();
   await expect(topper.locator("[data-part=cake-topper-card]")).toHaveCount(1);
+  // The card in a colour of hers (the owner: "yazının arkasındaki cloud kartın rengini seçebilsin").
+  const cardColour = page.getByTestId("cake-topper-card-colour").getByRole("radio");
+  await expect(cardColour.first()).toHaveAttribute("aria-checked", "true"); // white
+  await cardColour.nth(2).click();
+  await expect(cardColour.nth(2)).toHaveAttribute("aria-checked", "true");
+  const cardHex = await cardColour.nth(2).evaluate((b) => {
+    const [r, g, bl] = getComputedStyle(b).backgroundColor.match(/\d+/g)!.map(Number);
+    return "#" + [r, g, bl].map((n) => n.toString(16).padStart(2, "0")).join("").toUpperCase();
+  });
+  await expect(topper.locator(`[data-part=cake-topper-card] [fill="${cardHex}"]`).first()).toBeAttached();
   const s2 = aed(await sum.textContent());
   await page.getByTestId("cake-cutouts").getByRole("button", { name: /Add Holographic star/ }).click();
   await page.getByTestId("cake-decos").getByRole("button", { name: /Add Mirror ball/ }).click();
@@ -571,11 +581,12 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   expect(aed(await sum.textContent())).toBe(s3 + 12 * 12 + 6 * (10 + 1));
   await cupcakes.getByRole("radio", { name: "None" }).click();
   await expect(art.locator("[data-part=cake-sweet]")).toHaveCount(1);
-  // On a sweet cart (the owner: "cake cart opsiyonu da olabilir"): its awning in a colour of hers.
+  // On a sweet cart (the owner: "cake cart opsiyonu da olabilir"; later "stripe olmasın"): white, its roof in a colour of hers.
   const s4 = aed(await sum.textContent());
   await page.getByTestId("cake-display").getByText("On a sweet cart", { exact: true }).click();
   await expect(art).toHaveAttribute("data-scene", "cart");
   const awning = page.getByTestId("cake-awning").getByRole("radio");
+  await expect(awning.first()).toHaveAttribute("aria-checked", "true"); // white
   await awning.nth(2).click();
   await expect(awning.nth(2)).toHaveAttribute("aria-checked", "true");
   expect(await art.locator("[data-part=cake-awning]").getAttribute("fill")).toBe(await awning.nth(2).evaluate((b) => {
@@ -584,6 +595,22 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   }));
   await expect(art.locator("[data-part=cake-sweet]")).toHaveCount(1);
   expect(aed(await sum.textContent())).toBe(s4 + 450);
+  // Balloons up its side (the owner: "burdaki gibi balon seçeneği olsun"), in the party's colours; off again.
+  await page.getByTestId("cake-cart-balloons").getByText("A balloon garland on the cart").click();
+  await expect(art.locator("[data-part=cart-balloons] image")).toHaveCount(1);
+  expect(aed(await sum.textContent())).toBe(s4 + 450 + 350);
+  await page.getByTestId("cake-cart-balloons").getByText("A balloon garland on the cart").click();
+  await expect(art.locator("[data-part=cart-balloons]")).toHaveCount(0);
+  expect(aed(await sum.textContent())).toBe(s4 + 450);
+  // On plinths (the owner: "pastayı plinth üzerinde de görmek isteyebilir … diğer sweet'leri … diğer plinth'lerde").
+  await page.getByTestId("cake-display").getByText("On plinths", { exact: true }).click();
+  await expect(art).toHaveAttribute("data-scene", "plinths");
+  await expect(page.getByTestId("cake-awning")).toHaveCount(0);
+  await expect(art.locator("[data-part=cake-sweet]")).toHaveCount(1);
+  await expect(page.getByTestId("cake-views").getByRole("tab").first()).toHaveText("Whole display");
+  expect(aed(await sum.textContent())).toBe(s4 + 300);
+  await page.getByTestId("cake-display").getByText("On a sweet cart", { exact: true }).click();
+  await expect(art).toHaveAttribute("data-scene", "cart");
   // Close up (the owner: "cake'e basacağız sadece cake … cookies'e basacağız yakından cookies"): a tap on a sweet or the cake.
   const views = page.getByTestId("cake-views");
   await expect(views.getByRole("tab")).toHaveText(["Whole cart", "Cake", "Iced cookies"]);
@@ -623,6 +650,17 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await expect(page.getByTestId("finish-cake")).toBeEnabled();
   await page.getByTestId("finish-cake-generate").click();
   await expect(page.getByTestId("cake-render")).toBeVisible();
+  // Looked at closely (the owner: "render'a zoom in yapılıp detaylar incelenebilir mi?"): opened, a tap zooms in, Escape closes.
+  await page.getByTestId("cake-render-zoom").click();
+  const zoom = page.getByTestId("render-zoom");
+  await expect(zoom).toBeVisible();
+  const big = zoom.locator("img");
+  await expect.poll(() => big.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true);
+  const fitted = (await big.boundingBox())!.width;
+  await big.click();
+  await expect.poll(async () => (await big.boundingBox())!.width).toBeGreaterThan(fitted * 2);
+  await page.keyboard.press("Escape");
+  await expect(zoom).toHaveCount(0);
   await expect(page.getByTestId("cake-render-again").getByRole("button", { name: /Regenerate render/ })).toBeVisible();
   const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/cake-render"))!.postData()!);
   expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);

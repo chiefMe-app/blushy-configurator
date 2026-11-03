@@ -7,7 +7,9 @@ import { CAKE_SWEETS, colourWords } from "./cakeSweets";
 import { fontWords, tableFont } from "./tableFonts";
 
 const TIER_NAMES: Record<number, string[]> = { 1: ["the cake"], 2: ["the bottom tier", "the top tier"], 3: ["the bottom tier", "the middle tier", "the top tier"] };
-const LIGHT = "Make the light real: soft, even, neutral daylight, gentle natural shadows — never yellow or orange light, no sunbeams or patches of sunlight.";
+// 2026-11-03 (the owner: "kötü bir render ışığı var, çok sarı, kaliteli durmuyor hiç … örnekteki ışık kalitesi iyi"):
+// a bakery's product photograph — bright, clean, white, sharp.
+const LIGHT = "Light it like a high-end bakery's product photograph: bright, clean, high-key white daylight from a large soft window, a true neutral white balance — whites stay pure white, never cream, ivory, beige, yellow or orange — gentle soft shadows, no sunbeams or patches of sunlight; crisp and sharp, every detail in focus, the colours fresh and clear.";
 
 /** The words for the photograph: keep the scene, make it real. */
 export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
@@ -26,7 +28,7 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
   const holder = onBoard ? "a wide round white cake board" : "a white cake stand";
   const words = [t.name.trim(), t.age].filter(Boolean).map((w) => `"${w}"`).join(" and ");
   const lettering = fontWords(tableFont(t.font)).replace(", all capitals", "");
-  const card = t.card ? TOPPER_CARDS.find((c) => c.id === t.card)!.words : "";
+  const card = t.card ? TOPPER_CARDS.find((c) => c.id === t.card)!.words.replace("white", t.cardColour ? colourWords(t.cardColour) : "white") : "";
   // On the front or the board the name is real cake lettering, as in the owner's examples (2026-11-03: "renderda
   // yapay çıkmasın, pastanın üstünde bu örneklerdeki gibi olsun"): letters cut from sugar paste, with a thickness and
   // a shadow — painted with a metal's shine, or in her colour. On top, on sticks, acrylic.
@@ -51,27 +53,35 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
     return `${kind.words(colourWords(sw.colour))}${top}${print}${sw.sprinkles ? ", with rainbow sprinkles" : ""}`;
   };
   const sweets = CAKE_SWEETS.map((s) => sweetWords(s.id)).filter(Boolean);
-  // On the sweet cart: the cake and the sweets on its counter, under its striped awning.
-  const cart = k.cart ? `a white wooden sweet cart with a ${colourWords(k.cart.awning)} and white striped awning` : "";
+  // On the sweet cart: the cake and the sweets on its counter, under its flat wooden roof (2026-11-03, the owner:
+  // "stripe olmasın artık"), and her balloons up its side if she wants them.
+  const roof = `a flat ${colourWords(k.cart?.awning ?? "#FFFFFF")} wooden roof with a scalloped trim`;
+  const cart = k.cart ? `a white wooden sweet cart with ${roof}` : "";
+  const balloons = k.cart?.balloons?.length
+    ? `a full organic garland of real matte latex balloons in ${Array.from(new Set(k.cart.balloons.map(colourWords))).join(", ")}, of mixed sizes, rising from the floor up the cart's left side and over the left of its roof`
+    : "";
+  // On the plinths (2026-11-03): the cake on the tall middle one, each sweet on its own.
+  const plinths = !k.cart && !!k.plinths;
+  const where = cart ? `on the counter of ${cart}` : plinths ? "on top of a tall round white plinth, the middle one of a party dessert display of white round plinths before a plain wall" : "on a table";
   const characters = cutTop.length + cutSide.length > 0 || (k.sweets ?? []).some((x) => [x.topper, x.print].some((p) => p && p !== "age" && said(p)?.kind === "cutout"));
 
   // A sweet close up: only it, made real; the rest as it is, out of focus.
   const these = view !== "whole" && view !== "cake" ? sweetWords(view) : "";
   if (these) return [
-    `Image 1 is a close-up preview of ${these}, ${cart ? `on the counter of ${cart}` : "on a table"} at a birthday party, beside the birthday cake.`,
+    `Image 1 is a close-up preview of ${these}, ${cart ? `on the counter of ${cart}` : plinths ? "on a round white plinth" : "on a table"} at a birthday party, beside the birthday cake.`,
     "Make it one real, natural close-up photograph of exactly these, from the same camera position and with the same framing, every piece the same size and in the same place: real and freshly made, the same colours, toppers, prints and sprinkles as image 1 shows them, appetising.",
-    `Keep the background as image 1 has it — the ${cart ? "cart" : "table"}, the wall and whatever else shows at the edges of the picture — softly out of focus.`,
+    `Keep the background as image 1 has it — the ${cart ? "cart" : plinths ? "plinths" : "table"}, the wall and whatever else shows at the edges of the picture — softly out of focus.`,
     LIGHT,
     `Nothing added and nothing taken away: no candles, ${characters ? "no real people or hands, no characters beyond the printed pictures" : "no people, no hands, no characters"}, no fresh flowers, no extra words or letters.`,
   ].join(" ");
   const close = view === "cake";
-  const wide = !close && (!!cart || sweets.length > 0);
+  const wide = !close && (!!cart || plinths || sweets.length > 0);
   return [
-    `Image 1 is a ${close ? "close-up " : ""}preview of a birthday cake standing on ${holder} ${cart ? `on the counter of ${cart}` : "on a table"}: ${cakeWords(k)}.`,
+    `Image 1 is a ${close ? "close-up " : ""}preview of a birthday cake standing on ${holder} ${where}: ${cakeWords(k)}.`,
     wide
-      ? `Make it one real, natural photograph of exactly this scene, from the same camera position and with the same framing — the whole ${cart ? "sweet cart" : "table"} in view, never zoomed in or cropped — every part the same size and in the same place.`
+      ? `Make it one real, natural photograph of exactly this scene, from the same camera position and with the same framing — the whole ${cart ? "sweet cart" : plinths ? "display" : "table"} in view, never zoomed in or cropped — every part the same size and in the same place.`
       : "Make it one real, natural close-up photograph of exactly this cake, from the same camera position, with the same framing and every part the same size and in the same place.",
-    `Keep the cake exactly: ${k.tiers > 1 ? "the same tiers, each in its own colour as image 1 shows it" : "the same colour as image 1"}, the same decoration, made of real soft buttercream with its texture.`,
+    `Keep the cake exactly: ${k.tiers > 1 ? `exactly ${k.tiers === 2 ? "two" : "three"} tiers stacked, never more and never fewer, each in its own colour as image 1 shows it` : "one single tier, the same colour as image 1"}, the same decoration, each figure once and only where image 1 has it, made of real smooth buttercream with its fine texture.`,
     rainbow.length ? `${rainbow.join("; ")} — keep its colours and patches as image 1 shows them.` : "",
     sprinkles?.words ? `Keep the sprinkles as image 1 shows them: ${sprinkles.words}, real sugar sprinkles.` : "",
     figures.length ? `On top keep the handmade sugar-paste figures exactly: ${figures.join(", ")} — the same shapes, colours, sizes and places, made real and matte.` : "",
@@ -81,8 +91,9 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
     decos.length ? `Keep the small round decorations exactly where image 1 has them: ${decos.join(", ")} — real and shiny, on the top and round the foot of the cake.` : "",
     topper,
     close ? "Keep whatever else shows at the edges of the picture as it is, softly out of focus."
-      : sweets.length ? `On the ${cart ? "cart's counter" : "table"} beside the cake keep the sweets exactly where image 1 has them: ${sweets.join("; ")} — the same places, sizes and colours, made real.` : "",
-    cart ? `Keep the ${onBoard ? "cake board" : "white cake stand"} and the sweet cart exactly as image 1 has them — its white wooden counter, its posts and its ${colourWords(k.cart!.awning)} and white striped awning, the same stripes and colour — and the floor and the wall behind it; a soft shadow under the cake.`
+      : sweets.length ? `${plinths ? "On the other plinths, each on its own," : `On the ${cart ? "cart's counter" : "table"} beside the cake`} keep the sweets exactly where image 1 has them: ${sweets.join("; ")} — the same places, sizes and colours, made real.` : "",
+    cart ? `Keep the ${onBoard ? "cake board" : "white cake stand"} and the sweet cart exactly as image 1 has them — its white wooden counter, its turned posts, its wheel and ${roof}, the same colour —${balloons ? ` ${balloons} exactly as image 1 has it, the same balloons in the same places and colours, —` : ""} and the floor and the wall behind it; a soft shadow under the cake.`
+      : plinths ? `Keep the ${onBoard ? "cake board" : "white cake stand"} and the five white round plinths exactly as image 1 has them — their sizes, heights and places — and the floor and the wall behind them; a soft shadow under the cake.`
       : `Keep the ${onBoard ? "cake board" : "white cake stand"}, the table and the wall as they are; a soft shadow under the cake.`,
     LIGHT,
     `Nothing added and nothing taken away: no candles, ${characters ? "no real people or hands, no characters beyond the printed cutouts" : "no people, no hands, no characters"}, no fresh flowers, ${sprinkles?.words || k.sweets?.some((x) => x.sprinkles) ? "" : "no sprinkles, "}${sweets.length && !close ? "no other sweets or plates" : "no plates"}, no extra words or letters.`,

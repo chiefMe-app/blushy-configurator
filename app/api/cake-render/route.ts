@@ -18,8 +18,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 150;
 
-// FLUX.2 [dev] edit at the preview's own size, as the welcome board's; CAKE_RENDER_MODEL switches it.
-const MODEL = process.env.CAKE_RENDER_MODEL || "fal-ai/flux-2/edit";
+// FLUX.2 [pro] edit at the preview's own size (2026-11-03, the owner: "kötü bir render ışığı var, çok sarı, kaliteli
+// durmuyor hiç": side by side on her cart [dev] turned a tier's colour and the stands, [pro] kept every piece, in clean
+// white light; ≈ $0.045 a render); CAKE_RENDER_MODEL switches it.
+const MODEL = process.env.CAKE_RENDER_MODEL || "fal-ai/flux-2-pro/edit";
 /** The preview JPEG the builder sends: at most this many bytes. */
 const MAX_PREVIEW_BYTES = 4 * 1024 * 1024;
 

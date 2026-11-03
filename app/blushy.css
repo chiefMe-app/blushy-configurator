@@ -1431,3 +1431,14 @@ div.bz-stale-banner { cursor: default; }
 .bz-finished-card .stage .art > svg { display: block; width: 100% !important; height: auto !important; max-width: none; }
 .bz-finished-save { align-self: flex-start; font-weight: 800; color: var(--bz-pink); font-size: 13px; text-decoration: none; }
 .bz-finished-save:hover { text-decoration: underline; }
+
+/* A part's render looked at closely (components/builder/ZoomPhoto.tsx). */
+.bz-zoom-wrap { position: relative; display: block; }
+.bz-zoom-open { position: absolute; right: 12px; bottom: 12px; z-index: 2; border: 0; border-radius: 999px; padding: 6px 12px; background: rgba(255, 255, 255, 0.92); color: #3b2a30; font: 600 12px/1 var(--font-dm-sans, system-ui), sans-serif; box-shadow: 0 2px 8px rgba(40, 20, 30, 0.18); cursor: zoom-in; }
+.bz-zoom { position: fixed; inset: 0; z-index: 1000; background: rgba(24, 16, 20, 0.9); }
+.bz-zoom-box { position: absolute; inset: 0; overflow: auto; display: flex; align-items: center; justify-content: center; overscroll-behavior: contain; }
+.bz-zoom-box img { display: block; max-width: 94vw; max-height: 86vh; border-radius: 10px; cursor: zoom-in; user-select: none; }
+.bz-zoom-box.in { display: block; cursor: grab; }
+.bz-zoom-box.in img { margin: 0; border-radius: 0; }
+.bz-zoom-close { position: absolute; top: 12px; right: 14px; width: 40px; height: 40px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.92); color: #3b2a30; font-size: 26px; line-height: 1; cursor: pointer; }
+.bz-zoom-hint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); margin: 0; padding: 6px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.45); color: #fff; font: 500 12px/1.2 var(--font-dm-sans, system-ui), sans-serif; pointer-events: none; white-space: nowrap; }
