@@ -486,15 +486,46 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await page.getByTestId("cake-colour-1").getByRole("radio", { name: "white" }).click();
   await expect(art.locator("[data-part=cake-colour]")).toHaveCount(1);
   expect(aed(await sum.textContent())).toBe(780 + 2 * 40 + 3 * 45 + 60); // two tiers, a drip on each, three figures, the topper
-  // Figures: up to three, priced; one taken off.
+  // Figures: each card adds one (three on top already, so the fourth goes on a tier's side), priced each.
+  // 2026-11-03 (the owner: "sürükle bırak … duplicate … her yere yapıştırabilsin", up to 8).
   const figures = page.getByTestId("cake-figures").getByRole("button");
   await expect(figures).toHaveCount(20);
+  const placed = art.locator("[data-part=cake-figure]");
   const s0 = aed(await sum.textContent());
-  const on0 = await art.locator("[data-part=cake-figure]").count();
+  await expect(placed).toHaveCount(3);
   await figures.filter({ hasText: "Rocket" }).click();
-  await expect(art.locator("[data-part=cake-figure]")).toHaveCount(Math.min(3, on0 + 1));
-  if (on0 < 3) expect(aed(await sum.textContent())).toBe(s0 + 45);
-  await expect(art.locator('[data-part=cake-figure][href$="fig-rocket.webp"]')).toHaveCount(1);
+  await expect(placed).toHaveCount(4);
+  expect(aed(await sum.textContent())).toBe(s0 + 45);
+  const rocket = art.locator('[data-part=cake-figure][href$="fig-rocket.webp"]');
+  await expect(rocket).toHaveAttribute("data-on", "side");
+  // Tapped: its tools. A copy beside it, priced too.
+  await rocket.click();
+  const tools = page.getByTestId("cake-tools");
+  await expect(tools).toContainText("Rocket");
+  await expect(page.getByTestId("cake-picked")).toHaveCount(1);
+  await tools.getByRole("button", { name: "Copy" }).click();
+  await expect(rocket).toHaveCount(2);
+  expect(aed(await sum.textContent())).toBe(s0 + 2 * 45);
+  await expect(figures.filter({ hasText: "Rocket" })).toHaveAttribute("aria-label", /2 on the cake/);
+  // Dragged up onto the top of the cake.
+  const box = (await rocket.nth(1).boundingBox())!;
+  const top = (await art.locator("[data-part=cake-tier]").last().boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(top.x + top.width * 0.7, top.y - box.height * 0.25, { steps: 8 }); // its foot on the top
+  await page.mouse.up();
+  await expect(rocket.nth(1)).toHaveAttribute("data-on", "top");
+  // Taken off from its tools; up to eight on the cake, then the cards wait.
+  await tools.getByRole("button", { name: "Remove" }).click();
+  await expect(rocket).toHaveCount(1);
+  for (let i = 0; i < 4; i++) await figures.filter({ hasText: "Heart" }).click();
+  await expect(placed).toHaveCount(8);
+  await expect(figures.filter({ hasText: "Heart" })).toBeDisabled();
+  await expect(page.getByTestId("cake-figures-note")).toContainText("8 figures");
+  await page.getByRole("button", { name: "Take all the figures off" }).click();
+  await expect(placed).toHaveCount(0);
+  await figures.filter({ hasText: "Rocket" }).click();
+  await expect(rocket).toHaveAttribute("data-on", "top");
   // The topper's words, in the preview; off takes its price away.
   await page.getByTestId("cake-topper-name").fill("Arya");
   await page.getByTestId("cake-topper-age").fill("7");

@@ -726,7 +726,7 @@ export default function ConfigurePage() {
           {onWelcome && <WelcomePreview config={config} render={welcomeRender} onGenerate={makeWelcomeRender} />}
           {onGiveaways && <GiveawaysPreview config={config} render={giveawaysRender} onGenerate={makeGiveawaysRender} />}
           {onPinata && <PinataPreview config={config} render={pinataRender} onGenerate={makePinataRender} />}
-          {onCake && <CakePreview config={config} render={cakeRender} onGenerate={makeCakeRender} />}
+          {onCake && <CakePreview config={config} setCake={setCake} render={cakeRender} onGenerate={makeCakeRender} />}
           <div hidden={!onKids}>
             <TablePreview config={config} render={tableRender} onGenerate={makeTableRender} placeShot={tablePlaceShot} />
           </div>

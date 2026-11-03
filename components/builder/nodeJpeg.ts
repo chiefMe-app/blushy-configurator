@@ -49,7 +49,9 @@ export async function nodeJpeg(node: HTMLElement | SVGSVGElement, width: number,
   const side = Math.min(rect.width, rect.height);
   const box = square ? { width: side, height: side } : rect;
   const options = { quality: 0.92, backgroundColor: "#FFFFFF", width: box.width, height: box.height, pixelRatio: width / box.width,
-    style: { borderRadius: "0" }, fontEmbedCSS: await fontCssFor(node as HTMLElement) };
+    style: { borderRadius: "0" }, fontEmbedCSS: await fontCssFor(node as HTMLElement),
+    // What is only there to edit the drawing (the cake's chosen figure, its frame) stays out of the picture.
+    filter: (n: Node) => !(n instanceof Element && n.hasAttribute("data-no-capture")) };
   // Twice: some browsers (Safari) draw the first picture before its fonts are in.
   await toJpeg(node as HTMLElement, options);
   return toJpeg(node as HTMLElement, options);

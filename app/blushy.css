@@ -1361,6 +1361,12 @@ div.bz-stale-banner { cursor: default; }
 .bz-ck-art { width: 100%; max-width: 556px; height: auto; display: block; margin: 0 auto; }
 .bz-ck-words { display: grid; grid-template-columns: minmax(0, 1fr) 88px; gap: 10px; }
 .bz-ck-words input { min-width: 0; width: 100%; box-sizing: border-box; }
+.bz-ck-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px auto 0; max-width: 556px; padding: 8px 10px; background: #fff5f9; border: 1.5px solid #f6c9dc; border-radius: 14px; }
+.bz-ck-tools b { font: 700 13px var(--bz-sans); color: var(--bz-ink); margin-right: auto; }
+.bz-ck-tools button { font: 600 12.5px var(--bz-sans); padding: 6px 10px; border-radius: 10px; border: 1.5px solid #f2dde6; background: #fff; color: var(--bz-ink); cursor: pointer; }
+.bz-ck-tools button:disabled { opacity: 0.45; cursor: default; }
+.bz-ck-tools button.off { color: #c0264f; }
+.bz-ck-tools button.done { background: var(--bz-pink); border-color: var(--bz-pink); color: #fff; }
 .bz-gv-board { max-height: 600px; }
 /* The box close up, above the render (2026-11-03). */
 .bz-gv-close { margin-bottom: 14px; }

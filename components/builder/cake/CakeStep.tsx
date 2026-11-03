@@ -6,7 +6,7 @@ import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import {
   CAKE_FLAVOURS, CAKE_STYLES, CAKE_TIERS, FIGURE_PRICE, MAX_CAKE_FIGURES, TOPPER_COLOURS, TOPPER_PRICE,
-  cakeDesigns, cakeFiguresFor, cakePrice, cakeTotal, defaultCake, figurePicture, type Cake, type CakeSeed,
+  addItem, cakeDesigns, cakeFiguresFor, cakePrice, cakeTotal, defaultCake, figurePicture, type Cake, type CakeSeed,
 } from "@/lib/studio/cake";
 import { cleanAge } from "@/lib/studio/pinata";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
@@ -67,7 +67,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
   const pickDesign = (d: (typeof designs)[number]) => set({ ...d.cake, topper: { ...k.topper, on: d.cake.topper.on }, flavour: k.flavour });
   const swatches = Array.from(new Set(["#FFFFFF", ...theme.balloonColors, ...theme.backdropColors, ...PLAIN_COLOURS.map((c) => c.hex)].map((h) => h.toUpperCase())));
   const figures = cakeFiguresFor(theme.id);
-  const toggleFigure = (id: Cake["figures"][number]) => set({ figures: k.figures.includes(id) ? k.figures.filter((f) => f !== id) : [...k.figures, id].slice(-MAX_CAKE_FIGURES) });
+  const full = k.figures.length >= MAX_CAKE_FIGURES;
   const setTopper = (patch: Partial<Cake["topper"]>) => set({ topper: { ...k.topper, ...patch } });
   const fontSample = k.topper.name.trim() || "Olivia";
 
@@ -128,14 +128,19 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
 
       <section className="bz-tb-section" aria-label="On top">
         <h2>On top</h2>
-        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>Handmade sugar figures — pick up to {MAX_CAKE_FIGURES}, +AED {formatAED(FIGURE_PRICE)} each.</p>
+        {/* 2026-11-03 (the owner: "sürükle bırak … duplicate … her yere yapıştırabilsin", up to 8). */}
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }} data-testid="cake-figures-note">
+          Handmade sugar figures, +AED {formatAED(FIGURE_PRICE)} each — tap one to add it, then drag it anywhere on the cake, on top or on a tier.
+          {" "}{full ? `That's the most — ${MAX_CAKE_FIGURES} figures.` : `Up to ${MAX_CAKE_FIGURES}, copies too.`}
+        </p>
         <div className="bz-tb-item">
-          <div className="bz-tb-options" role="group" aria-label="Figures on top" data-testid="cake-figures">
+          <div className="bz-tb-options" role="group" aria-label="Figures" data-testid="cake-figures">
             {figures.map((f) => {
-              const on = k.figures.includes(f.id);
+              const n = k.figures.filter((x) => x.id === f.id).length;
               return (
-                <button key={f.id} type="button" aria-pressed={on} className={`bz-tb-option ${on ? "on" : ""}`} onClick={() => toggleFigure(f.id)}>
-                  {on && <span className="tick">✓</span>}
+                <button key={f.id} type="button" aria-pressed={n > 0} aria-label={`Add ${f.name}${n ? ` (${n} on the cake)` : ""}`} disabled={full}
+                  className={`bz-tb-option ${n ? "on" : ""}`} onClick={() => set({ figures: addItem(k, f.id) })}>
+                  {n > 0 && <span className="tick">{n > 1 ? `×${n}` : "✓"}</span>}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <span className="art"><img className="photo cutout" style={{ objectFit: "contain" }} src={figurePicture(f.id).src} alt="" loading="lazy" /></span>
                   <b>{f.name}</b>{f.own && <small>Your {theme.name} theme</small>}
@@ -143,6 +148,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
               );
             })}
           </div>
+          {k.figures.length > 0 && <button type="button" className="bz-restart" onClick={() => set({ figures: [] })}>Take all the figures off</button>}
         </div>
       </section>
 
