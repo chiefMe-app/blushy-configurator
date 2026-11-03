@@ -6,9 +6,11 @@ import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import {
   CAKE_FLAVOURS, CAKE_SPRINKLES, CAKE_STYLES, CAKE_TIERS, FIGURE_KINDS, RAINBOW_PRICE, RAINBOW_TIERS, rainbowOf, MAX_CAKE_DECOS, MAX_CAKE_FIGURES, TOPPER_CARDS, TOPPER_COLOURS, TOPPER_PLACES, TOPPER_PRICE,
-  addItem, cakeDesigns, cakeFiguresFor, cakePrice, cakeTotal, defaultCake, figureKind, figurePicture, roomFor, type Cake, type CakeSeed,
+  CAKE_FIGURES, THEME_CAKE_CUTOUTS, addItem, cakeDesigns, cakeFiguresFor, cakePrice, cakeTotal, defaultCake, figureKind, figurePicture, roomFor, themeFigures,
+  type Cake, type CakeFigure, type CakeSeed,
 } from "@/lib/studio/cake";
 import { cleanAge } from "@/lib/studio/pinata";
+import { CAKE_SWEETS, SPRINKLE_PRICE, SWEET_COUNTS, sweetPicture, sweetPrice, type CakeSweet } from "@/lib/studio/cakeSweets";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
 import { CakeThumb } from "./CakePreview";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
@@ -43,7 +45,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
     return (
       <div className="bz-tb-intro" data-testid="cake-intro">
         <h2>Add a cake?</h2>
-        <p>A birthday cake for your {theme.name} theme — one to three tiers, its colours, figures on top and a topper with the name — shown on its stand. The price adds to your party.</p>
+        <p>A birthday cake for your {theme.name} theme — one to three tiers, its colours, figures on top and a topper with the name — shown on its stand, with cupcakes, cake pops, cookies, donuts or macarons beside it if you like. The price adds to your party.</p>
         <div className="actions">
           <button type="button" className="bz-next" onClick={() => setCake(k ? { ...k, enabled: true, done: false } : defaultCake(cakeSeed(config)))}>Yes, add a cake ✦</button>
           {!k && <button type="button" className="bz-back" onClick={() => setCake({ ...defaultCake(cakeSeed(config)), enabled: false })}>No thanks, skip</button>}
@@ -74,6 +76,8 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
   const full = k.figures.filter((f) => figureKind(f.id) !== "deco").length >= MAX_CAKE_FIGURES;
   const setTopper = (patch: Partial<Cake["topper"]>) => set({ topper: { ...k.topper, ...patch } });
   const fontSample = k.topper.name.trim() || "Olivia";
+  // What a cupcake can carry, or a cookie have printed on it: the theme's own figures and cutouts first.
+  const pieces = Array.from(new Set<CakeFigure>([...themeFigures(theme.id), ...(THEME_CAKE_CUTOUTS[theme.id] ?? []), "star", "heart"]));
 
   return (
     <div className="bz-tb" data-testid="cake">
@@ -278,12 +282,66 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
         </div>
       </section>
 
+      {/* 2026-11-03 (the owner: "cupcake, cookie, cake pops opsiyonları da olmalı … ve donut"): on the table beside the cake. */}
+      <section className="bz-tb-section" aria-label="Sweets">
+        <h2>Sweets</h2>
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>On the table beside the cake, in your colours.</p>
+        {CAKE_SWEETS.map((kind) => {
+          const sw = k.sweets?.find((x) => x.id === kind.id);
+          const setSweet = (next: CakeSweet | null) => set({ sweets: CAKE_SWEETS.flatMap((x) => (x.id === kind.id ? (next ? [next] : []) : (k.sweets ?? []).filter((y) => y.id === x.id))) });
+          const start = (count: CakeSweet["count"]): CakeSweet => ({
+            id: kind.id, count, colour: seed.colours?.[0]?.toUpperCase() ?? "#F8BBD0",
+            ...(kind.topper === "figure" ? { topper: pieces[0] } : kind.topper === "print" ? { print: pieces[0] } : {}),
+          });
+          return (
+            <div className="bz-tb-item bz-ck-sweet" key={kind.id} data-testid={`cake-sweet-${kind.id}`}>
+              <div className="head">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={sweetPicture(kind.id).src} alt="" loading="lazy" />
+                <span><b>{kind.name}</b><small>{kind.note} · AED {formatAED(kind.each)} each</small></span>
+              </div>
+              <div className="bz-ck-counts" role="radiogroup" aria-label={`How many ${kind.name.toLowerCase()}`}>
+                {[0, ...SWEET_COUNTS].map((n) => (
+                  <button key={n} type="button" role="radio" aria-checked={(sw?.count ?? 0) === n} className={(sw?.count ?? 0) === n ? "on" : ""}
+                    onClick={() => setSweet(n === 0 ? null : sw ? { ...sw, count: n as CakeSweet["count"] } : start(n as CakeSweet["count"]))}>{n === 0 ? "None" : n}</button>
+                ))}
+              </div>
+              {sw && <>
+                <div className="bz-ts-swatches" role="radiogroup" aria-label={`${kind.name} colour`}>
+                  {swatches.map((hex) => (
+                    <button key={hex} type="button" role="radio" aria-checked={sw.colour === hex} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
+                      className={sw.colour === hex ? "on" : ""} style={{ background: hex }} onClick={() => setSweet({ ...sw, colour: hex })}>{sw.colour === hex ? "✓" : ""}</button>
+                  ))}
+                </div>
+                {kind.topper && (
+                  <div className="bz-ck-counts" role="radiogroup" aria-label={kind.topper === "figure" ? `On each of the ${kind.name.toLowerCase()}` : "Printed on each cookie"}>
+                    {[null, ...(kind.topper === "print" ? ["age" as const] : []), ...pieces].map((p) => {
+                      const now = (kind.topper === "figure" ? sw.topper : sw.print) ?? null;
+                      const label = p === null ? "Plain" : p === "age" ? `The age${k.topper.age ? ` (${k.topper.age})` : ""}` : CAKE_FIGURES.find((f) => f.id === p)!.name;
+                      return (
+                        <button key={p ?? "none"} type="button" role="radio" aria-checked={now === p} className={now === p ? "on" : ""}
+                          onClick={() => setSweet(kind.topper === "figure" ? { ...sw, topper: (p as CakeFigure | null) ?? undefined } : { ...sw, print: p ?? undefined })}>{label}</button>
+                      );
+                    })}
+                  </div>
+                )}
+                <label className="bz-ck-check">
+                  <input type="checkbox" checked={!!sw.sprinkles} onChange={() => setSweet({ ...sw, sprinkles: !sw.sprinkles || undefined })} />
+                  <span>Rainbow sprinkles · +AED {formatAED(SPRINKLE_PRICE)} each</span>
+                </label>
+                <p className="bz-tb-sub" style={{ fontWeight: 400 }}>{sw.count} {kind.name.toLowerCase()} · AED {formatAED(sweetPrice(sw))}</p>
+              </>}
+            </div>
+          );
+        })}
+      </section>
+
       <div className="bz-tb-sum" data-testid="cake-total">
         <span>Cake</span>
         <b>AED {formatAED(cakeTotal(k))}</b>
         <button type="button" className="bz-restart" onClick={() => setCake({ ...k, enabled: false, done: false })}>Remove the cake</button>
       </div>
-      <FinishBar done={k.done} what="cake" next="Package" onFinish={onFinish} onSkip={onSkip} testId="finish-cake" render={{ ...render, onGenerate }} />
+      <FinishBar done={k.done} what="cake & sweets" next="Package" onFinish={onFinish} onSkip={onSkip} testId="finish-cake" render={{ ...render, onGenerate }} />
     </div>
   );
 }

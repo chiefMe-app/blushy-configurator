@@ -11,6 +11,7 @@ import {
   readCake, roomFor, tierColours, tierPicture, type Cake, type CakeFigure, type CakeItem,
 } from "@/lib/studio/cake";
 import { cakePrompt } from "@/lib/studio/cakeRender";
+import { CAKE_SWEETS, SWEET_PLACES, colourWords, readSweets, sweetPicture } from "@/lib/studio/cakeSweets";
 import { cakeLayout, viewOf } from "@/components/builder/cake/CakePreview";
 import { fromDraft, toDraft } from "@/lib/draft";
 import { resetRenderGuard } from "@/lib/renderGuard";
@@ -285,5 +286,37 @@ describe("the cake kept and rendered", () => {
     vi.stubEnv("VERCEL_ENV", "production");
     expect((await post({ cake: defaultCake(), theme: "unicorn", preview: `data:image/jpeg;base64,${JPEG.toString("base64")}` })).status).toBe(503);
     expect(subscribe).not.toHaveBeenCalled();
+  });
+});
+
+describe("the sweets beside the cake", () => {
+  // 2026-11-03 (the owner: "cupcake, cookie, cake pops … ve donut … macaron da olabilir"; on the table, in her colours).
+  it("has a photo and its icing for each, a place on the table, and prices by how many", () => {
+    for (const s of CAKE_SWEETS) {
+      const pic = sweetPicture(s.id);
+      expect(fs.existsSync(path.join("public", pic.src)), s.id).toBe(true);
+      expect(fs.existsSync(path.join("public", pic.icing)), s.id).toBe(true);
+      expect(pic.w).toBeGreaterThan(0);
+      expect(SWEET_PLACES[s.id].foot).toBeLessThanOrEqual(1262);
+    }
+    const k: Cake = { ...defaultCake(seed), sweets: [{ id: "cupcakes", count: 12, colour: "#F8BBD0", topper: "unicorn", sprinkles: true }, { id: "macarons", count: 6, colour: "#DDD6FE" }] };
+    expect(cakePriceLines(k)).toEqual(expect.arrayContaining([{ label: "Cupcakes ×12, sprinkles", amount: 12 * (12 + 1) }, { label: "Macarons ×6", amount: 48 }]));
+    // On the table: the picture shows the whole table.
+    expect(viewOf(k).w).toBe(896);
+    const words = cakePrompt(k);
+    expect(words).toMatch(/cupcakes in gold foil liners, each with a tall swirl of pink buttercream.*topped with a little sugar-paste unicorn horn/);
+    expect(words).toMatch(/French macarons with lilac shells/);
+    expect(words).not.toMatch(/no sprinkles/);
+    // How many does not change the picture; the colour does.
+    const more = { ...k, sweets: [{ ...k.sweets![0], count: 24 as const }, k.sweets![1]] };
+    expect(cakeRenderKey(more, "unicorn")).toBe(cakeRenderKey(k, "unicorn"));
+    expect(cakeRenderKey({ ...k, sweets: [{ ...k.sweets![0], colour: "#BAE6FD" }] }, "unicorn")).not.toBe(cakeRenderKey(k, "unicorn"));
+  });
+
+  it("reads back each sweet once, with what belongs to it", () => {
+    const s = readSweets([{ id: "cookies", count: 99, colour: "red", print: "age", topper: "star" }, { id: "cookies" }, { id: "cupcakes", topper: "disco-ball", print: "age" }, { id: "nope" }])!;
+    expect(s).toEqual([{ id: "cookies", count: 12, colour: "#FFFFFF", print: "age" }, { id: "cupcakes", count: 12, colour: "#FFFFFF" }]);
+    expect(readCake({ sweets: [{ id: "donuts", count: 6, colour: "#bae6fd", sprinkles: true }] })!.sweets).toEqual([{ id: "donuts", count: 6, colour: "#BAE6FD", sprinkles: true }]);
+    expect(colourWords("#A855F7")).toBe("purple");
   });
 });

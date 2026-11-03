@@ -563,7 +563,8 @@ export default function ConfigurePage() {
     if (!config.giveaways) setGiveaways({ ...defaultGiveaways(giveawaysSeed(config)), enabled: false });
     setDecorPart("pinata");
   };
-  // After the piñata, the cake (2026-11-03, the owner: "finalize the piñata → Cake olsun").
+  // After the piñata, the cake (2026-11-03, the owner: "finalize the piñata → Cake olsun"); named Cake & Sweets since the
+  // sweets joined it (the owner: "cake studio adı değişsin hepsini kapsasın").
   const toCake = () => {
     if (!config.welcomeBoard) setWelcomeBoard({ ...defaultWelcomeBoard(themeById(config.theme) ?? THEMES[0]), enabled: false });
     if (!config.giveaways) setGiveaways({ ...defaultGiveaways(giveawaysSeed(config)), enabled: false });
@@ -593,7 +594,7 @@ export default function ConfigurePage() {
     : onPinata
     ? { eyebrow: "DECOR · PART 5 · PIÑATA", heading: ["Break it", "open"] as [string, string], description: "A fringe piñata for the big moment, filled and hung on its stand.", progress: "Shape, colours, opening and filling" }
     : onCake
-    ? { eyebrow: "DECOR · PART 6 · CAKE", heading: ["Make a", "wish"] as [string, string], description: "The birthday cake, designed tier by tier and shown on its stand.", progress: "Design, tiers, colours, topper and flavour" }
+    ? { eyebrow: "DECOR · PART 6 · CAKE & SWEETS", heading: ["Make a", "wish"] as [string, string], description: "The birthday cake, designed tier by tier on its stand — and the sweets on the table beside it.", progress: "The cake, its topper and flavour, the sweets" }
     : (step === 2 && DECOR_STEP_COPY[decorTab]) || STEP_COPY[step];
   const total = priceBreakdown(config).total;
 
@@ -641,7 +642,7 @@ export default function ConfigurePage() {
   }
   if (onPinata) {
     if (config.pinata?.enabled) hideNext = true;
-    else { nextLabel = config.pinata ? label("Next: Cake →", "Next →") : label("Skip to Cake →", "Skip →"); onNext = toCake; }
+    else { nextLabel = config.pinata ? label("Next: Cake & Sweets →", "Next →") : label("Skip to Cake & Sweets →", "Skip →"); onNext = toCake; }
   }
   if (onCake) {
     if (config.cake?.enabled) hideNext = true;
@@ -830,7 +831,7 @@ export default function ConfigurePage() {
               <div className="bz-parts-wrap">
                 <span className="label">Your party, piece by piece</span>
                 <div className="bz-parts" role="tablist" aria-label="Decor parts">
-                  {([["backdrop", "Backdrop"], ["table", "Table setup"], ["welcome", "Welcome board"], ["giveaways", "Giveaways"], ["pinata", "Piñata"], ["cake", "Cake"]] as const).map(([id, name], i) => {
+                  {([["backdrop", "Backdrop"], ["table", "Table setup"], ["welcome", "Welcome board"], ["giveaways", "Giveaways"], ["pinata", "Piñata"], ["cake", "Cake & Sweets"]] as const).map(([id, name], i) => {
                     const tablesDone = kidsDecided && !!config.adultTable && (!config.adultTable.enabled || !!config.adultTable.done);
                     const welcomeDone = !!config.welcomeBoard && (!config.welcomeBoard.enabled || !!config.welcomeBoard.done);
                     const giveawaysDone = !!config.giveaways && (!config.giveaways.enabled || !!config.giveaways.done);

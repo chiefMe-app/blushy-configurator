@@ -1367,6 +1367,17 @@ div.bz-stale-banner { cursor: default; }
 .bz-ck-tools button:disabled { opacity: 0.45; cursor: default; }
 .bz-ck-tools button.off { color: #c0264f; }
 .bz-ck-tools button.done { background: var(--bz-pink); border-color: var(--bz-pink); color: #fff; }
+/* The sweets beside the cake: a row each, its count, colour, topper and sprinkles. */
+.bz-ck-sweet { display: grid; gap: 10px; padding: 12px; border: 1.5px solid #f2dde6; border-radius: 14px; background: #fff; }
+.bz-ck-sweet .head { display: flex; align-items: center; gap: 12px; }
+.bz-ck-sweet .head img { width: 64px; height: 64px; object-fit: contain; flex: none; }
+.bz-ck-sweet .head span { display: grid; gap: 2px; min-width: 0; }
+.bz-ck-sweet .head b { font: 700 14px var(--bz-sans); color: var(--bz-ink); }
+.bz-ck-sweet .head small { font: 400 12.5px var(--bz-sans); color: var(--bz-muted, #7a6b75); }
+.bz-ck-counts { display: flex; flex-wrap: wrap; gap: 6px; }
+.bz-ck-counts button { font: 600 12.5px var(--bz-sans); padding: 6px 12px; border-radius: 10px; border: 1.5px solid #f2dde6; background: #fff; color: var(--bz-ink); cursor: pointer; }
+.bz-ck-counts button.on { background: var(--bz-pink); border-color: var(--bz-pink); color: #fff; }
+.bz-ck-check { display: flex; align-items: center; gap: 8px; font: 500 13px var(--bz-sans); color: var(--bz-ink); cursor: pointer; }
 .bz-gv-board { max-height: 600px; }
 /* The box close up, above the render (2026-11-03). */
 .bz-gv-close { margin-bottom: 14px; }

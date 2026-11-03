@@ -11,6 +11,7 @@ import {
   rainbowOf, roomFor, tierAt, tierColours, topperColour, topperShows, type Cake,
 } from "@/lib/studio/cake";
 import { asPrinted, fontCss, tableFont } from "@/lib/studio/tableFonts";
+import { SWEET_PLACES, SWEET_SPOTS, sweetPicture, type CakeSweet } from "@/lib/studio/cakeSweets";
 import FitText from "@/components/studio/FitText";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
@@ -88,18 +89,18 @@ function RainbowTier({ id, t, r, seed }: { id: string; t: TierBox; r: NonNullabl
 
 const SPRINKLE_COLOURS = ["#F43F5E", "#FB923C", "#FACC15", "#22C55E", "#3B82F6", "#A855F7", "#FFFFFF", "#F9A8D4"];
 /** Sprinkles on a tier: scattered, a thick band at its foot, or little hearts; on its side, and on the top for the top tier. */
-function Sprinkles({ id, t, kind, seed, top }: { id: string; t: TierBox; kind: NonNullable<Cake["sprinkles"]>; seed: number; top: boolean }) {
+function Sprinkles({ id, t, kind, seed, top, size, many = 1 }: { id: string; t: TierBox; kind: NonNullable<Cake["sprinkles"]>; seed: number; top: boolean; size?: number; many?: number }) {
   const rnd = random(seed * 17 + kind.length);
   const side = t.bottom - t.top;
   // From the top surface (for the top tier) down to the foot; a band keeps to its lowest quarter.
   const from = kind === "base" ? t.bottom - side * 0.28 : top ? t.y + 4 : t.top + 6;
-  const n = Math.round((t.w * (t.bottom - from)) / (kind === "base" ? 34 : 260));
+  const n = Math.round(((t.w * (t.bottom - from)) / (kind === "base" ? 34 : 260)) * many);
   const bits = Array.from({ length: n }, () => {
     // A band thick at the foot, thinning upwards.
     const v = kind === "base" ? Math.pow(rnd(), 0.55) : rnd();
     return { x: t.x + t.w * (0.02 + rnd() * 0.96), y: from + v * (t.bottom + side * 0.04 - from), a: rnd() * 180, c: SPRINKLE_COLOURS[Math.floor(rnd() * SPRINKLE_COLOURS.length)], star: kind === "base" && rnd() < 0.12 };
   });
-  const u = t.w / 280;
+  const u = size ?? t.w / 280;
   const heart = (x: number, y: number, s: number) => `M ${x} ${y + s * 0.35} C ${x - s} ${y - s * 0.4} ${x - s * 0.45} ${y - s} ${x} ${y - s * 0.45} C ${x + s * 0.45} ${y - s} ${x + s} ${y - s * 0.4} ${x} ${y + s * 0.35} Z`;
   return (
     <g mask={`url(#${id})`} data-part="cake-sprinkles" data-kind={kind}>
@@ -107,6 +108,40 @@ function Sprinkles({ id, t, kind, seed, top }: { id: string; t: TierBox; kind: N
         ? <path key={j} d={heart(b.x, b.y, 4.2 * u)} fill={b.c === "#FFFFFF" ? "#F9A8D4" : b.c} transform={`rotate(${b.a / 4 - 22} ${b.x} ${b.y})`} />
         : b.star ? <path key={j} d={`M ${b.x} ${b.y - 4 * u} L ${b.x + 1.2 * u} ${b.y - 1.2 * u} L ${b.x + 4 * u} ${b.y - 1 * u} L ${b.x + 1.8 * u} ${b.y + 1 * u} L ${b.x + 2.5 * u} ${b.y + 4 * u} L ${b.x} ${b.y + 2.2 * u} L ${b.x - 2.5 * u} ${b.y + 4 * u} L ${b.x - 1.8 * u} ${b.y + 1 * u} L ${b.x - 4 * u} ${b.y - 1 * u} L ${b.x - 1.2 * u} ${b.y - 1.2 * u} Z`} fill="#FFFFFF" />
         : <rect key={j} x={b.x - 3.6 * u} y={b.y - 1.15 * u} width={7.2 * u} height={2.3 * u} rx={1.15 * u} fill={b.c} transform={`rotate(${b.a} ${b.x} ${b.y})`} />)}
+    </g>
+  );
+}
+
+/**
+ * A sweet on the table beside the stand (2026-11-03, the owner: "cupcake, cookie, cake pops … ve donut"): its photo,
+ * its icing in her colour (multiplied through the icing's mask), sprinkles on the icing, a little figure on each
+ * cupcake, a print on each cookie.
+ */
+function SweetPiece({ s, k, uid }: { s: CakeSweet; k: Cake; uid: string }) {
+  const pic = sweetPicture(s.id), at = SWEET_PLACES[s.id];
+  const h = at.tall, w = (pic.w / pic.h) * h, x = at.x - w / 2, y = at.foot - h;
+  const id = `${uid}-${s.id}`;
+  const spots = (SWEET_SPOTS[s.id] ?? []).map((p) => ({ x: x + p.x * w, y: y + p.y * h, w: p.w * w }));
+  const face = tableFont(k.topper.font);
+  const print = s.print && s.print !== "age" ? figurePicture(s.print) : null;
+  return (
+    <g data-part="cake-sweet" data-sweet={s.id}>
+      <defs><mask id={id} style={{ maskType: "alpha" }}><image href={pic.icing} x={x} y={y} width={w} height={h} /></mask></defs>
+      <image href={pic.src} x={x} y={y} width={w} height={h} />
+      {s.colour.toUpperCase() !== WHITE && <rect mask={`url(#${id})`} style={{ mixBlendMode: "multiply" }} x={x} y={y} width={w} height={h} fill={s.colour} />}
+      {s.sprinkles && <Sprinkles id={id} t={{ x, y, w, h, top: y, bottom: y + h }} kind="scatter" seed={s.id.length} top size={w / 300} many={2.2} />}
+      {s.print && spots.map((p, i) => s.print === "age"
+        ? <text key={i} x={p.x} y={p.y + p.w * 0.16} fontSize={p.w * 0.5} textAnchor="middle" fill={topperColour(k.topper.colour).hex} transform={`translate(0 ${p.y * 0.38}) scale(1 0.62)`}
+          style={{ fontFamily: `${fontCss(face)}, Georgia, serif`, fontWeight: face.weight }} data-part="cake-sweet-print">{k.topper.age || "1"}</text>
+        : print && (() => {
+          // Lying flat on the cookie: as wide, less tall.
+          const pw = p.w * 0.62, ph = ((pw * print.h) / print.w) * 0.62;
+          return <image key={i} href={print.src} x={p.x - pw / 2} y={p.y - ph / 2} width={pw} height={ph} preserveAspectRatio="none" data-part="cake-sweet-print" />;
+        })())}
+      {s.topper && spots.map((p, i) => {
+        const f = figurePicture(s.topper!), th = p.w * 0.95, tw = (th * f.w) / f.h;
+        return <image key={i} href={f.src} x={p.x - tw / 2} y={p.y - th + p.w * 0.25} width={tw} height={th} data-part="cake-sweet-topper" />;
+      })}
     </g>
   );
 }
@@ -212,9 +247,12 @@ export function CakeThumb({ k, uid }: { k: Cake; uid: string }) {
  * the owner: "topperı bigger smaller yapınca bütün pasta büyüyüp küçülüyor"); it stays inside that room.
  */
 export function viewOf(k: Cake) {
-  const { w: W, bottom } = CAKE_STAND;
+  const { w: W } = CAKE_STAND;
+  const sweets = !!k.sweets?.length;
+  // With sweets on the table: the whole table, to its front edge.
+  const bottom = sweets ? 1262 : CAKE_STAND.bottom;
   const room = cakeLayout({ ...k, topper: { ...k.topper, at: undefined, x: undefined, up: undefined, y: undefined, s: 1.25 } }).contentTop;
-  const top = Math.max(0, Math.min(room - 50, cakeLayout(k).contentTop - 20));
+  const top = Math.max(0, Math.min(room - 50, cakeLayout(k).contentTop - 20, sweets ? bottom - W / 0.8 : Infinity));
   const h = bottom - top;
   const w = Math.min(W, h * 0.8);
   return { x: Math.max(0, Math.min(W - w, CAKE_STAND.plate.x - w / 2)), y: top, w, h };
@@ -296,6 +334,7 @@ export function CakeArt({ k, className, edit }: {
       onPointerMove={drag ? (e) => { if (e.pointerId === drag.id) setDrag({ ...drag, at: point(e) }); } : undefined}
       onPointerUp={letGo} onPointerCancel={letGo}>
       <image href={CAKE_STAND.src} x={0} y={0} width={W} height={H} />
+      {(k.sweets ?? []).map((sw) => <SweetPiece key={sw.id} s={sw} k={k} uid="ck-sw" />)}
       <CakePiece k={shown} uid="ck-stand" grab={grab} />
       {frame && <rect data-no-capture="" data-testid="cake-picked" x={frame.x - 6} y={frame.y - 6} width={frame.w + 12} height={frame.h + 12} rx={10}
         fill="none" stroke="#FF0D66" strokeWidth={3} strokeDasharray="10 7" pointerEvents="none" />}

@@ -57,8 +57,34 @@ function bbox(d: Buffer, W: number, H: number) {
   return { left: x0, top: y0, width: x1 - x0 + 1, height: y1 - y0 + 1 };
 }
 
+/** How tall a sweet's picture is kept. */
+const SWEET_TALL = 480;
+
+/**
+ * A sweet's icing (2026-11-03, the owner: "cupcake, cookie, cake pops … ve donut"): the white of it — bright and
+ * colourless, the gold stand and the baked dough left out — as a mask its colour is multiplied through. (Where its
+ * pieces are, for toppers and prints, is measured by eye in lib/studio/cakeSweets.ts: the icing runs together.)
+ */
+function icing(d: Buffer, W: number, H: number) {
+  const m = Buffer.alloc(W * H * 4);
+  for (let i = 0; i < W * H; i++) {
+    const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2], a = d[i * 4 + 3];
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const sat = max ? (max - min) / max : 0;
+    // Soft at the edge: white enough and grey enough, the more the stronger.
+    const w = Math.max(0, Math.min(1, (max - 170) / 40)) * Math.max(0, Math.min(1, (0.2 - sat) / 0.08)) * (a / 255);
+    m[i * 4] = m[i * 4 + 1] = m[i * 4 + 2] = 255;
+    m[i * 4 + 3] = Math.round(w * 255);
+  }
+  return m;
+}
+
 fs.mkdirSync(OUT, { recursive: true });
-const manifest: { tiers: Record<string, { w: number; h: number; top: number; bottom: number }>; figures: Record<string, { w: number; h: number }> } = { tiers: {}, figures: {} };
+const manifest: {
+  tiers: Record<string, { w: number; h: number; top: number; bottom: number }>;
+  figures: Record<string, { w: number; h: number }>;
+  sweets: Record<string, { w: number; h: number }>;
+} = { tiers: {}, figures: {}, sweets: {} };
 for (const f of fs.readdirSync(SRC).filter((n) => n.endsWith(".png")).sort()) {
   const name = f.replace(/\.png$/, "");
   if (name === "stand") {
@@ -82,6 +108,17 @@ for (const f of fs.readdirSync(SRC).filter((n) => n.endsWith(".png")).sort()) {
   }
   const b = bbox(data, W, H);
   const img = sharp(data, { raw: { width: W, height: H, channels: 4 } }).extract(b);
+  if (name.startsWith("sweet-")) {
+    const out = await img.resize({ height: SWEET_TALL }).png().toBuffer({ resolveWithObject: true });
+    const w = out.info.width, h = out.info.height;
+    const { data: px } = await sharp(out.data).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const mask = icing(px, w, h);
+    await sharp(out.data).webp({ quality: 86, alphaQuality: 90 }).toFile(path.join(OUT, `${name}.webp`));
+    await sharp(mask, { raw: { width: w, height: h, channels: 4 } }).webp({ quality: 80, alphaQuality: 80 }).toFile(path.join(OUT, `${name}-icing.webp`));
+    manifest.sweets[name.slice(6)] = { w, h };
+    console.log(name.padEnd(16), w, "x", h);
+    continue;
+  }
   if (tier) {
     const out = await img.webp({ quality: 88, alphaQuality: 92 }).toBuffer({ resolveWithObject: true });
     fs.writeFileSync(path.join(OUT, `${name}.webp`), out.data);

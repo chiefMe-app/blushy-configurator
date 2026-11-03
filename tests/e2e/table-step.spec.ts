@@ -558,6 +558,19 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await page.getByTestId("cake-sprinkles").getByText("A band at the foot", { exact: true }).click();
   await expect(art.locator("[data-part=cake-sprinkles]")).toHaveCount(2); // on both tiers
   expect(aed(await sum.textContent())).toBe(s2 + 30 + 15 + 30 + 30);
+  // Sweets on the table beside it (the owner: "cupcake, cookie, cake pops … donut … macaron"): how many, a topper, a print.
+  const s3 = aed(await sum.textContent());
+  const cupcakes = page.getByTestId("cake-sweet-cupcakes");
+  await cupcakes.getByRole("radio", { name: "12", exact: true }).click();
+  await expect(art.locator("[data-sweet=cupcakes] [data-part=cake-sweet-topper]").first()).toBeVisible();
+  const cookies = page.getByTestId("cake-sweet-cookies");
+  await cookies.getByRole("radio", { name: "6", exact: true }).click();
+  await cookies.getByRole("radio", { name: /The age/ }).click();
+  await expect(art.locator("[data-sweet=cookies] text[data-part=cake-sweet-print]").first()).toHaveText("7");
+  await cookies.getByText(/Rainbow sprinkles/).click();
+  expect(aed(await sum.textContent())).toBe(s3 + 12 * 12 + 6 * (10 + 1));
+  await cupcakes.getByRole("radio", { name: "None" }).click();
+  await expect(art.locator("[data-part=cake-sweet]")).toHaveCount(1);
   // A plain cake: white, nothing on top.
   await designs.filter({ hasText: "Plain cake" }).click();
   await expect(art.locator("[data-part=cake-figure]")).toHaveCount(0);

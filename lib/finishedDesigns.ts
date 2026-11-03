@@ -22,7 +22,7 @@ export function finishedPieces(config: Pick<BuilderConfig, "decor" | "table" | "
   if (config.welcomeBoard?.enabled) out.push({ id: "welcome", title: "Welcome board", file: "partymuse-welcome-board.jpg", finished: !!config.welcomeBoard.done });
   if (config.giveaways?.enabled) out.push({ id: "giveaways", title: "Giveaways", file: "partymuse-giveaways.jpg", finished: !!config.giveaways.done });
   if (config.pinata?.enabled) out.push({ id: "pinata", title: "Piñata", file: "partymuse-pinata.jpg", finished: !!config.pinata.done });
-  if (config.cake?.enabled) out.push({ id: "cake", title: "Cake", file: "partymuse-cake.jpg", finished: !!config.cake.done });
+  if (config.cake?.enabled) out.push({ id: "cake", title: "Cake & sweets", file: "partymuse-cake.jpg", finished: !!config.cake.done });
   return out;
 }
 
