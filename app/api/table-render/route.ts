@@ -1,4 +1,7 @@
-// The real render of the kids' table (F3): since 2026-10-28 one close-up of
+// The real render of the kids' table (F3). Its top view, since 2026-11-03 (the owner: "tam üstten sandalye
+// gözükmesin, live sketchin birebir aynı açısının renderı olsun … çok uzun sürüyor"): the one place as the
+// builder draws it, sent as a JPEG, made into a photograph by FLUX.2 [flash] in a few seconds
+// (lib/studio/tableRender.ts tablePhotoPrompt). Otherwise, since 2026-10-28, one close-up of
 // part of the table, made from a drawing of the exact scene
 // (lib/studio/tableCloseGuide.ts) and the pictures of the options the customer
 // chose (lib/studio/tableRender.ts). Like the
@@ -21,18 +24,24 @@ import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
 import { readTableSetup } from "@/lib/studio/tableSetup";
 import { optionPhoto, tableOption } from "@/lib/studio/tableCatalog";
-import { referencePictures, tablePrompt, tableRenderKey, type TableRender } from "@/lib/studio/tableRender";
+import { referencePictures, tablePhotoPrompt, tablePrompt, tableRenderKey, type TableRender } from "@/lib/studio/tableRender";
 import { tableCloseGuideSvg, type TableView } from "@/lib/studio/tableCloseGuide";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 150; // one Seedream picture (60–90 s)
+export const maxDuration = 150; // one Seedream picture (60–90 s); the top view takes seconds
 
 // Seedream 5 Lite: in the 2026-10-27 comparison with flux-2-pro and
 // nano-banana it came closest to the owner's reference photos, and is the
 // cheapest ($0.035 a picture). TABLE_RENDER_MODEL switches the engine.
 const MODEL = process.env.TABLE_RENDER_MODEL || "fal-ai/bytedance/seedream/v5/lite/edit";
 const SEED = 777;
+// The top view from the builder's drawing: in the 2026-11-03 test FLUX.2 [flash] kept the drawing's angle,
+// framing and pieces as a real photo in 6–7 s; Seedream took 40–52 s and kept the drawing's frame, FLUX.2
+// [dev] edit spread the placemat's print over the table. TABLE_TOP_MODEL switches it.
+const TOP_MODEL = process.env.TABLE_TOP_MODEL || "fal-ai/flux-2/flash/edit";
+/** The drawing the builder sends: at most this many bytes. */
+const MAX_PREVIEW_BYTES = 4 * 1024 * 1024;
 
 function engineInput(model: string, prompt: string, imageUrls: string[]) {
   const base = { prompt, image_urls: imageUrls, num_images: 1, output_format: "jpeg" };
@@ -59,13 +68,16 @@ async function optionPicture(photo: string, origin: string): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { table?: unknown; theme?: unknown; view?: unknown };
+  let body: { table?: unknown; theme?: unknown; view?: unknown; preview?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
   const theme = typeof body?.theme === "string" ? themeById(body.theme) : undefined;
   const table = theme ? readTableSetup(body.table, theme) : undefined;
   if (!theme || !table?.enabled) return NextResponse.json({ error: "Missing table or theme." }, { status: 400 });
   // 2026-10-29: the close-up, or one place seen straight down.
   const view: TableView = body.view === "top" ? "top" : "close";
+  const preview = view === "top" && typeof body?.preview === "string" ? body.preview.match(/^data:image\/(?:jpeg|png);base64,([A-Za-z0-9+/=]+)$/)?.[1] : undefined;
+  const previewBytes = preview ? Buffer.from(preview, "base64") : undefined;
+  if (previewBytes && previewBytes.length > MAX_PREVIEW_BYTES) return NextResponse.json({ error: "The preview is too big." }, { status: 413 });
   const falKey = process.env.FAL_KEY;
   if (!falKey) return NextResponse.json({ error: "Renders are not available right now." }, { status: 503 });
 
@@ -88,20 +100,34 @@ export async function POST(req: NextRequest) {
           // Where the time goes, in the function's log (2026-10-28: "render aşırı uzun sürüyor").
           const t0 = Date.now(), times: Record<string, number> = {};
           const lap = (k: string) => { times[k] = Date.now() - t0; };
-          const refs = referencePictures(table, theme.id);
-          // Image 1: the drawing of the exact scene, the placemats wearing their own
-          // design (2026-10-28 tests); then the chosen pieces' pictures — all made at once.
-          const matPhoto = optionPhoto("placemats", tableOption("placemats", table.choices.placemats), theme.id);
-          const [placemat, photos] = await Promise.all([
-            matPhoto ? optionPicture(matPhoto, req.nextUrl.origin) : undefined,
-            Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin))),
-          ]);
-          // A JPEG, not a PNG: the drawing with its placemat photos is a fraction of the upload.
-          const guide = await sharp(Buffer.from(tableCloseGuideSvg(table, theme, { placemat }, view))).jpeg({ quality: 90 }).toBuffer();
-          const pictures = [`data:image/jpeg;base64,${guide.toString("base64")}`, ...photos];
-          lap("prepared");
-          const result = await fal.subscribe(MODEL, {
-            input: engineInput(MODEL, tablePrompt(table, theme, refs.map((r) => r.key), view), pictures) as never,
+          let model = MODEL, input: unknown;
+          if (previewBytes) {
+            // A picture, and only one: re-encoded here, about a megapixel, its sides in steps of 16.
+            const img = await sharp(previewBytes).resize({ width: 1216, height: 1216, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 90 }).toBuffer({ resolveWithObject: true });
+            const step = (n: number) => Math.max(512, Math.round(n / 16) * 16);
+            model = TOP_MODEL;
+            input = {
+              prompt: tablePhotoPrompt(table), image_urls: [`data:image/jpeg;base64,${img.data.toString("base64")}`], num_images: 1, output_format: "jpeg",
+              image_size: { width: step(img.info.width), height: step(img.info.height) }, seed: SEED,
+            };
+            lap("prepared");
+          } else {
+            const refs = referencePictures(table, theme.id);
+            // Image 1: the drawing of the exact scene, the placemats wearing their own
+            // design (2026-10-28 tests); then the chosen pieces' pictures — all made at once.
+            const matPhoto = optionPhoto("placemats", tableOption("placemats", table.choices.placemats), theme.id);
+            const [placemat, photos] = await Promise.all([
+              matPhoto ? optionPicture(matPhoto, req.nextUrl.origin) : undefined,
+              Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin))),
+            ]);
+            // A JPEG, not a PNG: the drawing with its placemat photos is a fraction of the upload.
+            const guide = await sharp(Buffer.from(tableCloseGuideSvg(table, theme, { placemat }, view))).jpeg({ quality: 90 }).toBuffer();
+            const pictures = [`data:image/jpeg;base64,${guide.toString("base64")}`, ...photos];
+            lap("prepared");
+            input = engineInput(MODEL, tablePrompt(table, theme, refs.map((r) => r.key), view), pictures);
+          }
+          const result = await fal.subscribe(model, {
+            input: input as never,
             abortSignal: AbortSignal.timeout(130_000),
             onQueueUpdate: (u) => { if (u.status === "IN_PROGRESS" && times.started === undefined) lap("started"); },
           });
@@ -122,7 +148,7 @@ export async function POST(req: NextRequest) {
           }
           lap("kept");
           // prepared: pictures ready; started: fal began (the rest was its queue); made: picture done; sent: downloaded and on its way.
-          console.info("[table-render] ms", JSON.stringify({ ...times, upload: pictures.reduce((n, p) => n + p.length, 0) }));
+          console.info("[table-render] ms", JSON.stringify({ ...times, model }));
           send({ done: true, ...(render ? { render } : {}), left: taken.left });
         } catch (err) {
           console.error("[table-render]", err);

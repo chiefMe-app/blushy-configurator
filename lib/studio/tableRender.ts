@@ -192,3 +192,27 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
   // Straight down the whole place is sharp: no background to blur.
   return [...lines, LENS[view], top ? "" : SETTING[t.scene ?? "garden"], top ? STYLE.replace(" with a shallow depth of field", "") : STYLE].filter(Boolean).join(" ");
 }
+
+/**
+ * The top view made from the one place as the builder draws it (2026-11-03, the owner: "tam üstten sandalye
+ * gözükmesin, live sketchin birebir aynı açısının renderı olsun, seçimlerin aynısının renderı alınsın"): the
+ * picture, stacked from photos of the very pieces chosen in their colours and words, is the only image, so the
+ * render keeps its angle, its framing and its pieces, and adds nothing — the old drawing and option photos
+ * brought in a chair, a slanted view and a name tag of their own.
+ */
+export function tablePhotoPrompt(t: TableSetup): string {
+  const c = t.choices;
+  const said = (k: "placemats" | "cutleryHolder" | "bottleLabel") => wordsOn(t, k);
+  const words = Array.from(new Set([said("placemats"), said("cutleryHolder"), said("bottleLabel")].filter(Boolean) as string[]));
+  const band = c.cutleryHolder === "band" ? `The band round the napkin and cutlery stays ${colourWords(t.holderColor)}${said("cutleryHolder") ? `, the name printed straight on it` : ""} — no tag, no label.` : "";
+  return [
+    "Image 1 is a flat lay of one child's place at a kids' birthday party table, seen from straight above, put together from photos of the exact pieces chosen.",
+    "Turn image 1 into one real photograph of the very same place: the same camera, looking straight down from directly above, and the same framing, edge to edge — not tilted, not from the side, not zoomed out.",
+    "Keep every piece exactly where image 1 has it, at the same size and turned the same way, in the same colours, finishes, patterns and prints — the same pieces and the same number of each.",
+    "The table top round the placemat stays exactly as image 1 has it: plain, with nothing printed on it — the placemat's print stays on the placemat alone.",
+    "Add nothing: no chair, no chair back, no table edge, no floor, no people, no balloons, no flowers, no confetti, no other plates, cups, cutlery, napkins, name cards, tags or labels. Leave nothing out.",
+    band,
+    words.length ? `Keep the words exactly as image 1 letters them, letter for letter, in the same lettering, size and place: ${words.map((w) => `"${w}"`).join(" and ")}. No other words or letters anywhere.` : "No words or letters anywhere.",
+    "Make it real: paper, foil, card and wood with their own fine texture, soft even daylight from above, and gentle natural shadows under each piece where it rests on the table. Crisp and sharp all over, like a styled flat-lay product photo. No outlines, no cut-out edges, no cartoon characters, no faces, no logos.",
+  ].filter(Boolean).join(" ");
+}

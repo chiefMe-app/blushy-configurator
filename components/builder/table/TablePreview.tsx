@@ -9,7 +9,7 @@
 // (the owner: "top view render alsın sadece … render almadan o aşamaya
 // geçemesin"): one render of the top view of one place, which finalizing the
 // table waits for (the builder's usePieceRender, /api/table-render).
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { tableCounts } from "@/lib/studio/tableSetup";
 import { tableRenderKey } from "@/lib/studio/tableRender";
@@ -24,12 +24,21 @@ type View = "place" | "six" | "perspective" | "top" | "render";
 /** How a table render asked for in this visit is going (kept for the builder's notes). */
 export type TableRenderJob = "loading" | "ready" | "error";
 
-export default function TablePreview({ config, render, onGenerate }: {
+export default function TablePreview({ config, render, onGenerate, placeShot }: {
   config: BuilderConfig;
   render: PieceRender;
   onGenerate: () => void;
+  /** Set here: shows the one place and gives back its box, for the render to be made from (2026-11-03). */
+  placeShot?: MutableRefObject<(() => Promise<SVGSVGElement | null>) | null>;
 }) {
   const [view, setView] = useState<View>("place");
+  // 2026-11-03 (the owner: "live sketchin birebir aynı açısının renderı olsun, seçimlerin aynısının"): the render
+  // is made from the one place as it is drawn here, so it is shown first, then its box is handed over.
+  if (placeShot) placeShot.current = async () => {
+    setView("place");
+    for (let i = 0; i < 2; i++) await new Promise((r) => requestAnimationFrame(r));
+    return document.querySelector<SVGSVGElement>('#table-preview-card svg[data-mode="one"]');
+  };
   // A render that comes in is shown; one asked for shows its wait on the render tab.
   useEffect(() => { if (render.loading || render.url) setView("render"); }, [render.loading, render.url]);
   const theme = themeById(config.theme) ?? THEMES[0];
@@ -73,13 +82,13 @@ export default function TablePreview({ config, render, onGenerate }: {
                 <div className="veil" role="status" data-testid="table-render-wait">
                   <span className="dots" aria-hidden="true"><i /><i /><i /></span>
                   <b>Rendering one place from above</b>
-                  <span>From the pictures you chose — about a minute.</span>
+                  <span>From this place as you designed it — about 10 seconds.</span>
                 </div>
               )}
             </div>
           )}
           <p className="note">
-            {shown === "render" ? (render.url ? <>Your render — one place from above, made from the pictures you chose.</> : <>Your render is on its way.</>)
+            {shown === "render" ? (render.url ? <>Your render — this place from above, as a real photo.</> : <>Your render is on its way.</>)
               : shown === "place" ? <>One place from above, made from photos of each piece — your colours and words show straight away.</>
               : shown === "six" ? <>Six places, a part of the table, from above.</>
               : shown === "top" ? <>From above, to scale · {tableCounts(table).tables} table{tableCounts(table).tables > 1 ? "s" : ""} · {table.kids} kids — a drawing, not a photo.</>
@@ -92,7 +101,7 @@ export default function TablePreview({ config, render, onGenerate }: {
           {!render.ready && !render.loading && (
             <div className="bz-tb-render" data-testid="table-render-box">
               <button type="button" className="bz-next" onClick={onGenerate}>{render.stale ? "Regenerate render ✨" : "Generate render ✨"}</button>
-              <p className="hint">{render.stale ? "You changed the table since your render." : "A photo-real top view of one place, made from the pictures you chose."} Needs a free account.</p>
+              <p className="hint">{render.stale ? "You changed the table since your render." : "A photo-real top view of this place, exactly as you designed it."} Needs a free account.</p>
               {render.error && <p className="error" role="alert">{render.error}</p>}
             </div>
           )}

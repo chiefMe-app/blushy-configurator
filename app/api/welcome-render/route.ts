@@ -21,9 +21,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 150;
 
-// Seedream 5 Lite, as the table's: the closest to real photographs in the 2026-10-27 comparison, and it keeps
-// printed words. WELCOME_RENDER_MODEL switches the engine.
-const MODEL = process.env.WELCOME_RENDER_MODEL || "fal-ai/bytedance/seedream/v5/lite/edit";
+// FLUX.2 [dev] edit at the preview's own size (2026-11-03, the owner: "welcome board renderı çok uzun sürüyor"):
+// in that day's test it kept the board, its words and the garland as a real photo in about 14 s, where Seedream
+// 5 Lite, which must make at least 2560×1440 pixels, took a minute or more. WELCOME_RENDER_MODEL switches it.
+const MODEL = process.env.WELCOME_RENDER_MODEL || "fal-ai/flux-2/edit";
 /** The preview JPEG the builder sends: at most this many bytes. */
 const MAX_PREVIEW_BYTES = 4 * 1024 * 1024;
 const HEX = /^#[0-9A-F]{6}$/i;
@@ -52,8 +53,8 @@ export async function POST(req: NextRequest) {
   try {
     const taken = await takeAccountRender(user);
     if (!taken.ok) return NextResponse.json({ error: taken.error, signin: taken.signin, limited: taken.limited }, { status: taken.status });
-    // A picture, and only one: re-encoded here, at most 2048 px long.
-    const image = await sharp(bytes).resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 90 }).toBuffer({ resolveWithObject: true });
+    // A picture, and only one: re-encoded here, at most 1408 px long.
+    const image = await sharp(bytes).resize({ width: 1408, height: 1408, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 90 }).toBuffer({ resolveWithObject: true });
     const { width, height } = image.info;
     fal.config({ credentials: falKey });
     const stream = new ReadableStream<Uint8Array>({
@@ -61,13 +62,16 @@ export async function POST(req: NextRequest) {
         const send = (o: unknown) => controller.enqueue(ndjsonLine(o));
         try {
           const stand = BOARD_STANDS.find((s) => s.id === board.stand)?.name.toLowerCase() ?? "easel";
-          // Seedream wants at least 2560×1440 pixels: the preview's shape, scaled up to that.
-          const k = Math.max(1, Math.sqrt((2560 * 1440) / (width * height)));
+          // Seedream wants at least 2560×1440 pixels: the preview's shape, scaled up to that; FLUX its own size,
+          // the sides in steps of 16.
+          const seedream = MODEL.includes("seedream");
+          const k = seedream ? Math.max(1, Math.sqrt((2560 * 1440) / (width * height))) : 1;
+          const side = (n: number) => (seedream ? Math.round(n * k) : Math.max(512, Math.round(n / 16) * 16));
           const result = await fal.subscribe(MODEL, {
             input: {
               prompt: welcomePrompt([board.heading, board.name, board.line], stand),
               image_urls: [`data:image/jpeg;base64,${image.data.toString("base64")}`], num_images: 1, output_format: "jpeg",
-              image_size: { width: Math.round(width * k), height: Math.round(height * k) },
+              image_size: { width: side(width), height: side(height) }, ...(seedream ? {} : { seed: 777 }),
             } as never,
             abortSignal: AbortSignal.timeout(130_000),
           });

@@ -6,9 +6,10 @@ import { NextRequest } from "next/server";
 import { themeById } from "@/lib/config";
 import { NONE } from "@/lib/studio/tableCatalog";
 import { defaultTableSetup, readTableRender, readTableSetup } from "@/lib/studio/tableSetup";
-import { MAX_REFERENCES, referencePictures, tablePrompt, tableRenderKey } from "@/lib/studio/tableRender";
+import { MAX_REFERENCES, referencePictures, tablePhotoPrompt, tablePrompt, tableRenderKey } from "@/lib/studio/tableRender";
 import { placematWordsSize, tableCloseGuideSvg } from "@/lib/studio/tableCloseGuide";
 import { tableFont } from "@/lib/studio/tableFonts";
+import { defaultWelcomeBoard } from "@/lib/studio/welcomeBoard";
 import { resetRenderGuard } from "@/lib/renderGuard";
 import { readNdjson } from "@/lib/ndjson";
 
@@ -279,6 +280,48 @@ describe("the route", () => {
     expect(got[0]).toEqual({ view: "top", url: PICTURE });
     const [, { input }] = subscribe.mock.calls[0] as [string, { input: { prompt: string } }];
     expect(input.prompt).toContain("A flat lay");
+  }, 30_000);
+
+  it("the top view from the builder's own drawing of the place: that picture alone, made real by FLUX.2 [flash]", async () => {
+    // 2026-11-03 (the owner: "tam üstten sandalye gözükmesin, live sketchin birebir aynı açısının renderı olsun").
+    subscribe.mockImplementation(async () => ({ data: { images: [{ url: FAL }] } }));
+    const sharp = (await import("sharp")).default;
+    const drawn = await sharp({ create: { width: 1200, height: 899, channels: 3, background: "#f5f3ef" } }).jpeg().toBuffer();
+    const { POST } = await import("@/app/api/table-render/route");
+    const got = await lines(await POST(post({ table: table(), theme: "frozen", view: "top", preview: `data:image/jpeg;base64,${drawn.toString("base64")}` })));
+    expect(got[0]).toEqual({ view: "top", url: PICTURE });
+    const [model, { input }] = subscribe.mock.calls[0] as [string, { input: { prompt: string; image_urls: string[]; image_size: { width: number; height: number } } }];
+    expect(model).toBe("fal-ai/flux-2/flash/edit");
+    expect(input.image_urls).toHaveLength(1);
+    expect(input.image_size).toEqual({ width: 1200, height: 896 });
+    expect(input.prompt).toBe(tablePhotoPrompt(table()));
+  }, 30_000);
+
+  it("the photo of the drawn place keeps its angle and pieces, adds no chair, and keeps the band's colour and words", () => {
+    const t = { ...table({ cutleryHolder: "band" }), holderColor: "#F4B6C2", words: { ...defaultTableSetup(frozen).words, cutleryHolder: "Maya" } };
+    const p = tablePhotoPrompt(t);
+    expect(p).toMatch(/The band round the napkin and cutlery stays [a-z ]*pink, the name printed straight on it — no tag/);
+    expect(p).toContain('"Maya"');
+    expect(p).toContain("looking straight down from directly above");
+    expect(p).toMatch(/Add nothing: no chair/);
+    expect(p).toMatch(/plain, with nothing printed on it/);
+    expect(p).not.toMatch(/frozen/i);
+  });
+
+  it("the welcome board from its preview: FLUX.2 edit at the preview's own size, in seconds", async () => {
+    // 2026-11-03 (the owner: "table setup ve welcome board renderı çok uzun sürüyor").
+    subscribe.mockImplementation(async () => ({ data: { images: [{ url: FAL }] } }));
+    const sharp = (await import("sharp")).default;
+    const drawn = await sharp({ create: { width: 1400, height: 1022, channels: 3, background: "#eeeeee" } }).jpeg().toBuffer();
+    const { POST } = await import("@/app/api/welcome-render/route");
+    const board = { ...defaultWelcomeBoard(frozen), enabled: true };
+    const res = await POST(new NextRequest("http://localhost/api/welcome-render", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ board, theme: "frozen", balloons: [], preview: `data:image/jpeg;base64,${drawn.toString("base64")}` }) }));
+    expect((await lines(res))[0]).toEqual({ url: PICTURE });
+    const [model, { input }] = subscribe.mock.calls[0] as [string, { input: { image_urls: string[]; image_size: { width: number; height: number } } }];
+    expect(model).toBe("fal-ai/flux-2/edit");
+    expect(input.image_urls).toHaveLength(1);
+    expect(input.image_size).toEqual({ width: 1408, height: 1024 });
   }, 30_000);
 
   it("refuses a missing or skipped table without calling fal", async () => {

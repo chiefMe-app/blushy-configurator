@@ -46,7 +46,7 @@ export default function WelcomePreview({ config, render, onGenerate }: { config:
               <div className="veil" role="status" data-testid="welcome-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>
                 <b>Rendering your board</b>
-                <span>From this preview — about a minute.</span>
+                <span>From this preview — about 15 seconds.</span>
               </div>
             )}
           </div>

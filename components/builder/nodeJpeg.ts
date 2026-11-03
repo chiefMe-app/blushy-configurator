@@ -38,11 +38,16 @@ async function fontCssFor(node: HTMLElement): Promise<string> {
   return out.join("\n");
 }
 
-/** The node drawn as a JPEG data URI, `width` px wide, its lettering in its own fonts. */
-export async function nodeJpeg(node: HTMLElement, width: number): Promise<string> {
+/**
+ * The node drawn as a JPEG data URI, `width` px wide, its lettering in its own fonts. An SVG too (2026-11-03,
+ * the kids' table's one place), which has no offset size; square-cornered, as a photo to be rendered is.
+ */
+export async function nodeJpeg(node: HTMLElement | SVGSVGElement, width: number): Promise<string> {
   await document.fonts.ready;
-  const options = { quality: 0.92, backgroundColor: "#FFFFFF", pixelRatio: width / node.offsetWidth, fontEmbedCSS: await fontCssFor(node) };
+  const box = node.getBoundingClientRect();
+  const options = { quality: 0.92, backgroundColor: "#FFFFFF", width: box.width, height: box.height, pixelRatio: width / box.width,
+    style: { borderRadius: "0" }, fontEmbedCSS: await fontCssFor(node as HTMLElement) };
   // Twice: some browsers (Safari) draw the first picture before its fonts are in.
-  await toJpeg(node, options);
-  return toJpeg(node, options);
+  await toJpeg(node as HTMLElement, options);
+  return toJpeg(node as HTMLElement, options);
 }

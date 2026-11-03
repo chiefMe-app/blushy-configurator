@@ -126,7 +126,10 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await page.getByTestId("finish-kids-table").click();
   await expect(page.getByTestId("adult-intro")).toBeVisible();
   expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/table-render"]);
-  expect(JSON.parse(guard.blocked[0].postData()!).view).toBe("top");
+  const sent = JSON.parse(guard.blocked[0].postData()!);
+  expect(sent.view).toBe("top");
+  // Made from the one place as drawn here (2026-11-03: "live sketchin birebir aynı açısının renderı olsun").
+  expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
 });
 
 test("K10 the grown-ups' table: asked only once the kids' table is finished, then on to the welcome board", async ({ page, guard }) => {

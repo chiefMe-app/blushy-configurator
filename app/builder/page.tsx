@@ -184,11 +184,16 @@ export default function ConfigurePage() {
   // 2026-11-03 (the owner: "generate render yapmadan finalize … basılamasın … top view render alsın sadece …
   // burda da rendera zorlasın"): the kids' table's top view and the welcome board are each rendered before
   // they are finalized (components/builder/usePieceRender.ts); the renders show side by side at the end.
+  const tablePlaceShot = useRef<(() => Promise<SVGSVGElement | null>) | null>(null);
   const tableKey = config.table?.enabled ? tableRenderKey(config.table, config.theme) : "";
   const tableRender = usePieceRender({
     endpoint: "/api/table-render", partKey: tableKey,
     kept: config.table?.render?.view === "top" ? { key: config.table.render.key, path: config.table.render.close } : undefined,
-    body: () => ({ table: config.table, theme: config.theme, view: "top" }),
+    // The one place as the customer sees it (2026-11-03: "live sketchin birebir aynı açısının renderı olsun").
+    body: async () => {
+      const node = await tablePlaceShot.current?.();
+      return { table: config.table, theme: config.theme, view: "top", preview: node ? await nodeJpeg(node, 1200) : null };
+    },
     onKept: (k) => setConfig((c) => (c.table ? { ...c, table: { ...c.table, render: { key: k.key, close: k.path, view: "top" } } } : c)),
     onSignInNeeded: () => askSignIn("table-render"),
   });
@@ -582,7 +587,7 @@ export default function ConfigurePage() {
           )}
           {onWelcome && <WelcomePreview config={config} render={welcomeRender} onGenerate={makeWelcomeRender} />}
           <div hidden={!onKids}>
-            <TablePreview config={config} render={tableRender} onGenerate={makeTableRender} />
+            <TablePreview config={config} render={tableRender} onGenerate={makeTableRender} placeShot={tablePlaceShot} />
           </div>
           {step < 2 ? (
             <div className="bz-cake">
