@@ -571,6 +571,22 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   expect(aed(await sum.textContent())).toBe(s3 + 12 * 12 + 6 * (10 + 1));
   await cupcakes.getByRole("radio", { name: "None" }).click();
   await expect(art.locator("[data-part=cake-sweet]")).toHaveCount(1);
+  // On a sweet cart (the owner: "cake cart opsiyonu da olabilir"): its awning in a colour of hers.
+  const s4 = aed(await sum.textContent());
+  await page.getByTestId("cake-display").getByText("On a sweet cart", { exact: true }).click();
+  await expect(art).toHaveAttribute("data-scene", "cart");
+  const awning = page.getByTestId("cake-awning").getByRole("radio");
+  await awning.nth(2).click();
+  await expect(awning.nth(2)).toHaveAttribute("aria-checked", "true");
+  expect(await art.locator("[data-part=cake-awning]").getAttribute("fill")).toBe(await awning.nth(2).evaluate((b) => {
+    const [r, g, bl] = getComputedStyle(b).backgroundColor.match(/\d+/g)!.map(Number);
+    return "#" + [r, g, bl].map((n) => n.toString(16).padStart(2, "0")).join("").toUpperCase();
+  }));
+  await expect(art.locator("[data-part=cake-sweet]")).toHaveCount(1);
+  expect(aed(await sum.textContent())).toBe(s4 + 450);
+  await page.getByTestId("cake-display").getByText("On a table", { exact: true }).click();
+  await expect(art).toHaveAttribute("data-scene", "table");
+  expect(aed(await sum.textContent())).toBe(s4);
   // A plain cake: white, nothing on top.
   await designs.filter({ hasText: "Plain cake" }).click();
   await expect(art.locator("[data-part=cake-figure]")).toHaveCount(0);

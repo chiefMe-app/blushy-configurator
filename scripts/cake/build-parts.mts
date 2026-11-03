@@ -57,6 +57,8 @@ function bbox(d: Buffer, W: number, H: number) {
   return { left: x0, top: y0, width: x1 - x0 + 1, height: y1 - y0 + 1 };
 }
 
+/** Where the cart photo's awning is (measured by eye), its stripes looked for inside it. */
+const AWNING = { x0: 160, x1: 825, y0: 165, y1: 395 };
 /** How tall a sweet's picture is kept. */
 const SWEET_TALL = 480;
 
@@ -87,6 +89,25 @@ const manifest: {
 } = { tiers: {}, figures: {}, sweets: {} };
 for (const f of fs.readdirSync(SRC).filter((n) => n.endsWith(".png")).sort()) {
   const name = f.replace(/\.png$/, "");
+  if (name === "cart") {
+    // The sweet cart (2026-11-03, the owner: "cake cart opsiyonu da olabilir"): its photo, and its awning's grey
+    // stripes as a mask her colour is multiplied through (only inside the awning: the cart's own shade stays white).
+    const { data: c, info: ci } = await sharp(path.join(SRC, f)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    // The cart alone (a birefnet cut-out of the same photo): the wall round the awning is left as it is.
+    const { data: cut } = await sharp(path.join(SRC, "cart-cut.png.keep")).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const m = Buffer.alloc(ci.width * ci.height * 4);
+    for (let y = 0; y < ci.height; y++) for (let x = 0; x < ci.width; x++) {
+      const i = (y * ci.width + x) * 4;
+      m[i] = m[i + 1] = m[i + 2] = 255;
+      if (x < AWNING.x0 || x > AWNING.x1 || y < AWNING.y0 || y > AWNING.y1) continue;
+      const lum = (c[i] + c[i + 1] + c[i + 2]) / 3;
+      m[i + 3] = Math.round(Math.max(0, Math.min(1, (236 - lum) / 22)) * cut[i + 3]);
+    }
+    await sharp(path.join(SRC, f)).webp({ quality: 84 }).toFile(path.join(OUT, "cart.webp"));
+    await sharp(m, { raw: { width: ci.width, height: ci.height, channels: 4 } }).blur(1).webp({ quality: 80, alphaQuality: 80 }).toFile(path.join(OUT, "cart-awning.webp"));
+    console.log("cart", ci.width, "x", ci.height);
+    continue;
+  }
   if (name === "stand") {
     // More wall above it, its top row carried up, for a tall cake and its topper.
     await sharp(path.join(SRC, f)).extend({ top: STAND_ABOVE, extendWith: "copy" }).webp({ quality: 84 }).toFile(path.join(OUT, "stand.webp"));

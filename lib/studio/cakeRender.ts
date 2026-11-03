@@ -37,9 +37,11 @@ export function cakePrompt(k: Cake): string {
     const print = sw.print ? `, each printed with ${sw.print === "age" ? `the number "${t.age || "1"}"` : `a little ${said(sw.print)!.name.toLowerCase()}`}` : "";
     return [`${kind.words(colourWords(sw.colour))}${top}${print}${sw.sprinkles ? ", with rainbow sprinkles" : ""}`];
   });
+  // On the sweet cart: the cake and the sweets on its counter, under its striped awning.
+  const cart = k.cart ? `a white wooden sweet cart with a ${colourWords(k.cart.awning)} and white striped awning` : "";
   const characters = cutTop.length + cutSide.length > 0 || (k.sweets ?? []).some((x) => [x.topper, x.print].some((p) => p && p !== "age" && said(p)?.kind === "cutout"));
   return [
-    `Image 1 is a preview of a birthday cake standing on a white cake stand on a table: ${cakeWords(k)}.`,
+    `Image 1 is a preview of a birthday cake standing on a white cake stand ${cart ? `on the counter of ${cart}` : "on a table"}: ${cakeWords(k)}.`,
     "Make it one real, natural close-up photograph of exactly this cake, from the same camera position, with the same framing and every part the same size and in the same place.",
     `Keep the cake exactly: ${k.tiers > 1 ? "the same tiers, each in its own colour as image 1 shows it" : "the same colour as image 1"}, the same decoration, made of real soft buttercream with its texture.`,
     rainbow.length ? `${rainbow.join("; ")} — keep its colours and patches as image 1 shows them.` : "",
@@ -50,8 +52,9 @@ export function cakePrompt(k: Cake): string {
     cutSide.length ? `Keep the printed card cutouts stuck flat on the sides of the tiers exactly where image 1 has them: ${cutSide.join(", ")} — flat glossy printed card with a thin white cut edge.` : "",
     decos.length ? `Keep the small round decorations exactly where image 1 has them: ${decos.join(", ")} — real and shiny, on the top and round the foot of the cake.` : "",
     topper,
-    sweets.length ? `On the table beside the cake stand keep the sweets exactly where image 1 has them: ${sweets.join("; ")} — the same places, sizes and colours, made real.` : "",
-    "Keep the white cake stand, the table and the wall as they are; a soft shadow under the cake on the stand's plate.",
+    sweets.length ? `On the ${cart ? "cart's counter" : "table"} beside the cake stand keep the sweets exactly where image 1 has them: ${sweets.join("; ")} — the same places, sizes and colours, made real.` : "",
+    cart ? `Keep the white cake stand and the sweet cart exactly as image 1 has them — its white wooden counter, its posts and its ${colourWords(k.cart!.awning)} and white striped awning, the same stripes and colour — and the floor and the wall behind it; a soft shadow under the cake on the stand's plate.`
+      : "Keep the white cake stand, the table and the wall as they are; a soft shadow under the cake on the stand's plate.",
     "Make the light real: soft, even, neutral daylight, gentle natural shadows — never yellow or orange light, no sunbeams or patches of sunlight.",
     `Nothing added and nothing taken away: no candles, ${characters ? "no real people or hands, no characters beyond the printed cutouts" : "no people, no hands, no characters"}, no fresh flowers, ${sprinkles?.words || k.sweets?.some((x) => x.sprinkles) ? "" : "no sprinkles, "}${sweets.length ? "no other sweets or plates" : "no plates"}, no extra words or letters.`,
   ].filter(Boolean).join(" ");

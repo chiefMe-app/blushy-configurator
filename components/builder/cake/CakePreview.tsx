@@ -11,7 +11,7 @@ import {
   rainbowOf, roomFor, tierAt, tierColours, topperColour, topperShows, type Cake,
 } from "@/lib/studio/cake";
 import { asPrinted, fontCss, tableFont } from "@/lib/studio/tableFonts";
-import { SWEET_PLACES, SWEET_SPOTS, sweetPicture, type CakeSweet } from "@/lib/studio/cakeSweets";
+import { CAKE_CART, CART_SWEET_PLACES, SWEET_PLACES, SWEET_SPOTS, sweetPicture, type CakeSweet } from "@/lib/studio/cakeSweets";
 import FitText from "@/components/studio/FitText";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
@@ -117,8 +117,8 @@ function Sprinkles({ id, t, kind, seed, top, size, many = 1 }: { id: string; t: 
  * its icing in her colour (multiplied through the icing's mask), sprinkles on the icing, a little figure on each
  * cupcake, a print on each cookie.
  */
-function SweetPiece({ s, k, uid }: { s: CakeSweet; k: Cake; uid: string }) {
-  const pic = sweetPicture(s.id), at = SWEET_PLACES[s.id];
+function SweetPiece({ s, k, uid, places }: { s: CakeSweet; k: Cake; uid: string; places: typeof SWEET_PLACES }) {
+  const pic = sweetPicture(s.id), at = places[s.id];
   const h = at.tall, w = (pic.w / pic.h) * h, x = at.x - w / 2, y = at.foot - h;
   const id = `${uid}-${s.id}`;
   const spots = (SWEET_SPOTS[s.id] ?? []).map((p) => ({ x: x + p.x * w, y: y + p.y * h, w: p.w * w }));
@@ -300,15 +300,17 @@ export function CakeArt({ k, className, edit }: {
 }) {
   const { w: W, h: H } = CAKE_STAND;
   const svg = useRef<SVGSVGElement>(null);
+  // The cake's own pixels (the stand photo's): on a cart, set onto its counter.
+  const layer = useRef<SVGGElement>(null);
   type Drag = { what: CakePick; from: { x: number; y: number }; at: { x: number; y: number }; mid: { x: number; y: number }; view: ReturnType<typeof viewOf>; id: number };
   const [drag, setDrag] = useState<Drag | null>(null);
   const point = (e: React.PointerEvent) => {
-    const m = svg.current?.getScreenCTM();
+    const m = layer.current?.getScreenCTM();
     if (!m) return { x: 0, y: 0 };
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
     return { x: p.x, y: p.y };
   };
-  const shown = drag ? moved(k, drag.what, drag.mid.x + drag.at.x - drag.from.x, drag.mid.y + drag.at.y - drag.from.y, drag.view) : k;
+  const shown = drag ? moved(k, drag.what, drag.mid.x + drag.at.x - drag.from.x, drag.mid.y + drag.at.y - drag.from.y, roomOf(k, drag.view)) : k;
   const view = drag?.view ?? viewOf(k);
   const grab = edit ? (e: React.PointerEvent, what: CakePick) => {
     e.stopPropagation();
@@ -327,19 +329,33 @@ export function CakeArt({ k, className, edit }: {
   };
   const L = edit && edit.picked !== null ? cakeLayout(shown) : null;
   const frame = L ? (edit!.picked === "topper" ? L.topperBox : L.figures[edit!.picked as number]) : null;
+  const cart = k.cart;
+  const box = cart ? CAKE_CART.view : view;
   return (
-    <svg ref={svg} className={className} viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} role="img" aria-label="Your cake on its stand" data-testid="cake-art"
-      style={drag ? { touchAction: "none" } : undefined}
+    <svg ref={svg} className={className} viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} role="img" aria-label={cart ? "Your cake on a sweet cart" : "Your cake on its stand"} data-testid="cake-art"
+      data-scene={cart ? "cart" : "table"} style={drag ? { touchAction: "none" } : undefined}
       onPointerDown={edit ? () => edit.onPick(null) : undefined}
       onPointerMove={drag ? (e) => { if (e.pointerId === drag.id) setDrag({ ...drag, at: point(e) }); } : undefined}
       onPointerUp={letGo} onPointerCancel={letGo}>
-      <image href={CAKE_STAND.src} x={0} y={0} width={W} height={H} />
-      {(k.sweets ?? []).map((sw) => <SweetPiece key={sw.id} s={sw} k={k} uid="ck-sw" />)}
-      <CakePiece k={shown} uid="ck-stand" grab={grab} />
-      {frame && <rect data-no-capture="" data-testid="cake-picked" x={frame.x - 6} y={frame.y - 6} width={frame.w + 12} height={frame.h + 12} rx={10}
-        fill="none" stroke="#FF0D66" strokeWidth={3} strokeDasharray="10 7" pointerEvents="none" />}
+      {cart ? <>
+        {/* The cart, its awning's stripes in her colour. */}
+        <defs><mask id="ck-awning" style={{ maskType: "alpha" }}><image href={CAKE_CART.awning} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} /></mask></defs>
+        <image href={CAKE_CART.src} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} />
+        <rect mask="url(#ck-awning)" style={{ mixBlendMode: "multiply" }} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} fill={cart.awning} data-part="cake-awning" />
+      </> : <image href={CAKE_STAND.src} x={0} y={0} width={W} height={H} />}
+      <g ref={layer} transform={cart ? `translate(${CAKE_CART.x} ${CAKE_CART.y}) scale(${CAKE_CART.scale})` : undefined}>
+        {(k.sweets ?? []).map((sw) => <SweetPiece key={sw.id} s={sw} k={k} uid="ck-sw" places={cart ? CART_SWEET_PLACES : SWEET_PLACES} />)}
+        <CakePiece k={shown} uid="ck-stand" grab={grab} />
+        {frame && <rect data-no-capture="" data-testid="cake-picked" x={frame.x - 6} y={frame.y - 6} width={frame.w + 12} height={frame.h + 12} rx={10}
+          fill="none" stroke="#FF0D66" strokeWidth={3} strokeDasharray="10 7" vectorEffect="non-scaling-stroke" pointerEvents="none" />}
+      </g>
     </svg>
   );
+}
+
+/** How high anything may stand on the cake, in its own pixels: inside the picture, or under the cart's awning. */
+function roomOf(k: Cake, view: { y: number }) {
+  return k.cart ? { y: Math.min(view.y, CAKE_CART.room) } : view;
 }
 
 /** The tools for what she picked on the cake: a figure to copy, size, bring forward or take off; the topper to size or put back. */
@@ -349,7 +365,7 @@ function PickedTools({ k, picked, setCake, onPick }: { k: Cake; picked: CakePick
     const setTopper = (patch: Partial<Cake["topper"]>) => setCake({ ...k, topper: { ...k.topper, ...patch } });
     // Bigger while it fits: on top, inside the picture's room over the cake; on the front, on its tier.
     const bigger = { ...k, topper: { ...k.topper, s: clamp(s * 1.12, 0.6, 1.6) } };
-    const L = cakeLayout(bigger), view = viewOf(k);
+    const L = cakeLayout(bigger), view = roomOf(k, viewOf(k));
     const fits = k.topper.at === "front" ? L.topperBox!.w <= tierAt(L.st, L.topperBox!.y + L.topperBox!.h / 2).w * 0.95 : L.topperBox!.y >= view.y + 8;
     return (
       <div className="bz-ck-tools" role="toolbar" aria-label="The topper" data-testid="cake-tools">

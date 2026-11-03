@@ -10,7 +10,7 @@ import {
   type Cake, type CakeFigure, type CakeSeed,
 } from "@/lib/studio/cake";
 import { cleanAge } from "@/lib/studio/pinata";
-import { CAKE_SWEETS, SPRINKLE_PRICE, SWEET_COUNTS, sweetPicture, sweetPrice, type CakeSweet } from "@/lib/studio/cakeSweets";
+import { CAKE_SWEETS, CART_PRICE, SPRINKLE_PRICE, SWEET_COUNTS, sweetPicture, sweetPrice, type CakeSweet } from "@/lib/studio/cakeSweets";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
 import { CakeThumb } from "./CakePreview";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
@@ -285,7 +285,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
       {/* 2026-11-03 (the owner: "cupcake, cookie, cake pops opsiyonları da olmalı … ve donut"): on the table beside the cake. */}
       <section className="bz-tb-section" aria-label="Sweets">
         <h2>Sweets</h2>
-        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>On the table beside the cake, in your colours.</p>
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>{k.cart ? "On the cart's counter" : "On the table"} beside the cake, in your colours.</p>
         {CAKE_SWEETS.map((kind) => {
           const sw = k.sweets?.find((x) => x.id === kind.id);
           const setSweet = (next: CakeSweet | null) => set({ sweets: CAKE_SWEETS.flatMap((x) => (x.id === kind.id ? (next ? [next] : []) : (k.sweets ?? []).filter((y) => y.id === x.id))) });
@@ -334,6 +334,36 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
             </div>
           );
         })}
+      </section>
+
+      {/* 2026-11-03 (the owner: "cake cart opsiyonu da olabilir"): the cake and the sweets on a white sweet cart. */}
+      <section className="bz-tb-section" aria-label="Shown on">
+        <h2>Shown on</h2>
+        <div className="bz-tb-item">
+          <div className="bz-gv-contents" role="radiogroup" aria-label="Shown on" data-testid="cake-display">
+            {[
+              { id: "table", name: "On a table", note: "The cake on its stand, the sweets beside it", on: !k.cart },
+              { id: "cart", name: "On a sweet cart", note: `A white cart with a striped awning in your colour · +AED ${formatAED(CART_PRICE)}`, on: !!k.cart },
+            ].map((o) => (
+              <label key={o.id} className={o.on ? "on" : ""}>
+                <input type="radio" name="cake-display" checked={o.on}
+                  onChange={() => set({ cart: o.id === "cart" ? { awning: seed.colours?.[0]?.toUpperCase() ?? "#F8BBD0" } : undefined })} />
+                <span><b>{o.name}</b><small>{o.note}</small></span>
+              </label>
+            ))}
+          </div>
+        </div>
+        {k.cart && (
+          <div className="bz-tb-item">
+            <h3>The awning&apos;s stripes</h3>
+            <div className="bz-ts-swatches" role="radiogroup" aria-label="Awning colour" data-testid="cake-awning">
+              {swatches.filter((hex) => hex !== "#FFFFFF").map((hex) => (
+                <button key={hex} type="button" role="radio" aria-checked={k.cart!.awning === hex} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
+                  className={k.cart!.awning === hex ? "on" : ""} style={{ background: hex }} onClick={() => set({ cart: { awning: hex } })}>{k.cart!.awning === hex ? "✓" : ""}</button>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       <div className="bz-tb-sum" data-testid="cake-total">

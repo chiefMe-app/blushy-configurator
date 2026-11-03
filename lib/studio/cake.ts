@@ -5,7 +5,7 @@
 // step's sixth part, after the piñata. Pure data and sums.
 import PARTS from "./cakeParts.json";
 import { cleanAge } from "./pinata";
-import { readSweets, sweetPriceLines, type CakeSweet } from "./cakeSweets";
+import { CART_PRICE, readCart, readSweets, sweetPriceLines, type CakeCart, type CakeSweet } from "./cakeSweets";
 
 /** How it is decorated, every tier alike (public/design/cake/tier-<id>.webp, scripts/cake/build-parts.mts). */
 export const CAKE_STYLES = [
@@ -193,6 +193,8 @@ export interface Cake {
   sprinkles?: CakeSprinkles;
   /** The sweets on the table beside it: cupcakes, cake pops, cookies, donuts (lib/studio/cakeSweets.ts). */
   sweets?: CakeSweet[];
+  /** Shown on a sweet cart instead of a table, its awning in a colour (lib/studio/cakeSweets.ts CAKE_CART). */
+  cart?: CakeCart;
   /** The figures, the back one first (0 to 8). */
   figures: CakeItem[];
   topper: CakeTopper;
@@ -280,7 +282,7 @@ export function cakePriceLines(k: Cake): { label: string; amount: number }[] {
   if (topperShows(k)) lines.push({ label: "Cake topper with the name", amount: TOPPER_PRICE });
   const flavour = CAKE_FLAVOURS.find((x) => x.id === k.flavour)!;
   if (flavour.price) lines.push({ label: `Cake flavour: ${flavour.name.toLowerCase()}`, amount: flavour.price });
-  return [...lines, ...sweetPriceLines(k.sweets)];
+  return [...lines, ...sweetPriceLines(k.sweets), ...(k.cart ? [{ label: "Sweet cart with a striped awning", amount: CART_PRICE }] : [])];
 }
 export const cakeTotal = (k: Cake) => cakePriceLines(k).reduce((s, l) => s + l.amount, 0);
 
@@ -295,6 +297,7 @@ export function readCake(raw: unknown): Cake | undefined {
     ? r.colours.filter((h): h is string => typeof h === "string" && (HEX.test(h) || !!rainbowOf(h))).slice(0, 3).map((h) => (rainbowOf(h) ? h : h.toUpperCase())) : [];
   const sprinkles = CAKE_SPRINKLES.find((s) => s.id !== "none" && s.id === r.sprinkles)?.id as CakeSprinkles | undefined;
   const sweets = readSweets(r.sweets);
+  const cart = readCart(r.cart);
   const tiers = CAKE_TIERS.find((x) => x.n === r.tiers)?.n ?? base.tiers;
   const style = CAKE_STYLES.find((s) => s.id === r.style)?.id ?? base.style;
   const isFigure = (f: unknown): f is CakeFigure => CAKE_FIGURES.some((x) => x.id === f);
@@ -321,6 +324,7 @@ export function readCake(raw: unknown): Cake | undefined {
     colours: colours.length ? [...colours, ...base.colours].slice(0, 3) : base.colours,
     ...(sprinkles ? { sprinkles } : {}),
     ...(sweets?.length ? { sweets } : {}),
+    ...(cart ? { cart } : {}),
     figures,
     topper: {
       on: typeof t.on === "boolean" ? t.on : base.topper.on,
@@ -347,7 +351,7 @@ export function cakeRenderKey(k: Cake, themeId: string): string {
   const figures = k.figures.map((f) => [f.id, f.on, r2(f.x), r2(f.y), r2(f.s)]);
   // The sweets as they show (not how many: the picture has a few of each).
   const sweets = (k.sweets ?? []).map((x) => [x.id, x.colour, !!x.sprinkles, x.topper ?? null, x.print ?? null]);
-  const s = JSON.stringify([themeId, k.tiers, k.style, tierColours(k), figures, topper, ...(k.sprinkles ? [k.sprinkles] : []), ...(sweets.length ? [sweets] : [])]);
+  const s = JSON.stringify([themeId, k.tiers, k.style, tierColours(k), figures, topper, ...(k.sprinkles ? [k.sprinkles] : []), ...(sweets.length ? [sweets] : []), ...(k.cart ? [["cart", k.cart.awning]] : [])]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
   return (h >>> 0).toString(36);

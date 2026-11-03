@@ -5,6 +5,8 @@
 import PARTS from "./cakeParts.json";
 import { CAKE_FIGURES, type CakeFigure } from "./cake";
 
+const HEX = /^#[0-9A-F]{6}$/i;
+
 export const CAKE_SWEETS = [
   { id: "cupcakes", name: "Cupcakes", note: "A swirl of buttercream, on a gold stand", each: 12, topper: "figure",
     words: (c: string) => `cupcakes in gold foil liners, each with a tall swirl of ${c} buttercream, on a small two-tier gold cupcake stand` },
@@ -68,6 +70,33 @@ export const SWEET_PLACES: Record<SweetId, { x: number; foot: number; tall: numb
   macarons: { x: 448, foot: 1238, tall: 80 },
 };
 
+/**
+ * The sweet cart (2026-11-03, the owner: "cake cart opsiyonu da olabilir", her photos of a white cart with a striped
+ * awning): a photo of an empty white cart with its own empty cake stand on the counter (scripts/cake/sources/cart.png),
+ * its awning's grey stripes in her colour. The cake and the sweets are drawn in the stand photo's pixels and set onto
+ * it: the stand photo's plate (CAKE_STAND) onto the cart's, `scale` and then (`x`, `y`). `room`: how high anything may
+ * stand, in the stand photo's pixels — under the awning. `view`: the picture, in the cart photo's pixels.
+ */
+export const CAKE_CART = {
+  src: "/design/cake/cart.webp", awning: "/design/cake/cart-awning.webp", w: 1024, h: 1280,
+  scale: 0.517, x: 261, y: 129.6, room: 504, view: { x: 40, y: 70, w: 944, h: 1180 },
+};
+/** A placeholder: the cart's hire, set up and taken back. */
+export const CART_PRICE = 450;
+export interface CakeCart { awning: string }
+/** The sweets on the cart's counter, between its posts, in the stand photo's pixels (as SWEET_PLACES). */
+export const CART_SWEET_PLACES: Record<SweetId, { x: number; foot: number; tall: number }> = {
+  cupcakes: { x: 110, foot: 1050, tall: 228 },
+  cakepops: { x: 800, foot: 1050, tall: 205 },
+  cookies: { x: 150, foot: 1118, tall: 100 },
+  donuts: { x: 770, foot: 1120, tall: 120 },
+  macarons: { x: 448, foot: 1122, tall: 72 },
+};
+export const readCart = (raw: unknown): CakeCart | undefined => {
+  const o = (raw && typeof raw === "object" ? raw : null) as Record<string, unknown> | null;
+  return o ? { awning: typeof o.awning === "string" && HEX.test(o.awning) ? o.awning.toUpperCase() : "#F8BBD0" } : undefined;
+};
+
 export const sweetPrice = (s: CakeSweet) => s.count * (sweetOf(s.id).each + (s.sprinkles ? SPRINKLE_PRICE : 0));
 
 export function sweetPriceLines(sweets: CakeSweet[] = []): { label: string; amount: number }[] {
@@ -76,8 +105,6 @@ export function sweetPriceLines(sweets: CakeSweet[] = []): { label: string; amou
     return s ? [{ label: `${k.name} ×${s.count}${s.sprinkles ? ", sprinkles" : ""}`, amount: sweetPrice(s) }] : [];
   });
 }
-
-const HEX = /^#[0-9A-F]{6}$/i;
 
 /** Stored sweets read back: each kind once, its count, colour and topper as they may be. */
 export function readSweets(raw: unknown): CakeSweet[] | undefined {

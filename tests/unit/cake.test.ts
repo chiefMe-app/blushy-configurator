@@ -11,7 +11,7 @@ import {
   readCake, roomFor, tierColours, tierPicture, type Cake, type CakeFigure, type CakeItem,
 } from "@/lib/studio/cake";
 import { cakePrompt } from "@/lib/studio/cakeRender";
-import { CAKE_SWEETS, SWEET_PLACES, colourWords, readSweets, sweetPicture } from "@/lib/studio/cakeSweets";
+import { CAKE_CART, CAKE_SWEETS, CART_PRICE, CART_SWEET_PLACES, SWEET_PLACES, colourWords, readSweets, sweetPicture } from "@/lib/studio/cakeSweets";
 import { cakeLayout, viewOf } from "@/components/builder/cake/CakePreview";
 import { fromDraft, toDraft } from "@/lib/draft";
 import { resetRenderGuard } from "@/lib/renderGuard";
@@ -318,5 +318,32 @@ describe("the sweets beside the cake", () => {
     expect(s).toEqual([{ id: "cookies", count: 12, colour: "#FFFFFF", print: "age" }, { id: "cupcakes", count: 12, colour: "#FFFFFF" }]);
     expect(readCake({ sweets: [{ id: "donuts", count: 6, colour: "#bae6fd", sprinkles: true }] })!.sweets).toEqual([{ id: "donuts", count: 6, colour: "#BAE6FD", sprinkles: true }]);
     expect(colourWords("#A855F7")).toBe("purple");
+  });
+});
+
+describe("the sweet cart", () => {
+  // 2026-11-03 (the owner: "cake cart opsiyonu da olabilir"): the cake and the sweets on a white cart, its awning in her colour.
+  it("has its photo and awning, prices the cart, and says it in the render", () => {
+    expect(fs.existsSync(path.join("public", CAKE_CART.src))).toBe(true);
+    expect(fs.existsSync(path.join("public", CAKE_CART.awning))).toBe(true);
+    // The sweets stand between the cart's posts, on its counter.
+    for (const s of CAKE_SWEETS) {
+      const x = CART_SWEET_PLACES[s.id].x * CAKE_CART.scale + CAKE_CART.x;
+      expect(x, s.id).toBeGreaterThan(240);
+      expect(x, s.id).toBeLessThan(755);
+    }
+    const k: Cake = { ...defaultCake(seed), cart: { awning: "#F8BBD0" } };
+    expect(cakePriceLines(k)).toContainEqual({ label: "Sweet cart with a striped awning", amount: CART_PRICE });
+    expect(cakeTotal(k)).toBe(cakeTotal(defaultCake(seed)) + CART_PRICE);
+    expect(cakePrompt(k)).toMatch(/on the counter of a white wooden sweet cart with a pink and white striped awning/);
+    expect(cakePrompt(defaultCake(seed))).not.toMatch(/cart/);
+    expect(cakeRenderKey(k, "unicorn")).not.toBe(cakeRenderKey(defaultCake(seed), "unicorn"));
+    expect(cakeRenderKey({ ...k, cart: { awning: "#BAE6FD" } }, "unicorn")).not.toBe(cakeRenderKey(k, "unicorn"));
+  });
+
+  it("reads the cart back, its colour or pink", () => {
+    expect(readCake({ cart: { awning: "#bae6fd" } })!.cart).toEqual({ awning: "#BAE6FD" });
+    expect(readCake({ cart: { awning: "blue" } })!.cart).toEqual({ awning: "#F8BBD0" });
+    expect(readCake({})!.cart).toBeUndefined();
   });
 });
