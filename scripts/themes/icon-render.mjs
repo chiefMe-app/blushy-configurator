@@ -9,7 +9,8 @@ const [dir, out, only] = process.argv.slice(2);
 const projectDir = path.resolve(dir);
 const require = createRequire(path.join(projectDir, "package.json"));
 const sharp = require("sharp");
-const env = fs.readFileSync(path.join(projectDir, ".env.local"), "utf8");
+// ENV_FILE: another checkout's .env.local (e.g. from a git worktree); only FAL_KEY is read, never printed.
+const env = fs.readFileSync(process.env.ENV_FILE ?? path.join(projectDir, ".env.local"), "utf8");
 const key = (env.match(/^FAL_KEY\s*=\s*"?([^"\r\n]+)"?/m) || [])[1];
 const ref = async (f) => `data:image/png;base64,${(await sharp(path.join(projectDir, "public/design/themes-v2", f)).png().toBuffer()).toString("base64")}`;
 
@@ -20,6 +21,10 @@ const ICONS = {
   "circus": "a red-and-white striped circus big-top tent with little flags on top, stars, bunting and a striped popcorn box beside it",
   "ballerina": "a pair of blush pink satin ballet slippers with long ribbons and a fluffy pink tulle tutu, with a graceful white swan beside them and little bows and sparkles",
   "pirates": "a little wooden pirate ship with red-and-white striped sails on blue waves, an open treasure chest of gold coins and a rolled treasure map",
+  // 2026-11-03: generic, never a known character's look, collar tag, badge emblem or uniform.
+  "puppy-rescue": "a cheerful generic cartoon puppy (an original design, not any known character) with floppy ears and a plain red collar, beside a shiny gold star badge, a dog bone and paw prints, in bright red, blue and yellow",
+  "puppy-rescue-girl": "a cheerful generic cartoon puppy (an original design, not any known character) with floppy ears, a pink bow and a plain pink collar, beside a shiny star badge, a dog bone and paw prints, in pink, lilac and sunny yellow",
+  "dollhouse-kitties": "a little pastel pink and purple dollhouse with a teal roof and heart windows, a generic cute cartoon kitten (an original design, not any known character) sitting in front of it and a cupcake with a cherry, with sparkles",
   "football": "a black-and-white soccer ball wearing a little striped party hat, with a small gold trophy, a green pitch patch with a goal net and little stars",
   "dinosaur-girl": "a cute pastel pink and lilac long-necked dinosaur with soft spots, wearing a party hat with a little bow, with flowers at its feet and pastel confetti — the same kind of dinosaur as image 1, but pink and girly",
 };

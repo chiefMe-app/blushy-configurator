@@ -66,7 +66,9 @@ export type ThemeId =
   | "under_the_sea"
   | "circus"
   | "ballerina"
-  | "pirates";
+  | "pirates"
+  | "puppy_rescue"
+  | "dollhouse_kitties";
 
 export interface Theme {
   id: ThemeId;
@@ -159,6 +161,10 @@ export const THEMES: Theme[] = [
   { id: "circus", name: "Circus & Carnival", emoji: "-", desc: "Big-top stripes, popcorn brights", backdropColors: ["#FFFFFF", "#FFF8E1", "#FFEBEE"], balloonColors: ["#EF4444", "#FFFFFF", "#FFC200", "#00CED1", "#1E3A8A"], priceModifier: 40, accent: "#D63A3A" },
   { id: "ballerina", name: "Ballerina & Swan", emoji: "-", desc: "Tutu blush, pearl and champagne", backdropColors: ["#FCE4EC", "#FFFFFF", "#F5F0EE"], balloonColors: ["#F8BBD0", "#FBCFE8", "#F5F0EE", "#F5E6C8", "#E9D5FF"], priceModifier: 40, accent: "#D9709A" },
   { id: "pirates", name: "Pirates", emoji: "-", desc: "Navy seas, treasure gold, sailcloth", backdropColors: ["#F5EDD6", "#FFFFFF", "#E3F2FD"], balloonColors: ["#1E3A8A", "#EF4444", "#1F2937", "#FDE68A", "#F5EDD6"], priceModifier: 40, accent: "#9B2C2C" },
+  // 2026-11-03 (owner): "temalarda paw patrol ve gabbys house unuttuk" — generic, no licensed characters, names or logos.
+  // Their placemats: scripts/table/placemat-render.mjs (motifs only), portraits scripts/welcome/portrait-art.ts.
+  { id: "puppy_rescue", name: "Puppy Rescue", emoji: "-", desc: "Hero-pup red, blue and sunny yellow", backdropColors: ["#FFFFFF", "#E3F2FD", "#FFF8E1"], balloonColors: ["#EF4444", "#2563EB", "#FFC200", "#0EA5E9", "#FFFFFF"], priceModifier: 40, accent: "#D63031" },
+  { id: "dollhouse_kitties", name: "Dollhouse & Kitties", emoji: "-", desc: "Pink, purple and teal dollhouse sparkle", backdropColors: ["#FCE4EC", "#F3E5F5", "#E0F7FA"], balloonColors: ["#F9A8D4", "#C084FC", "#00CED1", "#F8BBD0", "#FFFFFF"], priceModifier: 40, accent: "#9B4DCA" },
   { id: "luxury_neutral", name: "Luxury Neutral", emoji: "-", desc: "Champagne satin, gold foil", backdropColors: ["#F5F0E8", "#EDE0D0", "#FFFFFF"], balloonColors: ["#F5E6C8", "#FEF3C7", "#F5EDD6", "#FDE68A", "#C9A96E"], priceModifier: 80, accent: "#B08D57" },
 ];
 

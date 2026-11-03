@@ -34,6 +34,7 @@ const MOTIF: Record<string, string> = {
   cocomelon: "watermelons and little fruits", teddy_bear: "hearts and paw prints", pineapple_tropical: "pineapples and palm leaves", blush_garden: "little flowers",
   minecraft: "pixel squares", star_wars: "stars and planets", luxury_neutral: "gold dots and stars",
   butterfly_fairy: "butterflies, daisies and little flowers", vehicles: "race cars, fire trucks, diggers and trains", under_the_sea: "friendly sharks, whales, fish and bubbles", circus: "circus tents, stars and popcorn", ballerina: "ballet slippers, swans and bows", pirates: "pirate ships, treasure chests and anchors",
+  puppy_rescue: "paw prints, dog bones and star badges", dollhouse_kitties: "little dollhouses, cupcakes, hearts and kitty paw prints",
 };
 export const motifOf = (themeId: string) => MOTIF[themeId] ?? "confetti dots and stars";
 /** A colour in the prompt's words: the plain colours by their own names. */

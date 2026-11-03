@@ -94,6 +94,8 @@ export const THEME_GROUPS: { key: "girl" | "boy"; title: string; items: { id: st
     // 2026-10-30 (owner): new themes; the dinosaur for girls too, with its own icon.
     { id: "butterfly_fairy", icon: "butterfly-fairy" }, { id: "ballerina", icon: "ballerina" },
     { id: "dinosaur", icon: "dinosaur-girl" }, { id: "circus", icon: "circus" },
+    // 2026-11-03 (owner): the rescue puppies for girls and boys (each list its own icon, like Space), the dollhouse for girls.
+    { id: "puppy_rescue", icon: "puppy-rescue-girl" }, { id: "dollhouse_kitties", icon: "dollhouse-kitties" },
   ] },
   { key: "boy", title: "For boys", items: [
     { id: "dinosaur", icon: "dinosaur" }, { id: "safari", icon: "safari" }, { id: "space", icon: "space-boy" },
@@ -103,6 +105,7 @@ export const THEME_GROUPS: { key: "girl" | "boy"; title: string; items: { id: st
     { id: "pirates", icon: "pirates" }, { id: "circus", icon: "circus" },
     // Back in the list with its own icon and its themed cups, plates and napkins (2026-10-30).
     { id: "football", icon: "football" },
+    { id: "puppy_rescue", icon: "puppy-rescue" },
   ] },
 ];
 
@@ -171,6 +174,8 @@ export const THEME_PRINT_SUGGESTIONS: Record<string, string> = {
   circus: "Striped big top, stars, popcorn and bunting",
   ballerina: "Ballet slippers, tutus, swans and bows",
   pirates: "Pirate ship, treasure chest and an old map",
+  puppy_rescue: "Paw prints, dog bones and shiny star badges",
+  dollhouse_kitties: "A pastel dollhouse, cupcakes and cute kittens",
 };
 
 /** Short display labels for plinth size buttons. */

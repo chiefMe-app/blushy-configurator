@@ -585,6 +585,8 @@ const THEME_MOTIFS: Partial<Record<string, MotifFn[]>> = {
   bluey:              [mPawPrint, mStar, mHeart, mPawPrint, mSparkle],
   stitch:             [mStar, mFlower, mLeaf, mHeart, mStar],
   football:           [mStar, mDiamond, mHeart, mStar, mSparkle],
+  puppy_rescue:       [mPawPrint, mStar, mPawPrint, mDiamond, mStar],
+  dollhouse_kitties:  [mHeart, mPawPrint, mStar, mSparkle, mHeart],
 };
 const GENERIC_MOTIFS: MotifFn[] = [mStar, mHeart, mSparkle, mDiamond, mFlower];
 
