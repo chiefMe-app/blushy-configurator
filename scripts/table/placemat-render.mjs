@@ -10,7 +10,8 @@ const [dir, only] = process.argv.slice(2);
 const projectDir = path.resolve(dir);
 const require = createRequire(path.join(projectDir, "package.json"));
 const sharp = require("sharp");
-const env = fs.readFileSync(path.join(projectDir, ".env.local"), "utf8");
+// ENV_FILE: another checkout's .env.local (e.g. from a git worktree); only FAL_KEY is read, never printed.
+const env = fs.readFileSync(process.env.ENV_FILE ?? path.join(projectDir, ".env.local"), "utf8");
 const key = (env.match(/^FAL_KEY\s*=\s*"?([^"\r\n]+)"?/m) || [])[1];
 const pub = path.join(projectDir, "public/design/table/placemats");
 
@@ -22,6 +23,9 @@ const THEMES = {
   circus: ["cherry red", "warm cream", "circus tents, stars, popcorn and bunting", "circus tent"],
   ballerina: ["blush pink", "pearl white", "ballet slippers, tutus, swans and bows", "swan"],
   pirates: ["navy blue", "sandy cream", "pirate ships, treasure chests, maps and anchors", "pirate ship"],
+  // 2026-11-03: motifs only, no puppies or kittens drawn on the paper (FLAT says no characters).
+  puppy_rescue: ["bright royal blue", "sunny yellow", "paw prints, dog bones, little red hearts and star badges", "gold star badge"],
+  dollhouse_kitties: ["soft pink", "pale lilac", "little dollhouses, cupcakes, hearts and kitty paw prints", "pastel dollhouse"],
 };
 const FLAT = "Flat printed artwork filling the whole frame edge to edge, seen straight on, no border, no photo, no table, no shadows. No text, no letters, no numbers, no people, no faces, no cartoon characters, no logos.";
 const JOBS = {};

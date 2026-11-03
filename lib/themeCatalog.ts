@@ -606,3 +606,40 @@ THEME_CATALOG.push(
     ],
   },
 );
+
+// 2026-11-03 (owner): "temalarda paw patrol ve gabbys house unuttuk onlarida ekleyelim. paw patrol hem kız hem
+// erkek gabbys sadece kıza." Generic themes: no licensed characters, character names or logos anywhere.
+THEME_CATALOG.push(
+  {
+    id: "puppy_rescue",
+    coverImageUrl: "/design/themes-v2/puppy-rescue.webp",
+    name: "Puppy Rescue",
+    icon: "*",
+    price: 40,
+    description: "Hero-pup red, blue and sunny yellow",
+    swatchHexes: ["#EF4444", "#2563EB", "#FFC200"],
+    sempertexPaletteIds: ["fashion-015-red", "fashion-041-royal-blue", "fashion-021-honey-yellow", "fashion-038-caribbean-blue", "fashion-005-white"],
+    renderDescription: "Brave rescue puppies party theme in bright red, royal blue, sunny yellow and sky blue, with paw prints, dog bones and shiny star badges; generic cartoon puppies, original designs, not any known character",
+    graphicPresets: [
+      { id: "puppy_paws", assetId: "puppy-rescue-01", label: "Paw Prints", desc: "Paw prints and dog bones" },
+      { id: "puppy_badge", assetId: "puppy-rescue-02", label: "Star Badge", desc: "A shiny rescue-team star badge" },
+      { id: "puppy_pups", assetId: "puppy-rescue-03", label: "Rescue Puppies", desc: "Generic cartoon puppies, original designs" },
+    ],
+  },
+  {
+    id: "dollhouse_kitties",
+    coverImageUrl: "/design/themes-v2/dollhouse-kitties.webp",
+    name: "Dollhouse & Kitties",
+    icon: "*",
+    price: 40,
+    description: "Pink, purple and teal dollhouse sparkle",
+    swatchHexes: ["#F9A8D4", "#C084FC", "#00CED1"],
+    sempertexPaletteIds: ["fashion-009-pink", "fashion-050-lilac", "fashion-037-aquamarine", "pastel-matte-174-pink", "fashion-005-white"],
+    renderDescription: "Sweet dollhouse and kittens party theme in pink, purple, teal and white, with a pastel dollhouse, cupcakes, hearts and sparkles; generic cartoon kittens, original designs, not any known character",
+    graphicPresets: [
+      { id: "dollhouse_house", assetId: "dollhouse-kitties-01", label: "Dollhouse", desc: "A pastel pink and purple dollhouse" },
+      { id: "dollhouse_cupcakes", assetId: "dollhouse-kitties-02", label: "Cupcakes", desc: "Cupcakes, hearts and sparkles" },
+      { id: "dollhouse_kittens", assetId: "dollhouse-kitties-03", label: "Kittens", desc: "Generic cartoon kittens, original designs" },
+    ],
+  },
+);
