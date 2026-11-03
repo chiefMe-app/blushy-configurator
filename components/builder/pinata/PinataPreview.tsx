@@ -4,7 +4,7 @@
 // and blindfold by the stand. Then that picture rendered into one photograph (usePieceRender, /api/pinata-render).
 import { useEffect, useState } from "react";
 import { themeById, THEMES, type BuilderConfig } from "@/lib/config";
-import { PINATA_FILLINGS, PINATA_ROOM, digitPicture, shapePicture, type Pinata } from "@/lib/studio/pinata";
+import { PINATA_FILLINGS, PINATA_ROOM, digitPicture, pinataSize, shapePicture, type Pinata } from "@/lib/studio/pinata";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 import RenderAgain from "@/components/builder/RenderAgain";
@@ -46,12 +46,13 @@ export function PinataPiece({ p, x, top, tall, uid, maxW = 380 }: { p: Pinata; x
 }
 
 /** As wide as it may hang: inside the stand's legs. */
-const ROOM_W = 330;
+const ROOM_W = 350;
 
 /** How tall the piñata hangs in the room, and where its top is: a wide shape is drawn less tall. */
 function hung(p: Pinata) {
-  const { hook, tall } = PINATA_ROOM;
+  const { hook, perCm } = PINATA_ROOM;
   const top = hook.y + 46;
+  const tall = pinataSize(p.size).cm * perCm;
   let h = tall;
   if (p.kind === "shape") {
     const pic = shapePicture(p.shape);
@@ -136,7 +137,7 @@ export default function PinataPreview({ config, render, onGenerate }: { config: 
           </div>
         )}
         <p className="note">{showRender ? "Your render — this picture, made into one photograph."
-          : <>About 60 cm, hung on its stand. {inside.length ? <>Inside: {inside.map((f) => f.name).join(" · ")}</> : "Nothing inside yet — pick what goes in it."}</>}</p>
+          : <>{pinataSize(p.size).note}, hung on its stand. {inside.length ? <>Inside: {inside.map((f) => f.name).join(" · ")}</> : "Nothing inside yet — pick what goes in it."}</>}</p>
         {backTo !== null && <button type="button" className="bz-tb-back" data-testid="pinata-back-to-choices" onClick={back}>↑ Back to your choices</button>}
         {!render.ready && !render.loading && (
           <div className="bz-tb-render" data-testid="pinata-render-box">

@@ -391,6 +391,12 @@ test("P1 the piñata: the age in her colours or a theme shape, how it opens, wha
   await page.getByTestId("pinata-number").fill("10");
   await expect(art.locator("[data-part=pinata] > g")).toHaveCount(2);
   expect(aed(await sum.textContent())).toBe(one + 150);
+  // Large (2026-11-03: "medium ve large iki size olsun"): bigger on the stand, and priced.
+  const h0 = Number(await art.locator("[data-part=pinata] > g > image").first().getAttribute("height"));
+  await page.getByTestId("pinata-size").getByRole("radio", { name: /Large/ }).click();
+  expect(Number(await art.locator("[data-part=pinata] > g > image").first().getAttribute("height"))).toBeGreaterThan(h0 * 1.2);
+  expect(aed(await sum.textContent())).toBe(one - 220 + 320 + 220); // 320 and 220 for the second digit, large
+  await page.getByTestId("pinata-size").getByRole("radio", { name: /Medium/ }).click();
   // Her colours, in the order picked: one taken off, one more on.
   const colours = page.getByTestId("pinata-colours").getByRole("button");
   const picked = page.getByTestId("pinata-colours").locator("button[aria-pressed=true]");

@@ -1,7 +1,7 @@
 // The piñata (2026-11-03, the owner: "şimdi piñata studio'ya geçelim, sonra da cake studio"; her answers: a number
 // piñata — the child's age — or a theme shape; opened by pull strings or with a stick, both offered; shown hung on
 // a stand in a party room; prices placeholders until she sends hers): the Decor step's fifth part, after the
-// giveaways. One piñata, about 60 cm: its shape (the age in up to three colours, or a fringe shape — the theme's
+// giveaways. One piñata, medium or large: its shape (the age in up to three colours, or a fringe shape — the theme's
 // own first, never a licensed character), how it opens, and what is inside it as a list. Pure data and sums.
 import SHAPES from "./pinataShapes.json";
 
@@ -57,10 +57,21 @@ export const PINATA_FILLINGS = [
 ] as const;
 export type PinataFilling = (typeof PINATA_FILLINGS)[number]["id"];
 
-/** A number piñata of one digit, and each digit more; a theme shape (placeholders). */
-export const NUMBER_PINATA_PRICE = 220;
-export const EXTRA_DIGIT_PRICE = 150;
-export const SHAPE_PINATA_PRICE = 250;
+/** Its size (2026-11-03, the owner: "size seçilsin, medium ve large iki size olsun"), how tall. */
+export const PINATA_SIZES = [
+  { id: "medium", name: "Medium", note: "About 50 cm", cm: 50 },
+  { id: "large", name: "Large", note: "About 75 cm", cm: 75 },
+] as const;
+export type PinataSize = (typeof PINATA_SIZES)[number]["id"];
+
+/** A number piñata of one digit, and each digit more; a theme shape — by size (placeholders). */
+export const NUMBER_PINATA_PRICE: Record<PinataSize, number> = { medium: 220, large: 320 };
+export const EXTRA_DIGIT_PRICE: Record<PinataSize, number> = { medium: 150, large: 220 };
+export const SHAPE_PINATA_PRICE: Record<PinataSize, number> = { medium: 250, large: 360 };
+/** The piñata itself, by its shape, digits and size. */
+export const pinataPrice = (p: Pick<Pinata, "kind" | "number" | "size">) =>
+  p.kind === "number" ? NUMBER_PINATA_PRICE[p.size] + Math.max(0, p.number.length - 1) * EXTRA_DIGIT_PRICE[p.size] : SHAPE_PINATA_PRICE[p.size];
+export const pinataSize = (id: PinataSize) => PINATA_SIZES.find((s) => s.id === id) ?? PINATA_SIZES[0];
 /** Colours a number piñata's fringe comes in, in bands top to bottom. */
 export const MAX_PINATA_COLOURS = 3;
 
@@ -74,6 +85,7 @@ export interface Pinata {
   colours: string[];
   /** The theme-shape piñata. */
   shape: PinataShape;
+  size: PinataSize;
   opening: PinataOpening;
   fillings: PinataFilling[];
   /** The customer pressed Finish (they may still change it). */
@@ -92,15 +104,14 @@ export function defaultPinata(seed: { themeId?: string; age?: string; colours?: 
   const colours = (seed.colours ?? []).filter((h) => HEX.test(h)).slice(0, MAX_PINATA_COLOURS);
   return {
     enabled: true, kind: "number", number: cleanAge(seed.age) || "5", colours: colours.length ? colours : ["#F8BBD0", "#DDD6FE", "#BAE6FD"],
-    shape: (THEME_PINATAS[seed.themeId ?? ""] ?? ["star"])[0], opening: "pull", fillings: ["candy", "toys", "confetti"],
+    shape: (THEME_PINATAS[seed.themeId ?? ""] ?? ["star"])[0], size: "medium", opening: "pull", fillings: ["candy", "toys", "confetti"],
   };
 }
 
 export function pinataPriceLines(p: Pinata): { label: string; amount: number }[] {
   if (!p.enabled) return [];
-  const lines = p.kind === "number"
-    ? [{ label: `Number piñata "${p.number}"`, amount: NUMBER_PINATA_PRICE + Math.max(0, p.number.length - 1) * EXTRA_DIGIT_PRICE }]
-    : [{ label: `${PINATA_SHAPES.find((s) => s.id === p.shape)?.name ?? "Shape"} piñata`, amount: SHAPE_PINATA_PRICE }];
+  const size = pinataSize(p.size).name.toLowerCase();
+  const lines = [{ label: p.kind === "number" ? `Number piñata "${p.number}", ${size}` : `${PINATA_SHAPES.find((s) => s.id === p.shape)?.name ?? "Shape"} piñata, ${size}`, amount: pinataPrice(p) }];
   const opening = PINATA_OPENINGS.find((o) => o.id === p.opening)!;
   if (opening.price) lines.push({ label: `Piñata ${opening.name.toLowerCase()}`, amount: opening.price });
   for (const f of PINATA_FILLINGS.filter((x) => p.fillings.includes(x.id))) lines.push({ label: `Piñata filling: ${f.name.toLowerCase()}`, amount: f.price });
@@ -124,6 +135,7 @@ export function readPinata(raw: unknown): Pinata | undefined {
     number: cleanAge(r.number) || base.number,
     colours: colours.length ? colours : base.colours,
     shape: PINATA_SHAPES.find((s) => s.id === r.shape)?.id ?? base.shape,
+    size: PINATA_SIZES.find((s) => s.id === r.size)?.id ?? base.size,
     opening: PINATA_OPENINGS.find((o) => o.id === r.opening)?.id ?? base.opening,
     fillings: Array.isArray(r.fillings) ? PINATA_FILLINGS.filter((f) => (r.fillings as unknown[]).includes(f.id)).map((f) => f.id) : base.fillings,
     ...(r.done === true ? { done: true } : {}),
@@ -135,7 +147,7 @@ export function readPinata(raw: unknown): Pinata | undefined {
 /** Changes whenever anything that shows in the picture changes (the fillings are a list: they do not show). */
 export function pinataRenderKey(p: Pinata, themeId: string): string {
   const shown = p.kind === "number" ? { kind: p.kind, number: p.number, colours: p.colours } : { kind: p.kind, shape: p.shape };
-  const s = JSON.stringify([themeId, shown, p.opening]);
+  const s = JSON.stringify([themeId, shown, p.opening, p.size]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
   return (h >>> 0).toString(36);
@@ -147,9 +159,9 @@ export const digitPicture = (d: string) => ({ src: `/design/pinata/digit-${d}.we
 
 /**
  * The room photo (an empty white piñata stand, its hook on the crossbar) and where things go in it: the hook, the
- * floor at the stand's feet, and how tall a 60 cm piñata is there (the stand is about 2 m).
+ * floor at the stand's feet, and how many pixels a centimetre is there (the stand is about 2 m: 800 px).
  */
-export const PINATA_ROOM = { src: "/design/pinata/room.webp", w: 896, h: 1152, hook: { x: 446, y: 272 }, floor: 1000, legs: [262, 630], tall: 250 };
+export const PINATA_ROOM = { src: "/design/pinata/room.webp", w: 896, h: 1152, hook: { x: 446, y: 272 }, floor: 1000, legs: [262, 630], perCm: 4 };
 
 /** The piñata's words for the render. */
 export function pinataWords(p: Pinata): string {

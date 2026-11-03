@@ -53,21 +53,27 @@ describe("piñata", () => {
 
   it("is priced: the number by its digits, a shape, the stick, the fillings", () => {
     const p = { ...defaultPinata(), fillings: [] };
-    expect(pinataTotal(p)).toBe(NUMBER_PINATA_PRICE);
-    expect(pinataTotal({ ...p, number: "10" })).toBe(NUMBER_PINATA_PRICE + EXTRA_DIGIT_PRICE);
-    expect(pinataTotal({ ...p, kind: "shape" })).toBe(SHAPE_PINATA_PRICE);
+    expect(pinataTotal(p)).toBe(NUMBER_PINATA_PRICE.medium);
+    expect(pinataTotal({ ...p, number: "10" })).toBe(NUMBER_PINATA_PRICE.medium + EXTRA_DIGIT_PRICE.medium);
+    expect(pinataTotal({ ...p, kind: "shape" })).toBe(SHAPE_PINATA_PRICE.medium);
+    // Large (2026-11-03: "medium ve large iki size olsun").
+    expect(pinataTotal({ ...p, size: "large", number: "10" })).toBe(NUMBER_PINATA_PRICE.large + EXTRA_DIGIT_PRICE.large);
+    expect(pinataTotal({ ...p, size: "large", kind: "shape" })).toBe(SHAPE_PINATA_PRICE.large);
+    expect(pinataPriceLines({ ...p, size: "large" })[0].label).toBe('Number piñata "5", large');
     expect(pinataPriceLines({ ...p, opening: "stick" }).map((l) => l.label)).toContain("Piñata stick & blindfold");
     expect(pinataPriceLines({ ...p, fillings: ["candy", "confetti"] })).toHaveLength(3);
     expect(pinataPriceLines({ ...p, enabled: false })).toEqual([]);
     const config = { ...defaultConfig(), pinata: p };
-    expect(priceBreakdown(config).lines.filter((l) => l.section === "pinata").map((l) => l.amount)).toEqual([NUMBER_PINATA_PRICE]);
+    expect(priceBreakdown(config).lines.filter((l) => l.section === "pinata").map((l) => l.amount)).toEqual([NUMBER_PINATA_PRICE.medium]);
   });
 
   it("is read back over the defaults, never with what does not belong", () => {
     expect(readPinata(null)).toBeUndefined();
     const p = readPinata({ kind: "roof", number: "abc", colours: ["red", "#112233", "#445566", "#778899", "#AABBCC"], shape: "nope", opening: "bomb", fillings: ["candy", "rocks"],
       render: { key: "k1", path: "https://evil.example/a.jpg" } })!;
-    expect(p).toMatchObject({ enabled: true, kind: "number", number: "5", colours: ["#112233", "#445566", "#778899"], shape: "star", opening: "pull", fillings: ["candy"] });
+    expect(p).toMatchObject({ enabled: true, kind: "number", number: "5", colours: ["#112233", "#445566", "#778899"], shape: "star", opening: "pull", size: "medium", fillings: ["candy"] });
+    expect(readPinata({ size: "large" })?.size).toBe("large");
+    expect(readPinata({ size: "huge" })?.size).toBe("medium");
     expect(p.render).toBeUndefined();
     expect(readPinata({ kind: "shape", shape: "rocket", opening: "stick", enabled: false, done: true })).toMatchObject({ kind: "shape", shape: "rocket", opening: "stick", enabled: false, done: true });
   });
@@ -79,6 +85,7 @@ describe("piñata", () => {
     expect(pinataRenderKey({ ...p, number: "7" }, "unicorn")).not.toBe(k);
     expect(pinataRenderKey({ ...p, colours: ["#000000"] }, "unicorn")).not.toBe(k);
     expect(pinataRenderKey({ ...p, opening: "stick" }, "unicorn")).not.toBe(k);
+    expect(pinataRenderKey({ ...p, size: "large" }, "unicorn")).not.toBe(k);
     const s = { ...p, kind: "shape" as const };
     expect(pinataRenderKey({ ...s, colours: ["#000000"] }, "unicorn")).toBe(pinataRenderKey(s, "unicorn"));
   });
@@ -86,6 +93,8 @@ describe("piñata", () => {
   it("asks the render for the number and the opening it shows", () => {
     const p = defaultPinata({ age: "4" });
     expect(pinataPrompt(p)).toContain("the number 4");
+    expect(pinataPrompt(p)).toContain("about 50 cm tall");
+    expect(pinataPrompt({ ...p, size: "large" })).toContain("about 75 cm tall");
     expect(pinataPrompt(p)).toContain("pull strings");
     expect(pinataPrompt({ ...p, kind: "shape", shape: "rocket", opening: "stick" })).toMatch(/rocket piñata.*blindfold/);
   });

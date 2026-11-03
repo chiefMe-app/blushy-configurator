@@ -4,8 +4,8 @@
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import {
-  EXTRA_DIGIT_PRICE, MAX_PINATA_COLOURS, NUMBER_PINATA_PRICE, PINATA_FILLINGS, PINATA_OPENINGS, SHAPE_PINATA_PRICE,
-  cleanAge, defaultPinata, pinataShapesFor, pinataTotal, shapePicture, type Pinata,
+  EXTRA_DIGIT_PRICE, MAX_PINATA_COLOURS, PINATA_FILLINGS, PINATA_OPENINGS, PINATA_SIZES,
+  cleanAge, defaultPinata, pinataPrice, pinataShapesFor, pinataTotal, shapePicture, type Pinata,
 } from "@/lib/studio/pinata";
 import { PinataPiece } from "./PinataPreview";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
@@ -35,7 +35,7 @@ export default function PinataStep({ config, setPinata, onFinish, onSkip, render
     return (
       <div className="bz-tb-intro" data-testid="pinata-intro">
         <h2>Add a piñata?</h2>
-        <p>A tissue-fringe piñata of about 60 cm — the age, or a shape for your {theme.name} theme — filled and hung on its stand. The price adds to your party.</p>
+        <p>A tissue-fringe piñata, medium or large — the age, or a shape for your {theme.name} theme — filled and hung on its stand. The price adds to your party.</p>
         <div className="actions">
           <button type="button" className="bz-next" onClick={() => setPinata(p ? { ...p, enabled: true, done: false } : defaultPinata(pinataSeed(config)))}>Yes, add a piñata ✦</button>
           {!p && <button type="button" className="bz-back" onClick={() => setPinata({ ...defaultPinata(pinataSeed(config)), enabled: false })}>No thanks, skip</button>}
@@ -62,7 +62,6 @@ export default function PinataStep({ config, setPinata, onFinish, onSkip, render
     set({ colours: [...p.colours, hex].slice(-MAX_PINATA_COLOURS) });
   };
   const shapes = pinataShapesFor(theme.id);
-  const digitsPrice = NUMBER_PINATA_PRICE + Math.max(0, p.number.length - 1) * EXTRA_DIGIT_PRICE;
 
   return (
     <div className="bz-tb" data-testid="pinata">
@@ -71,9 +70,9 @@ export default function PinataStep({ config, setPinata, onFinish, onSkip, render
         <div className="bz-tb-item">
           <div className="bz-tb-options" role="radiogroup" aria-label="Piñata" data-testid="pinata-kind">
             {card(p.kind === "number", () => set({ kind: "number" }), piece({ ...p, kind: "number" }, "pn-k-num"),
-              "Number", "The age, in the colours you pick", `AED ${formatAED(digitsPrice)}`, "number")}
+              "Number", "The age, in the colours you pick", `AED ${formatAED(pinataPrice({ ...p, kind: "number" }))}`, "number")}
             {card(p.kind === "shape", () => set({ kind: "shape" }), piece({ ...p, kind: "shape" }, "pn-k-shape"),
-              "Theme shape", `A fringe shape for your ${theme.name} theme`, `AED ${formatAED(SHAPE_PINATA_PRICE)}`, "shape")}
+              "Theme shape", `A fringe shape for your ${theme.name} theme`, `AED ${formatAED(pinataPrice({ ...p, kind: "shape" }))}`, "shape")}
           </div>
         </div>
         {p.kind === "number" ? <>
@@ -82,7 +81,7 @@ export default function PinataStep({ config, setPinata, onFinish, onSkip, render
             <label className="bz-gv-count">
               <input type="text" inputMode="numeric" maxLength={2} value={p.number} data-testid="pinata-number" aria-label="The age on the piñata"
                 onFocus={(e) => e.target.select()} onChange={(e) => { const n = cleanAge(e.target.value); if (n) set({ number: n }); }} />
-              <small>{p.number.length > 1 ? `Two numbers, side by side — +AED ${formatAED(EXTRA_DIGIT_PRICE)} for the second.` : "One number, about 60 cm tall."}</small>
+              <small>{p.number.length > 1 ? `Two numbers, side by side — +AED ${formatAED(EXTRA_DIGIT_PRICE[p.size])} for the second.` : "One number."}</small>
             </label>
           </div>
           <div className="bz-tb-item">
@@ -108,6 +107,18 @@ export default function PinataStep({ config, setPinata, onFinish, onSkip, render
             </div>
           </div>
         )}
+      </section>
+
+      {/* 2026-11-03 (the owner: "size seçilsin, medium ve large iki size olsun"). */}
+      <section className="bz-tb-section" aria-label="Size">
+        <h2>Size</h2>
+        <div className="bz-tb-item">
+          <div className="bz-tb-options" role="radiogroup" aria-label="Size" data-testid="pinata-size">
+            {PINATA_SIZES.map((s) => card(p.size === s.id, () => set({ size: s.id }),
+              <svg viewBox="0 0 120 90" aria-hidden="true"><PinataPiece p={p} x={60} top={84 - s.cm * 1.05} tall={s.cm * 1.05} maxW={s.cm * 1.5} uid={`pn-s-${s.id}`} /></svg>,
+              s.name, s.note, `AED ${formatAED(pinataPrice({ ...p, size: s.id }))}`, s.id))}
+          </div>
+        </div>
       </section>
 
       <section className="bz-tb-section" aria-label="How it opens">
