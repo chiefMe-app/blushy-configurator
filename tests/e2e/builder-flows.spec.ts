@@ -80,6 +80,10 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   await next(page).click();
   // And the piñata (2026-11-03).
   await expect(page.getByTestId("pinata-intro")).toBeVisible();
+  await expect(next(page)).toHaveText(/Skip to Cake/);
+  await next(page).click();
+  // And the cake (2026-11-03).
+  await expect(page.getByTestId("cake-intro")).toBeVisible();
   await expect(next(page)).toHaveText(/Skip to Package/);
   await next(page).click();
   await shot(page, "f1-05-package");

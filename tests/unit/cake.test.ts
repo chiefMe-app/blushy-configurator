@@ -1,0 +1,171 @@
+// The cake (2026-11-03): the model, its designs, its sums, reading it back and the key its render is kept under.
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
+import sharp from "sharp";
+import fs from "node:fs";
+import path from "node:path";
+import { THEMES, priceBreakdown, defaultConfig } from "@/lib/config";
+import {
+  CAKE_FIGURES, CAKE_STYLES, FIGURE_PRICE, THEME_CAKE_FIGURES, TOPPER_PRICE, cakeDesigns, cakeFiguresFor, cakePriceLines,
+  cakeRenderKey, cakeTotal, defaultCake, figurePicture, readCake, tierColours, tierPicture,
+} from "@/lib/studio/cake";
+import { cakePrompt } from "@/lib/studio/cakeRender";
+import { cakeLayout } from "@/components/builder/cake/CakePreview";
+import { fromDraft, toDraft } from "@/lib/draft";
+import { resetRenderGuard } from "@/lib/renderGuard";
+import { readNdjson } from "@/lib/ndjson";
+
+const subscribe = vi.fn();
+vi.mock("@fal-ai/client", () => ({ fal: { config: vi.fn(), subscribe: (...a: unknown[]) => subscribe(...a) } }));
+const JPEG = Buffer.from("jpeg-bytes"), PICTURE = `data:image/jpeg;base64,${JPEG.toString("base64")}`;
+vi.mock("@/lib/renderStore", () => ({ renderJpeg: async () => JPEG, storeRenderJpeg: async () => null }));
+import { POST } from "@/app/api/cake-render/route";
+
+const seed = { themeId: "unicorn", themeName: "Unicorn", name: "Olivia", age: "6", colours: ["#F8BBD0", "#FEF08A", "#BBF7D0"] };
+
+describe("cake", () => {
+  it("starts as the theme's first design: one smooth tier in its colour, its figure, the name and age on a topper", () => {
+    const k = defaultCake(seed);
+    expect(k).toMatchObject({ enabled: true, design: "classic", tiers: 1, style: "smooth", figures: ["unicorn"], flavour: "vanilla",
+      topper: { on: true, name: "Olivia", age: "6", colour: "gold" } });
+    expect(tierColours(k)).toEqual(["#F8BBD0"]);
+    expect(defaultCake().topper.age).toBe("5");
+  });
+
+  it("has four designs for every theme, each its own tiers and decoration, and a plain cake", () => {
+    for (const t of THEMES) {
+      const d = cakeDesigns({ themeId: t.id, themeName: t.name, colours: t.balloonColors });
+      expect(d.map((x) => x.id)).toEqual(["classic", "drip", "ruffle", "grand", "plain"]);
+      expect(new Set(d.slice(0, 4).map((x) => `${x.cake.tiers}-${x.cake.style}`)).size).toBe(4);
+      expect(THEME_CAKE_FIGURES[t.id], t.id).toBeDefined();
+      expect(cakeFiguresFor(t.id)[0].own).toBe(true);
+      expect(cakeFiguresFor(t.id)).toHaveLength(CAKE_FIGURES.length);
+    }
+    const plain = cakeDesigns(seed).at(-1)!.cake;
+    expect(plain).toMatchObject({ figures: [], colours: ["#FFFFFF", "#FFFFFF", "#FFFFFF"], topper: { on: false } });
+  });
+
+  it("has a picture for every tier and figure, and where each tier's top and bottom are", () => {
+    for (const s of CAKE_STYLES) {
+      const pic = tierPicture(s.id);
+      expect(fs.existsSync(path.join("public", pic.src)), s.id).toBe(true);
+      expect(pic.bottom - pic.top, s.id).toBeGreaterThan(pic.h * 0.6);
+    }
+    for (const f of CAKE_FIGURES) expect(fs.existsSync(path.join("public", figurePicture(f.id).src)), f.id).toBe(true);
+    expect(fs.existsSync("public/design/cake/stand.webp")).toBe(true);
+  });
+
+  it("stacks its tiers on the stand, each narrower, its topper above its figures, all in the photo", () => {
+    for (const d of cakeDesigns(seed)) {
+      const L = cakeLayout({ ...d.cake, topper: { ...d.cake.topper, on: true } });
+      expect(L.tiers).toHaveLength(d.cake.tiers);
+      L.tiers.forEach((t, i) => { if (i) expect(t.w).toBeLessThan(L.tiers[i - 1].w); });
+      for (const f of L.figures) expect(L.words.bottom).toBeLessThan(f.y);
+      expect(L.contentTop, d.id).toBeGreaterThan(40);
+    }
+  });
+
+  it("is priced: its tiers, its decoration on each, the figures, the topper, the flavour", () => {
+    const k = { ...defaultCake(seed), figures: [] };
+    expect(cakeTotal(k)).toBe(380 + TOPPER_PRICE);
+    expect(cakeTotal({ ...k, tiers: 3, style: "ruffles" })).toBe(1250 + 3 * 70 + TOPPER_PRICE);
+    expect(cakeTotal({ ...k, figures: ["star", "heart"] })).toBe(380 + 2 * FIGURE_PRICE + TOPPER_PRICE);
+    expect(cakeTotal({ ...k, flavour: "red-velvet" })).toBe(380 + 40 + TOPPER_PRICE);
+    // A topper with nothing to say, or off, is not priced.
+    expect(cakeTotal({ ...k, topper: { ...k.topper, on: false } })).toBe(380);
+    expect(cakeTotal({ ...k, topper: { ...k.topper, name: " ", age: "" } })).toBe(380);
+    expect(cakePriceLines({ ...k, tiers: 2, style: "drip" })[0]).toEqual({ label: "Cake: two tiers, drip", amount: 780 + 80 });
+    expect(cakePriceLines({ ...k, enabled: false })).toEqual([]);
+    const config = { ...defaultConfig(), cake: k };
+    expect(priceBreakdown(config).lines.filter((l) => l.section === "cake").map((l) => l.amount)).toEqual([380, TOPPER_PRICE]);
+  });
+
+  it("is read back over the defaults, never with what does not belong", () => {
+    expect(readCake(null)).toBeUndefined();
+    const k = readCake({ tiers: 7, style: "glitter", colours: ["red", "#112233"], figures: ["star", "dragon", "star", "heart", "rocket", "car"], flavour: "mud",
+      topper: { on: true, name: "<b>Arya</b> the very long name here", age: "123", font: "../x", colour: "neon" }, design: "../x",
+      render: { key: "k1", path: "https://evil.example/a.jpg" } })!;
+    expect(k).toMatchObject({ enabled: true, tiers: 1, style: "smooth", flavour: "vanilla", design: "classic", figures: ["star", "heart", "rocket"] });
+    expect(k.colours[0]).toBe("#112233");
+    expect(k.colours).toHaveLength(3);
+    expect(k.topper.name).not.toMatch(/[<>]/);
+    expect(k.topper.name.length).toBeLessThanOrEqual(18);
+    expect(k.topper).toMatchObject({ age: "12", colour: "gold" });
+    expect(k.topper.font).toBe(defaultCake().topper.font);
+    expect(k.render).toBeUndefined();
+    expect(readCake({ topper: { age: "" } })?.topper.age).toBe("");
+    expect(readCake({ tiers: 3, style: "drip", enabled: false, done: true })).toMatchObject({ tiers: 3, style: "drip", enabled: false, done: true });
+  });
+
+  it("keys its render on what shows: not the flavour, the colours only of its own tiers", () => {
+    const k = defaultCake(seed);
+    const key = cakeRenderKey(k, "unicorn");
+    expect(cakeRenderKey({ ...k, flavour: "lemon" }, "unicorn")).toBe(key);
+    expect(cakeRenderKey({ ...k, colours: [k.colours[0], "#000000", "#000000"] }, "unicorn")).toBe(key); // one tier
+    expect(cakeRenderKey({ ...k, tiers: 2 }, "unicorn")).not.toBe(key);
+    expect(cakeRenderKey({ ...k, style: "drip" }, "unicorn")).not.toBe(key);
+    expect(cakeRenderKey({ ...k, figures: ["star"] }, "unicorn")).not.toBe(key);
+    expect(cakeRenderKey({ ...k, topper: { ...k.topper, name: "Mia" } }, "unicorn")).not.toBe(key);
+    const off = { ...k, topper: { ...k.topper, on: false } };
+    expect(cakeRenderKey({ ...off, topper: { ...off.topper, name: "Mia" } }, "unicorn")).toBe(cakeRenderKey(off, "unicorn"));
+  });
+
+  it("asks the render for its tiers, decoration, figures and the topper's words", () => {
+    const k = { ...defaultCake(seed), tiers: 2 as const, style: "drip" as const, figures: ["unicorn", "star"] as ("unicorn" | "star")[] };
+    const p = cakePrompt(k);
+    expect(p).toContain("a two-tier round birthday cake");
+    expect(p).toContain("chocolate drip");
+    expect(p).toContain("unicorn horn & ears, gold star");
+    expect(p).toContain('reading "Olivia" and "6"');
+    expect(p).toMatch(/never yellow/);
+    expect(cakePrompt({ ...k, topper: { ...k.topper, on: false } })).not.toContain("topper");
+    expect(cakePrompt({ ...k, figures: [] })).not.toContain("sugar-paste figures");
+  });
+});
+
+describe("the cake kept and rendered", () => {
+  it("is kept with the design on the device", () => {
+    const config = { ...defaultConfig(), cake: { ...defaultCake(seed), tiers: 3 as const, style: "rosettes" as const } };
+    expect(fromDraft(JSON.stringify(toDraft(config, 2, 0)))?.config.cake).toMatchObject({ tiers: 3, style: "rosettes", topper: { name: "Olivia" } });
+  });
+
+  const post = (body: unknown) => POST(new NextRequest("http://localhost/api/cake-render", { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" } }));
+  const lines = async (res: Response) => { const out: Record<string, unknown>[] = []; await readNdjson(res.body!, (l) => out.push(l as Record<string, unknown>)); return out; };
+  beforeEach(() => {
+    vi.stubEnv("FAL_KEY", "test-key");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
+    vi.stubEnv("SUPABASE_URL", "");
+    subscribe.mockReset();
+    resetRenderGuard();
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("one picture of the preview to FLUX.2 edit, at its own size, with its words", async () => {
+    subscribe.mockImplementation(async () => ({ data: { images: [{ url: "https://fal.example/x.jpg" }] } }));
+    const drawn = await sharp({ create: { width: 1200, height: 1500, channels: 3, background: "#eeeeee" } }).jpeg().toBuffer();
+    const k = defaultCake(seed);
+    const got = await lines(await post({ cake: k, theme: "unicorn", preview: `data:image/jpeg;base64,${drawn.toString("base64")}` }));
+    expect(got[0]).toEqual({ url: PICTURE });
+    expect(got.at(-1)).toMatchObject({ done: true });
+    const [model, { input }] = subscribe.mock.calls[0] as [string, { input: { prompt: string; image_urls: string[]; image_size: { width: number; height: number } } }];
+    expect(model).toBe("fal-ai/flux-2/edit");
+    expect(input.image_urls).toHaveLength(1);
+    expect(input.image_size).toEqual({ width: 1120, height: 1408 });
+    expect(input.prompt).toBe(cakePrompt(k));
+  }, 30_000);
+
+  it("refuses a missing or skipped cake, or no preview, without calling fal", async () => {
+    const preview = `data:image/jpeg;base64,${JPEG.toString("base64")}`;
+    expect((await post({ theme: "unicorn", preview })).status).toBe(400);
+    expect((await post({ cake: { ...defaultCake(), enabled: false }, theme: "unicorn", preview })).status).toBe(400);
+    expect((await post({ cake: defaultCake(), theme: "unicorn" })).status).toBe(400);
+    expect((await post({ cake: defaultCake(), theme: "nope", preview })).status).toBe(400);
+    expect(subscribe).not.toHaveBeenCalled();
+  });
+
+  it("never opens to everyone on the live site when sign-in is not set up", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    expect((await post({ cake: defaultCake(), theme: "unicorn", preview: `data:image/jpeg;base64,${JPEG.toString("base64")}` })).status).toBe(503);
+    expect(subscribe).not.toHaveBeenCalled();
+  });
+});

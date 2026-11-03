@@ -257,12 +257,15 @@ test("W3 a welcome board begun can still be skipped, with no render", async ({ p
   await page.getByTestId("finish-welcome-skip").click();
   await expect(page.getByTestId("giveaways-intro")).toBeVisible();
   expect(aed(await total(page).textContent())).toBe(before);
-  // The giveaways and the piñata the same way, on to Package.
+  // The giveaways, the piñata and the cake the same way, on to Package.
   await page.getByRole("button", { name: /Yes, add giveaways/ }).click();
   await page.getByTestId("finish-giveaways-skip").click();
   await expect(page.getByTestId("pinata-intro")).toBeVisible();
   await page.getByRole("button", { name: /Yes, add a piñata/ }).click();
   await page.getByTestId("finish-pinata-skip").click();
+  await expect(page.getByTestId("cake-intro")).toBeVisible();
+  await page.getByRole("button", { name: /Yes, add a cake/ }).click();
+  await page.getByTestId("finish-cake-skip").click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   expect(aed(await total(page).textContent())).toBe(before);
 });
@@ -356,12 +359,16 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   // The backdrop's own preview is not shown on this part.
   await expect(page.getByText("Your party preview").locator("visible=true")).toHaveCount(0);
   await page.getByTestId("finish-giveaways").click();
-  // Then the piñata (2026-11-03), skipped here.
+  // Then the piñata and the cake (2026-11-03), skipped here.
   await expect(page.getByTestId("pinata-intro")).toBeVisible();
-  await expect(next(page)).toHaveText(/Skip to Package/);
+  await expect(next(page)).toHaveText(/Skip to Cake/);
+  await next(page).click();
+  await expect(page.getByTestId("cake-intro")).toBeVisible();
   await next(page).click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   await expect(page.getByTestId("finished-giveaways-jpeg").or(page.getByTestId("finished-designs").getByAltText("Your giveaways"))).toBeVisible();
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(page.getByTestId("cake-intro")).toContainText("You skipped the cake");
   await page.getByRole("button", { name: "← Back" }).click();
   await expect(page.getByTestId("pinata-intro")).toContainText("You skipped the piñata");
   await page.getByRole("button", { name: "← Back" }).click();
@@ -369,7 +376,7 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/giveaway-render"]);
 });
 
-test("P1 the piñata: the age in her colours or a theme shape, how it opens, what's inside; rendered, then on to Package", async ({ page, guard }) => {
+test("P1 the piñata: the age in her colours or a theme shape, how it opens, what's inside; rendered, then on to the cake", async ({ page, guard }) => {
   // 2026-11-03 (the owner: "şimdi piñata studio'ya geçelim"; number or theme shape, pull strings or a stick, on a stand).
   guard.fakeRender = true;
   await signIn(page);
@@ -433,12 +440,97 @@ test("P1 the piñata: the age in her colours or a theme shape, how it opens, wha
   const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/pinata-render"))!.postData()!);
   expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
   expect(sent.pinata).toMatchObject({ kind: "shape", shape: "rocket", opening: "stick", number: "10" });
+  // "Finalize the piñata → Cake" (2026-11-03).
+  await expect(page.getByTestId("finish-pinata")).toHaveText(/Cake/);
   await page.getByTestId("finish-pinata").click();
+  await expect(page.getByTestId("cake-intro")).toBeVisible();
+  await next(page).click(); // the cake skipped
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   await expect(page.getByTestId("finished-designs")).toContainText("Piñata");
   await page.getByRole("button", { name: "← Back" }).click();
-  await expect(page.getByTestId("finish-pinata")).toHaveText(/Next: Package/);
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(page.getByTestId("finish-pinata")).toHaveText(/Next: Cake/);
   expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/pinata-render"]);
+});
+
+test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours, figures, topper and flavour; rendered, then on to Package", async ({ page, guard }) => {
+  // 2026-11-03 (the owner: "piñatadan sonra cake studio'ya geçelim"; themed designs she can change, or plain; on a stand).
+  guard.fakeRender = true;
+  await signIn(page);
+  await toTable(page);
+  await page.getByTestId("skip-kids-table").click();
+  for (let i = 0; i < 4; i++) await next(page).click(); // the grown-ups' table, welcome board, giveaways, piñata skipped
+  await expect(page.getByTestId("cake-intro")).toBeVisible();
+  const before = aed(await total(page).textContent());
+  await page.getByRole("button", { name: /Yes, add a cake/ }).click();
+  const art = page.getByTestId("cake-art");
+  const sum = page.getByTestId("cake-total");
+  // The theme's first design: one tier, its figure on top (Ice Princess: a snowflake), the topper with the age.
+  const designs = page.getByTestId("cake-design").getByRole("radio");
+  await expect(designs).toHaveCount(5);
+  await expect(designs.first()).toHaveAttribute("aria-checked", "true");
+  await expect(art.locator("[data-part=cake-tier]")).toHaveCount(1);
+  await expect(art.locator('[data-part=cake-figure][href$="fig-snowflake.webp"]')).toHaveCount(1);
+  await expect(art.locator("[data-part=cake-topper]")).toHaveCount(1);
+  const one = aed(await sum.textContent());
+  expect(one).toBe(380 + 45 + 60);
+  expect(aed(await total(page).textContent())).toBe(before + one);
+  // The grand design: three tiers of rosettes, each its own colour.
+  await designs.filter({ hasText: /grand/ }).click();
+  await expect(art.locator("[data-part=cake-tier]")).toHaveCount(3);
+  await expect(art.locator('image[href$="tier-rosettes.webp"]')).toHaveCount(6); // each tier and its mask
+  // Two tiers, drip; the top tier in white has no colour over it.
+  await page.getByTestId("cake-tiers").getByRole("radio", { name: /Two tiers/ }).click();
+  await page.getByTestId("cake-style").getByRole("radio", { name: /Drip/ }).click();
+  await expect(art.locator("[data-part=cake-tier]")).toHaveCount(2);
+  await page.getByTestId("cake-colour-1").getByRole("radio", { name: "white" }).click();
+  await expect(art.locator("[data-part=cake-colour]")).toHaveCount(1);
+  expect(aed(await sum.textContent())).toBe(780 + 2 * 40 + 3 * 45 + 60); // two tiers, a drip on each, three figures, the topper
+  // Figures: up to three, priced; one taken off.
+  const figures = page.getByTestId("cake-figures").getByRole("button");
+  await expect(figures).toHaveCount(20);
+  const s0 = aed(await sum.textContent());
+  const on0 = await art.locator("[data-part=cake-figure]").count();
+  await figures.filter({ hasText: "Rocket" }).click();
+  await expect(art.locator("[data-part=cake-figure]")).toHaveCount(Math.min(3, on0 + 1));
+  if (on0 < 3) expect(aed(await sum.textContent())).toBe(s0 + 45);
+  await expect(art.locator('[data-part=cake-figure][href$="fig-rocket.webp"]')).toHaveCount(1);
+  // The topper's words, in the preview; off takes its price away.
+  await page.getByTestId("cake-topper-name").fill("Arya");
+  await page.getByTestId("cake-topper-age").fill("7");
+  await expect(art.locator("[data-part=cake-topper]")).toContainText("Arya");
+  await expect(art.locator("[data-part=cake-topper]")).toContainText("7");
+  await page.getByTestId("cake-topper-colour").getByRole("radio", { name: "Silver" }).click();
+  const s1 = aed(await sum.textContent());
+  await page.getByTestId("cake-topper").getByText("A topper with the name and age").click();
+  await expect(art.locator("[data-part=cake-topper]")).toHaveCount(0);
+  expect(aed(await sum.textContent())).toBe(s1 - 60);
+  await page.getByTestId("cake-topper").getByText("A topper with the name and age").click();
+  // The flavour: a list, in the price, not in the picture.
+  await page.getByTestId("cake-flavour").getByText("Red velvet", { exact: true }).click();
+  expect(aed(await sum.textContent())).toBe(s1 + 40);
+  await expect(page.getByTestId("cake-preview")).toContainText("Red velvet");
+  // A plain cake: white, nothing on top.
+  await designs.filter({ hasText: "Plain cake" }).click();
+  await expect(art.locator("[data-part=cake-figure]")).toHaveCount(0);
+  await expect(art.locator("[data-part=cake-colour]")).toHaveCount(0);
+  await expect(art.locator("[data-part=cake-topper]")).toHaveCount(0);
+  await designs.filter({ hasText: /drip/ }).click();
+  // The render offered, not waited for; then made again as it is.
+  await expect(next(page)).toHaveCount(0);
+  await expect(page.getByTestId("finish-cake")).toBeEnabled();
+  await page.getByTestId("finish-cake-generate").click();
+  await expect(page.getByTestId("cake-render")).toBeVisible();
+  await expect(page.getByTestId("cake-render-again").getByRole("button", { name: /Regenerate render/ })).toBeVisible();
+  const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/cake-render"))!.postData()!);
+  expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
+  expect(sent.cake).toMatchObject({ design: "drip", tiers: 2, style: "drip", topper: { name: "Arya", age: "7", colour: "silver" }, flavour: "red-velvet" });
+  await page.getByTestId("finish-cake").click();
+  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  await expect(page.getByTestId("finished-designs")).toContainText("Cake");
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(page.getByTestId("finish-cake")).toHaveText(/Next: Package/);
+  expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/cake-render"]);
 });
 
 test("W2 on a phone, a change to the welcome board brings it into sight, and Back returns to the choices", async ({ page }, info) => {

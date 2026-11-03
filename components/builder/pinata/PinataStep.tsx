@@ -23,7 +23,7 @@ export default function PinataStep({ config, setPinata, onFinish, onSkip, render
   config: BuilderConfig;
   setPinata: (p: Pinata) => void;
   onFinish: () => void;
-  /** No piñata after all: skipped, on to Package. */
+  /** No piñata after all: skipped, on to the cake. */
   onSkip: () => void;
   render: PieceRender;
   onGenerate: () => void;
@@ -158,7 +158,7 @@ export default function PinataStep({ config, setPinata, onFinish, onSkip, render
         <b>AED {formatAED(pinataTotal(p))}</b>
         <button type="button" className="bz-restart" onClick={() => setPinata({ ...p, enabled: false, done: false })}>Remove the piñata</button>
       </div>
-      <FinishBar done={p.done} what="piñata" next="Package" onFinish={onFinish} onSkip={onSkip} testId="finish-pinata" render={{ ...render, onGenerate }} />
+      <FinishBar done={p.done} what="piñata" next="Cake" onFinish={onFinish} onSkip={onSkip} testId="finish-pinata" render={{ ...render, onGenerate }} />
     </div>
   );
 }

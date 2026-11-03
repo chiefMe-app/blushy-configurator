@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readGiveaways } from "@/lib/studio/giveaways";
 import { readPinata } from "@/lib/studio/pinata";
+import { readCake } from "@/lib/studio/cake";
 import { randomUUID } from "node:crypto";
 import { getSupabase } from "@/lib/supabase";
 import {
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
     // Read over the defaults, so a malformed one cannot break the sum.
     giveaways: readGiveaways(body.giveaways),
     pinata: readPinata(body.pinata),
+    cake: readCake(body.cake),
   } as unknown as BuilderConfig;
   const total = computeTotal(pricingConfig);
 
@@ -78,6 +80,7 @@ export async function POST(req: NextRequest) {
     welcomeBoard: body.welcomeBoard,
     giveaways: pricingConfig.giveaways,
     pinata: pricingConfig.pinata,
+    cake: pricingConfig.cake,
     addOns: body.addOns,
     venue: body.venue,
   };

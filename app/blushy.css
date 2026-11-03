@@ -1358,6 +1358,9 @@ div.bz-stale-banner { cursor: default; }
 .bz-gv-art { width: 100%; display: block; }
 /* The room photo whole, as tall as 640 px at most: as wide as that lets it. */
 .bz-pn-art { width: 100%; max-width: 556px; height: auto; display: block; margin: 0 auto; }
+.bz-ck-art { width: 100%; max-width: 556px; height: auto; display: block; margin: 0 auto; }
+.bz-ck-words { display: grid; grid-template-columns: minmax(0, 1fr) 88px; gap: 10px; }
+.bz-ck-words input { min-width: 0; width: 100%; box-sizing: border-box; }
 .bz-gv-board { max-height: 600px; }
 /* The box close up, above the render (2026-11-03). */
 .bz-gv-close { margin-bottom: 14px; }

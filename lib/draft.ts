@@ -8,12 +8,13 @@ import { readAdultTable } from "@/lib/studio/adultTable";
 import { readWelcomeBoard } from "@/lib/studio/welcomeBoard";
 import { readGiveaways } from "@/lib/studio/giveaways";
 import { readPinata } from "@/lib/studio/pinata";
+import { readCake } from "@/lib/studio/cake";
 
 export const DRAFT_KEY = "partymuse.builder.draft.v1";
 const LAST_STEP = 6;
 const LAST_DECOR_TAB = 3;
 
-type DesignFields = Pick<BuilderConfig, "eventType" | "theme" | "themeSelected" | "package" | "servicePackageId" | "decor" | "table" | "adultTable" | "welcomeBoard" | "giveaways" | "pinata" | "addOns">;
+type DesignFields = Pick<BuilderConfig, "eventType" | "theme" | "themeSelected" | "package" | "servicePackageId" | "decor" | "table" | "adultTable" | "welcomeBoard" | "giveaways" | "pinata" | "cake" | "addOns">;
 
 export interface StoredDraft {
   v: 1;
@@ -35,13 +36,13 @@ export function isWorthSaving(config: BuilderConfig, step: number): boolean {
 }
 
 export function toDraft(config: BuilderConfig, step: number, decorTab: number, now = new Date()): StoredDraft {
-  const { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, table, adultTable, welcomeBoard, giveaways, pinata, addOns } = config;
+  const { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, table, adultTable, welcomeBoard, giveaways, pinata, cake, addOns } = config;
   return {
     v: 1,
     savedAt: now.toISOString(),
     step,
     decorTab,
-    config: { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, ...(table ? { table } : {}), ...(adultTable ? { adultTable } : {}), ...(welcomeBoard ? { welcomeBoard } : {}), ...(giveaways ? { giveaways } : {}), ...(pinata ? { pinata } : {}), addOns },
+    config: { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, ...(table ? { table } : {}), ...(adultTable ? { adultTable } : {}), ...(welcomeBoard ? { welcomeBoard } : {}), ...(giveaways ? { giveaways } : {}), ...(pinata ? { pinata } : {}), ...(cake ? { cake } : {}), addOns },
   };
 }
 
@@ -80,6 +81,8 @@ export function fromDraft(raw: string | null): RestoredDraft | null {
   if (giveaways) config.giveaways = giveaways;
   const pinata = readPinata(c.pinata);
   if (pinata) config.pinata = pinata;
+  const cake = readCake(c.cake);
+  if (cake) config.cake = cake;
   // Past the Theme step only with a theme chosen.
   const step = config.themeSelected ? clampInt(d.step, LAST_STEP) : Math.min(clampInt(d.step, LAST_STEP), 1);
   return { config, step, decorTab: clampInt(d.decorTab, LAST_DECOR_TAB) };
