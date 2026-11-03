@@ -61,6 +61,8 @@ export interface DecorStepProps {
   onContinue: () => void;
   /** An arch without its size can't be finished yet (the page's Next waits for it too). */
   continueBlocked?: boolean;
+  /** 2026-11-03: the backdrop is finalized with a current render (not the Customized Themed set, its own photo). */
+  needsRender?: boolean;
 }
 
 export function useDecorStep(props: DecorStepProps) {

@@ -9,6 +9,7 @@ import { TABLE_FONTS, fontCss, tableFont, type TableFont } from "@/lib/studio/ta
 import { COLOUR_OF, FONT_OF, nameColour, wordsColour, MAX_KIDS, MAX_PLACEMAT_TEXT, MIN_KIDS, WORDS_ITEMS, clampKids, cleanPlacematText, defaultTableSetup, tableCounts, tableTotal, type TableSetup, type WordsKey } from "@/lib/studio/tableSetup";
 import { GlyphDefs, glyph, scallop, type GlyphColours } from "@/components/studio/table/glyphs";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
+import type { PieceRender } from "@/components/builder/usePieceRender";
 
 /** The printed words in their colour, with a shadow that keeps light words readable on the design. */
 export function wordsStyle(hex: string, font?: TableFont) {
@@ -67,13 +68,18 @@ const stacked = (words: string) => words.trim().split(/\s+/).join("\n");
 
 const unitLabel = (o: TableOption) => `AED ${formatAED(o.price)} ${o.unit === "per_child" ? "each" : "a table"}`;
 
-export default function TableStep({ config, setTable, onFinish, onFinishTables }: {
+export default function TableStep({ config, setTable, onFinish, onFinishTables, onSkip, render, onGenerate }: {
   config: BuilderConfig;
   setTable: (t: TableSetup) => void;
   /** Finish (2026-10-31): the kids' table is done; the grown-ups' table is asked next. */
   onFinish: () => void;
   /** The whole table setup finished at once, straight on to the welcome board (2026-11-02). */
   onFinishTables: () => void;
+  /** 2026-11-03 (the owner: "kids table skipable olsun"): no kids' table, on to the grown-ups'. */
+  onSkip: () => void;
+  /** The top view's render, which finalizing waits for (2026-11-03). */
+  render: PieceRender;
+  onGenerate: () => void;
 }) {
   const theme = themeById(config.theme) ?? THEMES[0];
   const table = config.table;
@@ -87,7 +93,7 @@ export default function TableStep({ config, setTable, onFinish, onFinishTables }
         <p>Seats, plates, napkins and little treats for every guest — in your {theme.name} theme. You choose every piece; the price adds to your party.</p>
         <div className="actions">
           <button type="button" className="bz-next" onClick={() => setTable({ ...defaultTableSetup(theme), ...(table ? { ...table, enabled: true, done: false } : {}) })}>Yes, design the table ✦</button>
-          {!table && <button type="button" className="bz-back" onClick={() => setTable({ ...defaultTableSetup(theme), enabled: false })}>No thanks, skip</button>}
+          {!table && <button type="button" className="bz-back" onClick={onSkip}>No thanks, skip</button>}
         </div>
         {table && !table.enabled && <p className="skipped">You skipped the kids&apos; table — it isn&apos;t in your total.</p>}
       </div>
@@ -239,6 +245,10 @@ export default function TableStep({ config, setTable, onFinish, onFinishTables }
     <div className="bz-tb">
       {/* The lettering fonts (the words' choices are shown in them). */}
       <link rel="stylesheet" href="/fonts/typography/fonts.css" />
+      <div className="bz-tb-jump">
+        <span>No kids&apos; table this time?</span>
+        <button type="button" className="bz-back" data-testid="skip-kids-table" onClick={onSkip}>Skip the kids&apos; table →</button>
+      </div>
       <div className="bz-tb-item">
         <h3>How many kids?</h3>
         <div className="bz-ts-row">
@@ -263,7 +273,8 @@ export default function TableStep({ config, setTable, onFinish, onFinishTables }
         <b>AED {formatAED(tableTotal(table))}</b>
         <button type="button" className="bz-restart" onClick={() => setTable({ ...table, enabled: false, done: false })}>Remove the table</button>
       </div>
-      <FinishBar done={table.done} what="kids' table" next="Grown-ups' table" onFinish={onFinish} onSkipAhead={onFinishTables} testId="finish-kids-table" />
+      <FinishBar done={table.done} what="kids' table" next="Grown-ups' table" onFinish={onFinish} onSkipAhead={onFinishTables} testId="finish-kids-table"
+        render={{ ...render, onGenerate }} />
     </div>
   );
 }

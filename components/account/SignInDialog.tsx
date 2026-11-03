@@ -5,6 +5,7 @@
 // is back from signing in.
 import { useEffect, useId, useRef, useState } from "react";
 import { loadClient } from "./useAccount";
+import type { AfterSignInAction } from "@/lib/account";
 
 const COPY = {
   account: { title: "Keep your designs", lead: "Sign in to save your designs and open them on any device.", after: "" },
@@ -23,9 +24,14 @@ const COPY = {
     lead: "Renders come with a free account. Sign in and your table render starts right away — your design stays as it is.",
     after: " — your render starts right after",
   },
+  "welcome-render": {
+    title: "Sign in to see your welcome board",
+    lead: "Renders come with a free account. Sign in and your board's render starts right away — your design stays as it is.",
+    after: " — your render starts right after",
+  },
 };
 
-export default function SignInDialog({ open, onClose, purpose }: { open: boolean; onClose: () => void; purpose?: "save" | "render" | "table-render" }) {
+export default function SignInDialog({ open, onClose, purpose }: { open: boolean; onClose: () => void; purpose?: AfterSignInAction }) {
   const copy = COPY[purpose ?? "account"];
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "sent" | "error">("idle");

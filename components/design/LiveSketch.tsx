@@ -21,7 +21,7 @@ import {
 } from "@/lib/config";
 import { useLetteringLayout } from "./useLetteringLayout";
 import { hexPaletteKind, sceneBalloonSet, setHexes, themeBalloonSets } from "@/lib/balloonSets";
-import { bannerPrintTheme } from "@/lib/bannerPrintThemes";
+import { bannerPrintTheme, themeGraphicArt } from "@/lib/bannerPrintThemes";
 import { asPhotographed, labToRgb, recolourPixel, rgbToLab, type Lab } from "@/lib/balloonRecolour";
 import { wavyBoardPath, wavyFacePath, wavyBorderColor } from "@/lib/wavyBoard";
 
@@ -121,14 +121,14 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     room: `${SK}/wavy_shimmer-room.webp`, balloons: `${SK}/wavy_shimmer-balloons.webp`, families: `${SK}/wavy_shimmer-families.png`,
     // The wavy board stands in front of its garland, on its rim ("backdrop önde olması lazım").
     boards: [
-      // Re-shot in the owner's wavy board ("bunun aynısını yap şekil olarak"): waves on all four edges. Then
-      // ("yere değmeli", "görüntü kalitesi çok düşük … aşırı uzak"): a straight foot on the floor, the shot
-      // upscaled 4x (aura-sr) and cropped 1.2x closer — every point below moved with the crop.
-      { mask: `${SK}/wavy_shimmer-board-0.png`, rim: `${SK}/wavy_shimmer-rim-0.png`, x0: 0.164, y0: 0.223, x1: 0.46, y1: 0.788, text: { cx: 0.312, cy: 0.393, w: 0.18 } },
-      { mask: `${SK}/wavy_shimmer-board-1.png`, x0: 0.4526, y0: 0.2836, x1: 0.7292, y1: 0.769, text: { cx: 0.591, cy: 0.436, w: 0.204 } },
+      // Re-shot in the owner's wavy board ("bunun aynısını yap şekil olarak"): waves on all four edges, a
+      // straight foot on the floor. 2026-11-03 ("wavy + shimmer hâlâ kalitesiz … balonlarda görüntü kalitesi
+      // düşük"): shot again whole with the full model, its own rim per set — not upscaled, not cropped.
+      { mask: `${SK}/wavy_shimmer-board-0.png`, rim: `${SK}/wavy_shimmer-rim-0.png`, x0: 0.207, y0: 0.342, x1: 0.467, y1: 0.806, text: { cx: 0.337, cy: 0.48, w: 0.16 } },
+      { mask: `${SK}/wavy_shimmer-board-1.png`, x0: 0.4648, y0: 0.3672, x1: 0.7607, y1: 0.8369, text: { cx: 0.605, cy: 0.513, w: 0.2 } },
     ],
-    plinth: { x: 0.4183, y: 0.5994, w: 0.0708, h: 0.2065 },
-    florals: fromPx([[130, 240], [815, 240], [118, 324], [911, 324], [869, 408], [121, 492], [864, 492], [89, 576], [953, 576], [85, 660], [822, 660], [77, 744], [987, 744]]),
+    plinth: { x: 0.4345, y: 0.648, w: 0.061, h: 0.178 },
+    florals: fromPx([[150, 330], [800, 340], [90, 430], [900, 440], [180, 500], [780, 520], [60, 560], [930, 600], [150, 640], [830, 680], [40, 700], [950, 760], [130, 780]]),
     numberX: 0.625, standeeX: [0.04, 0.96],
   },
   banner: {
@@ -925,6 +925,18 @@ export default function LiveSketch({
           return (
             <image key={`g${p.item.id}`} href={`${SK}/banner-print-${print}.webp`} x={p.x} y={p.top} width={p.w} height={p.h}
               preserveAspectRatio="xMidYMid slice" mask={`url(#skBoard${uid}${p.idx})`} style={{ mixBlendMode: "multiply" }} />
+          );
+        }
+        // Its own picture where the theme has one, where the render's guide keeps the graphic's place
+        // (lib/generateStructureSilhouette.ts themeGraphicGuideArea): 70% of the board wide, 40% tall, below
+        // the lettering when there is some.
+        const art = themeGraphicArt(p.item.graphic.assetId);
+        if (art) {
+          const lettered = !!(p.item.text?.enabled && (p.item.text.value ?? "").trim());
+          const gw = p.w * 0.7, gh = p.h * 0.4;
+          return (
+            <image key={`g${p.item.id}`} href={art} x={p.x + (p.w - gw) / 2} y={p.top + p.h * (lettered ? 0.42 : 0.32)} width={gw} height={gh}
+              preserveAspectRatio="xMidYMid meet" mask={base?.boards[p.idx].mask ? `url(#skBoard${uid}${p.idx})` : undefined} />
           );
         }
         const rnd = seeded(p.idx * 97 + 3);

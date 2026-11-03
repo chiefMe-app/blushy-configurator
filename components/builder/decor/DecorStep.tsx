@@ -17,9 +17,11 @@ export default function DecorStep(props: DecorStepProps) {
   } = ctx;
   // 2026-11-02 (owner, later: "her stepe koyalım demek istemedim, extras'tan sonra … öncesinde 'first generate
   // render to see final design' … 'finalize the backdrop to table setup' desin"): only on the last tab, Extras.
+  // 2026-11-03 ("generate render yapmadan finalize … basılamasın"): and only once the render is made.
+  const blocked = continueBlocked || !!props.needsRender;
   const finish = (
-    <button type="button" className="bz-decor-cta" onClick={onContinue} disabled={continueBlocked} data-testid="finish-backdrop"
-      title={continueBlocked ? "Pick your arch's size first" : undefined}>
+    <button type="button" className="bz-decor-cta" onClick={onContinue} disabled={blocked} data-testid="finish-backdrop"
+      title={continueBlocked ? "Pick your arch's size first" : props.needsRender ? "Generate your render first" : undefined}>
       <span className="full">Finalize the backdrop → Table setup</span><span className="short" aria-hidden="true">Finalize → Table setup</span>
     </button>
   );
@@ -81,7 +83,9 @@ export default function DecorStep(props: DecorStepProps) {
           </span>
         ) : (
           <span className="bz-decor-actions">
-            {offerRender && <span className="bz-decor-first" data-testid="render-first-hint">First <b>Generate render</b> to see your final design.</span>}
+            {offerRender && <span className="bz-decor-first" data-testid="render-first-hint">{hasRender
+              ? <>You changed it since your render — <b>Regenerate</b> to finalize this design.</>
+              : <>First <b>Generate render</b> to see your final design.</>}</span>}
             {/* The Customized Themed set is its real photo: no render is made of it. */}
             {offerRender && (
               <button type="button" className="bz-decor-hint" onClick={onGenerate} data-testid="generate-render"

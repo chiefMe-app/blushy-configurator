@@ -10,3 +10,13 @@ export function bannerPrintTheme(assetId: unknown): string | null {
   const theme = String(assetId ?? "").replace(/-\d+$/, "");
   return (BANNER_PRINT_THEMES as readonly string[]).includes(theme) ? theme : null;
 }
+
+// A theme graphic's own picture (2026-11-03, the owner: "add graphic çalışmıyor"): one cut-out motif per preset
+// (lib/themeCatalog.ts graphicPresets), made by scripts/themes/theme-art.mjs, at /design/graphics/<assetId>.webp.
+const GRAPHIC_ART = new Set(["unicorn-01", "unicorn-02", "unicorn-03", "frozen-01", "frozen-02", "frozen-03"]);
+
+/** The picture a theme graphic is printed with, by its asset id, or null (a theme with no art yet). */
+export function themeGraphicArt(assetId: unknown): string | null {
+  const id = String(assetId ?? "");
+  return GRAPHIC_ART.has(id) ? `/design/graphics/${id}.webp` : null;
+}

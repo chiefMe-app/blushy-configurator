@@ -9,12 +9,14 @@ import { renderKey } from "@/lib/renderKey";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import type { TableSetup } from "@/lib/studio/tableSetup";
 
-const BLOCKED_API = /\/api\/(orders|generate|generate-cutouts|generate-controlled-render|generate-structure-render-test|table-render)\/?(\?|$)/;
+const BLOCKED_API = /\/api\/(orders|generate|generate-cutouts|generate-controlled-render|generate-structure-render-test|table-render|welcome-render)\/?(\?|$)/;
 
 /** A stand-in render: any local picture, so the flow can move past Decor. */
 export const FAKE_RENDER = "/design/balloon-dog-outline.webp";
 /** Stand-ins for the table render's two views. */
 export const FAKE_TABLE_RENDER = { close: "/design/table/plates-themed.webp" };
+/** The welcome board's stand-in render (2026-11-03). */
+export const FAKE_WELCOME_RENDER = "/design/welcome/shape-rectangle.webp";
 
 export interface Guard {
   blocked: Request[];
@@ -192,6 +194,12 @@ export async function lockNetwork(page: Page): Promise<Guard> {
         const lines = [{ view: "close", url: FAKE_TABLE_RENDER.close },
           { done: true, ...(sub ? { render: { key, close: `${sub}/c${key}.jpg` } } : {}) }];
         return route.fulfill({ contentType: "application/x-ndjson", body: lines.map((l) => `${JSON.stringify(l)}\n`).join("") });
+      }
+      if (guard.fakeRender && url.pathname.startsWith("/api/welcome-render")) {
+        // As the route streams it: the picture's line, then the end (nothing kept: the stand-in has no folder).
+        const lines = [{ url: FAKE_WELCOME_RENDER }, { done: true }];
+        return route.fulfill({ contentType: "application/x-ndjson", body: lines.map((l) => `${JSON.stringify(l)}
+`).join("") });
       }
       if (guard.fakeOrder && url.pathname.startsWith("/api/orders")) {
         return route.fulfill({ json: { designId: "TEST-ORDER", total: 0, persisted: false } });

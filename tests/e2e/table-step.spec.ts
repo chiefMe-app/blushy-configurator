@@ -1,23 +1,36 @@
 // The kids' table, part 2 of Decor (2026-10-27, F2): after the backdrop's
 // Extras, a yes or skip; then every item on one page (2026-10-28); the price
 // adds to the party total; Back walks back; the table is kept on the device.
-import { test, expect, openDecor, decorTab, next, total, settle } from "./guard";
+import { test, expect, next, total, settle, signIn } from "./guard";
 import type { Page } from "@playwright/test";
 
 const aed = (s: string | null) => Number((s ?? "").replace(/[^0-9]/g, ""));
 
+// 2026-11-03: a designed backdrop is finalized only with its render, so the tables are reached with the backdrop
+// skipped; the kids' table then opens designed, in the theme's own pieces ("default böyle gelsin").
 async function toTable(page: Page) {
-  await openDecor(page, "Ice Princess", "Single Round");
-  await decorTab(page, "Extras");
+  await page.goto("/builder");
+  await page.locator(".bz-choice.bz-birthday").click();
+  await next(page).click();
+  await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: /^Ice Princess$/ }) }).first().click();
+  await next(page).click();
+  await page.getByRole("button", { name: "No thanks, skip" }).click();
   await expect(next(page)).toHaveText(/Next: Table setup/);
   await next(page).click();
-  await expect(page.getByTestId("table-intro")).toBeVisible();
+  await expect(page.getByTestId("table-place")).toBeVisible();
+}
+
+/** The kids' table's top-view render (a stand-in, guard.fakeRender), which finalizing it waits for. */
+async function renderKids(page: Page) {
+  await expect(page.getByTestId("finish-kids-table")).toBeDisabled();
+  await page.getByTestId("finish-kids-table-generate").click();
+  await expect(page.getByTestId("finish-kids-table")).toBeEnabled();
 }
 
 test("K1 design the kids' table: picture options on one page, the total grows, then Finish", async ({ page, guard }) => {
+  guard.fakeRender = true;
+  await signIn(page); // its render needs an account
   await toTable(page);
-  const before = aed(await total(page).textContent());
-  await page.getByRole("button", { name: /Yes, design the table/ }).click();
   // The preview opens on one place from above (2026-10-29, on its own since 2026-10-31); six places, the whole table and the perspective are a tab away.
   await expect(page.getByTestId("table-place")).toHaveAttribute("data-mode", "one");
   await page.getByRole("tab", { name: "Six places" }).click();
@@ -27,7 +40,8 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await page.getByRole("tab", { name: "Whole table" }).click();
   await expect(page.getByTestId("table-sketch")).toHaveAttribute("aria-label", "Top view: 1 standard table for 10 children");
   const tableSum = aed(await page.getByTestId("table-total").locator("b").textContent());
-  expect(aed(await total(page).textContent())).toBe(before + tableSum);
+  expect(tableSum).toBeGreaterThan(0);
+  const before = aed(await total(page).textContent()) - tableSum; // the party without its table
   // The owner's six tables and three chairs, with her photos and prices.
   await expect(page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio")).toHaveCount(6);
   // 2026-10-30: the colour chair (white to begin with) and the bow chair; the white chair went.
@@ -101,21 +115,27 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await expect(page.getByTestId("chairs-colour").getByRole("radio")).toHaveCount(3); // white, pink, light blue
   await page.getByTestId("chairs-colour").getByRole("radio", { name: "pastel pink" }).click();
   await expect(chairs.getByRole("radio", { name: /Colour chair for kids/ }).locator("img")).toHaveAttribute("src", "/design/table/chairs/blue_kids/f8bbd0.webp");
-  await expect(next(page)).toHaveText(/Finalize the kids' table/);
+  // The table ends in its own Finalize buttons, no footer Next (2026-11-03).
+  await expect(next(page)).toHaveCount(0);
   await expect(page.getByRole("radiogroup", { name: "Party hats", exact: true }).getByRole("radio")).toHaveCount(2); // None + the cone hat (2026-10-29)
   await page.getByRole("radiogroup", { name: "Party hats", exact: true }).getByRole("radio", { name: /None/ }).click();
-  // 2026-10-31 (owner): Finish the table, then the grown-ups' table is asked — not Package.
-  await expect(next(page)).toHaveText(/Finalize the kids' table/);
-  await next(page).click();
+  // 2026-10-31 (owner): Finish the table, then the grown-ups' table is asked — not Package. 2026-11-03: once its
+  // top view is rendered ("generate render yapmadan finalize basılamasın … top view render alsın sadece").
+  await renderKids(page);
+  await expect(page.getByTestId("table-render")).toBeVisible();
+  await page.getByTestId("finish-kids-table").click();
   await expect(page.getByTestId("adult-intro")).toBeVisible();
-  expect(guard.blocked).toEqual([]);
+  expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/table-render"]);
+  expect(JSON.parse(guard.blocked[0].postData()!).view).toBe("top");
 });
 
-test("K10 the grown-ups' table: asked only once the kids' table is finished, then on to the welcome board", async ({ page }) => {
+test("K10 the grown-ups' table: asked only once the kids' table is finished, then on to the welcome board", async ({ page, guard }) => {
+  guard.fakeRender = true;
+  await signIn(page);
   await toTable(page);
-  await page.getByRole("button", { name: /Yes, design the table/ }).click();
   // Not before the kids' table is finished.
   await expect(page.getByTestId("adults-tab")).toBeDisabled();
+  await renderKids(page);
   await page.getByTestId("finish-kids-table").click();
   await expect(page.getByRole("heading", { name: "Add a grown-ups' table?" })).toBeVisible();
   const before = aed(await total(page).textContent());
@@ -134,8 +154,8 @@ test("K10 the grown-ups' table: asked only once the kids' table is finished, the
   await page.getByRole("tab", { name: /Kids' table/ }).click();
   await expect(page.getByTestId("finish-kids-table")).toHaveText(/Next: Grown-ups' table/);
   await page.getByRole("tab", { name: /Grown-ups' table/ }).click();
-  await expect(next(page)).toHaveText(/Finalize the grown-ups' table/);
-  await next(page).click();
+  await expect(next(page)).toHaveCount(0);
+  await page.getByTestId("finish-adult-table").click();
   await expect(page.getByTestId("welcome-intro")).toBeVisible();
   await expect(page.getByRole("tab", { name: /Table setup/ }).locator(".n")).toHaveText("✓");
   // Kept on the device.
@@ -147,9 +167,10 @@ test("K10 the grown-ups' table: asked only once the kids' table is finished, the
 });
 
 test("W1 the welcome board: words and lettering drawn live, priced, Finish goes on to Package; Back comes back", async ({ page, guard }) => {
+  guard.fakeRender = true;
+  await signIn(page);
   await toTable(page);
-  await page.getByRole("button", { name: "No thanks, skip" }).click();
-  await next(page).click(); // to the grown-ups' table
+  await page.getByTestId("skip-kids-table").click(); // on to the grown-ups' table
   await next(page).click(); // skipped: the welcome board
   await expect(page.getByTestId("welcome-intro")).toBeVisible();
   await expect(next(page)).toHaveText(/Skip to Package/);
@@ -205,20 +226,27 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
       return h.y + h.height <= n.y + 0.01 && n.y + n.height <= l.y + 0.01;
     })).toBe(true);
   }
-  await expect(next(page)).toHaveText(/Finalize the welcome board/);
-  await next(page).click();
+  // Finalized once rendered (2026-11-03, the owner: "burda da rendera zorlasın").
+  await expect(next(page)).toHaveCount(0);
+  await expect(page.getByTestId("finish-welcome")).toBeDisabled();
+  await page.getByTestId("finish-welcome-generate").click();
+  await expect(page.getByTestId("welcome-render")).toBeVisible();
+  await expect(page.getByTestId("finish-welcome")).toBeEnabled();
+  const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/welcome-render"))!.postData()!);
+  expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
+  expect(sent.board.name).toBe("Maximiliana-Josephine's");
+  await page.getByTestId("finish-welcome").click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   await page.getByRole("button", { name: "← Back" }).click();
   await expect(page.getByTestId("finish-welcome")).toHaveText(/Next: Package/);
   await expect(page.getByTestId("welcome-name")).toHaveValue("Maximiliana-Josephine's");
-  expect(guard.blocked).toEqual([]);
+  expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/welcome-render"]);
 });
 
 test("W2 on a phone, a change to the welcome board brings it into sight, and Back returns to the choices", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile", "the phone layout only");
   await toTable(page);
-  await page.getByRole("button", { name: "No thanks, skip" }).click();
-  await next(page).click();
+  await page.getByTestId("skip-kids-table").click();
   await next(page).click();
   await page.getByRole("button", { name: /Yes, design the board/ }).click();
   await page.waitForTimeout(800);
@@ -236,19 +264,21 @@ test("W2 on a phone, a change to the welcome board brings it into sight, and Bac
   await expect(page.getByTestId("welcome-preview").locator("svg [data-word=name]")).toHaveText("Zara's");
 });
 
-test("K2 skipping the table adds nothing; Back walks back to the backdrop", async ({ page }) => {
+test("K2 skipping the table takes it out of the total; Back walks back to the backdrop", async ({ page }) => {
   await toTable(page);
-  const before = await total(page).textContent();
-  await page.getByRole("button", { name: "No thanks, skip" }).click();
-  await expect(page.getByText("You skipped the kids' table")).toBeVisible();
-  expect(await total(page).textContent()).toBe(before);
+  const designed = aed(await total(page).textContent());
+  const sum = aed(await page.getByTestId("table-total").locator("b").textContent());
+  await page.getByTestId("skip-kids-table").click();
+  await expect(page.getByTestId("adult-intro")).toBeVisible(); // on to the grown-ups' table
+  expect(aed(await total(page).textContent())).toBe(designed - sum);
   await page.getByRole("button", { name: "← Back" }).click();
-  await expect(page.locator(".bz-decor-tab.on")).toContainText("Extras");
+  await expect(page.getByText("You skipped the kids' table")).toBeVisible();
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(page.getByText("You skipped the backdrop")).toBeVisible();
 });
 
 test("K3 the table is kept on the device", async ({ page }) => {
   await toTable(page);
-  await page.getByRole("button", { name: /Yes, design the table/ }).click();
   await page.getByRole("button", { name: "One more child" }).click();
   await page.getByRole("radiogroup", { name: "Table", exact: true }).getByRole("radio", { name: /Round table/ }).click();
   await page.waitForTimeout(800);
@@ -274,7 +304,7 @@ test("K4 the backdrop is a choice too: skipping it leaves it out of the total", 
   expect(aed(await total(page).textContent())).toBeLessThan(withBackdrop);
   await expect(next(page)).toHaveText(/Next: Table setup/);
   await next(page).click();
-  await expect(page.getByTestId("table-intro")).toBeVisible();
+  await expect(page.getByTestId("table-place")).toBeVisible(); // the kids' table, designed (2026-11-03)
 });
 
 // K5–K8 and K6 (the table's own close-up render) went on 2026-10-29: the owner
@@ -283,7 +313,6 @@ test("K4 the backdrop is a choice too: skipping it leaves it out of the total", 
 
 test("K9 the top view of one place follows every colour and word at once, with no render", async ({ page, guard }) => {
   await toTable(page);
-  await page.getByRole("button", { name: /Yes, design the table/ }).click();
   const place = page.getByTestId("table-place");
   const focus = place.locator("[data-place=focus]");
   await expect(focus).toBeVisible();
@@ -316,8 +345,7 @@ test("K9 the top view of one place follows every colour and word at once, with n
 test("K10 on a phone, a change brings the top view into sight, and Back returns to the choices", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile", "the phone layout only");
   await toTable(page);
-  await page.getByRole("button", { name: /Yes, design the table/ }).click();
-  // Adding the table does not jump: the customer is about to choose.
+  // Opening the table does not jump: the customer is about to choose.
   await page.waitForTimeout(800);
   await expect(page.getByTestId("table-back-to-choices")).toHaveCount(0);
   await page.getByRole("tab", { name: "Perspective" }).click();

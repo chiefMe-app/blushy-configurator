@@ -10,11 +10,15 @@ import { BOARD_DESIGNS, BOARD_GARNISHES, BOARD_MATERIALS, BOARD_SHAPES, BOARD_SI
 import { PaintedCorners, cornerMotif, paintInks } from "@/components/studio/WelcomeBoardArt";
 import { wavyBoardPath, wavyBorderColor } from "@/lib/wavyBoard";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
+import type { PieceRender } from "@/components/builder/usePieceRender";
 
-export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
+export default function WelcomeStep({ config, setWelcomeBoard, onFinish, render, onGenerate }: {
   config: BuilderConfig;
   setWelcomeBoard: (b: WelcomeBoard) => void;
   onFinish: () => void;
+  /** The board's render, which finalizing waits for (2026-11-03, the owner: "burda da rendera zorlasın"). */
+  render: PieceRender;
+  onGenerate: () => void;
 }) {
   const theme = themeById(config.theme) ?? THEMES[0];
   const b = config.welcomeBoard;
@@ -161,7 +165,7 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish }: {
         <b>AED {formatAED(welcomeTotal(b))}</b>
         <button type="button" className="bz-restart" onClick={() => setWelcomeBoard({ ...b, enabled: false, done: false })}>Remove the board</button>
       </div>
-      <FinishBar done={b.done} what="welcome board" next="Package" onFinish={onFinish} testId="finish-welcome" />
+      <FinishBar done={b.done} what="welcome board" next="Package" onFinish={onFinish} testId="finish-welcome" render={{ ...render, onGenerate }} />
     </div>
   );
 }

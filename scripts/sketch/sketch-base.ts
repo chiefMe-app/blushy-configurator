@@ -44,7 +44,8 @@ const SEEDS: Record<string, [number, number, number, number, number, number][]> 
   single_fringe: [[0, 0, 218, 258, 806, 850]],
   // The Wavy + Shimmer (new 2026-11-02): laid out as the Arch + Shimmer, the wavy board in front on its rim.
   // Later ("yere değmeli", "aşırı uzak"): its flat-foot board drawn from its outline, the shot cropped 1.2x closer.
-  wavy_shimmer: [[225, 500, 160, 215, 480, 815], [0, 0, 467, 294, 743, 786]],
+  // 2026-11-03 ("wavy + shimmer hâlâ kalitesiz"): re-shot whole with the full model, not upscaled or cropped.
+  wavy_shimmer: [[330, 600, 185, 320, 480, 860], [0, 0, 479, 379, 776, 854]],
 };
 /** A round board's circle (px: centre and radius), past which nothing is board. */
 const CIRCLE: Record<string, [number, number, number]> = { round: [505, 560, 300] };
@@ -382,13 +383,27 @@ const labAB = (r: number, g: number, b: number) => {
   const notBalloon = near && segId ? offSegments((i) => near[i] > 0, 0.5) : null;
   if (RIM.has(setup)) SEEDS[setup].forEach(([sx, , bx0, by0, bx1, by1], b) => {
     if (sx <= 0) return; // a sequin wall has no rim
+    // 2026-11-03 (the Wavy + Shimmer re-shot in its sets' own rims, pink and peach as well as blue): the rim's
+    // colour as photographed, from the band down the board's right half (no garland there), and what is near it.
+    const like = (() => {
+      if (!near || !notBalloon) return null;
+      const rs: number[] = [], gs: number[] = [], bs: number[] = [];
+      for (let y = by0; y <= by1; y++) for (let x = Math.round((bx0 + bx1) / 2); x <= bx1; x++) {
+        const i = y * W + x;
+        if (near[i] === 2 && !notBalloon[i] && chroma(i) > 11 && lum(i) > 55) { rs.push(at(i, 0)); gs.push(at(i, 1)); bs.push(at(i, 2)); }
+      }
+      if (rs.length < 500) return null;
+      const med = (a: number[]) => a.sort((p, q) => p - q)[a.length >> 1];
+      const [mr, mg, mb] = [med(rs), med(gs), med(bs)];
+      return (i: number) => Math.abs(at(i, 0) - mr) + Math.abs(at(i, 1) - mg) + Math.abs(at(i, 2) - mb) < 70;
+    })();
     for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
       const i = y * W + x, r = at(i, 0), g = at(i, 1), bl = at(i, 2);
       if (near) {
         // Coloured, as the wall never is: pink, peach or blue by the set (a balloon is too, so only in the band,
         // right of the seed).
         // Over 11: Frozen Pastel's pale arctic-blue rim reads 12–24 where the window lights it (the wall 1–4).
-        if (notBalloon) { if (near[i] === 2 && !notBalloon[i] && bl - r > 8 && lum(i) > 55) rim[i] = b; }
+        if (notBalloon) { if (near[i] === 2 && !notBalloon[i] && (bl - r > 8 || (like?.(i) && chroma(i) > 11)) && lum(i) > 55) rim[i] = b; }
         else if (near[i] === 2 && x > sx - 60 && chroma(i) > 11 && lum(i) > 100) rim[i] = b;
         continue;
       }

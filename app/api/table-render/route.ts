@@ -115,9 +115,9 @@ export async function POST(req: NextRequest) {
           const key = tableRenderKey(table, theme.id);
           // Without a database (local development) nothing is kept.
           let render: TableRender | undefined;
-          if (user.client && user.userId && view === "close") {
-            const kept = await storeRenderJpeg(user.client, user.userId, jpeg, `table:close:${key}`);
-            render = kept ? { key, close: kept.path } : undefined;
+          if (user.client && user.userId) {
+            const kept = await storeRenderJpeg(user.client, user.userId, jpeg, `table:${view}:${key}`);
+            render = kept ? { key, close: kept.path, ...(view === "top" ? { view } : {}) } : undefined;
             if (!render) console.warn("[table-render] not kept; shown only");
           }
           lap("kept");

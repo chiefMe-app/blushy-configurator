@@ -108,16 +108,34 @@ export default function AdultTableStep({ config, setAdultTable, onFinish, onSkip
   );
 }
 
+/** A part's render, which its Finalize buttons wait for (2026-11-03, the owner: "generate render yapmadan finalize
+ *  … basılamasın"). */
+export interface FinishRender { ready: boolean; stale: boolean; loading: boolean; error: string | null; onGenerate: () => void }
+
 /** The end of a part: Finalize, then on to the next part (2026-10-31, the owner: "finalize etmek için bir butona basıp");
  *  and, on the kids' table, straight on to the welcome board too (`onSkipAhead`, 2026-11-02). Only here, at the
- *  end of the part (2026-11-02, later: "hep son aşamalarda olsun"). */
-export function FinishBar({ done, what, next, onFinish, onSkipAhead, testId }: { done?: boolean; what: string; next: string; onFinish: () => void; onSkipAhead?: () => void; testId: string }) {
+ *  end of the part (2026-11-02, later: "hep son aşamalarda olsun"). With a render, first the render ("First
+ *  Generate render to see your final design"), as the backdrop's Extras tab. */
+export function FinishBar({ done, what, next, onFinish, onSkipAhead, testId, render }: { done?: boolean; what: string; next: string; onFinish: () => void; onSkipAhead?: () => void; testId: string; render?: FinishRender }) {
+  const waiting = !!render && !render.ready;
   return (
     <div className={`bz-tb-finish ${done ? "done" : ""}`}>
       <p>{done ? <>✓ Your {what} is finished. Changes are still kept.</> : <>Happy with every choice? Finalize the {what} — next comes the {next.toLowerCase()}.</>}</p>
+      {waiting && (
+        <div className="render" data-testid={`${testId}-render`}>
+          <span className="bz-decor-first">{render.stale
+            ? <>You changed it since your render — <b>Regenerate</b> to finalize this design.</>
+            : <>First <b>Generate render</b> to see your final design.</>}</span>
+          <button type="button" className="bz-decor-hint" onClick={render.onGenerate} disabled={render.loading} data-testid={`${testId}-generate`}>
+            {render.loading ? "Generating…" : render.stale ? "Regenerate render ✨" : "Generate render ✨"}
+          </button>
+          {render.error && <span className="error" role="alert">{render.error}</span>}
+        </div>
+      )}
       <div className="actions">
-        {onSkipAhead && <SkipAhead onClick={onSkipAhead} testId={`${testId}-to-welcome`} />}
-        <button type="button" className="bz-next" data-testid={testId} onClick={onFinish} aria-label={done ? undefined : `Finalize the ${what} → ${next}`}>
+        {onSkipAhead && <SkipAhead onClick={onSkipAhead} testId={`${testId}-to-welcome`} disabled={waiting} />}
+        <button type="button" className="bz-next" data-testid={testId} onClick={onFinish} disabled={waiting} title={waiting ? "Generate your render first" : undefined}
+          aria-label={done ? undefined : `Finalize the ${what} → ${next}`}>
           {done ? `Next: ${next} →` : <><span className="full">Finalize the {what} → {next}</span><span className="short" aria-hidden="true">Finalize → {next}</span></>}
         </button>
       </div>
@@ -129,9 +147,9 @@ export function FinishBar({ done, what, next, onFinish, onSkipAhead, testId }: {
  * "Finalize the table setup → Welcome board" (2026-11-02, the owner: "sonrasında da welcome board için olmalı aynı
  * şekilde buton"): at the end of the kids' table, beside finalizing it, past the grown-ups' table.
  */
-export function SkipAhead({ onClick, testId }: { onClick: () => void; testId: string }) {
+export function SkipAhead({ onClick, testId, disabled }: { onClick: () => void; testId: string; disabled?: boolean }) {
   return (
-    <button type="button" className="bz-decor-cta" data-testid={testId} onClick={onClick} aria-label="Finalize the table setup → Welcome board">
+    <button type="button" className="bz-decor-cta" data-testid={testId} onClick={onClick} disabled={disabled} aria-label="Finalize the table setup → Welcome board">
       <span className="full">Finalize the table setup → Welcome board</span><span className="short" aria-hidden="true">Finalize → Welcome board</span>
     </button>
   );

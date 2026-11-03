@@ -55,6 +55,8 @@ export interface TableRender {
   key: string;
   /** Where it is kept: the customer's folder of the private renders bucket (lib/renderStore.ts). */
   close: string;
+  /** 2026-11-03: the top view of one place, which finalizing the kids' table waits for; a close-up when absent. */
+  view?: "top";
 }
 
 // A stored render is only ever a file in the customer's own folder — never a
@@ -67,7 +69,7 @@ export function readTableRender(raw: unknown): TableRender | undefined {
   const r = raw as Record<string, unknown>;
   const ok = (v: unknown): v is string => typeof v === "string" && RENDER_PATH.test(v);
   // Three-view renders kept before 2026-10-28 read back by their close-up.
-  return typeof r.key === "string" && /^[a-z0-9]{1,13}$/.test(r.key) && ok(r.close) ? { key: r.key, close: r.close } : undefined;
+  return typeof r.key === "string" && /^[a-z0-9]{1,13}$/.test(r.key) && ok(r.close) ? { key: r.key, close: r.close, ...(r.view === "top" ? { view: "top" as const } : {}) } : undefined;
 }
 
 export const MIN_KIDS = 4;
@@ -137,12 +139,22 @@ const themeTones = (theme: { balloonColors: string[]; accent: string }) => {
   return [tones[0] ?? theme.accent, tones[1] ?? tones[0] ?? theme.accent];
 };
 
-/** A new table, in the theme's colours. */
-export function defaultTableSetup(theme: { balloonColors: string[]; accent: string }): TableSetup {
+/**
+ * A theme's own pieces on a new table (2026-11-03, the owner, on her Unicorn table: "default böyle gelsin"): the
+ * rainbow plates and napkins, with a pink band and hat.
+ */
+const THEME_DEFAULTS: Record<string, { choices: Partial<Record<TableItemKey, string>> } & Partial<Pick<TableSetup, "holderColor" | "hatColor">>> = {
+  unicorn: { choices: { plates: "unicorn_rainbow", napkins: "unicorn_rainbow" }, holderColor: "#F8BBD0", hatColor: "#F8BBD0" },
+};
+
+/** A new table, in the theme's colours (and its own pieces, THEME_DEFAULTS). */
+export function defaultTableSetup(theme: { id?: string; balloonColors: string[]; accent: string }): TableSetup {
+  const own = THEME_DEFAULTS[theme.id ?? ""];
+  const { choices: ownChoices, ...ownColours } = own ?? { choices: {} };
   return {
     enabled: true,
     kids: 10,
-    choices: { ...DEFAULT_CHOICES },
+    choices: { ...DEFAULT_CHOICES, ...ownChoices },
     clothColor: "#FFFFFF",
     runnerColor: theme.balloonColors[1] ?? theme.accent,
     napkinColor: "#FFFFFF",
@@ -158,6 +170,7 @@ export function defaultTableSetup(theme: { balloonColors: string[]; accent: stri
     hatColor: themeTones(theme)[0],
     placematFont: DEFAULT_TABLE_FONT,
     labelFont: DEFAULT_TABLE_FONT,
+    ...ownColours,
   };
 }
 

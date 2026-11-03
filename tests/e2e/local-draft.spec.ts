@@ -103,8 +103,8 @@ test("D8 the saved design is cleared once the request is sent", async ({ page, g
   for (let i = 0; i < 3; i++) await next(page).click(); // Style, Balloons, Extras
   await renderButton(page).click(); // → stand-in
   await expect(renderButton(page)).toHaveCount(0); // the render is in
-  await next(page).click(); // the kids' table
-  await next(page).click(); // skipped → the grown-ups' table
+  await page.getByTestId("finish-backdrop").click(); // the kids' table, designed (2026-11-03)
+  await page.getByTestId("skip-kids-table").click(); // skipped → the grown-ups' table
   await next(page).click(); // skipped → the welcome board
   await next(page).click(); // skipped → Package
   await next(page).click();

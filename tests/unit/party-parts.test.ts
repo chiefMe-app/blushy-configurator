@@ -8,7 +8,8 @@ import { fromDraft, toDraft } from "@/lib/draft";
 import { NONE } from "@/lib/studio/tableCatalog";
 import { defaultTableSetup, readTableSetup } from "@/lib/studio/tableSetup";
 import { ADULT_ITEMS, ADULT_SECTIONS, adultCounts, adultPriceLines, adultTotal, defaultAdultTable, readAdultTable } from "@/lib/studio/adultTable";
-import { BOARD_DESIGNS, BOARD_SHAPES, boardArt, boardFace, cleanBoardText, defaultWelcomeBoard, readWelcomeBoard, welcomePriceLines, welcomeTotal } from "@/lib/studio/welcomeBoard";
+import { BOARD_DESIGNS, BOARD_SHAPES, boardArt, boardFace, cleanBoardText, defaultWelcomeBoard, readWelcomeBoard, welcomePriceLines, welcomeRenderKey, welcomeTotal } from "@/lib/studio/welcomeBoard";
+import { welcomePrompt } from "@/lib/studio/welcomeRender";
 import { paintInks, stackWords } from "@/components/studio/WelcomeBoardArt";
 import PIECES from "@/lib/studio/welcomePieces.json";
 import { designCards, joinParty, readStoredTable, splitDesign, TABLE_ITEM, WELCOME_ITEM, type SavedItem } from "@/lib/savedDesigns";
@@ -142,6 +143,25 @@ describe("the welcome board's photo pieces", () => {
     // The Sparkle face is gone (2026-11-02, "sparkle versiyonunu beğenmedim"): a stored one reads back as the default.
     expect(BOARD_DESIGNS.map((d) => d.id)).not.toContain("sparkle");
     expect(readWelcomeBoard({ design: "sparkle" }, frozen)!.design).toBe("plain");
+  });
+  it("Unicorn's board opens on its watercolour art (2026-11-03, \"default unicornda bu background gelsin\")", () => {
+    const unicorn = themeById("unicorn")!;
+    expect(defaultWelcomeBoard(unicorn).design).toBe("watercolour");
+    expect(boardArt(defaultWelcomeBoard(unicorn), "unicorn")).toBe("/design/table/placemats/unicorn/watercolour-portrait.webp");
+    expect(defaultWelcomeBoard(frozen).design).toBe("plain");
+    // A board saved without a design reads back on its theme's.
+    expect(readWelcomeBoard({ shape: "round" }, unicorn)!.design).toBe("watercolour");
+  });
+  it("its render: kept only as a file in the customer's folder, current while the board and its garland are unchanged", () => {
+    const b = { ...defaultWelcomeBoard(frozen), name: "Arya's" };
+    const key = welcomeRenderKey(b, "frozen", ["#FFFFFF"]);
+    expect(welcomeRenderKey({ ...b, done: true, render: { key, path: "u/k.jpg" } }, "frozen", ["#FFFFFF"])).toBe(key);
+    expect(welcomeRenderKey({ ...b, name: "Mia's" }, "frozen", ["#FFFFFF"])).not.toBe(key);
+    expect(welcomeRenderKey(b, "frozen", ["#BAE6FD"])).not.toBe(key);
+    expect(readWelcomeBoard({ render: { key, path: "00000000-0000-4000-8000-0000000000a1/abc123.jpg" } }, frozen)!.render).toEqual({ key, path: "00000000-0000-4000-8000-0000000000a1/abc123.jpg" });
+    expect(readWelcomeBoard({ render: { key, path: "https://example.com/x.jpg" } }, frozen)!.render).toBeUndefined();
+    // The words go in letter for letter.
+    expect(welcomePrompt(["Welcome to", "Arya's", ""], "easel")).toContain(`"Welcome to", "Arya's"`);
   });
 });
 

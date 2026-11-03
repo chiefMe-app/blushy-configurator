@@ -5,6 +5,7 @@
 //                     lib/bannerThemePrints/<theme>.ts for the render's guide
 //   table-cutouts   → public/design/table/top/centrepiece-cutouts-<theme>.webp and
 //                     public/design/table/centrepiece/<theme>/cutouts.webp (its card)
+//   graphic-0N      → public/design/graphics/<theme>-0N.webp (a theme graphic, its preset's assetId; 2026-11-03)
 // Run: npx tsx scripts/themes/theme-art-prepare.ts <dir of the green renders> <theme>
 import sharp from "sharp";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -48,5 +49,13 @@ const src = (n: string) => path.join(RAW, `${theme}-${n}.png`);
     m[name] = { ...m[name], w: meta.width!, h: meta.height! };
     writeFileSync(MANIFEST, JSON.stringify(m, null, 1) + "\n");
     console.log(name, meta.width, meta.height);
+  }
+  for (let n = 1; n <= 3; n++) {
+    if (!existsSync(src(`graphic-0${n}`))) continue;
+    mkdirSync("public/design/graphics", { recursive: true });
+    const t = await raw(await cutOut(src(`graphic-0${n}`))).png().toBuffer();
+    const out = `public/design/graphics/${theme}-0${n}.webp`;
+    await sharp(await sharp(t).trim({ threshold: 0 }).png().toBuffer()).resize({ width: 800, height: 800, fit: "inside", withoutEnlargement: true }).webp({ quality: 88, alphaQuality: 100 }).toFile(out);
+    console.log(out);
   }
 })();

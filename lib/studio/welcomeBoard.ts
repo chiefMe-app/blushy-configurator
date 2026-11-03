@@ -80,6 +80,8 @@ export interface WelcomeBoard {
   rimColor?: string;
   /** The customer pressed Finish (they may still change it). */
   done?: boolean;
+  /** The last render of the board (2026-11-03), kept in the customer's folder: welcomeRenderKey of the board it shows. */
+  render?: { key: string; path: string };
 }
 
 export const MAX_BOARD_TEXT = 30;
@@ -92,9 +94,12 @@ export function cleanBoardText(v: unknown): string {
 
 // 2026-11-01 (owner, of her A1 board — rectangle, plain white, the handwritten name, a balloon garland,
 // "Birthday Party" under it: "default bu yazıtipi ve bu şekil vs gelsin").
-export function defaultWelcomeBoard(_theme: { backdropColors: string[]; accent: string }): WelcomeBoard {
+/** Themes whose board opens on their watercolour art (2026-11-03, the owner, on Unicorn's: "default unicornda bu background gelsin"). */
+const WATERCOLOUR_FIRST = ["unicorn"];
+
+export function defaultWelcomeBoard(theme: { id?: string; backdropColors: string[]; accent: string }): WelcomeBoard {
   return {
-    enabled: true, size: "a1", shape: "rectangle", design: "plain",
+    enabled: true, size: "a1", shape: "rectangle", design: WATERCOLOUR_FIRST.includes(theme.id ?? "") ? "watercolour" : "plain",
     colour: "#FFFFFF", material: "foam", stand: "easel", garnish: "balloons",
     heading: "Welcome to", name: "", line: "Birthday Party", font: "sacramento",
   };
@@ -136,7 +141,7 @@ const HEX = /^#[0-9A-F]{6}$/i;
 const oneOf = <T extends string>(list: readonly { id: T }[], v: unknown, d: T): T => list.find((x) => x.id === v)?.id ?? d;
 
 /** A stored welcome board read back over the defaults. */
-export function readWelcomeBoard(raw: unknown, theme: { backdropColors: string[]; accent: string }): WelcomeBoard | undefined {
+export function readWelcomeBoard(raw: unknown, theme: { id?: string; backdropColors: string[]; accent: string }): WelcomeBoard | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const r = raw as Record<string, unknown>;
   const base = defaultWelcomeBoard(theme);
@@ -156,5 +161,22 @@ export function readWelcomeBoard(raw: unknown, theme: { backdropColors: string[]
     ...(typeof r.textColor === "string" && HEX.test(r.textColor) ? { textColor: r.textColor } : {}),
     ...(typeof r.rimColor === "string" && HEX.test(r.rimColor) ? { rimColor: r.rimColor } : {}),
     ...(r.done === true ? { done: true } : {}),
+    ...(readKept(r.render) ? { render: readKept(r.render) } : {}),
   };
+}
+
+// A kept render is only ever a file in the customer's own folder (as the table's, lib/studio/tableSetup.ts).
+const RENDER_PATH = /^[0-9a-z-]{1,64}\/[0-9a-z]{1,40}\.jpg$/i;
+function readKept(raw: unknown): { key: string; path: string } | undefined {
+  const r = raw as Record<string, unknown> | null;
+  return r && typeof r === "object" && typeof r.key === "string" && /^[a-z0-9]{1,13}$/.test(r.key) && typeof r.path === "string" && RENDER_PATH.test(r.path)
+    ? { key: r.key, path: r.path } : undefined;
+}
+
+/** Changes whenever anything that shows in the board's picture changes: the board, the theme, the garland's colours. */
+export function welcomeRenderKey(b: WelcomeBoard, themeId: string, balloons: string[]): string {
+  const s = JSON.stringify([themeId, balloons, { ...b, done: undefined, render: undefined, enabled: undefined }]);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
+  return (h >>> 0).toString(36);
 }

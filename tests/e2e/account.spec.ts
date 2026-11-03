@@ -3,7 +3,7 @@
 // 2026-10-27), coming back to the page signed in from, My designs (open,
 // delete), and the edges. A guest's old designs moving into an account is
 // covered in tests/unit/account.test.ts.
-import { test, expect, openDecor, decorTab, settle, masks, FAKE_ACCOUNT } from "./guard";
+import { test, expect, openDecor, decorTab, settle, masks, signIn, renderButton, FAKE_ACCOUNT } from "./guard";
 import type { Page } from "@playwright/test";
 
 const saveLabel = (page: Page) => page.getByTestId("save-design").locator(".full");
@@ -120,13 +120,14 @@ test("A8 Sign out", async ({ page }) => {
 
 // 2026-10-30: the backdrop and the kids' table are two designs in My designs.
 test("A9 the backdrop and the kids' table saved: two designs; the table opens on the table", async ({ page, guard }) => {
+  guard.fakeRender = true;
+  await signIn(page); // the backdrop is finalized with its render (2026-11-03), which needs an account
   await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Extras");
-  await page.locator(".bz-footer .bz-next").click(); // Next: Table setup
-  await page.getByRole("button", { name: /Yes, design the table/ }).click();
-  await page.getByRole("button", { name: "One more child" }).click();
+  await renderButton(page).click();
+  await page.getByTestId("finish-backdrop").click();
+  await page.getByRole("button", { name: "One more child" }).click(); // the kids' table opens designed
   await page.getByTestId("save-design").click();
-  await signInByEmail(page);
   await expect(saveLabel(page)).toHaveText("✓ Saved");
   expect(guard.supabase.items.map((i) => i.ref_id)).toEqual(["studio.backdrop", "studio.table"]);
   await page.goto("/my-designs");

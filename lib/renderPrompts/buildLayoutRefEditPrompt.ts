@@ -924,8 +924,10 @@ export function buildLayoutRefEditPrompt(
   // Superseded 2026-10-21: no cluster on the frame's face any more.
   const openFrameDetailLine = hasOpenFramePair
     // 2026-10-23 to 11-02 down the outer side, the opening clear; since 2026-11-02 (her photo of a garland
-    // flowing down an arch's face) down the front, through the opening.
-    ? `The frame's garland comes over its crown and flows down the frame's FRONT, through the middle of the opening, to the floor — a thick, full garland, the grey wall still showing through the opening beside it. ` +
+    // flowing down an arch's face) down the front, through the opening. 2026-11-03 ("az balon geliyor, biraz daha
+    // iri balonlarla gelsin açıklıktan … texti kapatmış"): of big balloons, and clear of the other board's lettering.
+    ? `The frame's garland comes over its crown and flows down the frame's FRONT, through the middle of the opening, to the floor — a thick, full garland of BIG balloons, mostly 12- to 18-inch ones with small fillers between them, the grey wall still showing through the opening beside it. ` +
+      `Its crown stays over the frame's own top: it does not reach across onto the ${solidSide}-hand board. ` +
       (sceneModel.panels.some((p) => p.text.enabled || p.graphic.enabled)
         ? `No lettering and no artwork on the ${openFrameSide}-hand backdrop — any text or illustration ` +
           `belongs on the ${solidSide}-hand one only. `
@@ -1276,9 +1278,12 @@ export function buildLayoutRefEditPrompt(
       if (types.includes("arch") && types.includes("open_arch_frame")) return frontOpenFrameSentence;
       if (types.includes("arch") && types.includes("shimmer_wall")) {
         const archLeft = types[0] === "arch";
+        // 2026-11-03: a wavy board is laid out as an arch, but called one here the render drew a round-topped
+        // arch ("wavy + shimmer hâlâ kalitesiz").
+        const board = anyWavy ? "white WAVY board (its sides and top in rounded waves)" : "white arch board";
         // One short sentence: the first, longer version pushed the plinth
         // out of the render, as long front clauses have before.
-        return `Two backdrops side by side: a white arch board on the ${archLeft ? "left" : "right"} and a ` +
+        return `Two backdrops side by side: a ${board} on the ${archLeft ? "left" : "right"} and a ` +
           `${sceneModel.shimmerColor ?? "silver"} SEQUIN shimmer wall (a flat square panel of sequin tiles) on the ${archLeft ? "right" : "left"}` +
           // Named here or it goes: with the sequin wall stated up front, the
           // white column in front of it was painted over by sequins.

@@ -65,8 +65,12 @@ describe("the colours on the table", () => {
     expect([t.plateColor, t.smallPlateColor]).toEqual(["#F8BBD0", "#FEF08A"]);
     expect([defaultTableSetup(frozen).plateColor, defaultTableSetup(frozen).smallPlateColor]).toEqual(["#BAE6FD", "#DDD6FE"]);
     // A white napkin, and the napkin band in the theme's colour.
-    expect(t).toMatchObject({ napkinColor: "#FFFFFF", chairColor: "#FFFFFF", holderColor: unicorn.balloonColors[1] });
-    expect(t.choices).toMatchObject({ table: "standard", chairs: "blue_kids", tablecloth: NONE, napkins: "plain", cutlery: "wooden", cutleryHolder: "band" });
+    const f = defaultTableSetup(frozen);
+    expect(f).toMatchObject({ napkinColor: "#FFFFFF", chairColor: "#FFFFFF", holderColor: frozen.balloonColors[1] });
+    expect(f.choices).toMatchObject({ table: "standard", chairs: "blue_kids", tablecloth: NONE, napkins: "plain", plates: "plain", cutlery: "wooden", cutleryHolder: "band" });
+    // 2026-11-03 (the owner, on her Unicorn table: "default böyle gelsin"): the rainbow plates and napkins, a pink band and hat.
+    expect(t).toMatchObject({ chairColor: "#FFFFFF", holderColor: "#F8BBD0", hatColor: "#F8BBD0" });
+    expect(t.choices).toMatchObject({ table: "standard", chairs: "blue_kids", tablecloth: NONE, napkins: "unicorn_rainbow", plates: "unicorn_rainbow", cutlery: "wooden", cutleryHolder: "band" });
   });
   it("they read back; a table saved before them gets them; a chair colour must be one of its own", () => {
     const back = readTableSetup({ ...table(), plateColor: "#E53935", cupColor: "#1E88E5", holderColor: "#43A047", chairColor: "#F8BBD0", textColor: "#1F2937" }, frozen)!;

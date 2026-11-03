@@ -1211,6 +1211,8 @@ div.bz-stale-banner { cursor: default; }
 .bz-parts button.on .n { background: #fff; color: #6d4fb3; }
 .bz-parts button.done .n { background: #6d4fb3; color: #fff; }
 .bz-parts .soon { font: 700 13px var(--bz-sans); color: #a99cc4; padding: 9px 8px; }
+/* 2026-11-03: a part opens once the parts before it are finalized. */
+.bz-parts button:disabled { opacity: .5; cursor: not-allowed; }
 .bz-parts .soon small { font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; }
 .bz-parts .arrow { color: #b4a6d8; font-size: 14px; }
 @media (max-width: 520px) { .bz-parts button { font-size: 13.5px; padding: 7px 14px 7px 7px; } .bz-parts button .n { width: 23px; height: 23px; } }
@@ -1283,9 +1285,10 @@ div.bz-stale-banner { cursor: default; }
 /* Waiting for the table render (2026-10-27): the drawing, faded, under three moving dots. */
 .bz-tb-wait { position: relative; }
 .bz-tb-wait.on > .bz-tb-sketch { opacity: .35; filter: blur(1px); transition: opacity .3s; }
-.bz-tb-wait .veil { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 16px; }
-.bz-tb-wait .veil b { font: 400 22px var(--bz-hand); color: var(--bz-ink, #2b1a24); }
-.bz-tb-wait .veil span:not(.dots) { font-size: 12.5px; color: var(--bz-muted); }
+.bz-wb-wait { position: relative; }
+.bz-tb-wait .veil, .bz-wb-wait .veil { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 16px; }
+.bz-tb-wait .veil b, .bz-wb-wait .veil b { font: 400 22px var(--bz-hand); color: var(--bz-ink, #2b1a24); }
+.bz-tb-wait .veil span:not(.dots), .bz-wb-wait .veil span:not(.dots) { font-size: 12.5px; color: var(--bz-muted); }
 .bz-tb-preview .dots, .bz-tb-job .dots { display: inline-flex; gap: 6px; align-items: center; }
 .bz-tb-job .dots { flex: none; }
 .bz-tb-job { margin-bottom: 14px; background: var(--bz-pink-fog); border-color: #ffb3cf; transform: none; }
@@ -1333,6 +1336,14 @@ div.bz-stale-banner { cursor: default; }
 /* On a phone the long "Finalize the kids' table → Grown-ups' table" ran off the screen: the short one there. */
 .bz-tb-finish .bz-next .short { display: none; }
 @media (max-width: 520px) { .bz-tb-finish .bz-next .full { display: none; } .bz-tb-finish .bz-next .short { display: inline; } }
+/* 2026-11-03: the part's render first ("First Generate render to see your final design"), then Finalize. */
+.bz-tb-finish .render { flex: 1 0 100%; display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.bz-tb-finish .render .bz-decor-first { flex: 1 1 200px; }
+.bz-tb-finish .render .error { flex: 1 0 100%; text-align: right; color: #b4234d; font-size: 12.5px; }
+.bz-tb-finish .bz-next:disabled { opacity: .5; cursor: not-allowed; }
+/* The footer without a Next of its own, where a part ends in its Finalize buttons. */
+.bz-next-gap { min-width: 1px; }
+.bz-tb-wait.on > .bz-tb-place, .bz-wb-wait.on > .bz-wb-art { opacity: .35; filter: blur(1px); transition: opacity .3s; }
 .bz-tb-jump { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 14px; border-radius: 16px; border: 1.5px dashed var(--bz-pink-soft); background: var(--bz-pink-fog); }
 .bz-tb-jump span { font-size: 13px; color: var(--bz-muted); }
 .bz-tb-jump .bz-back { padding: 8px 14px 5px; font-size: 16px; }

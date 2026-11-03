@@ -23,6 +23,8 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   guard.fakeRender = true;
   guard.fakeOrder = true;
   await page.goto("/builder");
+  // Running first, on a server still compiling, the page could be clicked before it came alive.
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
   await shot(page, "f1-01-event");
   await page.locator(".bz-choice.bz-birthday").click();
   await next(page).click();
@@ -42,8 +44,10 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
     if ((page.viewportSize()?.width ?? 1000) >= 768) await expect(page.getByTestId("sketch-lettering").locator("path").first()).toBeAttached();
     await shot(page, `f1-04-decor-${tab.toLowerCase()}`);
   }
-  // The footer goes on to the kids' table; the render is the Extras tab's own button.
-  await expect(next(page)).toHaveText(/Next: Table setup/);
+  // The Extras tab ends in Finalize the backdrop, not a footer Next, and only once rendered (2026-11-03: "finalize
+  // the backdrop çıksın, next table setup çıkmasın … generate render yapmadan finalize basılamasın").
+  await expect(next(page)).toHaveCount(0);
+  await expect(page.getByTestId("finish-backdrop")).toBeDisabled();
   // Generate render, signed out (2026-10-27: renders need an account): the
   // sign-in window, and no render asked for.
   await renderButton(page).click();
@@ -62,11 +66,10 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   const renders = renderCalls();
   expect(renders).toHaveLength(1);
   expect(renders[0].headers()["authorization"]).toMatch(/^Bearer \S+/);
-  await next(page).click(); // the kids' table: skipped here (tests/e2e/table-step.spec.ts)
-  await page.getByRole("button", { name: "No thanks, skip" }).click();
+  await page.getByTestId("finish-backdrop").click();
+  // The kids' table opens designed; skipped here (tests/e2e/table-step.spec.ts).
+  await page.getByTestId("skip-kids-table").click();
   // Then the grown-ups' table and the welcome board (2026-10-31), both skipped.
-  await expect(next(page)).toHaveText(/Next: Grown-ups' table/);
-  await next(page).click();
   await expect(next(page)).toHaveText(/Skip to Welcome board/);
   await next(page).click();
   await expect(next(page)).toHaveText(/Skip to Package/);
@@ -273,20 +276,15 @@ test("F12 renders still running from the same connection: says so, and Retry sta
   await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
 });
 
-test("F13 the Package step without a render: the render is optional", async ({ page, guard }) => {
+test("F13 a designed backdrop is finalized only with its render; the next parts wait for it", async ({ page, guard }) => {
   await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Extras");
-  await expect(renderButton(page)).toBeVisible(); // offered, not required
-  await expect(next(page)).toHaveText(/Next: Table setup/);
-  await next(page).click();
-  // The tables and the welcome board are optional too (2026-10-31).
-  await expect(next(page)).toHaveText(/Skip the kids' table/);
-  await next(page).click();
-  await expect(next(page)).toHaveText(/Skip to Welcome board/);
-  await next(page).click();
-  await expect(next(page)).toHaveText(/Skip to Package/);
-  await next(page).click();
-  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  // 2026-11-03 (the owner: "generate render yapmadan finalize render butonuna basılamasın").
+  await expect(renderButton(page)).toBeVisible();
+  await expect(next(page)).toHaveCount(0);
+  await expect(page.getByTestId("finish-backdrop")).toBeDisabled();
+  await expect(page.getByRole("tab", { name: /Table setup/ })).toBeDisabled();
+  await expect(page.getByRole("tab", { name: /Welcome board/ })).toBeDisabled();
   expect(guard.blocked.some((r) => r.url().includes("/api/generate-controlled-render"))).toBe(false);
   expect(guard.supabase.requests).toEqual([]); // nor any sign-in asked for
 });

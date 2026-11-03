@@ -46,7 +46,10 @@ import AdultTableSketch from "@/components/studio/table/AdultTableSketch";
 import WelcomePreview from "@/components/builder/welcome/WelcomePreview";
 import { adultCounts, defaultAdultTable } from "@/lib/studio/adultTable";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
-import { defaultWelcomeBoard } from "@/lib/studio/welcomeBoard";
+import { defaultWelcomeBoard, welcomeRenderKey } from "@/lib/studio/welcomeBoard";
+import { tableRenderKey } from "@/lib/studio/tableRender";
+import { usePieceRender } from "@/components/builder/usePieceRender";
+import { nodeJpeg } from "@/components/builder/nodeJpeg";
 
 import Sprinkles from "@/components/design/Sprinkles";
 
@@ -119,8 +122,8 @@ export default function ConfigurePage() {
   const serverDraft = useServerDraft({ config, step, decorTab });
   // 2026-10-27 (0.5b): renders need an account too. One sign-in window, for
   // saving or for a render; back from signing in, that is done at once.
-  const [signInFor, setSignInFor] = useState<"save" | "render" | "table-render" | null>(null);
-  const askSignIn = (purpose: "save" | "render" | "table-render") => {
+  const [signInFor, setSignInFor] = useState<"save" | "render" | "table-render" | "welcome-render" | null>(null);
+  const askSignIn = (purpose: "save" | "render" | "table-render" | "welcome-render") => {
     draft.flush(); // the design must be here when they come back
     setSignInFor(purpose);
   };
@@ -129,12 +132,14 @@ export default function ConfigurePage() {
   };
   const [renderOnArrival, setRenderOnArrival] = useState(false);
   const [tableRenderOnArrival, setTableRenderOnArrival] = useState(false);
+  const [welcomeRenderOnArrival, setWelcomeRenderOnArrival] = useState(false);
   useEffect(() => {
     // After the device copy is restored (useLocalDraft, above), in the same pass.
     const then = takeAfterSignIn();
     if (then === "save") serverDraft.saveOnArrival();
     if (then === "render") setRenderOnArrival(true);
     if (then === "table-render") { setDecorPart("table"); setTableRenderOnArrival(true); }
+    if (then === "welcome-render") { setDecorPart("welcome"); setWelcomeRenderOnArrival(true); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const startOver = () => {
@@ -175,6 +180,47 @@ export default function ConfigurePage() {
   }, [renderOnArrival, generateFinalRender]);
 
   const theme = themeById(config.theme) ?? THEMES[0];
+
+  // 2026-11-03 (the owner: "generate render yapmadan finalize … basılamasın … top view render alsın sadece …
+  // burda da rendera zorlasın"): the kids' table's top view and the welcome board are each rendered before
+  // they are finalized (components/builder/usePieceRender.ts); the renders show side by side at the end.
+  const tableKey = config.table?.enabled ? tableRenderKey(config.table, config.theme) : "";
+  const tableRender = usePieceRender({
+    endpoint: "/api/table-render", partKey: tableKey,
+    kept: config.table?.render?.view === "top" ? { key: config.table.render.key, path: config.table.render.close } : undefined,
+    body: () => ({ table: config.table, theme: config.theme, view: "top" }),
+    onKept: (k) => setConfig((c) => (c.table ? { ...c, table: { ...c.table, render: { key: k.key, close: k.path, view: "top" } } } : c)),
+    onSignInNeeded: () => askSignIn("table-render"),
+  });
+  const welcomeKey = config.welcomeBoard?.enabled ? welcomeRenderKey(config.welcomeBoard, config.theme, config.decor.balloonColors) : "";
+  const welcomeRender = usePieceRender({
+    endpoint: "/api/welcome-render", partKey: welcomeKey, kept: config.welcomeBoard?.render,
+    // The live preview, as the customer sees it, is what is rendered.
+    body: async () => {
+      const node = document.querySelector<HTMLElement>("#welcome-preview-card .bz-wb-wait");
+      return { board: config.welcomeBoard, theme: config.theme, balloons: config.decor.balloonColors, preview: node ? await nodeJpeg(node, 1400) : null };
+    },
+    onKept: (render) => setConfig((c) => (c.welcomeBoard ? { ...c, welcomeBoard: { ...c.welcomeBoard, render } } : c)),
+    onSignInNeeded: () => askSignIn("welcome-render"),
+  });
+  // Back from signing in for one of them: it starts.
+  useEffect(() => {
+    if (!tableRenderOnArrival || !tableKey) return;
+    setTableRenderOnArrival(false);
+    void tableRender.make();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableRenderOnArrival, tableKey]);
+  useEffect(() => {
+    if (!welcomeRenderOnArrival || !welcomeKey) return;
+    setWelcomeRenderOnArrival(false);
+    // The preview is drawn first.
+    const t = setTimeout(() => void welcomeRender.make(), 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [welcomeRenderOnArrival, welcomeKey]);
+  const makeTableRender = () => { document.getElementById("table-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" }); void tableRender.make(); };
+  const makeWelcomeRender = () => { document.getElementById("welcome-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" }); void welcomeRender.make(); };
+
   // 2026-10-22 redesign: the interface stays in Blushy brand pink whatever the
   // theme (app/globals.css sets --accent); the theme's own accent is product
   // data and is still used for "Theme accent" lettering.
@@ -266,6 +312,17 @@ export default function ConfigurePage() {
   const [tableJob, setTableJob] = useState<TableRenderJob | null>(null);
   const onTableNow = step === 2 && decorPart === "table";
   useEffect(() => { if (onTableNow && tableJob !== "loading") setTableJob(null); }, [onTableNow, tableJob]);
+  useEffect(() => {
+    if (tableRender.loading) setTableJob("loading");
+    else setTableJob((j) => (j === "loading" ? (tableRender.error ? "error" : "ready") : j));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableRender.loading]);
+  // 2026-11-03 (the owner: "kids table skipable olsun, default böyle gelsin"): the kids' table opens designed,
+  // in the theme's own pieces (lib/studio/tableSetup.ts), with a way to skip it.
+  useEffect(() => {
+    if (onTableNow && !config.table) setConfig((c) => (c.table ? c : { ...c, table: defaultTableSetup(themeById(c.theme) ?? THEMES[0]) }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onTableNow, config.table]);
 
   // =========================================================================
   // SUCCESS SCREEN
@@ -362,6 +419,10 @@ export default function ConfigurePage() {
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // A backdrop the customer is designing is finished with its render (2026-11-03); the Customized Themed set
+  // is its own photo, and no render is made of it.
+  const themedSet = config.decor.backdropItems.some((i) => i.type === "themed_set");
+  const backdropFinished = config.decor.backdropChoice !== "yes" || themedSet || decorRenderReady;
   const onTable = step === 2 && decorPart === "table";
   const onWelcome = step === 2 && decorPart === "welcome";
   const openTable = () => { goToStep(2); setDecorPart("table"); setTableView("kids"); };
@@ -373,6 +434,9 @@ export default function ConfigurePage() {
   const setAdultTable = (adultTable: NonNullable<typeof config.adultTable>) => setConfig((c) => ({ ...c, adultTable }));
   const setWelcomeBoard = (welcomeBoard: NonNullable<typeof config.welcomeBoard>) => setConfig((c) => ({ ...c, welcomeBoard }));
   const finishKids = () => { if (config.table) setTable({ ...config.table, done: true }); setTableView("adults"); };
+  // 2026-11-03 (the owner: "kids table skipable olsun, default böyle gelsin"): the table opens designed, in
+  // the theme's own pieces, with a way to skip it.
+  const skipKids = () => { setTable({ ...(config.table ?? defaultTableSetup(theme)), enabled: false, done: false }); setTableView("adults"); };
   const toWelcome = () => {
     // Leaving the grown-ups' question unanswered skips it.
     if (!config.adultTable) setAdultTable({ ...defaultAdultTable(themeById(config.theme) ?? THEMES[0]), enabled: false });
@@ -408,6 +472,9 @@ export default function ConfigurePage() {
   let nextLabel: React.ReactNode = "Keep going →";
   let onNext: () => void = () => goToStep(step + 1);
   let nextDisabled = false;
+  // 2026-11-03 (the owner: "finalize the backdrop çıksın, next table setup çıkmasın, ikisi aynı"): where a part
+  // ends in its own Finalize buttons, the footer has no Next of its own.
+  let hideNext = false;
   if (step === 0) nextLabel = "Let’s go! →";
   if (step === 1) { nextDisabled = !config.themeSelected; }
   if (onBackdropQuestion) {
@@ -418,31 +485,26 @@ export default function ConfigurePage() {
       nextLabel = `Next: ${DECOR_TABS[decorTab + 1].name} →`;
       onNext = () => setDecorTab(decorTab + 1);
     } else {
-      // 2026-10-27: the render is optional ("extras'tan sonraki adıma geçebilmek
-      // için illa generate render olmamalı") — it is offered beside this, in
-      // the Extras tab and on the preview card. Next comes the kids' table.
-      nextLabel = "Next: Table setup →";
-      onNext = () => setDecorPart("table");
-      nextDisabled = archUnsized;
+      // The Extras tab ends in Finalize the backdrop (DecorStep), once the render is made.
+      hideNext = true;
     }
   }
   // 2026-10-31 (owner): each table is finished with a button, then on to the
   // grown-ups' table, then the welcome board — not straight to Package.
   // A long label and a short one for phones (blushy.css).
   const label = (full: string, short: string) => <><span className="full">{full}</span><span className="short" aria-hidden="true">{short}</span></>;
+  // An enabled table or board ends in its own Finalize buttons (TableStep, AdultTableStep, WelcomeStep);
+  // a skipped one goes on from the footer.
   if (onKids) {
-    if (config.table?.enabled && !config.table.done) { nextLabel = label("Finalize the kids' table ✓", "Finalize ✓"); onNext = finishKids; }
-    else if (!config.table) {
-      nextLabel = label("Skip the kids' table →", "Skip →");
-      onNext = () => { setTable({ ...defaultTableSetup(themeById(config.theme) ?? THEMES[0]), enabled: false }); setTableView("adults"); };
-    } else { nextLabel = label("Next: Grown-ups' table →", "Next →"); onNext = () => setTableView("adults"); }
+    if (config.table?.enabled) hideNext = true;
+    else { nextLabel = label("Next: Grown-ups' table →", "Next →"); onNext = () => setTableView("adults"); }
   }
   if (onAdults) {
-    if (config.adultTable?.enabled && !config.adultTable.done) { nextLabel = label("Finalize the grown-ups' table ✓", "Finalize ✓"); onNext = finishAdults; }
+    if (config.adultTable?.enabled) hideNext = true;
     else { nextLabel = config.adultTable ? label("Next: Welcome board →", "Next →") : label("Skip to Welcome board →", "Skip →"); onNext = toWelcome; }
   }
   if (onWelcome) {
-    if (config.welcomeBoard?.enabled && !config.welcomeBoard.done) { nextLabel = label("Finalize the welcome board ✓", "Finalize ✓"); onNext = finishWelcome; }
+    if (config.welcomeBoard?.enabled) hideNext = true;
     else { nextLabel = config.welcomeBoard ? label("Continue to Package →", "Package →") : label("Skip to Package →", "Skip →"); onNext = toPackage; }
   }
   // Back walks the parts and tabs of Decor before leaving it.
@@ -518,11 +580,9 @@ export default function ConfigurePage() {
               </> : <div className="empty">Add a grown-ups&apos; table to see it here.</div>}
             </div>
           )}
-          {onWelcome && <WelcomePreview config={config} />}
+          {onWelcome && <WelcomePreview config={config} render={welcomeRender} onGenerate={makeWelcomeRender} />}
           <div hidden={!onKids}>
-            <TablePreview config={config} setTable={(table) => setConfig((c) => ({ ...c, table }))}
-              onSignInNeeded={() => askSignIn("table-render")}
-              startNow={tableRenderOnArrival} onStarted={() => setTableRenderOnArrival(false)} onJob={setTableJob} />
+            <TablePreview config={config} render={tableRender} onGenerate={makeTableRender} />
           </div>
           {step < 2 ? (
             <div className="bz-cake">
@@ -571,7 +631,7 @@ export default function ConfigurePage() {
               {isDecorStep && !onTable && !onWelcome && !finalRenderState.hasRender && (
                 <div className="bz-little-note">
                   <svg viewBox="0 0 35 28" aria-hidden="true"><path d="M3 4Q6 23 29 16M21 11L30 16L23 23" /></svg>
-                  <span>Want to see it for real? Tap <b>Generate render</b> on the Extras tab — or carry on without one.</span>
+                  <span>See it for real: tap <b>Generate render</b> on the Extras tab — your backdrop is finalized with its render.</span>
                 </div>
               )}
               </div>
@@ -625,12 +685,16 @@ export default function ConfigurePage() {
                 <span className="label">Your party, piece by piece</span>
                 <div className="bz-parts" role="tablist" aria-label="Decor parts">
                   {([["backdrop", "Backdrop"], ["table", "Table setup"], ["welcome", "Welcome board"]] as const).map(([id, name], i) => {
-                    const done = id === "table" ? kidsDecided && !!config.adultTable && (!config.adultTable.enabled || !!config.adultTable.done)
+                    const tablesDone = kidsDecided && !!config.adultTable && (!config.adultTable.enabled || !!config.adultTable.done);
+                    const done = id === "table" ? tablesDone
                       : id === "welcome" ? !!config.welcomeBoard && (!config.welcomeBoard.enabled || !!config.welcomeBoard.done) : false;
+                    // 2026-11-03 ("render almadan o aşamaya geçemesin"): a part opens once the ones before it are finalized.
+                    const open = id === "backdrop" || (backdropFinished && (id === "table" || tablesDone));
                     return (
                       <span key={id} style={{ display: "contents" }}>
                         {i > 0 && <span className="arrow" aria-hidden="true">→</span>}
                         <button type="button" role="tab" aria-selected={decorPart === id} className={`${decorPart === id ? "on" : ""} ${done ? "done" : ""}`}
+                          disabled={decorPart !== id && !open} title={decorPart !== id && !open ? "Finalize the part before it first" : undefined}
                           onClick={() => setDecorPart(id)}><span className="n">{done ? "✓" : i + 1}</span>{name}</button>
                       </span>
                     );
@@ -650,7 +714,7 @@ export default function ConfigurePage() {
                 stylePieceId={stylePieceId} setStylePieceId={setStylePieceId}
                 onGenerate={triggerDecorGenerateRender} renderReady={decorRenderReady}
                 hasRender={finalRenderState.hasRender} generating={finalRenderState.generating}
-                onContinue={() => setDecorPart("table")} continueBlocked={archUnsized} />
+                onContinue={() => setDecorPart("table")} continueBlocked={archUnsized} needsRender={!backdropFinished} />
             )}
             {onTable && (
               // The two tables, the grown-ups' only once the kids' is finished or skipped.
@@ -665,14 +729,16 @@ export default function ConfigurePage() {
               </div>
             )}
             {onKids && (
-              <TableStep config={config} setTable={setTable} onFinish={finishKids} onFinishTables={finishTables} />
+              <TableStep config={config} setTable={setTable} onFinish={finishKids} onFinishTables={finishTables} onSkip={skipKids}
+                render={tableRender} onGenerate={makeTableRender} />
             )}
             {onAdults && <AdultTableStep config={config} setAdultTable={setAdultTable} onFinish={finishAdults} onSkip={skipAdults} />}
-            {onWelcome && <WelcomeStep config={config} setWelcomeBoard={setWelcomeBoard} onFinish={finishWelcome} />}
+            {onWelcome && <WelcomeStep config={config} setWelcomeBoard={setWelcomeBoard} onFinish={finishWelcome} render={welcomeRender} onGenerate={makeWelcomeRender} />}
 
             {/* 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
             {(step === 3 || step === 6) && <FinishedDesigns config={config}
-              renderUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl : null} />}
+              renderUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl : null}
+              tableRenderUrl={tableRender.url} welcomeRenderUrl={welcomeRender.url} />}
             {step === 3 && <PackageStep config={config} setServicePackage={setServicePackage} />}
 
             {step === 4 && <AddOnsStep config={config} toggleAddOn={toggleAddOn} setAddOnOption={setAddOnOption} />}
@@ -706,10 +772,12 @@ export default function ConfigurePage() {
           ) : (
             <div className="bz-footer-note">Small steps, big party energy <b>✳</b></div>
           )}
-          <button type="button" className="bz-next" onClick={onNext} disabled={nextDisabled || busy}>
-            {busy && <span className="bz-spinner" aria-hidden="true" />}
-            {busy ? (submitting ? "Sending…" : "Generating…") : nextLabel}
-          </button>
+          {hideNext ? <span className="bz-next-gap" aria-hidden="true" /> : (
+            <button type="button" className="bz-next" onClick={onNext} disabled={nextDisabled || busy}>
+              {busy && <span className="bz-spinner" aria-hidden="true" />}
+              {busy ? (submitting ? "Sending…" : "Generating…") : nextLabel}
+            </button>
+          )}
         </div>
       </footer>
       <SignInDialog open={signInFor !== null} purpose={signInFor ?? undefined} onClose={() => setSignInFor(null)} />
