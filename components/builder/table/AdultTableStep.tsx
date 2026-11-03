@@ -116,7 +116,7 @@ export interface FinishRender { ready: boolean; stale: boolean; loading: boolean
  *  and, on the kids' table, straight on to the welcome board too (`onSkipAhead`, 2026-11-02). Only here, at the
  *  end of the part (2026-11-02, later: "hep son aşamalarda olsun"). With a render, first the render ("First
  *  Generate render to see your final design"), as the backdrop's Extras tab. */
-export function FinishBar({ done, what, next, onFinish, onSkipAhead, testId, render }: { done?: boolean; what: string; next: string; onFinish: () => void; onSkipAhead?: () => void; testId: string; render?: FinishRender }) {
+export function FinishBar({ done, what, next, onFinish, onSkipAhead, onSkip, testId, render }: { done?: boolean; what: string; next: string; onFinish: () => void; onSkipAhead?: () => void; onSkip?: () => void; testId: string; render?: FinishRender }) {
   const waiting = !!render && !render.ready;
   return (
     <div className={`bz-tb-finish ${done ? "done" : ""}`}>
@@ -133,6 +133,12 @@ export function FinishBar({ done, what, next, onFinish, onSkipAhead, testId, ren
         </div>
       )}
       <div className="actions">
+        {/* 2026-11-03 (the owner: "welcome board skip yapabilmeliyim"): on without it, no render needed. */}
+        {onSkip && !done && (
+          <button type="button" className="bz-back" data-testid={`${testId}-skip`} onClick={onSkip}>
+            <span className="full">Skip the {what} → {next}</span><span className="short" aria-hidden="true">Skip →</span>
+          </button>
+        )}
         {onSkipAhead && <SkipAhead onClick={onSkipAhead} testId={`${testId}-to-welcome`} disabled={waiting} />}
         <button type="button" className="bz-next" data-testid={testId} onClick={onFinish} disabled={waiting} title={waiting ? "Generate your render first" : undefined}
           aria-label={done ? undefined : `Finalize the ${what} → ${next}`}>

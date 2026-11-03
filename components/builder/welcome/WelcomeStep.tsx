@@ -12,10 +12,12 @@ import { wavyBoardPath, wavyBorderColor } from "@/lib/wavyBoard";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 
-export default function WelcomeStep({ config, setWelcomeBoard, onFinish, render, onGenerate }: {
+export default function WelcomeStep({ config, setWelcomeBoard, onFinish, onSkip, render, onGenerate }: {
   config: BuilderConfig;
   setWelcomeBoard: (b: WelcomeBoard) => void;
   onFinish: () => void;
+  /** No board after all: skipped, on to the next part. */
+  onSkip: () => void;
   /** The board's render, which finalizing waits for (2026-11-03, the owner: "burda da rendera zorlasın"). */
   render: PieceRender;
   onGenerate: () => void;
@@ -165,7 +167,7 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish, render,
         <b>AED {formatAED(welcomeTotal(b))}</b>
         <button type="button" className="bz-restart" onClick={() => setWelcomeBoard({ ...b, enabled: false, done: false })}>Remove the board</button>
       </div>
-      <FinishBar done={b.done} what="welcome board" next="Giveaways" onFinish={onFinish} testId="finish-welcome" render={{ ...render, onGenerate }} />
+      <FinishBar done={b.done} what="welcome board" next="Giveaways" onFinish={onFinish} onSkip={onSkip} testId="finish-welcome" render={{ ...render, onGenerate }} />
     </div>
   );
 }

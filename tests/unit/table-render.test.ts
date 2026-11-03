@@ -324,6 +324,15 @@ describe("the route", () => {
     expect(input.image_size).toEqual({ width: 1408, height: 1024 });
   }, 30_000);
 
+  it("the welcome board's prompt keeps her balloons' colours, the light neutral and the words readable", async () => {
+    // 2026-11-03: a Unicorn board's pastel garland came back bright, in yellow sunbeams that washed out the name.
+    const { welcomePrompt } = await import("@/lib/studio/welcomeRender");
+    const p = welcomePrompt(["Welcome to", "Arya's", "Birthday party"], "easel");
+    expect(p).toMatch(/Pastel balloons stay soft pastel/);
+    expect(p).toMatch(/never yellow or orange light, no sunbeams/);
+    expect(p).toMatch(/fully readable/);
+  });
+
   it("refuses a missing or skipped table without calling fal", async () => {
     const { POST } = await import("@/app/api/table-render/route");
     expect((await POST(post({ theme: "frozen" }))).status).toBe(400);

@@ -246,6 +246,24 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/welcome-render"]);
 });
 
+test("W3 a welcome board begun can still be skipped, with no render", async ({ page }) => {
+  // 2026-11-03 (the owner: "welcome board skip yapabilmeliyim").
+  await toTable(page);
+  await page.getByTestId("skip-kids-table").click();
+  await next(page).click();
+  const before = aed(await total(page).textContent());
+  await page.getByRole("button", { name: /Yes, design the board/ }).click();
+  await expect(page.getByTestId("finish-welcome")).toBeDisabled();
+  await page.getByTestId("finish-welcome-skip").click();
+  await expect(page.getByTestId("giveaways-intro")).toBeVisible();
+  expect(aed(await total(page).textContent())).toBe(before);
+  // The giveaways the same way, on to Package.
+  await page.getByRole("button", { name: /Yes, add giveaways/ }).click();
+  await page.getByTestId("finish-giveaways-skip").click();
+  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  expect(aed(await total(page).textContent())).toBe(before);
+});
+
 test("G1 the giveaways: a themed box, its contents as a list, on a board in her colour; rendered, then on to Package", async ({ page, guard }) => {
   // 2026-11-03 (the owner: "bu box'ı masaya mı yoksa giveaway board mu istiyor onun seçimini yapsın … board rengi
   // vs customizable olacak … onları da render alıp sonra gene preview'a koymamız lazım").
@@ -294,6 +312,10 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/giveaway-render"))!.postData()!);
   expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
   expect(sent.giveaways).toMatchObject({ name: "Arya", age: "6", place: "board", count: 30 });
+  // The boxes go on their own, laid on the render afterwards (the engine, given them, redrew them).
+  expect(sent.boxes).toMatch(/^data:image\/png;base64,/);
+  // The backdrop's own preview is not shown on this part.
+  await expect(page.getByText("Your party preview").locator("visible=true")).toHaveCount(0);
   await page.getByTestId("finish-giveaways").click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   await expect(page.getByTestId("finished-giveaways-jpeg").or(page.getByTestId("finished-designs").getByAltText("Your giveaways"))).toBeVisible();

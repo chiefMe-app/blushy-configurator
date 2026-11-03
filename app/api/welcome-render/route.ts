@@ -14,6 +14,7 @@ import { acquireRender, clientIp } from "@/lib/renderGuard";
 import { renderUser, takeAccountRender } from "@/lib/renderAccount";
 import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
+import { finishSketchRender } from "@/lib/sketchRenderFinish";
 import { BOARD_STANDS, readWelcomeBoard, welcomeRenderKey } from "@/lib/studio/welcomeBoard";
 import { welcomePrompt } from "@/lib/studio/welcomeRender";
 
@@ -77,8 +78,12 @@ export async function POST(req: NextRequest) {
           });
           const url = (result.data as { images?: { url?: string }[] })?.images?.[0]?.url;
           if (!url) throw new Error("no welcome board image");
-          const jpeg = await renderJpeg(url);
-          if (!jpeg) throw new Error("the welcome board render could not be read");
+          const made = await renderJpeg(url);
+          if (!made) throw new Error("the welcome board render could not be read");
+          // Its colours brought back to the preview's (2026-11-03: a Unicorn board's pastel garland came back bright
+          // and sunlit), as the backdrop's (lib/sketchRenderFinish.ts).
+          // A failed colour step never loses the paid render.
+          const jpeg = await finishSketchRender(made, image.data).catch(() => made);
           send({ url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
           const key = welcomeRenderKey(board, theme.id, balloons);
           // Without a database (local development) nothing is kept.

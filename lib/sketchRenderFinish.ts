@@ -17,15 +17,30 @@ export async function colourGains(render: Buffer, sketch: Buffer): Promise<[numb
   }) as [number, number, number];
 }
 
-/** The render with the sketch's colours and, when it has any, the sketch's words laid flat on it. */
-export async function finishSketchRender(render: Buffer, sketch: Buffer, words?: Buffer): Promise<Buffer> {
+/**
+ * The render with the sketch's colours and, when it has any, the sketch's words laid flat on it — or (`shadow`,
+ * 2026-11-03, the giveaways' boxes) things standing in the scene, each with a soft contact shadow under it.
+ */
+export async function finishSketchRender(render: Buffer, sketch: Buffer, words?: Buffer, { shadow = false } = {}): Promise<Buffer> {
   const { width = 1024, height = 1024 } = await sharp(render).metadata();
   const gains = await colourGains(render, sketch);
   let img = sharp(render).removeAlpha().linear(gains, [0, 0, 0]);
   if (words) {
     // The words drawn at the sketch's own square, so at the render's (made at the sketch's size).
-    const layer = await sharp(words).resize(width, height, { fit: "fill" }).png().toBuffer();
-    img = sharp(await img.toBuffer()).composite([{ input: layer }]);
+    const layer = await sharp(words).resize(width, height, { fit: "fill" }).ensureAlpha().png().toBuffer();
+    const under = shadow ? [{ input: await softShadow(layer, width, height), left: 0, top: 0 }] : [];
+    img = sharp(await img.toBuffer()).composite([...under, { input: layer }]);
   }
   return img.jpeg({ quality: 90 }).toBuffer();
+}
+
+/** A layer's soft shadow: its shape, blurred, a little below it. */
+async function softShadow(layer: Buffer, width: number, height: number): Promise<Buffer> {
+  const k = width / 1000;
+  const alpha = await sharp(layer).extractChannel(3).blur(Math.max(1, 5 * k)).linear(0.45, 0).raw().toBuffer();
+  const drop = Math.round(5 * k);
+  const shifted = Buffer.alloc(width * height);
+  alpha.copy(shifted, drop * width, 0, (height - drop) * width);
+  return sharp({ create: { width, height, channels: 3, background: { r: 40, g: 30, b: 35 } } })
+    .joinChannel(shifted, { raw: { width, height, channels: 1 } }).png().toBuffer();
 }

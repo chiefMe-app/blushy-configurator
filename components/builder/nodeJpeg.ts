@@ -1,6 +1,6 @@
 // A drawing on the page as a JPEG, made in the browser (2026-11-02, the finished designs; 2026-11-03, the
 // welcome board's preview sent to be rendered).
-import { toJpeg } from "html-to-image";
+import { toJpeg, toPng } from "html-to-image";
 
 /**
  * The @font-face rules of the fonts a drawing uses, their files inlined: html-to-image's own embedding left
@@ -106,6 +106,46 @@ export async function sketchJpegWithoutWords(svg: SVGSVGElement, width: number):
   (svg.parentElement ?? document.body).appendChild(holder);
   try {
     return await nodeJpeg(bare, width, { square: true });
+  } finally {
+    holder.remove();
+  }
+}
+
+/**
+ * A drawing in two layers, both at its own size (2026-11-03, the giveaways: the test render redrew the boxes —
+ * two more of them, and characters on their stickers): the picture without the parts `selector` picks, as a JPEG
+ * for the engine, and only those parts on a clear ground, as a PNG laid on the render afterwards.
+ */
+export async function svgLayers(svg: SVGSVGElement, width: number, selector: string): Promise<{ without: string; only: string | null }> {
+  const r = svg.getBoundingClientRect();
+  const bare = svg.cloneNode(true) as SVGSVGElement;
+  const parts = bare.querySelectorAll(selector);
+  parts.forEach((e) => e.remove());
+  const solo = svg.cloneNode(true) as SVGSVGElement;
+  // Everything else hidden in place, so the parts keep their frames (a box sits inside a place's transform).
+  solo.style.visibility = "hidden";
+  solo.querySelectorAll<SVGElement>(selector).forEach((e) => { e.style.visibility = "visible"; });
+  // Both copies at the drawing's own size on the page (its CSS would size them to the holder otherwise), so the
+  // parts land where the picture has them.
+  for (const c of [bare, solo]) {
+    c.style.setProperty("width", `${r.width}px`, "important");
+    c.style.setProperty("height", `${r.height}px`, "important");
+    c.style.setProperty("max-height", "none", "important");
+  }
+  const holder = document.createElement("div");
+  Object.assign(holder.style, { position: "fixed", left: "-10000px", top: "0", width: `${r.width}px`, height: `${r.height}px`, pointerEvents: "none" });
+  holder.setAttribute("aria-hidden", "true");
+  (svg.parentElement ?? document.body).appendChild(holder);
+  try {
+    holder.appendChild(bare);
+    const without = await nodeJpeg(bare, width);
+    bare.remove();
+    if (!parts.length) return { without, only: null };
+    holder.appendChild(solo);
+    await document.fonts.ready;
+    const options = { width: r.width, height: r.height, pixelRatio: width / r.width, fontEmbedCSS: await fontCssFor(solo as unknown as HTMLElement) };
+    await toPng(solo as unknown as HTMLElement, options);
+    return { without, only: await toPng(solo as unknown as HTMLElement, options) };
   } finally {
     holder.remove();
   }

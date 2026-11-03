@@ -11,6 +11,7 @@ import { acquireRender, clientIp } from "@/lib/renderGuard";
 import { renderUser, takeAccountRender } from "@/lib/renderAccount";
 import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
+import { finishSketchRender } from "@/lib/sketchRenderFinish";
 import { giveawaysRenderKey, readGiveaways } from "@/lib/studio/giveaways";
 import { giveawayPrompt } from "@/lib/studio/giveawayRender";
 
@@ -26,7 +27,7 @@ const MAX_PREVIEW_BYTES = 4 * 1024 * 1024;
 const KEY = /^[0-9a-z]{1,13}$/;
 
 export async function POST(req: NextRequest) {
-  let body: { giveaways?: unknown; theme?: unknown; tableKey?: unknown; preview?: unknown };
+  let body: { giveaways?: unknown; theme?: unknown; tableKey?: unknown; preview?: unknown; boxes?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
   const theme = typeof body?.theme === "string" ? themeById(body.theme) : undefined;
   const g = readGiveaways(body?.giveaways);
@@ -34,7 +35,11 @@ export async function POST(req: NextRequest) {
   const preview = typeof body?.preview === "string" ? body.preview.match(/^data:image\/(?:jpeg|png);base64,([A-Za-z0-9+/=]+)$/)?.[1] : undefined;
   if (!theme || !g?.enabled || !preview) return NextResponse.json({ error: "Missing giveaways, theme or preview." }, { status: 400 });
   const bytes = Buffer.from(preview, "base64");
-  if (bytes.length > MAX_PREVIEW_BYTES) return NextResponse.json({ error: "The preview is too big." }, { status: 413 });
+  // The boxes on their own, laid on the render afterwards (2026-11-03: the engine, given them, drew two more and
+  // characters on their stickers); the preview it is given has none.
+  const boxes64 = typeof body?.boxes === "string" ? body.boxes.match(/^data:image\/png;base64,([A-Za-z0-9+/=]+)$/)?.[1] : undefined;
+  const boxes = boxes64 ? Buffer.from(boxes64, "base64") : undefined;
+  if (bytes.length > MAX_PREVIEW_BYTES || (boxes?.length ?? 0) > MAX_PREVIEW_BYTES) return NextResponse.json({ error: "The preview is too big." }, { status: 413 });
   const falKey = process.env.FAL_KEY;
   if (!falKey) return NextResponse.json({ error: "Renders are not available right now." }, { status: 503 });
 
@@ -64,7 +69,7 @@ export async function POST(req: NextRequest) {
           const side = (n: number) => (seedream ? Math.round(n * k) : Math.max(512, Math.round(n / 16) * 16));
           const result = await fal.subscribe(MODEL, {
             input: {
-              prompt: giveawayPrompt(g),
+              prompt: giveawayPrompt(g, { boxesAfter: !!boxes }),
               image_urls: [`data:image/jpeg;base64,${image.data.toString("base64")}`], num_images: 1, output_format: "jpeg",
               image_size: { width: side(width), height: side(height) }, ...(seedream ? {} : { seed: 777 }),
             } as never,
@@ -72,8 +77,12 @@ export async function POST(req: NextRequest) {
           });
           const url = (result.data as { images?: { url?: string }[] })?.images?.[0]?.url;
           if (!url) throw new Error("no giveaways image");
-          const jpeg = await renderJpeg(url);
-          if (!jpeg) throw new Error("the giveaways render could not be read");
+          const made = await renderJpeg(url);
+          if (!made) throw new Error("the giveaways render could not be read");
+          // Its colours brought back to the preview's (2026-11-03: a Unicorn board's pastel garland came back bright
+          // and sunlit), as the backdrop's (lib/sketchRenderFinish.ts).
+          // A failed colour step never loses the paid render.
+          const jpeg = await finishSketchRender(made, image.data, boxes, { shadow: true }).catch(() => made);
           send({ url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
           const key = giveawaysRenderKey(g, theme.id, tableKey);
           // Without a database (local development) nothing is kept.

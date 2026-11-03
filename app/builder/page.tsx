@@ -53,7 +53,7 @@ import { defaultTableSetup } from "@/lib/studio/tableSetup";
 import { defaultWelcomeBoard, welcomeRenderKey } from "@/lib/studio/welcomeBoard";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import { usePieceRender } from "@/components/builder/usePieceRender";
-import { nodeJpeg } from "@/components/builder/nodeJpeg";
+import { nodeJpeg, svgLayers } from "@/components/builder/nodeJpeg";
 
 import Sprinkles from "@/components/design/Sprinkles";
 
@@ -221,8 +221,10 @@ export default function ConfigurePage() {
   const giveawaysRender = usePieceRender({
     endpoint: "/api/giveaway-render", partKey: giveawaysKey, kept: config.giveaways?.render,
     body: async () => {
-      const node = document.querySelector<HTMLElement>("#giveaways-preview-card .bz-gv-art");
-      return { giveaways: config.giveaways, theme: config.theme, tableKey: giveawaysTableKey, preview: node ? await nodeJpeg(node, 1400) : null };
+      // The scene without its boxes for the engine, and the boxes on their own, laid on its picture afterwards.
+      const svg = document.querySelector<SVGSVGElement>("#giveaways-preview-card svg.bz-gv-art");
+      const layers = svg ? await svgLayers(svg, 1400, '[data-part="giveaway-box"]') : null;
+      return { giveaways: config.giveaways, theme: config.theme, tableKey: giveawaysTableKey, preview: layers?.without ?? null, ...(layers?.only ? { boxes: layers.only } : {}) };
     },
     onKept: (render) => setConfig((c) => (c.giveaways ? { ...c, giveaways: { ...c.giveaways, render } } : c)),
     onSignInNeeded: () => askSignIn("giveaways-render"),
@@ -499,6 +501,9 @@ export default function ConfigurePage() {
   };
   const finishWelcome = () => { if (config.welcomeBoard) setWelcomeBoard({ ...config.welcomeBoard, done: true }); toGiveaways(); };
   const finishGiveaways = () => { if (config.giveaways) setGiveaways({ ...config.giveaways, done: true }); toPackage(); };
+  // Skipped from inside the part, no render needed (2026-11-03, the owner: "welcome board skip yapabilmeliyim").
+  const skipWelcome = () => { if (config.welcomeBoard) setWelcomeBoard({ ...config.welcomeBoard, enabled: false, done: false }); setDecorPart("giveaways"); };
+  const skipGiveaways = () => { if (config.giveaways) setGiveaways({ ...config.giveaways, enabled: false, done: false }); toPackage(); };
   // The backdrop is a choice too: asked first, and skippable.
   const backdropAsked = config.decor.backdropChoice === "yes";
   const onBackdropQuestion = step === 2 && decorPart === "backdrop" && !backdropAsked;
@@ -646,11 +651,11 @@ export default function ConfigurePage() {
             </div>
           ) : (
             <>
-              {!onTable && !onWelcome && config.decor.backdropChoice === "skip" && (
+              {!onTable && !onWelcome && !onGiveaways && config.decor.backdropChoice === "skip" && (
                 <div className="bz-tb-preview"><div className="empty">No backdrop in this party — add one any time.</div></div>
               )}
               {/* The backdrop's preview stays mounted (its render is kept) while the table is on show. */}
-              <div hidden={onTable || onWelcome || config.decor.backdropChoice === "skip"}>
+              <div hidden={onTable || onWelcome || onGiveaways || config.decor.backdropChoice === "skip"}>
               <SetupPreview
                 config={config}
                 status={preview.status}
@@ -678,7 +683,7 @@ export default function ConfigurePage() {
                 sketchActiveId={isDecorStep && decorTab === 1 && sketchItems.length > 1 ? sketchActiveId : null}
                 sketchCutouts={sketchCutouts}
               />
-              {isDecorStep && !onTable && !onWelcome && !finalRenderState.hasRender && (
+              {isDecorStep && !onTable && !onWelcome && !onGiveaways && !finalRenderState.hasRender && (
                 <div className="bz-little-note">
                   <svg viewBox="0 0 35 28" aria-hidden="true"><path d="M3 4Q6 23 29 16M21 11L30 16L23 23" /></svg>
                   <span>See it for real: tap <b>Generate render</b> on the Extras tab — your backdrop is finalized with its render.</span>
@@ -784,8 +789,8 @@ export default function ConfigurePage() {
                 render={tableRender} onGenerate={makeTableRender} />
             )}
             {onAdults && <AdultTableStep config={config} setAdultTable={setAdultTable} onFinish={finishAdults} onSkip={skipAdults} />}
-            {onWelcome && <WelcomeStep config={config} setWelcomeBoard={setWelcomeBoard} onFinish={finishWelcome} render={welcomeRender} onGenerate={makeWelcomeRender} />}
-            {onGiveaways && <GiveawaysStep config={config} setGiveaways={setGiveaways} onFinish={finishGiveaways} render={giveawaysRender} onGenerate={makeGiveawaysRender} />}
+            {onWelcome && <WelcomeStep config={config} setWelcomeBoard={setWelcomeBoard} onFinish={finishWelcome} onSkip={skipWelcome} render={welcomeRender} onGenerate={makeWelcomeRender} />}
+            {onGiveaways && <GiveawaysStep config={config} setGiveaways={setGiveaways} onFinish={finishGiveaways} onSkip={skipGiveaways} render={giveawaysRender} onGenerate={makeGiveawaysRender} />}
 
             {/* 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
             {(step === 3 || step === 6) && <FinishedDesigns config={config}

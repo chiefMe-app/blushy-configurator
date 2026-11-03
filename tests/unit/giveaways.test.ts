@@ -14,7 +14,9 @@ import { readNdjson } from "@/lib/ndjson";
 const subscribe = vi.fn();
 vi.mock("@fal-ai/client", () => ({ fal: { config: vi.fn(), subscribe: (...a: unknown[]) => subscribe(...a) } }));
 const JPEG = Buffer.from("jpeg-bytes"), PICTURE = `data:image/jpeg;base64,${JPEG.toString("base64")}`;
-vi.mock("@/lib/renderStore", () => ({ renderJpeg: async () => JPEG, storeRenderJpeg: async () => null }));
+// The engine's picture: not a JPEG (the colour step lets it through as it is) unless a test makes one.
+let made: Buffer = JPEG;
+vi.mock("@/lib/renderStore", () => ({ renderJpeg: async () => made, storeRenderJpeg: async () => null }));
 import { POST } from "@/app/api/giveaway-render/route";
 
 const USER = "00000000-0000-4000-8000-0000000000a1";
@@ -75,6 +77,11 @@ describe("the giveaways", () => {
     expect(boardShelves(10)).toBe("three on the top shelf, three on the second shelf, three on the third shelf, one on the bottom shelf");
     expect(boardShelves(40)).toMatch(/three on the bottom shelf$/);
     expect(giveawayPrompt(defaultGiveaways({ name: "Arya" }))).toMatch(/seen from straight above/);
+    // With the boxes laid on afterwards, the engine is told the shelves stay empty and never to draw characters.
+    const after = giveawayPrompt({ ...defaultGiveaways({ name: "Arya", age: "6" }), place: "board" }, { boxesAfter: true });
+    expect(after).toMatch(/EMPTY: nothing on them/);
+    expect(after).toMatch(/no faces, no characters/);
+    expect(after).not.toMatch(/gift boxes on its shelves/);
   });
 });
 
@@ -86,6 +93,7 @@ describe("the route", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     vi.stubEnv("SUPABASE_URL", "");
     subscribe.mockReset();
+    made = JPEG;
     resetRenderGuard();
   });
   afterEach(() => vi.unstubAllEnvs());
@@ -102,6 +110,26 @@ describe("the route", () => {
     expect(input.image_urls).toHaveLength(1);
     expect(input.image_size).toEqual({ width: 1088, height: 1408 });
     expect(input.prompt).toBe(giveawayPrompt(g));
+  }, 30_000);
+
+  it("the boxes sent on their own are laid on the render afterwards, the engine told the shelves are empty", async () => {
+    subscribe.mockImplementation(async () => ({ data: { images: [{ url: "https://fal.example/x.jpg" }] } }));
+    made = await sharp({ create: { width: 640, height: 832, channels: 3, background: "#d0c8c8" } }).jpeg().toBuffer();
+    const drawn = await sharp({ create: { width: 640, height: 832, channels: 3, background: "#d0c8c8" } }).jpeg().toBuffer();
+    // One box: a red block on a clear ground.
+    const boxes = await sharp({ create: { width: 640, height: 832, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite([{ input: { create: { width: 80, height: 100, channels: 4, background: { r: 220, g: 20, b: 20, alpha: 1 } } }, left: 280, top: 300 }]).png().toBuffer();
+    const g = { ...defaultGiveaways({ name: "Arya" }), place: "board" as const };
+    const got = await lines(await post({ giveaways: g, theme: "frozen", preview: `data:image/jpeg;base64,${drawn.toString("base64")}`, boxes: `data:image/png;base64,${boxes.toString("base64")}` }));
+    const [, { input }] = subscribe.mock.calls[0] as [string, { input: { prompt: string } }];
+    expect(input.prompt).toBe(giveawayPrompt(g, { boxesAfter: true }));
+    const out = Buffer.from(String(got[0].url).split(",")[1], "base64");
+    const px = async (x: number, y: number) => Array.from((await sharp(out).extract({ left: x, top: y, width: 1, height: 1 }).raw().toBuffer()));
+    const [r, gg, b] = await px(320, 350);
+    expect(r).toBeGreaterThan(180); expect(gg).toBeLessThan(60); expect(b).toBeLessThan(60);
+    // Its soft shadow just under it.
+    const [r2] = await px(320, 405);
+    expect(r2).toBeLessThan(200);
   }, 30_000);
 
   it("refuses missing or skipped giveaways, or no preview, without calling fal", async () => {
