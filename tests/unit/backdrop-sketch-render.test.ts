@@ -16,7 +16,7 @@ vi.mock("@fal-ai/client", () => ({ fal: { config: vi.fn(), subscribe: (...a: unk
 // The engine's picture: a warm grey square (as the test's render came back, warmer than the sketch).
 let made: Buffer;
 vi.mock("@/lib/renderStore", () => ({ renderJpeg: async () => made, storeRender: async () => null }));
-const { POST } = await import("@/app/api/generate-controlled-render/route");
+import { POST } from "@/app/api/generate-controlled-render/route";
 
 const square = (rgb: [number, number, number], size = 1408) =>
   sharp({ create: { width: size, height: size, channels: 3, background: { r: rgb[0], g: rgb[1], b: rgb[2] } } }).jpeg().toBuffer();
@@ -57,7 +57,7 @@ describe("backdrop render from the live sketch", () => {
     const json = await res.json();
     expect(json.fromSketch).toBe(true);
     const out = Buffer.from(String(json.imageUrl).split(",")[1], "base64");
-    const px = async (x: number, y: number) => { const { data } = await sharp(out).extract({ left: x, top: y, width: 1, height: 1 }).raw().toBuffer({ resolveWithObject: true }); return [...data]; };
+    const px = async (x: number, y: number) => { const { data } = await sharp(out).extract({ left: x, top: y, width: 1, height: 1 }).raw().toBuffer({ resolveWithObject: true }); return Array.from(data); };
     const [r, g, b] = await px(700, 550); // the words
     expect(r).toBeGreaterThan(180); expect(g).toBeLessThan(60); expect(b).toBeLessThan(60);
     // Elsewhere: the warm render brought back towards the sketch's grey.

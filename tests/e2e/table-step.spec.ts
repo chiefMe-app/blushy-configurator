@@ -169,14 +169,14 @@ test("K10 the grown-ups' table: asked only once the kids' table is finished, the
   await expect(page.getByTestId("guests-count")).toHaveText("12");
 });
 
-test("W1 the welcome board: words and lettering drawn live, priced, Finish goes on to Package; Back comes back", async ({ page, guard }) => {
+test("W1 the welcome board: words and lettering drawn live, priced, Finish goes on to the giveaways; Back comes back", async ({ page, guard }) => {
   guard.fakeRender = true;
   await signIn(page);
   await toTable(page);
   await page.getByTestId("skip-kids-table").click(); // on to the grown-ups' table
   await next(page).click(); // skipped: the welcome board
   await expect(page.getByTestId("welcome-intro")).toBeVisible();
-  await expect(next(page)).toHaveText(/Skip to Package/);
+  await expect(next(page)).toHaveText(/Skip to Giveaways/);
   const before = aed(await total(page).textContent());
   await page.getByRole("button", { name: /Yes, design the board/ }).click();
   const board = page.getByTestId("welcome-preview").getByRole("img", { name: "Your welcome board" });
@@ -239,11 +239,67 @@ test("W1 the welcome board: words and lettering drawn live, priced, Finish goes 
   expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
   expect(sent.board.name).toBe("Maximiliana-Josephine's");
   await page.getByTestId("finish-welcome").click();
-  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  await expect(page.getByTestId("giveaways-intro")).toBeVisible();
   await page.getByRole("button", { name: "← Back" }).click();
-  await expect(page.getByTestId("finish-welcome")).toHaveText(/Next: Package/);
+  await expect(page.getByTestId("finish-welcome")).toHaveText(/Next: Giveaways/);
   await expect(page.getByTestId("welcome-name")).toHaveValue("Maximiliana-Josephine's");
   expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/welcome-render"]);
+});
+
+test("G1 the giveaways: a themed box, its contents as a list, on a board in her colour; rendered, then on to Package", async ({ page, guard }) => {
+  // 2026-11-03 (the owner: "bu box'ı masaya mı yoksa giveaway board mu istiyor onun seçimini yapsın … board rengi
+  // vs customizable olacak … onları da render alıp sonra gene preview'a koymamız lazım").
+  guard.fakeRender = true;
+  await signIn(page);
+  await toTable(page);
+  await page.getByTestId("skip-kids-table").click();
+  await next(page).click(); // the grown-ups' table skipped
+  await next(page).click(); // the welcome board skipped
+  await expect(page.getByTestId("giveaways-intro")).toBeVisible();
+  await expect(next(page)).toHaveText(/Skip to Package/);
+  const before = aed(await total(page).textContent());
+  await page.getByRole("button", { name: /Yes, add giveaways/ }).click();
+  // No kids' table: the boxes go on the board.
+  const places = page.getByTestId("giveaways-place");
+  await expect(places.getByRole("radio", { name: /On the table/ })).toBeDisabled();
+  await expect(places.getByRole("radio", { name: /On a giveaway board/ })).toHaveAttribute("aria-checked", "true");
+  const board = page.getByTestId("giveaway-board-art");
+  await expect(board).toBeVisible();
+  await page.getByTestId("giveaways-count").fill("8");
+  await expect(board.locator("[data-part=giveaway-box]")).toHaveCount(8);
+  await page.getByTestId("giveaways-count").fill("30");
+  await expect(board.locator("[data-part=giveaway-box]")).toHaveCount(12);
+  await page.getByTestId("giveaways-name").fill("Arya");
+  await page.getByTestId("giveaways-age").fill("6");
+  await expect(board).toContainText("Arya");
+  // What is inside is a list, each priced a box.
+  const contents = page.getByTestId("giveaways-contents");
+  await expect(contents.getByRole("checkbox")).toHaveCount(5);
+  const sum = aed(await page.getByTestId("giveaways-total").locator("b").textContent());
+  expect(aed(await total(page).textContent())).toBe(before + sum);
+  await contents.getByRole("checkbox", { name: /Candy/ }).uncheck();
+  expect(aed(await page.getByTestId("giveaways-total").locator("b").textContent())).toBe(sum - 6 * 30);
+  // The board in her colour.
+  await expect(board.locator("[data-part=board-colour]")).toHaveCount(0);
+  await page.getByTestId("giveaways-board-colour").getByRole("radio").nth(1).click();
+  await expect(board.locator("[data-part=board-colour]")).toHaveCount(1);
+  for (const src of await board.locator("image").evaluateAll((l) => Array.from(new Set(l.map((i) => i.getAttribute("href")!))))) {
+    expect((await page.request.get(src)).status(), src).toBe(200);
+  }
+  // Finalized once rendered.
+  await expect(next(page)).toHaveCount(0);
+  await expect(page.getByTestId("finish-giveaways")).toBeDisabled();
+  await page.getByTestId("finish-giveaways-generate").click();
+  await expect(page.getByTestId("giveaways-render")).toBeVisible();
+  const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/giveaway-render"))!.postData()!);
+  expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
+  expect(sent.giveaways).toMatchObject({ name: "Arya", age: "6", place: "board", count: 30 });
+  await page.getByTestId("finish-giveaways").click();
+  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  await expect(page.getByTestId("finished-giveaways-jpeg").or(page.getByTestId("finished-designs").getByAltText("Your giveaways"))).toBeVisible();
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(page.getByTestId("finish-giveaways")).toHaveText(/Next: Package/);
+  expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/giveaway-render"]);
 });
 
 test("W2 on a phone, a change to the welcome board brings it into sight, and Back returns to the choices", async ({ page }, info) => {

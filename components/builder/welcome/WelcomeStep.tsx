@@ -165,7 +165,7 @@ export default function WelcomeStep({ config, setWelcomeBoard, onFinish, render,
         <b>AED {formatAED(welcomeTotal(b))}</b>
         <button type="button" className="bz-restart" onClick={() => setWelcomeBoard({ ...b, enabled: false, done: false })}>Remove the board</button>
       </div>
-      <FinishBar done={b.done} what="welcome board" next="Package" onFinish={onFinish} testId="finish-welcome" render={{ ...render, onGenerate }} />
+      <FinishBar done={b.done} what="welcome board" next="Giveaways" onFinish={onFinish} testId="finish-welcome" render={{ ...render, onGenerate }} />
     </div>
   );
 }

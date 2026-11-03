@@ -53,6 +53,8 @@ export const hasWelcome = (config: Pick<BuilderConfig, "welcomeBoard">) => !!con
  */
 export const hasBackdrop = (config: BuilderConfig) =>
   config.decor.backdropChoice === "yes" || (config.decor.backdropChoice !== "skip" && !hasTable(config) && !hasWelcome(config));
+/** The giveaways (2026-11-03) are kept with the backdrop's design, so a party with them keeps that item. */
+const hasGiveaways = (config: Pick<BuilderConfig, "giveaways">) => !!config.giveaways?.enabled;
 
 const tablesTotal = (t: Pick<BuilderConfig, "table" | "adultTable">) =>
   (t.table ? tablePriceLines(t.table).reduce((s, l) => s + l.amount, 0) : 0) + (t.adultTable ? adultTotal(t.adultTable) : 0);
@@ -62,7 +64,7 @@ export function splitDesign(config: BuilderConfig, step: number, decorTab: numbe
   const backdropOnly: BuilderConfig = { ...config, table: undefined, adultTable: undefined, welcomeBoard: undefined };
   const meta = { v: 1 as const, savedAt: now.toISOString(), eventType: config.eventType, theme: config.theme, themeSelected: config.themeSelected };
   // Something is always kept: a design with no part saves as it is.
-  const backdrop = hasBackdrop(config) || (!hasTable(config) && !hasWelcome(config))
+  const backdrop = hasBackdrop(config) || hasGiveaways(config) || (!hasTable(config) && !hasWelcome(config))
     ? { config: toDraft(backdropOnly, step, decorTab, now), price_snapshot: price(priceBreakdown(backdropOnly).total) }
     : null;
   const table = hasTable(config)

@@ -29,6 +29,11 @@ const COPY = {
     lead: "Renders come with a free account. Sign in and your board's render starts right away — your design stays as it is.",
     after: " — your render starts right after",
   },
+  "giveaways-render": {
+    title: "Sign in to see your giveaways",
+    lead: "Renders come with a free account. Sign in and your giveaways' render starts right away — your design stays as it is.",
+    after: " — your render starts right after",
+  },
 };
 
 export default function SignInDialog({ open, onClose, purpose }: { open: boolean; onClose: () => void; purpose?: AfterSignInAction }) {

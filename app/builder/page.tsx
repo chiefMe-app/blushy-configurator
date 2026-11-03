@@ -44,6 +44,10 @@ import FinishedDesigns from "@/components/builder/FinishedDesigns";
 import WelcomeStep from "@/components/builder/welcome/WelcomeStep";
 import AdultTableSketch from "@/components/studio/table/AdultTableSketch";
 import WelcomePreview from "@/components/builder/welcome/WelcomePreview";
+import GiveawaysStep, { giveawaysSeed } from "@/components/builder/giveaways/GiveawaysStep";
+import GiveawaysPreview from "@/components/builder/giveaways/GiveawaysPreview";
+import { defaultGiveaways, giveawaysRenderKey } from "@/lib/studio/giveaways";
+import type { AfterSignInAction } from "@/lib/account";
 import { adultCounts, defaultAdultTable } from "@/lib/studio/adultTable";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
 import { defaultWelcomeBoard, welcomeRenderKey } from "@/lib/studio/welcomeBoard";
@@ -75,7 +79,7 @@ export default function ConfigurePage() {
   // table (then, in turn, welcome board, giveaways and helium balloons).
   // 2026-10-31: the table part holds the kids' table, then (once that is
   // finished or skipped) the grown-ups' table; the welcome board comes after.
-  const [decorPart, setDecorPart] = useState<"backdrop" | "table" | "welcome">("backdrop");
+  const [decorPart, setDecorPart] = useState<"backdrop" | "table" | "welcome" | "giveaways">("backdrop");
   const [tableView, setTableView] = useState<"kids" | "adults">("kids");
   const shownPart = useRef(`${decorPart}:${tableView}`);
   useEffect(() => {
@@ -107,10 +111,11 @@ export default function ConfigurePage() {
       const query = new URLSearchParams(window.location.search);
       const toTheme = query.get("step") === "theme";
       const part = query.get("part");
-      setStep(toTheme ? 1 : part === "table" || part === "welcome" ? 2 : d.step);
+      setStep(toTheme ? 1 : part === "table" || part === "welcome" || part === "giveaways" ? 2 : d.step);
       // A saved table setup (2026-10-30) or welcome board (2026-10-31), opened from My designs.
       if (!toTheme && part === "table") { setDecorPart("table"); setTableView(d.config.table?.enabled ? "kids" : "adults"); }
       if (!toTheme && part === "welcome") setDecorPart("welcome");
+      if (!toTheme && part === "giveaways") setDecorPart("giveaways");
       // The restored tab is not a tab change: no scroll.
       if (d.decorTab !== decorTab) firstDecorTab.current = true;
       setDecorTab(d.decorTab);
@@ -122,8 +127,8 @@ export default function ConfigurePage() {
   const serverDraft = useServerDraft({ config, step, decorTab });
   // 2026-10-27 (0.5b): renders need an account too. One sign-in window, for
   // saving or for a render; back from signing in, that is done at once.
-  const [signInFor, setSignInFor] = useState<"save" | "render" | "table-render" | "welcome-render" | null>(null);
-  const askSignIn = (purpose: "save" | "render" | "table-render" | "welcome-render") => {
+  const [signInFor, setSignInFor] = useState<AfterSignInAction | null>(null);
+  const askSignIn = (purpose: AfterSignInAction) => {
     draft.flush(); // the design must be here when they come back
     setSignInFor(purpose);
   };
@@ -133,6 +138,7 @@ export default function ConfigurePage() {
   const [renderOnArrival, setRenderOnArrival] = useState(false);
   const [tableRenderOnArrival, setTableRenderOnArrival] = useState(false);
   const [welcomeRenderOnArrival, setWelcomeRenderOnArrival] = useState(false);
+  const [giveawaysRenderOnArrival, setGiveawaysRenderOnArrival] = useState(false);
   useEffect(() => {
     // After the device copy is restored (useLocalDraft, above), in the same pass.
     const then = takeAfterSignIn();
@@ -140,6 +146,7 @@ export default function ConfigurePage() {
     if (then === "render") setRenderOnArrival(true);
     if (then === "table-render") { setDecorPart("table"); setTableRenderOnArrival(true); }
     if (then === "welcome-render") { setDecorPart("welcome"); setWelcomeRenderOnArrival(true); }
+    if (then === "giveaways-render") { setDecorPart("giveaways"); setGiveawaysRenderOnArrival(true); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const startOver = () => {
@@ -208,6 +215,18 @@ export default function ConfigurePage() {
     onKept: (render) => setConfig((c) => (c.welcomeBoard ? { ...c, welcomeBoard: { ...c.welcomeBoard, render } } : c)),
     onSignInNeeded: () => askSignIn("welcome-render"),
   });
+  // The giveaways (2026-11-03): their preview — the boxes on the kids' table, or on the board — rendered too.
+  const giveawaysTableKey = config.giveaways?.place === "table" ? tableKey : "";
+  const giveawaysKey = config.giveaways?.enabled ? giveawaysRenderKey(config.giveaways, config.theme, giveawaysTableKey) : "";
+  const giveawaysRender = usePieceRender({
+    endpoint: "/api/giveaway-render", partKey: giveawaysKey, kept: config.giveaways?.render,
+    body: async () => {
+      const node = document.querySelector<HTMLElement>("#giveaways-preview-card .bz-gv-art");
+      return { giveaways: config.giveaways, theme: config.theme, tableKey: giveawaysTableKey, preview: node ? await nodeJpeg(node, 1400) : null };
+    },
+    onKept: (render) => setConfig((c) => (c.giveaways ? { ...c, giveaways: { ...c.giveaways, render } } : c)),
+    onSignInNeeded: () => askSignIn("giveaways-render"),
+  });
   // Back from signing in for one of them: it starts.
   useEffect(() => {
     if (!tableRenderOnArrival || !tableKey) return;
@@ -224,6 +243,14 @@ export default function ConfigurePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [welcomeRenderOnArrival, welcomeKey]);
   const makeTableRender = () => { document.getElementById("table-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" }); void tableRender.make(); };
+  useEffect(() => {
+    if (!giveawaysRenderOnArrival || !giveawaysKey) return;
+    setGiveawaysRenderOnArrival(false);
+    const t = setTimeout(() => void giveawaysRender.make(), 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [giveawaysRenderOnArrival, giveawaysKey]);
+  const makeGiveawaysRender = () => { document.getElementById("giveaways-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" }); void giveawaysRender.make(); };
   const makeWelcomeRender = () => { document.getElementById("welcome-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" }); void welcomeRender.make(); };
 
   // 2026-10-22 redesign: the interface stays in Blushy brand pink whatever the
@@ -258,6 +285,7 @@ export default function ConfigurePage() {
       ...(config.table ? { table: config.table } : {}),
       ...(config.adultTable ? { adultTable: config.adultTable } : {}),
       ...(config.welcomeBoard ? { welcomeBoard: config.welcomeBoard } : {}),
+      ...(config.giveaways ? { giveaways: config.giveaways } : {}),
       addOns: config.addOns,
       venue: {
         ...config.venue,
@@ -430,6 +458,7 @@ export default function ConfigurePage() {
   const backdropFinished = config.decor.backdropChoice !== "yes" || themedSet || decorRenderReady;
   const onTable = step === 2 && decorPart === "table";
   const onWelcome = step === 2 && decorPart === "welcome";
+  const onGiveaways = step === 2 && decorPart === "giveaways";
   const openTable = () => { goToStep(2); setDecorPart("table"); setTableView("kids"); };
   // The grown-ups' table is asked once the kids' table is finished or skipped (2026-10-31).
   const kidsDecided = !!config.table && (!config.table.enabled || !!config.table.done);
@@ -438,6 +467,7 @@ export default function ConfigurePage() {
   const setTable = (table: NonNullable<typeof config.table>) => setConfig((c) => ({ ...c, table }));
   const setAdultTable = (adultTable: NonNullable<typeof config.adultTable>) => setConfig((c) => ({ ...c, adultTable }));
   const setWelcomeBoard = (welcomeBoard: NonNullable<typeof config.welcomeBoard>) => setConfig((c) => ({ ...c, welcomeBoard }));
+  const setGiveaways = (giveaways: NonNullable<typeof config.giveaways>) => setConfig((c) => ({ ...c, giveaways }));
   const finishKids = () => { if (config.table) setTable({ ...config.table, done: true }); setTableView("adults"); };
   // 2026-11-03 (the owner: "kids table skipable olsun, default böyle gelsin"): the table opens designed, in
   // the theme's own pieces, with a way to skip it.
@@ -457,11 +487,18 @@ export default function ConfigurePage() {
     if (config.adultTable?.enabled) setAdultTable({ ...config.adultTable, done: true });
     toWelcome();
   };
+  // After the welcome board, the giveaways (2026-11-03); leaving a question unanswered skips it.
+  const toGiveaways = () => {
+    if (!config.welcomeBoard) setWelcomeBoard({ ...defaultWelcomeBoard(themeById(config.theme) ?? THEMES[0]), enabled: false });
+    setDecorPart("giveaways");
+  };
   const toPackage = () => {
     if (!config.welcomeBoard) setWelcomeBoard({ ...defaultWelcomeBoard(themeById(config.theme) ?? THEMES[0]), enabled: false });
+    if (!config.giveaways) setGiveaways({ ...defaultGiveaways(giveawaysSeed(config)), enabled: false });
     goToStep(3);
   };
-  const finishWelcome = () => { if (config.welcomeBoard) setWelcomeBoard({ ...config.welcomeBoard, done: true }); toPackage(); };
+  const finishWelcome = () => { if (config.welcomeBoard) setWelcomeBoard({ ...config.welcomeBoard, done: true }); toGiveaways(); };
+  const finishGiveaways = () => { if (config.giveaways) setGiveaways({ ...config.giveaways, done: true }); toPackage(); };
   // The backdrop is a choice too: asked first, and skippable.
   const backdropAsked = config.decor.backdropChoice === "yes";
   const onBackdropQuestion = step === 2 && decorPart === "backdrop" && !backdropAsked;
@@ -471,6 +508,8 @@ export default function ConfigurePage() {
     ? { eyebrow: "DECOR · PART 2 · TABLE SETUP", heading: ["Set the", "kids' table"] as [string, string], description: "Every piece on one page — we work out how many.", progress: "Table, linens, tableware and extras" }
     : onWelcome
     ? { eyebrow: "DECOR · PART 3 · WELCOME BOARD", heading: ["Greet your", "guests"] as [string, string], description: "A printed board at the entrance, with your words.", progress: "Size, design, words and stand" }
+    : onGiveaways
+    ? { eyebrow: "DECOR · PART 4 · GIVEAWAYS", heading: ["Something to", "take home"] as [string, string], description: "A themed box for every child, on the table or on a board.", progress: "Box, contents, name and place" }
     : (step === 2 && DECOR_STEP_COPY[decorTab]) || STEP_COPY[step];
   const total = priceBreakdown(config).total;
 
@@ -510,18 +549,23 @@ export default function ConfigurePage() {
   }
   if (onWelcome) {
     if (config.welcomeBoard?.enabled) hideNext = true;
-    else { nextLabel = config.welcomeBoard ? label("Continue to Package →", "Package →") : label("Skip to Package →", "Skip →"); onNext = toPackage; }
+    else { nextLabel = config.welcomeBoard ? label("Next: Giveaways →", "Next →") : label("Skip to Giveaways →", "Skip →"); onNext = toGiveaways; }
+  }
+  if (onGiveaways) {
+    if (config.giveaways?.enabled) hideNext = true;
+    else { nextLabel = config.giveaways ? label("Continue to Package →", "Package →") : label("Skip to Package →", "Skip →"); onNext = toPackage; }
   }
   // Back walks the parts and tabs of Decor before leaving it.
   const onBack = () => {
+    if (onGiveaways) { setDecorPart("welcome"); return; }
     if (onWelcome) { setDecorPart("table"); setTableView(kidsDecided ? "adults" : "kids"); return; }
     if (onAdults) { setTableView("kids"); return; }
     if (onTable) {
       setDecorPart("backdrop"); setDecorTab(DECOR_TABS.length - 1);
       return;
     }
-    // Back from Package lands on the welcome board.
-    if (step === 3) { goToStep(2); setDecorPart("welcome"); return; }
+    // Back from Package lands on the giveaways.
+    if (step === 3) { goToStep(2); setDecorPart("giveaways"); return; }
     goToStep(step - 1);
   };
   if (step === 5) nextLabel = "See my party →";
@@ -586,6 +630,7 @@ export default function ConfigurePage() {
             </div>
           )}
           {onWelcome && <WelcomePreview config={config} render={welcomeRender} onGenerate={makeWelcomeRender} />}
+          {onGiveaways && <GiveawaysPreview config={config} render={giveawaysRender} onGenerate={makeGiveawaysRender} />}
           <div hidden={!onKids}>
             <TablePreview config={config} render={tableRender} onGenerate={makeTableRender} placeShot={tablePlaceShot} />
           </div>
@@ -689,12 +734,13 @@ export default function ConfigurePage() {
               <div className="bz-parts-wrap">
                 <span className="label">Your party, piece by piece</span>
                 <div className="bz-parts" role="tablist" aria-label="Decor parts">
-                  {([["backdrop", "Backdrop"], ["table", "Table setup"], ["welcome", "Welcome board"]] as const).map(([id, name], i) => {
+                  {([["backdrop", "Backdrop"], ["table", "Table setup"], ["welcome", "Welcome board"], ["giveaways", "Giveaways"]] as const).map(([id, name], i) => {
                     const tablesDone = kidsDecided && !!config.adultTable && (!config.adultTable.enabled || !!config.adultTable.done);
-                    const done = id === "table" ? tablesDone
-                      : id === "welcome" ? !!config.welcomeBoard && (!config.welcomeBoard.enabled || !!config.welcomeBoard.done) : false;
+                    const welcomeDone = !!config.welcomeBoard && (!config.welcomeBoard.enabled || !!config.welcomeBoard.done);
+                    const done = id === "table" ? tablesDone : id === "welcome" ? welcomeDone
+                      : id === "giveaways" ? !!config.giveaways && (!config.giveaways.enabled || !!config.giveaways.done) : false;
                     // 2026-11-03 ("render almadan o aşamaya geçemesin"): a part opens once the ones before it are finalized.
-                    const open = id === "backdrop" || (backdropFinished && (id === "table" || tablesDone));
+                    const open = id === "backdrop" || (backdropFinished && (id === "table" || (tablesDone && (id === "welcome" || welcomeDone))));
                     return (
                       <span key={id} style={{ display: "contents" }}>
                         {i > 0 && <span className="arrow" aria-hidden="true">→</span>}
@@ -704,7 +750,7 @@ export default function ConfigurePage() {
                       </span>
                     );
                   })}
-                  {["Giveaways", "Helium balloons"].map((name) => (
+                  {["Helium balloons"].map((name) => (
                     <span key={name} style={{ display: "contents" }}>
                       <span className="arrow" aria-hidden="true">→</span>
                       <span className="soon" aria-disabled="true">{name} <small>soon</small></span>
@@ -739,11 +785,12 @@ export default function ConfigurePage() {
             )}
             {onAdults && <AdultTableStep config={config} setAdultTable={setAdultTable} onFinish={finishAdults} onSkip={skipAdults} />}
             {onWelcome && <WelcomeStep config={config} setWelcomeBoard={setWelcomeBoard} onFinish={finishWelcome} render={welcomeRender} onGenerate={makeWelcomeRender} />}
+            {onGiveaways && <GiveawaysStep config={config} setGiveaways={setGiveaways} onFinish={finishGiveaways} render={giveawaysRender} onGenerate={makeGiveawaysRender} />}
 
             {/* 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
             {(step === 3 || step === 6) && <FinishedDesigns config={config}
               renderUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl : null}
-              tableRenderUrl={tableRender.url} welcomeRenderUrl={welcomeRender.url} />}
+              tableRenderUrl={tableRender.url} welcomeRenderUrl={welcomeRender.url} giveawaysRenderUrl={giveawaysRender.url} />}
             {step === 3 && <PackageStep config={config} setServicePackage={setServicePackage} />}
 
             {step === 4 && <AddOnsStep config={config} toggleAddOn={toggleAddOn} setAddOnOption={setAddOnOption} />}

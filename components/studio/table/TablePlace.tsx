@@ -100,7 +100,11 @@ function Pompom({ id, cx, cy, r }: { id: string; cx: number; cy: number; r: numb
 }
 
 /** `fill`: covers its box, cropping the sides (a card in My designs, 2026-10-30). */
-export default function TablePlace({ table, theme, className, fill, mode = "one" }: { table: TableSetup; theme: { id: string; balloonColors: string[]; accent: string }; className?: string; fill?: boolean; mode?: PlaceMode }) {
+/**
+ * `atPlace`: drawn at each place in sight, in its own frame (cm, the plate in the middle), over the rest — the
+ * giveaway box (2026-11-03, components/builder/giveaways).
+ */
+export default function TablePlace({ table, theme, className, fill, mode = "one", atPlace }: { table: TableSetup; theme: { id: string; balloonColors: string[]; accent: string }; className?: string; fill?: boolean; mode?: PlaceMode; atPlace?: (id: string) => React.ReactNode }) {
   const nodes = useMemo(() => placeLayout(table, theme, mode), [table, theme, mode]);
   const view = useMemo(() => placeView(table, mode), [table, mode]);
   const top = nodes.find((n): n is Extract<PlaceNode, { k: "top" }> => n.k === "top");
@@ -189,7 +193,7 @@ export default function TablePlace({ table, theme, className, fill, mode = "one"
         </g>;
       }
       case "group":
-        return <g key={n.id} transform={`translate(${n.x.toFixed(2)} ${n.y.toFixed(2)}) rotate(${n.rot.toFixed(2)})`} data-place={n.focus ? "focus" : undefined}>{n.nodes.map(draw)}</g>;
+        return <g key={n.id} transform={`translate(${n.x.toFixed(2)} ${n.y.toFixed(2)}) rotate(${n.rot.toFixed(2)})`} data-place={n.focus ? "focus" : undefined}>{n.nodes.map(draw)}{atPlace?.(n.id)}</g>;
     }
   };
   const body = nodes.map(draw);

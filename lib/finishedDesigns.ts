@@ -3,7 +3,7 @@
 // the customer skipped isn't one. Pure; the pictures are made in components/builder/FinishedDesigns.tsx.
 import type { BuilderConfig } from "./config";
 
-export type FinishedPieceId = "backdrop" | "kids" | "adults" | "welcome";
+export type FinishedPieceId = "backdrop" | "kids" | "adults" | "welcome" | "giveaways";
 export interface FinishedPiece {
   id: FinishedPieceId;
   title: string;
@@ -13,13 +13,14 @@ export interface FinishedPiece {
   finished: boolean;
 }
 
-export function finishedPieces(config: Pick<BuilderConfig, "decor" | "table" | "adultTable" | "welcomeBoard">): FinishedPiece[] {
+export function finishedPieces(config: Pick<BuilderConfig, "decor" | "table" | "adultTable" | "welcomeBoard" | "giveaways">): FinishedPiece[] {
   const out: FinishedPiece[] = [];
   if (config.decor.backdropChoice !== "skip" && config.decor.backdropItems.length > 0)
     out.push({ id: "backdrop", title: "Backdrop", file: "partymuse-backdrop.jpg", finished: true });
   if (config.table?.enabled) out.push({ id: "kids", title: "Kids' table", file: "partymuse-kids-table.jpg", finished: !!config.table.done });
   if (config.adultTable?.enabled) out.push({ id: "adults", title: "Grown-ups' table", file: "partymuse-grown-ups-table.jpg", finished: !!config.adultTable.done });
   if (config.welcomeBoard?.enabled) out.push({ id: "welcome", title: "Welcome board", file: "partymuse-welcome-board.jpg", finished: !!config.welcomeBoard.done });
+  if (config.giveaways?.enabled) out.push({ id: "giveaways", title: "Giveaways", file: "partymuse-giveaways.jpg", finished: !!config.giveaways.done });
   return out;
 }
 

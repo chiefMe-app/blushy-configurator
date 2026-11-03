@@ -6,6 +6,7 @@
 import { tablePriceLines, type TableSetup } from "./studio/tableSetup";
 import { adultPriceLines, type AdultTable } from "./studio/adultTable";
 import { welcomePriceLines, type WelcomeBoard } from "./studio/welcomeBoard";
+import { giveawayPriceLines, type Giveaways } from "./studio/giveaways";
 
 // =====================  STEP - EVENT TYPE  =================================
 
@@ -1335,6 +1336,8 @@ export interface BuilderConfig {
   adultTable?: AdultTable;
   /** 2026-10-31: the welcome board, the Decor step's third part; absent until visited. */
   welcomeBoard?: WelcomeBoard;
+  /** 2026-11-03: the giveaway boxes, the Decor step's fourth part; absent until visited. */
+  giveaways?: Giveaways;
   addOns: SelectedAddOn[];
   venue: VenueDetails;
   customer: CustomerDetails;
@@ -1402,7 +1405,7 @@ export interface PriceLine {
   label:   string;
   amount:  number;
   /** Groups lines for display in the pricing breakdown. */
-  section: "design" | "table" | "adults" | "welcome" | "package" | "addons";
+  section: "design" | "table" | "adults" | "welcome" | "giveaways" | "package" | "addons";
 }
 
 /**
@@ -1539,6 +1542,8 @@ export function priceBreakdown(config: BuilderConfig): {
   // -- The grown-ups' table and the welcome board (2026-10-31) -----------------
   if (config.adultTable) for (const l of adultPriceLines(config.adultTable)) lines.push({ ...l, section: "adults" });
   if (config.welcomeBoard) for (const l of welcomePriceLines(config.welcomeBoard)) lines.push({ ...l, section: "welcome" });
+  // -- The giveaways (2026-11-03) ----------------------------------------------
+  if (config.giveaways) for (const l of giveawayPriceLines(config.giveaways)) lines.push({ ...l, section: "giveaways" });
 
   // -- Add-ons -------------------------------------------------------------
   // Available for all service packages - never cleared by package selection.

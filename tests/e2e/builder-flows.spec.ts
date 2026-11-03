@@ -72,6 +72,10 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   // Then the grown-ups' table and the welcome board (2026-10-31), both skipped.
   await expect(next(page)).toHaveText(/Skip to Welcome board/);
   await next(page).click();
+  await expect(next(page)).toHaveText(/Skip to Giveaways/);
+  await next(page).click();
+  // The giveaways (2026-11-03), skipped too.
+  await expect(page.getByTestId("giveaways-intro")).toBeVisible();
   await expect(next(page)).toHaveText(/Skip to Package/);
   await next(page).click();
   await shot(page, "f1-05-package");

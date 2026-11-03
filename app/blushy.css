@@ -1354,6 +1354,19 @@ div.bz-stale-banner { cursor: default; }
 /* The board among its photo pieces (2026-10-31): the picture fills the card, the room's wall round it. */
 .bz-wb-wait { display: grid; place-items: center; background: #f3e6dc; border-radius: 16px; overflow: hidden; }
 .bz-wb-art { width: 100%; max-height: 560px; display: block; }
+/* Giveaways (2026-11-03): the board or the table's place with its box; the contents as a checklist. */
+.bz-gv-art { width: 100%; display: block; }
+.bz-gv-board { max-height: 600px; }
+.bz-wb-wait.on > .bz-gv-art { opacity: .35; filter: blur(1px); transition: opacity .3s; }
+.bz-gv-contents { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bz-gv-contents label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1.5px solid var(--bz-line, #eadfe3); border-radius: 12px; background: #fff; cursor: pointer; }
+.bz-gv-contents label.on { border-color: var(--bz-pink, #e84f8b); background: #fff6f9; }
+.bz-gv-contents input { margin-top: 3px; accent-color: var(--bz-pink, #e84f8b); }
+.bz-gv-contents b { display: block; font-size: 14px; }
+.bz-gv-contents small { display: block; font-size: 12px; color: var(--bz-muted); }
+.bz-gv-count { display: flex; align-items: center; gap: 10px; }
+.bz-gv-count input { width: 72px; padding: 8px 10px; border: 1.5px solid var(--bz-line, #eadfe3); border-radius: 10px; font-size: 15px; }
+.bz-gv-count small { color: var(--bz-muted); font-size: 12.5px; }
 .bz-tb-option .art .swatch-big { width: 60%; height: 70%; border-radius: 8px; border: 1px solid #d9c9cf; display: block; }
 .bz-md-card.welcome .sketch { display: grid; place-items: center; background: #fbf7f4; }
 .bz-md-card.welcome .sketch > svg { height: 92%; width: auto; max-width: 100%; }

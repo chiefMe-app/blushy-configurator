@@ -60,6 +60,7 @@ export default function PriceSummary({
   const tableLines   = lines.filter((l) => l.section === "table");
   const adultLines   = lines.filter((l) => l.section === "adults");
   const welcomeLines = lines.filter((l) => l.section === "welcome");
+  const giveawayLines = lines.filter((l) => l.section === "giveaways");
 
   return (
     <div className={`rounded-2xl bg-white p-4 ${className}`} style={{ border: "1.5px solid #F5E4E9", boxShadow: "0 8px 25px rgba(103,44,71,.035)" }}>
@@ -74,6 +75,7 @@ export default function PriceSummary({
         <SectionGroup title="Kids' table"     lines={tableLines} />
         <SectionGroup title="Grown-ups' table" lines={adultLines} />
         <SectionGroup title="Welcome board"   lines={welcomeLines} />
+        <SectionGroup title="Giveaways"       lines={giveawayLines} />
         <SectionGroup title="Add-ons"         lines={addonLines} />
       </div>
 
