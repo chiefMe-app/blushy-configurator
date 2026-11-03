@@ -14,11 +14,14 @@ export function boardShelves(count: number): string {
 }
 
 /** The words for the photograph: keep the scene, make it real. */
-export function giveawayPrompt(g: Pick<Giveaways, "place" | "name" | "age" | "boardLine" | "count">, { boxesAfter = false } = {}): string {
+export function giveawayPrompt(g: Pick<Giveaways, "place" | "name" | "age" | "boardLine" | "count"> & Partial<Pick<Giveaways, "boardGarland">>, { boxesAfter = false } = {}): string {
   const plate = [g.name.trim(), g.age].filter(Boolean).map((w) => `"${w}"`).join(" and ");
   const board = g.place === "board";
   const boardWords = [g.name.trim(), g.boardLine.trim()].filter(Boolean).map((w) => `"${w}"`).join(", ");
   const shown = Math.min(g.count, BOARD_SHOWS);
+  const garland = board && g.boardGarland
+    ? "Keep the balloon garland exactly as it is — every balloon in its place, the same size and exactly the same colour, matte latex balloons — standing on the floor, rising up the board's side and arching over its top, hugging the board. Pastel balloons stay soft pastel."
+    : "";
   // 2026-11-03: given the boxes, the engine drew two more and put characters on their stickers; so the scene goes
   // to it without them, and the preview's own boxes are laid on its picture afterwards.
   if (boxesAfter) return [
@@ -27,11 +30,12 @@ export function giveawayPrompt(g: Pick<Giveaways, "place" | "name" | "age" | "bo
       : "Image 1 is a preview of one place at a children's birthday party table, seen from straight above: the placemat, plates, cup and cutlery.",
     "Make it one real, natural photograph of exactly this scene, from the same camera position, with the same framing and every part the same size and in the same place.",
     board
-      ? "Keep the board exactly: its arch shape, its colour, and its words" + (boardWords ? ` (${boardWords})` : "") + " letter for letter as flat cut vinyl on the board — never puffy or raised. Its shelves stay exactly where they are, and EMPTY: nothing on them — gift boxes are set on them afterwards."
+      ? "Keep the board exactly: its arch shape, its colour, and its words" + (boardWords ? ` (${boardWords})` : "") + " letter for letter, in the same lettering and colour, as flat cut vinyl on the board — never puffy or raised. Its shelves stay exactly where they are, and EMPTY: nothing on them — gift boxes are set on them afterwards."
       : "Keep the table exactly as it is: every piece in its place, colour and size, the printed placemat flat on the table. The top of the place stays clear — a gift box is set there afterwards.",
+    garland,
     "Make the light real: soft, even, neutral daylight, gentle natural shadows — never yellow or orange light, no sunbeams or patches of sunlight.",
     "Nothing added: no boxes, no people, no faces, no characters, no toys or sweets, no extra words or letters.",
-  ].join(" ");
+  ].filter(Boolean).join(" ");
   return [
     board
       ? "Image 1 is a preview of a giveaway board for a children's birthday party: a tall arch board with shelves, standing in a room, white gable gift boxes on its shelves."

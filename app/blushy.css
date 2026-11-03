@@ -1357,6 +1357,11 @@ div.bz-stale-banner { cursor: default; }
 /* Giveaways (2026-11-03): the board or the table's place with its box; the contents as a checklist. */
 .bz-gv-art { width: 100%; display: block; }
 .bz-gv-board { max-height: 600px; }
+/* The box close up, above the render (2026-11-03). */
+.bz-gv-close { margin-bottom: 14px; }
+.bz-gv-box { display: block; width: 100%; max-height: 380px; margin: 0 auto; }
+/* The board words' "theme colour" swatch. */
+.bz-ts-swatches button.auto { color: #fff; font-weight: 800; font-size: 12px; line-height: 1; }
 .bz-wb-wait.on > .bz-gv-art { opacity: .35; filter: blur(1px); transition: opacity .3s; }
 .bz-gv-contents { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .bz-gv-contents label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1.5px solid var(--bz-line, #eadfe3); border-radius: 12px; background: #fff; cursor: pointer; }

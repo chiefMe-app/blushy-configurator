@@ -217,14 +217,14 @@ export default function ConfigurePage() {
   });
   // The giveaways (2026-11-03): their preview — the boxes on the kids' table, or on the board — rendered too.
   const giveawaysTableKey = config.giveaways?.place === "table" ? tableKey : "";
-  const giveawaysKey = config.giveaways?.enabled ? giveawaysRenderKey(config.giveaways, config.theme, giveawaysTableKey) : "";
+  const giveawaysKey = config.giveaways?.enabled ? giveawaysRenderKey(config.giveaways, config.theme, giveawaysTableKey, config.decor.balloonColors) : "";
   const giveawaysRender = usePieceRender({
     endpoint: "/api/giveaway-render", partKey: giveawaysKey, kept: config.giveaways?.render,
     body: async () => {
       // The scene without its boxes for the engine, and the boxes on their own, laid on its picture afterwards.
       const svg = document.querySelector<SVGSVGElement>("#giveaways-preview-card svg.bz-gv-art");
       const layers = svg ? await svgLayers(svg, 1400, '[data-part="giveaway-box"]') : null;
-      return { giveaways: config.giveaways, theme: config.theme, tableKey: giveawaysTableKey, preview: layers?.without ?? null, ...(layers?.only ? { boxes: layers.only } : {}) };
+      return { giveaways: config.giveaways, theme: config.theme, tableKey: giveawaysTableKey, balloons: config.decor.balloonColors, preview: layers?.without ?? null, ...(layers?.only ? { boxes: layers.only } : {}) };
     },
     onKept: (render) => setConfig((c) => (c.giveaways ? { ...c, giveaways: { ...c.giveaways, render } } : c)),
     onSignInNeeded: () => askSignIn("giveaways-render"),

@@ -28,6 +28,8 @@ export type GiveawayPlace = (typeof GIVEAWAY_PLACES)[number]["id"];
 export const BOX_PRICE = 18;
 /** The shelved arch board, 60 × 150 cm (placeholder). */
 export const GIVEAWAY_BOARD_PRICE = 350;
+/** A balloon garland up the board and over its top, in the party's balloon colours (placeholder). */
+export const GIVEAWAY_GARLAND_PRICE = 250;
 /** Boxes the board's four shelves show (three a shelf). */
 export const BOARD_SHOWS = 12;
 export const MAX_BOXES = 60;
@@ -49,6 +51,12 @@ export interface Giveaways {
   boardColour: string;
   /** The line under the name on the board. */
   boardLine: string;
+  /** The board's words (2026-11-03, the owner: "board'un üstüne yazılan yazı font renk customized olsun"): the
+   *  name's lettering, and the words' colour ("" = the theme's, or white on a dark board). */
+  boardFont: string;
+  boardInk: string;
+  /** A balloon garland on the board ("balon garland opsiyonu olsun"). */
+  boardGarland: boolean;
   /** The customer pressed Finish (they may still change it). */
   done?: boolean;
   /** The last render (2026-11-03), kept in the customer's folder: giveawaysRenderKey of what it shows. */
@@ -59,6 +67,7 @@ export function defaultGiveaways(seed: { kids?: number; name?: string; age?: str
   return {
     enabled: true, count: clampCount(seed.kids ?? 10), place: "table", contents: ["playdough", "bubbles", "candy", "stickers", "themed"],
     name: cleanBoardText(seed.name ?? ""), age: cleanAge(seed.age ?? ""), font: "sacramento", boardColour: "#FFFFFF", boardLine: "Thank you for coming",
+    boardFont: "sacramento", boardInk: "", boardGarland: false,
   };
 }
 
@@ -72,6 +81,7 @@ export function giveawayPriceLines(g: Giveaways): { label: string; amount: numbe
   const each = BOX_PRICE + inside.reduce((s, c) => s + c.price, 0);
   const lines = [{ label: `Giveaway boxes × ${g.count}${inside.length ? ` (${inside.map((c) => c.name.toLowerCase()).join(", ")})` : ""}`, amount: each * g.count }];
   if (g.place === "board") lines.push({ label: "Giveaway board", amount: GIVEAWAY_BOARD_PRICE });
+  if (g.place === "board" && g.boardGarland) lines.push({ label: "Balloon garland on the giveaway board", amount: GIVEAWAY_GARLAND_PRICE });
   return lines;
 }
 export const giveawaysTotal = (g: Giveaways) => giveawayPriceLines(g).reduce((s, l) => s + l.amount, 0);
@@ -95,6 +105,9 @@ export function readGiveaways(raw: unknown): Giveaways | undefined {
     font: TABLE_FONTS.find((f) => f.id === r.font)?.id ?? base.font,
     boardColour: typeof r.boardColour === "string" && HEX.test(r.boardColour) ? r.boardColour : base.boardColour,
     boardLine: typeof r.boardLine === "string" ? cleanBoardText(r.boardLine) : base.boardLine,
+    boardFont: TABLE_FONTS.find((f) => f.id === r.boardFont)?.id ?? base.boardFont,
+    boardInk: typeof r.boardInk === "string" && HEX.test(r.boardInk) ? r.boardInk : "",
+    boardGarland: r.boardGarland === true,
     ...(r.done === true ? { done: true } : {}),
     ...(kept && typeof kept === "object" && typeof kept.key === "string" && /^[a-z0-9]{1,13}$/.test(kept.key) && typeof kept.path === "string" && RENDER_PATH.test(kept.path)
       ? { render: { key: kept.key, path: kept.path } } : {}),
@@ -102,9 +115,10 @@ export function readGiveaways(raw: unknown): Giveaways | undefined {
 }
 
 /** Changes whenever anything that shows in the picture changes (on the table, the table too: its key). */
-export function giveawaysRenderKey(g: Giveaways, themeId: string, tableKey = ""): string {
+export function giveawaysRenderKey(g: Giveaways, themeId: string, tableKey = "", balloons: string[] = []): string {
   // The count and the contents do not show (one box a place; what is inside is a list).
-  const shown = { place: g.place, name: g.name, age: g.age, font: g.font, ...(g.place === "board" ? { boardColour: g.boardColour, boardLine: g.boardLine } : { tableKey }) };
+  const board = { boardColour: g.boardColour, boardLine: g.boardLine, boardFont: g.boardFont, boardInk: g.boardInk, boardGarland: g.boardGarland, ...(g.boardGarland ? { balloons } : {}) };
+  const shown = { place: g.place, name: g.name, age: g.age, font: g.font, ...(g.place === "board" ? board : { tableKey }) };
   const s = JSON.stringify([themeId, shown]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);

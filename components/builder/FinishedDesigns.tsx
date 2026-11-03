@@ -99,7 +99,7 @@ export default function FinishedDesigns({ config, renderUrl, tableRenderUrl, wel
         return { drawing: <div className="art"><WelcomeBoardArt board={config.welcomeBoard!} theme={theme} balloons={config.decor.balloonColors} placeholders={false} /></div>,
         redraw: JSON.stringify([config.theme, config.welcomeBoard, config.decor.balloonColors]) };
       case "giveaways": if (giveawaysRenderUrl) return { imageUrl: giveawaysRenderUrl, redraw: giveawaysRenderUrl };
-        return { drawing: <div className="art"><GiveawayBoardArt g={config.giveaways!} theme={theme} /></div>, redraw: JSON.stringify([config.theme, config.giveaways]) };
+        return { drawing: <div className="art"><GiveawayBoardArt g={config.giveaways!} theme={theme} balloons={config.decor.balloonColors} /></div>, redraw: JSON.stringify([config.theme, config.giveaways, config.decor.balloonColors]) };
     }
   };
   return (

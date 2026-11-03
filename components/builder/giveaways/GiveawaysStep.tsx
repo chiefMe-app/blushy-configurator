@@ -7,7 +7,7 @@ import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
 import { MAX_BOARD_TEXT, cleanBoardText } from "@/lib/studio/welcomeBoard";
-import { BOX_PRICE, GIVEAWAY_BOARD_PRICE, GIVEAWAY_CONTENTS, GIVEAWAY_PLACES, MAX_BOXES, clampCount, cleanAge, defaultGiveaways, giveawaysTotal, type Giveaways } from "@/lib/studio/giveaways";
+import { BOX_PRICE, GIVEAWAY_BOARD_PRICE, GIVEAWAY_GARLAND_PRICE, GIVEAWAY_CONTENTS, GIVEAWAY_PLACES, MAX_BOXES, clampCount, cleanAge, defaultGiveaways, giveawaysTotal, type Giveaways } from "@/lib/studio/giveaways";
 import { clampKids } from "@/lib/studio/tableSetup";
 import GiveawayBox from "@/components/studio/GiveawayBox";
 import { boxLook } from "./GiveawaysPreview";
@@ -59,6 +59,7 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
     </button>
   );
   const look = boxLook(g, theme);
+  const inks = Array.from(new Set(["#FFFFFF", "#2B2B2B", ...theme.balloonColors, ...PLAIN_COLOURS.map((c) => c.hex)].map((h) => h.toUpperCase())));
 
   return (
     <div className="bz-tb" data-testid="giveaways">
@@ -145,10 +146,40 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
             </div>
           </div>
           <div className="bz-tb-item">
+            <h3>The board&apos;s words</h3>
             <label className="bz-tb-words">
               <span>Line under the name</span>
               <input type="text" value={g.boardLine} maxLength={MAX_BOARD_TEXT} placeholder="e.g. Thank you for coming" data-testid="giveaways-board-line" onChange={(e) => set({ boardLine: cleanBoardText(e.target.value) })} />
             </label>
+            {/* 2026-11-03 (the owner: "board'un üstüne yazılan yazı font renk customized olsun"). */}
+            <div className="bz-tb-fonts" role="radiogroup" aria-label="Board lettering" data-testid="giveaways-board-font">
+              {TABLE_FONTS.map((f) => (
+                <button key={f.id} type="button" role="radio" aria-checked={g.boardFont === f.id} className={g.boardFont === f.id ? "on" : ""} onClick={() => set({ boardFont: f.id })}>
+                  <span style={{ fontFamily: `${fontCss(f)}, Georgia, serif`, fontWeight: f.weight, textTransform: f.hand ? "none" : "uppercase", "--fscale": f.scale } as React.CSSProperties}>{g.name || "Arya"}</span>
+                  <small>{f.name}</small>
+                </button>
+              ))}
+            </div>
+            <div className="bz-ts-swatches" role="radiogroup" aria-label="Words colour" data-testid="giveaways-board-ink">
+              <button type="button" role="radio" aria-checked={!g.boardInk} className={`auto ${!g.boardInk ? "on" : ""}`} aria-label="Theme colour" title="Theme colour"
+                style={{ background: theme.accent }} onClick={() => set({ boardInk: "" })}>A</button>
+              {inks.map((hex) => (
+                <button key={hex} type="button" role="radio" aria-checked={hex === g.boardInk.toUpperCase()} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
+                  className={hex === g.boardInk.toUpperCase() ? "on" : ""} style={{ background: hex }} onClick={() => set({ boardInk: hex })} />
+              ))}
+            </div>
+          </div>
+          <div className="bz-tb-item">
+            <h3>Balloons</h3>
+            <div className="bz-tb-options" role="radiogroup" aria-label="Board balloons" data-testid="giveaways-board-garland">
+              {card(!g.boardGarland, () => set({ boardGarland: false }),
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="photo" src="/design/giveaways/board.webp" alt="" loading="lazy" />, "Just the board", "No balloons", "", "plain")}
+              {card(g.boardGarland, () => set({ boardGarland: true }),
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="photo" src="/design/welcome/garnish-balloons.webp" alt="" loading="lazy" />,
+                "Balloon garland", "Up its side and over the top, in your balloon colours", `+AED ${formatAED(GIVEAWAY_GARLAND_PRICE)}`, "garland")}
+            </div>
           </div>
         </>}
       </section>

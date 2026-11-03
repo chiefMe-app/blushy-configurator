@@ -27,11 +27,13 @@ const MAX_PREVIEW_BYTES = 4 * 1024 * 1024;
 const KEY = /^[0-9a-z]{1,13}$/;
 
 export async function POST(req: NextRequest) {
-  let body: { giveaways?: unknown; theme?: unknown; tableKey?: unknown; preview?: unknown; boxes?: unknown };
+  let body: { giveaways?: unknown; theme?: unknown; tableKey?: unknown; balloons?: unknown; preview?: unknown; boxes?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
   const theme = typeof body?.theme === "string" ? themeById(body.theme) : undefined;
   const g = readGiveaways(body?.giveaways);
   const tableKey = typeof body?.tableKey === "string" && KEY.test(body.tableKey) ? body.tableKey : "";
+  // The party's balloons: the board's garland is in them (for the key it is kept under).
+  const balloons = Array.isArray(body?.balloons) ? body.balloons.filter((h): h is string => typeof h === "string" && /^#[0-9A-F]{6}$/i.test(h)).slice(0, 12) : [];
   const preview = typeof body?.preview === "string" ? body.preview.match(/^data:image\/(?:jpeg|png);base64,([A-Za-z0-9+/=]+)$/)?.[1] : undefined;
   if (!theme || !g?.enabled || !preview) return NextResponse.json({ error: "Missing giveaways, theme or preview." }, { status: 400 });
   const bytes = Buffer.from(preview, "base64");
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
           // A failed colour step never loses the paid render.
           const jpeg = await finishSketchRender(made, image.data, boxes, { shadow: true }).catch(() => made);
           send({ url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
-          const key = giveawaysRenderKey(g, theme.id, tableKey);
+          const key = giveawaysRenderKey(g, theme.id, tableKey, balloons);
           // Without a database (local development) nothing is kept.
           let render: { key: string; path: string } | undefined;
           if (user.client && user.userId) {

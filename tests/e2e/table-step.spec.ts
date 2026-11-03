@@ -301,9 +301,23 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   await expect(board.locator("[data-part=board-colour]")).toHaveCount(0);
   await page.getByTestId("giveaways-board-colour").getByRole("radio").nth(1).click();
   await expect(board.locator("[data-part=board-colour]")).toHaveCount(1);
+  // The board's words in her lettering and colour, and a balloon garland on it (2026-11-03).
+  await page.getByTestId("giveaways-board-font").getByRole("radio", { name: /Classic/ }).click();
+  await expect(board.locator("text").first()).toHaveText("ARYA");
+  await page.getByTestId("giveaways-board-ink").getByRole("radio").nth(1).click();
+  await expect(board.locator("text").first()).toHaveAttribute("fill", "#FFFFFF");
+  const withoutGarland = aed(await page.getByTestId("giveaways-total").locator("b").textContent());
+  await page.getByTestId("giveaways-board-garland").getByRole("radio", { name: /Balloon garland/ }).click();
+  await expect(board).toHaveAttribute("data-garland", "yes");
+  await expect(board.locator("[data-part=garland] image")).toHaveCount(2);
+  expect(aed(await page.getByTestId("giveaways-total").locator("b").textContent())).toBe(withoutGarland + 250);
   for (const src of await board.locator("image").evaluateAll((l) => Array.from(new Set(l.map((i) => i.getAttribute("href")!))))) {
+    if (src.startsWith("blob:")) continue; // the garland, repainted in the page
     expect((await page.request.get(src)).status(), src).toBe(200);
   }
+  // The box close up, above the render.
+  await expect(page.getByTestId("giveaway-box-card").locator("[data-part=giveaway-box]")).toHaveCount(1);
+  await expect(page.getByTestId("giveaway-box-card")).toContainText("Inside: Playdough · Bubbles · Stickers · Themed items");
   // Finalized once rendered.
   await expect(next(page)).toHaveCount(0);
   await expect(page.getByTestId("finish-giveaways")).toBeDisabled();
