@@ -163,8 +163,12 @@ describe("cake", () => {
     expect(p).toContain("stuck flat on the sides of the tiers exactly where image 1 has them: heart ×2");
     expect(p).toContain('reading "Olivia" and "6"');
     // The light (2026-11-03, the owner: "çok sarı, kaliteli durmuyor hiç"): clean white, and the tiers counted.
-    expect(p).toMatch(/never cream, ivory, beige, grey, yellow or orange.*a balanced exposure that never blows out/);
+    // 2026-11-04 (the owner: "şu örnekteki gibi içim açılsın … ışık ve renkler"): a party photo shoot's light, candy pastels.
+    expect(p).toMatch(/styled kids' birthday party photo shoot.*never yellow, cream, ivory or beige.*candy-bright pastel colours.*shallow depth of field/);
     expect(p).toMatch(/exactly two tiers stacked, never more and never fewer/);
+    // Each tier's colour by name (a test render greyed a mint tier to sage), its border too.
+    const named = cakePrompt({ ...k, colours: ["#F8BBD0", "#BBF7D0", "#FFFFFF"] });
+    expect(named).toMatch(/The bottom tier and its border in pink buttercream, the top tier and its border in mint green buttercream — bright, clean and fresh/);
     expect(cakePrompt({ ...k, topper: { ...k.topper, on: false } })).not.toContain("topper");
     expect(cakePrompt({ ...k, figures: [] })).not.toContain("sugar-paste figures");
   });
@@ -584,6 +588,12 @@ describe("the board, the lettering and the close-ups", () => {
     expect(viewBoxOf(k, "cake").w).toBeLessThan(viewBoxOf(k, "whole").w);
     expect(cakePrompt(k, "cookies")).toMatch(/^Image 1 is a close-up preview of round sugar cookies.*printed with a big number "6"/);
     expect(cakePrompt(k, "cake")).toMatch(/close-up preview of a birthday cake.*softly out of focus/);
+    // The sweets at the close-up's edge named with their icing (2026-11-04: a test render dropped the cupcakes).
+    expect(cakePrompt(k, "cake")).toContain("the iced cookies with their pink icing beside the cake, every one of them kept in its colours");
+    // No wall left over the cake for a topper that is not on top (the engine filled it with a tier and more unicorns).
+    const front = { ...k, cart: undefined, topper: { ...k.topper, at: "front" as const } };
+    const onTop = { ...front, topper: { ...front.topper, at: undefined } };
+    expect(viewBoxOf(front, "cake").y).toBeGreaterThan(viewBoxOf(onTop, "cake").y + 20);
     expect(cakePrompt(k)).toMatch(/the whole sweet cart in view, never zoomed in or cropped/);
     // The close-ups' renders are kept, and read back only when they are a close-up's.
     const kept = readCake({ ...k, views: { cookies: { key: "abc123:cookies", path: "u1/k1.jpg" }, whole: { key: "x", path: "u1/k2.jpg" }, nope: { key: "y", path: "u1/k3.jpg" } } })!;

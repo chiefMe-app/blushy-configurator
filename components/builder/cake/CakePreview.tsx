@@ -347,8 +347,11 @@ export function viewBoxOf(k: Cake, view: CakeView) {
   let box: { x: number; y: number; w: number; h: number };
   if (view === "cake") {
     // The cake and its topper's room, down to the stand's foot or the board's front.
+    // A topper's room only for a topper on top: with the name on the front or the board, wall left empty over the
+    // cake was filled by the engine with a tier and more unicorns of its own (2026-11-04, the owner: "niye bu kadar saçmaladı").
     const L = cakeLayout(k), holder = holderOf(k);
-    const room = cakeLayout({ ...k, topper: { ...k.topper, at: undefined, x: undefined, up: undefined, y: undefined, s: 1.25 } }).contentTop;
+    const onTop = topperShows(k) && k.topper.at !== "front" && k.topper.at !== "board";
+    const room = onTop ? cakeLayout({ ...k, topper: { ...k.topper, at: undefined, x: undefined, up: undefined, y: undefined, s: 1.25 } }).contentTop : L.contentTop;
     const top = Math.min(room - 30, L.contentTop - 24), bottom = holder.bottom + 10;
     const w = Math.max(L.tiers[0].w * 1.45, (bottom - top) * 0.8);
     box = { x: holder.plate.x - w / 2, y: bottom - w / 0.8, w, h: w / 0.8 };

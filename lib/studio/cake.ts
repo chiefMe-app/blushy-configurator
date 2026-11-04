@@ -447,7 +447,9 @@ export const figurePicture = (id: CakeFigure) => ({ src: `/design/cake/fig-${id}
 
 /**
  * The photo of the empty stand on its table (240 px of wall added above it), its plate — the middle of its top and
- * how wide it is — and the bottom of the view, below the stand's foot.
+ * how wide it is — and the bottom of the view, below the stand's foot. In these units; since 2026-11-04 the photo is
+ * 1.5× as sharp, before a pastel party wall (bunting, balloons, paper fans), the stand where it was (the owner: "şu
+ * örnekteki gibi içim açılsın"); board.webp the same wall with the board on the cloth.
  */
 export const CAKE_STAND = { src: "/design/cake/stand.webp", w: 896, h: 1392, plate: { x: 447, y: 906, w: 377 }, bottom: 1170 };
 /**

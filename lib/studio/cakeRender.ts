@@ -12,7 +12,10 @@ const TIER_NAMES: Record<number, string[]> = { 1: ["the cake"], 2: ["the bottom 
 // 2026-11-04 (the owner: "render'da ışık aşırı var, tasarım anlaşılmıyor"): still bright, but a balanced exposure that
 // keeps every colour and every piece of the decoration as clear as the preview (a "soft window light" test went grey
 // and dim, the white tier cream).
-const LIGHT = "Light it like a high-end bakery's product photograph: bright, even, soft daylight with a true neutral white balance — whites stay pure clean white, never cream, ivory, beige, grey, yellow or orange — and the wall behind as light as image 1's; a balanced exposure that never blows out: no glare, no haze or glow, no washed-out or faded colours, every colour as rich as image 1 shows it and every piece of the decoration crisp and easy to see; gentle soft shadows; no sunbeams, no patches of sunlight, no moody or dim light.";
+// 2026-11-04 (the owner, of a styled unicorn-cake photo: "şu örnekteki gibi içim açılsın … sadece arka plan değil, ışık
+// ve renkler hoşuma gidiyor"): a party photo shoot's light — airy, cool-neutral, candy-bright pastels, soft shadows
+// giving the cake its depth, the background softly blurred; the stand photo a pastel party wall behind (stand.webp).
+const LIGHT = "Light and colour it like a bright, styled kids' birthday party photo shoot: soft, airy, diffused daylight from a big window to one side; a fresh, cool-neutral white balance — whites clean and bright, never yellow, cream, ivory or beige; candy-bright pastel colours, clear, fresh and saturated, every colour at least as rich as image 1 shows it, never washed out, greyed or faded; gentle soft shadows that give every tier, figure and letter its real roundness and depth; the cake crisp and sharp against a softly blurred background, a shallow depth of field. No glare, no haze or glow, no blown-out highlights, no sunbeams or patches of sunlight, no dim or moody light.";
 
 /** The words for the photograph: keep the scene, make it real. */
 export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
@@ -46,6 +49,7 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
         ? `On the front of the cake keep the name exactly where image 1 has it: ${card ? `${card}${border} pressed flat onto the buttercream, with ${sugar} reading ${words}, ${lettering}, on it` : `${sugar} reading ${words}, ${lettering}, pressed onto the buttercream`} — ${real}; the same letters in the same colour as image 1.`
         : `Keep the cake topper exactly: ${card ? `${card}${border} on two thin white sticks pushed into the top, with ${tc.words} printed letters reading ${words}, ${lettering}, on it` : `${tc.words} acrylic letters reading ${words}, ${lettering}, on two thin sticks pushed into the top`}, the same letters in the same colour as image 1.`;
   const colours = tierColours(k);
+  const plainTiers = colours.flatMap((c, i) => (rainbowOf(c) ? [] : [`${TIER_NAMES[k.tiers][i]} and its border in ${colourWords(c)} buttercream`]));
   const rainbow = colours.flatMap((c, i) => (rainbowOf(c) ? [`${TIER_NAMES[k.tiers][i]} in ${rainbowOf(c)!.words}`] : []));
   const sprinkles = CAKE_SPRINKLES.find((s) => s.id === k.sprinkles);
   // Each sweet as it shows.
@@ -93,15 +97,18 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
       ? `Make it one real, natural photograph of exactly this scene, from the same camera position and with the same framing — the whole ${cart ? "sweet cart" : plinths ? "display" : "table"} in view, never zoomed in or cropped — every part the same size and in the same place.`
       : "Make it one real, natural close-up photograph of exactly this cake, from the same camera position, with the same framing and every part the same size and in the same place.",
     `Keep the cake exactly: ${k.tiers > 1 ? `exactly ${k.tiers === 2 ? "two" : "three"} tiers stacked, never more and never fewer, each in its own colour as image 1 shows it` : "one single tier, the same colour as image 1"}, the same decoration, each figure once and only where image 1 has it, made of real smooth buttercream with its fine texture.`,
+    // Each tier's colour named (2026-11-04: a test render greyed a pastel mint tier to sage and its pink to mauve).
+    plainTiers.length ? `${plainTiers.join(", ").replace(/^./, (l) => l.toUpperCase())} — bright, clean and fresh, exactly the colours image 1 shows, never greyed, dusty or muted; no border white unless its tier is.` : "",
     rainbow.length ? `${rainbow.join("; ")} — keep its colours and patches as image 1 shows them.` : "",
     sprinkles?.words ? `Keep the sprinkles as image 1 shows them: ${sprinkles.words}, real sugar sprinkles.` : "",
     figures.length ? `On top keep the handmade sugar-paste figures exactly: ${figures.join(", ")} — the same shapes, colours, sizes and places, made real and matte.` : "",
     sides.length ? `Keep the sugar-paste figures stuck flat on the sides of the tiers exactly where image 1 has them: ${sides.join(", ")} — real and matte, pressed onto the buttercream.` : "",
     cutTop.length ? `On top keep the printed card cutout toppers exactly: ${cutTop.join(", ")} — flat glossy printed card with a thin white cut edge, each on a thin white stick pushed into the cake, the same pictures, sizes and places as image 1.` : "",
     cutSide.length ? `Keep the printed card cutouts stuck flat on the sides of the tiers exactly where image 1 has them: ${cutSide.join(", ")} — flat glossy printed card with a thin white cut edge.` : "",
-    decos.length ? `Keep the small round decorations exactly where image 1 has them: ${decos.join(", ")} — real and shiny, on the top and round the foot of the cake.` : "",
+    decos.length ? `Keep the small round decorations exactly where image 1 has them: ${decos.join(", ")} — real and shiny, each once, the same size.` : "",
     topper,
-    close ? `Keep ${cart ? "the cart" : plinths ? "the plinth" : "the table and its cloth, the same colour"}, the wall and whatever else shows at the edges of the picture as image 1 has them, softly out of focus.`
+    // The sweets at its edge named (2026-11-04: a close-up test render left the cupcakes out).
+    close ? `Keep ${cart ? "the cart" : plinths ? "the plinth" : "the table and its cloth, the same colour"}, ${sweets.length ? `the ${(k.sweets ?? []).flatMap((y) => { const x = CAKE_SWEETS.find((z) => z.id === y.id); return x ? [`${x.name.toLowerCase()} with their ${colourWords(y.colour)} icing`] : []; }).join(" and ")} beside the cake, every one of them kept in its colours, ` : ""}the wall with its decorations and whatever else shows at the edges of the picture as image 1 has them, softly out of focus.`
       : sweets.length ? `${plinths ? "On the other plinths, each on its own," : `On the ${cart ? "cart's counter" : "table"} beside the cake`} keep the sweets exactly where image 1 has them: ${sweets.join("; ")} — the same places, sizes and colours, made real.` : "",
     cart ? `Keep the ${onBoard ? "cake board" : "white cake stand"} and the sweet cart exactly as image 1 has them — its white wooden counter, its turned posts, its wheel and ${roof}, the same colour —${balloons ? ` ${balloons} exactly as image 1 has it, the same balloons in the same places and colours, —` : ""} and the floor and the wall behind it; a soft shadow under the cake.`
       : plinths ? `Keep the ${onBoard ? "cake board" : "white cake stand"} and the five white round plinths exactly as image 1 has them — their sizes, heights and places — and the floor and the wall behind them; a soft shadow under the cake.`
