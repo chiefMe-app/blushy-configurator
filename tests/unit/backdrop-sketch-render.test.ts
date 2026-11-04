@@ -97,6 +97,23 @@ describe("finishing the sketch render", () => {
     expect(Math.abs(data[0] - data[2])).toBeLessThan(12);
   });
 
+  // 2026-11-04 (the cake: "aşırı aydınlık ortam"): a plain multiply burned the whites of a bright photo to 255.
+  it("a brightening gain eases into white instead of burning it", async () => {
+    const out = await finishSketchRender(await square([236, 236, 236], 64), await square([255, 255, 255], 64));
+    const { data } = await sharp(out).raw().toBuffer({ resolveWithObject: true });
+    expect(data[0]).toBeGreaterThan(240); expect(data[0]).toBeLessThan(254);
+  });
+
+  it("`cast` matches only the colour's cast and keeps the render's own exposure", async () => {
+    const warm = await square([210, 200, 180], 64);
+    const px = async (sketch: number) => Array.from((await sharp(await finishSketchRender(warm, await square([sketch, sketch, sketch], 64), undefined, { cast: true })).raw().toBuffer()).subarray(0, 3));
+    const y = ([r, g, b]: number[]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    const [brighter, same] = [await px(245), await px(200)];
+    expect(Math.abs(y(brighter) - y([210, 200, 180]))).toBeLessThan(3); // a brighter sketch does not brighten it
+    expect(Math.abs(y(same) - y([210, 200, 180]))).toBeLessThan(3);
+    expect(same[0] - same[2]).toBeLessThan(12); // the warm cast taken off
+  });
+
   it("the prompt names the print, the rainbows and neutral light", () => {
     const s = scene();
     s.rainbowBalloons = true;

@@ -21,17 +21,41 @@ export async function colourGains(render: Buffer, sketch: Buffer): Promise<[numb
  * The render with the sketch's colours and, when it has any, the sketch's words laid flat on it — or (`shadow`,
  * 2026-11-03, the giveaways' boxes) things standing in the scene, each with a soft contact shadow under it.
  */
-export async function finishSketchRender(render: Buffer, sketch: Buffer, words?: Buffer, { shadow = false } = {}): Promise<Buffer> {
+export async function finishSketchRender(render: Buffer, sketch: Buffer, words?: Buffer, { shadow = false, cast = false } = {}): Promise<Buffer> {
   const { width = 1024, height = 1024 } = await sharp(render).metadata();
-  const gains = await colourGains(render, sketch);
-  let img = sharp(render).removeAlpha().linear(gains, [0, 0, 0]);
+  let gains = await colourGains(render, sketch);
+  // `cast` (2026-11-04, the cake: "aşırı aydınlık ortam"): only the colour's cast matched, the render's own exposure
+  // kept — the bright sketch had lifted an already bright photo by a twelfth, and the photo is graded after.
+  if (cast) {
+    const y = 0.2126 * gains[0] + 0.7152 * gains[1] + 0.0722 * gains[2];
+    gains = gains.map((g) => g / y) as [number, number, number];
+  }
+  const lit = await brightened(render, gains);
+  let img = sharp(lit.data, { raw: { width: lit.info.width, height: lit.info.height, channels: 3 } });
   if (words) {
     // The words drawn at the sketch's own square, so at the render's (made at the sketch's size).
     const layer = await sharp(words).resize(width, height, { fit: "fill" }).ensureAlpha().png().toBuffer();
     const under = shadow ? [{ input: await softShadow(layer, width, height), left: 0, top: 0 }] : [];
-    img = sharp(await img.toBuffer()).composite([...under, { input: layer }]);
+    img = img.composite([...under, { input: layer }]);
   }
   return img.jpeg({ quality: 90 }).toBuffer();
+}
+
+/**
+ * The render's channels times their gains, a gain above 1 easing into white instead of clipping (2026-11-04: a plain
+ * multiply burned a fifth of a bright cake photo — its white tiers, wall and cloth — to flat 255).
+ */
+async function brightened(render: Buffer, gains: [number, number, number]) {
+  const { data, info } = await sharp(render).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const curves = gains.map((g) => Uint8Array.from({ length: 256 }, (_, v) => {
+    let x = (v / 255) * g;
+    if (g > 1 && x > 0.8) x = 0.8 + 0.2 * Math.tanh((x - 0.8) / 0.2);
+    return Math.round(Math.min(1, x) * 255);
+  }));
+  for (let i = 0; i < data.length; i += 3) {
+    data[i] = curves[0][data[i]]; data[i + 1] = curves[1][data[i + 1]]; data[i + 2] = curves[2][data[i + 2]];
+  }
+  return { data, info };
 }
 
 /** A layer's soft shadow: its shape, blurred, a little below it. */

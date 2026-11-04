@@ -31,7 +31,7 @@ export async function gradePhoto(jpeg: Buffer): Promise<Buffer> {
   const hist = new Uint32Array(256);
   for (let i = 0; i < data.length; i += 3) hist[Math.min(255, Math.round(lum(i)))]++;
   const at = (q: number) => { let c = 0; for (let v = 0; v < 256; v++) { c += hist[v]; if (c >= q * n) return v; } return 255; };
-  const p97 = at(0.97), p85 = at(0.85);
+  const p97 = at(0.97), p85 = at(0.85), p50 = at(0.5);
   const sum = [0, 0, 0];
   let count = 0;
   for (let i = 0; i < data.length; i += 3) {
@@ -43,14 +43,20 @@ export async function gradePhoto(jpeg: Buffer): Promise<Buffer> {
   // Exposure: the light parts towards white, never darker.
   const gain = Math.min(1 + GRADE.lift, Math.max(1, GRADE.white / Math.max(1, p97)));
 
+  // The S's upper half lifts the light tones: on a photo already bright (its middle tone near white — the wall, the
+  // cloth, a white cake) that only flattens them into one white (2026-11-04, the owner: "aşırı aydınlık ortam"), so it
+  // fades out as the middle passes 175 and is gone by 215.
+  const upper = Math.min(1, Math.max(0, (215 - p50) / 40));
+
   // One curve for the light: the exposure with a soft shoulder (no hard clip), shadows opened, an S of contrast.
   const curve = new Float32Array(256);
   for (let v = 0; v < 256; v++) {
     let x = (v / 255) * gain;
-    if (x > 0.85) x = 0.85 + 0.15 * Math.tanh((x - 0.85) / 0.15);
+    // The shoulder reaches white where the exposure puts it (a photo needing none keeps its white white).
+    if (gain > 1 && x > 0.85) x = 0.85 + (0.15 * Math.tanh((x - 0.85) / 0.15)) / Math.tanh((gain - 0.85) / 0.15);
     const d = Math.max(0, 1 - x / 0.5);
     x += GRADE.shadows * 4 * d * d * (x / 0.5); // nothing at black, nothing from the middle up
-    x -= (GRADE.contrast * Math.sin(2 * Math.PI * x)) / (2 * Math.PI); // darker below the middle, lighter above
+    x -= ((x > 0.5 ? upper : 1) * GRADE.contrast * Math.sin(2 * Math.PI * x)) / (2 * Math.PI); // darker below the middle, lighter above
     curve[v] = Math.min(1, Math.max(0, x)) * 255;
   }
   const out = Buffer.alloc(data.length);

@@ -37,6 +37,14 @@ describe("gradePhoto", () => {
     expect(dark[0]).toBeGreaterThanOrEqual(40); // opened, never crushed
   });
 
+  // 2026-11-04 ("aşırı aydınlık ortam"): a photo already bright keeps its light tones apart instead of one white.
+  it("does not lift the light tones of a photo already bright", async () => {
+    const wall: [number, number, number] = [238, 238, 238], cloth: [number, number, number] = [222, 222, 222];
+    const [w, , , c] = await bands(await gradePhoto(await swatch([wall, wall, wall, cloth, [120, 118, 118]])), 5);
+    expect(w[1]).toBeLessThanOrEqual(247); // only the exposure's own lift, to its white
+    expect(w[1] - c[1]).toBeGreaterThan(12); // still a step apart
+  });
+
   it("leaves white white and keeps the size", async () => {
     const jpeg = await swatch([[255, 255, 255], [250, 250, 250], [120, 60, 160]]);
     const out = await gradePhoto(jpeg);

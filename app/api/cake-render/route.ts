@@ -82,9 +82,9 @@ export async function POST(req: NextRequest) {
           if (!url) throw new Error("no cake image");
           const made = await renderJpeg(url);
           if (!made) throw new Error("the cake render could not be read");
-          // Its colours brought back to the preview's, as the backdrop's (lib/sketchRenderFinish.ts); a failed colour
-          // step never loses the paid render.
-          const finished = await finishSketchRender(made, image.data).catch(() => made);
+          // Its colours' cast brought back to the preview's, as the backdrop's (lib/sketchRenderFinish.ts) but keeping its
+          // own exposure; a failed colour step never loses the paid render.
+          const finished = await finishSketchRender(made, image.data, undefined, { cast: true }).catch(() => made);
           // Then a photographer's edit — white balance, exposure, shadows, contrast, vibrance (lib/photoGrade.ts).
           const jpeg = await gradePhoto(finished).catch(() => finished);
           send({ url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
