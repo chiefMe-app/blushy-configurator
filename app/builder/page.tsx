@@ -59,7 +59,7 @@ import { defaultTableSetup } from "@/lib/studio/tableSetup";
 import { defaultWelcomeBoard, welcomeRenderKey } from "@/lib/studio/welcomeBoard";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import { usePieceRender } from "@/components/builder/usePieceRender";
-import { nodeJpeg, svgLayers } from "@/components/builder/nodeJpeg";
+import { nodeJpeg, svgJpeg, svgLayers } from "@/components/builder/nodeJpeg";
 
 import Sprinkles from "@/components/design/Sprinkles";
 import { REQUIRE_RENDER } from "@/lib/renderGate";
@@ -246,7 +246,7 @@ export default function ConfigurePage() {
     endpoint: "/api/pinata-render", partKey: pinataKey, kept: config.pinata?.render,
     body: async () => {
       const node = document.querySelector<SVGSVGElement>("#pinata-preview-card svg.bz-pn-art");
-      return { pinata: config.pinata, theme: config.theme, preview: node ? await nodeJpeg(node, 1200) : null };
+      return { pinata: config.pinata, theme: config.theme, preview: node ? await svgJpeg(node, 1200) : null };
     },
     onKept: (render) => setConfig((c) => (c.pinata ? { ...c, pinata: { ...c.pinata, render } } : c)),
     onSignInNeeded: () => askSignIn("pinata-render"),
@@ -261,7 +261,7 @@ export default function ConfigurePage() {
     endpoint: "/api/cake-render", partKey: cakeKey, kept: cakeView === "whole" ? config.cake?.render : config.cake?.views?.[cakeView],
     body: async () => {
       const node = document.querySelector<SVGSVGElement>("#cake-preview-card svg.bz-ck-art");
-      return { cake: config.cake, theme: config.theme, view: cakeView, preview: node ? await nodeJpeg(node, 1200) : null };
+      return { cake: config.cake, theme: config.theme, view: cakeView, preview: node ? await svgJpeg(node, 1200) : null };
     },
     // Kept as what it shows: its key ends in its view when it is a close-up.
     onKept: (render) => setConfig((c) => {
@@ -895,7 +895,7 @@ export default function ConfigurePage() {
             {onWelcome && <WelcomeStep config={config} setWelcomeBoard={setWelcomeBoard} onFinish={finishWelcome} onSkip={skipWelcome} render={welcomeRender} onGenerate={makeWelcomeRender} />}
             {onGiveaways && <GiveawaysStep config={config} setGiveaways={setGiveaways} onFinish={finishGiveaways} onSkip={skipGiveaways} render={giveawaysRender} onGenerate={makeGiveawaysRender} />}
             {onPinata && <PinataStep config={config} setPinata={setPinata} onFinish={finishPinata} onSkip={skipPinata} render={pinataRender} onGenerate={makePinataRender} />}
-            {onCake && <CakeStep config={config} setCake={setCake} onFinish={finishCake} onSkip={skipCake} render={cakeRender} onGenerate={makeCakeRender} />}
+            {onCake && <CakeStep config={config} setCake={setCake} onFinish={finishCake} onSkip={skipCake} render={cakeRender} onGenerate={makeCakeRender} setView={setCakeView} />}
 
             {/* 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
             {(step === 3 || step === 6) && <FinishedDesigns config={config}

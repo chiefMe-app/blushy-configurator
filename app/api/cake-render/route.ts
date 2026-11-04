@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
   const view = isCakeView(body.view) && cakeViews(p).includes(body.view) ? body.view : "whole";
   const bytes = Buffer.from(preview, "base64");
   if (bytes.length > MAX_PREVIEW_BYTES) return NextResponse.json({ error: "The preview is too big." }, { status: 413 });
+  // A preview whose photos did not paint (2026-11-04: on the owner's iPhone the close-ups came with only their
+  // lettering, and the engine made up a cake) is mostly bare white: never paid for.
+  if (await bareWhite(bytes) > 0.5) return NextResponse.json({ error: "The preview didn't come through — please try again." }, { status: 422 });
   const falKey = process.env.FAL_KEY;
   if (!falKey) return NextResponse.json({ error: "Renders are not available right now." }, { status: 503 });
 
@@ -105,6 +108,15 @@ export async function POST(req: NextRequest) {
   } finally {
     if (!streaming) slot.release();
   }
+}
+
+/** How much of the picture is bare white, on a small copy (0 when it cannot be read: refused further on). */
+async function bareWhite(bytes: Buffer): Promise<number> {
+  const small = await sharp(bytes).resize(48).flatten({ background: "#ffffff" }).removeAlpha().raw().toBuffer().catch(() => null);
+  if (!small) return 0;
+  let white = 0;
+  for (let i = 0; i < small.length; i += 3) if (small[i] > 251 && small[i + 1] > 251 && small[i + 2] > 251) white++;
+  return white / (small.length / 3);
 }
 
 function renderError(err: unknown) {

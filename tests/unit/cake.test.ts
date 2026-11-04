@@ -298,6 +298,14 @@ describe("the cake kept and rendered", () => {
     expect(subscribe).not.toHaveBeenCalled();
   });
 
+  it("refuses a preview whose photos did not paint (bare white), without calling fal", async () => {
+    // 2026-11-04: on the owner's iPhone the close-ups came with only their lettering, and the engine made up a cake.
+    const blank = await sharp({ create: { width: 1200, height: 1500, channels: 3, background: "#ffffff" } }).jpeg().toBuffer();
+    const res = await post({ cake: defaultCake(seed), theme: "unicorn", preview: `data:image/jpeg;base64,${blank.toString("base64")}` });
+    expect(res.status).toBe(422);
+    expect(subscribe).not.toHaveBeenCalled();
+  });
+
   it("never opens to everyone on the live site when sign-in is not set up", async () => {
     vi.stubEnv("VERCEL_ENV", "production");
     expect((await post({ cake: defaultCake(), theme: "unicorn", preview: `data:image/jpeg;base64,${JPEG.toString("base64")}` })).status).toBe(503);
@@ -365,6 +373,9 @@ describe("the sweets beside the cake", () => {
     // 2026-11-03 (the owner: "cookies'de daha büyümeli şekiller, o yuvarlak büyüklüğünde olsun, taşmasın").
     const k: Cake = { ...defaultCake(seed), sweets: [{ id: "cookies", count: 12, colour: "#FFFFFF", print: "rainbow" }] };
     expect(cakePrompt(k, "cookies")).toMatch(/each printed with a big rainbow filling its iced face nearly to the edge but never over it/);
+    // Without sprinkles, nothing but the print (2026-11-04, the owner: "sprinkle seçmemiştim ama sprinkle'lı gelmiş").
+    expect(cakePrompt(k, "cookies")).toMatch(/on plain smooth icing with nothing else on it — no sprinkles/);
+    expect(cakePrompt(k, "cookies")).toMatch(/no fresh flowers, no sprinkles, no extra words/);
     // Every cookie in sight has its print, inside the photo.
     for (const p of SWEET_SPOTS.cookies!) {
       expect(p.x - p.w / 2).toBeGreaterThanOrEqual(0);

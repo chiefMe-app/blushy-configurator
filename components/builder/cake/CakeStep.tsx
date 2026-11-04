@@ -7,7 +7,7 @@ import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import {
   CAKE_FLAVOURS, CAKE_SPRINKLES, CAKE_STYLES, CAKE_TIERS, FIGURE_KINDS, RAINBOW_PRICE, RAINBOW_TIERS, rainbowOf, MAX_CAKE_DECOS, MAX_CAKE_FIGURES, TOPPER_CARDS, TOPPER_COLOURS, TOPPER_PLACES, TOPPER_PRICE,
   CAKE_FIGURES, THEME_CAKE_CUTOUTS, addItem, cakeDesigns, cakeFiguresFor, cakePrice, cakeTotal, defaultCake, figureKind, figurePicture, roomFor, themeFigures, topperColour as topperLook,
-  type Cake, type CakeFigure, type CakeSeed,
+  type Cake, type CakeFigure, type CakeSeed, type CakeView,
 } from "@/lib/studio/cake";
 import { cleanAge } from "@/lib/studio/pinata";
 import {
@@ -31,7 +31,7 @@ export function cakeSeed(config: BuilderConfig): CakeSeed {
 
 const TIER_NAMES: Record<number, string[]> = { 1: ["The cake"], 2: ["Bottom tier", "Top tier"], 3: ["Bottom tier", "Middle tier", "Top tier"] };
 
-export default function CakeStep({ config, setCake, onFinish, onSkip, render, onGenerate }: {
+export default function CakeStep({ config, setCake, onFinish, onSkip, render, onGenerate, setView }: {
   config: BuilderConfig;
   setCake: (k: Cake) => void;
   onFinish: () => void;
@@ -39,6 +39,8 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
   onSkip: () => void;
   render: PieceRender;
   onGenerate: () => void;
+  /** What the preview shows: a change to a sweet shows it close up. */
+  setView?: (v: CakeView) => void;
 }) {
   const theme = themeById(config.theme) ?? THEMES[0];
   const k = config.cake;
@@ -325,7 +327,11 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
         <p className="bz-tb-sub" style={{ fontWeight: 400 }}>{k.cart ? "On the cart's counter beside the cake" : k.plinths ? "Each on a plinth of its own beside the cake" : "On the table beside the cake"}, in your colours.</p>
         {CAKE_SWEETS.map((kind) => {
           const sw = k.sweets?.find((x) => x.id === kind.id);
-          const setSweet = (next: CakeSweet | null) => set({ sweets: CAKE_SWEETS.flatMap((x) => (x.id === kind.id ? (next ? [next] : []) : (k.sweets ?? []).filter((y) => y.id === x.id))) });
+          const setSweet = (next: CakeSweet | null, see = true) => {
+            set({ sweets: CAKE_SWEETS.flatMap((x) => (x.id === kind.id ? (next ? [next] : []) : (k.sweets ?? []).filter((y) => y.id === x.id))) });
+            // Seen close up as it changes (2026-11-04, the owner: "cupcake değişikliği yapılıyorsa cupcake'in yakın view'u açılsın").
+            if (next && see) setView?.(kind.id);
+          };
           const start = (count: CakeSweet["count"]): CakeSweet => ({
             id: kind.id, count, colour: seed.colours?.[0]?.toUpperCase() ?? "#F8BBD0",
             ...(kind.topper === "figure" ? { topper: pieces[0] } : kind.topper === "print" ? { print: pieces[0] } : {}),
@@ -379,7 +385,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
                   {SWEET_FLAVOURS[kind.id].map((f) => {
                     const on = sweetFlavour(sw).id === f.id;
                     return <button key={f.id} type="button" role="radio" aria-checked={on} className={on ? "on" : ""}
-                      onClick={() => setSweet({ ...sw, flavour: f.id === SWEET_FLAVOURS[kind.id][0].id ? undefined : f.id })}>{f.name}</button>;
+                      onClick={() => setSweet({ ...sw, flavour: f.id === SWEET_FLAVOURS[kind.id][0].id ? undefined : f.id }, false)}>{f.name}</button>;
                   })}
                 </div>
                 <label className="bz-ck-check">

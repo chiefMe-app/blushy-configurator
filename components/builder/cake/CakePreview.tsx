@@ -136,7 +136,7 @@ function SweetPiece({ s, k, uid, places, onTap }: { s: CakeSweet; k: Cake; uid: 
   // The foil's grey made a little brighter and cooler (silver), or much lighter, for paper in her colour.
   const lift = s.liner === "silver" ? { slope: 1.15, by: 0.08, blue: 0.03 } : { slope: 0.4, by: 0.6, blue: 0 };
   // The age printed on a cookie, its figures inside the face's oval (two of them smaller).
-  const ageSize = (across: number) => across * ((k.topper.age || "1").length > 1 ? 0.56 : 0.72);
+  const ageSize = (across: number) => across * ((k.topper.age || "1").length > 1 ? 0.6 : 0.8);
   return (
     <g data-part="cake-sweet" data-sweet={s.id} style={onTap ? { cursor: "zoom-in" } : undefined} onPointerDown={onTap ? (e) => { e.stopPropagation(); onTap(); } : undefined}>
       <defs><mask id={id} style={{ maskType: "alpha" }}><image href={pic.icing} x={x} y={y} width={w} height={h} /></mask></defs>
@@ -169,8 +169,9 @@ function SweetPiece({ s, k, uid, places, onTap }: { s: CakeSweet; k: Cake; uid: 
         ? <text key={i} x={p.x} y={(p.y + ageSize(p.w) * 0.21) / COOKIE_FACE} fontSize={ageSize(p.w)} textAnchor="middle" fill={topperColour(k.topper.colour).hex} transform={`scale(1 ${COOKIE_FACE})`}
           style={{ fontFamily: `${fontCss(face)}, Georgia, serif`, fontWeight: face.weight }} data-part="cake-sweet-print">{k.topper.age || "1"}</text>
         : print && (() => {
-          // Its longer side across 86% of the face: a picture's corners are clear, so it keeps inside the oval.
-          const a = print.h / print.w, pw = (p.w * 0.86) / Math.max(1, a), ph = pw * a * COOKIE_FACE;
+          // Its longer side nearly across the face (2026-11-04, the owner: "içindeki şekil biraz daha büyüsün"): a
+          // picture's corners are clear, so it keeps inside the oval.
+          const a = print.h / print.w, pw = (p.w * PRINT_FILL) / Math.max(1, a), ph = pw * a * COOKIE_FACE;
           return <image key={i} href={print.src} x={p.x - pw / 2} y={p.y - ph / 2} width={pw} height={ph} preserveAspectRatio="none" data-part="cake-sweet-print" />;
         })())}
       {s.topper && spots.map((p, i) => {
@@ -328,8 +329,9 @@ export function viewBoxOf(k: Cake, view: CakeView) {
   } else {
     const at = sweetPlaces(k)[view], pic = sweetPicture(view);
     const sw = (pic.w / pic.h) * at.tall;
-    const h = Math.max(at.tall * 2.1, (sw * 1.6) / 0.8), w = h * 0.8;
-    box = { x: at.x - w / 2, y: at.foot - at.tall / 2 - h * 0.55, w, h };
+    // Close enough that a wide pile (the cookies) fills most of the picture, not a band across a tall one (2026-11-04).
+    const h = Math.max(at.tall * 2.1, (sw * 1.3) / 0.8), w = h * 0.8;
+    box = { x: at.x - w / 2, y: at.foot - at.tall / 2 - h * 0.52, w, h };
   }
   // On a cart or the plinths, into that photo's pixels; then kept inside the photo.
   const b = map ? { x: box.x * map.scale + map.x, y: box.y * map.scale + map.y, w: box.w * map.scale, h: box.h * map.scale } : box;
@@ -529,6 +531,9 @@ function PickedTools({ k, picked, setCake, onPick }: { k: Cake; picked: CakePick
     </div>
   );
 }
+
+/** How much of a cookie's face its print's longer side covers. */
+const PRINT_FILL = 0.96;
 
 /** A view's name on its chip. */
 const viewName = (k: Cake, v: CakeView) => (v === "whole" ? (k.cart ? "Whole cart" : k.plinths ? "Whole display" : "Whole table") : v === "cake" ? "Cake" : CAKE_SWEETS.find((s) => s.id === v)!.name);

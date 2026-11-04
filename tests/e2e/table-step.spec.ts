@@ -583,6 +583,8 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   // Their liners and their flavour (the owner: "cupcake kağıdının rengini de seçebilsin … flavour her sweet için ayrı seçilsin").
   await cupcakes.getByTestId("cake-cupcake-liner").getByRole("radio", { name: "Silver foil" }).click();
   await expect(art.locator("[data-sweet=cupcakes] [data-part=cake-sweet-liner]")).toHaveAttribute("data-liner", "silver");
+  // A change to a sweet shows it close up (2026-11-04, the owner: "cupcake değişikliği yapılıyorsa cupcake'in yakın view'u açılsın").
+  await expect(art).toHaveAttribute("data-view", "cupcakes");
   const cupFlavour = page.getByTestId("cake-sweet-flavour-cupcakes").getByRole("radio");
   await expect(cupFlavour.first()).toHaveAttribute("aria-checked", "true");
   await cupFlavour.filter({ hasText: "Chocolate" }).click();
@@ -592,6 +594,7 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await cookies.getByRole("radio", { name: "6", exact: true }).click();
   await cookies.getByRole("radio", { name: /The age/ }).click();
   await expect(art.locator("[data-sweet=cookies] text[data-part=cake-sweet-print]").first()).toHaveText("7");
+  await expect(art).toHaveAttribute("data-view", "cookies");
   await cookies.getByText(/Rainbow sprinkles/).click();
   expect(aed(await sum.textContent())).toBe(s3 + 12 * 12 + 6 * (10 + 1));
   await cupcakes.getByRole("radio", { name: "None" }).click();

@@ -52,7 +52,7 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
     if (!kind || !sw) return "";
     const top = sw.topper ? `, each topped with a little ${said(sw.topper)!.kind === "cutout" ? "printed card" : "sugar-paste"} ${said(sw.topper)!.name.toLowerCase()}` : "";
     // A cookie's print as big as its iced face, inside its edge (2026-11-03, the owner: "o yuvarlak büyüklüğünde olsun, taşmasın").
-    const print = sw.print ? `, each printed with ${sw.print === "age" ? `a big number "${t.age || "1"}"` : `a big ${said(sw.print)!.name.toLowerCase()}`} filling its iced face nearly to the edge but never over it` : "";
+    const print = sw.print ? `, each printed with ${sw.print === "age" ? `a big number "${t.age || "1"}"` : `a big ${said(sw.print)!.name.toLowerCase()}`} filling its iced face nearly to the edge but never over it, on plain smooth icing${sw.sprinkles ? "" : " with nothing else on it — no sprinkles, no stars, no dots, no flowers"}` : "";
     // The cupcakes' liners in hers (2026-11-03, the owner: "cupcake kağıdının rengini de seçebilsin").
     return `${kind.words(colourWords(sw.colour)).replace("gold foil", linerWords(sw.liner))}${top}${print}${sw.sprinkles ? ", with rainbow sprinkles" : ""}`;
   };
@@ -76,7 +76,7 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
     "Make it one real, natural close-up photograph of exactly these, from the same camera position and with the same framing, every piece the same size and in the same place: real and freshly made, the same colours, toppers, prints and sprinkles as image 1 shows them, appetising.",
     `Keep the background as image 1 has it — the ${cart ? "cart" : plinths ? "plinths" : "table"}, the wall and whatever else shows at the edges of the picture — softly out of focus.`,
     LIGHT,
-    `Nothing added and nothing taken away: no candles, ${characters ? "no real people or hands, no characters beyond the printed pictures" : "no people, no hands, no characters"}, no fresh flowers, no extra words or letters.`,
+    `Nothing added and nothing taken away: no candles, ${characters ? "no real people or hands, no characters beyond the printed pictures" : "no people, no hands, no characters"}, no fresh flowers, ${k.sweets?.find((x) => x.id === view)?.sprinkles ? "" : "no sprinkles, "}no extra words or letters.`,
   ].join(" ");
   const close = view === "cake";
   const wide = !close && (!!cart || plinths || sweets.length > 0);

@@ -2,6 +2,11 @@
 // welcome board's preview sent to be rendered).
 import { toJpeg, toPng } from "html-to-image";
 
+const asDataUrl = async (url: string) => {
+  const blob = await (await fetch(url)).blob();
+  return await new Promise<string>((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result)); r.onerror = no; r.readAsDataURL(blob); });
+};
+
 /**
  * The @font-face rules of the fonts a drawing uses, their files inlined: html-to-image's own embedding left
  * the board's name in Georgia (2026-11-02), so it is handed these instead.
@@ -19,10 +24,6 @@ async function fontCssFor(node: HTMLElement): Promise<string> {
       if (r instanceof CSSFontFaceRule && families.has(r.style.getPropertyValue("font-family").trim().replace(/^["']|["']$/g, "").toLowerCase())) rules.push(r);
     }
   }
-  const asData = async (url: string) => {
-    const blob = await (await fetch(url)).blob();
-    return await new Promise<string>((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result)); r.onerror = no; r.readAsDataURL(blob); });
-  };
   // A page's stylesheets can hold the same rule more than once (next/font's, once per use).
   const seen = new Set<string>();
   const out = await Promise.all(rules.filter((r) => !seen.has(r.cssText) && !!seen.add(r.cssText)).map(async (r) => {
@@ -31,7 +32,7 @@ async function fontCssFor(node: HTMLElement): Promise<string> {
     const base = r.parentStyleSheet?.href ?? location.href;
     for (const m of Array.from(css.matchAll(/url\((["']?)([^"')]+)\1\)/g))) {
       if (m[2].startsWith("data:")) continue;
-      try { css = css.replace(m[0], `url("${await asData(new URL(m[2], base).href)}")`); } catch { /* left as it was */ }
+      try { css = css.replace(m[0], `url("${await asDataUrl(new URL(m[2], base).href)}")`); } catch { /* left as it was */ }
     }
     return css;
   }));
@@ -63,6 +64,74 @@ export async function nodeJpeg(node: HTMLElement | SVGSVGElement, width: number,
     return await toJpeg(node as HTMLElement, options);
   } finally {
     editing.forEach((e, i) => { e.style.display = was[i]; });
+  }
+}
+
+/**
+ * An SVG drawing as a JPEG data URI, `width` px wide, drawn as an SVG picture of its own — its photos and fonts
+ * inlined — never through html-to-image's foreignObject (2026-11-04: on the owner's iPhone the cake's close-ups
+ * reached the render with only their lettering, the photos left out, and the engine made up a cake). Safari can paint
+ * such a picture before its inner photos are decoded, so it is drawn again until the photos show.
+ */
+export async function svgJpeg(svg: SVGSVGElement, width: number): Promise<string> {
+  await document.fonts.ready;
+  const vb = svg.viewBox.baseVal;
+  const height = Math.round((width * vb.height) / vb.width);
+  const copy = svg.cloneNode(true) as SVGSVGElement;
+  copy.querySelectorAll("[data-no-capture]").forEach((e) => e.remove());
+  copy.removeAttribute("class");
+  copy.removeAttribute("style");
+  copy.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  copy.setAttribute("width", String(width));
+  copy.setAttribute("height", String(height));
+  const inlined = new Map<string, Promise<string>>();
+  await Promise.all(Array.from(copy.querySelectorAll("image")).map(async (im) => {
+    const href = im.getAttribute("href") ?? im.getAttribute("xlink:href");
+    if (!href || href.startsWith("data:")) return;
+    const url = new URL(href, location.href).href;
+    if (!inlined.has(url)) inlined.set(url, asDataUrl(url));
+    im.setAttribute("href", await inlined.get(url)!);
+  }));
+  const fonts = await fontCssFor(svg as unknown as HTMLElement);
+  if (fonts) {
+    const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    style.textContent = fonts;
+    copy.insertBefore(style, copy.firstChild);
+  }
+  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(copy)], { type: "image/svg+xml" }));
+  try {
+    const img = new Image();
+    await new Promise<void>((ok, no) => { img.onload = () => ok(); img.onerror = () => no(new Error("the drawing could not be read")); img.src = url; });
+    await img.decode().catch(() => undefined);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const cx = canvas.getContext("2d")!;
+    // How much of a small copy is bare white: a drawing whose photos did not paint is mostly white.
+    const probe = document.createElement("canvas");
+    probe.width = 48;
+    probe.height = Math.max(1, Math.round((48 * height) / width));
+    const px = probe.getContext("2d", { willReadFrequently: true })!;
+    const bare = () => {
+      px.drawImage(canvas, 0, 0, probe.width, probe.height);
+      const d = px.getImageData(0, 0, probe.width, probe.height).data;
+      let white = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] > 251 && d[i + 1] > 251 && d[i + 2] > 251) white++;
+      return white / (d.length / 4);
+    };
+    let best: string | null = null, bestBare = 2;
+    for (let i = 0; i < 4; i++) {
+      if (i) await new Promise((r) => setTimeout(r, 250 * i));
+      cx.fillStyle = "#FFFFFF";
+      cx.fillRect(0, 0, width, height);
+      cx.drawImage(img, 0, 0, width, height);
+      const b = bare();
+      if (b < bestBare) { bestBare = b; best = canvas.toDataURL("image/jpeg", 0.92); }
+      if (b < 0.25) break;
+    }
+    return best!;
+  } finally {
+    URL.revokeObjectURL(url);
   }
 }
 
