@@ -167,6 +167,8 @@ describe("cake", () => {
     // Later (her render "gene karanlık ve kasvet çıktı"): high-key, even, from the front, never darker than the preview.
     expect(p).toMatch(/high-key kids' birthday party photo.*from the front.*never yellow, cream, ivory, beige or grey.*candy-bright pastel colours.*never darker.*no dim, moody, dramatic or low-key light/);
     expect(p).toContain("a pink heart stays pink, never turned gold or glitter");
+    // Real, not the preview's flat pieces kept (her Seedream render: "bu sefer de gerçek gibi durmadı").
+    expect(p).toMatch(/Rebuild every part as a real object photographed by a real camera — nothing flat, drawn, pasted on/);
     expect(p).toMatch(/exactly two tiers stacked, never more and never fewer/);
     // Each tier's colour by name (a test render greyed a mint tier to sage), its border too.
     const named = cakePrompt({ ...k, colours: ["#F8BBD0", "#BBF7D0", "#FFFFFF"] });
@@ -244,6 +246,8 @@ describe("cutouts, balls, the name on the front, rainbows and sprinkles", () => 
     expect(cakePrompt({ ...uni, enabled: true })).toMatch(/white cloud-shaped card .*on two thin white sticks/);
     expect(cakePrompt({ ...kpop, enabled: true, topper: { ...kpop.topper, name: "Arya" } })).toMatch(/On the front of the cake keep the name/);
     expect(cakePrompt({ ...kpop, enabled: true })).toMatch(/printed card cutout toppers exactly: pop star trio/);
+    // Cut along its own outline (2026-11-04: Seedream set a rainbow cutout on a grey rectangle of card).
+    expect(cakePrompt({ ...kpop, enabled: true })).toContain("cut out exactly along the picture's own outline with a thin white edge — never a rectangle");
   });
 
   it("keeps the picture's view when the topper is made bigger, smaller or moved", () => {

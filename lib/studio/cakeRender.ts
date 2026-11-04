@@ -7,6 +7,17 @@ import { CAKE_SWEETS, colourWords, linerWords } from "./cakeSweets";
 import { fontWords, tableFont } from "./tableFonts";
 
 const TIER_NAMES: Record<number, string[]> = { 1: ["the cake"], 2: ["the bottom tier", "the top tier"], 3: ["the bottom tier", "the middle tier", "the top tier"] };
+// Every piece made a real thing (2026-11-04, the owner of a Seedream render: "bu sefer de gerçek gibi durmadı" — it
+// kept the preview's flat tiers and pasted-looking cupcakes).
+/** Every piece there made a real thing, named only when it is there (so none is asked for that is not). */
+function realWords(k: Cake): string {
+  const parts = ["real buttercream with its soft texture and the light falling round each tier's curve"];
+  if (k.figures.some((f) => CAKE_FIGURES.find((x) => x.id === f.id)?.kind === "sugar")) parts.push("real handmade sugar-paste figures with their own soft highlights and shadows");
+  if (k.sweets?.some((x) => x.id === "cupcakes")) parts.push("real freshly baked cupcakes with piped frosting in real paper liners");
+  if ((k.sweets ?? []).some((x) => x.id !== "cupcakes")) parts.push("the other sweets real and freshly made");
+  return `Rebuild every part as a real object photographed by a real camera — nothing flat, drawn, pasted on or cut out of a picture: ${parts.join(", ")}, real contact shadows wherever things touch, and the gentle grain, depth and natural imperfection of a real photograph.`;
+}
+
 // 2026-11-03 (the owner: "kötü bir render ışığı var, çok sarı, kaliteli durmuyor hiç … örnekteki ışık kalitesi iyi"):
 // a bakery's product photograph — bright, clean, white, sharp.
 // 2026-11-04 (the owner: "render'da ışık aşırı var, tasarım anlaşılmıyor"): still bright, but a balanced exposure that
@@ -88,6 +99,7 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
     "Make it one real, natural close-up photograph of exactly these, from the same camera position and with the same framing, every piece the same size and in the same place: real and freshly made, the same colours, toppers, prints and sprinkles as image 1 shows them — the icing, the liners and the stand exactly the colours of image 1 — appetising.",
     // The other sweets and the cloth stay (2026-11-04: a cupcakes test render dropped the cookies in front and changed the cloth).
     `Keep everything else as image 1 has it — the ${cart ? "cart" : plinths ? "plinths" : "table and its cloth, the same colour"}, ${others.length ? `the ${others.join(" and ")} beside them, every one of them kept, ` : ""}the cake, the wall and whatever else shows at the edges of the picture — in the same places and colours, softly out of focus.`,
+    realWords(k),
     LIGHT,
     `Nothing added and nothing taken away: no candles, ${characters ? "no real people or hands, no characters beyond the printed pictures" : "no people, no hands, no characters"}, no fresh flowers, ${k.sweets?.find((x) => x.id === view)?.sprinkles ? "" : "no sprinkles, "}no extra words or letters.`,
   ].join(" ");
@@ -105,8 +117,8 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
     sprinkles?.words ? `Keep the sprinkles as image 1 shows them: ${sprinkles.words}, real sugar sprinkles.` : "",
     figures.length ? `On top keep the handmade sugar-paste figures exactly: ${figures.join(", ")} — the same shapes, colours, sizes and places, made real and matte.` : "",
     sides.length ? `Keep the sugar-paste figures stuck flat on the sides of the tiers exactly where image 1 has them: ${sides.join(", ")} — real and matte, pressed onto the buttercream.` : "",
-    cutTop.length ? `On top keep the printed card cutout toppers exactly: ${cutTop.join(", ")} — flat glossy printed card with a thin white cut edge, each on a thin white stick pushed into the cake, the same pictures, sizes and places as image 1.` : "",
-    cutSide.length ? `Keep the printed card cutouts stuck flat on the sides of the tiers exactly where image 1 has them: ${cutSide.join(", ")} — flat glossy printed card with a thin white cut edge.` : "",
+    cutTop.length ? `On top keep the printed card cutout toppers exactly: ${cutTop.join(", ")} — flat glossy printed card cut out exactly along the picture's own outline with a thin white edge — never a rectangle or any background round it — each on a thin white stick pushed into the cake, the same pictures, sizes and places as image 1.` : "",
+    cutSide.length ? `Keep the printed card cutouts stuck flat on the sides of the tiers exactly where image 1 has them: ${cutSide.join(", ")} — flat glossy printed card cut out exactly along the picture's own outline with a thin white edge, never a rectangle or any background round it.` : "",
     decos.length ? `Keep the small round decorations exactly where image 1 has them: ${decos.join(", ")} — real and shiny, each once, the same size.` : "",
     topper,
     // The sweets at its edge named (2026-11-04: a close-up test render left the cupcakes out).
@@ -115,6 +127,7 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
     cart ? `Keep the ${onBoard ? "cake board" : "white cake stand"} and the sweet cart exactly as image 1 has them — its white wooden counter, its turned posts, its wheel and ${roof}, the same colour —${balloons ? ` ${balloons} exactly as image 1 has it, the same balloons in the same places and colours, —` : ""} and the floor and the wall behind it; a soft shadow under the cake.`
       : plinths ? `Keep the ${onBoard ? "cake board" : "white cake stand"} and the five white round plinths exactly as image 1 has them — their sizes, heights and places — and the floor and the wall behind them; a soft shadow under the cake.`
       : `Keep the ${onBoard ? "cake board" : "white cake stand"}, the table and the wall as they are; a soft shadow under the cake.`,
+    realWords(k),
     LIGHT,
     `Nothing added and nothing taken away: no candles, ${characters ? "no real people or hands, no characters beyond the printed cutouts" : "no people, no hands, no characters"}, no fresh flowers, ${sprinkles?.words || k.sweets?.some((x) => x.sprinkles) ? "" : "no sprinkles, "}${sweets.length && !close ? "no other sweets or plates" : "no plates"}, no extra words or letters.`,
   ].filter(Boolean).join(" ");
