@@ -751,6 +751,18 @@ test("H1 the helium balloons: bouquets in her colours with a foil, the age and t
   await page.getByTestId("helium-size").getByRole("radio", { name: /Large/ }).click();
   await expect(art.locator("[data-part=helium-latex]")).toHaveCount(27);
   expect(aed(await sum.textContent())).toBe(3 * (210 + 30));
+  // Real Sempertex balloons by their codes, the whole catalogue, metallic and Reflex too (2026-11-04).
+  await expect(page.getByTestId("helium-colours").getByRole("button").first()).toHaveAccessibleName(/^Remove \d{3} /);
+  await page.getByTestId("helium-sempertex-open").click();
+  const shop = page.getByTestId("helium-sempertex");
+  await shop.getByRole("button", { name: "Metallic", exact: true }).click();
+  await expect(shop.getByRole("button", { name: /^\d{3} Metallic / }).first()).toBeVisible();
+  await expect(shop.getByRole("button", { name: /^\d{3} Reflex / })).toHaveCount(0);
+  await shop.getByRole("button", { name: "All", exact: true }).click();
+  await page.getByTestId("helium-sempertex-search").fill("970");
+  await shop.getByRole("button", { name: "970 Reflex Gold" }).click();
+  await expect(page.getByTestId("helium-colours").getByRole("button", { name: "Remove 970 Reflex Gold" })).toBeVisible();
+  expect(aed(await sum.textContent())).toBe(3 * (210 + 30));
   // A plain star as well (several foils, 2026-11-04), in rose gold: the silver photo coloured; then the snowflake off.
   const foils = page.getByTestId("helium-topper");
   await foils.getByRole("checkbox", { name: /^Star(?!ry)/ }).click();
@@ -792,6 +804,7 @@ test("H1 the helium balloons: bouquets in her colours with a foil, the age and t
   expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
   expect(sent.helium).toMatchObject({ bouquets: 3, size: "large", foils: ["star"], ceiling: 25, number: { value: "10", size: "100" },
     letters: { on: true, text: "MIAROSE" }, bubble: { on: true, name: "Mia", filling: "mini" } });
+  expect(sent.helium.balloons).toContain("reflex-970-gold");
   // "Finalize the balloons → Package".
   await page.getByTestId("finish-helium").click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();

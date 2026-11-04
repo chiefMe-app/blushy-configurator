@@ -18,7 +18,7 @@ const LIGHT = "Light and colour it like a bright, cheerful, well-exposed kids' b
 function bouquetCounts(h: Helium): string {
   const per = heliumLayout(h).bouquets.map((q) => {
     const n = new Map<string, number>();
-    for (const b of q.balloons) n.set(b.colour, (n.get(b.colour) ?? 0) + 1);
+    for (const b of q.balloons) n.set(b.sempertex, (n.get(b.sempertex) ?? 0) + 1);
     return Array.from(n).sort((a, b) => b[1] - a[1]).map(([c, k]) => `${k} ${latexColourName(c)}`);
   });
   if (!per.length || per[0].length < 2) return "";
@@ -35,7 +35,7 @@ export function heliumPrompt(h: Helium): string {
   return [
     `Image 1 is a drawn preview of an empty children's party room decorated with helium balloons: ${parts.join("; ")}.`,
     "Make it one real, natural photograph of exactly this scene, taken with a camera, from the same camera position, with the same framing and every balloon the same size, in the same colour and in the same place — nothing moved, added or left out.",
-    "The latex balloons in image 1 are only drawn stand-ins: photograph each one anew as a real 11-inch latex balloon of that colour, true to life and never drawn, illustrated, smooth CGI or 3D-rendered — real rubber with its natural soft gradient from a soft bright highlight where the light falls to a deeper, richer shade at its edge, light glowing faintly through the rubber, slightly pear-shaped with a short stretched neck and a small tied knot, each one a little different in shape and a touch uneven in size as real balloons are blown, deep colours staying rich and pastel ones soft. Photograph them the way a professional balloon decorator's portfolio photo shows balloons: soft, diffused light, a smooth matte finish with one gentle soft highlight each, soft natural shadows where the balloons touch and overlap, clear depth between the front balloons and the ones behind.",
+    "The latex balloons in image 1 are only drawn stand-ins: photograph each one anew as a real 11-inch Sempertex latex balloon of that colour and finish, true to life and never drawn, illustrated, smooth CGI or 3D-rendered — real rubber with its natural soft gradient from a soft bright highlight where the light falls to a deeper, richer shade at its edge, light glowing faintly through the rubber, slightly pear-shaped with a short stretched neck and a small tied knot, each one a little different in shape and a touch uneven in size as real balloons are blown, deep colours staying rich and pastel ones soft; the Reflex and metallic ones a real shiny chrome or pearly metallic finish reflecting the room, the clear ones see-through. Photograph them the way a professional balloon decorator's portfolio photo shows balloons: soft, diffused light, a smooth matte finish with one gentle soft highlight each, soft natural shadows where the balloons touch and overlap, clear depth between the front balloons and the ones behind.",
     "Rebuild every other balloon as a real helium balloon too: the foil ones shiny metallic with puffy crinkled seams along their edges and soft reflections of the room, each printed foil keeping its own picture and colours; real thin curling ribbons; the weights on the floor real small foil-wrapped balloon weights; any bubble balloon truly clear and see-through with its lettering flat on it.",
     bouquetCounts(h),
     h.letters.on && h.letters.text ? `The foil letters spell exactly ${h.letters.text.split("").join(" ")}, in this order, each letter once.` : "",

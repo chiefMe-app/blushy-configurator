@@ -5,10 +5,12 @@
 // "daha yakın olsun view, default olarak 1 buket olsun, age balon olmasın hemen, renkler daha karışsın, duvar beyaz,
 // foil balonlar daha büyük ve size'ı yazsın" — one bouquet to start, no number until asked, bigger foils with their
 // sizes written, a white wall, the picture closer (lib/studio/heliumLayout.ts). Then "birkaç tane foil balon
-// seçebilsin": up to three foils on each bouquet, the first the biggest in the middle.
+// seçebilsin": up to three foils on each bouquet, the first the biggest in the middle. And "balonlar Sempertex
+// kataloğundaki gerçek balonlar olmalı, kodları çıkmalı … metalikler de, kataloğun hepsi": the latex balloons are
+// Sempertex balloons from the whole catalogue (lib/sempertexCatalog.ts), by their codes.
 import PARTS from "./heliumParts.json";
 import { cleanAge } from "./pinata";
-import { colourWords } from "./colourWords";
+import { SEMPERTEX_CATALOG, type SempertexColor } from "../sempertexCatalog";
 
 /** The printed theme-shape foils (public/design/helium/<id>.webp, scripts/helium/build.mts), each `cm` on its longest side. */
 export const THEME_FOILS = [
@@ -78,6 +80,33 @@ export const MAX_FOILS = 3;
 export const PLAIN_FOIL_PRICE = 15;
 export const MAX_LATEX_COLOURS = 4;
 
+/** A Sempertex balloon by its id. */
+export const sempertexBalloon = (id: string): SempertexColor | undefined => SEMPERTEX_CATALOG.find((c) => c.id === id);
+export const latexHex = (id: string) => sempertexBalloon(id)?.hex ?? "#F8BBD0";
+/** How a Sempertex finish takes the light: Reflex a mirror chrome, Metallic pearly, Satin and Silk a sheen, the rest matte. */
+export type LatexFinish = "chrome" | "metallic" | "sheen" | "matte";
+export function latexFinish(id: string): LatexFinish {
+  const f = sempertexBalloon(id)?.finish ?? "";
+  return /reflex/i.test(f) ? "chrome" : /metallic/i.test(f) ? "metallic" : /satin|silk/i.test(f) ? "sheen" : "matte";
+}
+export const isClearLatex = (id: string) => /clear/i.test(sempertexBalloon(id)?.colorName ?? "");
+/** "609 Pastel Matte Pink": how the owner orders it. */
+export const sempertexLabel = (id: string) => { const c = sempertexBalloon(id); return c ? `${c.code} ${c.finish} ${c.colorName}` : id; };
+/** The Sempertex balloon nearest a colour (drafts kept before 2026-11-04 held colours, not balloons). */
+export function nearestSempertex(hex: string): string {
+  const rgb = (x: string) => { const n = parseInt(x.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const [r, g, b] = rgb(hex);
+  let best = SEMPERTEX_CATALOG[0], d = Infinity;
+  for (const c of SEMPERTEX_CATALOG) {
+    if (/clear/i.test(c.colorName)) continue;
+    const [r2, g2, b2] = rgb(c.hex);
+    const e = (r - r2) ** 2 + (g - g2) ** 2 + (b - b2) ** 2 + (/pastel matte/i.test(c.finish) ? 0 : 1); // a tie: the matte one
+    if (e < d) { d = e; best = c; }
+  }
+  return best.id;
+}
+export const DEFAULT_LATEX = ["pastel-matte-609-pink", "pastel-matte-650-lilac", "pastel-matte-640-blue"];
+
 /** Loose balloons against the ceiling, their ribbons hanging (placeholders). */
 export const CEILING_COUNTS = [
   { count: 0, price: 0 }, { count: 25, price: 275 }, { count: 50, price: 500 }, { count: 100, price: 900 },
@@ -110,8 +139,8 @@ export const MAX_BUBBLE_NAME = 12;
 export interface Helium {
   /** false: the customer skipped it. */
   enabled: boolean;
-  /** The latex balloons' colours, for the bouquets and the ceiling (1 to 4). */
-  colours: string[];
+  /** The latex balloons, Sempertex ids (lib/sempertexCatalog.ts), for the bouquets and the ceiling (1 to 4). */
+  balloons: string[];
   /** How many bouquets (0 to 6), their size and the foils on each (none to three, the first the main one). */
   bouquets: number;
   size: BouquetSize;
@@ -136,12 +165,12 @@ export const cleanLetters = (v: unknown) => String(v ?? "").replace(/[^A-Za-z]/g
 /** The bubble's name: as typed, at most twelve characters. */
 export const cleanBubbleName = (v: unknown) => String(v ?? "").replace(/[^A-Za-z0-9À-ɏ '&!.-]/g, "").slice(0, MAX_BUBBLE_NAME);
 
-export function defaultHelium(seed: { themeId?: string; age?: string; name?: string; colours?: string[] } = {}): Helium {
-  const colours = (seed.colours ?? []).filter((h) => HEX.test(h)).slice(0, 3);
+export function defaultHelium(seed: { themeId?: string; age?: string; name?: string; balloons?: string[] } = {}): Helium {
+  const balloons = Array.from(new Set((seed.balloons ?? []).filter((id) => !!sempertexBalloon(id)))).slice(0, 3);
   const own = THEME_FOIL_PICKS[seed.themeId ?? ""]?.[0];
   return {
     enabled: true,
-    colours: colours.length ? colours : ["#F8BBD0", "#DDD6FE", "#BAE6FD"],
+    balloons: balloons.length ? balloons : DEFAULT_LATEX,
     bouquets: 1, size: "medium", foils: [own ?? "star"], topperColour: FOIL_COLOURS[1].hex,
     number: { on: false, value: cleanAge(seed.age) || "5", size: "80", colour: FOIL_COLOURS[1].hex },
     letters: { on: false, text: cleanLetters(seed.name), colour: FOIL_COLOURS[1].hex },
@@ -162,7 +191,8 @@ export function heliumPriceLines(h: Helium): { label: string; amount: number }[]
     const s = bouquetSize(h.size);
     const each = s.price + foilsPrice(h.foils);
     const foil = h.foils.length ? `, ${h.foils.map((f) => foilName(f).toLowerCase()).join(" + ")} foil${h.foils.length > 1 ? "s" : ""}` : "";
-    lines.push({ label: `${h.bouquets} helium bouquet${h.bouquets > 1 ? "s" : ""}, ${s.balloons} balloons${foil}`, amount: each * h.bouquets });
+    const codes = h.balloons.map((id) => sempertexBalloon(id)?.code).filter(Boolean).join(", ");
+    lines.push({ label: `${h.bouquets} helium bouquet${h.bouquets > 1 ? "s" : ""}, ${s.balloons} balloons${codes ? ` (Sempertex ${codes})` : ""}${foil}`, amount: each * h.bouquets });
   }
   if (h.number.on && h.number.value) lines.push({ label: `Foil number "${h.number.value}", ${h.number.size} cm`, amount: numberPrice(h.number) });
   if (h.letters.on && h.letters.text) lines.push({ label: `Foil letters "${h.letters.text}"`, amount: LETTER_PRICE * h.letters.text.length });
@@ -187,14 +217,16 @@ export function readHelium(raw: unknown): Helium | undefined {
   const obj = (v: unknown) => (v && typeof v === "object" ? v as Record<string, unknown> : {});
   const n = obj(r.number), l = obj(r.letters), b = obj(r.bubble);
   const kept = r.render as Record<string, unknown> | null;
-  const colours = Array.isArray(r.colours) ? r.colours.filter((h): h is string => typeof h === "string" && HEX.test(h)).slice(0, MAX_LATEX_COLOURS) : [];
+  // Kept before the Sempertex balloons as colours: each the nearest balloon.
+  const balloons = Array.from(new Set(Array.isArray(r.balloons) ? r.balloons.filter((id): id is string => typeof id === "string" && !!sempertexBalloon(id))
+    : Array.isArray(r.colours) ? r.colours.filter((h): h is string => typeof h === "string" && HEX.test(h)).map(nearestSempertex) : [])).slice(0, MAX_LATEX_COLOURS);
   const known = (v: unknown): v is FoilId => typeof v === "string" && [...THEME_FOILS, ...PLAIN_FOILS].some((f) => f.id === v);
   // Kept before 2026-11-04's several foils as one `topper` ("none" for none).
   const foils = Array.isArray(r.foils) ? Array.from(new Set(r.foils.filter(known))).slice(0, MAX_FOILS)
     : r.topper === "none" ? [] : known(r.topper) ? [r.topper] : base.foils;
   return {
     enabled: r.enabled !== false,
-    colours: colours.length ? colours : base.colours,
+    balloons: balloons.length ? balloons : base.balloons,
     bouquets: Math.max(0, Math.min(MAX_BOUQUETS, Math.round(Number(r.bouquets ?? base.bouquets)) || 0)),
     size: BOUQUET_SIZES.find((s) => s.id === r.size)?.id ?? base.size,
     foils,
@@ -238,12 +270,15 @@ export const LATEX = ["latex-a", "latex-b", "latex-c", "latex-d"] as const;
  */
 export const HELIUM_ROOM = { src: "/design/helium/room.webp", w: 1344, h: 1024, ceiling: 157, base: 823, floor: 894, perCm: 2.7, view: { x: 130, y: 20, w: 1084, h: 940 } };
 
-/** A latex balloon's colour by name, how light or deep it is said too. */
-export function latexColourName(hex: string): string {
-  const n = parseInt(hex.slice(1), 16), ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  const l = (Math.max(...ch) + Math.min(...ch)) / 510, sat = Math.max(...ch) - Math.min(...ch);
-  const name = colourWords(hex);
-  return sat < 24 || /pastel/.test(name) ? name : l > 0.8 ? `pale ${name}` : l < 0.3 ? `deep ${name}` : name;
+/**
+ * A Sempertex balloon for the render: its code and name, and what it looks like (the catalogue's render label, said to
+ * keep the engine off the wrong colour; FLUX drifted a light pink to coral when told only "pink").
+ */
+export function latexColourName(id: string): string {
+  const c = sempertexBalloon(id);
+  if (!c) return "pink";
+  const look = c.renderLabel ?? `${c.finish.toLowerCase()} ${c.colorName.toLowerCase()}`;
+  return `Sempertex ${c.code} ${c.finish} ${c.colorName} (${look})`;
 }
 
 /** What is in the picture, in words, for the render. */
@@ -255,10 +290,10 @@ export function heliumWords(h: Helium): string[] {
     const [first] = h.foils;
     const foil = !first ? "" : h.foils.length === 1 ? ` with ${one(first)} on top, ${foilCm(first)} cm`
       : ` with ${h.foils.length} foil balloons on top, side by side: ${h.foils.map((f) => `${one(f)}, ${foilCm(f)} cm`).join("; ")}, the first the one in the middle`;
-    // Her colours by name (FLUX drifted a light pink to coral without them, and to candy pink as plain "pink").
-    const names = Array.from(new Set(h.colours.map(latexColourName)));
+    // Her balloons by name (FLUX drifted a light pink to coral without them, and to candy pink as plain "pink").
+    const names = Array.from(new Set(h.balloons.map(latexColourName)));
     const mix = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)} mixed together` : names[0] ?? "pink";
-    out.push(`${h.bouquets} helium balloon bouquet${h.bouquets > 1 ? "s" : ""} standing on the floor, ${h.bouquets > 1 ? "each " : ""}${s.balloons} matte ${LATEX_CM} cm latex balloons in ${mix}${foil ? "," : ""}${foil}, their ribbons gathered down to a small balloon weight on the floor`);
+    out.push(`${h.bouquets} helium balloon bouquet${h.bouquets > 1 ? "s" : ""} standing on the floor, ${h.bouquets > 1 ? "each " : ""}${s.balloons} ${LATEX_CM} cm latex balloons: ${mix}${foil ? "," : ""}${foil}, their ribbons gathered down to a small balloon weight on the floor`);
   }
   if (h.number.on && h.number.value) out.push(`a giant ${foilColourName(h.number.colour).toLowerCase()} foil number ${h.number.value} balloon, ${h.number.size} cm tall, standing on the floor`);
   if (h.letters.on && h.letters.text) out.push(`the name ${h.letters.text} in ${foilColourName(h.letters.colour).toLowerCase()} foil letter balloons, 40 cm each, in a row on the wall`);

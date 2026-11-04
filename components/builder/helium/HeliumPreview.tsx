@@ -5,7 +5,7 @@
 // /api/helium-render).
 import { useEffect, useState } from "react";
 import type { BuilderConfig } from "@/lib/config";
-import { HELIUM_ROOM, SILVER, heliumEmpty, heliumPicture, isPlainFoil, type FoilId, type Helium } from "@/lib/studio/helium";
+import { HELIUM_ROOM, SILVER, heliumEmpty, heliumPicture, isClearLatex, isPlainFoil, latexFinish, latexHex, type FoilId, type Helium, type LatexFinish } from "@/lib/studio/helium";
 import { heliumLayout, type PlacedLatex } from "@/lib/studio/heliumLayout";
 import { fontCss, tableFont } from "@/lib/studio/tableFonts";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
@@ -14,20 +14,29 @@ import RenderAgain from "@/components/builder/RenderAgain";
 import ZoomPhoto from "@/components/builder/ZoomPhoto";
 
 // -- Colouring the white latex and the silver foils -----------------------------------------------------------------
-// Once per picture and colour, on a canvas (an SVG filter per balloon made the page slow): the photo multiplied by the
-// colour, its own outline kept. Until it is made the photo shows as it is.
+// Once per picture, colour and finish, on a canvas (an SVG filter per balloon made the page slow): a foil's photo
+// multiplied by its colour, its own outline kept; a latex balloon shaded as its Sempertex finish takes the light.
+// Until it is made the photo shows as it is.
 const tinted = new Map<string, string>();
 const making = new Map<string, Promise<void>>();
 const TINT_TALL = 200;
+/** How each finish takes the light: its shade to the edge (from, by, curve) and its highlight (from, wide, strength). */
+const FINISH_LIGHT: Record<LatexFinish, { from: number; by: number; curve: number; spec: number; wide: number; k: number }> = {
+  matte: { from: 0.6, by: 0.4, curve: 1.3, spec: 0.88, wide: 0.08, k: 0.5 },
+  sheen: { from: 0.55, by: 0.45, curve: 1.4, spec: 0.86, wide: 0.08, k: 0.65 },
+  metallic: { from: 0.45, by: 0.55, curve: 1.6, spec: 0.84, wide: 0.09, k: 0.8 },
+  chrome: { from: 0.25, by: 0.75, curve: 2, spec: 0.82, wide: 0.1, k: 0.95 },
+};
 /**
  * A latex balloon in its colour, as one photographs (the owner, 2026-11-04: "neden gerçek balon gibi durmuyor şu
  * pembe ve morlar?"): the evened-out white photo multiplied by a deep colour was a flat disc, and the render kept it
  * so. Its light (smoothed, the photo's steps showed) now gives the colour a real roundness — a deeper shade to the
- * edge — and a soft highlight towards white where the light falls.
+ * edge — and a highlight towards white where the light falls: soft on matte rubber, bright and hard on chrome.
  */
-function latexTint(ctx: CanvasRenderingContext2D, w: number, h: number, hex: string) {
+function latexTint(ctx: CanvasRenderingContext2D, w: number, h: number, hex: string, finish: LatexFinish) {
   const px = ctx.getImageData(0, 0, w, h), d = px.data;
   const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const f = FINISH_LIGHT[finish];
   let light = new Float32Array(w * h);
   for (let i = 0; i < w * h; i++) light[i] = d[i * 4 + 3] ? (d[i * 4] * 0.2126 + d[i * 4 + 1] * 0.7152 + d[i * 4 + 2] * 0.0722) / 255 : 0.8;
   // Two box blurs each way, two pixels wide.
@@ -45,8 +54,8 @@ function latexTint(ctx: CanvasRenderingContext2D, w: number, h: number, hex: str
   }
   for (let i = 0; i < w * h; i++) {
     const L = light[i];
-    const shade = 0.6 + 0.4 * Math.pow(Math.max(0, Math.min(1.08, (L - 0.55) / 0.27)), 1.3);
-    const x = Math.max(0, Math.min(1, (L - 0.88) / 0.08)), spec = x * x * (3 - 2 * x) * 0.5;
+    const shade = f.from + f.by * Math.pow(Math.max(0, Math.min(1.08, (L - 0.55) / 0.27)), f.curve);
+    const x = Math.max(0, Math.min(1, (L - f.spec) / f.wide)), spec = x * x * (3 - 2 * x) * f.k;
     for (let k = 0; k < 3; k++) {
       const base = Math.min(255, c[k] * shade);
       d[i * 4 + k] = base + (255 - base) * spec;
@@ -54,9 +63,15 @@ function latexTint(ctx: CanvasRenderingContext2D, w: number, h: number, hex: str
   }
   ctx.putImageData(px, 0, 0);
 }
+/** A foil left as photographed: white or silver. */
 const plainColour = (hex: string) => /^#F[0-9A-F]F[0-9A-F]F[0-9A-F]$/i.test(hex) || hex.toUpperCase() === SILVER;
-function makeTint(src: string, hex: string): Promise<void> {
-  const key = `${src}|${hex}`;
+/** `finish` for a latex balloon; none for a foil. */
+type Tint = [src: string, hex: string, finish?: LatexFinish];
+const tintKey = ([src, hex, finish]: Tint) => `${src}|${hex}|${finish ?? ""}`;
+const asIs = ([, hex, finish]: Tint) => !finish && plainColour(hex);
+function makeTint(t: Tint): Promise<void> {
+  const key = tintKey(t);
+  const [src, hex, finish] = t;
   if (tinted.has(key)) return Promise.resolve();
   if (!making.has(key)) making.set(key, (async () => {
     const img = new Image();
@@ -67,7 +82,7 @@ function makeTint(src: string, hex: string): Promise<void> {
     canvas.width = w; canvas.height = h;
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(img, 0, 0, w, h);
-    if (src.includes("/latex-")) latexTint(ctx, w, h, hex);
+    if (finish) latexTint(ctx, w, h, hex, finish);
     else {
       ctx.globalCompositeOperation = "multiply";
       ctx.fillStyle = hex;
@@ -80,18 +95,18 @@ function makeTint(src: string, hex: string): Promise<void> {
   return making.get(key)!;
 }
 /** The pictures in their colours: a lookup that falls back to the photo while a colour is being made. */
-function useTints(pairs: [string, string][]) {
+function useTints(list: Tint[]) {
   const [, redraw] = useState(0);
-  const want = Array.from(new Set(pairs.filter(([, hex]) => !plainColour(hex)).map(([src, hex]) => `${src}|${hex}`)));
-  const sig = want.join(",");
+  const want = Array.from(new Map(list.filter((t) => !asIs(t)).map((t) => [tintKey(t), t] as const)).values());
+  const sig = want.map(tintKey).join(",");
   useEffect(() => {
     let alive = true;
-    const missing = want.filter((k) => !tinted.has(k));
-    if (missing.length) void Promise.all(missing.map((k) => { const [src, hex] = k.split("|"); return makeTint(src, hex); })).then(() => { if (alive) redraw((x) => x + 1); });
+    const missing = want.filter((t) => !tinted.has(tintKey(t)));
+    if (missing.length) void Promise.all(missing.map(makeTint)).then(() => { if (alive) redraw((x) => x + 1); });
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig]);
-  return (src: string, hex: string) => (plainColour(hex) ? src : tinted.get(`${src}|${hex}`) ?? src);
+  return (...t: Tint) => (asIs(t) ? t[0] : tinted.get(tintKey(t)) ?? t[0]);
 }
 
 /** A foil's shine: lighter at the top, its colour, deeper below. */
@@ -161,13 +176,15 @@ export function HeliumArt({ h, className }: { h: Helium; className?: string }) {
   const view = L.view;
   const latex = [...L.bouquets.flatMap((b) => b.balloons), ...L.ceiling];
   const tint = useTints([
-    ...latex.map((b) => [heliumPicture(b.pic).src, b.colour] as [string, string]),
-    ...h.foils.filter(isPlainFoil).map((f) => [heliumPicture(f).src, h.topperColour] as [string, string]),
+    ...latex.map((b): Tint => [heliumPicture(b.pic).src, b.colour, latexFinish(b.sempertex)]),
+    ...h.foils.filter(isPlainFoil).map((f): Tint => [heliumPicture(f).src, h.topperColour]),
   ]);
   const balloon = (b: PlacedLatex, key: string | number) => {
     const pic = heliumPicture(b.pic);
     const bh = (pic.h / pic.w) * b.w;
-    return <image key={key} data-part="helium-latex" href={tint(pic.src, b.colour)} x={b.x - b.w / 2} y={b.y - bh * 0.45} width={b.w} height={bh}
+    // A clear balloon: the white photo, see-through.
+    const clear = isClearLatex(b.sempertex);
+    return <image key={key} data-part="helium-latex" href={clear ? pic.src : tint(pic.src, b.colour, latexFinish(b.sempertex))} opacity={clear ? 0.45 : undefined} x={b.x - b.w / 2} y={b.y - bh * 0.45} width={b.w} height={bh}
       transform={b.tilt ? `rotate(${b.tilt.toFixed(1)} ${b.x} ${b.y})` : undefined} />;
   };
   /**
@@ -215,7 +232,7 @@ export function HeliumArt({ h, className }: { h: Helium; className?: string }) {
             {q.foils.map((f, k) => <image key={k} data-part="helium-foil" href={foilSrc(f.id)} x={f.x - f.w / 2} y={f.y - f.h / 2} width={f.w} height={f.h}
               transform={f.tilt ? `rotate(${f.tilt} ${f.x} ${f.y})` : undefined} />)}
             {q.balloons.map((b, j) => <g key={j}>{contact(b, "s")}{balloon(b, "b")}</g>)}
-            <Weight x={q.weight.x} y={q.weight.y} hex={h.colours[0] ?? "#F8BBD0"} uid={`hl-q${i}`} />
+            <Weight x={q.weight.x} y={q.weight.y} hex={latexHex(h.balloons[0] ?? "")} uid={`hl-q${i}`} />
           </g>
         );
       })}
@@ -238,7 +255,7 @@ export function HeliumArt({ h, className }: { h: Helium; className?: string }) {
             </defs>
             <path d={ribbon(x, y + r, weight.x, weight.y - 22, 8)} stroke={RIBBON} strokeWidth={1.6} fill="none" />
             {dots.map((d, i) => inside === "mini"
-              ? <circle key={i} cx={d.cx} cy={d.cy} r={r * 0.17} fill={h.colours[i % h.colours.length] ?? "#F8BBD0"} stroke="rgba(0,0,0,0.08)" />
+              ? <circle key={i} cx={d.cx} cy={d.cy} r={r * 0.17} fill={latexHex(h.balloons[i % Math.max(1, h.balloons.length)] ?? "")} stroke="rgba(0,0,0,0.08)" />
               : inside === "feathers"
                 ? <ellipse key={i} cx={d.cx} cy={d.cy} rx={r * 0.13} ry={r * 0.04} transform={`rotate(${(i * 47) % 180} ${d.cx} ${d.cy})`} fill="#FFFFFF" stroke="rgba(0,0,0,0.12)" strokeWidth={0.6} />
                 : <rect key={i} x={d.cx - 3} y={d.cy - 2} width={6} height={4} transform={`rotate(${(i * 53) % 180} ${d.cx} ${d.cy})`} fill={i % 3 ? "#D4AF37" : "#F3D98B"} />)}
@@ -251,7 +268,7 @@ export function HeliumArt({ h, className }: { h: Helium; className?: string }) {
               <text x={x} y={y + r * 0.12} textAnchor="middle" fontSize={Math.min(r * 0.62, (r * 3.2) / Math.max(4, h.bubble.name.length))} fill={h.bubble.colour}
                 stroke="rgba(0,0,0,0.12)" strokeWidth={0.6} paintOrder="stroke" style={{ fontFamily: `${fontCss(face)}, cursive`, fontWeight: face.weight }} data-part="helium-bubble-name">{h.bubble.name}</text>
             )}
-            <Weight x={weight.x} y={weight.y} hex={h.colours[0] ?? "#F8BBD0"} uid="hl-b" />
+            <Weight x={weight.x} y={weight.y} hex={latexHex(h.balloons[0] ?? "")} uid="hl-b" />
           </g>
         );
       })()}

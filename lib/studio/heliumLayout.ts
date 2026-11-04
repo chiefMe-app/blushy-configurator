@@ -6,10 +6,10 @@
 // the picture closing in on what is there (`view`); up to three foils on a bouquet, fanned; and every latex balloon
 // leaning along its ribbon to the weight, as a real bouquet's do ("neden gerçek balon gibi durmuyor": all upright,
 // side by side, they read as drawn discs).
-import { BUBBLE_CM, HELIUM_ROOM, LATEX, LATEX_CM, LETTER_CM, NUMBER_SIZES, bouquetSize, foilCm, heliumPicture, type FoilId, type Helium } from "./helium";
+import { BUBBLE_CM, DEFAULT_LATEX, HELIUM_ROOM, LATEX, LATEX_CM, LETTER_CM, NUMBER_SIZES, bouquetSize, foilCm, heliumPicture, latexHex, type FoilId, type Helium } from "./helium";
 
-/** A latex balloon: its picture (LATEX), its colour, its middle and width, and its lean in degrees (clockwise). */
-export interface PlacedLatex { pic: (typeof LATEX)[number]; colour: string; x: number; y: number; w: number; tilt: number }
+/** A latex balloon: its picture (LATEX), which Sempertex balloon and its colour, its middle and width, and its lean in degrees (clockwise). */
+export interface PlacedLatex { pic: (typeof LATEX)[number]; sempertex: string; colour: string; x: number; y: number; w: number; tilt: number }
 /** A foil on a bouquet: which, its middle, its size and its lean. */
 export interface PlacedFoil { id: FoilId; x: number; y: number; w: number; h: number; tilt: number }
 export interface PlacedBouquet { x: number; weight: { x: number; y: number }; balloons: PlacedLatex[]; foils: PlacedFoil[] }
@@ -73,7 +73,7 @@ export function mixColours(colours: string[], cluster: [number, number][], seed:
 }
 
 export function heliumLayout(h: Helium): HeliumLayout {
-  const colours = h.colours.length ? h.colours : ["#F8BBD0"];
+  const colours = h.balloons.length ? h.balloons : DEFAULT_LATEX.slice(0, 1);
   const number = h.number.on && !!h.number.value;
   const bubble = h.bubble.on;
   const middle = number || bubble;
@@ -94,7 +94,7 @@ export function heliumLayout(h: Helium): HeliumLayout {
       const by = cy + (dy + (rand(i * 37 + j + 2) - 0.5) * 0.14) * BALLOON_W * 1.05;
       // Leaning along its ribbon, its knot to the weight, a little more as a held bouquet fans out.
       const tilt = (-Math.atan2(weight.x - bx, weight.y - by) * 180 / Math.PI) * 1.6 + (rand(i * 41 + j + 9) - 0.5) * 6;
-      return { pic: LATEX[(i + j) % LATEX.length], colour: mixed[j], x: bx, y: by, w: BALLOON_W * (0.95 + rand(i * 53 + j * 11 + 5) * 0.1), tilt };
+      return { pic: LATEX[(i + j) % LATEX.length], sempertex: mixed[j], colour: latexHex(mixed[j]), x: bx, y: by, w: BALLOON_W * (0.95 + rand(i * 53 + j * 11 + 5) * 0.1), tilt };
     });
     const top = Math.min(...balloons.map((b) => b.y)) - BALLOON_W * 0.55;
     // Each foil its real size on its longest side, fanned by the main one's size.
@@ -133,7 +133,8 @@ export function heliumLayout(h: Helium): HeliumLayout {
     const s = 0.85 + t * 0.55;
     const w = BALLOON_W * s;
     const top = CEILING - 8 - t * 95;
-    out.ceiling.push({ pic: LATEX[i % LATEX.length], colour: colours[Math.floor(rand(i + 301) * colours.length)], x, y: top + w * 0.55, w, ribbon: (90 + rand(i + 201) * 110) * s, tilt: (rand(i + 401) - 0.5) * 14 });
+    const id = colours[Math.floor(rand(i + 301) * colours.length)];
+    out.ceiling.push({ pic: LATEX[i % LATEX.length], sempertex: id, colour: latexHex(id), x, y: top + w * 0.55, w, ribbon: (90 + rand(i + 201) * 110) * s, tilt: (rand(i + 401) - 0.5) * 14 });
   }
   out.view = closeIn(out, h);
   return out;

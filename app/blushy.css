@@ -1478,3 +1478,14 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 .bz-zoom-box.in img { margin: 0; border-radius: 0; }
 .bz-zoom-close { position: absolute; top: 12px; right: 14px; width: 40px; height: 40px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.92); color: #3b2a30; font-size: 26px; line-height: 1; cursor: pointer; }
 .bz-zoom-hint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); margin: 0; padding: 6px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.45); color: #fff; font: 500 12px/1.2 var(--font-dm-sans, system-ui), sans-serif; pointer-events: none; white-space: nowrap; }
+
+/* The helium balloons' Sempertex picker (2026-11-04): the backdrop's balloon chips, smaller, picked ones ringed. */
+.bz-hl-chips { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.bz-hl-chips .bz-bl-chip { padding: 8px; gap: 7px; font: inherit; background: #fff; cursor: pointer; text-align: left; }
+.bz-hl-chips .bz-bl-chip .ball { width: 28px; height: 33px; }
+.bz-hl-chips .bz-bl-chip small { font-size: 10.5px; }
+.bz-hl-pick.on { border-color: var(--bz-pink, #ec4d8d); background: #fff7fb; box-shadow: 0 0 0 1px var(--bz-pink, #ec4d8d); }
+.bz-hl-search { width: 100%; box-sizing: border-box; padding: 9px 14px; border-radius: 10px; border: 1.5px solid #eceaf1; font: inherit; font-size: 13px; margin-bottom: 10px; }
+.bz-hl-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.bz-hl-filters button { padding: 4px 12px; border-radius: 999px; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; background: #fff; color: #73778a; border: 1.5px solid #eceaf1; }
+.bz-hl-filters button.on { background: #ec4d8d; color: #fff; border-color: #ec4d8d; }

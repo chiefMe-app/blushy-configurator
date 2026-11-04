@@ -23,7 +23,7 @@ const JPEG = Buffer.from("jpeg-bytes"), PICTURE = `data:image/jpeg;base64,${JPEG
 vi.mock("@/lib/renderStore", () => ({ renderJpeg: async () => JPEG, storeRenderJpeg: async () => null }));
 import { POST } from "@/app/api/helium-render/route";
 
-const seed = { themeId: "unicorn", age: "6", name: "Arya", colours: ["#F8BBD0", "#DDD6FE"] };
+const seed = { themeId: "unicorn", age: "6", name: "Arya", balloons: ["pastel-matte-609-pink", "pastel-matte-650-lilac"] };
 const full = (): Helium => ({
   ...defaultHelium(seed), bouquets: 3, size: "large", foils: ["star"], topperColour: "#D9B45A",
   number: { ...defaultHelium(seed).number, on: true },
@@ -35,7 +35,7 @@ describe("the helium balloons", () => {
   it("start from the party: one bouquet with the theme's own foil in its colours; the age ready but off, letters and bubble off", () => {
     // The owner's first look (2026-11-04): "default olarak 1 buket olsun, age balon olmasın hemen".
     const h = defaultHelium(seed);
-    expect(h).toMatchObject({ enabled: true, bouquets: 1, size: "medium", foils: ["unicorn"], colours: seed.colours, ceiling: 0 });
+    expect(h).toMatchObject({ enabled: true, bouquets: 1, size: "medium", foils: ["unicorn"], balloons: seed.balloons, ceiling: 0 });
     expect(h.number).toMatchObject({ on: false, value: "6" });
     expect(h.letters).toMatchObject({ on: false, text: "ARYA" });
     expect(h.bubble).toMatchObject({ on: false, name: "Arya" });
@@ -61,7 +61,7 @@ describe("the helium balloons", () => {
     const h = full();
     const lines = heliumPriceLines(h);
     expect(lines.map((l) => l.label)).toEqual([
-      "3 helium bouquets, 9 balloons, star foil", 'Foil number "6", 80 cm', 'Foil letters "ARYA"', "50 ceiling balloons", 'Name bubble balloon "Arya", mini balloons',
+      "3 helium bouquets, 9 balloons (Sempertex 609, 650), star foil", 'Foil number "6", 80 cm', 'Foil letters "ARYA"', "50 ceiling balloons", 'Name bubble balloon "Arya", mini balloons',
     ]);
     expect(lines[0].amount).toBe((210 + PLAIN_FOIL_PRICE) * 3);
     expect(lines[2].amount).toBe(LETTER_PRICE * 4);
@@ -69,8 +69,8 @@ describe("the helium balloons", () => {
     expect(heliumPriceLines({ ...h, foils: ["unicorn"] })[0].amount).toBe((210 + THEME_FOIL_PRICE) * 3);
     // Several foils on each bouquet (the owner, 2026-11-04: "birkaç tane foil balon seçebilsin"), priced each.
     const three = heliumPriceLines({ ...h, foils: ["unicorn", "star", "heart"] })[0];
-    expect(three).toEqual({ label: "3 helium bouquets, 9 balloons, unicorn + star + heart foils", amount: (210 + THEME_FOIL_PRICE + 2 * PLAIN_FOIL_PRICE) * 3 });
-    expect(heliumPriceLines({ ...h, foils: [] })[0]).toEqual({ label: "3 helium bouquets, 9 balloons", amount: 630 });
+    expect(three).toEqual({ label: "3 helium bouquets, 9 balloons (Sempertex 609, 650), unicorn + star + heart foils", amount: (210 + THEME_FOIL_PRICE + 2 * PLAIN_FOIL_PRICE) * 3 });
+    expect(heliumPriceLines({ ...h, foils: [] })[0]).toEqual({ label: "3 helium bouquets, 9 balloons (Sempertex 609, 650)", amount: 630 });
     expect(heliumPriceLines({ ...h, number: { ...h.number, value: "10", size: "100" } })[1].amount).toBe(240);
     const config = { ...defaultConfig(), helium: h };
     const base = priceBreakdown({ ...defaultConfig() }).total;
@@ -84,10 +84,12 @@ describe("the helium balloons", () => {
   it("read back over the defaults, whatever comes in", () => {
     const h = full();
     expect(readHelium(JSON.parse(JSON.stringify(h)))).toEqual(h);
-    const bad = readHelium({ bouquets: 40, size: "huge", foils: ["mickey", "star", "star", "heart", "round", "cloud"], colours: ["red", "#FFFFFF"], ceiling: 33,
+    const bad = readHelium({ bouquets: 40, size: "huge", foils: ["mickey", "star", "star", "heart", "round", "cloud"], balloons: ["nope", "reflex-970-gold", "reflex-970-gold"], ceiling: 33,
       number: { on: true, value: "x7y", colour: "#123456" }, letters: { on: true, text: "ar ya 5!" }, bubble: { on: true, name: "<b>Arya</b>", filling: "gold" },
       render: { key: "../x", path: "nope" } })!;
-    expect(bad).toMatchObject({ bouquets: 6, size: "medium", foils: ["star", "heart", "round"], colours: ["#FFFFFF"], ceiling: 0 });
+    expect(bad).toMatchObject({ bouquets: 6, size: "medium", foils: ["star", "heart", "round"], balloons: ["reflex-970-gold"], ceiling: 0 });
+    // Kept before the Sempertex balloons, as colours: each the nearest balloon, the matte one on a tie.
+    expect(readHelium({ colours: ["#F8BBD0", "#FFFFFF", "red"] })!.balloons).toEqual(["pastel-matte-174-pink", "fashion-002-white"]);
     // Kept before several foils: one topper, or none.
     expect(readHelium({ topper: "unicorn" })!.foils).toEqual(["unicorn"]);
     expect(readHelium({ topper: "none" })!.foils).toEqual([]);
@@ -130,9 +132,10 @@ describe("the helium balloons", () => {
     }
     // Her colours, each as often as the other, mixed: never two of a colour side by side where it can be helped,
     // and the bouquets not all alike.
-    expect(new Set(L.bouquets.flatMap((q) => q.balloons.map((b) => b.colour)))).toEqual(new Set(h.colours));
+    expect(new Set(L.bouquets.flatMap((q) => q.balloons.map((b) => b.sempertex)))).toEqual(new Set(h.balloons));
+    expect(L.bouquets[0].balloons.find((b) => b.sempertex === "pastel-matte-609-pink")!.colour).toBe("#F8BBD0");
     for (const q of L.bouquets) {
-      const count = h.colours.map((c) => q.balloons.filter((b) => b.colour === c).length);
+      const count = h.balloons.map((c) => q.balloons.filter((b) => b.sempertex === c).length);
       expect(Math.max(...count) - Math.min(...count)).toBeLessThanOrEqual(1);
     }
     const rows = (q: (typeof L.bouquets)[number]) => q.balloons.map((b) => b.colour).join();
@@ -177,9 +180,11 @@ describe("the helium balloons", () => {
 
   it("are told to the engine as they are: each piece, the letters spelled out, the room kept, no characters", () => {
     const p = heliumPrompt(full());
-    expect(p).toMatch(/3 helium balloon bouquets standing on the floor, each 9 matte 28 cm latex balloons in pale pink and pale lilac mixed together, with a big gold star foil balloon on top, 60 cm/);
-    expect(p).toMatch(/The bouquets' latex balloons, from left to right, are exactly (5 pale (pink|lilac) and 4 pale (pink|lilac)(; )?){3}, each in the colour and the place image 1 shows/);
-    expect(heliumPrompt(defaultHelium(seed))).toMatch(/The bouquet's latex balloons are exactly 4 pale pink and 3 pale lilac|The bouquet's latex balloons are exactly 4 pale lilac and 3 pale pink/);
+    expect(p).toMatch(/3 helium balloon bouquets standing on the floor, each 9 28 cm latex balloons: Sempertex 609 Pastel Matte Pink \(soft baby pink, matte pastel\) and Sempertex 650 Pastel Matte Lilac \(pastel matte lilac\) mixed together, with a big gold star foil balloon on top, 60 cm/);
+    expect(p).toMatch(/The bouquets' latex balloons, from left to right, are exactly ([54] Sempertex (609|650) [^;]+ and [54] Sempertex (609|650) [^;]+(; )?){3}, each in the colour and the place image 1 shows/);
+    expect(heliumPrompt(defaultHelium(seed))).toMatch(/The bouquet's latex balloons are exactly 4 Sempertex (609|650) .+ and 3 Sempertex (609|650) /);
+    // Every finish of the catalogue said as it is: chrome, metallic.
+    expect(heliumPrompt({ ...full(), balloons: ["reflex-970-gold", "metallic-570-gold"] })).toMatch(/Sempertex 970 Reflex Gold .* and Sempertex 570 Metallic Gold/);
     expect(p).toMatch(/a giant gold foil number 6 balloon, 80 cm tall/);
     expect(p).toMatch(/The foil letters spell exactly A R Y A/);
     expect(p).toMatch(/about 50 loose latex helium balloons floating against the ceiling/);
