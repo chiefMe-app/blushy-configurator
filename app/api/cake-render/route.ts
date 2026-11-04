@@ -11,6 +11,7 @@ import { renderUser, takeAccountRender } from "@/lib/renderAccount";
 import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
 import { finishSketchRender } from "@/lib/sketchRenderFinish";
+import { gradePhoto } from "@/lib/photoGrade";
 import { cakeRenderKey, cakeViews, isCakeView, readCake } from "@/lib/studio/cake";
 import { cakePrompt } from "@/lib/studio/cakeRender";
 
@@ -83,7 +84,9 @@ export async function POST(req: NextRequest) {
           if (!made) throw new Error("the cake render could not be read");
           // Its colours brought back to the preview's, as the backdrop's (lib/sketchRenderFinish.ts); a failed colour
           // step never loses the paid render.
-          const jpeg = await finishSketchRender(made, image.data).catch(() => made);
+          const finished = await finishSketchRender(made, image.data).catch(() => made);
+          // Then a photographer's edit — white balance, exposure, shadows, contrast, vibrance (lib/photoGrade.ts).
+          const jpeg = await gradePhoto(finished).catch(() => finished);
           send({ url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
           const key = cakeRenderKey(p, theme.id, view);
           // Without a database (local development) nothing is kept.
