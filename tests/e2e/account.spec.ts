@@ -125,6 +125,8 @@ test("A9 the backdrop and the kids' table saved: two designs; the table opens on
   await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Extras");
   await renderButton(page).click();
+  // The render is in (and kept with the design) before Save: landing after it, it would be a change to save.
+  await expect(renderButton(page)).toHaveCount(0);
   await page.getByTestId("finish-backdrop").click();
   await page.getByRole("button", { name: "One more child" }).click(); // the kids' table opens designed
   await page.getByTestId("save-design").click();
