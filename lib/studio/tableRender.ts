@@ -93,6 +93,19 @@ const REFERENCE_ORDER: TableItemKey[] = ["table", "chairs", "plates", "napkins",
 /** With the layout drawing (tableCloseGuide.ts) first, a few option pictures: more drowned the drawing out (2026-10-28 test). */
 export const MAX_REFERENCES = 7;
 
+/** One chosen piece in words ("a long white rectangular kids' table …"); "" for none. Also the party's picture's. */
+export function itemWords(t: TableSetup, themeId: string, k: TableItemKey): string {
+  const c = t.choices;
+  if (c[k] === NONE) return "";
+  // A themed cup, plate or napkin is its own look (2026-10-30).
+  const o = tableOption(k, c[k]);
+  const themed = isThemed(o) ? (k === "cups" ? `a paper cup ${o!.look} (no straw)` : k === "plates" ? `disposable paper plates ${o!.look}` : `a paper napkin ${o!.look}`) : undefined;
+  return (themed ?? WORDS[k]?.[c[k]] ?? "")
+    .replace("{cloth}", colourWords(t.clothColor)).replace("{napkin}", colourWords(t.napkinColor)).replace("{motif}", motifOf(themeId))
+    .replace("{plate}", colourWords(t.plateColor)).replace("{cup}", finishWords(t.cupColor)).replace("{holder}", colourWords(t.holderColor)).replace("{chair}", colourWords(t.chairColor))
+    .replace("{placemat}", colourWords(t.placematColor)).replace("{label}", colourWords(t.labelColor)).replace("{hat}", colourWords(t.hatColor)).replace("{plateShape}", PLATE_SHAPES.find((p) => p.id === t.plateShape)?.words ?? "round");
+}
+
 /** The chosen options' pictures for the render, in the order the prompt names them. */
 export function referencePictures(t: TableSetup, themeId: string): { key: TableItemKey; photo: string }[] {
   const floor = onFloor(t.choices); // the low table: cushions, no chair to show
@@ -120,11 +133,7 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
   const floor = onFloor(c);
   const round = c.table === "round" || c.table === "flower";
   // A themed cup, plate or napkin is its own look (2026-10-30).
-  const themed = (k: TableItemKey) => { const o = tableOption(k, c[k]); return isThemed(o) ? (k === "cups" ? `a paper cup ${o!.look} (no straw)` : k === "plates" ? `disposable paper plates ${o!.look}` : `a paper napkin ${o!.look}`) : undefined; };
-  const word = (k: TableItemKey) => (c[k] === NONE || (floor && k === "chairs") ? "" : (themed(k) ?? WORDS[k]?.[c[k]] ?? "")
-    .replace("{cloth}", colourWords(t.clothColor)).replace("{napkin}", colourWords(t.napkinColor)).replace("{motif}", motifOf(theme.id))
-    .replace("{plate}", colourWords(t.plateColor)).replace("{cup}", finishWords(t.cupColor)).replace("{holder}", colourWords(t.holderColor)).replace("{chair}", colourWords(t.chairColor))
-    .replace("{placemat}", colourWords(t.placematColor)).replace("{label}", colourWords(t.labelColor)).replace("{hat}", colourWords(t.hatColor)).replace("{plateShape}", PLATE_SHAPES.find((p) => p.id === t.plateShape)?.words ?? "round"));
+  const word = (k: TableItemKey) => (floor && k === "chairs" ? "" : itemWords(t, theme.id, k));
   // Image 1 is the layout drawing; the option pictures follow it.
   const pic = (k: TableItemKey) => (pictures.includes(k) ? pictures.indexOf(k) + 2 : 0); // 0: no picture
   const exactly = (k: TableItemKey) => (pic(k) ? ` — exactly as in image ${pic(k)}` : "");

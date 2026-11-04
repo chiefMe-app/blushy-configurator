@@ -27,6 +27,7 @@ const nextConfig = {
       // 2026-10-28: the table close-up is made from the option pictures;
       // 2026-10-29: its placemat words are lettered in the chosen font.
       "/api/table-render": ["./public/design/table/**/*", "./assets/fonts/**/*", "./node_modules/harfbuzzjs/dist/*.wasm"],
+      "/api/party-render": ["./public/design/table/**/*"],
     },
   },
 };

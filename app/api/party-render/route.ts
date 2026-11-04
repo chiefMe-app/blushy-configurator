@@ -5,14 +5,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import sharp from "sharp";
 import { fal } from "@fal-ai/client";
-import { themeById } from "@/lib/config";
+import { defaultConfig, themeById, type BackdropItem, type DecorConfig } from "@/lib/config";
 import { acquireRender, clientIp } from "@/lib/renderGuard";
 import { renderUser, takeAccountRender } from "@/lib/renderAccount";
 import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
 import { gradePhoto } from "@/lib/photoGrade";
 import { readTableSetup } from "@/lib/studio/tableSetup";
-import { partyPrompt, type PartySetting } from "@/lib/studio/partyRender";
+import { partyPrompt, partyReferences, type PartySetting } from "@/lib/studio/partyRender";
+import { optionPicture } from "@/lib/studio/tableOptionPicture";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,10 +25,27 @@ const MAX_PICTURE_BYTES = 4 * 1024 * 1024;
 /** The photograph: landscape, the whole setup in it. */
 const SIZE = { width: 1344, height: 896 };
 
+/** The backdrop's pieces as told (its boards and plinths), read over the defaults: only what the words use. */
+function readDecor(raw: unknown): Pick<DecorConfig, "backdropItems" | "backdropColor" | "plinths"> {
+  const base = defaultConfig().decor;
+  const d = (typeof raw === "object" && raw ? raw : {}) as Record<string, unknown>;
+  const hex = (v: unknown) => (typeof v === "string" && /^#[0-9A-F]{6}$/i.test(v) ? v : "");
+  const cm = (v: unknown) => (typeof v === "number" && v > 0 && v < 1000 ? Math.round(v) : 0);
+  const items = Array.isArray(d.backdropItems) ? d.backdropItems.slice(0, 8) : [];
+  return {
+    backdropItems: items.map((i) => {
+      const r = (typeof i === "object" && i ? i : {}) as Record<string, unknown>;
+      return { type: typeof r.type === "string" ? r.type.slice(0, 30) : "board", widthCm: cm(r.widthCm), heightCm: cm(r.heightCm), color: hex(r.color) } as unknown as BackdropItem;
+    }),
+    backdropColor: hex(d.backdropColor) || base.backdropColor,
+    plinths: Number.isInteger(d.plinths) ? Math.max(0, Math.min(6, d.plinths as number)) : 0,
+  };
+}
+
 const pictureOf = (v: unknown) => (typeof v === "string" ? v.match(/^data:image\/(?:jpeg|png);base64,([A-Za-z0-9+/=]+)$/)?.[1] : undefined);
 
 export async function POST(req: NextRequest) {
-  let body: { theme?: unknown; setting?: unknown; key?: unknown; table?: unknown; backdrop?: unknown; tablePicture?: unknown };
+  let body: { theme?: unknown; setting?: unknown; key?: unknown; table?: unknown; decor?: unknown; backdrop?: unknown; tablePicture?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
   const theme = typeof body?.theme === "string" ? themeById(body.theme) : undefined;
   const setting: PartySetting | undefined = body?.setting === "indoor" || body?.setting === "outdoor" ? body.setting : undefined;
@@ -54,6 +72,10 @@ export async function POST(req: NextRequest) {
     if (!taken.ok) return NextResponse.json({ error: taken.error, signin: taken.signin, limited: taken.limited }, { status: taken.status });
     // Each a picture, and only one: re-encoded here, at most 1024 px long (two go in: the engine's price is by size).
     const images = await Promise.all(pictures.map((b) => sharp(b).resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 88 }).toBuffer()));
+    // Her table's and chair's own option photos (2026-11-04, the owner: "Birebir benim seçimlerim olmalı masa sandalye
+    // backdrop vs"), small: the top view already shows the rest. One that can't be read is left out.
+    const refs = table?.enabled ? partyReferences(table, theme.id) : [];
+    const refPics = (await Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin, 512).then((u) => ({ key: r.key, u })).catch(() => null)))).filter((r): r is { key: (typeof refs)[number]["key"]; u: string } => !!r);
     const has = { backdrop: !!backdrop, table: !!table?.enabled };
     // The builder's key for what it sent (partyRenderKey): only ever a short word of letters and digits.
     const key = typeof body.key === "string" && /^[0-9a-z]{1,16}$/.test(body.key) ? body.key : undefined;
@@ -64,8 +86,8 @@ export async function POST(req: NextRequest) {
         try {
           const result = await fal.subscribe(MODEL, {
             input: {
-              prompt: partyPrompt({ table }, setting, has),
-              image_urls: images.map((b) => `data:image/jpeg;base64,${b.toString("base64")}`), num_images: 1, output_format: "jpeg",
+              prompt: partyPrompt({ table, decor: { ...defaultConfig().decor, ...readDecor(body.decor) }, theme: theme.id }, setting, { ...has, refs: refPics.map((r) => r.key) }),
+              image_urls: [...images.map((b) => `data:image/jpeg;base64,${b.toString("base64")}`), ...refPics.map((r) => r.u)], num_images: 1, output_format: "jpeg",
               image_size: SIZE, seed: 777,
             } as never,
             abortSignal: AbortSignal.timeout(130_000),

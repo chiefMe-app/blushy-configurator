@@ -13,8 +13,6 @@
 // Supabase's picture hosts). The answer is a stream (lib/ndjson.ts): the
 // picture's line, then a line saying it is done.
 import { NextResponse, type NextRequest } from "next/server";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import sharp from "sharp";
 import { fal } from "@fal-ai/client";
 import { themeById } from "@/lib/config";
@@ -22,6 +20,7 @@ import { acquireRender, clientIp } from "@/lib/renderGuard";
 import { renderUser, takeAccountRender } from "@/lib/renderAccount";
 import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
+import { optionPicture } from "@/lib/studio/tableOptionPicture";
 import { readTableSetup } from "@/lib/studio/tableSetup";
 import { optionPhoto, tableOption } from "@/lib/studio/tableCatalog";
 import { referencePictures, tablePhotoPrompt, tablePrompt, tableRenderKey, type TableRender } from "@/lib/studio/tableRender";
@@ -49,22 +48,6 @@ function engineInput(model: string, prompt: string, imageUrls: string[]) {
   // Seedream has no seed, and wants at least 2560×1440 pixels: a named size it scales itself.
   if (model.includes("seedream")) return { ...base, image_size: "landscape_4_3" };
   return { ...base, image_size: { width: 1152, height: 864 }, seed: SEED };
-}
-
-/**
- * An option picture (/design/table/…) as a small JPEG data URI: from the
- * site's own files, or — where those are not bundled with the function — from
- * the site itself.
- */
-async function optionPicture(photo: string, origin: string): Promise<string> {
-  if (!/^\/design\/table\/(?:[\w-]+\/){0,2}[\w-]+\.(webp|png|jpe?g)$/.test(photo)) throw new Error(`not an option picture: ${photo}`);
-  const bytes = await readFile(path.join(process.cwd(), "public", photo)).catch(async () => {
-    const res = await fetch(new URL(photo, origin), { signal: AbortSignal.timeout(15_000) });
-    if (!res.ok) throw new Error(`option picture ${photo}: ${res.status}`);
-    return Buffer.from(await res.arrayBuffer());
-  });
-  const jpeg = await sharp(bytes).resize({ width: 768, height: 768, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 88 }).toBuffer();
-  return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
 }
 
 export async function POST(req: NextRequest) {

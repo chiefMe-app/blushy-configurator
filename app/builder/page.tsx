@@ -305,7 +305,7 @@ export default function ConfigurePage() {
     endpoint: "/api/party-render", partKey: partyKey, kept: config.venue.render,
     body: async () => {
       const shot = await partyShot.current?.();
-      return { theme: config.theme, setting: partySetting, key: partyKey, table: config.table, backdrop: shot?.backdrop ?? null, tablePicture: shot?.tablePicture ?? null };
+      return { theme: config.theme, setting: partySetting, key: partyKey, table: config.table, decor: config.decor, backdrop: shot?.backdrop ?? null, tablePicture: shot?.tablePicture ?? null };
     },
     onKept: (render) => setConfig((c) => ({ ...c, venue: { ...c.venue, render } })),
     onSignInNeeded: () => askSignIn("party-render"),

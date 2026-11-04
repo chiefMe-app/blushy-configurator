@@ -5,7 +5,8 @@ import { NextRequest } from "next/server";
 import sharp from "sharp";
 import { defaultConfig, themeById, type BuilderConfig } from "@/lib/config";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
-import { partyPieces, partyPrompt, partyRenderKey } from "@/lib/studio/partyRender";
+import { backdropWords, partyPieces, partyPrompt, partyReferences, partyRenderKey } from "@/lib/studio/partyRender";
+import { itemWords } from "@/lib/studio/tableRender";
 import { resetRenderGuard } from "@/lib/renderGuard";
 import { readNdjson } from "@/lib/ndjson";
 
@@ -45,17 +46,37 @@ describe("the party's picture", () => {
     const out = partyPrompt(c, "outdoor", { backdrop: true, table: true });
     expect(out).toMatch(/Image 1 is the balloon backdrop/);
     expect(out).toMatch(/Image 2 shows the kids' party table/);
-    expect(out).toMatch(/laid for 12 children/);
+    expect(out).toMatch(/with 12 chairs/);
     expect(out).toMatch(/garden/);
     expect(out).toMatch(/never yellow/);
     expect(out).toMatch(/no cartoon or licensed characters/);
     const inside = partyPrompt(c, "indoor", { backdrop: true, table: true });
     expect(inside).toMatch(/indoors/);
     expect(inside).not.toMatch(/garden/);
+    // Her own pieces (2026-11-04, the owner: "Birebir benim seçimlerim olmalı masa sandalye backdrop vs"): the table and
+    // the chair in words, each with its own option photo after the two pictures.
+    const own = partyPrompt(c, "outdoor", { backdrop: true, table: true, refs: ["table", "chairs"] });
+    expect(own).toContain(itemWords(c.table!, "unicorn", "table"));
+    expect(own).toContain(itemWords(c.table!, "unicorn", "chairs"));
+    expect(own).toMatch(/Image 3 is the table she chose — copy only the table itself.*; image 4 is the chair she chose\./);
+    // 12 children: two tables of 10 seats, 6 and 6.
+    expect(own).toMatch(/2 identical tables.*with 12 chairs — exactly 3 along each long side of each table/);
+    expect(own).toMatch(/exactly the one in image 4/);
+    expect(own).toMatch(/never other chairs/);
     // Only the table: it is image 1.
     const table = partyPrompt(c, "indoor", { backdrop: false, table: true });
     expect(table).toMatch(/Image 1 shows the kids' party table/);
     expect(table).not.toMatch(/balloon backdrop/);
+  });
+});
+
+describe("the party's backdrop in words", () => {
+  it("names each board with its size and colour, and the plinths", () => {
+    const w = backdropWords({ backdropColor: "#FFFFFF", plinths: 2, backdropItems: [
+      { type: "arch", widthCm: 100, heightCm: 200, color: "" } as never, { type: "round", widthCm: 150, heightCm: 150, color: "#F8BBD0" } as never] });
+    expect(w).toMatch(/arch board \(100 × 200 cm\)/);
+    expect(w).toMatch(/round board \(150 × 150 cm\)/);
+    expect(w).toMatch(/2 white cylinder plinths in front of the boards/);
   });
 });
 
@@ -80,10 +101,15 @@ describe("the party's render", () => {
     expect(got.at(-1)).toMatchObject({ done: true });
     const [model, { input }] = subscribe.mock.calls[0] as [string, { input: { prompt: string; image_urls: string[]; image_size: { width: number; height: number }; seed?: number } }];
     expect(model).toBe("fal-ai/flux-2-pro/edit");
-    expect(input.image_urls).toHaveLength(2);
+    // The backdrop, the table's top view, then her table's and chair's own photos.
+    const refs = partyReferences(c.table!, "unicorn");
+    expect(refs.length).toBeGreaterThan(0);
+    expect(input.image_urls).toHaveLength(2 + refs.length);
     expect(input.image_size).toEqual({ width: 1344, height: 896 });
     expect(input).toMatchObject({ seed: 777 });
-    expect(input.prompt).toBe(partyPrompt({ table: c.table }, "indoor", { backdrop: true, table: true }));
+    expect(input.prompt).toContain("Image 1 is the balloon backdrop");
+    expect(input.prompt).toContain(`Image 3 is the ${refs[0].key === "table" ? "table" : "chair"} she chose`);
+    expect(input.prompt).toMatch(/indoors/);
   }, 30_000);
 
   it("refuses no setting, or nothing to stand there, without calling fal", async () => {
