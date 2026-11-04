@@ -13,6 +13,7 @@ import TablePlace from "@/components/studio/table/TablePlace";
 import AdultTableSketch from "@/components/studio/table/AdultTableSketch";
 import { GiveawayBoardArt } from "@/components/builder/giveaways/GiveawaysPreview";
 import { PinataArt } from "@/components/builder/pinata/PinataPreview";
+import { HeliumArt } from "@/components/builder/helium/HeliumPreview";
 import { CakeArt } from "@/components/builder/cake/CakePreview";
 import WelcomeBoardArt from "@/components/studio/WelcomeBoardArt";
 
@@ -86,7 +87,7 @@ function DesignCard({ piece, drawing, imageUrl, redraw }: { piece: FinishedPiece
  * 2026-11-03 (the owner: "o renderı en son görelim yan yana"): each piece's render, where it has one — the
  * backdrop's, the kids' table's top view, the welcome board's — side by side; its drawing otherwise.
  */
-export default function FinishedDesigns({ config, renderUrl, tableRenderUrl, welcomeRenderUrl, giveawaysRenderUrl, pinataRenderUrl, cakeRenderUrl }: { config: BuilderConfig; renderUrl?: string | null; tableRenderUrl?: string | null; welcomeRenderUrl?: string | null; giveawaysRenderUrl?: string | null; pinataRenderUrl?: string | null; cakeRenderUrl?: string | null }) {
+export default function FinishedDesigns({ config, renderUrl, tableRenderUrl, welcomeRenderUrl, giveawaysRenderUrl, pinataRenderUrl, cakeRenderUrl, heliumRenderUrl }: { config: BuilderConfig; renderUrl?: string | null; tableRenderUrl?: string | null; welcomeRenderUrl?: string | null; giveawaysRenderUrl?: string | null; pinataRenderUrl?: string | null; cakeRenderUrl?: string | null; heliumRenderUrl?: string | null }) {
   const pieces = finishedPieces(config);
   if (!pieces.length) return null;
   const theme = themeById(config.theme) ?? THEMES[0];
@@ -106,6 +107,8 @@ export default function FinishedDesigns({ config, renderUrl, tableRenderUrl, wel
         return { drawing: <div className="art"><PinataArt p={config.pinata!} theme={theme} /></div>, redraw: JSON.stringify([config.theme, config.pinata]) };
       case "cake": if (cakeRenderUrl) return { imageUrl: cakeRenderUrl, redraw: cakeRenderUrl };
         return { drawing: <div className="art"><CakeArt k={config.cake!} themeId={config.theme} /></div>, redraw: JSON.stringify([config.theme, config.cake]) };
+      case "helium": if (heliumRenderUrl) return { imageUrl: heliumRenderUrl, redraw: heliumRenderUrl };
+        return { drawing: <div className="art"><HeliumArt h={config.helium!} /></div>, redraw: JSON.stringify([config.theme, config.helium]) };
     }
   };
   return (

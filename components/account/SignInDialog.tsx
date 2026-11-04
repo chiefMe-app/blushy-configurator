@@ -44,6 +44,11 @@ const COPY = {
     lead: "Real photos come with a free account. Sign in and your cake's is made right away — your design stays as it is.",
     after: " — your real photo is made right after",
   },
+  "helium-render": {
+    title: "Sign in to see your balloons",
+    lead: "Real photos come with a free account. Sign in and your balloons' is made right away — your design stays as it is.",
+    after: " — your real photo is made right after",
+  },
 };
 
 export default function SignInDialog({ open, onClose, purpose }: { open: boolean; onClose: () => void; purpose?: AfterSignInAction }) {

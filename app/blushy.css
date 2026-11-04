@@ -1367,6 +1367,16 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 .bz-gv-art { width: 100%; display: block; }
 /* The room photo whole, as tall as 640 px at most: as wide as that lets it. */
 .bz-pn-art { width: 100%; max-width: 556px; height: auto; display: block; margin: 0 auto; }
+/* The helium balloons (2026-11-04): the room, the bouquet counter, a bouquet's balloons as dots, short choices. */
+.bz-hl-art { width: 100%; height: auto; display: block; border-radius: 14px; }
+.bz-hl-count { display: flex; align-items: center; gap: 12px; }
+.bz-hl-count button { width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid var(--bz-line, #eadfe3); background: #fff; font-size: 20px; line-height: 1; cursor: pointer; }
+.bz-hl-count button:disabled { opacity: 0.4; cursor: default; }
+.bz-hl-count b { min-width: 20px; text-align: center; font-size: 18px; }
+.bz-hl-count small { color: var(--bz-muted); font-size: 12.5px; }
+.bz-hl-dots { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 3px; width: 70%; margin: 0 auto; height: 100%; }
+.bz-hl-dot { width: 15px; height: 18px; border-radius: 50% 50% 48% 48%; box-shadow: inset -3px -3px 5px rgba(0,0,0,0.12), inset 2px 2px 4px rgba(255,255,255,0.6); }
+.bz-tb-options.compact { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
 .bz-ck-art { width: 100%; max-width: 556px; height: auto; display: block; margin: 0 auto; }
 /* The hand showing the drag (2026-11-04): over the picture, at its first piece, gone at her first touch. */
 .bz-ck-stage { position: relative; width: 100%; max-width: 556px; margin: 0 auto; }

@@ -9,7 +9,7 @@ import { renderKey } from "@/lib/renderKey";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import type { TableSetup } from "@/lib/studio/tableSetup";
 
-const BLOCKED_API = /\/api\/(orders|generate|generate-cutouts|generate-controlled-render|generate-structure-render-test|table-render|welcome-render|giveaway-render|pinata-render|cake-render)\/?(\?|$)/;
+const BLOCKED_API = /\/api\/(orders|generate|generate-cutouts|generate-controlled-render|generate-structure-render-test|table-render|welcome-render|giveaway-render|pinata-render|cake-render|helium-render)\/?(\?|$)/;
 
 /** A stand-in render: any local picture, so the flow can move past Decor. */
 export const FAKE_RENDER = "/design/balloon-dog-outline.webp";
@@ -195,7 +195,7 @@ export async function lockNetwork(page: Page): Promise<Guard> {
           { done: true, ...(sub ? { render: { key, close: `${sub}/c${key}.jpg` } } : {}) }];
         return route.fulfill({ contentType: "application/x-ndjson", body: lines.map((l) => `${JSON.stringify(l)}\n`).join("") });
       }
-      if (guard.fakeRender && (url.pathname.startsWith("/api/welcome-render") || url.pathname.startsWith("/api/giveaway-render") || url.pathname.startsWith("/api/pinata-render") || url.pathname.startsWith("/api/cake-render"))) {
+      if (guard.fakeRender && (url.pathname.startsWith("/api/welcome-render") || url.pathname.startsWith("/api/giveaway-render") || url.pathname.startsWith("/api/pinata-render") || url.pathname.startsWith("/api/cake-render") || url.pathname.startsWith("/api/helium-render"))) {
         // As the route streams it: the picture's line, then the end (nothing kept: the stand-in has no folder).
         const lines = [{ url: FAKE_WELCOME_RENDER }, { done: true }];
         return route.fulfill({ contentType: "application/x-ndjson", body: lines.map((l) => `${JSON.stringify(l)}

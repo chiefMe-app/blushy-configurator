@@ -257,7 +257,7 @@ test("W3 a welcome board begun can still be skipped, with no render", async ({ p
   await page.getByTestId("finish-welcome-skip").click();
   await expect(page.getByTestId("giveaways-intro")).toBeVisible();
   expect(aed(await total(page).textContent())).toBe(before);
-  // The giveaways, the piñata and the cake the same way, on to Package.
+  // The giveaways, the piñata, the cake and the balloons the same way, on to Package.
   await page.getByRole("button", { name: /Yes, add giveaways/ }).click();
   await page.getByTestId("finish-giveaways-skip").click();
   await expect(page.getByTestId("pinata-intro")).toBeVisible();
@@ -266,6 +266,9 @@ test("W3 a welcome board begun can still be skipped, with no render", async ({ p
   await expect(page.getByTestId("cake-intro")).toBeVisible();
   await page.getByRole("button", { name: /Yes, add a cake/ }).click();
   await page.getByTestId("finish-cake-skip").click();
+  await expect(page.getByTestId("helium-intro")).toBeVisible();
+  await page.getByRole("button", { name: /Yes, add balloons/ }).click();
+  await page.getByTestId("finish-helium-skip").click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   expect(aed(await total(page).textContent())).toBe(before);
 });
@@ -365,8 +368,12 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   await next(page).click();
   await expect(page.getByTestId("cake-intro")).toBeVisible();
   await next(page).click();
+  await expect(page.getByTestId("helium-intro")).toBeVisible();
+  await next(page).click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   await expect(page.getByTestId("finished-giveaways-jpeg").or(page.getByTestId("finished-designs").getByAltText("Your giveaways"))).toBeVisible();
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(page.getByTestId("helium-intro")).toContainText("You skipped the helium balloons");
   await page.getByRole("button", { name: "← Back" }).click();
   await expect(page.getByTestId("cake-intro")).toContainText("You skipped the cake");
   await page.getByRole("button", { name: "← Back" }).click();
@@ -445,15 +452,17 @@ test("P1 the piñata: the age in her colours or a theme shape, how it opens, wha
   await page.getByTestId("finish-pinata").click();
   await expect(page.getByTestId("cake-intro")).toBeVisible();
   await next(page).click(); // the cake skipped
+  await next(page).click(); // the balloons skipped
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   await expect(page.getByTestId("finished-designs")).toContainText("Piñata");
+  await page.getByRole("button", { name: "← Back" }).click();
   await page.getByRole("button", { name: "← Back" }).click();
   await page.getByRole("button", { name: "← Back" }).click();
   await expect(page.getByTestId("finish-pinata")).toHaveText(/Next: Cake/);
   expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/pinata-render"]);
 });
 
-test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours, figures, topper and flavour; rendered, then on to Package", async ({ page, guard }) => {
+test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours, figures, topper and flavour; rendered, then on to the balloons", async ({ page, guard }) => {
   // 2026-11-03 (the owner: "piñatadan sonra cake studio'ya geçelim"; themed designs she can change, or plain; on a stand).
   guard.fakeRender = true;
   await signIn(page);
@@ -702,12 +711,83 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   expect(JSON.parse(guard.blocked.filter((r) => r.url().includes("/api/cake-render"))[1].postData()!).preview).toMatch(/^data:image\/jpeg;base64,/);
   await expect(page.getByTestId("cake-render")).toBeVisible();
   expect(sent.cake).toMatchObject({ design: "drip", tiers: 2, style: "drip", topper: { name: "Arya", age: "7", colour: "silver" }, flavour: "red-velvet" });
+  // "Finalize the cake & sweets → Helium balloons" (2026-11-04).
+  await expect(page.getByTestId("finish-cake")).toHaveText(/Helium balloons/);
   await page.getByTestId("finish-cake").click();
+  await expect(page.getByTestId("helium-intro")).toBeVisible();
+  await next(page).click(); // the balloons skipped
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   await expect(page.getByTestId("finished-designs")).toContainText("Cake");
   await page.getByRole("button", { name: "← Back" }).click();
-  await expect(page.getByTestId("finish-cake")).toHaveText(/Next: Package/);
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(page.getByTestId("finish-cake")).toHaveText(/Next: Helium balloons/);
   expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/cake-render", "/api/cake-render"]);
+});
+
+test("H1 the helium balloons: bouquets in her colours with a foil, the age and the name in foil, the ceiling and a name bubble; rendered, then on to Package", async ({ page, guard }) => {
+  // 2026-11-04 (the owner's answers: bouquets, ceiling balloons and a name bubble; theme, number, letter and plain foils; an empty pastel room).
+  guard.fakeRender = true;
+  await signIn(page);
+  await toTable(page);
+  await page.getByTestId("skip-kids-table").click();
+  for (let i = 0; i < 5; i++) await next(page).click(); // the grown-ups' table, welcome board, giveaways, piñata, cake skipped
+  await expect(page.getByTestId("helium-intro")).toBeVisible();
+  const before = aed(await total(page).textContent());
+  await page.getByRole("button", { name: /Yes, add balloons/ }).click();
+  const art = page.getByTestId("helium-art");
+  const sum = page.getByTestId("helium-total");
+  // Two medium bouquets with the theme's own foil (Ice Princess: a snowflake), the age standing between them.
+  await expect(art.locator("[data-part=helium-bouquet]")).toHaveCount(2);
+  await expect(art.locator("[data-part=helium-latex]")).toHaveCount(14);
+  await expect(art.locator('[data-part=helium-foil][href$="snowflake.webp"]')).toHaveCount(2);
+  await expect(art.locator("[data-part=helium-number-glyph]")).toHaveCount(1);
+  expect(aed(await sum.textContent())).toBe(2 * (165 + 30) + 85);
+  expect(aed(await total(page).textContent())).toBe(before + aed(await sum.textContent()));
+  // One more bouquet, large.
+  await page.getByRole("button", { name: "One bouquet more" }).click();
+  await page.getByTestId("helium-size").getByRole("radio", { name: /Large/ }).click();
+  await expect(art.locator("[data-part=helium-latex]")).toHaveCount(27);
+  expect(aed(await sum.textContent())).toBe(3 * (210 + 30) + 85);
+  // A plain star instead, in rose gold: the silver photo coloured.
+  await page.getByTestId("helium-topper").getByRole("radio", { name: /^Star(?!ry)/ }).click();
+  await page.getByTestId("helium-topper-colour").getByRole("radio", { name: "Rose gold" }).click();
+  await expect.poll(async () => (await art.locator("[data-part=helium-foil]").first().getAttribute("href")) ?? "").toMatch(/^data:image\/png/);
+  expect(aed(await sum.textContent())).toBe(3 * (210 + 15) + 85);
+  // The age in two digits, 100 cm tall.
+  await page.getByTestId("helium-number").fill("10");
+  await page.getByTestId("helium-number-size").getByRole("radio", { name: /100 cm/ }).click();
+  await expect(art.locator("[data-part=helium-number-glyph]")).toHaveCount(2);
+  expect(aed(await sum.textContent())).toBe(3 * 225 + 240);
+  // The name in foil letters: capitals, letters only.
+  await page.getByTestId("helium-letters-on").getByRole("radio", { name: "Yes" }).click();
+  await page.getByTestId("helium-letters").fill("Mia-Rose");
+  await expect(page.getByTestId("helium-letters")).toHaveValue("MIAROSE");
+  await expect(art.locator("[data-part=helium-letters-glyph]")).toHaveCount(7);
+  // The ceiling, and the bubble with the name.
+  await page.getByTestId("helium-ceiling").getByRole("radio", { name: /^25 balloons/ }).click();
+  await expect(art.locator("[data-part=helium-ceiling] [data-part=helium-latex]")).toHaveCount(25);
+  await page.getByTestId("helium-bubble-on").getByRole("radio", { name: "Yes" }).click();
+  await page.getByTestId("helium-bubble-name").fill("Mia");
+  await page.getByTestId("helium-bubble-filling").getByRole("radio", { name: /Mini balloons/ }).click();
+  await expect(art.locator("[data-part=helium-bubble-name]")).toHaveText("Mia");
+  expect(aed(await sum.textContent())).toBe(3 * 225 + 240 + 7 * 25 + 275 + 180 + 40);
+  expect(aed(await total(page).textContent())).toBe(before + aed(await sum.textContent()));
+  // The render offered, not waited for (lib/renderGate.ts); then made.
+  await expect(next(page)).toHaveCount(0);
+  await expect(page.getByTestId("finish-helium")).toBeEnabled();
+  await page.getByTestId("finish-helium-generate").click();
+  await expect(page.getByTestId("helium-render")).toBeVisible();
+  const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/helium-render"))!.postData()!);
+  expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
+  expect(sent.helium).toMatchObject({ bouquets: 3, size: "large", topper: "star", ceiling: 25, number: { value: "10", size: "100" },
+    letters: { on: true, text: "MIAROSE" }, bubble: { on: true, name: "Mia", filling: "mini" } });
+  // "Finalize the balloons → Package".
+  await page.getByTestId("finish-helium").click();
+  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  await expect(page.getByTestId("finished-designs")).toContainText("Helium balloons");
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(page.getByTestId("finish-helium")).toHaveText(/Next: Package/);
+  expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/helium-render"]);
 });
 
 test("W2 on a phone, a change to the welcome board brings it into sight, and Back returns to the choices", async ({ page }, info) => {

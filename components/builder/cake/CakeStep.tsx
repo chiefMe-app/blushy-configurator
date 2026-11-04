@@ -459,7 +459,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
         <b>AED {formatAED(cakeTotal(k))}</b>
         <button type="button" className="bz-restart" onClick={() => setCake({ ...k, enabled: false, done: false })}>Remove the cake</button>
       </div>
-      <FinishBar done={k.done} what="cake & sweets" next="Package" onFinish={onFinish} onSkip={onSkip} testId="finish-cake" render={{ ...render, onGenerate }} />
+      <FinishBar done={k.done} what="cake & sweets" next="Helium balloons" onFinish={onFinish} onSkip={onSkip} testId="finish-cake" render={{ ...render, onGenerate }} />
     </div>
   );
 }

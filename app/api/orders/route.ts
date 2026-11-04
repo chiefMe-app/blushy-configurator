@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readGiveaways } from "@/lib/studio/giveaways";
 import { readPinata } from "@/lib/studio/pinata";
+import { readHelium } from "@/lib/studio/helium";
 import { readCake } from "@/lib/studio/cake";
 import { randomUUID } from "node:crypto";
 import { getSupabase } from "@/lib/supabase";
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
     giveaways: readGiveaways(body.giveaways),
     pinata: readPinata(body.pinata),
     cake: readCake(body.cake),
+    helium: readHelium(body.helium),
   } as unknown as BuilderConfig;
   const total = computeTotal(pricingConfig);
 
@@ -81,6 +83,7 @@ export async function POST(req: NextRequest) {
     giveaways: pricingConfig.giveaways,
     pinata: pricingConfig.pinata,
     cake: pricingConfig.cake,
+    helium: pricingConfig.helium,
     addOns: body.addOns,
     venue: body.venue,
   };

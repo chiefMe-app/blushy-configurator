@@ -1,0 +1,187 @@
+// The helium balloons (2026-11-04): the model, its sums, reading it back, where each balloon goes, the words for its
+// render and the route that makes it.
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
+import sharp from "sharp";
+import fs from "node:fs";
+import path from "node:path";
+import { defaultConfig, priceBreakdown } from "@/lib/config";
+import {
+  BUBBLE_PRICE, LETTER_PRICE, PLAIN_FOIL_PRICE, THEME_FOILS, PLAIN_FOILS, THEME_FOIL_PRICE, THEME_FOIL_PICKS,
+  cleanLetters, defaultHelium, foilsFor, heliumEmpty, heliumPicture, heliumPriceLines, heliumRenderKey, heliumTotal, readHelium, type Helium,
+} from "@/lib/studio/helium";
+import { heliumLayout } from "@/lib/studio/heliumLayout";
+import { heliumPrompt } from "@/lib/studio/heliumRender";
+import { finishedPieces } from "@/lib/finishedDesigns";
+import { fromDraft, toDraft } from "@/lib/draft";
+import { resetRenderGuard } from "@/lib/renderGuard";
+import { readNdjson } from "@/lib/ndjson";
+
+const subscribe = vi.fn();
+vi.mock("@fal-ai/client", () => ({ fal: { config: vi.fn(), subscribe: (...a: unknown[]) => subscribe(...a) } }));
+const JPEG = Buffer.from("jpeg-bytes"), PICTURE = `data:image/jpeg;base64,${JPEG.toString("base64")}`;
+vi.mock("@/lib/renderStore", () => ({ renderJpeg: async () => JPEG, storeRenderJpeg: async () => null }));
+import { POST } from "@/app/api/helium-render/route";
+
+const seed = { themeId: "unicorn", age: "6", name: "Arya", colours: ["#F8BBD0", "#DDD6FE"] };
+const full = (): Helium => ({
+  ...defaultHelium(seed), bouquets: 3, size: "large", topper: "star", topperColour: "#D9B45A",
+  letters: { on: true, text: "ARYA", colour: "#D9A08E" }, ceiling: 50,
+  bubble: { on: true, name: "Arya", filling: "mini", colour: "#FFFFFF" },
+});
+
+describe("the helium balloons", () => {
+  it("start from the party: the theme's own foil, the age as a foil number, its colours; letters and bubble off", () => {
+    const h = defaultHelium(seed);
+    expect(h).toMatchObject({ enabled: true, bouquets: 2, size: "medium", topper: "unicorn", colours: seed.colours, ceiling: 0 });
+    expect(h.number).toMatchObject({ on: true, value: "6" });
+    expect(h.letters).toMatchObject({ on: false, text: "ARYA" });
+    expect(h.bubble).toMatchObject({ on: false, name: "Arya" });
+    // A theme without a foil of its own starts on the plain star.
+    expect(defaultHelium({ themeId: "luxury_neutral" }).topper).toBe("star");
+  });
+
+  it("offer the theme's own foils first, then the plain ones, then every other shape — never a licensed character", () => {
+    const list = foilsFor("frozen");
+    expect(list.slice(0, 2).map((f) => f.id)).toEqual(["snowflake", "crown"]);
+    expect(list.slice(2, 6).map((f) => f.id)).toEqual(PLAIN_FOILS.map((f) => f.id));
+    expect(list).toHaveLength(THEME_FOILS.length + PLAIN_FOILS.length);
+    for (const picks of Object.values(THEME_FOIL_PICKS)) for (const id of picks) expect(THEME_FOILS.some((f) => f.id === id)).toBe(true);
+    // Every foil and latex balloon has its picture.
+    for (const id of [...THEME_FOILS.map((f) => f.id), ...PLAIN_FOILS.map((f) => f.id), "latex-a", "latex-d"]) {
+      const pic = heliumPicture(id);
+      expect(pic.w).toBeGreaterThan(50);
+      expect(fs.existsSync(path.join(process.cwd(), "public", pic.src))).toBe(true);
+    }
+  });
+
+  it("price every piece on its own line and add to the party", () => {
+    const h = full();
+    const lines = heliumPriceLines(h);
+    expect(lines.map((l) => l.label)).toEqual([
+      "3 helium bouquets, 9 balloons, star foil", 'Foil number "6", 80 cm', 'Foil letters "ARYA"', "50 ceiling balloons", 'Name bubble balloon "Arya", mini balloons',
+    ]);
+    expect(lines[0].amount).toBe((210 + PLAIN_FOIL_PRICE) * 3);
+    expect(lines[2].amount).toBe(LETTER_PRICE * 4);
+    expect(lines[4].amount).toBe(BUBBLE_PRICE + 40);
+    expect(heliumPriceLines({ ...h, topper: "unicorn" })[0].amount).toBe((210 + THEME_FOIL_PRICE) * 3);
+    expect(heliumPriceLines({ ...h, number: { ...h.number, value: "10", size: "100" } })[1].amount).toBe(240);
+    const config = { ...defaultConfig(), helium: h };
+    const base = priceBreakdown({ ...defaultConfig() }).total;
+    expect(priceBreakdown(config).total).toBe(base + heliumTotal(h));
+    expect(priceBreakdown(config).lines.filter((l) => l.section === "helium")).toHaveLength(5);
+    // Skipped: nothing.
+    expect(heliumPriceLines({ ...h, enabled: false })).toEqual([]);
+    expect(heliumEmpty({ ...defaultHelium(), bouquets: 0, number: { ...defaultHelium().number, on: false } })).toBe(true);
+  });
+
+  it("read back over the defaults, whatever comes in", () => {
+    const h = full();
+    expect(readHelium(JSON.parse(JSON.stringify(h)))).toEqual(h);
+    const bad = readHelium({ bouquets: 40, size: "huge", topper: "mickey", colours: ["red", "#FFFFFF"], ceiling: 33,
+      number: { on: true, value: "x7y", colour: "#123456" }, letters: { on: true, text: "ar ya 5!" }, bubble: { on: true, name: "<b>Arya</b>", filling: "gold" },
+      render: { key: "../x", path: "nope" } })!;
+    expect(bad).toMatchObject({ bouquets: 6, size: "medium", topper: "star", colours: ["#FFFFFF"], ceiling: 0 });
+    expect(bad.number).toMatchObject({ on: true, value: "7", colour: "#D9B45A" });
+    expect(bad.letters.text).toBe("ARYA");
+    expect(bad.bubble).toMatchObject({ name: "bAryab", filling: "confetti" });
+    expect(bad).not.toHaveProperty("render");
+    expect(readHelium(null)).toBeUndefined();
+    expect(cleanLetters("Mia-Rose")).toBe("MIAROSE");
+  });
+
+  it("are kept with the design on the device, and shown with the finished designs", () => {
+    const config = { ...defaultConfig(), helium: full() };
+    expect(fromDraft(JSON.stringify(toDraft(config, 2, 0)))?.config.helium).toEqual(config.helium);
+    expect(finishedPieces(config).map((p) => p.id)).toContain("helium");
+    expect(finishedPieces({ ...config, helium: { ...config.helium, enabled: false } }).map((p) => p.id)).not.toContain("helium");
+  });
+
+  it("change the render's key with what shows, and only with that", () => {
+    const h = full();
+    const k = heliumRenderKey(h, "unicorn");
+    expect(heliumRenderKey({ ...h, done: true, render: { key: "a", path: "u/a.jpg" } }, "unicorn")).toBe(k);
+    expect(heliumRenderKey({ ...h, ceiling: 25 }, "unicorn")).not.toBe(k);
+    expect(heliumRenderKey({ ...h, bubble: { ...h.bubble, name: "Mia" } }, "unicorn")).not.toBe(k);
+    expect(heliumRenderKey(h, "frozen")).not.toBe(k);
+  });
+
+  it("stand in the room: bouquets either side of the number and the bubble, the ceiling's balloons up top", () => {
+    const h = full();
+    const L = heliumLayout(h);
+    expect(L.bouquets).toHaveLength(3);
+    for (const q of L.bouquets) {
+      expect(q.balloons).toHaveLength(9);
+      expect(q.foil).toBeDefined();
+      // Clear of the middle, where the number and the bubble stand.
+      expect(q.x < 480 || q.x > 870).toBe(true);
+    }
+    // Her colours in turn.
+    expect(new Set(L.bouquets.flatMap((q) => q.balloons.map((b) => b.colour)))).toEqual(new Set(h.colours));
+    expect(L.number).toBeDefined();
+    expect(L.bubble).toBeDefined();
+    expect(Math.abs(L.number!.x - L.bubble!.x)).toBeGreaterThan(L.bubble!.r + 60);
+    expect(L.letters).toBeDefined();
+    expect(L.ceiling).toHaveLength(50);
+    for (const b of L.ceiling) expect(b.y).toBeLessThan(260);
+    // Nothing in the middle: the bouquets spread across the room, and no foil asked for, none drawn.
+    const lone = heliumLayout({ ...h, number: { ...h.number, on: false }, bubble: { ...h.bubble, on: false }, topper: "none", bouquets: 1 });
+    expect(lone.bouquets[0].x).toBe(672);
+    expect(lone.bouquets[0].foil).toBeUndefined();
+    expect(lone.number).toBeUndefined();
+    // A 100 cm number is taller than an 80 cm one.
+    expect(heliumLayout({ ...h, number: { ...h.number, size: "100" } }).number!.h).toBeGreaterThan(L.number!.h);
+  });
+
+  it("are told to the engine as they are: each piece, the letters spelled out, the room kept, no characters", () => {
+    const p = heliumPrompt(full());
+    expect(p).toMatch(/3 helium balloon bouquets standing on the floor, each 9 matte latex balloons with a gold star foil balloon on top/);
+    expect(p).toMatch(/a giant gold foil number 6 balloon, 80 cm tall/);
+    expect(p).toMatch(/The foil letters spell exactly A R Y A/);
+    expect(p).toMatch(/about 50 loose latex helium balloons floating against the ceiling/);
+    expect(p).toMatch(/clear bubble balloon filled with small pastel balloons, the name "Arya" on it/);
+    expect(p).toMatch(/well-exposed/);
+    expect(p).toMatch(/Nothing added: no people, no characters/);
+    const plain = heliumPrompt({ ...full(), topper: "unicorn", letters: { on: false, text: "", colour: "#D9B45A" }, bubble: { ...full().bubble, on: false }, ceiling: 0 });
+    expect(plain).toMatch(/a printed unicorn shaped foil balloon on top/);
+    expect(plain).not.toMatch(/foil letter|against the ceiling|bubble balloon filled/);
+  });
+});
+
+describe("the helium balloons' render", () => {
+  const post = (body: unknown) => POST(new NextRequest("http://localhost/api/helium-render", { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" } }));
+  const lines = async (res: Response) => { const out: Record<string, unknown>[] = []; await readNdjson(res.body!, (l) => out.push(l as Record<string, unknown>)); return out; };
+  beforeEach(() => {
+    vi.stubEnv("FAL_KEY", "test-key");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
+    vi.stubEnv("SUPABASE_URL", "");
+    subscribe.mockReset();
+    resetRenderGuard();
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("one picture of the preview to Seedream 4.5 edit, at its shape scaled up to Seedream's least, with its words", async () => {
+    subscribe.mockImplementation(async () => ({ data: { images: [{ url: "https://fal.example/x.jpg" }] } }));
+    const drawn = await sharp({ create: { width: 1344, height: 1008, channels: 3, background: "#f3c6cc" } }).jpeg().toBuffer();
+    const h = full();
+    const got = await lines(await post({ helium: h, theme: "unicorn", preview: `data:image/jpeg;base64,${drawn.toString("base64")}` }));
+    expect(got[0]).toEqual({ url: PICTURE });
+    expect(got.at(-1)).toMatchObject({ done: true });
+    const [model, { input }] = subscribe.mock.calls[0] as [string, { input: { prompt: string; image_urls: string[]; image_size: { width: number; height: number } } }];
+    expect(model).toBe("fal-ai/bytedance/seedream/v4.5/edit");
+    expect(input.image_urls).toHaveLength(1);
+    // 1344×1008 scaled to 2560×1440's area, the sides up to a step of 16.
+    expect(input.image_size).toEqual({ width: 2224, height: 1664 });
+    expect(input.prompt).toBe(heliumPrompt(h));
+  }, 30_000);
+
+  it("refuses skipped or empty balloons, or no preview, without calling fal", async () => {
+    const preview = `data:image/jpeg;base64,${JPEG.toString("base64")}`;
+    expect((await post({ theme: "unicorn", preview })).status).toBe(400);
+    expect((await post({ helium: { ...full(), enabled: false }, theme: "unicorn", preview })).status).toBe(400);
+    const none = { ...defaultHelium(), bouquets: 0, number: { ...defaultHelium().number, on: false } };
+    expect((await post({ helium: none, theme: "unicorn", preview })).status).toBe(400);
+    expect((await post({ helium: full(), theme: "unicorn" })).status).toBe(400);
+    expect(subscribe).not.toHaveBeenCalled();
+  });
+});

@@ -9,6 +9,7 @@ import { welcomePriceLines, type WelcomeBoard } from "./studio/welcomeBoard";
 import { giveawayPriceLines, type Giveaways } from "./studio/giveaways";
 import { pinataPriceLines, type Pinata } from "./studio/pinata";
 import { cakePriceLines, type Cake } from "./studio/cake";
+import { heliumPriceLines, type Helium } from "./studio/helium";
 
 // =====================  STEP - EVENT TYPE  =================================
 
@@ -1344,6 +1345,8 @@ export interface BuilderConfig {
   pinata?: Pinata;
   /** 2026-11-03: the cake, the Decor step's sixth part; absent until visited. */
   cake?: Cake;
+  /** 2026-11-04: the helium balloons, the Decor step's seventh part; absent until visited. */
+  helium?: Helium;
   addOns: SelectedAddOn[];
   venue: VenueDetails;
   customer: CustomerDetails;
@@ -1411,7 +1414,7 @@ export interface PriceLine {
   label:   string;
   amount:  number;
   /** Groups lines for display in the pricing breakdown. */
-  section: "design" | "table" | "adults" | "welcome" | "giveaways" | "pinata" | "cake" | "package" | "addons";
+  section: "design" | "table" | "adults" | "welcome" | "giveaways" | "pinata" | "cake" | "helium" | "package" | "addons";
 }
 
 /**
@@ -1552,6 +1555,7 @@ export function priceBreakdown(config: BuilderConfig): {
   if (config.giveaways) for (const l of giveawayPriceLines(config.giveaways)) lines.push({ ...l, section: "giveaways" });
   if (config.pinata) for (const l of pinataPriceLines(config.pinata)) lines.push({ ...l, section: "pinata" });
   if (config.cake) for (const l of cakePriceLines(config.cake)) lines.push({ ...l, section: "cake" });
+  if (config.helium) for (const l of heliumPriceLines(config.helium)) lines.push({ ...l, section: "helium" });
 
   // -- Add-ons -------------------------------------------------------------
   // Available for all service packages - never cleared by package selection.
