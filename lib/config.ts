@@ -176,84 +176,66 @@ export const THEMES: Theme[] = [
 // =====================  STEP - SERVICE PACKAGE  ============================
 
 /**
- * Service packages define what the customer receives and how the setup is
- * handled. They do NOT affect or reset the user's design configuration.
+ * 2026-11-04 (the owner): only two ways to have the party she designed. They never change the design.
+ * - DIY: she makes it herself; we give her the Design Pack with the shopping list and the supplier list.
+ *   Only the design fee and the experiences she books are charged; the pieces are her shopping, estimated.
+ * - We do it: we make every piece, deliver it, set it up and collect it after the party.
+ * Prices are placeholders until the owner sends hers.
  */
-export type ServicePackageId =
-  | "design_only"
-  | "full_design"
-  | "delivery_backdrop"
-  | "delivery_full";
-
-export type ServicePackageGroup = "design" | "execution";
+export type ServicePackageId = "diy" | "we_do_it";
 
 export interface ServicePackage {
   id:       ServicePackageId;
-  group:    ServicePackageGroup;
   name:     string;
+  tagline:  string;
   includes: string[];
   price:    number;
 }
 
 export const SERVICE_PACKAGES: ServicePackage[] = [
-  // -- Design Packages ---------------------------------------------------
   {
-    id:    "design_only",
-    group: "design",
-    name:  "Design Only",
-    price: 250,
+    id:      "diy",
+    name:    "DIY",
+    tagline: "We design it, you make it",
+    price:   250,
     includes: [
-      "Final Design Render",
-      "Production Layout Preview",
-      "Backdrop design specification",
-      "Basic item & spec summary",
+      "Every design as a picture, with its sizes",
+      "Print-ready files for the boards, banner and prints",
+      "A shopping list with quantities and Sempertex balloon codes",
+      "A supplier list: where to buy each piece",
+      "The experiences you picked, still booked by us",
     ],
   },
   {
-    id:    "full_design",
-    group: "design",
-    name:  "Full Design Package",
-    price: 450,
+    id:      "we_do_it",
+    name:    "We do it",
+    tagline: "We make it and set it up",
+    price:   450,
     includes: [
-      "Final Design Render",
-      "Production Layout Preview",
-      "Backdrop design specification",
-      "Table setup design",
-      "Basic styling direction",
-      "Complete item & spec summary",
-    ],
-  },
-  // -- Execution Packages ------------------------------------------------
-  {
-    id:    "delivery_backdrop",
-    group: "execution",
-    name:  "Backdrop Design + Delivery",
-    price: 450,
-    includes: [
-      "Final backdrop design",
-      "Backdrop production specification",
-      "Delivery & execution coordination",
-      "Production-ready item list",
-    ],
-  },
-  {
-    id:    "delivery_full",
-    group: "execution",
-    name:  "Backdrop + Table Setup + Delivery",
-    price: 750,
-    includes: [
-      "Final backdrop design",
-      "Table setup design",
-      "Backdrop production specification",
-      "Table setup specification",
-      "Delivery & execution coordination",
-      "Production-ready item list",
+      "Every piece made by us, as you designed it",
+      "Delivery to your venue",
+      "Setup before the party, at the time you pick",
+      "Collection after the party",
+      "Your Design Pack files too",
     ],
   },
 ];
 
-export function servicePackageById(id: ServicePackageId): ServicePackage | undefined {
-  return SERVICE_PACKAGES.find((p) => p.id === id);
+/** The four packages before 2026-11-04, read as the two: the design ones are DIY, the delivery ones We do it. */
+const LEGACY_SERVICE_PACKAGES: Record<string, ServicePackageId> = {
+  design_only: "diy", full_design: "diy", delivery_backdrop: "we_do_it", delivery_full: "we_do_it",
+};
+
+/** A stored package id, an old one read as its new one; undefined when it is none of them. */
+export function readServicePackageId(raw: unknown): ServicePackageId | undefined {
+  if (typeof raw !== "string") return undefined;
+  if (SERVICE_PACKAGES.some((p) => p.id === raw)) return raw as ServicePackageId;
+  return LEGACY_SERVICE_PACKAGES[raw];
+}
+
+export function servicePackageById(id: string): ServicePackage | undefined {
+  const known = readServicePackageId(id);
+  return SERVICE_PACKAGES.find((p) => p.id === known);
 }
 
 // =====================  STEP - PACKAGE (legacy, kept for order compat) ===
@@ -1374,7 +1356,7 @@ export function defaultConfig(): BuilderConfig {
     theme: theme.id,
     themeSelected: false, // no theme selected by default - user must choose
     package: pkg.id,
-    servicePackageId: "design_only",
+    servicePackageId: "we_do_it",
     decor: {
       ...pkg.defaultDecor,
       backdropItems: [],        // no default backdrop - user chooses
@@ -1452,14 +1434,16 @@ export function addOnPrice(sel: SelectedAddOn, config: BuilderConfig): number {
 export function priceBreakdown(config: BuilderConfig): {
   lines: PriceLine[];
   total: number;
+  /** DIY (2026-11-04): the pieces she buys herself, estimated, not in the total; empty otherwise. */
+  shopping: PriceLine[];
 } {
   const lines: PriceLine[] = [];
   const d = config.decor;
 
   // -- Service package ----------------------------------------------------
   // Defines what the customer receives - separate from the design items below.
-  const svcPkg = servicePackageById(config.servicePackageId) ?? SERVICE_PACKAGES[0];
-  lines.push({ label: svcPkg.name, amount: svcPkg.price, section: "package" });
+  const svcPkg = servicePackageById(config.servicePackageId) ?? SERVICE_PACKAGES[1];
+  lines.push({ label: svcPkg.id === "diy" ? "DIY package (design fee)" : "We do it (delivery, setup & collection)", amount: svcPkg.price, section: "package" });
 
   // -- Design / decor items ------------------------------------------------
   const theme = themeById(config.theme);
@@ -1560,6 +1544,8 @@ export function priceBreakdown(config: BuilderConfig): {
   if (config.pinata) for (const l of pinataPriceLines(config.pinata)) lines.push({ ...l, section: "pinata" });
   if (config.cake) for (const l of cakePriceLines(config.cake)) lines.push({ ...l, section: "cake" });
   if (config.helium) for (const l of heliumPriceLines(config.helium)) lines.push({ ...l, section: "helium" });
+  // DIY: every piece above, from the backdrop to the helium balloons, is her own shopping.
+  const shopping = svcPkg.id === "diy" ? lines.splice(backdropStart) : [];
   if (config.experiences) for (const l of experiencePriceLines(config.experiences)) lines.push({ ...l, section: "experiences" });
 
   // -- Add-ons -------------------------------------------------------------
@@ -1571,7 +1557,7 @@ export function priceBreakdown(config: BuilderConfig): {
   }
 
   const total = lines.reduce((sum, l) => sum + l.amount, 0);
-  return { lines, total };
+  return { lines, total, shopping };
 }
 
 export function computeTotal(config: BuilderConfig): number {

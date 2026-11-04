@@ -5,7 +5,7 @@
 //     1_SPECIFICATION/Design_Specification.pdf
 //     2_CUT_FILES/   board outlines, lettering, calibration
 //     3_VISUAL_REFERENCE_NOT_FOR_PRINT/visual_reference.jpg
-//     4_LISTS/balloons.csv, props.csv (and kids_table.csv)
+//     4_LISTS/balloons.csv, props.csv, shopping_and_suppliers.csv (and kids_table.csv)
 //
 // Production files (1, 2, 4) come from the design; the AI picture (3) is only
 // ever a labelled visual reference. A sample pack has no cut files.
@@ -16,6 +16,7 @@ import { CUT_DIR, boardOutlineSvg, calibrationSvg, letteringCutSvg, placementSvg
 export { CUT_DIR };
 import { specificationPdf } from "./pdf";
 import { labelledReference } from "./visualRef";
+import { shoppingList } from "@/lib/studio/shopping";
 
 export const VISUAL_DIR = "3_VISUAL_REFERENCE_NOT_FOR_PRINT";
 
@@ -125,6 +126,11 @@ export async function buildDesignPack(input: DesignPackInput): Promise<DesignPac
         r.print ? (r.print.round ? `diameter ${r.print.widthMm}` : `${r.print.widthMm} x ${r.print.heightMm}`) : "", r.print?.words ?? "", r.print?.wordsColour?.toUpperCase() ?? "", r.print?.wordsFont ?? ""]),
     ]));
   }
+  // 2026-11-04: the DIY package's shopping list, by the kind of shop that sells each piece.
+  put("4_LISTS/shopping_and_suppliers.csv", csv([
+    ["where to buy", "what to ask for there", "piece", "item", "estimated cost (AED)"],
+    ...shoppingList(input.config).groups.flatMap((g) => g.items.map((i) => [g.supplier.name, g.supplier.note, i.piece, i.label, i.amount])),
+  ]));
   put("README.txt", readme(spec, input.packId, sample));
 
   const zip = zipSync(files, { level: 6, mtime: createdAt });

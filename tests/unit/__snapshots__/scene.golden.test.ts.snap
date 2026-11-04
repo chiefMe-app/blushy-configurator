@@ -107,7 +107,7 @@ exports[`scene golden > A-arch_open_frame 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -219,7 +219,7 @@ exports[`scene golden > A-arch_shimmer 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": "silver",
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -309,7 +309,7 @@ exports[`scene golden > A-balloon_ring 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -420,7 +420,7 @@ exports[`scene golden > A-double_arch 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -510,7 +510,7 @@ exports[`scene golden > A-single_arch 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -600,7 +600,7 @@ exports[`scene golden > A-single_banner 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -697,7 +697,7 @@ exports[`scene golden > A-single_fringe 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -787,7 +787,7 @@ exports[`scene golden > A-single_round 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -878,7 +878,7 @@ exports[`scene golden > A-single_shimmer 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": "silver",
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -969,7 +969,7 @@ exports[`scene golden > A-single_wavy 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -1101,7 +1101,7 @@ exports[`scene golden > A-triple_arch 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -1214,7 +1214,7 @@ exports[`scene golden > A-wavy_shimmer 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": "silver",
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -1304,7 +1304,7 @@ exports[`scene golden > B01-hb-arya-script 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -1394,7 +1394,7 @@ exports[`scene golden > B02-hb-arya-elegant 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -1484,7 +1484,7 @@ exports[`scene golden > B03-hb-arya-block 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -1575,7 +1575,7 @@ exports[`scene golden > B04-hb-arya-small 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -1666,7 +1666,7 @@ exports[`scene golden > B05-hb-arya-large 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -1756,7 +1756,7 @@ exports[`scene golden > B06-ordinal-layla 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -1846,7 +1846,7 @@ exports[`scene golden > B07-ordinal-malek-elegant 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -1936,7 +1936,7 @@ exports[`scene golden > B08-turkish 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -2026,7 +2026,7 @@ exports[`scene golden > B09-name-only 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -2116,7 +2116,7 @@ exports[`scene golden > B10-oh-baby 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -2206,7 +2206,7 @@ exports[`scene golden > B11-welcome-elegant 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -2296,7 +2296,7 @@ exports[`scene golden > B12-hb-only 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -2387,7 +2387,7 @@ Arya",
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -2477,7 +2477,7 @@ exports[`scene golden > B14-long-block 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -2567,7 +2567,7 @@ exports[`scene golden > C01-legacy-birthday 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -2657,7 +2657,7 @@ exports[`scene golden > C02-legacy-custom 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -2747,7 +2747,7 @@ exports[`scene golden > C03-legacy-turkish 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -2837,7 +2837,7 @@ exports[`scene golden > C04-legacy-off 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -2927,7 +2927,7 @@ exports[`scene golden > D01-gold 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -3017,7 +3017,7 @@ exports[`scene golden > D02-rose-gold 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -3107,7 +3107,7 @@ exports[`scene golden > D03-white 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -3197,7 +3197,7 @@ exports[`scene golden > D04-custom-hex 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -3287,7 +3287,7 @@ exports[`scene golden > D05-pink-board 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -3398,7 +3398,7 @@ exports[`scene golden > D06-double-two-colours 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -3488,7 +3488,7 @@ exports[`scene golden > E01-neon 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -3591,7 +3591,7 @@ exports[`scene golden > E02-marquee-3-plinths 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -3683,7 +3683,7 @@ exports[`scene golden > E03-foil-pink 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -3775,7 +3775,7 @@ exports[`scene golden > E04-foil-gold 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -3865,7 +3865,7 @@ exports[`scene golden > E05-florals 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -3976,7 +3976,7 @@ exports[`scene golden > E06-two-standees 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -4066,7 +4066,7 @@ exports[`scene golden > E07-ring-half 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -4156,7 +4156,7 @@ exports[`scene golden > E08-ring-none 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -4246,7 +4246,7 @@ exports[`scene golden > E09-no-balloons 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -4336,7 +4336,7 @@ exports[`scene golden > E10-barbie 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "barbie",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -4447,7 +4447,7 @@ exports[`scene golden > E11-minecraft 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "minecraft",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -4530,7 +4530,7 @@ exports[`scene golden > E12-zero-plinths 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -4627,7 +4627,7 @@ exports[`scene golden > E13-unicorn-fringe 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "unicorn",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -4718,7 +4718,7 @@ exports[`scene golden > E14-unicorn-wavy 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "unicorn",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -4808,7 +4808,7 @@ exports[`scene golden > E15-unicorn-bright-wavy-rainbow 1`] = `
   "rainbowBalloons": true,
   "shimmerColor": null,
   "theme": "unicorn",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -4915,7 +4915,7 @@ exports[`scene golden > N01-soft-signature-round 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -5022,7 +5022,7 @@ exports[`scene golden > N02-editorial-gold 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -5150,7 +5150,7 @@ exports[`scene golden > N03-party-pop-double 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -5256,7 +5256,7 @@ exports[`scene golden > N04-one-line 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -5363,7 +5363,7 @@ exports[`scene golden > N05-timeless-black-arch 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -5512,7 +5512,7 @@ exports[`scene golden > N06-triple-overlay 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -5619,7 +5619,7 @@ exports[`scene golden > N07-turkish 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;
 
@@ -5747,6 +5747,6 @@ exports[`scene golden > N08-open-frame-overlay 1`] = `
   "rainbowBalloons": false,
   "shimmerColor": null,
   "theme": "frozen",
-  "totalPrice": 610,
+  "totalPrice": 810,
 }
 `;

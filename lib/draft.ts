@@ -2,7 +2,7 @@
 // reload or a return visit opens where they left off. Only design choices are
 // stored: never the customer's name, phone or venue. Anything that does not
 // read back as a sensible design is ignored, never trusted.
-import { THEMES, defaultConfig, servicePackageById, themeById, type BuilderConfig } from "@/lib/config";
+import { THEMES, defaultConfig, readServicePackageId, themeById, type BuilderConfig } from "@/lib/config";
 import { readTableSetup } from "@/lib/studio/tableSetup";
 import { readAdultTable } from "@/lib/studio/adultTable";
 import { readWelcomeBoard } from "@/lib/studio/welcomeBoard";
@@ -67,8 +67,8 @@ export function fromDraft(raw: string | null): RestoredDraft | null {
     theme: c.theme as BuilderConfig["theme"],
     themeSelected: c.themeSelected === true,
     package: typeof c.package === "string" ? (c.package as BuilderConfig["package"]) : base.package,
-    servicePackageId: typeof c.servicePackageId === "string" && servicePackageById(c.servicePackageId as BuilderConfig["servicePackageId"])
-      ? (c.servicePackageId as BuilderConfig["servicePackageId"]) : base.servicePackageId,
+    // The four packages before 2026-11-04 read as the two.
+    servicePackageId: readServicePackageId(c.servicePackageId) ?? base.servicePackageId,
     // A design kept before the backdrop became a choice was designed: "yes".
     decor: { ...base.decor, backdropChoice: "yes", ...(c.decor as Partial<BuilderConfig["decor"]>) },
     addOns: [],

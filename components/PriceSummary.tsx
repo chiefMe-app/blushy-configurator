@@ -51,7 +51,8 @@ export default function PriceSummary({
   config: BuilderConfig;
   className?: string;
 }) {
-  const { lines, total } = priceBreakdown(config);
+  const { lines, total, shopping } = priceBreakdown(config);
+  const shoppingTotal = shopping.reduce((t, l) => t + l.amount, 0);
 
   const designLines  = lines.filter((l) => l.section === "design");
   const packageLines = lines.filter((l) => l.section === "package");
@@ -91,6 +92,16 @@ export default function PriceSummary({
         <span className="font-semibold">Total</span>
         <span className="text-xl font-bold text-accent">AED {formatAED(total)}</span>
       </div>
+
+      {/* DIY (2026-11-04): what she buys herself, estimated, not paid to us. */}
+      {shopping.length > 0 && (
+        <div className="mt-4 rounded-xl p-3" style={{ background: "#fdf7fa" }} data-testid="price-shopping">
+          <SectionGroup title="Your shopping — you buy it yourself (estimated)" lines={shopping} />
+          <div className="mt-2 flex items-baseline justify-between text-sm" style={{ color: "#6d5f69" }}>
+            <span>At the shops</span><span>≈ AED {formatAED(shoppingTotal)}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

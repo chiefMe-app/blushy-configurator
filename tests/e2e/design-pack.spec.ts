@@ -14,11 +14,12 @@ test("P1 the sample pack downloads as a ZIP", async ({ page }) => {
     "3_VISUAL_REFERENCE_NOT_FOR_PRINT/visual_reference.jpg",
     "4_LISTS/balloons.csv",
     "4_LISTS/props.csv",
+    "4_LISTS/shopping_and_suppliers.csv",
     "README.txt",
   ]);
 });
 
-test("P2 the Package step links the sample under the design packages", async ({ page }) => {
+test("P2 the Package step links the sample beside the two packages", async ({ page }) => {
   await openDecor(page, "Ice Princess", "Single Round");
   // Straight to the Package step: the design kept on this device, at step 5 (the fifth, after the experiences).
   await page.waitForTimeout(800); // the device copy is written a moment after a change

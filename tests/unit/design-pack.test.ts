@@ -30,6 +30,7 @@ describe("the pack's folders", () => {
       "3_VISUAL_REFERENCE_NOT_FOR_PRINT/visual_reference.jpg",
       "4_LISTS/balloons.csv",
       "4_LISTS/props.csv",
+      "4_LISTS/shopping_and_suppliers.csv",
       "README.txt",
     ]);
     const entries = unzip(pack.zip);

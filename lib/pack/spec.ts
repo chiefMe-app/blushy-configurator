@@ -203,8 +203,9 @@ export function buildPackSpec(config: BuilderConfig): PackSpec {
     standees: (d.cutouts.selectedAssets ?? []).map((a) => ({ label: a.label, ...a.quantities })),
     extras,
     kidsTable: kidsTable(config),
-    items: breakdown.lines.map((l) => ({ label: l.label, amount: l.amount })),
-    estimatedTotal: breakdown.total,
+    items: [...breakdown.lines, ...breakdown.shopping].map((l) => ({ label: l.label, amount: l.amount })),
+    // DIY: her shopping is listed and counted here too, so the list adds up.
+    estimatedTotal: breakdown.total + breakdown.shopping.reduce((t, l) => t + l.amount, 0),
   };
 }
 

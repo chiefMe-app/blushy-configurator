@@ -1,7 +1,7 @@
 // The kids' table, part 2 of Decor (2026-10-27, F2): after the backdrop's
 // Extras, a yes or skip; then every item on one page (2026-10-28); the price
 // adds to the party total; Back walks back; the table is kept on the device.
-import { test, expect, next, total, settle, signIn } from "./guard";
+import { test, expect, next, total, settle, signIn, chooseSetup } from "./guard";
 import type { Page } from "@playwright/test";
 
 const aed = (s: string | null) => Number((s ?? "").replace(/[^0-9]/g, ""));
@@ -271,7 +271,7 @@ test("W3 a welcome board begun can still be skipped, with no render", async ({ p
   await page.getByTestId("finish-helium-skip").click();
   await expect(page.getByTestId("experiences")).toBeVisible(); // the experiences (2026-11-04), none picked
   await next(page).click();
-  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who makes your party?" })).toBeVisible();
   expect(aed(await total(page).textContent())).toBe(before);
 });
 
@@ -374,7 +374,7 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   await next(page).click();
   await expect(page.getByTestId("experiences")).toBeVisible(); // the experiences (2026-11-04), none picked
   await next(page).click();
-  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who makes your party?" })).toBeVisible();
   await expect(page.getByTestId("finished-giveaways-jpeg").or(page.getByTestId("finished-designs").getByAltText("Your giveaways"))).toBeVisible();
   await page.getByRole("button", { name: "← Back" }).click(); // to the experiences
   await page.getByRole("button", { name: "← Back" }).click();
@@ -460,7 +460,7 @@ test("P1 the piñata: the age in her colours or a theme shape, how it opens, wha
   await next(page).click(); // the balloons skipped
   await expect(page.getByTestId("experiences")).toBeVisible(); // the experiences (2026-11-04), none picked
   await next(page).click();
-  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who makes your party?" })).toBeVisible();
   await expect(page.getByTestId("finished-designs")).toContainText("Piñata");
   await page.getByRole("button", { name: "← Back" }).click(); // to the experiences
   await page.getByRole("button", { name: "← Back" }).click();
@@ -726,7 +726,7 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await next(page).click(); // the balloons skipped
   await expect(page.getByTestId("experiences")).toBeVisible(); // the experiences (2026-11-04), none picked
   await next(page).click();
-  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who makes your party?" })).toBeVisible();
   await expect(page.getByTestId("finished-designs")).toContainText("Cake");
   await page.getByRole("button", { name: "← Back" }).click(); // to the experiences
   await page.getByRole("button", { name: "← Back" }).click();
@@ -820,7 +820,7 @@ test("H1 the helium balloons: bouquets in her colours with a foil, the age and t
   await page.getByTestId("finish-helium").click();
   await expect(page.getByTestId("experiences")).toBeVisible(); // the experiences (2026-11-04), none picked
   await next(page).click();
-  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who makes your party?" })).toBeVisible();
   await expect(page.getByTestId("finished-designs")).toContainText("Helium balloons");
   // Its card's Edit goes straight back to the balloons (the tidied finished designs, 2026-11-04).
   await expect(page.getByTestId("finished-helium")).toContainText(`AED ${(3 * 225 + 240 + 7 * 25 + 275 + 180 + 40).toLocaleString("en-US")}`);
@@ -865,7 +865,7 @@ test("X1 the experiences, their own step before Package: priced by the guests, t
   // On to Package, and back: kept.
   await expect(next(page)).toHaveText(/Continue to Package/);
   await next(page).click();
-  await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who makes your party?" })).toBeVisible();
   // Beside the packages, in the finished designs: one card of them, its Edit back to them.
   const card = page.getByTestId("finished-experiences");
   await expect(card).toContainText("Popcorn cart · Party photographer · Face painting · Bouncy castle");
@@ -882,6 +882,55 @@ test("X1 the experiences, their own step before Package: priced by the guests, t
   await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
   const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
   expect(order.experiences).toMatchObject({ picked: ["popcorn", "photographer", "face_painting", "bouncy_castle"], children: 11, photoHours: 3, video: true, place: "outdoor" });
+});
+
+test("PK1 two packages: We do it until she picks, DIY takes the pieces out of the total into a shopping list by shop", async ({ page, guard }) => {
+  // 2026-11-04 (the owner: only two packages; DIY = design fee + experiences, the pieces her own shopping).
+  await page.goto("/builder");
+  await page.locator(".bz-choice.bz-birthday").click();
+  await next(page).click();
+  await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: /^Ice Princess$/ }) }).first().click();
+  await next(page).click();
+  await page.getByRole("button", { name: /Yes, design the backdrop/ }).click();
+  await chooseSetup(page, "Single Round");
+  for (let i = 0; i < 3; i++) await next(page).click(); // Style, Balloons, Extras
+  await page.getByTestId("finish-backdrop").click();
+  await expect(page.getByTestId("table-place")).toBeVisible();
+  await page.getByTestId("skip-kids-table").click();
+  for (let i = 0; i < 6; i++) await next(page).click(); // the grown-ups' table to the balloons skipped
+  await page.getByTestId("exp-magician").click();
+  await next(page).click();
+  await expect(page.getByRole("heading", { name: "Who makes your party?" })).toBeVisible();
+  const right = page.locator(".bz-right");
+  await expect(right.getByTestId("package-we_do_it")).toHaveAttribute("aria-checked", "true");
+  await expect(right.getByTestId("we-do-it-steps")).toContainText("We collect it after");
+  const full = aed(await total(page).textContent());
+  expect(aed(await page.getByTestId("package-total-we_do_it").textContent())).toBe(full);
+  // DIY: the design fee, the theme and the magician; the backdrop is her shopping, by shop.
+  await right.getByTestId("package-diy").click();
+  await expect(right.getByTestId("package-diy")).toHaveAttribute("aria-checked", "true");
+  const list = right.getByTestId("shopping-list");
+  await expect(list.getByTestId("shop-balloons")).toContainText("Balloon shop");
+  await expect(list.getByTestId("shop-rental")).toContainText("Plinth");
+  await expect(list).toContainText("still booked by us");
+  const diy = aed(await total(page).textContent());
+  expect(diy).toBe(aed(await page.getByTestId("package-total-diy").textContent()));
+  expect(diy).toBeLessThan(full);
+  const shopTotal = aed(await list.locator(".bz-pk-foot").first().textContent());
+  expect(diy + shopTotal).toBe(full - 450 + 250);
+  // Kept on the way to the venue and back.
+  await next(page).click();
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(right.getByTestId("package-diy")).toHaveAttribute("aria-checked", "true");
+  await next(page).click();
+  await page.getByPlaceholder("Full name").fill("Test Customer");
+  await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
+  await next(page).click();
+  await expect(page.getByTestId("price-shopping")).toContainText("you buy it yourself");
+  await next(page).click(); // Request Final Quote → caught
+  await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
+  const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
+  expect(order.servicePackageId).toBe("diy");
 });
 
 test("W2 on a phone, a change to the welcome board brings it into sight, and Back returns to the choices", async ({ page }, info) => {

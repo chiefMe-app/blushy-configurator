@@ -5,8 +5,8 @@ exports[`pricing golden > A-arch_open_frame 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -40,9 +40,10 @@ exports[`pricing golden > A-arch_open_frame 1`] = `
         "section": "design",
       },
     ],
-    "total": 1440,
+    "shopping": [],
+    "total": 1640,
   },
-  "total": 1440,
+  "total": 1640,
 }
 `;
 
@@ -51,8 +52,8 @@ exports[`pricing golden > A-arch_shimmer 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -86,9 +87,10 @@ exports[`pricing golden > A-arch_shimmer 1`] = `
         "section": "design",
       },
     ],
-    "total": 1690,
+    "shopping": [],
+    "total": 1890,
   },
-  "total": 1690,
+  "total": 1890,
 }
 `;
 
@@ -97,8 +99,8 @@ exports[`pricing golden > A-balloon_ring 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -122,9 +124,10 @@ exports[`pricing golden > A-balloon_ring 1`] = `
         "section": "design",
       },
     ],
-    "total": 1010,
+    "shopping": [],
+    "total": 1210,
   },
-  "total": 1010,
+  "total": 1210,
 }
 `;
 
@@ -133,8 +136,8 @@ exports[`pricing golden > A-double_arch 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -168,9 +171,10 @@ exports[`pricing golden > A-double_arch 1`] = `
         "section": "design",
       },
     ],
-    "total": 1440,
+    "shopping": [],
+    "total": 1640,
   },
-  "total": 1440,
+  "total": 1640,
 }
 `;
 
@@ -179,8 +183,8 @@ exports[`pricing golden > A-single_arch 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -209,9 +213,10 @@ exports[`pricing golden > A-single_arch 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -220,8 +225,8 @@ exports[`pricing golden > A-single_banner 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -255,9 +260,10 @@ exports[`pricing golden > A-single_banner 1`] = `
         "section": "design",
       },
     ],
-    "total": 1240,
+    "shopping": [],
+    "total": 1440,
   },
-  "total": 1240,
+  "total": 1440,
 }
 `;
 
@@ -266,8 +272,8 @@ exports[`pricing golden > A-single_fringe 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -291,9 +297,10 @@ exports[`pricing golden > A-single_fringe 1`] = `
         "section": "design",
       },
     ],
-    "total": 1010,
+    "shopping": [],
+    "total": 1210,
   },
-  "total": 1010,
+  "total": 1210,
 }
 `;
 
@@ -302,8 +309,8 @@ exports[`pricing golden > A-single_round 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -332,9 +339,10 @@ exports[`pricing golden > A-single_round 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -343,8 +351,8 @@ exports[`pricing golden > A-single_shimmer 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -373,9 +381,10 @@ exports[`pricing golden > A-single_shimmer 1`] = `
         "section": "design",
       },
     ],
-    "total": 1340,
+    "shopping": [],
+    "total": 1540,
   },
-  "total": 1340,
+  "total": 1540,
 }
 `;
 
@@ -384,8 +393,8 @@ exports[`pricing golden > A-single_wavy 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -414,9 +423,10 @@ exports[`pricing golden > A-single_wavy 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -425,8 +435,8 @@ exports[`pricing golden > A-triple_arch 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -465,9 +475,10 @@ exports[`pricing golden > A-triple_arch 1`] = `
         "section": "design",
       },
     ],
-    "total": 1790,
+    "shopping": [],
+    "total": 1990,
   },
-  "total": 1790,
+  "total": 1990,
 }
 `;
 
@@ -476,8 +487,8 @@ exports[`pricing golden > A-wavy_shimmer 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -511,9 +522,10 @@ exports[`pricing golden > A-wavy_shimmer 1`] = `
         "section": "design",
       },
     ],
-    "total": 1690,
+    "shopping": [],
+    "total": 1890,
   },
-  "total": 1690,
+  "total": 1890,
 }
 `;
 
@@ -522,8 +534,8 @@ exports[`pricing golden > B01-hb-arya-script 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -552,9 +564,10 @@ exports[`pricing golden > B01-hb-arya-script 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -563,8 +576,8 @@ exports[`pricing golden > B02-hb-arya-elegant 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -593,9 +606,10 @@ exports[`pricing golden > B02-hb-arya-elegant 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -604,8 +618,8 @@ exports[`pricing golden > B03-hb-arya-block 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -634,9 +648,10 @@ exports[`pricing golden > B03-hb-arya-block 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -645,8 +660,8 @@ exports[`pricing golden > B04-hb-arya-small 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -675,9 +690,10 @@ exports[`pricing golden > B04-hb-arya-small 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -686,8 +702,8 @@ exports[`pricing golden > B05-hb-arya-large 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -716,9 +732,10 @@ exports[`pricing golden > B05-hb-arya-large 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -727,8 +744,8 @@ exports[`pricing golden > B06-ordinal-layla 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -757,9 +774,10 @@ exports[`pricing golden > B06-ordinal-layla 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -768,8 +786,8 @@ exports[`pricing golden > B07-ordinal-malek-elegant 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -798,9 +816,10 @@ exports[`pricing golden > B07-ordinal-malek-elegant 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -809,8 +828,8 @@ exports[`pricing golden > B08-turkish 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -839,9 +858,10 @@ exports[`pricing golden > B08-turkish 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -850,8 +870,8 @@ exports[`pricing golden > B09-name-only 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -880,9 +900,10 @@ exports[`pricing golden > B09-name-only 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -891,8 +912,8 @@ exports[`pricing golden > B10-oh-baby 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -921,9 +942,10 @@ exports[`pricing golden > B10-oh-baby 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -932,8 +954,8 @@ exports[`pricing golden > B11-welcome-elegant 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -962,9 +984,10 @@ exports[`pricing golden > B11-welcome-elegant 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -973,8 +996,8 @@ exports[`pricing golden > B12-hb-only 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1003,9 +1026,10 @@ exports[`pricing golden > B12-hb-only 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -1014,8 +1038,8 @@ exports[`pricing golden > B13-newline 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1044,9 +1068,10 @@ exports[`pricing golden > B13-newline 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -1055,8 +1080,8 @@ exports[`pricing golden > B14-long-block 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1085,9 +1110,10 @@ exports[`pricing golden > B14-long-block 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -1096,8 +1122,8 @@ exports[`pricing golden > C01-legacy-birthday 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1126,9 +1152,10 @@ exports[`pricing golden > C01-legacy-birthday 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -1137,8 +1164,8 @@ exports[`pricing golden > C02-legacy-custom 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1167,9 +1194,10 @@ exports[`pricing golden > C02-legacy-custom 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -1178,8 +1206,8 @@ exports[`pricing golden > C03-legacy-turkish 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1208,9 +1236,10 @@ exports[`pricing golden > C03-legacy-turkish 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -1219,8 +1248,8 @@ exports[`pricing golden > C04-legacy-off 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1249,9 +1278,10 @@ exports[`pricing golden > C04-legacy-off 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -1260,8 +1290,8 @@ exports[`pricing golden > D01-gold 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1290,9 +1320,10 @@ exports[`pricing golden > D01-gold 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -1301,8 +1332,8 @@ exports[`pricing golden > D02-rose-gold 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1331,9 +1362,10 @@ exports[`pricing golden > D02-rose-gold 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -1342,8 +1374,8 @@ exports[`pricing golden > D03-white 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1372,9 +1404,10 @@ exports[`pricing golden > D03-white 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -1383,8 +1416,8 @@ exports[`pricing golden > D04-custom-hex 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1413,9 +1446,10 @@ exports[`pricing golden > D04-custom-hex 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -1424,8 +1458,8 @@ exports[`pricing golden > D05-pink-board 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1454,9 +1488,10 @@ exports[`pricing golden > D05-pink-board 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -1465,8 +1500,8 @@ exports[`pricing golden > D06-double-two-colours 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1500,9 +1535,10 @@ exports[`pricing golden > D06-double-two-colours 1`] = `
         "section": "design",
       },
     ],
-    "total": 1440,
+    "shopping": [],
+    "total": 1640,
   },
-  "total": 1440,
+  "total": 1640,
 }
 `;
 
@@ -1511,8 +1547,8 @@ exports[`pricing golden > E01-neon 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1541,9 +1577,10 @@ exports[`pricing golden > E01-neon 1`] = `
         "section": "design",
       },
     ],
-    "total": 1260,
+    "shopping": [],
+    "total": 1460,
   },
-  "total": 1260,
+  "total": 1460,
 }
 `;
 
@@ -1552,8 +1589,8 @@ exports[`pricing golden > E02-marquee-3-plinths 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1587,9 +1624,10 @@ exports[`pricing golden > E02-marquee-3-plinths 1`] = `
         "section": "design",
       },
     ],
-    "total": 1450,
+    "shopping": [],
+    "total": 1650,
   },
-  "total": 1450,
+  "total": 1650,
 }
 `;
 
@@ -1598,8 +1636,8 @@ exports[`pricing golden > E03-foil-pink 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1633,9 +1671,10 @@ exports[`pricing golden > E03-foil-pink 1`] = `
         "section": "design",
       },
     ],
-    "total": 1240,
+    "shopping": [],
+    "total": 1440,
   },
-  "total": 1240,
+  "total": 1440,
 }
 `;
 
@@ -1644,8 +1683,8 @@ exports[`pricing golden > E04-foil-gold 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1679,9 +1718,10 @@ exports[`pricing golden > E04-foil-gold 1`] = `
         "section": "design",
       },
     ],
-    "total": 1240,
+    "shopping": [],
+    "total": 1440,
   },
-  "total": 1240,
+  "total": 1440,
 }
 `;
 
@@ -1690,8 +1730,8 @@ exports[`pricing golden > E05-florals 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1725,9 +1765,10 @@ exports[`pricing golden > E05-florals 1`] = `
         "section": "design",
       },
     ],
-    "total": 1210,
+    "shopping": [],
+    "total": 1410,
   },
-  "total": 1210,
+  "total": 1410,
 }
 `;
 
@@ -1736,8 +1777,8 @@ exports[`pricing golden > E06-two-standees 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1771,9 +1812,10 @@ exports[`pricing golden > E06-two-standees 1`] = `
         "section": "design",
       },
     ],
-    "total": 1450,
+    "shopping": [],
+    "total": 1650,
   },
-  "total": 1450,
+  "total": 1650,
 }
 `;
 
@@ -1782,8 +1824,8 @@ exports[`pricing golden > E07-ring-half 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1807,9 +1849,10 @@ exports[`pricing golden > E07-ring-half 1`] = `
         "section": "design",
       },
     ],
-    "total": 1010,
+    "shopping": [],
+    "total": 1210,
   },
-  "total": 1010,
+  "total": 1210,
 }
 `;
 
@@ -1818,8 +1861,8 @@ exports[`pricing golden > E08-ring-none 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1838,9 +1881,10 @@ exports[`pricing golden > E08-ring-none 1`] = `
         "section": "design",
       },
     ],
-    "total": 760,
+    "shopping": [],
+    "total": 960,
   },
-  "total": 760,
+  "total": 960,
 }
 `;
 
@@ -1849,8 +1893,8 @@ exports[`pricing golden > E09-no-balloons 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1874,9 +1918,10 @@ exports[`pricing golden > E09-no-balloons 1`] = `
         "section": "design",
       },
     ],
-    "total": 840,
+    "shopping": [],
+    "total": 1040,
   },
-  "total": 840,
+  "total": 1040,
 }
 `;
 
@@ -1885,8 +1930,8 @@ exports[`pricing golden > E10-barbie 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1915,9 +1960,10 @@ exports[`pricing golden > E10-barbie 1`] = `
         "section": "design",
       },
     ],
-    "total": 1100,
+    "shopping": [],
+    "total": 1300,
   },
-  "total": 1100,
+  "total": 1300,
 }
 `;
 
@@ -1926,8 +1972,8 @@ exports[`pricing golden > E11-minecraft 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1961,9 +2007,10 @@ exports[`pricing golden > E11-minecraft 1`] = `
         "section": "design",
       },
     ],
-    "total": 1430,
+    "shopping": [],
+    "total": 1630,
   },
-  "total": 1430,
+  "total": 1630,
 }
 `;
 
@@ -1972,8 +2019,8 @@ exports[`pricing golden > E12-zero-plinths 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -1997,9 +2044,10 @@ exports[`pricing golden > E12-zero-plinths 1`] = `
         "section": "design",
       },
     ],
-    "total": 980,
+    "shopping": [],
+    "total": 1180,
   },
-  "total": 980,
+  "total": 1180,
 }
 `;
 
@@ -2008,8 +2056,8 @@ exports[`pricing golden > E13-unicorn-fringe 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -2033,9 +2081,10 @@ exports[`pricing golden > E13-unicorn-fringe 1`] = `
         "section": "design",
       },
     ],
-    "total": 1010,
+    "shopping": [],
+    "total": 1210,
   },
-  "total": 1010,
+  "total": 1210,
 }
 `;
 
@@ -2044,8 +2093,8 @@ exports[`pricing golden > E14-unicorn-wavy 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -2074,9 +2123,10 @@ exports[`pricing golden > E14-unicorn-wavy 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -2085,8 +2135,8 @@ exports[`pricing golden > E15-unicorn-bright-wavy-rainbow 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -2120,9 +2170,10 @@ exports[`pricing golden > E15-unicorn-bright-wavy-rainbow 1`] = `
         "section": "design",
       },
     ],
-    "total": 1180,
+    "shopping": [],
+    "total": 1380,
   },
-  "total": 1180,
+  "total": 1380,
 }
 `;
 
@@ -2131,8 +2182,8 @@ exports[`pricing golden > N01-soft-signature-round 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -2161,9 +2212,10 @@ exports[`pricing golden > N01-soft-signature-round 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -2172,8 +2224,8 @@ exports[`pricing golden > N02-editorial-gold 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -2202,9 +2254,10 @@ exports[`pricing golden > N02-editorial-gold 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -2213,8 +2266,8 @@ exports[`pricing golden > N03-party-pop-double 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -2248,9 +2301,10 @@ exports[`pricing golden > N03-party-pop-double 1`] = `
         "section": "design",
       },
     ],
-    "total": 1440,
+    "shopping": [],
+    "total": 1640,
   },
-  "total": 1440,
+  "total": 1640,
 }
 `;
 
@@ -2259,8 +2313,8 @@ exports[`pricing golden > N04-one-line 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -2289,9 +2343,10 @@ exports[`pricing golden > N04-one-line 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -2300,8 +2355,8 @@ exports[`pricing golden > N05-timeless-black-arch 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -2330,9 +2385,10 @@ exports[`pricing golden > N05-timeless-black-arch 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -2341,8 +2397,8 @@ exports[`pricing golden > N06-triple-overlay 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -2381,9 +2437,10 @@ exports[`pricing golden > N06-triple-overlay 1`] = `
         "section": "design",
       },
     ],
-    "total": 1790,
+    "shopping": [],
+    "total": 1990,
   },
-  "total": 1790,
+  "total": 1990,
 }
 `;
 
@@ -2392,8 +2449,8 @@ exports[`pricing golden > N07-turkish 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -2422,9 +2479,10 @@ exports[`pricing golden > N07-turkish 1`] = `
         "section": "design",
       },
     ],
-    "total": 1090,
+    "shopping": [],
+    "total": 1290,
   },
-  "total": 1090,
+  "total": 1290,
 }
 `;
 
@@ -2433,8 +2491,8 @@ exports[`pricing golden > N08-open-frame-overlay 1`] = `
   "breakdown": {
     "lines": [
       {
-        "amount": 250,
-        "label": "Design Only",
+        "amount": 450,
+        "label": "We do it (delivery, setup & collection)",
         "section": "package",
       },
       {
@@ -2468,8 +2526,9 @@ exports[`pricing golden > N08-open-frame-overlay 1`] = `
         "section": "design",
       },
     ],
-    "total": 1440,
+    "shopping": [],
+    "total": 1640,
   },
-  "total": 1440,
+  "total": 1640,
 }
 `;

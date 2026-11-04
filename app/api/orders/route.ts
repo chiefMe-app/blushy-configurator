@@ -9,7 +9,7 @@ import { getSupabase } from "@/lib/supabase";
 import {
   themeById,
   packageById,
-  servicePackageById,
+  readServicePackageId,
   computeTotal,
   type BuilderConfig,
 } from "@/lib/config";
@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
   // servicePackageId is what the client's Package step (step 3) actually sets.
   // Without this check a missing/invalid value would silently fall back to the
   // cheapest service package inside computeTotal() below instead of failing loudly.
-  if (!servicePackageById(body.servicePackageId)) {
+  const servicePackageId = readServicePackageId(body.servicePackageId);
+  if (!servicePackageId) {
     return NextResponse.json({ error: "Invalid service package." }, { status: 400 });
   }
 
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
     cake: readCake(body.cake),
     helium: readHelium(body.helium),
     experiences: readExperiences(body.experiences),
+    servicePackageId,
   } as unknown as BuilderConfig;
   const total = computeTotal(pricingConfig);
 
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
   const extras = {
     eventType: body.eventType,
     package: body.package,
-    servicePackageId: body.servicePackageId,
+    servicePackageId,
     decor: body.decor,
     // The tables and the welcome board are priced in the total: the team needs their choices too (2026-10-31).
     table: body.table,
