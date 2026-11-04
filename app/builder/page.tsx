@@ -41,6 +41,7 @@ import BackdropIntro from "@/components/builder/decor/BackdropIntro";
 import TablePreview, { type TableRenderJob } from "@/components/builder/table/TablePreview";
 import AdultTableStep from "@/components/builder/table/AdultTableStep";
 import FinishedDesigns from "@/components/builder/FinishedDesigns";
+import { finishedPieces, type FinishedPieceId } from "@/lib/finishedDesigns";
 import WelcomeStep from "@/components/builder/welcome/WelcomeStep";
 import AdultTableSketch from "@/components/studio/table/AdultTableSketch";
 import WelcomePreview from "@/components/builder/welcome/WelcomePreview";
@@ -597,6 +598,14 @@ export default function ConfigurePage() {
     if (!config.helium) setHelium({ ...defaultHelium(heliumSeed(config)), enabled: false });
     goToStep(3);
   };
+  // The finished designs on Package and Review (left), each with Edit back to its part.
+  const showFinished = (step === 4 || step === 6) && (finishedPieces(config).length > 0 || !!config.experiences?.picked.length);
+  const editPiece = (id: FinishedPieceId) => {
+    goToStep(2);
+    if (id === "backdrop") { setDecorPart("backdrop"); return; }
+    if (id === "kids" || id === "adults") { setDecorPart("table"); setTableView(id); return; }
+    setDecorPart(id);
+  };
   const setExperiences = (experiences: NonNullable<typeof config.experiences>) => setConfig((c) => ({ ...c, experiences }));
   // After the giveaways, the piñata (2026-11-03, the owner: "şimdi piñata studio'ya geçelim").
   const toPinata = () => {
@@ -790,6 +799,11 @@ export default function ConfigurePage() {
           {onPinata && <PinataPreview config={config} render={pinataRender} onGenerate={makePinataRender} />}
           {onHelium && <HeliumPreview config={config} render={heliumRender} onGenerate={makeHeliumRender} />}
           {step === 3 && <ExperiencesPreview config={config} />}
+          {/* 2026-11-04: on the left beside the packages (tidied). 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
+          {showFinished && <FinishedDesigns config={config} onEdit={editPiece} onEditExperiences={() => goToStep(3)}
+            renderUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl : null}
+            tableRenderUrl={tableRender.url} welcomeRenderUrl={welcomeRender.url} giveawaysRenderUrl={giveawaysRender.url} pinataRenderUrl={pinataRender.url} cakeRenderUrl={config.cake?.enabled ? cakeRender.urlOf(cakeRenderKey(config.cake, config.theme)) : null}
+            heliumRenderUrl={heliumRender.url} />}
           {onCake && <CakePreview config={config} setCake={setCake} render={cakeRender} onGenerate={makeCakeRender} view={cakeView} setView={setCakeView} />}
           <div hidden={!onKids}>
             <TablePreview config={config} render={tableRender} onGenerate={makeTableRender} placeShot={tablePlaceShot} />
@@ -806,11 +820,11 @@ export default function ConfigurePage() {
             </div>
           ) : (
             <>
-              {!onTable && !onWelcome && !onGiveaways && !onPinata && !onCake && !onHelium && step !== 3 && config.decor.backdropChoice === "skip" && (
+              {!onTable && !onWelcome && !onGiveaways && !onPinata && !onCake && !onHelium && step !== 3 && !showFinished && config.decor.backdropChoice === "skip" && (
                 <div className="bz-tb-preview"><div className="empty">No backdrop in this party — add one any time.</div></div>
               )}
               {/* The backdrop's preview stays mounted (its render is kept) while the table is on show. */}
-              <div hidden={onTable || onWelcome || onGiveaways || onPinata || onCake || onHelium || step === 3 || config.decor.backdropChoice === "skip"}>
+              <div hidden={onTable || onWelcome || onGiveaways || onPinata || onCake || onHelium || step === 3 || showFinished || config.decor.backdropChoice === "skip"}>
               <SetupPreview
                 config={config}
                 status={preview.status}
@@ -947,11 +961,6 @@ export default function ConfigurePage() {
             {onHelium && <HeliumStep config={config} setHelium={setHelium} onFinish={finishHelium} onSkip={skipHelium} render={heliumRender} onGenerate={makeHeliumRender} />}
             {onCake && <CakeStep config={config} setCake={setCake} onFinish={finishCake} onSkip={skipCake} render={cakeRender} onGenerate={makeCakeRender} setView={setCakeView} />}
 
-            {/* 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
-            {(step === 4 || step === 6) && <FinishedDesigns config={config}
-              renderUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl : null}
-              tableRenderUrl={tableRender.url} welcomeRenderUrl={welcomeRender.url} giveawaysRenderUrl={giveawaysRender.url} pinataRenderUrl={pinataRender.url} cakeRenderUrl={config.cake?.enabled ? cakeRender.urlOf(cakeRenderKey(config.cake, config.theme)) : null}
-              heliumRenderUrl={heliumRender.url} />}
             {step === 3 && <ExperiencesStep config={config} setExperiences={setExperiences} />}
 
             {step === 4 && <PackageStep config={config} setServicePackage={setServicePackage} />}

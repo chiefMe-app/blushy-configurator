@@ -822,8 +822,9 @@ test("H1 the helium balloons: bouquets in her colours with a foil, the age and t
   await next(page).click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
   await expect(page.getByTestId("finished-designs")).toContainText("Helium balloons");
-  await page.getByRole("button", { name: "← Back" }).click(); // to the experiences
-  await page.getByRole("button", { name: "← Back" }).click();
+  // Its card's Edit goes straight back to the balloons (the tidied finished designs, 2026-11-04).
+  await expect(page.getByTestId("finished-helium")).toContainText(`AED ${(3 * 225 + 240 + 7 * 25 + 275 + 180 + 40).toLocaleString("en-US")}`);
+  await page.getByTestId("finished-helium-edit").click();
   await expect(page.getByTestId("finish-helium")).toHaveText(/Next: Experiences/);
   expect(guard.blocked.map((r) => new URL(r.url()).pathname)).toEqual(["/api/helium-render"]);
 });
@@ -837,6 +838,9 @@ test("X1 the experiences, their own step before Package: priced by the guests, t
   await expect(next(page)).toHaveText(/Skip to Experiences/);
   await next(page).click(); // the balloons skipped
   await expect(page.getByTestId("experiences")).toBeVisible();
+  // The choices on the right, what she picked on the left (a move once put the choices on the left too).
+  await expect(page.locator(".bz-right").getByTestId("experiences")).toBeVisible();
+  await expect(page.locator(".bz-left").getByTestId("experiences-preview")).toBeVisible();
   await expect(next(page)).toHaveText(/Skip to Package/);
   const before = aed(await total(page).textContent());
   const sum = page.getByTestId("experiences-total");
@@ -862,7 +866,11 @@ test("X1 the experiences, their own step before Package: priced by the guests, t
   await expect(next(page)).toHaveText(/Continue to Package/);
   await next(page).click();
   await expect(page.getByRole("heading", { name: "Choose your service package" })).toBeVisible();
-  await page.getByRole("button", { name: "← Back" }).click();
+  // Beside the packages, in the finished designs: one card of them, its Edit back to them.
+  const card = page.getByTestId("finished-experiences");
+  await expect(card).toContainText("Popcorn cart · Party photographer · Face painting · Bouncy castle");
+  await expect(card).toContainText("AED 2,820");
+  await card.getByRole("button", { name: "Edit" }).click();
   await expect(page.getByTestId("exp-bouncy_castle")).toHaveAttribute("aria-checked", "true");
   await next(page).click();
   await next(page).click();

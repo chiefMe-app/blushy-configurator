@@ -1446,27 +1446,37 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 
 /* ---------- Finished designs (2026-11-02): each piece as a JPEG, on Package and Review ---------- */
 .bz-finished { margin-bottom: 18px; }
-.bz-finished .head h2 { margin: 0 0 2px; font: 400 26px var(--bz-hand); }
-.bz-finished .head p { margin: 0 0 12px; color: var(--bz-muted); font-size: 13.5px; }
-.bz-finished .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.bz-finished-card { margin: 0; border: 1px solid var(--bz-border); border-radius: 22px; padding: 12px; background: #fff; box-shadow: 0 10px 30px rgba(103,44,71,.06); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.bz-finished-card figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.bz-finished-card .title { font: 400 19px var(--bz-hand); white-space: nowrap; }
-.bz-finished-card .state { font-size: 11px; font-weight: 700; color: #947e8d; white-space: nowrap; }
-.bz-finished-card .state.done { color: #2f7a46; }
-/* A square for every piece, the picture fitted in it: the card keeps its size while its JPEG is made. */
-.bz-finished-card .pic { position: relative; overflow: hidden; border-radius: 14px; background: #fbf4f7; aspect-ratio: 1 / 1; display: grid; place-items: center; }
+.bz-finished .head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.bz-finished .head h2 { margin: 0; font: 400 24px var(--bz-hand); }
+.bz-finished .head p { margin: 0; color: var(--bz-muted); font-size: 13px; }
+.bz-finished .head p b { color: var(--bz-pink); }
+/* 2026-11-04 (tidied): every piece in the same 4:3 white frame, the picture whole inside it. */
+.bz-finished .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 44%), 1fr)); gap: 12px; }
+.bz-finished-card { margin: 0; border: 1px solid var(--bz-border); border-radius: 18px; padding: 8px 8px 10px; background: #fff; box-shadow: 0 6px 18px rgba(103,44,71,.05); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bz-finished-card .pic { position: relative; overflow: hidden; border-radius: 12px; background: #fff; box-shadow: inset 0 0 0 1px #f3ebee; aspect-ratio: 4 / 3; display: grid; place-items: center; }
 .bz-finished-card .pic.live { aspect-ratio: auto; }
 .bz-finished-card .pic > img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.bz-finished-card .making { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--bz-muted); }
+.bz-finished-card .pic .state { position: absolute; left: 6px; top: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.92); font-size: 10px; font-weight: 800; color: #947e8d; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.bz-finished-card .pic .state.done { color: #2f7a46; }
+.bz-finished-card .pic.mosaic { grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 2px; place-items: stretch; }
+.bz-finished-card .pic.mosaic > img { object-fit: cover; }
+.bz-finished-card .pic.mosaic > img:only-child { grid-column: span 2; grid-row: span 2; }
+.bz-finished-card .pic.mosaic > img:first-child:nth-last-child(2), .bz-finished-card .pic.mosaic > img:first-child:nth-last-child(2) ~ img { grid-row: span 2; }
+.bz-finished-card .pic.mosaic > img:first-child:nth-last-child(3) { grid-row: span 2; }
+.bz-finished-card figcaption { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding: 0 4px; }
+.bz-finished-card .title { font-weight: 800; font-size: 13px; color: var(--bz-ink); line-height: 1.25; }
+.bz-finished-card .price { font-weight: 800; font-size: 12px; color: var(--bz-pink); white-space: nowrap; }
+.bz-finished-card .list { margin: 0; padding: 0 4px; font-size: 11px; color: var(--bz-muted); line-height: 1.35; }
+.bz-finished-card .acts { display: flex; gap: 12px; padding: 0 4px; margin-top: auto; }
+.bz-finished-card .making { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--bz-muted); }
 .bz-finished-card .making .bz-spinner { border-color: rgba(255,13,102,.2); border-top-color: var(--bz-pink); }
-/* Drawn off-screen at a set width while its JPEG is made; in the card itself if it can't be. */
 .bz-finished-card .stage { position: absolute; left: -12000px; top: 0; width: 800px; pointer-events: none; }
 .bz-finished-card .stage.shown { position: static; width: 100%; pointer-events: auto; }
 .bz-finished-card .stage .art { background: #fff; }
 .bz-finished-card .stage .art > svg { display: block; width: 100% !important; height: auto !important; max-width: none; }
-.bz-finished-save { align-self: flex-start; font-weight: 800; color: var(--bz-pink); font-size: 13px; text-decoration: none; }
-.bz-finished-save:hover { text-decoration: underline; }
+.bz-finished-save, .bz-finished-edit { padding: 0; border: 0; background: none; font: inherit; font-weight: 800; color: var(--bz-pink); font-size: 12px; text-decoration: none; cursor: pointer; }
+.bz-finished-edit { color: var(--bz-ink); }
+.bz-finished-save:hover, .bz-finished-edit:hover { text-decoration: underline; }
 
 /* A part's render looked at closely (components/builder/ZoomPhoto.tsx). */
 .bz-zoom-wrap { position: relative; display: block; }
