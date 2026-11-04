@@ -5,7 +5,7 @@
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import {
-  BOUQUET_SIZES, BUBBLE_FILLINGS, BUBBLE_PRICE, CEILING_COUNTS, FOIL_COLOURS, LETTER_PRICE, MAX_BOUQUETS, MAX_LATEX_COLOURS,
+  BOUQUET_SIZES, BUBBLE_CM, BUBBLE_FILLINGS, BUBBLE_PRICE, CEILING_COUNTS, FOIL_COLOURS, LATEX_CM, LETTER_CM, LETTER_PRICE, MAX_BOUQUETS, MAX_LATEX_COLOURS,
   NUMBER_SIZES, PLAIN_FOIL_PRICE, THEME_FOIL_PRICE, cleanBubbleName, cleanLetters, defaultHelium, foilsFor, heliumPicture,
   heliumTotal, isPlainFoil, numberPrice, type Helium,
 } from "@/lib/studio/helium";
@@ -91,7 +91,7 @@ export default function HeliumStep({ config, setHelium, onFinish, onSkip, render
       <section className="bz-tb-section" aria-label="Balloon colours">
         <h2>Balloon colours</h2>
         <div className="bz-tb-item">
-          <p className="bz-tb-sub" style={{ fontWeight: 400 }}>Up to {MAX_LATEX_COLOURS}, for the bouquets and the ceiling — mixed in the order you pick them.</p>
+          <p className="bz-tb-sub" style={{ fontWeight: 400 }}>Up to {MAX_LATEX_COLOURS}, for the bouquets and the ceiling — mixed together at random.</p>
           <div className="bz-ts-swatches" role="group" aria-label="Balloon colours" data-testid="helium-colours">
             {swatches.map((hex) => {
               const at = colours.indexOf(hex);
@@ -121,7 +121,7 @@ export default function HeliumStep({ config, setHelium, onFinish, onSkip, render
             <div className="bz-tb-options" role="radiogroup" aria-label="Bouquet size" data-testid="helium-size">
               {BOUQUET_SIZES.map((s) => card(h.size === s.id, () => set({ size: s.id }),
                 <span className="bz-hl-dots">{Array.from({ length: s.balloons }, (_, i) => latexDot(h.colours[i % h.colours.length], i))}</span>,
-                s.name, `${s.balloons} balloons`, `AED ${formatAED(s.price)} each`, s.id))}
+                s.name, `${s.balloons} balloons, ${LATEX_CM} cm`, `AED ${formatAED(s.price)} each`, s.id))}
             </div>
           </div>
           <div className="bz-tb-item">
@@ -129,7 +129,7 @@ export default function HeliumStep({ config, setHelium, onFinish, onSkip, render
             <div className="bz-tb-options" role="radiogroup" aria-label="Foil on top" data-testid="helium-topper">
               {card(h.topper === "none", () => set({ topper: "none" }), null, "No foil", "Latex only", "", "none")}
               {foilsFor(theme.id).map((f) => card(h.topper === f.id, () => set({ topper: f.id }), foilPic(f.id), f.name,
-                f.own ? `Your ${theme.name} theme` : f.plain ? "In the colour you pick" : "", `+AED ${formatAED(f.plain ? PLAIN_FOIL_PRICE : THEME_FOIL_PRICE)}`, f.id))}
+                f.own ? `${f.cm} cm · your ${theme.name} theme` : f.plain ? `${f.cm} cm · in your colour` : `${f.cm} cm`, `+AED ${formatAED(f.plain ? PLAIN_FOIL_PRICE : THEME_FOIL_PRICE)}`, f.id))}
             </div>
           </div>
           {h.topper !== "none" && isPlainFoil(h.topper) && (
@@ -178,7 +178,7 @@ export default function HeliumStep({ config, setHelium, onFinish, onSkip, render
             <label className="bz-gv-count">
               <input type="text" maxLength={10} value={h.letters.text} data-testid="helium-letters" aria-label="The name in foil letters" placeholder="ARYA"
                 onChange={(e) => set({ letters: { ...h.letters, text: cleanLetters(e.target.value) } })} />
-              <small>40 cm letters on the wall · AED {formatAED(LETTER_PRICE)} a letter</small>
+              <small>{LETTER_CM} cm letters on the wall · AED {formatAED(LETTER_PRICE)} a letter</small>
             </label>
           </div>
           <div className="bz-tb-item">
@@ -193,7 +193,7 @@ export default function HeliumStep({ config, setHelium, onFinish, onSkip, render
         <div className="bz-tb-item">
           <div className="bz-tb-options compact" role="radiogroup" aria-label="Ceiling balloons" data-testid="helium-ceiling">
             {CEILING_COUNTS.map((c) => card(h.ceiling === c.count, () => set({ ceiling: c.count }), null, c.count ? `${c.count} balloons` : "None",
-              c.count ? "Floating, ribbons hanging" : "", c.count ? `AED ${formatAED(c.price)}` : "", String(c.count)))}
+              c.count ? `${LATEX_CM} cm, floating, ribbons hanging` : "", c.count ? `AED ${formatAED(c.price)}` : "", String(c.count)))}
           </div>
         </div>
       </section>
@@ -201,7 +201,7 @@ export default function HeliumStep({ config, setHelium, onFinish, onSkip, render
       <section className="bz-tb-section" aria-label="Name bubble">
         <h2>A bubble with the name</h2>
         <div className="bz-tb-item">
-          <p className="bz-tb-sub" style={{ fontWeight: 400 }}>A big clear bubble balloon, filled, the name on it · AED {formatAED(BUBBLE_PRICE)}</p>
+          <p className="bz-tb-sub" style={{ fontWeight: 400 }}>A big {BUBBLE_CM} cm clear bubble balloon, filled, the name on it · AED {formatAED(BUBBLE_PRICE)}</p>
           {yesNo(h.bubble.on, (on) => set({ bubble: { ...h.bubble, on } }), "Name bubble", "helium-bubble-on")}
         </div>
         {h.bubble.on && <>

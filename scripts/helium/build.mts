@@ -5,7 +5,7 @@
 // written to public/design/helium/<name>.webp (the snowflake, pale on white, birefnet lost: it was keyed from its white
 // and laid into foils-a). The plain foils and the latex are made grey with their light evened out (the brightest
 // white), so a colour multiplied over them reads true. Sizes go to lib/studio/heliumParts.json. The empty room
-// (room.png) is copied as it is.
+// (room.png, its pink wall made white by one flux-2 edit on the owner's first look) is copied as it is.
 //   npx tsx scripts/helium/build.mts
 import fs from "node:fs";
 import path from "node:path";

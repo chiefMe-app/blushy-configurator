@@ -1,8 +1,10 @@
 // Where every balloon goes in the empty room (2026-11-04), in the room photo's pixels (HELIUM_ROOM): the bouquets on
 // their weights to either side, the age's foil digits standing in the middle with the name bubble beside them, the
 // name's foil letters in a row on the wall, and the loose balloons against the ceiling, nearer ones bigger. Pure, so
-// the preview, its tests and the finished designs agree.
-import { BUBBLE_CM, HELIUM_ROOM, LATEX, LETTER_CM, NUMBER_SIZES, bouquetSize, heliumPicture, type Helium } from "./helium";
+// the preview, its tests and the finished designs agree. Since the owner's first look (2026-11-04): a bouquet's
+// colours mixed at random, never in rows, its balloons a little uneven like real ones, the foils their real size, and
+// the picture closing in on what is there (`view`).
+import { BUBBLE_CM, HELIUM_ROOM, LATEX, LATEX_CM, LETTER_CM, NUMBER_SIZES, bouquetSize, foilCm, heliumPicture, type Helium } from "./helium";
 
 /** A latex balloon: its picture (LATEX), its colour, its middle and width. */
 export interface PlacedLatex { pic: (typeof LATEX)[number]; colour: string; x: number; y: number; w: number }
@@ -13,13 +15,15 @@ export interface HeliumLayout {
   number?: { x: number; bottom: number; h: number };
   letters?: { x: number; top: number; h: number };
   bubble?: { x: number; y: number; r: number; weight: { x: number; y: number } };
+  /** The part of the room the picture shows, always the shape of HELIUM_ROOM.view. */
+  view: { x: number; y: number; w: number; h: number };
 }
 
-const { perCm, floor, ceiling: CEILING, w: W, view } = HELIUM_ROOM;
+const { perCm, floor, ceiling: CEILING, w: W, h: H, view } = HELIUM_ROOM;
 /** An 11-inch latex balloon, 28 cm across. */
-export const BALLOON_W = 28 * perCm;
-/** The foil on a bouquet, 45 cm tall. */
-const FOIL_H = 45 * perCm;
+export const BALLOON_W = LATEX_CM * perCm;
+/** The narrowest the picture closes in to: about 2.4 m of the room. */
+const MIN_VIEW_W = 640;
 
 /** The balloons of a bouquet, in balloon widths from its middle, the back ones first. */
 const CLUSTERS: Record<number, [number, number][]> = {
@@ -34,28 +38,57 @@ const rand = (seed: number) => { const x = Math.sin(seed * 12.9898) * 43758.5453
 /** n points spread from a to b (one in the middle). */
 const spread = (n: number, a: number, b: number) => Array.from({ length: n }, (_, i) => (n === 1 ? (a + b) / 2 : a + (i * (b - a)) / (n - 1)));
 
+/**
+ * A bouquet's colours: each colour as often as the others, shuffled (steadily, from the bouquet's seed) the way that
+ * puts the fewest same colours side by side — mixed, never in rows.
+ */
+export function mixColours(colours: string[], cluster: [number, number][], seed: number): string[] {
+  const n = cluster.length;
+  const pairs: [number, number][] = [];
+  for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) {
+    if (Math.hypot(cluster[a][0] - cluster[b][0], cluster[a][1] - cluster[b][1]) < 1.05) pairs.push([a, b]);
+  }
+  let best: string[] = [], bestBad = Infinity;
+  for (let t = 0; t < 24 && bestBad > 0; t++) {
+    const list = Array.from({ length: n }, (_, i) => colours[(i + seed) % colours.length]);
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(rand(seed * 131 + t * 17 + i) * (i + 1));
+      [list[i], list[j]] = [list[j], list[i]];
+    }
+    const bad = pairs.filter(([a, b]) => list[a] === list[b]).length;
+    if (bad < bestBad) { best = list; bestBad = bad; }
+  }
+  return best;
+}
+
 export function heliumLayout(h: Helium): HeliumLayout {
   const colours = h.colours.length ? h.colours : ["#F8BBD0"];
   const number = h.number.on && !!h.number.value;
   const bubble = h.bubble.on;
   const middle = number || bubble;
-  const out: HeliumLayout = { bouquets: [], ceiling: [] };
+  const out: HeliumLayout = { bouquets: [], ceiling: [], view };
 
   // The bouquets: half to each side of what stands in the middle, or across the room when nothing does.
   const n = h.bouquets;
   const xs = middle ? [...spread(Math.ceil(n / 2), 250, 450), ...spread(Math.floor(n / 2), 894, 1094)] : spread(n, n > 1 ? 300 : 672, n > 1 ? 1044 : 672);
   const cluster = CLUSTERS[bouquetSize(h.size).balloons];
-  let c = 0;
   xs.forEach((x, i) => {
     // Their strings 140 or 178 cm, so neighbours stand at two heights, one above the other.
     const cy = floor - (i % 2 ? 178 : 140) * perCm;
+    const mixed = mixColours(colours, cluster, i * 7 + 3);
+    // Each balloon a touch off the grid and a touch bigger or smaller, as real ones are blown.
     const balloons = cluster.map(([dx, dy], j) => ({
-      pic: LATEX[(i + j) % LATEX.length], colour: colours[c++ % colours.length], x: x + dx * BALLOON_W, y: cy + dy * BALLOON_W * 1.05, w: BALLOON_W,
+      pic: LATEX[(i + j) % LATEX.length], colour: mixed[j],
+      x: x + (dx + (rand(i * 31 + j + 1) - 0.5) * 0.16) * BALLOON_W,
+      y: cy + (dy + (rand(i * 37 + j + 2) - 0.5) * 0.14) * BALLOON_W * 1.05,
+      w: BALLOON_W * (0.95 + rand(i * 53 + j * 11 + 5) * 0.1),
     }));
     const top = Math.min(...balloons.map((b) => b.y)) - BALLOON_W * 0.55;
     const foil = h.topper === "none" ? undefined : (() => {
+      // Its real size on its longest side.
       const pic = heliumPicture(h.topper);
-      const fh = FOIL_H, fw = (pic.w / pic.h) * fh;
+      const long = foilCm(h.topper) * perCm;
+      const fh = pic.h >= pic.w ? long : (pic.h / pic.w) * long, fw = (pic.w / pic.h) * fh;
       return { x, y: top - fh * 0.42, w: fw, h: fh };
     })();
     out.bouquets.push({ x, weight: { x, y: floor + 6 + (i % 2) * 8 }, balloons, foil });
@@ -82,7 +115,40 @@ export function heliumLayout(h: Helium): HeliumLayout {
     const s = 0.85 + t * 0.55;
     const w = BALLOON_W * s;
     const top = CEILING - 8 - t * 95;
-    out.ceiling.push({ pic: LATEX[i % LATEX.length], colour: colours[i % colours.length], x, y: top + w * 0.55, w, ribbon: (90 + rand(i + 201) * 110) * s });
+    out.ceiling.push({ pic: LATEX[i % LATEX.length], colour: colours[Math.floor(rand(i + 301) * colours.length)], x, y: top + w * 0.55, w, ribbon: (90 + rand(i + 201) * 110) * s });
   }
+  out.view = closeIn(out, h);
   return out;
+}
+
+/**
+ * The picture closed in on what is in it: the balloons with some room around them and the floor under their weights,
+ * in the shape of HELIUM_ROOM.view, no narrower than MIN_VIEW_W, inside the room. With balloons on the ceiling, all of it.
+ */
+function closeIn(L: HeliumLayout, h: Helium): HeliumLayout["view"] {
+  if (L.ceiling.length) return view;
+  const box: [number, number, number, number][] = []; // left, top, right, bottom
+  for (const q of L.bouquets) {
+    for (const b of q.balloons) box.push([b.x - b.w / 2, b.y - b.w * 0.6, b.x + b.w / 2, b.y + b.w / 2]);
+    if (q.foil) box.push([q.foil.x - q.foil.w / 2, q.foil.y - q.foil.h / 2, q.foil.x + q.foil.w / 2, q.foil.y + q.foil.h / 2]);
+    box.push([q.weight.x - 25, q.weight.y - 30, q.weight.x + 25, q.weight.y + 6]);
+  }
+  if (L.number) {
+    const half = (L.number.h * 0.7 * h.number.value.length) / 2 + L.number.h * 0.1;
+    box.push([L.number.x - half, L.number.bottom - L.number.h, L.number.x + half, L.number.bottom]);
+  }
+  if (L.bubble) box.push([L.bubble.x - L.bubble.r, L.bubble.y - L.bubble.r, L.bubble.x + L.bubble.r, L.bubble.weight.y + 6]);
+  if (L.letters) {
+    const half = (L.letters.h * 0.7 * h.letters.text.length) / 2 + L.letters.h * 0.2;
+    box.push([L.letters.x - half, L.letters.top, L.letters.x + half, L.letters.top + L.letters.h]);
+  }
+  if (!box.length) return view;
+  const left = Math.min(...box.map((b) => b[0])), top = Math.min(...box.map((b) => b[1]));
+  const right = Math.max(...box.map((b) => b[2])), bottom = Math.max(floor + 35, ...box.map((b) => b[3] + 25));
+  const ratio = view.w / view.h;
+  const w = Math.min(view.w, Math.max(MIN_VIEW_W, right - left + 140, (bottom - (top - 40)) * ratio));
+  const vh = w / ratio;
+  const x = Math.max(0, Math.min(W - w, (left + right) / 2 - w / 2));
+  const y = Math.max(0, Math.min(H - vh, bottom - vh));
+  return { x, y, w, h: vh };
 }

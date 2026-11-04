@@ -736,24 +736,29 @@ test("H1 the helium balloons: bouquets in her colours with a foil, the age and t
   await page.getByRole("button", { name: /Yes, add balloons/ }).click();
   const art = page.getByTestId("helium-art");
   const sum = page.getByTestId("helium-total");
-  // Two medium bouquets with the theme's own foil (Ice Princess: a snowflake), the age standing between them.
-  await expect(art.locator("[data-part=helium-bouquet]")).toHaveCount(2);
-  await expect(art.locator("[data-part=helium-latex]")).toHaveCount(14);
-  await expect(art.locator('[data-part=helium-foil][href$="snowflake.webp"]')).toHaveCount(2);
-  await expect(art.locator("[data-part=helium-number-glyph]")).toHaveCount(1);
-  expect(aed(await sum.textContent())).toBe(2 * (165 + 30) + 85);
+  // One medium bouquet with the theme's own foil (Ice Princess: a snowflake), its size written; no number until asked
+  // (the owner's first look, 2026-11-04: "default olarak 1 buket olsun, age balon olmasın hemen").
+  await expect(art.locator("[data-part=helium-bouquet]")).toHaveCount(1);
+  await expect(art.locator("[data-part=helium-latex]")).toHaveCount(7);
+  await expect(art.locator('[data-part=helium-foil][href$="snowflake.webp"]')).toHaveCount(1);
+  await expect(page.getByTestId("helium-topper").getByRole("radio", { name: /Snowflake/ })).toContainText("60 cm");
+  await expect(art.locator("[data-part=helium-number-glyph]")).toHaveCount(0);
+  expect(aed(await sum.textContent())).toBe(165 + 30);
   expect(aed(await total(page).textContent())).toBe(before + aed(await sum.textContent()));
-  // One more bouquet, large.
+  // Two more bouquets, large.
+  await page.getByRole("button", { name: "One bouquet more" }).click();
   await page.getByRole("button", { name: "One bouquet more" }).click();
   await page.getByTestId("helium-size").getByRole("radio", { name: /Large/ }).click();
   await expect(art.locator("[data-part=helium-latex]")).toHaveCount(27);
-  expect(aed(await sum.textContent())).toBe(3 * (210 + 30) + 85);
+  expect(aed(await sum.textContent())).toBe(3 * (210 + 30));
   // A plain star instead, in rose gold: the silver photo coloured.
   await page.getByTestId("helium-topper").getByRole("radio", { name: /^Star(?!ry)/ }).click();
   await page.getByTestId("helium-topper-colour").getByRole("radio", { name: "Rose gold" }).click();
   await expect.poll(async () => (await art.locator("[data-part=helium-foil]").first().getAttribute("href")) ?? "").toMatch(/^data:image\/png/);
-  expect(aed(await sum.textContent())).toBe(3 * (210 + 15) + 85);
+  expect(aed(await sum.textContent())).toBe(3 * (210 + 15));
   // The age in two digits, 100 cm tall.
+  await page.getByTestId("helium-number-on").getByRole("radio", { name: "Yes" }).click();
+  await expect(art.locator("[data-part=helium-number-glyph]")).toHaveCount(1);
   await page.getByTestId("helium-number").fill("10");
   await page.getByTestId("helium-number-size").getByRole("radio", { name: /100 cm/ }).click();
   await expect(art.locator("[data-part=helium-number-glyph]")).toHaveCount(2);

@@ -109,6 +109,7 @@ test("D8 the saved design is cleared once the request is sent", async ({ page, g
   await next(page).click(); // skipped → the giveaways (2026-11-03)
   await next(page).click(); // skipped → the piñata (2026-11-03)
   await next(page).click(); // skipped → the cake (2026-11-03)
+  await next(page).click(); // skipped → the helium balloons (2026-11-04)
   await next(page).click(); // skipped → Package
   await next(page).click();
   await next(page).click();

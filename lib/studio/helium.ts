@@ -1,28 +1,33 @@
 // The helium balloons (2026-11-04, the owner's answers when the cake was done: "oldu sanki artık geçelim diğer
 // section'a" — weighted bouquets, ceiling balloons and a personalised bubble; theme-shape, age-number, name-letter
-// and plain star / heart / round foils; shown in an empty pastel party room, made a real photo; prices placeholders
-// until she sends hers): the Decor step's seventh part, after Cake & Sweets. Pure data and sums.
+// and plain star / heart / round foils; shown in an empty party room, made a real photo; prices placeholders until she
+// sends hers): the Decor step's seventh part, after Cake & Sweets. Pure data and sums. Her first look (2026-11-04):
+// "daha yakın olsun view, default olarak 1 buket olsun, age balon olmasın hemen, renkler daha karışsın, duvar beyaz,
+// foil balonlar daha büyük ve size'ı yazsın" — one bouquet to start, no number until asked, bigger foils with their
+// sizes written, a white wall, the picture closer (lib/studio/heliumLayout.ts).
 import PARTS from "./heliumParts.json";
 import { cleanAge } from "./pinata";
 
-/** The printed theme-shape foils (public/design/helium/<id>.webp, scripts/helium/build.mts). */
+/** The printed theme-shape foils (public/design/helium/<id>.webp, scripts/helium/build.mts), each `cm` on its longest side. */
 export const THEME_FOILS = [
-  { id: "unicorn", name: "Unicorn" }, { id: "snowflake", name: "Snowflake" }, { id: "crown", name: "Crown" },
-  { id: "rainbow", name: "Rainbow" }, { id: "dinosaur", name: "Dinosaur" }, { id: "lion", name: "Lion" },
-  { id: "lightning", name: "Lightning bolt" }, { id: "heart-red", name: "Starry heart" }, { id: "puppy", name: "Puppy" },
-  { id: "icecream", name: "Ice cream" }, { id: "mermaid", name: "Mermaid tail" }, { id: "shark", name: "Shark" },
-  { id: "rocket", name: "Rocket" }, { id: "football", name: "Football" }, { id: "butterfly", name: "Butterfly" },
-  { id: "cupcake", name: "Cupcake" }, { id: "treasure", name: "Treasure chest" }, { id: "kitten", name: "Kitten" },
+  { id: "unicorn", name: "Unicorn", cm: 75 }, { id: "snowflake", name: "Snowflake", cm: 60 }, { id: "crown", name: "Crown", cm: 65 },
+  { id: "rainbow", name: "Rainbow", cm: 75 }, { id: "dinosaur", name: "Dinosaur", cm: 75 }, { id: "lion", name: "Lion", cm: 70 },
+  { id: "lightning", name: "Lightning bolt", cm: 75 }, { id: "heart-red", name: "Starry heart", cm: 60 }, { id: "puppy", name: "Puppy", cm: 70 },
+  { id: "icecream", name: "Ice cream", cm: 75 }, { id: "mermaid", name: "Mermaid tail", cm: 75 }, { id: "shark", name: "Shark", cm: 75 },
+  { id: "rocket", name: "Rocket", cm: 75 }, { id: "football", name: "Football", cm: 60 }, { id: "butterfly", name: "Butterfly", cm: 70 },
+  { id: "cupcake", name: "Cupcake", cm: 65 }, { id: "treasure", name: "Treasure chest", cm: 65 }, { id: "kitten", name: "Kitten", cm: 70 },
 ] as const;
 export type ThemeFoil = (typeof THEME_FOILS)[number]["id"];
 /** The plain foils, silver in the photo and coloured in the builder. */
 export const PLAIN_FOILS = [
-  { id: "star", name: "Star" }, { id: "heart", name: "Heart" }, { id: "round", name: "Round" }, { id: "cloud", name: "Cloud" },
+  { id: "star", name: "Star", cm: 60 }, { id: "heart", name: "Heart", cm: 60 }, { id: "round", name: "Round", cm: 55 }, { id: "cloud", name: "Cloud", cm: 60 },
 ] as const;
 export type PlainFoil = (typeof PLAIN_FOILS)[number]["id"];
 export type FoilId = ThemeFoil | PlainFoil;
 export const isPlainFoil = (id: string): id is PlainFoil => PLAIN_FOILS.some((f) => f.id === id);
 export const foilName = (id: FoilId) => [...THEME_FOILS, ...PLAIN_FOILS].find((f) => f.id === id)?.name ?? "Star";
+/** A foil's size, on its longest side. */
+export const foilCm = (id: FoilId) => [...THEME_FOILS, ...PLAIN_FOILS].find((f) => f.id === id)?.cm ?? 60;
 
 /** Each theme's own foils, its best first; a theme of a licensed character gets plain shapes that suit it. */
 export const THEME_FOIL_PICKS: Record<string, ThemeFoil[]> = {
@@ -54,6 +59,8 @@ export const FOIL_COLOURS = [
 export const SILVER = FOIL_COLOURS[0].hex;
 export const foilColourName = (hex: string) => FOIL_COLOURS.find((c) => c.hex === hex.toUpperCase())?.name ?? "Silver";
 
+/** The latex balloons, 11 inch. */
+export const LATEX_CM = 28;
 /** A bouquet by how many latex balloons it has, under its foil (placeholder prices a bouquet). */
 export const BOUQUET_SIZES = [
   { id: "small", name: "Small", balloons: 5, price: 120 },
@@ -132,8 +139,8 @@ export function defaultHelium(seed: { themeId?: string; age?: string; name?: str
   return {
     enabled: true,
     colours: colours.length ? colours : ["#F8BBD0", "#DDD6FE", "#BAE6FD"],
-    bouquets: 2, size: "medium", topper: own ?? "star", topperColour: FOIL_COLOURS[1].hex,
-    number: { on: true, value: cleanAge(seed.age) || "5", size: "80", colour: FOIL_COLOURS[1].hex },
+    bouquets: 1, size: "medium", topper: own ?? "star", topperColour: FOIL_COLOURS[1].hex,
+    number: { on: false, value: cleanAge(seed.age) || "5", size: "80", colour: FOIL_COLOURS[1].hex },
     letters: { on: false, text: cleanLetters(seed.name), colour: FOIL_COLOURS[1].hex },
     ceiling: 0,
     bubble: { on: false, name: cleanBubbleName(seed.name), filling: "confetti", colour: "#F472B6" },
@@ -216,11 +223,13 @@ export const heliumPicture = (id: string) => ({ src: `/design/helium/${id}.webp`
 export const LATEX = ["latex-a", "latex-b", "latex-c", "latex-d"] as const;
 
 /**
- * The empty room (scripts/helium/sources/room.png): its ceiling meets the wall at `ceiling`, the wall meets the
- * floor at `base`; things stand on the floor at `floor`; a centimetre is `perCm` pixels at the wall (about 2.4 m
- * tall: at the photo's own 2.8 m the balloons were lost in it); the picture shows `view` of it, the room's middle.
+ * The empty room (scripts/helium/sources/room.png, its wall white since 2026-11-04), in these units whatever the
+ * photo's own size: its ceiling meets the wall at `ceiling`, the wall meets the floor at `base`; things stand on the
+ * floor at `floor`; a centimetre is `perCm` at the wall (about 2.4 m tall: at the photo's own 2.8 m the balloons were
+ * lost in it). The picture shows at most `view` of it, the room's middle, and closes in on what is there
+ * (heliumLayout's `view`).
  */
-export const HELIUM_ROOM = { src: "/design/helium/room.webp", w: 1344, h: 1008, ceiling: 155, base: 810, floor: 880, perCm: 2.7, view: { x: 130, y: 20, w: 1084, h: 940 } };
+export const HELIUM_ROOM = { src: "/design/helium/room.webp", w: 1344, h: 1024, ceiling: 157, base: 823, floor: 894, perCm: 2.7, view: { x: 130, y: 20, w: 1084, h: 940 } };
 
 /** What is in the picture, in words, for the render. */
 export function heliumWords(h: Helium): string[] {
@@ -228,16 +237,16 @@ export function heliumWords(h: Helium): string[] {
   if (h.bouquets > 0) {
     const s = bouquetSize(h.size);
     const foil = h.topper === "none" ? "" : isPlainFoil(h.topper)
-      ? ` with a ${foilColourName(h.topperColour).toLowerCase()} ${h.topper} foil balloon on top`
-      : ` with a printed ${foilName(h.topper).toLowerCase()} shaped foil balloon on top`;
-    out.push(`${h.bouquets} helium balloon bouquet${h.bouquets > 1 ? "s" : ""} standing on the floor, each ${s.balloons} matte latex balloons${foil}, their ribbons gathered down to a small balloon weight on the floor`);
+      ? ` with a big ${foilColourName(h.topperColour).toLowerCase()} ${h.topper} foil balloon on top, ${foilCm(h.topper)} cm`
+      : ` with a big printed ${foilName(h.topper).toLowerCase()} shaped foil balloon on top, ${foilCm(h.topper)} cm`;
+    out.push(`${h.bouquets} helium balloon bouquet${h.bouquets > 1 ? "s" : ""} standing on the floor, ${h.bouquets > 1 ? "each " : ""}${s.balloons} matte ${LATEX_CM} cm latex balloons in mixed colours${foil}, their ribbons gathered down to a small balloon weight on the floor`);
   }
   if (h.number.on && h.number.value) out.push(`a giant ${foilColourName(h.number.colour).toLowerCase()} foil number ${h.number.value} balloon, ${h.number.size} cm tall, standing on the floor`);
   if (h.letters.on && h.letters.text) out.push(`the name ${h.letters.text} in ${foilColourName(h.letters.colour).toLowerCase()} foil letter balloons, 40 cm each, in a row on the wall`);
   if (h.ceiling) out.push(`about ${h.ceiling} loose latex helium balloons floating against the ceiling, their thin ribbons hanging down`);
   if (h.bubble.on) {
     const f = { confetti: "gold confetti", mini: "small pastel balloons", feathers: "white feathers" }[h.bubble.filling];
-    out.push(`a big clear bubble balloon filled with ${f}${h.bubble.name ? `, the name "${h.bubble.name}" on it in vinyl script lettering` : ""}, floating on a ribbon tied to a weight`);
+    out.push(`a big ${BUBBLE_CM} cm clear bubble balloon filled with ${f}${h.bubble.name ? `, the name "${h.bubble.name}" on it in vinyl script lettering` : ""}, floating on a ribbon tied to a weight`);
   }
   return out;
 }

@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defaultConfig, priceBreakdown } from "@/lib/config";
 import {
-  BUBBLE_PRICE, LETTER_PRICE, PLAIN_FOIL_PRICE, THEME_FOILS, PLAIN_FOILS, THEME_FOIL_PRICE, THEME_FOIL_PICKS,
+  BUBBLE_PRICE, HELIUM_ROOM, LETTER_PRICE, PLAIN_FOIL_PRICE, THEME_FOILS, PLAIN_FOILS, THEME_FOIL_PRICE, THEME_FOIL_PICKS,
   cleanLetters, defaultHelium, foilsFor, heliumEmpty, heliumPicture, heliumPriceLines, heliumRenderKey, heliumTotal, readHelium, type Helium,
 } from "@/lib/studio/helium";
 import { heliumLayout } from "@/lib/studio/heliumLayout";
@@ -26,15 +26,17 @@ import { POST } from "@/app/api/helium-render/route";
 const seed = { themeId: "unicorn", age: "6", name: "Arya", colours: ["#F8BBD0", "#DDD6FE"] };
 const full = (): Helium => ({
   ...defaultHelium(seed), bouquets: 3, size: "large", topper: "star", topperColour: "#D9B45A",
+  number: { ...defaultHelium(seed).number, on: true },
   letters: { on: true, text: "ARYA", colour: "#D9A08E" }, ceiling: 50,
   bubble: { on: true, name: "Arya", filling: "mini", colour: "#FFFFFF" },
 });
 
 describe("the helium balloons", () => {
-  it("start from the party: the theme's own foil, the age as a foil number, its colours; letters and bubble off", () => {
+  it("start from the party: one bouquet with the theme's own foil in its colours; the age ready but off, letters and bubble off", () => {
+    // The owner's first look (2026-11-04): "default olarak 1 buket olsun, age balon olmasın hemen".
     const h = defaultHelium(seed);
-    expect(h).toMatchObject({ enabled: true, bouquets: 2, size: "medium", topper: "unicorn", colours: seed.colours, ceiling: 0 });
-    expect(h.number).toMatchObject({ on: true, value: "6" });
+    expect(h).toMatchObject({ enabled: true, bouquets: 1, size: "medium", topper: "unicorn", colours: seed.colours, ceiling: 0 });
+    expect(h.number).toMatchObject({ on: false, value: "6" });
     expect(h.letters).toMatchObject({ on: false, text: "ARYA" });
     expect(h.bubble).toMatchObject({ on: false, name: "Arya" });
     // A theme without a foil of its own starts on the plain star.
@@ -116,8 +118,20 @@ describe("the helium balloons", () => {
       // Clear of the middle, where the number and the bubble stand.
       expect(q.x < 480 || q.x > 870).toBe(true);
     }
-    // Her colours in turn.
+    // Her colours, each as often as the other, mixed: never two of a colour side by side where it can be helped,
+    // and the bouquets not all alike.
     expect(new Set(L.bouquets.flatMap((q) => q.balloons.map((b) => b.colour)))).toEqual(new Set(h.colours));
+    for (const q of L.bouquets) {
+      const count = h.colours.map((c) => q.balloons.filter((b) => b.colour === c).length);
+      expect(Math.max(...count) - Math.min(...count)).toBeLessThanOrEqual(1);
+    }
+    const rows = (q: (typeof L.bouquets)[number]) => q.balloons.map((b) => b.colour).join();
+    expect(new Set(L.bouquets.map(rows)).size).toBeGreaterThan(1);
+    // The foils their real size: the star 60 cm, a unicorn 75 cm, on the longest side.
+    const star = L.bouquets[0].foil!;
+    expect(Math.max(star.w, star.h)).toBeCloseTo(60 * HELIUM_ROOM.perCm);
+    const uni = heliumLayout({ ...h, topper: "unicorn" }).bouquets[0].foil!;
+    expect(Math.max(uni.w, uni.h)).toBeCloseTo(75 * HELIUM_ROOM.perCm);
     expect(L.number).toBeDefined();
     expect(L.bubble).toBeDefined();
     expect(Math.abs(L.number!.x - L.bubble!.x)).toBeGreaterThan(L.bubble!.r + 60);
@@ -129,21 +143,34 @@ describe("the helium balloons", () => {
     expect(lone.bouquets[0].x).toBe(672);
     expect(lone.bouquets[0].foil).toBeUndefined();
     expect(lone.number).toBeUndefined();
+    // One bouquet alone: the picture closes in on it, the room's shape kept, the bouquet and its weight in it.
+    const one = heliumLayout(defaultHelium(seed));
+    const v = one.view;
+    expect(L.view).toEqual(HELIUM_ROOM.view); // balloons on the ceiling: all of the room
+    expect(v.w).toBeLessThan(HELIUM_ROOM.view.w * 0.9);
+    expect(v.w / v.h).toBeCloseTo(HELIUM_ROOM.view.w / HELIUM_ROOM.view.h);
+    const q = one.bouquets[0];
+    expect(q.foil!.y - q.foil!.h / 2).toBeGreaterThan(v.y);
+    expect(q.weight.y).toBeLessThan(v.y + v.h);
+    expect(v.y + v.h).toBeLessThanOrEqual(HELIUM_ROOM.h);
     // A 100 cm number is taller than an 80 cm one.
     expect(heliumLayout({ ...h, number: { ...h.number, size: "100" } }).number!.h).toBeGreaterThan(L.number!.h);
   });
 
   it("are told to the engine as they are: each piece, the letters spelled out, the room kept, no characters", () => {
     const p = heliumPrompt(full());
-    expect(p).toMatch(/3 helium balloon bouquets standing on the floor, each 9 matte latex balloons with a gold star foil balloon on top/);
+    expect(p).toMatch(/3 helium balloon bouquets standing on the floor, each 9 matte 28 cm latex balloons in mixed colours with a big gold star foil balloon on top, 60 cm/);
     expect(p).toMatch(/a giant gold foil number 6 balloon, 80 cm tall/);
     expect(p).toMatch(/The foil letters spell exactly A R Y A/);
     expect(p).toMatch(/about 50 loose latex helium balloons floating against the ceiling/);
     expect(p).toMatch(/clear bubble balloon filled with small pastel balloons, the name "Arya" on it/);
     expect(p).toMatch(/well-exposed/);
+    expect(p).toMatch(/never drawn, illustrated or 3D-rendered/);
+    expect(p).toMatch(/the white wall/);
+    expect(p).not.toMatch(/pink wall/);
     expect(p).toMatch(/Nothing added: no people, no characters/);
     const plain = heliumPrompt({ ...full(), topper: "unicorn", letters: { on: false, text: "", colour: "#D9B45A" }, bubble: { ...full().bubble, on: false }, ceiling: 0 });
-    expect(plain).toMatch(/a printed unicorn shaped foil balloon on top/);
+    expect(plain).toMatch(/a big printed unicorn shaped foil balloon on top, 75 cm/);
     expect(plain).not.toMatch(/foil letter|against the ceiling|bubble balloon filled/);
   });
 });

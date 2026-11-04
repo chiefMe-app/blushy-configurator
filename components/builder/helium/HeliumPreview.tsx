@@ -1,5 +1,5 @@
-// The left-hand preview during the helium part of Decor (2026-11-04, the owner: "boş parti odası"): the empty pastel
-// room photo with every balloon she picked in it (lib/studio/heliumLayout.ts) — the latex balloons and plain foils
+// The left-hand preview during the helium part of Decor (2026-11-04, the owner: "boş parti odası"; its wall white since
+// her first look, the picture closed in on the balloons): the empty room photo with every balloon she picked in it (lib/studio/heliumLayout.ts) — the latex balloons and plain foils
 // are white and silver photos coloured here, the theme foils their own printed photos, the age and the name drawn
 // as puffy foil glyphs, the bubble drawn clear. Then that picture rendered into one photograph (usePieceRender,
 // /api/helium-render).
@@ -97,21 +97,30 @@ const ribbon = (x0: number, y0: number, x1: number, y1: number, wave: number) =>
   `M ${x0} ${y0} C ${x0 + wave} ${y0 + (y1 - y0) * 0.33}, ${x1 - wave} ${y0 + (y1 - y0) * 0.66}, ${x1} ${y1}`;
 const RIBBON = "#D6D3D1";
 
-/** A small foil-wrapped balloon weight on the floor. */
-function Weight({ x, y, hex }: { x: number; y: number; hex: string }) {
+/** A small foil-wrapped balloon weight on the floor: a round pouch, its foil gathered and tied at the top, shining. */
+function Weight({ x, y, hex, uid }: { x: number; y: number; hex: string; uid: string }) {
+  const id = `${uid}-wt`;
   return (
     <g data-part="helium-weight">
-      <ellipse cx={x} cy={y + 2} rx={20} ry={5} fill="rgba(80,60,60,0.18)" />
-      <path d={`M ${x - 13} ${y} L ${x - 10} ${y - 20} Q ${x} ${y - 26} ${x + 10} ${y - 20} L ${x + 13} ${y} Z`} fill={shade(hex, -0.1)} stroke={shade(hex, -0.3)} strokeWidth={1} />
-      <path d={`M ${x - 7} ${y - 24} L ${x} ${y - 19} L ${x + 7} ${y - 24}`} stroke={shade(hex, -0.3)} strokeWidth={2} fill="none" />
+      <defs>
+        <radialGradient id={id} cx="0.35" cy="0.35" r="0.8">
+          <stop offset="0" stopColor={shade(hex, 0.7)} /><stop offset="0.45" stopColor={hex} /><stop offset="1" stopColor={shade(hex, -0.4)} />
+        </radialGradient>
+      </defs>
+      <ellipse cx={x + 3} cy={y + 1} rx={19} ry={4.5} fill="rgba(60,50,40,0.22)" />
+      <path d={`M ${x - 14} ${y - 2} Q ${x - 17} ${y - 16} ${x - 5} ${y - 21} L ${x + 5} ${y - 21} Q ${x + 17} ${y - 16} ${x + 14} ${y - 2} Q ${x} ${y + 3} ${x - 14} ${y - 2} Z`} fill={`url(#${id})`} />
+      <path d={`M ${x - 5} ${y - 21} L ${x - 8} ${y - 29} L ${x - 2} ${y - 25} L ${x} ${y - 31} L ${x + 2} ${y - 25} L ${x + 8} ${y - 29} L ${x + 5} ${y - 21} Z`} fill={shade(hex, 0.25)} />
+      <rect x={x - 6} y={y - 23} width={12} height={3} rx={1.5} fill={shade(hex, -0.35)} />
+      <path d={`M ${x - 9} ${y - 14} Q ${x - 7} ${y - 8} ${x - 3} ${y - 5}`} stroke="rgba(255,255,255,0.7)" strokeWidth={2} fill="none" strokeLinecap="round" />
     </g>
   );
 }
 
 /** The room and every balloon in it. */
 export function HeliumArt({ h, className }: { h: Helium; className?: string }) {
-  const { w: W, h: H, view } = HELIUM_ROOM;
+  const { w: W, h: H } = HELIUM_ROOM;
   const L = heliumLayout(h);
+  const view = L.view;
   const latex = [...L.bouquets.flatMap((b) => b.balloons), ...L.ceiling];
   const plainFoil = h.topper !== "none" && isPlainFoil(h.topper);
   const tint = useTints([
@@ -148,7 +157,7 @@ export function HeliumArt({ h, className }: { h: Helium; className?: string }) {
             {q.balloons.map((b, j) => <path key={j} d={ribbon(b.x, knotY(b), q.weight.x, q.weight.y - 22, (j % 2 ? 1 : -1) * 7)} stroke={RIBBON} strokeWidth={1.6} fill="none" />)}
             {q.foil && <image data-part="helium-foil" href={foilSrc} x={q.foil.x - q.foil.w / 2} y={q.foil.y - q.foil.h / 2} width={q.foil.w} height={q.foil.h} />}
             {q.balloons.map((b, j) => balloon(b, j))}
-            <Weight x={q.weight.x} y={q.weight.y} hex={h.colours[0] ?? "#F8BBD0"} />
+            <Weight x={q.weight.x} y={q.weight.y} hex={h.colours[0] ?? "#F8BBD0"} uid={`hl-q${i}`} />
           </g>
         );
       })}
@@ -166,7 +175,7 @@ export function HeliumArt({ h, className }: { h: Helium; className?: string }) {
           <g data-part="helium-bubble">
             <defs>
               <radialGradient id="hl-bubble" cx="0.38" cy="0.32" r="0.75">
-                <stop offset="0" stopColor="rgba(255,255,255,0.55)" /><stop offset="0.7" stopColor="rgba(255,255,255,0.12)" /><stop offset="1" stopColor="rgba(255,255,255,0.4)" />
+                <stop offset="0" stopColor="rgba(255,255,255,0.6)" /><stop offset="0.7" stopColor="rgba(225,232,242,0.16)" /><stop offset="1" stopColor="rgba(170,182,200,0.45)" />
               </radialGradient>
             </defs>
             <path d={ribbon(x, y + r, weight.x, weight.y - 22, 8)} stroke={RIBBON} strokeWidth={1.6} fill="none" />
@@ -175,14 +184,16 @@ export function HeliumArt({ h, className }: { h: Helium; className?: string }) {
               : inside === "feathers"
                 ? <ellipse key={i} cx={d.cx} cy={d.cy} rx={r * 0.13} ry={r * 0.04} transform={`rotate(${(i * 47) % 180} ${d.cx} ${d.cy})`} fill="#FFFFFF" stroke="rgba(0,0,0,0.12)" strokeWidth={0.6} />
                 : <rect key={i} x={d.cx - 3} y={d.cy - 2} width={6} height={4} transform={`rotate(${(i * 53) % 180} ${d.cx} ${d.cy})`} fill={i % 3 ? "#D4AF37" : "#F3D98B"} />)}
-            <circle cx={x} cy={y} r={r} fill="url(#hl-bubble)" stroke="rgba(255,255,255,0.9)" strokeWidth={2} />
+            {/* On the white wall its edge shows by a faint grey rim, as a clear balloon's does in a photo. */}
+            <circle cx={x} cy={y} r={r} fill="url(#hl-bubble)" stroke="rgba(130,142,160,0.55)" strokeWidth={2.5} />
+            <circle cx={x} cy={y} r={r - 2} fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={1.5} />
             <ellipse cx={x - r * 0.35} cy={y - r * 0.45} rx={r * 0.22} ry={r * 0.1} transform={`rotate(-35 ${x - r * 0.35} ${y - r * 0.45})`} fill="rgba(255,255,255,0.8)" />
             <path d={`M ${x - 5} ${y + r - 1} L ${x + 5} ${y + r - 1} L ${x} ${y + r + 7} Z`} fill="rgba(255,255,255,0.85)" />
             {h.bubble.name && (
               <text x={x} y={y + r * 0.12} textAnchor="middle" fontSize={Math.min(r * 0.62, (r * 3.2) / Math.max(4, h.bubble.name.length))} fill={h.bubble.colour}
                 stroke="rgba(0,0,0,0.12)" strokeWidth={0.6} paintOrder="stroke" style={{ fontFamily: `${fontCss(face)}, cursive`, fontWeight: face.weight }} data-part="helium-bubble-name">{h.bubble.name}</text>
             )}
-            <Weight x={weight.x} y={weight.y} hex={h.colours[0] ?? "#F8BBD0"} />
+            <Weight x={weight.x} y={weight.y} hex={h.colours[0] ?? "#F8BBD0"} uid="hl-b" />
           </g>
         );
       })()}

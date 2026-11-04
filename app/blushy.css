@@ -1263,7 +1263,8 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 .bz-tb-words input { font: 400 15px var(--bz-sans); padding: 10px 12px; border: 1.5px solid #f2dde6; border-radius: 12px; outline: none; }
 .bz-tb-words input:focus { border-color: var(--bz-pink); }
 /* The kids' chair cut out of its photo, in the chosen colour (2026-10-28). */
-.bz-tb-option .art .photo.cutout { object-fit: contain; padding: 6%; background: #fbf6f8; }
+/* Pinned to the box: a height of 100% does not resolve in an aspect-ratio box, so a tall cutout (the lightning foil) overflowed and was cut. */
+.bz-tb-option .art .photo.cutout { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 6%; background: #fbf6f8; }
 .bz-tb-words-colour { display: grid; gap: 2px; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--bz-ink); }
 .bz-tb-sum { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 16px; background: #fbf4f7; font-size: 13px; }
 .bz-tb-sum b { font: 400 22px var(--bz-hand); color: var(--bz-pink); margin-right: auto; }
