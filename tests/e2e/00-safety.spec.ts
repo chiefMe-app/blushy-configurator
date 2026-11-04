@@ -10,7 +10,7 @@ test.describe.configure({ mode: "serial" });
 test("orders are only logged: no database configured", async ({ request }) => {
   const config = fixtureById("A-single_round").config;
   const res = await request.post("/api/orders", {
-    data: { ...config, venue: { ...config.venue, photos: [] }, customer: { name: "Safety Check", whatsapp: "+971500000000" } },
+    data: { ...config, venue: config.venue, customer: { name: "Safety Check", whatsapp: "+971500000000" } },
   });
   expect(res.status()).toBe(200);
   expect((await res.json()).persisted).toBe(false);

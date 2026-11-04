@@ -32,7 +32,7 @@ function orderBody(config: BuilderConfig) {
     servicePackageId: config.servicePackageId,
     decor: config.decor,
     addOns: config.addOns,
-    venue: { ...config.venue, photos: [] },
+    venue: config.venue,
     customer: { name: "Test Customer", whatsapp: "+971500000000" },
     estimatedTotal: computeTotal(config),
   };

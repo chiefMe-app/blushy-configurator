@@ -1324,11 +1324,16 @@ export interface VenueDetails {
   time: string;
   area: string;
   venueType: string;
-  isOutdoor: boolean;
+  /**
+   * Indoors or outdoors (2026-11-04): unset until she marks it on the Venue step, where the party's picture is made
+   * in that setting (lib/studio/partyRender.ts).
+   */
+  isOutdoor?: boolean;
   /** Everyone: the children and the grown-ups together. */
   guestCount: number;
   childrenCount: number;
-  photos: File[];
+  /** The party's picture (backdrop and table together, in her setting), kept in the customer's folder. */
+  render?: { key: string; path: string };
   // 2026-11-04, the venue step by package (lib/venue.ts): DIY's home address, We do it's venue, setup and collection.
   adultsCount?: number;
   /** When the party ends, "18:00". */
@@ -1428,10 +1433,8 @@ export function defaultConfig(): BuilderConfig {
       time: "",
       area: "",
       venueType: "",
-      isOutdoor: true,
       guestCount: 0,
       childrenCount: 0,
-      photos: [],
     },
     customer: { name: "", whatsapp: "" },
     estimatedTotal: 0,

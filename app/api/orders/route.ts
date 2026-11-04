@@ -17,13 +17,8 @@ import {
 
 export const runtime = "nodejs";
 
-// The payload mirrors BuilderConfig but venue.photos arrives as lightweight
-// metadata (name/size) since Files can't be JSON-serialized.
-interface OrderPayload extends Omit<BuilderConfig, "venue"> {
-  venue: Omit<BuilderConfig["venue"], "photos"> & {
-    photos?: { name: string; size: number }[];
-  };
-}
+// The payload mirrors BuilderConfig (the venue photos were dropped on 2026-11-04: the party's picture is made instead).
+type OrderPayload = BuilderConfig;
 
 export async function POST(req: NextRequest) {
   let body: OrderPayload;
@@ -61,7 +56,6 @@ export async function POST(req: NextRequest) {
   const pricingConfig = {
     ...body,
     themeSelected: true,
-    venue: { ...body.venue, photos: [] },
     // Read over the defaults, so a malformed one cannot break the sum.
     giveaways: readGiveaways(body.giveaways),
     pinata: readPinata(body.pinata),

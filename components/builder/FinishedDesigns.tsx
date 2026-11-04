@@ -5,7 +5,7 @@
 // each drawn off-screen, made into a JPEG in the browser and shown as that picture, with a Download.
 // If a picture can't be made, the live drawing shows instead.
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { nodeJpeg } from "@/components/builder/nodeJpeg";
+import { imageJpeg, nodeJpeg } from "@/components/builder/nodeJpeg";
 import { THEMES, formatAED, priceBreakdown, themeById, type BuilderConfig, type PriceLine } from "@/lib/config";
 import { EXPERIENCES } from "@/lib/studio/experiences";
 import { JPEG_WIDTH, finishedPieces, type FinishedPiece } from "@/lib/finishedDesigns";
@@ -17,21 +17,6 @@ import { PinataArt } from "@/components/builder/pinata/PinataPreview";
 import { HeliumArt } from "@/components/builder/helium/HeliumPreview";
 import { CakeArt } from "@/components/builder/cake/CakePreview";
 import WelcomeBoardArt from "@/components/studio/WelcomeBoardArt";
-
-/** A JPEG of a picture at `url` (the render): through a canvas, so it can be saved under our name. */
-async function jpegOfImage(url: string): Promise<string> {
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-  img.src = url;
-  await img.decode();
-  const k = Math.min(1, JPEG_WIDTH / img.naturalWidth);
-  const c = document.createElement("canvas");
-  c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
-  const g = c.getContext("2d")!;
-  g.fillStyle = "#FFFFFF"; g.fillRect(0, 0, c.width, c.height);
-  g.drawImage(img, 0, 0, c.width, c.height);
-  return c.toDataURL("image/jpeg", 0.92);
-}
 
 /** Each piece's lines in the price breakdown. */
 const SECTION: Record<FinishedPiece["id"], PriceLine["section"]> = {
@@ -50,7 +35,7 @@ function DesignCard({ piece, drawing, imageUrl, redraw, price, onEdit }: { piece
     const t = window.setTimeout(async () => {
       try {
         let out: string;
-        if (imageUrl) out = await jpegOfImage(imageUrl);
+        if (imageUrl) out = await imageJpeg(imageUrl, JPEG_WIDTH);
         else {
           const node = stage.current?.firstElementChild as HTMLElement | null;
           if (!node || !node.offsetWidth) throw new Error("nothing drawn");

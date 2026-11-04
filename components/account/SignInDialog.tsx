@@ -49,6 +49,11 @@ const COPY = {
     lead: "Real photos come with a free account. Sign in and your balloons' is made right away — your design stays as it is.",
     after: " — your real photo is made right after",
   },
+  "party-render": {
+    title: "Sign in to see your party",
+    lead: "Real photos come with a free account. Sign in and come back to see your backdrop and table together — your design stays as it is.",
+    after: "",
+  },
 };
 
 export default function SignInDialog({ open, onClose, purpose }: { open: boolean; onClose: () => void; purpose?: AfterSignInAction }) {

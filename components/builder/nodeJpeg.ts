@@ -39,6 +39,21 @@ async function fontCssFor(node: HTMLElement): Promise<string> {
   return out.join("\n");
 }
 
+/** A picture at `url` (a render) as a JPEG data URI, at most `width` px wide: through a canvas, white behind. */
+export async function imageJpeg(url: string, width: number): Promise<string> {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = url;
+  await img.decode();
+  const k = Math.min(1, width / img.naturalWidth);
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#FFFFFF"; g.fillRect(0, 0, c.width, c.height);
+  g.drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.92);
+}
+
 /**
  * The node drawn as a JPEG data URI, `width` px wide, its lettering in its own fonts. An SVG too (2026-11-03,
  * the kids' table's one place), which has no offset size; square-cornered, as a photo to be rendered is.

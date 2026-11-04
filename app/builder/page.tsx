@@ -61,6 +61,8 @@ import type { AfterSignInAction } from "@/lib/account";
 import { adultCounts, defaultAdultTable } from "@/lib/studio/adultTable";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
 import { defaultWelcomeBoard, welcomeRenderKey } from "@/lib/studio/welcomeBoard";
+import { partyPieces, partyRenderKey } from "@/lib/studio/partyRender";
+import PartyPreview, { settingOf, type PartyShot } from "@/components/builder/venue/PartyPreview";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import { usePieceRender } from "@/components/builder/usePieceRender";
 import { nodeJpeg, svgJpeg, svgLayers } from "@/components/builder/nodeJpeg";
@@ -156,6 +158,7 @@ export default function ConfigurePage() {
   const [pinataRenderOnArrival, setPinataRenderOnArrival] = useState(false);
   const [cakeRenderOnArrival, setCakeRenderOnArrival] = useState(false);
   const [heliumRenderOnArrival, setHeliumRenderOnArrival] = useState(false);
+  const [partyRenderOnArrival, setPartyRenderOnArrival] = useState(false);
   useEffect(() => {
     // After the device copy is restored (useLocalDraft, above), in the same pass.
     const then = takeAfterSignIn();
@@ -167,6 +170,7 @@ export default function ConfigurePage() {
     if (then === "pinata-render") { setDecorPart("pinata"); setPinataRenderOnArrival(true); }
     if (then === "cake-render") { setDecorPart("cake"); setCakeRenderOnArrival(true); }
     if (then === "helium-render") { setDecorPart("helium"); setHeliumRenderOnArrival(true); }
+    if (then === "party-render") setPartyRenderOnArrival(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const startOver = () => {
@@ -292,6 +296,27 @@ export default function ConfigurePage() {
     onKept: (render) => setConfig((c) => (c.helium ? { ...c, helium: { ...c.helium, render } } : c)),
     onSignInNeeded: () => askSignIn("helium-render"),
   });
+  // The whole party (2026-11-04): on the Venue step, the backdrop and the kids' table together, indoors or outdoors.
+  const partySetting = settingOf(config.venue);
+  const partyHas = partyPieces(config);
+  const partyKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting) : "";
+  const partyShot = useRef<(() => Promise<PartyShot>) | null>(null);
+  const partyRender = usePieceRender({
+    endpoint: "/api/party-render", partKey: partyKey, kept: config.venue.render,
+    body: async () => {
+      const shot = await partyShot.current?.();
+      return { theme: config.theme, setting: partySetting, key: partyKey, table: config.table, backdrop: shot?.backdrop ?? null, tablePicture: shot?.tablePicture ?? null };
+    },
+    onKept: (render) => setConfig((c) => ({ ...c, venue: { ...c.venue, render } })),
+    onSignInNeeded: () => askSignIn("party-render"),
+  });
+  useEffect(() => {
+    if (!partyRenderOnArrival || !partyKey) return;
+    setPartyRenderOnArrival(false);
+    const t = setTimeout(() => void partyRender.make(), 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partyRenderOnArrival, partyKey]);
   // Back from signing in for one of them: it starts.
   useEffect(() => {
     if (!tableRenderOnArrival || !tableKey) return;
@@ -381,11 +406,7 @@ export default function ConfigurePage() {
       ...(config.experiences ? { experiences: config.experiences } : {}),
       ...(config.diy ? { diy: config.diy } : {}),
       addOns: config.addOns,
-      venue: {
-        ...config.venue,
-        // Files can't be JSON-serialized; send metadata only (no storage yet).
-        photos: config.venue.photos.map((f) => ({ name: f.name, size: f.size })),
-      },
+      venue: config.venue,
       customer: config.customer,
       estimatedTotal: total,
     };
@@ -804,6 +825,8 @@ export default function ConfigurePage() {
           {onPinata && <PinataPreview config={config} render={pinataRender} onGenerate={makePinataRender} />}
           {onHelium && <HeliumPreview config={config} render={heliumRender} onGenerate={makeHeliumRender} />}
           {step === 3 && <ExperiencesPreview config={config} />}
+          {step === 5 && <PartyPreview config={config} render={partyRender} onGenerate={() => void partyRender.make()} onVenue={patchVenue} shot={partyShot}
+            backdropUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl ?? null : null} tableUrl={tableRender.url} />}
           {/* 2026-11-04: on the left beside the packages (tidied). 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
           {showFinished && <FinishedDesigns config={config} onEdit={editPiece} onEditExperiences={() => goToStep(3)}
             renderUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl : null}
@@ -825,11 +848,11 @@ export default function ConfigurePage() {
             </div>
           ) : (
             <>
-              {!onTable && !onWelcome && !onGiveaways && !onPinata && !onCake && !onHelium && step !== 3 && !showFinished && config.decor.backdropChoice === "skip" && (
+              {!onTable && !onWelcome && !onGiveaways && !onPinata && !onCake && !onHelium && step !== 3 && step !== 5 && !showFinished && config.decor.backdropChoice === "skip" && (
                 <div className="bz-tb-preview"><div className="empty">No backdrop in this party — add one any time.</div></div>
               )}
               {/* The backdrop's preview stays mounted (its render is kept) while the table is on show. */}
-              <div hidden={onTable || onWelcome || onGiveaways || onPinata || onCake || onHelium || step === 3 || showFinished || config.decor.backdropChoice === "skip"}>
+              <div hidden={onTable || onWelcome || onGiveaways || onPinata || onCake || onHelium || step === 3 || step === 5 || showFinished || config.decor.backdropChoice === "skip"}>
               <SetupPreview
                 config={config}
                 status={preview.status}

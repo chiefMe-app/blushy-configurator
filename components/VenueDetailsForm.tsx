@@ -1,8 +1,9 @@
 "use client";
 
 // The party's details (2026-11-04, by package): who she is and when the party is, then — DIY — her home address,
-// where what she asked us to bring comes; — We do it — the venue, when we set up and when we collect.
-import { useEffect, useState } from "react";
+// where what she asked us to bring comes; — We do it — the venue, when we set up and when we collect. No photos of
+// the space (2026-11-04, the owner: "Photo upload etmesine gerek yok"): indoors or outdoors is marked on the party's
+// picture instead (components/builder/venue/PartyPreview.tsx).
 import { VENUE_TYPES, type VenueDetails, type CustomerDetails } from "@/lib/config";
 import { COLLECTIONS, SETUP_LEADS, clockBefore } from "@/lib/venue";
 
@@ -23,25 +24,6 @@ export default function VenueDetailsForm({
   /** DIY: what she asked us to bring, by name, to say when it comes. */
   fromUs?: string[];
 }) {
-  // Local object URLs for thumbnail previews (revoked on change/unmount).
-  const [previews, setPreviews] = useState<string[]>([]);
-
-  useEffect(() => {
-    const urls = venue.photos.map((f) => URL.createObjectURL(f));
-    setPreviews(urls);
-    return () => urls.forEach((u) => URL.revokeObjectURL(u));
-  }, [venue.photos]);
-
-  function addPhotos(files: FileList | null) {
-    if (!files) return;
-    const incoming = Array.from(files).filter((f) => f.type.startsWith("image/"));
-    onVenue({ photos: [...venue.photos, ...incoming].slice(0, 8) });
-  }
-
-  function removePhoto(idx: number) {
-    onVenue({ photos: venue.photos.filter((_, i) => i !== idx) });
-  }
-
   const field =
     "w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30";
   const labelCls = "mb-1 block text-xs font-medium text-black/55";
@@ -138,17 +120,6 @@ export default function VenueDetailsForm({
             {text("Street & building", "street", "e.g. Al Wasl Road, Villa 12")}
             {text("Room, floor or villa number", "unit", "e.g. Ballroom 2")}
             <div className="sm:col-span-2">
-              <label className={labelCls}>Indoor or outdoor</label>
-              <div className="flex gap-2">
-                {[{ v: false, l: "Indoor" }, { v: true, l: "Outdoor" }].map((o) => (
-                  <button key={o.l} type="button" onClick={() => onVenue({ isOutdoor: o.v })} aria-pressed={venue.isOutdoor === o.v}
-                    className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition ${venue.isOutdoor === o.v ? "bg-accent text-white" : "bg-white text-black/60 border border-black/15"}`}>
-                    {o.l}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="sm:col-span-2">
               <label className={labelCls}>Access notes (optional)</label>
               <input className={field} value={venue.notes ?? ""} onChange={(e) => onVenue({ notes: e.target.value })} placeholder="Lift, parking, the venue's setup rules" aria-label="Access notes" />
             </div>
@@ -169,25 +140,6 @@ export default function VenueDetailsForm({
           </div>
         </section>
 
-        {/* Photo upload */}
-        <div className="rounded-2xl border border-dashed border-accent/40 bg-accent-soft/30 p-4">
-          <label className="mb-1 block text-sm font-medium">Upload 3–5 photos of your space</label>
-          <p className="mb-3 text-[11px] text-black/50">So we can plan the setup. Final layout is confirmed after venue review.</p>
-          <input type="file" accept="image/*" multiple onChange={(e) => addPhotos(e.target.files)}
-            className="block w-full text-xs text-black/60 file:mr-3 file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white" />
-          {previews.length > 0 && (
-            <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {previews.map((src, i) => (
-                <div key={i} className="group relative aspect-square overflow-hidden rounded-lg">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`Venue ${i + 1}`} className="h-full w-full object-cover" />
-                  <button type="button" onClick={() => removePhoto(i)} aria-label={`Remove photo ${i + 1}`}
-                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-[11px] text-white">✕</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </>}
     </div>
   );

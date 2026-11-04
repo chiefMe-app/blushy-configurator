@@ -933,6 +933,8 @@ test("PK1 two packages: We do it until she picks; DIY is the design fee, and wha
   await expect(page.getByRole("heading", { name: "Your party at home" })).toBeVisible();
   await expect(page.getByTestId("venue-home")).toContainText("we bring the plinths here");
   await expect(page.getByTestId("venue-setup")).toHaveCount(0);
+  // Indoors or outdoors is asked in DIY too, on the party's picture (2026-11-04).
+  await expect(page.getByTestId("party-setting")).toBeVisible();
   await page.getByLabel("Area / community").fill("Jumeirah, Dubai");
   await page.getByPlaceholder("Full name").fill("Test Customer");
   await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
@@ -976,6 +978,60 @@ test("VN1 We do it asks for the venue, when we set up and when we collect; the g
   await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
   const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
   expect(order.venue).toMatchObject({ time: "16:00", endTime: "19:00", setupLead: "2h", collection: "next_morning", venueType: "Restaurant", venueName: "The Garden", childrenCount: 10, adultsCount: 10, guestCount: 20 });
+});
+
+test("VN2 the venue step: no photo upload; indoors or outdoors, then the backdrop and the table in one picture there", async ({ page, guard }) => {
+  // 2026-11-04 (the owner: "Photo upload etmesine gerek yok … Backdrop+table setup beraber görebilceğimiz bir render
+  // alsın ama bu sayfada outdoor yada indoor işaretlesin").
+  guard.fakeRender = true;
+  await signIn(page);
+  await page.goto("/builder");
+  await page.locator(".bz-choice.bz-birthday").click();
+  await next(page).click();
+  await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: /^Ice Princess$/ }) }).first().click();
+  await next(page).click();
+  await page.getByRole("button", { name: /Yes, design the backdrop/ }).click();
+  await chooseSetup(page, "Single Round");
+  for (let i = 0; i < 3; i++) await next(page).click(); // Style, Balloons, Extras
+  await page.getByTestId("finish-backdrop").click();
+  await expect(page.getByTestId("table-place")).toBeVisible();
+  await page.getByTestId("finish-kids-table").click();
+  await expect(page.getByTestId("adult-intro")).toBeVisible();
+  for (let i = 0; i < 6; i++) await next(page).click(); // the grown-ups' table to the balloons skipped
+  await next(page).click(); // the experiences
+  await expect(page.getByRole("heading", { name: "Who makes your party?" })).toBeVisible();
+  await next(page).click();
+  await expect(page.getByRole("heading", { name: "Your venue & setup" })).toBeVisible();
+  await expect(page.getByText(/photos of your space/i)).toHaveCount(0);
+  const card = page.getByTestId("party-preview");
+  await expect(card.getByText("Your backdrop", { exact: true })).toBeVisible();
+  await expect(card.getByText("Your kids' table", { exact: true })).toBeVisible();
+  // Nothing to make until she marks where.
+  await expect(card.getByTestId("party-render-make")).toBeDisabled();
+  await card.getByTestId("party-setting-outdoor").click();
+  await expect(card.getByTestId("party-setting-outdoor")).toHaveAttribute("aria-checked", "true");
+  await card.getByRole("button", { name: "See my party outdoors ✨" }).click();
+  await expect(card.getByTestId("party-render")).toBeVisible();
+  const calls = () => guard.blocked.filter((r) => r.url().includes("/api/party-render"));
+  const sent = JSON.parse(calls()[0].postData()!);
+  expect(sent).toMatchObject({ theme: "frozen", setting: "outdoor" });
+  expect(sent.key).toMatch(/^[0-9a-z]{1,16}$/);
+  expect(sent.backdrop).toMatch(/^data:image\/jpeg;base64,/);
+  expect(sent.tablePicture).toMatch(/^data:image\/jpeg;base64,/);
+  expect(sent.table.enabled).toBe(true);
+  // Indoors is a picture of its own.
+  await card.getByTestId("party-setting-indoor").click();
+  await expect(card.getByTestId("party-render")).toHaveCount(0);
+  await expect(card.getByRole("button", { name: "See my party indoors ✨" })).toBeVisible();
+  await page.getByPlaceholder("Full name").fill("Test Customer");
+  await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
+  await next(page).click();
+  await expect(page.locator(".bz-right").getByText("Indoor", { exact: true })).toBeVisible();
+  await next(page).click(); // Request Final Quote → caught
+  await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
+  const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
+  expect(order.venue.isOutdoor).toBe(false);
+  expect(order.venue.photos).toBeUndefined();
 });
 
 test("W2 on a phone, a change to the welcome board brings it into sight, and Back returns to the choices", async ({ page }, info) => {

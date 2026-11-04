@@ -43,16 +43,16 @@ export function venueRows(config: BuilderConfig): { k: string; v: string }[] {
     { k: "Children", v: v.childrenCount ? String(v.childrenCount) : "—" },
     { k: "Grown-ups", v: grownUps ? String(grownUps) : "—" },
   ];
-  if (diy) return [...when, { k: "Home address", v: or(address) }, ...(v.notes?.trim() ? [{ k: "Notes", v: v.notes.trim() }] : []), ...guests];
+  const setting = { k: "Setting", v: v.isOutdoor === undefined ? "—" : v.isOutdoor ? "Outdoor" : "Indoor" };
+  if (diy) return [...when, { k: "Home address", v: or(address) }, setting, ...(v.notes?.trim() ? [{ k: "Notes", v: v.notes.trim() }] : []), ...guests];
   return [
     ...when,
     { k: "Venue", v: [v.venueType, v.venueName?.trim()].filter(Boolean).join(" · ") || "—" },
     { k: "Address", v: or(address) },
-    { k: "Setting", v: v.isOutdoor ? "Outdoor" : "Indoor" },
+    setting,
     { k: "We set up", v: setupWhen(v) },
     { k: "We collect", v: COLLECTIONS.find((c) => c.id === (v.collection ?? "after"))!.name },
     ...(v.notes?.trim() ? [{ k: "Access notes", v: v.notes.trim() }] : []),
     ...guests,
-    { k: "Photos", v: v.photos.length ? `${v.photos.length} uploaded` : "None" },
   ];
 }
