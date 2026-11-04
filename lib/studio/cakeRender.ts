@@ -11,11 +11,16 @@ const TIER_NAMES: Record<number, string[]> = { 1: ["the cake"], 2: ["the bottom 
 // kept the preview's flat tiers and pasted-looking cupcakes).
 /** Every piece there made a real thing, named only when it is there (so none is asked for that is not). */
 function realWords(k: Cake): string {
-  const parts = ["real buttercream with its soft texture and the light falling round each tier's curve"];
-  if (k.figures.some((f) => CAKE_FIGURES.find((x) => x.id === f.id)?.kind === "sugar")) parts.push("real handmade sugar-paste figures with their own soft highlights and shadows");
+  // Smooth stays smooth (a "hand-made" test render combed ridges into a smooth cake).
+  const parts = [k.style === "smooth"
+    ? "real smooth buttercream, its surface smooth and even all round with only the faintest soft texture — no ridges, comb lines or spatula marks — and the light falling softly round each tier's curve"
+    : "real buttercream with its soft texture and the light falling round each tier's curve"];
+  // Hand-made, not modelled (2026-11-04, the owner of a rendered sugar rainbow: "daha gerçekçi nasıl olabilir"): too
+  // even, too clean, drawn onto the buttercream.
+  if (k.figures.some((f) => CAKE_FIGURES.find((x) => x.id === f.id)?.kind === "sugar")) parts.push("real handmade sugar-paste figures, hand-rolled and hand-cut — soft rounded edges a little uneven, fine seams where one piece or band meets the next, a faint matte sugar texture, each colour lighter where the light catches its curve and a little deeper underneath, a few millimetres thick so each stands off the buttercream with a thin soft shadow along its lower edge, any clouds plump and soft");
   if (k.sweets?.some((x) => x.id === "cupcakes")) parts.push("real freshly baked cupcakes with piped frosting in real paper liners");
   if ((k.sweets ?? []).some((x) => x.id !== "cupcakes")) parts.push("the other sweets real and freshly made");
-  return `Rebuild every part as a real object photographed by a real camera — nothing flat, drawn, pasted on or cut out of a picture: ${parts.join(", ")}, real contact shadows wherever things touch, and the gentle grain, depth and natural imperfection of a real photograph.`;
+  return `Rebuild every part as a real object photographed by a real camera — nothing flat, drawn, pasted on or cut out of a picture: ${parts.join(", ")}, real contact shadows wherever things touch, and the gentle grain and depth of a real photograph.`;
 }
 
 // 2026-11-03 (the owner: "kötü bir render ışığı var, çok sarı, kaliteli durmuyor hiç … örnekteki ışık kalitesi iyi"):
@@ -27,8 +32,8 @@ function realWords(k: Cake): string {
 // ve renkler hoşuma gidiyor"): a party photo shoot's light — airy, cool-neutral, candy-bright pastels, soft shadows
 // giving the cake its depth, the background softly blurred; the stand photo a pastel party wall behind (stand.webp).
 // Later the same day (her render: "gene karanlık ve kasvet çıktı"): "window light to one side" gave a dark side and a
-// dim wall — now high-key, even and from the front.
-const LIGHT = "Light and colour it like a bright, cheerful, high-key kids' birthday party photo: lots of soft, even, bright daylight filling the whole scene from the front, the wall behind bright and airy, no dark corners and no dark side on the cake; a fresh, clean white balance — whites pure bright white, never yellow, cream, ivory, beige or grey; candy-bright pastel colours, clear, fresh and saturated, every colour at least as rich and as light as image 1 shows it, never darker, never washed out, greyed or muted; only very soft, light shadows; the cake crisp and sharp against a softly blurred background, a shallow depth of field. No glare, no haze, no blown-out highlights, no sunbeams, no dim, moody, dramatic or low-key light.";
+// dim wall — now high-key, even and from the front; and no hard sunlit shadow (one fell across the table).
+const LIGHT = "Light and colour it like a bright, cheerful, high-key kids' birthday party photo: lots of soft, even, bright daylight filling the whole scene from the front, the wall behind bright and airy, no dark corners and no dark side on the cake; a fresh, clean white balance — whites pure bright white, never yellow, cream, ivory, beige or grey; candy-bright pastel colours, clear, fresh and saturated, every colour at least as rich and as light as image 1 shows it, never darker, never washed out, greyed or muted; only very soft, light shadows; the cake crisp and sharp against a softly blurred background, a shallow depth of field. No direct sunlight and no hard shadows anywhere — on the table too, every shadow soft and faint as under a big soft light; no glare, no haze, no blown-out highlights, no sunbeams, no dim, moody, dramatic or low-key light.";
 
 /** The words for the photograph: keep the scene, make it real. */
 export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
@@ -62,7 +67,7 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
         ? `On the front of the cake keep the name exactly where image 1 has it: ${card ? `${card}${border} pressed flat onto the buttercream, with ${sugar} reading ${words}, ${lettering}, on it` : `${sugar} reading ${words}, ${lettering}, pressed onto the buttercream`} — ${real}; the same letters in the same colour as image 1.`
         : `Keep the cake topper exactly: ${card ? `${card}${border} on two thin white sticks pushed into the top, with ${tc.words} printed letters reading ${words}, ${lettering}, on it` : `${tc.words} acrylic letters reading ${words}, ${lettering}, on two thin sticks pushed into the top`}, the same letters in the same colour as image 1.`;
   const colours = tierColours(k);
-  const plainTiers = colours.flatMap((c, i) => (rainbowOf(c) ? [] : [`${TIER_NAMES[k.tiers][i]} and its border in ${colourWords(c)} buttercream`]));
+  const plainTiers = colours.flatMap((c, i) => (rainbowOf(c) ? [] : [`${TIER_NAMES[k.tiers][i]} and its border in ${c.toUpperCase() === "#FFFFFF" ? "pure bright white (never ivory, cream or yellow)" : colourWords(c)} buttercream`]));
   const rainbow = colours.flatMap((c, i) => (rainbowOf(c) ? [`${TIER_NAMES[k.tiers][i]} in ${rainbowOf(c)!.words}`] : []));
   const sprinkles = CAKE_SPRINKLES.find((s) => s.id === k.sprinkles);
   // Each sweet as it shows.

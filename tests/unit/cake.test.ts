@@ -169,6 +169,12 @@ describe("cake", () => {
     expect(p).toContain("a pink heart stays pink, never turned gold or glitter");
     // Real, not the preview's flat pieces kept (her Seedream render: "bu sefer de gerçek gibi durmadı").
     expect(p).toMatch(/Rebuild every part as a real object photographed by a real camera — nothing flat, drawn, pasted on/);
+    // Sugar figures hand-made (the owner: "rainbow daha gerçekçi nasıl olabilir"), smooth buttercream kept smooth, no hard shadow.
+    expect(p).toContain("hand-rolled and hand-cut — soft rounded edges a little uneven, fine seams");
+    expect(cakePrompt({ ...k, style: "smooth" })).toContain("no ridges, comb lines or spatula marks");
+    expect(p).not.toContain("no ridges");
+    expect(p).toContain("No direct sunlight and no hard shadows anywhere");
+    expect(cakePrompt({ ...k, colours: ["#FFFFFF", "#FFFFFF", "#FFFFFF"] })).toContain("the bottom tier and its border in pure bright white (never ivory, cream or yellow) buttercream".replace(/^./, "T"));
     expect(p).toMatch(/exactly two tiers stacked, never more and never fewer/);
     // Each tier's colour by name (a test render greyed a mint tier to sage), its border too.
     const named = cakePrompt({ ...k, colours: ["#F8BBD0", "#BBF7D0", "#FFFFFF"] });
