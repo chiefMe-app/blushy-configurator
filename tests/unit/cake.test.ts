@@ -164,7 +164,9 @@ describe("cake", () => {
     expect(p).toContain('reading "Olivia" and "6"');
     // The light (2026-11-03, the owner: "çok sarı, kaliteli durmuyor hiç"): clean white, and the tiers counted.
     // 2026-11-04 (the owner: "şu örnekteki gibi içim açılsın … ışık ve renkler"): a party photo shoot's light, candy pastels.
-    expect(p).toMatch(/styled kids' birthday party photo shoot.*never yellow, cream, ivory or beige.*candy-bright pastel colours.*shallow depth of field/);
+    // Later (her render "gene karanlık ve kasvet çıktı"): high-key, even, from the front, never darker than the preview.
+    expect(p).toMatch(/high-key kids' birthday party photo.*from the front.*never yellow, cream, ivory, beige or grey.*candy-bright pastel colours.*never darker.*no dim, moody, dramatic or low-key light/);
+    expect(p).toContain("a pink heart stays pink, never turned gold or glitter");
     expect(p).toMatch(/exactly two tiers stacked, never more and never fewer/);
     // Each tier's colour by name (a test render greyed a mint tier to sage), its border too.
     const named = cakePrompt({ ...k, colours: ["#F8BBD0", "#BBF7D0", "#FFFFFF"] });
@@ -286,7 +288,7 @@ describe("the cake kept and rendered", () => {
   });
   afterEach(() => vi.unstubAllEnvs());
 
-  it("one picture of the preview to FLUX.2 edit, at its own size, with its words", async () => {
+  it("one picture of the preview to Seedream 4.5 edit, at its shape scaled up to Seedream's least, with its words", async () => {
     subscribe.mockImplementation(async () => ({ data: { images: [{ url: "https://fal.example/x.jpg" }] } }));
     const drawn = await sharp({ create: { width: 1200, height: 1500, channels: 3, background: "#eeeeee" } }).jpeg().toBuffer();
     const k = defaultCake(seed);
@@ -294,9 +296,9 @@ describe("the cake kept and rendered", () => {
     expect(got[0]).toEqual({ url: PICTURE });
     expect(got.at(-1)).toMatchObject({ done: true });
     const [model, { input }] = subscribe.mock.calls[0] as [string, { input: { prompt: string; image_urls: string[]; image_size: { width: number; height: number } } }];
-    expect(model).toBe("fal-ai/flux-2-pro/edit");
+    expect(model).toBe("fal-ai/bytedance/seedream/v4.5/edit");
     expect(input.image_urls).toHaveLength(1);
-    expect(input.image_size).toEqual({ width: 1120, height: 1408 });
+    expect(input.image_size).toEqual({ width: 1728, height: 2160 });
     expect(input.prompt).toBe(cakePrompt(k));
     // A close-up of what is on it: its own words and its own key; a view of what is not there is the whole picture.
     subscribe.mockClear();

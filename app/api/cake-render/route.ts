@@ -21,7 +21,10 @@ export const maxDuration = 150;
 // FLUX.2 [pro] edit at the preview's own size (2026-11-03, the owner: "kötü bir render ışığı var, çok sarı, kaliteli
 // durmuyor hiç": side by side on her cart [dev] turned a tier's colour and the stands, [pro] kept every piece, in clean
 // white light; ≈ $0.045 a render); CAKE_RENDER_MODEL switches it.
-const MODEL = process.env.CAKE_RENDER_MODEL || "fal-ai/flux-2-pro/edit";
+// 2026-11-04 (the owner: "gene karanlık ve kasvet çıktı … fal.ai'de başka render motorunu dene"): Seedream 4.5 — side
+// by side on her unicorn cake [pro] came out dim and greyed, Seedream bright, candy-coloured and real in 23 s (≈ $0.04);
+// nano-banana-pro kept every piece as bright but left the cupcakes as drawn, in 43 s (≈ $0.15).
+const MODEL = process.env.CAKE_RENDER_MODEL || "fal-ai/bytedance/seedream/v4.5/edit";
 /** The preview JPEG the builder sends: at most this many bytes. */
 const MAX_PREVIEW_BYTES = 4 * 1024 * 1024;
 
@@ -61,11 +64,11 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         const send = (o: unknown) => controller.enqueue(ndjsonLine(o));
         try {
-          // Seedream wants at least 2560×1440 pixels: the preview's shape, scaled up to that; FLUX its own size,
-          // the sides in steps of 16.
+          // Seedream wants at least 2560×1440 pixels: the preview's shape, scaled up to that (the sides up to a step of
+          // 16: 1728×2160 for the 4:5 close-up, as tested); FLUX its own size, the sides in steps of 16.
           const seedream = MODEL.includes("seedream");
           const k = seedream ? Math.max(1, Math.sqrt((2560 * 1440) / (width * height))) : 1;
-          const side = (n: number) => (seedream ? Math.round(n * k) : Math.max(512, Math.round(n / 16) * 16));
+          const side = (n: number) => (seedream ? Math.ceil((n * k) / 16) * 16 : Math.max(512, Math.round(n / 16) * 16));
           const result = await fal.subscribe(MODEL, {
             input: {
               prompt: cakePrompt(p, view),
