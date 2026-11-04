@@ -929,6 +929,11 @@ test("PK1 two packages: We do it until she picks; DIY is the design fee, and wha
   await page.getByRole("button", { name: "← Back" }).click();
   await expect(right.getByTestId("package-diy")).toHaveAttribute("aria-checked", "true");
   await next(page).click();
+  // DIY: her home address, where the plinths come; no venue, no setup.
+  await expect(page.getByRole("heading", { name: "Your party at home" })).toBeVisible();
+  await expect(page.getByTestId("venue-home")).toContainText("we bring the plinths here");
+  await expect(page.getByTestId("venue-setup")).toHaveCount(0);
+  await page.getByLabel("Area / community").fill("Jumeirah, Dubai");
   await page.getByPlaceholder("Full name").fill("Test Customer");
   await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
   await next(page).click();
@@ -937,6 +942,40 @@ test("PK1 two packages: We do it until she picks; DIY is the design fee, and wha
   const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
   expect(order.servicePackageId).toBe("diy");
   expect(order.diy).toEqual({ bring: ["rental"], skipExperiences: ["magician"] });
+});
+
+test("VN1 We do it asks for the venue, when we set up and when we collect; the guests come from the experiences", async ({ page, guard }) => {
+  // 2026-11-04 (the owner: Package 2 asks for the venue; the setup day and time).
+  await toTable(page);
+  await page.getByTestId("skip-kids-table").click();
+  for (let i = 0; i < 6; i++) await next(page).click(); // the grown-ups' table to the balloons skipped
+  await page.getByTestId("exp-magician").click();
+  await next(page).click();
+  await expect(page.locator(".bz-right").getByTestId("package-we_do_it")).toHaveAttribute("aria-checked", "true");
+  await next(page).click();
+  await expect(page.getByRole("heading", { name: "Your venue & setup" })).toBeVisible();
+  await expect(page.getByTestId("venue-home")).toHaveCount(0);
+  await expect(page.getByLabel("Children", { exact: true })).toHaveValue("10");
+  await expect(page.getByLabel("Grown-ups", { exact: true })).toHaveValue("10");
+  await page.getByLabel("Starts at").fill("16:00");
+  await page.getByLabel("Ends at").fill("19:00");
+  const lead = page.getByTestId("venue-setup-lead");
+  await expect(lead.getByRole("radio", { name: /3 hours before · 13:00/ })).toHaveAttribute("aria-checked", "true");
+  await lead.getByRole("radio", { name: /2 hours before · 14:00/ }).click();
+  await page.getByTestId("venue-collection").getByRole("radio", { name: /The next morning/ }).click();
+  await page.getByLabel("Venue type").selectOption("Restaurant");
+  await page.getByLabel("Venue name (if it has one)").fill("The Garden");
+  await page.getByLabel("Area / community").fill("Jumeirah, Dubai");
+  await page.getByPlaceholder("Full name").fill("Test Customer");
+  await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
+  await next(page).click();
+  await expect(page.getByText("14:00 on the day (2 hours before)")).toBeVisible();
+  await expect(page.getByText("Restaurant · The Garden")).toBeVisible();
+  await expect(page.getByText("16:00 – 19:00")).toBeVisible();
+  await next(page).click(); // Request Final Quote → caught
+  await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
+  const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
+  expect(order.venue).toMatchObject({ time: "16:00", endTime: "19:00", setupLead: "2h", collection: "next_morning", venueType: "Restaurant", venueName: "The Garden", childrenCount: 10, adultsCount: 10, guestCount: 20 });
 });
 
 test("W2 on a phone, a change to the welcome board brings it into sight, and Back returns to the choices", async ({ page }, info) => {

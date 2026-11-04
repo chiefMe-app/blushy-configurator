@@ -1325,9 +1325,24 @@ export interface VenueDetails {
   area: string;
   venueType: string;
   isOutdoor: boolean;
+  /** Everyone: the children and the grown-ups together. */
   guestCount: number;
   childrenCount: number;
   photos: File[];
+  // 2026-11-04, the venue step by package (lib/venue.ts): DIY's home address, We do it's venue, setup and collection.
+  adultsCount?: number;
+  /** When the party ends, "18:00". */
+  endTime?: string;
+  /** Street and building or villa. */
+  street?: string;
+  /** Apartment, villa or room number. */
+  unit?: string;
+  /** We do it: the venue's own name (a restaurant, a hall); empty at home. */
+  venueName?: string;
+  /** DIY: for the driver; We do it: access (lift, parking, the venue's setup rules). */
+  notes?: string;
+  setupLead?: "evening" | "3h" | "2h";
+  collection?: "after" | "next_morning";
 }
 
 export interface CustomerDetails {
@@ -1477,10 +1492,8 @@ export function priceBreakdown(config: BuilderConfig): {
   lines.push({ label: svcPkg.id === "diy" ? "DIY package (design fee)" : "We do it (delivery, setup & collection)", amount: svcPkg.price, section: "package" });
 
   // -- Design / decor items ------------------------------------------------
-  const theme = themeById(config.theme);
-  if (config.themeSelected && theme && theme.priceModifier > 0) {
-    lines.push({ label: `${theme.name} theme`, amount: theme.priceModifier, section: "design" });
-  }
+  // The theme costs nothing in either package (the owner, 2026-11-04: "tema paralı olmasın … orada da kaldır");
+  // THEMES' priceModifier is kept, unused, should she want it back.
 
   // Everything below until the kids' table belongs to the backdrop: left out when it is skipped.
   const backdropStart = lines.length;
@@ -1576,7 +1589,7 @@ export function priceBreakdown(config: BuilderConfig): {
   if (config.cake) for (const l of cakePriceLines(config.cake)) lines.push({ ...l, section: "cake" });
   if (config.helium) for (const l of heliumPriceLines(config.helium)) lines.push({ ...l, section: "helium" });
   // DIY: every piece above, from the backdrop to the helium balloons, is her own to make, but for the ones she
-  // asks us to bring; the theme costs nothing (the owner, 2026-11-04: "tema paralı olmasın").
+  // asks us to bring.
   const shopping: PriceLine[] = [];
   const diy = svcPkg.id === "diy";
   if (diy) {
@@ -1585,7 +1598,6 @@ export function priceBreakdown(config: BuilderConfig): {
       const piece = diyPieceOf(l);
       (piece && bring.has(piece) ? lines : shopping).push(l);
     }
-    lines.splice(1, backdropStart - 1); // the theme line, when there is one
   }
   if (config.experiences) {
     const skip = new Set(diy ? config.diy?.skipExperiences ?? [] : []);

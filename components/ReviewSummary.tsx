@@ -15,6 +15,7 @@ import {
   formatAED,
   type BuilderConfig,
 } from "@/lib/config";
+import { venueRows } from "@/lib/venue";
 import PriceSummary from "./PriceSummary";
 import { experiencePriceLines } from "@/lib/studio/experiences";
 import { presetById } from "@/lib/typography/presets";
@@ -40,7 +41,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function ReviewSummary({ config }: { config: BuilderConfig }) {
-  const { decor, venue, customer } = config;
+  const { decor, customer } = config;
 
   return (
     <div className="space-y-4">
@@ -136,17 +137,11 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
         ) : experiencePriceLines(config.experiences).map((l) => <Row key={l.label} k={l.label} v={`AED ${formatAED(l.amount)}`} />)}
       </Section>
 
-      <Section title="Venue &amp; contact">
+      {/* 2026-11-04: by package — DIY's home address, We do it's venue, setup and collection (lib/venue.ts). */}
+      <Section title={config.servicePackageId === "diy" ? "Your party at home" : "Venue & contact"}>
         <Row k="Name" v={customer.name || "—"} />
         <Row k="WhatsApp" v={customer.whatsapp || "—"} />
-        <Row k="Date" v={venue.date || "—"} />
-        <Row k="Time" v={venue.time || "—"} />
-        <Row k="Area" v={venue.area || "—"} />
-        <Row k="Venue type" v={venue.venueType || "—"} />
-        <Row k="Setting" v={venue.isOutdoor ? "Outdoor" : "Indoor"} />
-        <Row k="Guests" v={venue.guestCount ? String(venue.guestCount) : "—"} />
-        <Row k="Children" v={venue.childrenCount ? String(venue.childrenCount) : "—"} />
-        <Row k="Photos" v={venue.photos.length ? `${venue.photos.length} uploaded` : "None"} />
+        {venueRows(config).map((r) => <Row key={r.k} k={r.k} v={r.v} />)}
       </Section>
 
       <PriceSummary config={config} />

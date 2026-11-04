@@ -1579,3 +1579,8 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 .bz-headbox.with-art { position: relative; padding-right: 130px; min-height: 116px; }
 .bz-step-art { position: absolute; right: 0; top: 0; width: 116px; height: 116px; object-fit: contain; pointer-events: none; }
 @media (max-width: 640px) { .bz-headbox.with-art { padding-right: 92px; min-height: 90px; } .bz-step-art { width: 90px; height: 90px; } }
+
+/* 2026-11-04: the venue step's sections, by package. */
+.bz-vn-section h3 { margin: 0 0 8px; font: 400 20px var(--bz-hand); color: #271617; }
+.bz-vn-section .sub { margin: -2px 0 10px; font-size: 12px; color: #7f717c; }
+.bz-vn-when { margin: 10px 0 0; padding: 8px 12px; border-radius: 12px; background: #f8f4ff; color: #7a4fb0; font-size: 12px; }

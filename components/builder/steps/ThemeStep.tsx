@@ -37,9 +37,8 @@ export default function ThemeStep({ config, theme, themeGroup, setTheme, setThem
                   {t.balloonColors.slice(0, 5).map((c, i) => <i key={i} style={{ background: c }} />)}
                 </span>
               )}
-              <small className={`cost ${t.priceModifier > 0 ? "" : "included"}`}>
-                {t.priceModifier > 0 ? `+AED ${t.priceModifier}` : "Included"}
-              </small>
+              {/* Every theme is included (2026-11-04). */}
+              <small className="cost included">Included</small>
             </button>
           );
         })}

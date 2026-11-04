@@ -125,12 +125,12 @@ describe("saved total = the total the customer saw", () => {
     expect(json.total).toBe(computeTotal(config));
   });
 
-  it("everything else in the price is unchanged: only the theme line moved", async () => {
+  it("the theme costs nothing (2026-11-04): picked or not, the same total", async () => {
     for (const f of FIXTURES) {
       const config = f.config;
       const withoutTheme = computeTotal({ ...config, themeSelected: false });
       const json = await (await post(orderBody(config))).json();
-      expect(json.total - withoutTheme, f.id).toBe(config.themeSelected ? THEMES.find((t) => t.id === config.theme)!.priceModifier : 0);
+      expect(json.total - withoutTheme, f.id).toBe(0);
     }
   });
 });

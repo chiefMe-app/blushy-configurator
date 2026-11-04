@@ -35,7 +35,7 @@ describe("the two packages", () => {
     expect(diy.total).toBe(250 + 650);
     expect(we.shopping).toEqual([]);
     // The same pieces: in We do it they are charged, in DIY hers.
-    expect(we.lines.filter((l) => l.section !== "package" && l.section !== "experiences").slice(1)).toEqual(diy.shopping);
+    expect(we.lines.filter((l) => l.section !== "package" && l.section !== "experiences")).toEqual(diy.shopping);
   });
 
   it("DIY adds what she asks us to bring, and leaves out an experience she takes out", () => {
