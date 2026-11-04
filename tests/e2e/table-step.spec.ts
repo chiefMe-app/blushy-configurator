@@ -741,7 +741,7 @@ test("H1 the helium balloons: bouquets in her colours with a foil, the age and t
   await expect(art.locator("[data-part=helium-bouquet]")).toHaveCount(1);
   await expect(art.locator("[data-part=helium-latex]")).toHaveCount(7);
   await expect(art.locator('[data-part=helium-foil][href$="snowflake.webp"]')).toHaveCount(1);
-  await expect(page.getByTestId("helium-topper").getByRole("radio", { name: /Snowflake/ })).toContainText("60 cm");
+  await expect(page.getByTestId("helium-topper").getByRole("checkbox", { name: /Snowflake/ })).toContainText("60 cm");
   await expect(art.locator("[data-part=helium-number-glyph]")).toHaveCount(0);
   expect(aed(await sum.textContent())).toBe(165 + 30);
   expect(aed(await total(page).textContent())).toBe(before + aed(await sum.textContent()));
@@ -751,8 +751,14 @@ test("H1 the helium balloons: bouquets in her colours with a foil, the age and t
   await page.getByTestId("helium-size").getByRole("radio", { name: /Large/ }).click();
   await expect(art.locator("[data-part=helium-latex]")).toHaveCount(27);
   expect(aed(await sum.textContent())).toBe(3 * (210 + 30));
-  // A plain star instead, in rose gold: the silver photo coloured.
-  await page.getByTestId("helium-topper").getByRole("radio", { name: /^Star(?!ry)/ }).click();
+  // A plain star as well (several foils, 2026-11-04), in rose gold: the silver photo coloured; then the snowflake off.
+  const foils = page.getByTestId("helium-topper");
+  await foils.getByRole("checkbox", { name: /^Star(?!ry)/ }).click();
+  await expect(art.locator("[data-part=helium-foil]")).toHaveCount(6);
+  expect(aed(await sum.textContent())).toBe(3 * (210 + 30 + 15));
+  await foils.getByRole("checkbox", { name: /Snowflake/ }).click();
+  await expect(foils.getByRole("checkbox", { name: /Snowflake/ })).toHaveAttribute("aria-checked", "false");
+  await expect(art.locator("[data-part=helium-foil]")).toHaveCount(3);
   await page.getByTestId("helium-topper-colour").getByRole("radio", { name: "Rose gold" }).click();
   await expect.poll(async () => (await art.locator("[data-part=helium-foil]").first().getAttribute("href")) ?? "").toMatch(/^data:image\/png/);
   expect(aed(await sum.textContent())).toBe(3 * (210 + 15));
@@ -784,7 +790,7 @@ test("H1 the helium balloons: bouquets in her colours with a foil, the age and t
   await expect(page.getByTestId("helium-render")).toBeVisible();
   const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/helium-render"))!.postData()!);
   expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
-  expect(sent.helium).toMatchObject({ bouquets: 3, size: "large", topper: "star", ceiling: 25, number: { value: "10", size: "100" },
+  expect(sent.helium).toMatchObject({ bouquets: 3, size: "large", foils: ["star"], ceiling: 25, number: { value: "10", size: "100" },
     letters: { on: true, text: "MIAROSE" }, bubble: { on: true, name: "Mia", filling: "mini" } });
   // "Finalize the balloons → Package".
   await page.getByTestId("finish-helium").click();

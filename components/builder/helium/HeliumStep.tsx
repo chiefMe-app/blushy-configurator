@@ -6,7 +6,7 @@ import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import {
   BOUQUET_SIZES, BUBBLE_CM, BUBBLE_FILLINGS, BUBBLE_PRICE, CEILING_COUNTS, FOIL_COLOURS, LATEX_CM, LETTER_CM, LETTER_PRICE, MAX_BOUQUETS, MAX_LATEX_COLOURS,
-  NUMBER_SIZES, PLAIN_FOIL_PRICE, THEME_FOIL_PRICE, cleanBubbleName, cleanLetters, defaultHelium, foilsFor, heliumPicture,
+  MAX_FOILS, NUMBER_SIZES, PLAIN_FOIL_PRICE, THEME_FOIL_PRICE, cleanBubbleName, cleanLetters, defaultHelium, foilsFor, heliumPicture,
   heliumTotal, isPlainFoil, numberPrice, type Helium,
 } from "@/lib/studio/helium";
 import { cleanAge } from "@/lib/studio/pinata";
@@ -54,8 +54,8 @@ export default function HeliumStep({ config, setHelium, onFinish, onSkip, render
   }
 
   const set = (patch: Partial<Helium>) => setHelium({ ...h, ...patch });
-  const card = (on: boolean, pick: () => void, art: React.ReactNode, name: string, note: string, price: string, key: string) => (
-    <button key={key} type="button" role="radio" aria-checked={on} className={`bz-tb-option ${on ? "on" : ""}`} onClick={pick}>
+  const card = (on: boolean, pick: () => void, art: React.ReactNode, name: string, note: string, price: string, key: string, role: "radio" | "checkbox" = "radio") => (
+    <button key={key} type="button" role={role} aria-checked={on} className={`bz-tb-option ${on ? "on" : ""}`} onClick={pick}>
       {on && <span className="tick">✓</span>}
       {art && <span className="art">{art}</span>}
       <b>{name}</b>{note && <small>{note}</small>}{price && <em>{price}</em>}
@@ -84,6 +84,10 @@ export default function HeliumStep({ config, setHelium, onFinish, onSkip, render
   };
   // eslint-disable-next-line @next/next/no-img-element
   const foilPic = (id: string) => <img className="photo cutout" style={{ objectFit: "contain" }} src={heliumPicture(id).src} alt="" loading="lazy" />;
+  // Several foils (the owner, 2026-11-04: "birkaç tane foil balon seçebilsin"): a tap adds one or takes it off; a
+  // fourth takes the place of the first.
+  const pickFoil = (id: (typeof h.foils)[number]) =>
+    set({ foils: h.foils.includes(id) ? h.foils.filter((f) => f !== id) : [...h.foils, id].slice(-MAX_FOILS) });
   const latexDot = (hex: string, i: number) => <span key={i} className="bz-hl-dot" style={{ background: hex }} />;
 
   return (
@@ -125,16 +129,17 @@ export default function HeliumStep({ config, setHelium, onFinish, onSkip, render
             </div>
           </div>
           <div className="bz-tb-item">
-            <h3>The foil on top</h3>
-            <div className="bz-tb-options" role="radiogroup" aria-label="Foil on top" data-testid="helium-topper">
-              {card(h.topper === "none", () => set({ topper: "none" }), null, "No foil", "Latex only", "", "none")}
-              {foilsFor(theme.id).map((f) => card(h.topper === f.id, () => set({ topper: f.id }), foilPic(f.id), f.name,
-                f.own ? `${f.cm} cm · your ${theme.name} theme` : f.plain ? `${f.cm} cm · in your colour` : `${f.cm} cm`, `+AED ${formatAED(f.plain ? PLAIN_FOIL_PRICE : THEME_FOIL_PRICE)}`, f.id))}
+            <h3>The foils on top</h3>
+            <p className="bz-tb-sub" style={{ fontWeight: 400 }}>Up to {MAX_FOILS} on each bouquet — the first you pick is the big one in the middle.</p>
+            <div className="bz-tb-options" role="group" aria-label="Foils on top" data-testid="helium-topper">
+              {card(!h.foils.length, () => set({ foils: [] }), null, "No foil", "Latex only", "", "none", "checkbox")}
+              {foilsFor(theme.id).map((f) => card(h.foils.includes(f.id), () => pickFoil(f.id), foilPic(f.id), f.name,
+                f.own ? `${f.cm} cm · your ${theme.name} theme` : f.plain ? `${f.cm} cm · in your colour` : `${f.cm} cm`, `+AED ${formatAED(f.plain ? PLAIN_FOIL_PRICE : THEME_FOIL_PRICE)}`, f.id, "checkbox"))}
             </div>
           </div>
-          {h.topper !== "none" && isPlainFoil(h.topper) && (
+          {h.foils.some(isPlainFoil) && (
             <div className="bz-tb-item">
-              <h3>The foil&apos;s colour</h3>
+              <h3>The plain foils&apos; colour</h3>
               {foilSwatches(h.topperColour, (hex) => set({ topperColour: hex }), "Foil colour", "helium-topper-colour")}
             </div>
           )}

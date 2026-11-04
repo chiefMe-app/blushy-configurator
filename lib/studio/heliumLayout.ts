@@ -3,12 +3,16 @@
 // name's foil letters in a row on the wall, and the loose balloons against the ceiling, nearer ones bigger. Pure, so
 // the preview, its tests and the finished designs agree. Since the owner's first look (2026-11-04): a bouquet's
 // colours mixed at random, never in rows, its balloons a little uneven like real ones, the foils their real size, and
-// the picture closing in on what is there (`view`).
-import { BUBBLE_CM, HELIUM_ROOM, LATEX, LATEX_CM, LETTER_CM, NUMBER_SIZES, bouquetSize, foilCm, heliumPicture, type Helium } from "./helium";
+// the picture closing in on what is there (`view`); up to three foils on a bouquet, fanned; and every latex balloon
+// leaning along its ribbon to the weight, as a real bouquet's do ("neden gerçek balon gibi durmuyor": all upright,
+// side by side, they read as drawn discs).
+import { BUBBLE_CM, HELIUM_ROOM, LATEX, LATEX_CM, LETTER_CM, NUMBER_SIZES, bouquetSize, foilCm, heliumPicture, type FoilId, type Helium } from "./helium";
 
-/** A latex balloon: its picture (LATEX), its colour, its middle and width. */
-export interface PlacedLatex { pic: (typeof LATEX)[number]; colour: string; x: number; y: number; w: number }
-export interface PlacedBouquet { x: number; weight: { x: number; y: number }; balloons: PlacedLatex[]; foil?: { x: number; y: number; w: number; h: number } }
+/** A latex balloon: its picture (LATEX), its colour, its middle and width, and its lean in degrees (clockwise). */
+export interface PlacedLatex { pic: (typeof LATEX)[number]; colour: string; x: number; y: number; w: number; tilt: number }
+/** A foil on a bouquet: which, its middle, its size and its lean. */
+export interface PlacedFoil { id: FoilId; x: number; y: number; w: number; h: number; tilt: number }
+export interface PlacedBouquet { x: number; weight: { x: number; y: number }; balloons: PlacedLatex[]; foils: PlacedFoil[] }
 export interface HeliumLayout {
   bouquets: PlacedBouquet[];
   ceiling: (PlacedLatex & { ribbon: number })[];
@@ -34,6 +38,13 @@ const CLUSTERS: Record<number, [number, number][]> = {
 
 /** A small steady number from a seed, 0 to 1. */
 const rand = (seed: number) => { const x = Math.sin(seed * 12.9898) * 43758.5453; return x - Math.floor(x); };
+
+/** Where a bouquet's foils sit, in the main foil's widths from the middle and its heights down, and their lean. */
+const FOIL_FANS: Record<number, { dx: number; dy: number; tilt: number }[]> = {
+  1: [{ dx: 0, dy: 0, tilt: 0 }],
+  2: [{ dx: -0.3, dy: 0, tilt: -6 }, { dx: 0.42, dy: 0.2, tilt: 12 }],
+  3: [{ dx: 0, dy: 0, tilt: 0 }, { dx: -0.6, dy: 0.24, tilt: -14 }, { dx: 0.6, dy: 0.26, tilt: 14 }],
+};
 
 /** n points spread from a to b (one in the middle). */
 const spread = (n: number, a: number, b: number) => Array.from({ length: n }, (_, i) => (n === 1 ? (a + b) / 2 : a + (i * (b - a)) / (n - 1)));
@@ -77,21 +88,28 @@ export function heliumLayout(h: Helium): HeliumLayout {
     const cy = floor - (i % 2 ? 178 : 140) * perCm;
     const mixed = mixColours(colours, cluster, i * 7 + 3);
     // Each balloon a touch off the grid and a touch bigger or smaller, as real ones are blown.
-    const balloons = cluster.map(([dx, dy], j) => ({
-      pic: LATEX[(i + j) % LATEX.length], colour: mixed[j],
-      x: x + (dx + (rand(i * 31 + j + 1) - 0.5) * 0.16) * BALLOON_W,
-      y: cy + (dy + (rand(i * 37 + j + 2) - 0.5) * 0.14) * BALLOON_W * 1.05,
-      w: BALLOON_W * (0.95 + rand(i * 53 + j * 11 + 5) * 0.1),
-    }));
+    const weight = { x, y: floor + 6 + (i % 2) * 8 };
+    const balloons = cluster.map(([dx, dy], j) => {
+      const bx = x + (dx + (rand(i * 31 + j + 1) - 0.5) * 0.16) * BALLOON_W;
+      const by = cy + (dy + (rand(i * 37 + j + 2) - 0.5) * 0.14) * BALLOON_W * 1.05;
+      // Leaning along its ribbon, its knot to the weight, a little more as a held bouquet fans out.
+      const tilt = (-Math.atan2(weight.x - bx, weight.y - by) * 180 / Math.PI) * 1.6 + (rand(i * 41 + j + 9) - 0.5) * 6;
+      return { pic: LATEX[(i + j) % LATEX.length], colour: mixed[j], x: bx, y: by, w: BALLOON_W * (0.95 + rand(i * 53 + j * 11 + 5) * 0.1), tilt };
+    });
     const top = Math.min(...balloons.map((b) => b.y)) - BALLOON_W * 0.55;
-    const foil = h.topper === "none" ? undefined : (() => {
-      // Its real size on its longest side.
-      const pic = heliumPicture(h.topper);
-      const long = foilCm(h.topper) * perCm;
-      const fh = pic.h >= pic.w ? long : (pic.h / pic.w) * long, fw = (pic.w / pic.h) * fh;
-      return { x, y: top - fh * 0.42, w: fw, h: fh };
-    })();
-    out.bouquets.push({ x, weight: { x, y: floor + 6 + (i % 2) * 8 }, balloons, foil });
+    // Each foil its real size on its longest side, fanned by the main one's size.
+    const sized = h.foils.map((id) => {
+      const pic = heliumPicture(id), long = foilCm(id) * perCm;
+      const fh = pic.h >= pic.w ? long : (pic.h / pic.w) * long;
+      return { id, w: (pic.w / pic.h) * fh, h: fh };
+    });
+    const fan = FOIL_FANS[sized.length] ?? [];
+    const main = sized[0];
+    const foils = sized.map((f, k) => ({
+      ...f, x: x + fan[k].dx * main.w, y: top - main.h * 0.42 + fan[k].dy * main.h + (main.h - f.h) * 0.3, tilt: fan[k].tilt,
+    }));
+    // Drawn back to front: the side ones behind the main one.
+    out.bouquets.push({ x, weight, balloons, foils: [...foils.slice(1), ...foils.slice(0, 1)] });
   });
 
   // The age, standing on the floor; the bubble beside it, or in the middle alone.
@@ -115,7 +133,7 @@ export function heliumLayout(h: Helium): HeliumLayout {
     const s = 0.85 + t * 0.55;
     const w = BALLOON_W * s;
     const top = CEILING - 8 - t * 95;
-    out.ceiling.push({ pic: LATEX[i % LATEX.length], colour: colours[Math.floor(rand(i + 301) * colours.length)], x, y: top + w * 0.55, w, ribbon: (90 + rand(i + 201) * 110) * s });
+    out.ceiling.push({ pic: LATEX[i % LATEX.length], colour: colours[Math.floor(rand(i + 301) * colours.length)], x, y: top + w * 0.55, w, ribbon: (90 + rand(i + 201) * 110) * s, tilt: (rand(i + 401) - 0.5) * 14 });
   }
   out.view = closeIn(out, h);
   return out;
@@ -130,7 +148,7 @@ function closeIn(L: HeliumLayout, h: Helium): HeliumLayout["view"] {
   const box: [number, number, number, number][] = []; // left, top, right, bottom
   for (const q of L.bouquets) {
     for (const b of q.balloons) box.push([b.x - b.w / 2, b.y - b.w * 0.6, b.x + b.w / 2, b.y + b.w / 2]);
-    if (q.foil) box.push([q.foil.x - q.foil.w / 2, q.foil.y - q.foil.h / 2, q.foil.x + q.foil.w / 2, q.foil.y + q.foil.h / 2]);
+    for (const f of q.foils) box.push([f.x - f.w / 2, f.y - f.h / 2, f.x + f.w / 2, f.y + f.h / 2]);
     box.push([q.weight.x - 25, q.weight.y - 30, q.weight.x + 25, q.weight.y + 6]);
   }
   if (L.number) {

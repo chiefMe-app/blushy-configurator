@@ -19,8 +19,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 150;
 
-// Seedream 4.5 edit, as the cake's (bright, real, its colours kept); HELIUM_RENDER_MODEL switches it.
-const MODEL = process.env.HELIUM_RENDER_MODEL || "fal-ai/bytedance/seedream/v4.5/edit";
+// FLUX.2 [pro] edit (2026-11-04, the owner: "neden gerçek balon gibi durmuyor şu pembe ve morlar?" — Seedream 4.5, the
+// cake's, kept the drawn latex discs nearly as drawn; FLUX.2 [pro] made them real rubber, in half the time);
+// HELIUM_RENDER_MODEL switches it.
+const MODEL = process.env.HELIUM_RENDER_MODEL || "fal-ai/flux-2-pro/edit";
 /** The preview JPEG the builder sends: at most this many bytes. */
 const MAX_PREVIEW_BYTES = 4 * 1024 * 1024;
 

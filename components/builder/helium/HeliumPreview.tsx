@@ -5,8 +5,8 @@
 // /api/helium-render).
 import { useEffect, useState } from "react";
 import type { BuilderConfig } from "@/lib/config";
-import { HELIUM_ROOM, SILVER, heliumEmpty, heliumPicture, isPlainFoil, type Helium } from "@/lib/studio/helium";
-import { heliumLayout } from "@/lib/studio/heliumLayout";
+import { HELIUM_ROOM, SILVER, heliumEmpty, heliumPicture, isPlainFoil, type FoilId, type Helium } from "@/lib/studio/helium";
+import { heliumLayout, type PlacedLatex } from "@/lib/studio/heliumLayout";
 import { fontCss, tableFont } from "@/lib/studio/tableFonts";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
 import type { PieceRender } from "@/components/builder/usePieceRender";
@@ -19,6 +19,41 @@ import ZoomPhoto from "@/components/builder/ZoomPhoto";
 const tinted = new Map<string, string>();
 const making = new Map<string, Promise<void>>();
 const TINT_TALL = 200;
+/**
+ * A latex balloon in its colour, as one photographs (the owner, 2026-11-04: "neden gerçek balon gibi durmuyor şu
+ * pembe ve morlar?"): the evened-out white photo multiplied by a deep colour was a flat disc, and the render kept it
+ * so. Its light (smoothed, the photo's steps showed) now gives the colour a real roundness — a deeper shade to the
+ * edge — and a soft highlight towards white where the light falls.
+ */
+function latexTint(ctx: CanvasRenderingContext2D, w: number, h: number, hex: string) {
+  const px = ctx.getImageData(0, 0, w, h), d = px.data;
+  const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  let light = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) light[i] = d[i * 4 + 3] ? (d[i * 4] * 0.2126 + d[i * 4 + 1] * 0.7152 + d[i * 4 + 2] * 0.0722) / 255 : 0.8;
+  // Two box blurs each way, two pixels wide.
+  for (let pass = 0; pass < 4; pass++) {
+    const out = new Float32Array(w * h), across = pass % 2 === 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let sum = 0, n = 0;
+      for (let k = -2; k <= 2; k++) {
+        const xx = across ? x + k : x, yy = across ? y : y + k;
+        if (xx >= 0 && xx < w && yy >= 0 && yy < h) { sum += light[yy * w + xx]; n++; }
+      }
+      out[y * w + x] = sum / n;
+    }
+    light = out;
+  }
+  for (let i = 0; i < w * h; i++) {
+    const L = light[i];
+    const shade = 0.6 + 0.4 * Math.pow(Math.max(0, Math.min(1.08, (L - 0.55) / 0.27)), 1.3);
+    const x = Math.max(0, Math.min(1, (L - 0.88) / 0.08)), spec = x * x * (3 - 2 * x) * 0.5;
+    for (let k = 0; k < 3; k++) {
+      const base = Math.min(255, c[k] * shade);
+      d[i * 4 + k] = base + (255 - base) * spec;
+    }
+  }
+  ctx.putImageData(px, 0, 0);
+}
 const plainColour = (hex: string) => /^#F[0-9A-F]F[0-9A-F]F[0-9A-F]$/i.test(hex) || hex.toUpperCase() === SILVER;
 function makeTint(src: string, hex: string): Promise<void> {
   const key = `${src}|${hex}`;
@@ -32,11 +67,14 @@ function makeTint(src: string, hex: string): Promise<void> {
     canvas.width = w; canvas.height = h;
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(img, 0, 0, w, h);
-    ctx.globalCompositeOperation = "multiply";
-    ctx.fillStyle = hex;
-    ctx.fillRect(0, 0, w, h);
-    ctx.globalCompositeOperation = "destination-in";
-    ctx.drawImage(img, 0, 0, w, h);
+    if (src.includes("/latex-")) latexTint(ctx, w, h, hex);
+    else {
+      ctx.globalCompositeOperation = "multiply";
+      ctx.fillStyle = hex;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = "destination-in";
+      ctx.drawImage(img, 0, 0, w, h);
+    }
     tinted.set(key, canvas.toDataURL("image/png"));
   })().catch(() => undefined));
   return making.get(key)!;
@@ -122,25 +160,44 @@ export function HeliumArt({ h, className }: { h: Helium; className?: string }) {
   const L = heliumLayout(h);
   const view = L.view;
   const latex = [...L.bouquets.flatMap((b) => b.balloons), ...L.ceiling];
-  const plainFoil = h.topper !== "none" && isPlainFoil(h.topper);
   const tint = useTints([
     ...latex.map((b) => [heliumPicture(b.pic).src, b.colour] as [string, string]),
-    ...(plainFoil ? [[heliumPicture(h.topper).src, h.topperColour] as [string, string]] : []),
+    ...h.foils.filter(isPlainFoil).map((f) => [heliumPicture(f).src, h.topperColour] as [string, string]),
   ]);
-  const balloon = (b: { pic: string; colour: string; x: number; y: number; w: number }, key: string | number) => {
+  const balloon = (b: PlacedLatex, key: string | number) => {
     const pic = heliumPicture(b.pic);
     const bh = (pic.h / pic.w) * b.w;
-    return <image key={key} data-part="helium-latex" href={tint(pic.src, b.colour)} x={b.x - b.w / 2} y={b.y - bh * 0.45} width={b.w} height={bh} />;
+    return <image key={key} data-part="helium-latex" href={tint(pic.src, b.colour)} x={b.x - b.w / 2} y={b.y - bh * 0.45} width={b.w} height={bh}
+      transform={b.tilt ? `rotate(${b.tilt.toFixed(1)} ${b.x} ${b.y})` : undefined} />;
   };
-  const knotY = (b: { pic: string; y: number; w: number }) => b.y + (heliumPicture(b.pic).h / heliumPicture(b.pic).w) * b.w * 0.53;
+  /**
+   * The soft shadow a balloon casts on the ones behind it and just past its edge (her reference, 2026-11-04: real
+   * balloons touch and shade each other; side by side without it they read as flat discs). Drawn just before it, a
+   * gradient, no filter; hardly past its edge (further, the render drew it as a dark halo on the wall).
+   */
+  const contact = (b: PlacedLatex, key: string | number) => {
+    const pic = heliumPicture(b.pic), bh = (pic.h / pic.w) * b.w;
+    const cx = b.x + b.w * 0.05, cy = b.y + bh * 0.06;
+    return <ellipse key={key} cx={cx} cy={cy} rx={b.w * 0.5} ry={bh * 0.46} fill="url(#hl-contact)" transform={b.tilt ? `rotate(${b.tilt.toFixed(1)} ${cx} ${cy})` : undefined} />;
+  };
+  /** Where a balloon's ribbon starts: its knot, turned with its lean. */
+  const knot = (b: PlacedLatex) => {
+    const k = (heliumPicture(b.pic).h / heliumPicture(b.pic).w) * b.w * 0.53, a = (b.tilt * Math.PI) / 180;
+    return { x: b.x - Math.sin(a) * k, y: b.y + Math.cos(a) * k };
+  };
   return (
     <svg className={className} viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} role="img" aria-label="Your helium balloons in the party room" data-testid="helium-art">
+      <defs>
+        <radialGradient id="hl-contact">
+          <stop offset="0" stopColor="rgba(50,30,50,0.3)" /><stop offset="0.8" stopColor="rgba(50,30,50,0.2)" /><stop offset="1" stopColor="rgba(50,30,50,0)" />
+        </radialGradient>
+      </defs>
       <image href={HELIUM_ROOM.src} x={0} y={0} width={W} height={H} />
 
       {/* The ceiling's loose balloons, their ribbons hanging. */}
       {L.ceiling.length > 0 && (
         <g data-part="helium-ceiling">
-          <g>{L.ceiling.map((b, i) => <path key={i} d={ribbon(b.x, knotY(b), b.x + (i % 2 ? 8 : -8), knotY(b) + b.ribbon, i % 2 ? 6 : -6)} stroke={RIBBON} strokeWidth={1.4} fill="none" />)}</g>
+          <g>{L.ceiling.map((b, i) => { const k = knot(b); return <path key={i} d={ribbon(k.x, k.y, k.x + (i % 2 ? 8 : -8), k.y + b.ribbon, i % 2 ? 6 : -6)} stroke={RIBBON} strokeWidth={1.4} fill="none" />; })}</g>
           {L.ceiling.map((b, i) => balloon(b, i))}
         </g>
       )}
@@ -148,15 +205,16 @@ export function HeliumArt({ h, className }: { h: Helium; className?: string }) {
       {/* The name on the wall. */}
       {L.letters && <FoilGlyphs text={h.letters.text} x={L.letters.x} top={L.letters.top} h={L.letters.h} hex={h.letters.colour} uid="hl-l" part="helium-letters" />}
 
-      {/* The bouquets: ribbons to the weight, the foil on top, the latex balloons. */}
+      {/* The bouquets: ribbons to the weight, the foils on top, the latex balloons. */}
       {L.bouquets.map((q, i) => {
-        const foilSrc = h.topper === "none" ? "" : tint(heliumPicture(h.topper).src, plainFoil ? h.topperColour : "#FFFFFF");
+        const foilSrc = (id: FoilId) => tint(heliumPicture(id).src, isPlainFoil(id) ? h.topperColour : "#FFFFFF");
         return (
           <g key={i} data-part="helium-bouquet">
-            {q.foil && <path d={ribbon(q.foil.x, q.foil.y + q.foil.h * 0.5, q.weight.x, q.weight.y - 22, 10)} stroke={RIBBON} strokeWidth={1.6} fill="none" />}
-            {q.balloons.map((b, j) => <path key={j} d={ribbon(b.x, knotY(b), q.weight.x, q.weight.y - 22, (j % 2 ? 1 : -1) * 7)} stroke={RIBBON} strokeWidth={1.6} fill="none" />)}
-            {q.foil && <image data-part="helium-foil" href={foilSrc} x={q.foil.x - q.foil.w / 2} y={q.foil.y - q.foil.h / 2} width={q.foil.w} height={q.foil.h} />}
-            {q.balloons.map((b, j) => balloon(b, j))}
+            {q.foils.map((f, k) => <path key={k} d={ribbon(f.x, f.y + f.h * 0.5, q.weight.x, q.weight.y - 22, 10)} stroke={RIBBON} strokeWidth={1.6} fill="none" />)}
+            {q.balloons.map((b, j) => { const k = knot(b); return <path key={j} d={ribbon(k.x, k.y, q.weight.x, q.weight.y - 22, (j % 2 ? 1 : -1) * 7)} stroke={RIBBON} strokeWidth={1.6} fill="none" />; })}
+            {q.foils.map((f, k) => <image key={k} data-part="helium-foil" href={foilSrc(f.id)} x={f.x - f.w / 2} y={f.y - f.h / 2} width={f.w} height={f.h}
+              transform={f.tilt ? `rotate(${f.tilt} ${f.x} ${f.y})` : undefined} />)}
+            {q.balloons.map((b, j) => <g key={j}>{contact(b, "s")}{balloon(b, "b")}</g>)}
             <Weight x={q.weight.x} y={q.weight.y} hex={h.colours[0] ?? "#F8BBD0"} uid={`hl-q${i}`} />
           </g>
         );

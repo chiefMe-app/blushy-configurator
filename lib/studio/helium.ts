@@ -4,9 +4,11 @@
 // sends hers): the Decor step's seventh part, after Cake & Sweets. Pure data and sums. Her first look (2026-11-04):
 // "daha yakın olsun view, default olarak 1 buket olsun, age balon olmasın hemen, renkler daha karışsın, duvar beyaz,
 // foil balonlar daha büyük ve size'ı yazsın" — one bouquet to start, no number until asked, bigger foils with their
-// sizes written, a white wall, the picture closer (lib/studio/heliumLayout.ts).
+// sizes written, a white wall, the picture closer (lib/studio/heliumLayout.ts). Then "birkaç tane foil balon
+// seçebilsin": up to three foils on each bouquet, the first the biggest in the middle.
 import PARTS from "./heliumParts.json";
 import { cleanAge } from "./pinata";
+import { colourWords } from "./colourWords";
 
 /** The printed theme-shape foils (public/design/helium/<id>.webp, scripts/helium/build.mts), each `cm` on its longest side. */
 export const THEME_FOILS = [
@@ -70,8 +72,9 @@ export const BOUQUET_SIZES = [
 export type BouquetSize = (typeof BOUQUET_SIZES)[number]["id"];
 export const bouquetSize = (id: BouquetSize) => BOUQUET_SIZES.find((s) => s.id === id) ?? BOUQUET_SIZES[1];
 export const MAX_BOUQUETS = 6;
-/** The foil on top of each bouquet: a printed theme shape, or a plain one. */
+/** The foils on top of each bouquet, up to three: printed theme shapes or plain ones, priced each. */
 export const THEME_FOIL_PRICE = 30;
+export const MAX_FOILS = 3;
 export const PLAIN_FOIL_PRICE = 15;
 export const MAX_LATEX_COLOURS = 4;
 
@@ -109,11 +112,11 @@ export interface Helium {
   enabled: boolean;
   /** The latex balloons' colours, for the bouquets and the ceiling (1 to 4). */
   colours: string[];
-  /** How many bouquets (0 to 6), their size and the foil on each. */
+  /** How many bouquets (0 to 6), their size and the foils on each (none to three, the first the main one). */
   bouquets: number;
   size: BouquetSize;
-  topper: FoilId | "none";
-  /** A plain foil's colour. */
+  foils: FoilId[];
+  /** The plain foils' colour. */
   topperColour: string;
   number: { on: boolean; value: string; size: NumberSize; colour: string };
   letters: { on: boolean; text: string; colour: string };
@@ -139,7 +142,7 @@ export function defaultHelium(seed: { themeId?: string; age?: string; name?: str
   return {
     enabled: true,
     colours: colours.length ? colours : ["#F8BBD0", "#DDD6FE", "#BAE6FD"],
-    bouquets: 1, size: "medium", topper: own ?? "star", topperColour: FOIL_COLOURS[1].hex,
+    bouquets: 1, size: "medium", foils: [own ?? "star"], topperColour: FOIL_COLOURS[1].hex,
     number: { on: false, value: cleanAge(seed.age) || "5", size: "80", colour: FOIL_COLOURS[1].hex },
     letters: { on: false, text: cleanLetters(seed.name), colour: FOIL_COLOURS[1].hex },
     ceiling: 0,
@@ -147,7 +150,8 @@ export function defaultHelium(seed: { themeId?: string; age?: string; name?: str
   };
 }
 
-export const topperPrice = (t: Helium["topper"]) => (t === "none" ? 0 : isPlainFoil(t) ? PLAIN_FOIL_PRICE : THEME_FOIL_PRICE);
+export const foilPrice = (id: FoilId) => (isPlainFoil(id) ? PLAIN_FOIL_PRICE : THEME_FOIL_PRICE);
+export const foilsPrice = (foils: FoilId[]) => foils.reduce((s, f) => s + foilPrice(f), 0);
 export const numberPrice = (n: Helium["number"]) => (NUMBER_SIZES.find((s) => s.id === n.size)?.price ?? 85) * n.value.length;
 export const ceilingPrice = (c: CeilingCount) => CEILING_COUNTS.find((x) => x.count === c)?.price ?? 0;
 
@@ -156,8 +160,8 @@ export function heliumPriceLines(h: Helium): { label: string; amount: number }[]
   const lines: { label: string; amount: number }[] = [];
   if (h.bouquets > 0) {
     const s = bouquetSize(h.size);
-    const each = s.price + topperPrice(h.topper);
-    const foil = h.topper === "none" ? "" : `, ${foilName(h.topper).toLowerCase()} foil`;
+    const each = s.price + foilsPrice(h.foils);
+    const foil = h.foils.length ? `, ${h.foils.map((f) => foilName(f).toLowerCase()).join(" + ")} foil${h.foils.length > 1 ? "s" : ""}` : "";
     lines.push({ label: `${h.bouquets} helium bouquet${h.bouquets > 1 ? "s" : ""}, ${s.balloons} balloons${foil}`, amount: each * h.bouquets });
   }
   if (h.number.on && h.number.value) lines.push({ label: `Foil number "${h.number.value}", ${h.number.size} cm`, amount: numberPrice(h.number) });
@@ -184,13 +188,16 @@ export function readHelium(raw: unknown): Helium | undefined {
   const n = obj(r.number), l = obj(r.letters), b = obj(r.bubble);
   const kept = r.render as Record<string, unknown> | null;
   const colours = Array.isArray(r.colours) ? r.colours.filter((h): h is string => typeof h === "string" && HEX.test(h)).slice(0, MAX_LATEX_COLOURS) : [];
-  const topper = typeof r.topper === "string" && (r.topper === "none" || [...THEME_FOILS, ...PLAIN_FOILS].some((f) => f.id === r.topper)) ? r.topper as Helium["topper"] : base.topper;
+  const known = (v: unknown): v is FoilId => typeof v === "string" && [...THEME_FOILS, ...PLAIN_FOILS].some((f) => f.id === v);
+  // Kept before 2026-11-04's several foils as one `topper` ("none" for none).
+  const foils = Array.isArray(r.foils) ? Array.from(new Set(r.foils.filter(known))).slice(0, MAX_FOILS)
+    : r.topper === "none" ? [] : known(r.topper) ? [r.topper] : base.foils;
   return {
     enabled: r.enabled !== false,
     colours: colours.length ? colours : base.colours,
     bouquets: Math.max(0, Math.min(MAX_BOUQUETS, Math.round(Number(r.bouquets ?? base.bouquets)) || 0)),
     size: BOUQUET_SIZES.find((s) => s.id === r.size)?.id ?? base.size,
-    topper,
+    foils,
     topperColour: foilColour(r.topperColour, base.topperColour),
     number: {
       on: n.on === true, value: cleanAge(n.value) || base.number.value,
@@ -231,15 +238,27 @@ export const LATEX = ["latex-a", "latex-b", "latex-c", "latex-d"] as const;
  */
 export const HELIUM_ROOM = { src: "/design/helium/room.webp", w: 1344, h: 1024, ceiling: 157, base: 823, floor: 894, perCm: 2.7, view: { x: 130, y: 20, w: 1084, h: 940 } };
 
+/** A latex balloon's colour by name, how light or deep it is said too. */
+export function latexColourName(hex: string): string {
+  const n = parseInt(hex.slice(1), 16), ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const l = (Math.max(...ch) + Math.min(...ch)) / 510, sat = Math.max(...ch) - Math.min(...ch);
+  const name = colourWords(hex);
+  return sat < 24 || /pastel/.test(name) ? name : l > 0.8 ? `pale ${name}` : l < 0.3 ? `deep ${name}` : name;
+}
+
 /** What is in the picture, in words, for the render. */
 export function heliumWords(h: Helium): string[] {
   const out: string[] = [];
   if (h.bouquets > 0) {
     const s = bouquetSize(h.size);
-    const foil = h.topper === "none" ? "" : isPlainFoil(h.topper)
-      ? ` with a big ${foilColourName(h.topperColour).toLowerCase()} ${h.topper} foil balloon on top, ${foilCm(h.topper)} cm`
-      : ` with a big printed ${foilName(h.topper).toLowerCase()} shaped foil balloon on top, ${foilCm(h.topper)} cm`;
-    out.push(`${h.bouquets} helium balloon bouquet${h.bouquets > 1 ? "s" : ""} standing on the floor, ${h.bouquets > 1 ? "each " : ""}${s.balloons} matte ${LATEX_CM} cm latex balloons in mixed colours${foil}, their ribbons gathered down to a small balloon weight on the floor`);
+    const one = (f: FoilId) => (isPlainFoil(f) ? `a big ${foilColourName(h.topperColour).toLowerCase()} ${f} foil balloon` : `a big printed ${foilName(f).toLowerCase()} shaped foil balloon`);
+    const [first] = h.foils;
+    const foil = !first ? "" : h.foils.length === 1 ? ` with ${one(first)} on top, ${foilCm(first)} cm`
+      : ` with ${h.foils.length} foil balloons on top, side by side: ${h.foils.map((f) => `${one(f)}, ${foilCm(f)} cm`).join("; ")}, the first the one in the middle`;
+    // Her colours by name (FLUX drifted a light pink to coral without them, and to candy pink as plain "pink").
+    const names = Array.from(new Set(h.colours.map(latexColourName)));
+    const mix = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)} mixed together` : names[0] ?? "pink";
+    out.push(`${h.bouquets} helium balloon bouquet${h.bouquets > 1 ? "s" : ""} standing on the floor, ${h.bouquets > 1 ? "each " : ""}${s.balloons} matte ${LATEX_CM} cm latex balloons in ${mix}${foil ? "," : ""}${foil}, their ribbons gathered down to a small balloon weight on the floor`);
   }
   if (h.number.on && h.number.value) out.push(`a giant ${foilColourName(h.number.colour).toLowerCase()} foil number ${h.number.value} balloon, ${h.number.size} cm tall, standing on the floor`);
   if (h.letters.on && h.letters.text) out.push(`the name ${h.letters.text} in ${foilColourName(h.letters.colour).toLowerCase()} foil letter balloons, 40 cm each, in a row on the wall`);
