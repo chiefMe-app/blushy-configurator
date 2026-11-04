@@ -11,7 +11,7 @@ import {
   figureKind, figurePicture, holderOf, itemAt, placeItem, rainbowOf, roomFor, tierAt, tierColours, topperColour, topperShows, type Cake, type CakeView,
 } from "@/lib/studio/cake";
 import { asPrinted, fontCss, tableFont } from "@/lib/studio/tableFonts";
-import { CAKE_CART, CAKE_PLINTHS, CAKE_SWEETS, COOKIE_FACE, SWEET_PLACES, SWEET_SPOTS, sceneMap, sceneOf, sweetPicture, sweetPlaces, type CakeSweet } from "@/lib/studio/cakeSweets";
+import { CAKE_CART, CAKE_PLINTHS, CAKE_SWEETS, COOKIE_FACE, RAINBOW_LINER, SWEET_PLACES, SWEET_SPOTS, sceneMap, sceneOf, sweetPicture, sweetPlaces, type CakeSweet } from "@/lib/studio/cakeSweets";
 import FitText from "@/components/studio/FitText";
 import PIECES from "@/lib/studio/welcomePieces.json";
 import { setShot, useRecoloredBase } from "@/components/design/LiveSketch";
@@ -159,27 +159,53 @@ function SweetPiece({ s, k, uid, places, onTap }: { s: CakeSweet; k: Cake; uid: 
           </defs>
           <g mask={`url(#${id}-liner)`}>
             <image href={pic.src} x={x} y={y} width={w} height={h} filter={`url(#${id}-paper)`} />
-            {s.liner !== "silver" && s.liner !== WHITE && <rect style={{ mixBlendMode: "multiply" }} x={x} y={y} width={w} height={h} fill={s.liner} />}
+            {s.liner === RAINBOW_LINER.id ? <ConfettiPaper id={`${id}-confetti`} x={x} y={y} w={w} h={h} />
+              : s.liner !== "silver" && s.liner !== WHITE && <rect style={{ mixBlendMode: "multiply" }} x={x} y={y} width={w} height={h} fill={s.liner} />}
           </g>
         </g>
       )}
       {s.sprinkles && <Sprinkles id={id} t={{ x, y, w, h, top: y, bottom: y + h }} kind="scatter" seed={s.id.length} top size={w / 300} many={2.2} />}
-      {s.print && spots.map((p, i) => s.print === "age"
+      {/* Each cookie's print on its own face, under the cookies in front of it (their faces and the biscuit below),
+          and on the icing only. */}
+      {s.print && s.id === "cookies" && (
+        <defs>{spots.map((p, i) => (
+          <mask key={i} id={`${id}-face${i}`} maskUnits="userSpaceOnUse" x={x} y={y} width={w} height={h}>
+            <ellipse cx={p.x} cy={p.y} rx={p.w * 0.49} ry={p.w * 0.49 * COOKIE_FACE} fill="#fff" />
+            {spots.slice(i + 1).map((q, j) => <ellipse key={j} cx={q.x} cy={q.y + q.w * 0.04} rx={q.w * 0.53} ry={q.w * 0.53 * COOKIE_FACE * 1.12} fill="#000" />)}
+          </mask>
+        ))}</defs>
+      )}
+      {s.print && <g mask={`url(#${id})`}>{spots.map((p, i) => <g key={i} mask={s.id === "cookies" ? `url(#${id}-face${i})` : undefined}>{s.print === "age"
         // Lying flat on the cookie: as wide, less tall; as big as its face (2026-11-03, the owner: "o yuvarlak büyüklüğünde olsun, taşmasın").
-        ? <text key={i} x={p.x} y={(p.y + ageSize(p.w) * 0.21) / COOKIE_FACE} fontSize={ageSize(p.w)} textAnchor="middle" fill={topperColour(k.topper.colour).hex} transform={`scale(1 ${COOKIE_FACE})`}
+        ? <text x={p.x} y={(p.y + ageSize(p.w) * 0.21) / COOKIE_FACE} fontSize={ageSize(p.w)} textAnchor="middle" fill={topperColour(k.topper.colour).hex} transform={`scale(1 ${COOKIE_FACE})`}
           style={{ fontFamily: `${fontCss(face)}, Georgia, serif`, fontWeight: face.weight }} data-part="cake-sweet-print">{k.topper.age || "1"}</text>
         : print && (() => {
           // Its longer side nearly across the face (2026-11-04, the owner: "içindeki şekil biraz daha büyüsün"): a
           // picture's corners are clear, so it keeps inside the oval.
           const a = print.h / print.w, pw = (p.w * PRINT_FILL) / Math.max(1, a), ph = pw * a * COOKIE_FACE;
-          return <image key={i} href={print.src} x={p.x - pw / 2} y={p.y - ph / 2} width={pw} height={ph} preserveAspectRatio="none" data-part="cake-sweet-print" />;
-        })())}
+          return <image href={print.src} x={p.x - pw / 2} y={p.y - ph / 2} width={pw} height={ph} preserveAspectRatio="none" data-part="cake-sweet-print" />;
+        })()}</g>)}</g>}
       {s.topper && spots.map((p, i) => {
         const f = figurePicture(s.topper!), th = p.w * 0.95, tw = (th * f.w) / f.h;
         return <image key={i} href={f.src} x={p.x - tw / 2} y={p.y - th + p.w * 0.25} width={tw} height={th} data-part="cake-sweet-topper" />;
       })}
     </g>
   );
+}
+
+/** White paper printed with rainbow confetti: small dots in the rainbow's colours, multiplied so the pleats show through. */
+function ConfettiPaper({ id, x, y, w, h }: { id: string; x: number; y: number; w: number; h: number }) {
+  const t = w / 22;
+  // A tile of dots, scattered by hand, each colour once or twice.
+  const dots = [[0.15, 0.2], [0.6, 0.1], [0.85, 0.55], [0.35, 0.65], [0.7, 0.85], [0.05, 0.8], [0.45, 0.35], [0.9, 0.2], [0.25, 0.95]];
+  return <>
+    <defs>
+      <pattern id={id} patternUnits="userSpaceOnUse" x={x} y={y} width={t} height={t}>
+        {dots.map(([dx, dy], i) => <circle key={i} cx={dx * t} cy={dy * t} r={t * 0.085} fill={RAINBOW_LINER.dots[i % RAINBOW_LINER.dots.length]} />)}
+      </pattern>
+    </defs>
+    <rect style={{ mixBlendMode: "multiply" }} x={x} y={y} width={w} height={h} fill={`url(#${id})`} />
+  </>;
 }
 
 /** The card the name is printed on, its border (the letters' colour unless she picked one, or none): drawn twice, the border under the card. */
@@ -532,6 +558,32 @@ function PickedTools({ k, picked, setCake, onPick }: { k: Cake; picked: CakePick
   );
 }
 
+/** Seen once on this device: the hand showing that the figures and the topper drag. */
+const COACH_KEY = "bz-ck-coach-done";
+
+/**
+ * A hand dragging the first piece, with a bubble (2026-11-04, the owner: "drag yaparak tasarlayabildiği çok küçük
+ * yazıyor, anlaşılmıyor — daha eğlenceli bir şekilde user'ı guide edelim"): over the picture, never in it, gone at
+ * her first touch.
+ */
+function DragCoach({ k, view }: { k: Cake; view: CakeView }) {
+  const top = k.figures.findIndex((f) => f.on === "top");
+  const what: CakePick | null = top >= 0 ? top : topperShows(k) ? "topper" : k.figures.length ? 0 : null;
+  if (what === null) return null;
+  const m = middleOf(k, what), map = sceneMap(k), vb = viewBoxOf(k, view);
+  const at = map ? { x: m.x * map.scale + map.x, y: m.y * map.scale + map.y } : m;
+  const left = (at.x - vb.x) / vb.w, top_ = (at.y - vb.y) / vb.h;
+  if (left < 0.08 || left > 0.92 || top_ < 0.12 || top_ > 0.95) return null;
+  return (
+    <div className="bz-ck-coach" aria-hidden="true" data-testid="cake-coach" style={{ left: `${left * 100}%`, top: `${top_ * 100}%` }}>
+      <span className="ring" />
+      <span className="hand">👆</span>
+      {/* Kept inside the picture: from the hand outwards, or centred over it. */}
+      <span className={`bubble ${left < 0.35 ? "from-left" : left > 0.65 ? "from-right" : ""}`}>Drag me anywhere! ✨</span>
+    </div>
+  );
+}
+
 /** How much of a cookie's face its print's longer side covers. */
 const PRINT_FILL = 0.96;
 
@@ -550,6 +602,14 @@ export default function CakePreview({ config, setCake, render, onGenerate, view 
   const [live, setLive] = useState(false);
   const [picked, setPicked] = useState<CakePick | null>(null);
   useEffect(() => { if (render.url) setLive(false); }, [render.url]);
+  // The hand showing the drag, until her first touch of the picture.
+  const [coached, setCoached] = useState(true);
+  useEffect(() => { try { setCoached(localStorage.getItem(COACH_KEY) === "1"); } catch { setCoached(false); } }, []);
+  const touched = () => {
+    if (coached) return;
+    setCoached(true);
+    try { localStorage.setItem(COACH_KEY, "1"); } catch { /* this visit only */ }
+  };
   // Nothing held that is not there any more.
   const pick = k && picked !== null && (picked === "topper" ? topperShows(k) : picked < k.figures.length) ? picked : null;
   const showRender = !!render.url && !live;
@@ -586,7 +646,10 @@ export default function CakePreview({ config, setCake, render, onGenerate, view 
           <div className="bz-live-hidden" aria-hidden="true"><CakeArt k={k} className="bz-ck-art" view={view} themeId={config.theme} /></div>
         </> : <>
           <div className={render.loading ? "bz-wb-wait on" : "bz-wb-wait"}>
-            <CakeArt k={k} className="bz-ck-art" view={view} themeId={config.theme} onView={choose} edit={render.loading ? undefined : { picked: pick, onPick: setPicked, onChange: setCake }} />
+            <div className="bz-ck-stage" onPointerDownCapture={touched}>
+              <CakeArt k={k} className="bz-ck-art" view={view} themeId={config.theme} onView={choose} edit={render.loading ? undefined : { picked: pick, onPick: setPicked, onChange: setCake }} />
+              {!coached && !render.loading && pick === null && <DragCoach k={k} view={view} />}
+            </div>
             {render.loading && (
               <div className="veil" role="status" data-testid="cake-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>
@@ -600,8 +663,13 @@ export default function CakePreview({ config, setCake, render, onGenerate, view 
         </>}
         <p className="note">{showRender ? "Your render — this picture, made into one photograph."
           : <>{["", "One tier", "Two tiers", "Three tiers"][k.tiers]}, {cakeStyle(k.style).name.toLowerCase()} · {CAKE_FLAVOURS.find((f) => f.id === k.flavour)?.name} inside.
-            {(k.figures.length > 0 || topperShows(k)) && <> Drag the figures and the topper anywhere on the cake — tap one to copy, resize or remove it.</>}
             {choose && view === "whole" && <> Tap the cake or a sweet to see it close up.</>}</>}</p>
+        {!showRender && (k.figures.length > 0 || topperShows(k)) && (
+          <ul className="bz-ck-tips" data-testid="cake-tips">
+            <li><i aria-hidden="true">✋</i> <b>Drag</b> the figures &amp; the name to move them</li>
+            <li><i aria-hidden="true">👆</i> <b>Tap</b> one to copy, resize or remove it</li>
+          </ul>
+        )}
         {backTo !== null && <button type="button" className="bz-tb-back" data-testid="cake-back-to-choices" onClick={back}>↑ Back to your choices</button>}
         {!render.ready && !render.loading && (
           <div className="bz-tb-render" data-testid="cake-render-box">

@@ -465,10 +465,19 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await page.getByRole("button", { name: /Yes, add a cake/ }).click();
   const art = page.getByTestId("cake-art");
   const sum = page.getByTestId("cake-total");
-  // The theme's first design: one tier, its figure on top (Ice Princess: a snowflake), the topper with the age.
+  // It opens as the plain white cake (2026-11-04, the owner: "cake plain white default gelsin").
   const designs = page.getByTestId("cake-design").getByRole("radio");
   await expect(designs).toHaveCount(5);
+  await expect(designs.filter({ hasText: "Plain cake" })).toHaveAttribute("aria-checked", "true");
+  await expect(art.locator("[data-part=cake-tier]")).toHaveCount(1);
+  await expect(art.locator("[data-part=cake-figure]")).toHaveCount(0);
+  await expect(art.locator("[data-part=cake-colour]")).toHaveCount(0);
+  // The theme's first design: one tier, its figure on top (Ice Princess: a snowflake), the topper with the age.
+  await designs.first().click();
   await expect(designs.first()).toHaveAttribute("aria-checked", "true");
+  // A hand shows that the figures drag (the owner: "daha eğlenceli bir şekilde user'ı guide edelim"), and the tips under the picture.
+  await expect(page.getByTestId("cake-coach")).toBeVisible();
+  await expect(page.getByTestId("cake-tips")).toContainText("Drag");
   await expect(art.locator("[data-part=cake-tier]")).toHaveCount(1);
   await expect(art.locator('[data-part=cake-figure][href$="fig-snowflake.webp"]')).toHaveCount(1);
   await expect(art.locator("[data-part=cake-topper]")).toHaveCount(1);
@@ -515,6 +524,7 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await page.mouse.move(top.x + top.width * 0.7, top.y - box.height * 0.25, { steps: 8 }); // its foot on the top
   await page.mouse.up();
   await expect(rocket.nth(1)).toHaveAttribute("data-on", "top");
+  await expect(page.getByTestId("cake-coach")).toHaveCount(0); // gone once she has touched the picture
   // Taken off from its tools; up to eight on the cake, then the cards wait.
   await tools.getByRole("button", { name: "Remove" }).click();
   await expect(rocket).toHaveCount(1);
@@ -585,6 +595,9 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await expect(art.locator("[data-sweet=cupcakes] [data-part=cake-sweet-liner]")).toHaveAttribute("data-liner", "silver");
   // A change to a sweet shows it close up (2026-11-04, the owner: "cupcake değişikliği yapılıyorsa cupcake'in yakın view'u açılsın").
   await expect(art).toHaveAttribute("data-view", "cupcakes");
+  // Rainbow confetti paper too (the owner: "rainbow liners'ta güzelmiş, onu da ekleyelim").
+  await cupcakes.getByTestId("cake-cupcake-liner").getByRole("radio", { name: "Rainbow confetti paper" }).click();
+  await expect(art.locator("[data-sweet=cupcakes] [data-part=cake-sweet-liner]")).toHaveAttribute("data-liner", "rainbow");
   const cupFlavour = page.getByTestId("cake-sweet-flavour-cupcakes").getByRole("radio");
   await expect(cupFlavour.first()).toHaveAttribute("aria-checked", "true");
   await cupFlavour.filter({ hasText: "Chocolate" }).click();

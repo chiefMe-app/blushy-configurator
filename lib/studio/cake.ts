@@ -309,6 +309,11 @@ export function defaultCake(seed: CakeSeed = {}): Cake {
   return { enabled: true, ...cakeDesigns(seed)[0].cake };
 }
 
+/** The cake the part opens with: the plain white one (2026-11-04, the owner: "cake plain white default gelsin"). */
+export function plainCake(seed: CakeSeed = {}): Cake {
+  return { enabled: true, ...cakeDesigns(seed).find((d) => d.id === "plain")!.cake };
+}
+
 /** The colours it shows, bottom tier first. */
 export const tierColours = (k: Pick<Cake, "tiers" | "colours">) => Array.from({ length: k.tiers }, (_, i) => k.colours[i] ?? k.colours[0] ?? WHITE);
 

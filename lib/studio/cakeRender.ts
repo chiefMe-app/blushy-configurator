@@ -54,7 +54,9 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
     // A cookie's print as big as its iced face, inside its edge (2026-11-03, the owner: "o yuvarlak büyüklüğünde olsun, taşmasın").
     const print = sw.print ? `, each printed with ${sw.print === "age" ? `a big number "${t.age || "1"}"` : `a big ${said(sw.print)!.name.toLowerCase()}`} filling its iced face nearly to the edge but never over it, on plain smooth icing${sw.sprinkles ? "" : " with nothing else on it — no sprinkles, no stars, no dots, no flowers"}` : "";
     // The cupcakes' liners in hers (2026-11-03, the owner: "cupcake kağıdının rengini de seçebilsin").
-    return `${kind.words(colourWords(sw.colour)).replace("gold foil", linerWords(sw.liner))}${top}${print}${sw.sprinkles ? ", with rainbow sprinkles" : ""}`;
+    // Bare when she chose no sprinkles (2026-11-04, the owner: "cupcake'de sprinkle seçmedim"); a cookie's print says so
+    // itself, and a macaron has none to leave off.
+    return `${kind.words(colourWords(sw.colour)).replace("gold foil liners", linerWords(sw.liner))}${top}${print}${sw.sprinkles ? ", with rainbow sprinkles" : sw.print || sw.id === "macarons" ? "" : ", with no sprinkles on them at all"}`;
   };
   const sweets = CAKE_SWEETS.map((s) => sweetWords(s.id)).filter(Boolean);
   // On the sweet cart: the cake and the sweets on its counter, under its flat wooden roof (2026-11-03, the owner:
@@ -71,10 +73,12 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
 
   // A sweet close up: only it, made real; the rest as it is, out of focus.
   const these = view !== "whole" && view !== "cake" ? sweetWords(view) : "";
+  const others = CAKE_SWEETS.filter((x) => x.id !== view && k.sweets?.some((y) => y.id === x.id)).map((x) => x.name.toLowerCase());
   if (these) return [
     `Image 1 is a close-up preview of ${these}, ${cart ? `on the counter of ${cart}` : plinths ? "on a round white plinth" : "on a table"} at a birthday party, beside the birthday cake.`,
-    "Make it one real, natural close-up photograph of exactly these, from the same camera position and with the same framing, every piece the same size and in the same place: real and freshly made, the same colours, toppers, prints and sprinkles as image 1 shows them, appetising.",
-    `Keep the background as image 1 has it — the ${cart ? "cart" : plinths ? "plinths" : "table"}, the wall and whatever else shows at the edges of the picture — softly out of focus.`,
+    "Make it one real, natural close-up photograph of exactly these, from the same camera position and with the same framing, every piece the same size and in the same place: real and freshly made, the same colours, toppers, prints and sprinkles as image 1 shows them — the icing, the liners and the stand exactly the colours of image 1 — appetising.",
+    // The other sweets and the cloth stay (2026-11-04: a cupcakes test render dropped the cookies in front and changed the cloth).
+    `Keep everything else as image 1 has it — the ${cart ? "cart" : plinths ? "plinths" : "table and its cloth, the same colour"}, ${others.length ? `the ${others.join(" and ")} beside them, every one of them kept, ` : ""}the cake, the wall and whatever else shows at the edges of the picture — in the same places and colours, softly out of focus.`,
     LIGHT,
     `Nothing added and nothing taken away: no candles, ${characters ? "no real people or hands, no characters beyond the printed pictures" : "no people, no hands, no characters"}, no fresh flowers, ${k.sweets?.find((x) => x.id === view)?.sprinkles ? "" : "no sprinkles, "}no extra words or letters.`,
   ].join(" ");

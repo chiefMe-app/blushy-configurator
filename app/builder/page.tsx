@@ -52,7 +52,7 @@ import PinataPreview from "@/components/builder/pinata/PinataPreview";
 import { defaultPinata, pinataRenderKey } from "@/lib/studio/pinata";
 import CakeStep, { cakeSeed } from "@/components/builder/cake/CakeStep";
 import CakePreview from "@/components/builder/cake/CakePreview";
-import { cakeRenderKey, cakeViews, defaultCake, type CakeView } from "@/lib/studio/cake";
+import { cakeRenderKey, cakeViews, plainCake, type CakeView } from "@/lib/studio/cake";
 import type { AfterSignInAction } from "@/lib/account";
 import { adultCounts, defaultAdultTable } from "@/lib/studio/adultTable";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
@@ -563,7 +563,7 @@ export default function ConfigurePage() {
     if (!config.welcomeBoard) setWelcomeBoard({ ...defaultWelcomeBoard(themeById(config.theme) ?? THEMES[0]), enabled: false });
     if (!config.giveaways) setGiveaways({ ...defaultGiveaways(giveawaysSeed(config)), enabled: false });
     if (!config.pinata) setPinata({ ...defaultPinata(pinataSeed(config)), enabled: false });
-    if (!config.cake) setCake({ ...defaultCake(cakeSeed(config)), enabled: false });
+    if (!config.cake) setCake({ ...plainCake(cakeSeed(config)), enabled: false });
     goToStep(3);
   };
   // After the giveaways, the piñata (2026-11-03, the owner: "şimdi piñata studio'ya geçelim").

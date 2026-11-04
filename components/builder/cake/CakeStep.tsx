@@ -6,12 +6,12 @@ import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import {
   CAKE_FLAVOURS, CAKE_SPRINKLES, CAKE_STYLES, CAKE_TIERS, FIGURE_KINDS, RAINBOW_PRICE, RAINBOW_TIERS, rainbowOf, MAX_CAKE_DECOS, MAX_CAKE_FIGURES, TOPPER_CARDS, TOPPER_COLOURS, TOPPER_PLACES, TOPPER_PRICE,
-  CAKE_FIGURES, THEME_CAKE_CUTOUTS, addItem, cakeDesigns, cakeFiguresFor, cakePrice, cakeTotal, defaultCake, figureKind, figurePicture, roomFor, themeFigures, topperColour as topperLook,
+  CAKE_FIGURES, THEME_CAKE_CUTOUTS, addItem, cakeDesigns, cakeFiguresFor, cakePrice, cakeTotal, plainCake, figureKind, figurePicture, roomFor, themeFigures, topperColour as topperLook,
   type Cake, type CakeFigure, type CakeSeed, type CakeView,
 } from "@/lib/studio/cake";
 import { cleanAge } from "@/lib/studio/pinata";
 import {
-  CAKE_SWEETS, CART_BALLOONS_PRICE, CART_PRICE, CUPCAKE_FOILS, PLINTHS_PRICE, SPRINKLE_PRICE, SWEET_COUNTS, SWEET_FLAVOURS, sweetFlavour, sweetPicture, sweetPrice, type CakeSweet,
+  CAKE_SWEETS, CART_BALLOONS_PRICE, CART_PRICE, CUPCAKE_FOILS, PLINTHS_PRICE, RAINBOW_LINER, SPRINKLE_PRICE, SWEET_COUNTS, SWEET_FLAVOURS, sweetFlavour, sweetPicture, sweetPrice, type CakeSweet,
 } from "@/lib/studio/cakeSweets";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
 import { CakeThumb } from "./CakePreview";
@@ -51,8 +51,8 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
         <h2>Add a cake?</h2>
         <p>A birthday cake for your {theme.name} theme — one to three tiers, its colours, figures on top and a topper with the name — shown on its stand, with cupcakes, cake pops, cookies, donuts or macarons beside it if you like. The price adds to your party.</p>
         <div className="actions">
-          <button type="button" className="bz-next" onClick={() => setCake(k ? { ...k, enabled: true, done: false } : defaultCake(cakeSeed(config)))}>Yes, add a cake ✦</button>
-          {!k && <button type="button" className="bz-back" onClick={() => setCake({ ...defaultCake(cakeSeed(config)), enabled: false })}>No thanks, skip</button>}
+          <button type="button" className="bz-next" onClick={() => setCake(k ? { ...k, enabled: true, done: false } : plainCake(cakeSeed(config)))}>Yes, add a cake ✦</button>
+          {!k && <button type="button" className="bz-back" onClick={() => setCake({ ...plainCake(cakeSeed(config)), enabled: false })}>No thanks, skip</button>}
         </div>
         {k && !k.enabled && <p className="skipped">You skipped the cake — it isn&apos;t in your total.</p>}
       </div>
@@ -373,6 +373,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
                   <h3 style={{ marginTop: 10 }}>Liners</h3>
                   <div className="bz-ts-swatches" role="radiogroup" aria-label="Cupcake liners" data-testid="cake-cupcake-liner">
                     {[...CUPCAKE_FOILS.map((f) => ({ id: f.id, name: f.name, bg: `linear-gradient(160deg, ${f.light}, ${f.hex} 60%, ${f.light})` })),
+                      { id: RAINBOW_LINER.id, name: RAINBOW_LINER.name, bg: `radial-gradient(circle at 25% 30%, ${RAINBOW_LINER.dots[0]} 2px, transparent 3px), radial-gradient(circle at 70% 25%, ${RAINBOW_LINER.dots[2]} 2px, transparent 3px), radial-gradient(circle at 45% 70%, ${RAINBOW_LINER.dots[4]} 2px, transparent 3px), radial-gradient(circle at 80% 75%, ${RAINBOW_LINER.dots[3]} 2px, transparent 3px), radial-gradient(circle at 20% 80%, ${RAINBOW_LINER.dots[5]} 2px, transparent 3px), #fff` },
                       ...swatches.map((hex) => ({ id: hex, name: `${PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? (hex === "#FFFFFF" ? "White" : hex)} paper`, bg: hex }))].map((l) => {
                       const on = (sw.liner ?? "gold") === l.id;
                       return <button key={l.id} type="button" role="radio" aria-checked={on} aria-label={l.name} title={l.name} className={on ? "on" : ""}

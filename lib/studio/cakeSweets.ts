@@ -42,7 +42,11 @@ export const CUPCAKE_FOILS = [
   { id: "gold", name: "Gold foil", hex: "#C9A13B", light: "#F3DC8A" },
   { id: "silver", name: "Silver foil", hex: "#A3A9B3", light: "#EEF1F5" },
 ] as const;
-export const linerWords = (liner?: string) => (!liner || liner === "gold" ? "gold foil" : liner === "silver" ? "shiny silver foil" : `${colourWords(liner)} paper`);
+/** White paper printed with rainbow confetti (2026-11-04, the owner liked a render's: "rainbow liners'ta güzelmiş, onu da ekleyelim"). */
+export const RAINBOW_LINER = { id: "rainbow", name: "Rainbow confetti paper", dots: ["#F48FB1", "#FFB74D", "#FFF176", "#81C784", "#64B5F6", "#BA68C8"] } as const;
+/** The liners, in words: "gold foil liners", "pink paper liners", … */
+export const linerWords = (liner?: string) => (!liner || liner === "gold" ? "gold foil liners" : liner === "silver" ? "shiny silver foil liners"
+  : liner === RAINBOW_LINER.id ? "white paper liners printed all over with tiny rainbow confetti dots" : `${colourWords(liner)} paper liners`);
 
 export interface CakeSweet {
   id: SweetId;
@@ -56,7 +60,7 @@ export interface CakeSweet {
   print?: CakeFigure | "age";
   /** What it tastes of (SWEET_FLAVOURS; none: the first). */
   flavour?: string;
-  /** Cupcakes: their liners, silver foil or paper in a colour (a hex; none: gold foil). */
+  /** Cupcakes: their liners, silver foil, rainbow confetti paper or paper in a colour (a hex; none: gold foil). */
   liner?: string;
 }
 
@@ -70,9 +74,10 @@ export const sweetPicture = (id: SweetId) => ({
 
 /**
  * Where each piece's top is in its photo, as fractions of it (measured by eye: the icing runs together): a cupcake's
- * swirl tip (a topper stands there); a cookie's middle and how wide the part of its face in sight is (its print, as
- * big as that and inside it — 2026-11-03, the owner: "cookies'de daha büyümeli şekiller, o yuvarlak büyüklüğünde olsun,
- * taşmasın"). The faces are seen from above as ovals COOKIE_FACE as deep as they are wide.
+ * swirl tip (a topper stands there); a cookie's whole iced face, its middle and width, the back ones first (its print
+ * as big as it and inside it — 2026-11-03, the owner: "o yuvarlak büyüklüğünde olsun, taşmasın"; 2026-11-04, "arkadakilerin
+ * üstündeki rainbowlar küçülmüş": every cookie's print as big as the front ones', partly under the cookies in front).
+ * The faces are seen from above as ovals COOKIE_FACE as deep as they are wide.
  */
 export const COOKIE_FACE = 0.6;
 export const SWEET_SPOTS: Partial<Record<SweetId, { x: number; y: number; w: number }[]>> = {
@@ -81,8 +86,8 @@ export const SWEET_SPOTS: Partial<Record<SweetId, { x: number; y: number; w: num
     { x: 0.12, y: 0.53, w: 0.17 }, { x: 0.82, y: 0.58, w: 0.17 }, { x: 0.31, y: 0.6, w: 0.18 }, { x: 0.56, y: 0.62, w: 0.18 },
   ],
   cookies: [
-    { x: 0.504, y: 0.208, w: 0.4 }, { x: 0.222, y: 0.21, w: 0.12 }, { x: 0.844, y: 0.275, w: 0.24 }, { x: 0.11, y: 0.545, w: 0.17 },
-    { x: 0.736, y: 0.608, w: 0.42 }, { x: 0.348, y: 0.68, w: 0.31 },
+    { x: 0.348, y: 0.242, w: 0.387 }, { x: 0.805, y: 0.333, w: 0.374 }, { x: 0.503, y: 0.206, w: 0.418 }, { x: 0.206, y: 0.531, w: 0.4 },
+    { x: 0.735, y: 0.606, w: 0.438 }, { x: 0.394, y: 0.681, w: 0.412 },
   ],
 };
 
@@ -190,7 +195,7 @@ export function readSweets(raw: unknown): CakeSweet[] | undefined {
       ...(k.topper === "figure" && isFigure(o.topper) ? { topper: o.topper } : {}),
       ...(k.topper === "print" && (o.print === "age" || isFigure(o.print)) ? { print: o.print as CakeSweet["print"] } : {}),
       ...(SWEET_FLAVOURS[k.id].some((f) => f.id === o.flavour) ? { flavour: o.flavour as string } : {}),
-      ...(k.id === "cupcakes" && o.liner === "silver" ? { liner: "silver" } : k.id === "cupcakes" && typeof o.liner === "string" && HEX.test(o.liner) ? { liner: o.liner.toUpperCase() } : {}),
+      ...(k.id === "cupcakes" && (o.liner === "silver" || o.liner === RAINBOW_LINER.id) ? { liner: o.liner } : k.id === "cupcakes" && typeof o.liner === "string" && HEX.test(o.liner) ? { liner: o.liner.toUpperCase() } : {}),
     });
   }
   return out;

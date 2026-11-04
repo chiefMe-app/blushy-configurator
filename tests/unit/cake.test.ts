@@ -9,7 +9,7 @@ import {
   CAKE_BOARD, CART_BOARD, CAKE_STAND, cakeViews, holderOf, topperColour,
   CAKE_FIGURES, CAKE_STYLES, FIGURE_PRICE, MAX_CAKE_DECOS, MAX_CAKE_FIGURES, RAINBOW_PRICE, THEME_CAKE_CUTOUTS, THEME_CAKE_FIGURES, TOPPER_PRICE,
   addItem, cakeDesigns, cakeFiguresFor, cakePriceLines, cakeRenderKey, cakeStack, cakeTotal, defaultCake, figureKind, figurePicture, itemAt, placeItem,
-  readCake, roomFor, tierColours, tierPicture, type Cake, type CakeFigure, type CakeItem,
+  plainCake, readCake, roomFor, tierColours, tierPicture, type Cake, type CakeFigure, type CakeItem,
 } from "@/lib/studio/cake";
 import { cakePrompt } from "@/lib/studio/cakeRender";
 import {
@@ -32,6 +32,10 @@ const onTop = (id: CakeFigure, x = 0): CakeItem => ({ id, on: "top", x, y: 0.4, 
 const seed = { themeId: "unicorn", themeName: "Unicorn", name: "Olivia", age: "6", colours: ["#F8BBD0", "#FEF08A", "#BBF7D0"] };
 
 describe("cake", () => {
+  it("opens as the plain white cake (2026-11-04, the owner: \"cake plain white default gelsin\")", () => {
+    expect(plainCake(seed)).toMatchObject({ enabled: true, design: "plain", tiers: 1, figures: [], topper: { on: false } });
+    expect(tierColours(plainCake(seed))).toEqual(["#FFFFFF"]);
+  });
   it("starts as the theme's first design: one smooth tier in its colour, its figure, the name and age on a topper", () => {
     const k = defaultCake(seed);
     expect(k).toMatchObject({ enabled: true, design: "classic", tiers: 1, style: "smooth", figures: [{ id: "unicorn", on: "top", x: 0 }], flavour: "vanilla",
@@ -366,10 +370,15 @@ describe("the sweets beside the cake", () => {
     expect(cakePrompt(k())).toMatch(/cupcakes in gold foil liners/);
     expect(cakePrompt(k("silver"))).toMatch(/cupcakes in shiny silver foil liners/);
     expect(cakePrompt(k("#F8BBD0"))).toMatch(/cupcakes in pink paper liners/);
+    // Rainbow confetti paper (2026-11-04, the owner: "rainbow liners'ta güzelmiş, onu da ekleyelim"); bare without sprinkles.
+    expect(readSweets([{ ...cup, liner: "rainbow" }])![0].liner).toBe("rainbow");
+    expect(cakePrompt(k("rainbow"))).toMatch(/cupcakes in white paper liners printed all over with tiny rainbow confetti dots, each with/);
+    expect(cakePrompt(k(), "cupcakes")).toMatch(/with no sprinkles on them at all/);
+    expect(cakePrompt({ ...k(), sweets: [{ ...cup, sprinkles: true }, { id: "cookies", count: 6, colour: "#FFFFFF" }] }, "cupcakes")).toMatch(/the iced cookies beside them, every one of them kept/);
     expect(cakeRenderKey(k("#F8BBD0"), "unicorn")).not.toBe(cakeRenderKey(k(), "unicorn"));
   });
 
-  it("prints a cookie's picture as big as its face", () => {
+  it("prints a cookie's picture as big as its face, the back ones too", () => {
     // 2026-11-03 (the owner: "cookies'de daha büyümeli şekiller, o yuvarlak büyüklüğünde olsun, taşmasın").
     const k: Cake = { ...defaultCake(seed), sweets: [{ id: "cookies", count: 12, colour: "#FFFFFF", print: "rainbow" }] };
     expect(cakePrompt(k, "cookies")).toMatch(/each printed with a big rainbow filling its iced face nearly to the edge but never over it/);
@@ -382,6 +391,8 @@ describe("the sweets beside the cake", () => {
       expect(p.x + p.w / 2).toBeLessThanOrEqual(1);
     }
     expect(SWEET_SPOTS.cookies!.length).toBe(6);
+    // Every face about as wide as the front ones' (2026-11-04, the owner: "arkadakilerin üstündeki rainbowlar küçülmüş").
+    for (const p of SWEET_SPOTS.cookies!) expect(p.w).toBeGreaterThan(0.36);
   });
 });
 

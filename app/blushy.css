@@ -1359,6 +1359,22 @@ div.bz-stale-banner { cursor: default; }
 /* The room photo whole, as tall as 640 px at most: as wide as that lets it. */
 .bz-pn-art { width: 100%; max-width: 556px; height: auto; display: block; margin: 0 auto; }
 .bz-ck-art { width: 100%; max-width: 556px; height: auto; display: block; margin: 0 auto; }
+/* The hand showing the drag (2026-11-04): over the picture, at its first piece, gone at her first touch. */
+.bz-ck-stage { position: relative; max-width: 556px; margin: 0 auto; }
+.bz-ck-coach { position: absolute; width: 1px; height: 1px; pointer-events: none; z-index: 2; }
+.bz-ck-coach .ring { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--bz-pink); background: rgba(255, 255, 255, .35); animation: bz-ck-ring 1.6s ease-out infinite; }
+.bz-ck-coach .hand { position: absolute; left: -6px; top: 4px; font-size: 34px; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .3)); animation: bz-ck-drag 1.6s ease-in-out infinite; }
+.bz-ck-coach .bubble { position: absolute; left: -88px; width: 176px; top: 46px; text-align: center; white-space: nowrap; background: var(--bz-pink); color: #fff; font: 400 17px var(--bz-hand); padding: 5px 10px 6px; border-radius: 16px; box-shadow: 0 4px 12px rgba(233, 30, 99, .3); animation: bz-ck-bob 1.6s ease-in-out infinite; }
+.bz-ck-coach .bubble.from-left { left: -14px; border-top-left-radius: 4px; }
+.bz-ck-coach .bubble.from-right { left: -162px; border-top-right-radius: 4px; }
+@keyframes bz-ck-drag { 0%, 15% { transform: translate(0, 0); } 50%, 60% { transform: translate(34px, -10px); } 95%, 100% { transform: translate(0, 0); } }
+@keyframes bz-ck-ring { 0% { transform: scale(.7); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+@keyframes bz-ck-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .bz-ck-coach .ring, .bz-ck-coach .hand, .bz-ck-coach .bubble { animation: none; } }
+.bz-ck-tips { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 10px 0 0; padding: 0; }
+.bz-ck-tips li { background: #fff5f9; border: 1px solid #f6cfe0; border-radius: 999px; padding: 6px 12px; font: 400 13.5px var(--bz-sans); color: var(--bz-ink, #2b1a24); }
+.bz-ck-tips li b { color: var(--bz-pink); }
+.bz-ck-tips li i { font-style: normal; }
 /* The cake's views (2026-11-03): the whole table or cart, or a close-up of the cake or a sweet. */
 .bz-ck-views { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
 .bz-ck-views button { border: 1px solid #f1dbe5; background: #fff; border-radius: 999px; padding: 6px 12px; font: 700 12px var(--bz-sans); color: var(--bz-muted); cursor: pointer; }
