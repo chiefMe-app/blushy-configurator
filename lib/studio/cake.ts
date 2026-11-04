@@ -297,7 +297,9 @@ function unicornDesigns(base: { topper: CakeTopper; flavour: CakeFlavour }, topp
     { id: "face", name: "Unicorn face", note: "Sleepy eyes, a flower mane, the name on the board", cake: { ...base, design: "face", tiers: 2 as const, style: "smooth" as const, colours: [pink, WHITE, b],
       topper: { ...topper, at: "board" as const },
       figures: [{ id: "unicorn" as const, on: "top" as const, x: 0, y: 0.1, s: 1.55 }, side("unicorn-lashes", 0, up(high, 0.42), 0.24),
-        side("flower-mane", 0.34, up(high, 0.5), 1.4), side("rainbow", 0, up(low, 0.45), 0.95)] } },
+        // The mane down the bottom tier's left side, off the face (2026-11-04, the owner: "çiçekler unicorn'un suratında
+        // geliyor … örnekte koyduğum yere koy").
+        side("flower-mane", -0.37, up(low, 0.5), 1.65), side("rainbow", 0.05, up(low, 0.45), 0.95)] } },
     { id: "sweet", name: "Sugar unicorns", note: "A sitting unicorn on top, one peeking over, a rainbow", cake: { ...base, design: "sweet", tiers: 2 as const, style: "smooth" as const, colours: [pink, "#BBF7D0", b],
       topper: { ...topper, at: "front" as const, y: Math.round(up(low, 0.38) * 100) / 100 },
       figures: [{ id: "sugar-unicorn" as const, on: "top" as const, x: -0.05, y: 0.35, s: 1.35 }, { id: "star" as const, on: "top" as const, x: 0.36, y: 0.2, s: 0.42 },

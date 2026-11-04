@@ -127,10 +127,10 @@ export function FinishBar({ done, what, next, onFinish, onSkipAhead, onSkip, tes
       {unrendered && (
         <div className="render" data-testid={`${testId}-render`}>
           <span className="bz-decor-first">{render.stale
-            ? <>You changed it since your render — <b>Regenerate</b> to finalize this design.</>
-            : waiting ? <>First <b>Generate render</b> to see your final design.</> : <><b>Generate render</b> to see your final design.</>}</span>
+            ? <>You changed it since its photo — <b>make a new photo</b> to finalize this design.</>
+            : waiting ? <>First <b>Make it a real photo</b> to see your final design.</> : <><b>Make it a real photo</b> to see your final design.</>}</span>
           <button type="button" className="bz-decor-hint" onClick={render.onGenerate} disabled={render.loading} data-testid={`${testId}-generate`}>
-            {render.loading ? "Generating…" : render.stale ? "Regenerate render ✨" : "Generate render ✨"}
+            {render.loading ? "Making the photo…" : render.stale ? "Make a new photo ✨" : "Make it a real photo ✨"}
           </button>
           {render.error && <span className="error" role="alert">{render.error}</span>}
         </div>
@@ -143,7 +143,7 @@ export function FinishBar({ done, what, next, onFinish, onSkipAhead, onSkip, tes
           </button>
         )}
         {onSkipAhead && <SkipAhead onClick={onSkipAhead} testId={`${testId}-to-welcome`} disabled={waiting} />}
-        <button type="button" className="bz-next" data-testid={testId} onClick={onFinish} disabled={waiting} title={waiting ? "Generate your render first" : undefined}
+        <button type="button" className="bz-next" data-testid={testId} onClick={onFinish} disabled={waiting} title={waiting ? "Make its real photo first" : undefined}
           aria-label={done ? undefined : `Finalize the ${what} → ${next}`}>
           {done ? `Next: ${next} →` : <><span className="full">Finalize the {what} → {next}</span><span className="short" aria-hidden="true">Finalize → {next}</span></>}
         </button>

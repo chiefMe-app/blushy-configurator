@@ -9,7 +9,10 @@ import { fontWords, tableFont } from "./tableFonts";
 const TIER_NAMES: Record<number, string[]> = { 1: ["the cake"], 2: ["the bottom tier", "the top tier"], 3: ["the bottom tier", "the middle tier", "the top tier"] };
 // 2026-11-03 (the owner: "kötü bir render ışığı var, çok sarı, kaliteli durmuyor hiç … örnekteki ışık kalitesi iyi"):
 // a bakery's product photograph — bright, clean, white, sharp.
-const LIGHT = "Light it like a high-end bakery's product photograph: bright, clean, high-key white daylight from a large soft window, a true neutral white balance — whites stay pure white, never cream, ivory, beige, yellow or orange — gentle soft shadows, no sunbeams or patches of sunlight; crisp and sharp, every detail in focus, the colours fresh and clear.";
+// 2026-11-04 (the owner: "render'da ışık aşırı var, tasarım anlaşılmıyor"): still bright, but a balanced exposure that
+// keeps every colour and every piece of the decoration as clear as the preview (a "soft window light" test went grey
+// and dim, the white tier cream).
+const LIGHT = "Light it like a high-end bakery's product photograph: bright, even, soft daylight with a true neutral white balance — whites stay pure clean white, never cream, ivory, beige, grey, yellow or orange — and the wall behind as light as image 1's; a balanced exposure that never blows out: no glare, no haze or glow, no washed-out or faded colours, every colour as rich as image 1 shows it and every piece of the decoration crisp and easy to see; gentle soft shadows; no sunbeams, no patches of sunlight, no moody or dim light.";
 
 /** The words for the photograph: keep the scene, make it real. */
 export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
@@ -98,7 +101,7 @@ export function cakePrompt(k: Cake, view: CakeView = "whole"): string {
     cutSide.length ? `Keep the printed card cutouts stuck flat on the sides of the tiers exactly where image 1 has them: ${cutSide.join(", ")} — flat glossy printed card with a thin white cut edge.` : "",
     decos.length ? `Keep the small round decorations exactly where image 1 has them: ${decos.join(", ")} — real and shiny, on the top and round the foot of the cake.` : "",
     topper,
-    close ? "Keep whatever else shows at the edges of the picture as it is, softly out of focus."
+    close ? `Keep ${cart ? "the cart" : plinths ? "the plinth" : "the table and its cloth, the same colour"}, the wall and whatever else shows at the edges of the picture as image 1 has them, softly out of focus.`
       : sweets.length ? `${plinths ? "On the other plinths, each on its own," : `On the ${cart ? "cart's counter" : "table"} beside the cake`} keep the sweets exactly where image 1 has them: ${sweets.join("; ")} — the same places, sizes and colours, made real.` : "",
     cart ? `Keep the ${onBoard ? "cake board" : "white cake stand"} and the sweet cart exactly as image 1 has them — its white wooden counter, its turned posts, its wheel and ${roof}, the same colour —${balloons ? ` ${balloons} exactly as image 1 has it, the same balloons in the same places and colours, —` : ""} and the floor and the wall behind it; a soft shadow under the cake.`
       : plinths ? `Keep the ${onBoard ? "cake board" : "white cake stand"} and the five white round plinths exactly as image 1 has them — their sizes, heights and places — and the floor and the wall behind them; a soft shadow under the cake.`

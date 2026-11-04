@@ -15,34 +15,34 @@ const COPY = {
     after: " — your design is saved right after",
   },
   render: {
-    title: "Sign in to see your render",
-    lead: "Renders come with a free account. Sign in and your render starts right away — your design stays as it is.",
-    after: " — your render starts right after",
+    title: "Sign in to see your real photo",
+    lead: "Real photos come with a free account. Sign in and yours is made right away — your design stays as it is.",
+    after: " — your real photo is made right after",
   },
   "table-render": {
     title: "Sign in to see your table",
-    lead: "Renders come with a free account. Sign in and your table render starts right away — your design stays as it is.",
-    after: " — your render starts right after",
+    lead: "Real photos come with a free account. Sign in and your table's is made right away — your design stays as it is.",
+    after: " — your real photo is made right after",
   },
   "welcome-render": {
     title: "Sign in to see your welcome board",
-    lead: "Renders come with a free account. Sign in and your board's render starts right away — your design stays as it is.",
-    after: " — your render starts right after",
+    lead: "Real photos come with a free account. Sign in and your board's is made right away — your design stays as it is.",
+    after: " — your real photo is made right after",
   },
   "giveaways-render": {
     title: "Sign in to see your giveaways",
-    lead: "Renders come with a free account. Sign in and your giveaways' render starts right away — your design stays as it is.",
-    after: " — your render starts right after",
+    lead: "Real photos come with a free account. Sign in and your giveaways' is made right away — your design stays as it is.",
+    after: " — your real photo is made right after",
   },
   "pinata-render": {
     title: "Sign in to see your piñata",
-    lead: "Renders come with a free account. Sign in and your piñata's render starts right away — your design stays as it is.",
-    after: " — your render starts right after",
+    lead: "Real photos come with a free account. Sign in and your piñata's is made right away — your design stays as it is.",
+    after: " — your real photo is made right after",
   },
   "cake-render": {
     title: "Sign in to see your cake",
-    lead: "Renders come with a free account. Sign in and your cake's render starts right away — your design stays as it is.",
-    after: " — your render starts right after",
+    lead: "Real photos come with a free account. Sign in and your cake's is made right away — your design stays as it is.",
+    after: " — your real photo is made right after",
   },
 };
 

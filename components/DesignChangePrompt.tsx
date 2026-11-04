@@ -99,7 +99,7 @@ export default function DesignChangePrompt({
           if (result.renderEditPrompt) {
             const hadRender = !!finalUrl;
             setMessage({
-              text: hadRender ? "Applying style edit…" : "Saved — will apply to your next Final Render.",
+              text: hadRender ? "Applying style edit…" : "Saved — will apply to your next real photo.",
               type: "info",
             });
             // If no render exists yet, onRenderEdit stashes this and applies it
@@ -129,13 +129,13 @@ export default function DesignChangePrompt({
           // 2. Edit (or stash, if no render exists yet) to show the change visually
           if (result.renderEditPrompt) {
             const hadRender = !!finalUrl;
-            setMessage({ text: hadRender ? "Applying balloon placement…" : "Saved — will apply to your next Final Render.", type: "info" });
+            setMessage({ text: hadRender ? "Applying balloon placement…" : "Saved — will apply to your next real photo.", type: "info" });
             try {
               await onRenderEdit(result.renderEditPrompt);
               setMessage({
                 text: hadRender
                   ? `${result.summary} Added as a design instruction and visual edit. Exact production count is saved in the design specs.`
-                  : `${result.summary} Saved for your next Final Render. Exact production count is saved in the design specs.`,
+                  : `${result.summary} Saved for your next real photo. Exact production count is saved in the design specs.`,
                 type: "success",
               });
             } catch {

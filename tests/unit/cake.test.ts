@@ -32,6 +32,17 @@ const onTop = (id: CakeFigure, x = 0): CakeItem => ({ id, on: "top", x, y: 0.4, 
 const seed = { themeId: "unicorn", themeName: "Unicorn", name: "Olivia", age: "6", colours: ["#F8BBD0", "#FEF08A", "#BBF7D0"] };
 
 describe("cake", () => {
+  it("puts the unicorn face's flower mane down the bottom tier's left, off its face", () => {
+    // 2026-11-04 (the owner: "çiçekler unicorn'un suratında geliyor … örnekte koyduğum yere koy").
+    const face = cakeDesigns(seed).find((d) => d.id === "face")!.cake;
+    const mane = face.figures.find((f) => f.id === "flower-mane")!;
+    const st = cakeStack(face);
+    expect(mane).toMatchObject({ on: "side" });
+    expect(mane.x).toBeLessThan(-0.3);
+    const mid = st.base - mane.y * (st.base - st.top);
+    expect(mid).toBeGreaterThan(st.tiers[0].top); // on the bottom tier
+  });
+
   it("opens as the plain white cake (2026-11-04, the owner: \"cake plain white default gelsin\")", () => {
     expect(plainCake(seed)).toMatchObject({ enabled: true, design: "plain", tiers: 1, figures: [], topper: { on: false } });
     expect(tierColours(plainCake(seed))).toEqual(["#FFFFFF"]);
@@ -152,7 +163,7 @@ describe("cake", () => {
     expect(p).toContain("stuck flat on the sides of the tiers exactly where image 1 has them: heart ×2");
     expect(p).toContain('reading "Olivia" and "6"');
     // The light (2026-11-03, the owner: "çok sarı, kaliteli durmuyor hiç"): clean white, and the tiers counted.
-    expect(p).toMatch(/never cream, ivory, beige, yellow or orange/);
+    expect(p).toMatch(/never cream, ivory, beige, grey, yellow or orange.*a balanced exposure that never blows out/);
     expect(p).toMatch(/exactly two tiers stacked, never more and never fewer/);
     expect(cakePrompt({ ...k, topper: { ...k.topper, on: false } })).not.toContain("topper");
     expect(cakePrompt({ ...k, figures: [] })).not.toContain("sugar-paste figures");

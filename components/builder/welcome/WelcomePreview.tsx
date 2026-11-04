@@ -32,15 +32,15 @@ export default function WelcomePreview({ config, render, onGenerate }: { config:
         <span className="title">✦ Your welcome board</span>
         {render.url && (
           <div className="views" role="tablist" aria-label="Welcome board view">
-            <button type="button" role="tab" aria-selected={!showRender} className={!showRender ? "on" : ""} onClick={() => setLive(true)}>Live</button>
-            <button type="button" role="tab" aria-selected={showRender} className={showRender ? "on" : ""} onClick={() => setLive(false)}>Render</button>
+            <button type="button" role="tab" aria-selected={!showRender} className={!showRender ? "on" : ""} onClick={() => setLive(true)}>Design</button>
+            <button type="button" role="tab" aria-selected={showRender} className={showRender ? "on" : ""} onClick={() => setLive(false)}>Real photo ✨</button>
           </div>
         )}
       </div>
       {b?.enabled ? <>
         <link rel="stylesheet" href="/fonts/typography/fonts.css" />
         {showRender ? <>
-          <ZoomPhoto testId="welcome-render" src={render.url!} alt="Your welcome board, rendered" />
+          <ZoomPhoto testId="welcome-render" src={render.url!} alt="Your welcome board, as a real photo" />
           {/* The live picture stays in the page, out of sight, for a new render of it to be taken from (Regenerate). */}
           <div className="bz-live-hidden" aria-hidden="true"><div className="bz-wb-wait">{art}</div></div>
         </> : (
@@ -49,7 +49,7 @@ export default function WelcomePreview({ config, render, onGenerate }: { config:
             {render.loading && (
               <div className="veil" role="status" data-testid="welcome-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>
-                <b>Rendering your board</b>
+                <b>Making a real photo of your board</b>
                 <span>From this preview — about 15 seconds.</span>
               </div>
             )}
@@ -59,7 +59,7 @@ export default function WelcomePreview({ config, render, onGenerate }: { config:
         {backTo !== null && <button type="button" className="bz-tb-back" data-testid="welcome-back-to-choices" onClick={back}>↑ Back to your choices</button>}
         {!render.ready && !render.loading && (
           <div className="bz-tb-render" data-testid="welcome-render-box">
-            <button type="button" className="bz-next" onClick={onGenerate}>{render.stale ? "Regenerate render ✨" : "Generate render ✨"}</button>
+            <button type="button" className="bz-next" onClick={onGenerate}>{render.stale ? "Make a new photo ✨" : "Make it a real photo ✨"}</button>
             <p className="hint">{render.stale ? "You changed the board since your render." : "This preview made into one photo-real picture."} Needs a free account.</p>
             {render.error && <p className="error" role="alert">{render.error}</p>}
           </div>

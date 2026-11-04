@@ -253,7 +253,8 @@ export default function ConfigurePage() {
   });
   // The cake (2026-11-03): on its stand, close up, rendered as the piñata is.
   // 2026-11-03: the whole table or cart, or a close-up of the cake or a sweet — each its own render.
-  const [cakeViewPicked, setCakeView] = useState<CakeView>("whole");
+  // It opens on the cake close up (2026-11-04, the owner: "cake yakın görüntü açılsın ilk").
+  const [cakeViewPicked, setCakeView] = useState<CakeView>("cake");
   // Away from the cake part (the finished designs show it), the whole picture.
   const cakeView: CakeView = step === 2 && decorPart === "cake" && config.cake?.enabled && cakeViews(config.cake).includes(cakeViewPicked) ? cakeViewPicked : "whole";
   const cakeKey = config.cake?.enabled ? cakeRenderKey(config.cake, config.theme, cakeView) : "";
@@ -775,7 +776,7 @@ export default function ConfigurePage() {
                 // 2026-10-23: the theme's example photo of the selected setup shows until a render exists.
                 emptyArt={isDecorStep ? THEME_SETUP_PREVIEW[config.theme]?.[inferSetupLayoutTemplateIdFromBackdropItems(config.decor.backdropItems) ?? ""] : undefined}
                 emptyArtLabel={`${themeById(config.theme)?.name ?? "Theme"} example.`}
-                emptyArtNote={isDecorStep && decorTab === 3 ? "Your render will update after generation to show your selected extras." : undefined}
+                emptyArtNote={isDecorStep && decorTab === 3 ? "Your real photo will show your selected extras once a new one is made." : undefined}
                 // 2026-10-24: from Style on, a live sketch of the choices (not a render).
                 // 2026-11-01: from the Backdrop tab too — the owner, on Unicorn's empty
                 // preview: "preview olarak görmek gerekiyor backdrop seçince". A theme's
@@ -787,7 +788,7 @@ export default function ConfigurePage() {
               {isDecorStep && !onTable && !onWelcome && !onGiveaways && !onPinata && !onCake && !finalRenderState.hasRender && (
                 <div className="bz-little-note">
                   <svg viewBox="0 0 35 28" aria-hidden="true"><path d="M3 4Q6 23 29 16M21 11L30 16L23 23" /></svg>
-                  <span>See it for real: tap <b>Generate render</b> on the Extras tab — your backdrop is finalized with its render.</span>
+                  <span>See it for real: tap <b>Make it a real photo</b> on the Extras tab — your backdrop is finalized with its real photo.</span>
                 </div>
               )}
               </div>

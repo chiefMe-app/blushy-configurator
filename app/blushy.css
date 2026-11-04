@@ -1239,7 +1239,16 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-option em { font-style: normal; font-size: 10.5px; font-weight: 800; color: var(--bz-pink); margin-top: 2px; }
 .bz-tb-item .bz-ts-swatches { margin-top: 10px; }
 .bz-tb-floor { margin: 0; font-size: 13px; color: var(--bz-muted); }
-.bz-tb-section > h2 { margin: 18px 4px 9px; font: 800 11px var(--bz-sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bz-pink); }
+/* Each part's sections as the welcome page's steps (2026-11-04, the owner: "bu yazılar çok sıkıcı … ilk sayfadaki ruhu
+   yakala"): a number in one of its pastel rounds, the title in the hand, its word picked out in pink on a yellow swash. */
+:has(> section.bz-tb-section) { counter-reset: bz-sec; }
+.bz-tb-section > h2 { margin: 26px 4px 2px; font: 400 25px/1.25 var(--bz-hand); letter-spacing: -0.4px; color: var(--bz-ink); }
+.bz-tb-section > h2::before { counter-increment: bz-sec; content: counter(bz-sec); width: 36px; height: 36px; margin: -4px 11px 0 0; vertical-align: middle; border-radius: 50%; display: inline-grid; place-items: center; font: 700 15px var(--bz-sans); letter-spacing: 0; color: #22181a; background: #ffe4f0; transform: rotate(-4deg); }
+section.bz-tb-section:nth-of-type(4n + 2) > h2::before { background: #d7f2ff; transform: rotate(3deg); }
+section.bz-tb-section:nth-of-type(4n + 3) > h2::before { background: #fff3ac; transform: rotate(-2deg); }
+section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transform: rotate(4deg); }
+.bz-tb-section > h2 em { font-style: normal; color: var(--bz-pink); background: linear-gradient(transparent 62%, #fff3ac 62%, #fff3ac 90%, transparent 90%); padding: 0 3px; }
+.bz-tb-section > h2 + .bz-tb-sub { margin: 0 4px 12px 51px; font-size: 13.5px; color: var(--bz-muted); }
 /* The customer's words, printed on the placemat pictures. */
 /* The placemat words sit in the bottom-right corner, like the owner's reference ("Fakhra's 4th birthday"). */
 .bz-tb-option .art .words { position: absolute; right: 6%; bottom: 7%; max-width: 80%; text-align: right; font: 600 calc(clamp(7px, 0.75vw, 11px) * var(--fscale, 1))/1.1 Georgia, "Times New Roman", serif; letter-spacing: 0.04em; text-transform: uppercase; color: #7a86d1; text-shadow: 0 1px 0 rgba(255,255,255,0.8); overflow-wrap: anywhere; pointer-events: none; }
@@ -1360,7 +1369,7 @@ div.bz-stale-banner { cursor: default; }
 .bz-pn-art { width: 100%; max-width: 556px; height: auto; display: block; margin: 0 auto; }
 .bz-ck-art { width: 100%; max-width: 556px; height: auto; display: block; margin: 0 auto; }
 /* The hand showing the drag (2026-11-04): over the picture, at its first piece, gone at her first touch. */
-.bz-ck-stage { position: relative; max-width: 556px; margin: 0 auto; }
+.bz-ck-stage { position: relative; width: 100%; max-width: 556px; margin: 0 auto; }
 .bz-ck-coach { position: absolute; width: 1px; height: 1px; pointer-events: none; z-index: 2; }
 .bz-ck-coach .ring { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--bz-pink); background: rgba(255, 255, 255, .35); animation: bz-ck-ring 1.6s ease-out infinite; }
 .bz-ck-coach .hand { position: absolute; left: -6px; top: 4px; font-size: 34px; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .3)); animation: bz-ck-drag 1.6s ease-in-out infinite; }

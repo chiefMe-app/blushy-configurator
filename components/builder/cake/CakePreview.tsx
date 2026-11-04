@@ -615,7 +615,8 @@ export default function CakePreview({ config, setCake, render, onGenerate, view 
   const showRender = !!render.url && !live;
   // Views to choose from when there is more than the cake to see: the sweets beside it, or the cart.
   const views = k?.enabled ? cakeViews(k) : [];
-  const choose = k?.enabled && setView && (views.length > 2 || !!k.cart || !!k.plinths) ? setView : undefined;
+  // Always the whole scene and the cake (2026-11-04: it opens on the cake close up).
+  const choose = k?.enabled && setView ? setView : undefined;
   const rendered = (v: CakeView) => !!k && render.keys.includes(cakeRenderKey(k, config.theme, v));
   // A render of this view before a change (not of another view).
   const staleHere = !!k && !render.ready && render.keys.some((key) => (key.split(":")[1] ?? "whole") === view);
@@ -625,8 +626,8 @@ export default function CakePreview({ config, setCake, render, onGenerate, view 
         <span className="title">✦ Your cake</span>
         {render.url && (
           <div className="views" role="tablist" aria-label="Cake view">
-            <button type="button" role="tab" aria-selected={!showRender} className={!showRender ? "on" : ""} onClick={() => setLive(true)}>Live</button>
-            <button type="button" role="tab" aria-selected={showRender} className={showRender ? "on" : ""} onClick={() => setLive(false)}>Render</button>
+            <button type="button" role="tab" aria-selected={!showRender} className={!showRender ? "on" : ""} onClick={() => setLive(true)}>Design</button>
+            <button type="button" role="tab" aria-selected={showRender} className={showRender ? "on" : ""} onClick={() => setLive(false)}>Real photo ✨</button>
           </div>
         )}
       </div>
@@ -635,13 +636,13 @@ export default function CakePreview({ config, setCake, render, onGenerate, view 
           <div className="bz-ck-views" role="tablist" aria-label="What the picture shows" data-testid="cake-views">
             {views.map((v) => (
               <button key={v} type="button" role="tab" aria-selected={view === v} className={view === v ? "on" : ""} onClick={() => { setPicked(null); choose(v); }}>
-                {viewName(k, v)}{rendered(v) && <i aria-label="rendered"> ✨</i>}
+                {viewName(k, v)}{rendered(v) && <i aria-label="has a real photo"> ✨</i>}
               </button>
             ))}
           </div>
         )}
         {showRender ? <>
-          <ZoomPhoto testId="cake-render" src={render.url!} alt="Your cake, rendered" />
+          <ZoomPhoto testId="cake-render" src={render.url!} alt="Your cake, as a real photo" />
           {/* The live picture stays in the page, out of sight, for a new render of it to be taken from. */}
           <div className="bz-live-hidden" aria-hidden="true"><CakeArt k={k} className="bz-ck-art" view={view} themeId={config.theme} /></div>
         </> : <>
@@ -654,14 +655,14 @@ export default function CakePreview({ config, setCake, render, onGenerate, view 
               <div className="veil" role="status" data-testid="cake-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>
                 {/* What it is rendering (2026-11-03, the owner: "rendering your sweet desin"). */}
-                <b>Rendering your {view === "whole" ? (k.sweets?.length ? "cake & sweets" : "cake") : view === "cake" ? "cake" : viewName(k, view).toLowerCase()}</b>
+                <b>Making a real photo of your {view === "whole" ? (k.sweets?.length ? "cake & sweets" : "cake") : view === "cake" ? "cake" : viewName(k, view).toLowerCase()}</b>
                 <span>From this preview — about 15 seconds.</span>
               </div>
             )}
           </div>
           {pick !== null && !render.loading && <PickedTools k={k} picked={pick} setCake={setCake} onPick={setPicked} />}
         </>}
-        <p className="note">{showRender ? "Your render — this picture, made into one photograph."
+        <p className="note">{showRender ? "Your real photo — this very design, made real."
           : <>{["", "One tier", "Two tiers", "Three tiers"][k.tiers]}, {cakeStyle(k.style).name.toLowerCase()} · {CAKE_FLAVOURS.find((f) => f.id === k.flavour)?.name} inside.
             {choose && view === "whole" && <> Tap the cake or a sweet to see it close up.</>}</>}</p>
         {!showRender && (k.figures.length > 0 || topperShows(k)) && (
@@ -673,8 +674,8 @@ export default function CakePreview({ config, setCake, render, onGenerate, view 
         {backTo !== null && <button type="button" className="bz-tb-back" data-testid="cake-back-to-choices" onClick={back}>↑ Back to your choices</button>}
         {!render.ready && !render.loading && (
           <div className="bz-tb-render" data-testid="cake-render-box">
-            <button type="button" className="bz-next" onClick={onGenerate}>{staleHere ? "Regenerate render ✨" : view === "whole" ? "Generate render ✨" : `Render the ${viewName(k, view).toLowerCase()} close up ✨`}</button>
-            <p className="hint">{staleHere ? "You changed the cake since your render." : view === "whole" ? "This preview made into one photo-real picture." : "This close-up made into one photo-real picture."} Needs a free account.</p>
+            <button type="button" className="bz-next" onClick={onGenerate}>{staleHere ? "Make a new photo ✨" : view === "whole" ? "Make it a real photo ✨" : `Make a real photo of the ${viewName(k, view).toLowerCase()} ✨`}</button>
+            <p className="hint">{staleHere ? "You changed the cake since its photo." : view === "whole" ? "This preview made into one photo-real picture." : "This close-up made into one photo-real picture."} Needs a free account.</p>
             {render.error && <p className="error" role="alert">{render.error}</p>}
           </div>
         )}

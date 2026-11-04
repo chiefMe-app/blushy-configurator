@@ -52,11 +52,11 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   // sign-in window, and no render asked for.
   await renderButton(page).click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByRole("heading", { name: "Sign in to see your render" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Sign in to see your real photo" })).toBeVisible();
   expect(guard.blocked.some((r) => r.url().includes("/api/generate-controlled-render"))).toBe(false);
   await dialog.getByLabel("Email").fill(FAKE_ACCOUNT.email);
   await dialog.getByRole("button", { name: "Email me a sign-in link" }).click();
-  await expect(dialog.getByRole("status")).toContainText("your render starts right after");
+  await expect(dialog.getByRole("status")).toContainText("your real photo is made right after");
   await page.goto("/account/callback?code=e2e-link"); // the emailed link
   // Back on the same design, and the render starts by itself → stand-in.
   await expect(page).toHaveURL(/\/builder$/);

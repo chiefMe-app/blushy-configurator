@@ -59,7 +59,13 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
     );
   }
 
-  const set = (patch: Partial<Cake>) => setCake({ ...k, ...patch });
+  // What she is designing is what the preview shows close up (2026-11-04, the owner: "neyin tasarımını yapıyorsa onun
+  // yakın görüntüsü açılsın"): the cake for the cake, the whole scene for where it is shown; a sweet's own (setSweet).
+  const set = (patch: Partial<Cake>) => {
+    setCake({ ...k, ...patch });
+    if ("cart" in patch || "plinths" in patch) setView?.("whole");
+    else if (!("sweets" in patch) && !("flavour" in patch)) setView?.("cake");
+  };
   const card = (on: boolean, pick: () => void, art: React.ReactNode, name: string, note: string, price: string, key: string) => (
     <button key={key} type="button" role="radio" aria-checked={on} className={`bz-tb-option ${on ? "on" : ""}`} onClick={pick}>
       {on && <span className="tick">✓</span>}
@@ -90,8 +96,9 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
     <div className="bz-tb" data-testid="cake">
       <link rel="stylesheet" href="/fonts/typography/fonts.css" />
       <section className="bz-tb-section" aria-label="The design">
-        <h2>The design</h2>
-        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>Start from one of these — then change anything below.</p>
+        {/* 2026-11-04 (the owner: "bu yazılar çok sıkıcı … ilk sayfadaki ruhu yakala"): titles to smile at. */}
+        <h2>Pick a <em>dream</em> design</h2>
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>Start from one of these — then make every bit of it yours ✨</p>
         <div className="bz-tb-item">
           <div className="bz-tb-options" role="radiogroup" aria-label="Cake design" data-testid="cake-design">
             {designs.map((d) => card(k.design === d.id, () => pickDesign(d), <CakeThumb k={{ ...d.cake, enabled: true, topper: designTopper(d) }} uid={`ck-d-${d.id}`} />,
@@ -101,7 +108,8 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
       </section>
 
       <section className="bz-tb-section" aria-label="Tiers">
-        <h2>Tiers</h2>
+        <h2>How <em>tall</em>?</h2>
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>One, two or three tiers of cake</p>
         <div className="bz-tb-item">
           <div className="bz-tb-options" role="radiogroup" aria-label="Tiers" data-testid="cake-tiers">
             {CAKE_TIERS.map((t) => card(k.tiers === t.n, () => set({ tiers: t.n }),
@@ -112,7 +120,8 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
       </section>
 
       <section className="bz-tb-section" aria-label="Decoration">
-        <h2>Decoration</h2>
+        <h2>Pipe it <em>pretty</em></h2>
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>How the buttercream is finished, tier by tier</p>
         <div className="bz-tb-item">
           <div className="bz-tb-options" role="radiogroup" aria-label="Decoration" data-testid="cake-style">
             {CAKE_STYLES.map((s) => card(k.style === s.id, () => set({ style: s.id }),
@@ -123,7 +132,8 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
       </section>
 
       <section className="bz-tb-section" aria-label="Colours">
-        <h2>Colours</h2>
+        <h2>Paint the <em>tiers</em></h2>
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>Any colour for each — or a rainbow 🌈</p>
         {TIER_NAMES[k.tiers].map((label, i) => {
           const c = k.colours[i] ?? "#FFFFFF";
           const now = rainbowOf(c) ? c : c.toUpperCase();
@@ -151,7 +161,8 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
       </section>
 
       <section className="bz-tb-section" aria-label="Sprinkles">
-        <h2>Sprinkles</h2>
+        <h2>A little <em>sparkle</em></h2>
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>Sprinkles on the cake — or none at all</p>
         <div className="bz-tb-item">
           <div className="bz-gv-contents" role="radiogroup" aria-label="Sprinkles" data-testid="cake-sprinkles">
             {CAKE_SPRINKLES.map((s) => {
@@ -168,7 +179,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
       </section>
 
       <section className="bz-tb-section" aria-label="On top">
-        <h2>On top</h2>
+        <h2>Figures &amp; <em>fun</em></h2>
         {/* 2026-11-03 (the owner: "sürükle bırak … duplicate … her yere yapıştırabilsin", up to 8). */}
         <p className="bz-tb-sub" style={{ fontWeight: 400 }} data-testid="cake-figures-note">
           Tap one to add it, then drag it anywhere on the cake, on top or on a tier.
@@ -198,7 +209,8 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
       </section>
 
       <section className="bz-tb-section" aria-label="Topper">
-        <h2>Topper</h2>
+        <h2>Their <em>name</em>, up in lights</h2>
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>The name and age — on top, on the front or on the board</p>
         <div className="bz-tb-item">
           <div className="bz-gv-contents" data-testid="cake-topper">
             <label className={k.topper.on ? "on" : ""}>
@@ -308,7 +320,8 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
       </section>
 
       <section className="bz-tb-section" aria-label="Flavour">
-        <h2>Flavour</h2>
+        <h2>The <em>yummy</em> inside</h2>
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>What hides under the buttercream</p>
         <div className="bz-tb-item">
           <div className="bz-gv-contents" role="radiogroup" aria-label="Flavour" data-testid="cake-flavour">
             {CAKE_FLAVOURS.map((f) => (
@@ -323,7 +336,7 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
 
       {/* 2026-11-03 (the owner: "cupcake, cookie, cake pops opsiyonları da olmalı … ve donut"): on the table beside the cake. */}
       <section className="bz-tb-section" aria-label="Sweets">
-        <h2>Sweets</h2>
+        <h2>Sweet <em>treats</em></h2>
         <p className="bz-tb-sub" style={{ fontWeight: 400 }}>{k.cart ? "On the cart's counter beside the cake" : k.plinths ? "Each on a plinth of its own beside the cake" : "On the table beside the cake"}, in your colours.</p>
         {CAKE_SWEETS.map((kind) => {
           const sw = k.sweets?.find((x) => x.id === kind.id);
@@ -402,7 +415,8 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
 
       {/* 2026-11-03 (the owner: "cake cart opsiyonu da olabilir"): the cake and the sweets on a white sweet cart. */}
       <section className="bz-tb-section" aria-label="Shown on">
-        <h2>Shown on</h2>
+        <h2>Where it <em>shines</em></h2>
+        <p className="bz-tb-sub" style={{ fontWeight: 400 }}>A table, a sweet cart or a row of plinths</p>
         <div className="bz-tb-item">
           <div className="bz-gv-contents" role="radiogroup" aria-label="Shown on" data-testid="cake-display">
             {[

@@ -349,7 +349,7 @@ test("G1 the giveaways: a themed box, its contents as a list, on a board in her 
   await page.getByTestId("finish-giveaways-generate").click();
   await expect(page.getByTestId("giveaways-render")).toBeVisible();
   // Rendered, it can be made again as it is (2026-11-03: "regenerate render çıkmıyor").
-  await expect(page.getByTestId("giveaways-render-again").getByRole("button", { name: /Regenerate render/ })).toBeVisible();
+  await expect(page.getByTestId("giveaways-render-again").getByRole("button", { name: /Make a new photo/ })).toBeVisible();
   const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/giveaway-render"))!.postData()!);
   expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
   expect(sent.giveaways).toMatchObject({ name: "Arya", place: "board", count: 30 });
@@ -436,7 +436,7 @@ test("P1 the piñata: the age in her colours or a theme shape, how it opens, wha
   await expect(page.getByTestId("finish-pinata")).toBeEnabled();
   await page.getByTestId("finish-pinata-generate").click();
   await expect(page.getByTestId("pinata-render")).toBeVisible();
-  await expect(page.getByTestId("pinata-render-again").getByRole("button", { name: /Regenerate render/ })).toBeVisible();
+  await expect(page.getByTestId("pinata-render-again").getByRole("button", { name: /Make a new photo/ })).toBeVisible();
   const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/pinata-render"))!.postData()!);
   expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
   expect(sent.pinata).toMatchObject({ kind: "shape", shape: "rocket", opening: "stick", number: "10" });
@@ -649,7 +649,7 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await expect(art).toHaveAttribute("data-view", "cookies");
   await views.getByRole("tab", { name: "Cake" }).click();
   await expect(art).toHaveAttribute("data-view", "cake");
-  await expect(page.getByTestId("cake-render-box").getByRole("button")).toHaveText(/Render the cake close up/);
+  await expect(page.getByTestId("cake-render-box").getByRole("button")).toHaveText(/Make a real photo of the cake/);
   await views.getByRole("tab", { name: "Whole cart" }).click();
   await expect(art).toHaveAttribute("data-view", "whole");
   // Three tiers stand on a flat board (the owner: "3 katlı olunca … ayaksızı olsun"); the name on the board, in any colour.
@@ -692,12 +692,12 @@ test("C1 the cake: a theme design or a plain one, its tiers, decoration, colours
   await expect.poll(async () => (await big.boundingBox())!.width).toBeGreaterThan(fitted * 2);
   await page.keyboard.press("Escape");
   await expect(zoom).toHaveCount(0);
-  await expect(page.getByTestId("cake-render-again").getByRole("button", { name: /Regenerate render/ })).toBeVisible();
+  await expect(page.getByTestId("cake-render-again").getByRole("button", { name: /Make a new photo/ })).toBeVisible();
   const sent = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/cake-render"))!.postData()!);
   expect(sent.preview).toMatch(/^data:image\/jpeg;base64,/);
   expect(sent.view).toBe("whole");
   // Made again while the render shows: still from the live picture.
-  await page.getByTestId("cake-render-again").getByRole("button", { name: /Regenerate render/ }).click();
+  await page.getByTestId("cake-render-again").getByRole("button", { name: /Make a new photo/ }).click();
   await expect.poll(() => guard.blocked.filter((r) => r.url().includes("/api/cake-render")).length).toBe(2);
   expect(JSON.parse(guard.blocked.filter((r) => r.url().includes("/api/cake-render"))[1].postData()!).preview).toMatch(/^data:image\/jpeg;base64,/);
   await expect(page.getByTestId("cake-render")).toBeVisible();

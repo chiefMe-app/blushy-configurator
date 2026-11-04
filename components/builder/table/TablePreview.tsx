@@ -65,7 +65,7 @@ export default function TablePreview({ config, render, onGenerate, placeShot }: 
           {tab("six", "Six places")}
           {tab("top", "Whole table")}
           {tab("perspective", "Perspective")}
-          {(render.url || render.loading) && tab("render", "Render")}
+          {(render.url || render.loading) && tab("render", "Real photo ✨")}
         </div>
       </div>
       {!table?.enabled ? (
@@ -82,14 +82,14 @@ export default function TablePreview({ config, render, onGenerate, placeShot }: 
               {shown === "render" && (
                 <div className="veil" role="status" data-testid="table-render-wait">
                   <span className="dots" aria-hidden="true"><i /><i /><i /></span>
-                  <b>Rendering one place from above</b>
+                  <b>Making a real photo of one place from above</b>
                   <span>From this place as you designed it — about 10 seconds.</span>
                 </div>
               )}
             </div>
           )}
           <p className="note">
-            {shown === "render" ? (render.url ? <>Your render — this place from above, as a real photo.</> : <>Your render is on its way.</>)
+            {shown === "render" ? (render.url ? <>Your real photo — this place from above.</> : <>Your real photo is on its way.</>)
               : shown === "place" ? <>One place from above, made from photos of each piece — your colours and words show straight away.</>
               : shown === "six" ? <>Six places, a part of the table, from above.</>
               : shown === "top" ? <>From above, to scale · {tableCounts(table).tables} table{tableCounts(table).tables > 1 ? "s" : ""} · {table.kids} kids — a drawing, not a photo.</>
@@ -101,7 +101,7 @@ export default function TablePreview({ config, render, onGenerate, placeShot }: 
           )}
           {!render.ready && !render.loading && (
             <div className="bz-tb-render" data-testid="table-render-box">
-              <button type="button" className="bz-next" onClick={onGenerate}>{render.stale ? "Regenerate render ✨" : "Generate render ✨"}</button>
+              <button type="button" className="bz-next" onClick={onGenerate}>{render.stale ? "Make a new photo ✨" : "Make it a real photo ✨"}</button>
               <p className="hint">{render.stale ? "You changed the table since your render." : "A photo-real top view of this place, exactly as you designed it."} Needs a free account.</p>
               {render.error && <p className="error" role="alert">{render.error}</p>}
             </div>

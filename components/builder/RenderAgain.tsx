@@ -6,8 +6,8 @@ export default function RenderAgain({ render, onGenerate, testId }: { render: Pi
   if (!render.ready || render.loading) return null;
   return (
     <div className="bz-tb-render again" data-testid={testId}>
-      <button type="button" className="bz-back" onClick={onGenerate}>Regenerate render ✨</button>
-      <p className="hint">Not quite right? A new render of this same design.</p>
+      <button type="button" className="bz-back" onClick={onGenerate}>Make a new photo ✨</button>
+      <p className="hint">Not quite right? A new photo of this same design.</p>
       {render.error && <p className="error" role="alert">{render.error}</p>}
     </div>
   );

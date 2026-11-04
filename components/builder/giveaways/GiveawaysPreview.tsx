@@ -145,15 +145,15 @@ export default function GiveawaysPreview({ config, render, onGenerate }: { confi
         <span className="title">✦ Your giveaways</span>
         {render.url && (
           <div className="views" role="tablist" aria-label="Giveaways view">
-            <button type="button" role="tab" aria-selected={!showRender} className={!showRender ? "on" : ""} onClick={() => setLive(true)}>Live</button>
-            <button type="button" role="tab" aria-selected={showRender} className={showRender ? "on" : ""} onClick={() => setLive(false)}>Render</button>
+            <button type="button" role="tab" aria-selected={!showRender} className={!showRender ? "on" : ""} onClick={() => setLive(true)}>Design</button>
+            <button type="button" role="tab" aria-selected={showRender} className={showRender ? "on" : ""} onClick={() => setLive(false)}>Real photo ✨</button>
           </div>
         )}
       </div>
       {g?.enabled ? <>
         <link rel="stylesheet" href="/fonts/typography/fonts.css" />
         {showRender ? <>
-          <ZoomPhoto testId="giveaways-render" src={render.url!} alt="Your giveaways, rendered" />
+          <ZoomPhoto testId="giveaways-render" src={render.url!} alt="Your giveaways, as a real photo" />
           {/* The live picture stays in the page, out of sight, for a new render of it to be taken from (Regenerate). */}
           <div className="bz-live-hidden" aria-hidden="true"><div className="bz-wb-wait">{art}</div></div>
         </> : (
@@ -162,20 +162,20 @@ export default function GiveawaysPreview({ config, render, onGenerate }: { confi
             {render.loading && (
               <div className="veil" role="status" data-testid="giveaways-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>
-                <b>Rendering your giveaways</b>
+                <b>Making a real photo of your giveaways</b>
                 <span>From this preview — about 15 seconds.</span>
               </div>
             )}
           </div>
         )}
-        <p className="note">{showRender ? "Your render — this picture, made into one photograph."
+        <p className="note">{showRender ? "Your real photo — this very design, made real."
           : onTable ? `One box at each place — ${g.count} in all. What's inside is listed under the choices.`
           : g.count > BOARD_SHOWS ? `Your board holds ${BOARD_SHOWS} boxes — the other ${g.count - BOARD_SHOWS} are kept beside it, and the shelves are filled up again as they go.`
           : `Your board — all ${g.count} of your boxes on its shelves.`}</p>
         {backTo !== null && <button type="button" className="bz-tb-back" data-testid="giveaways-back-to-choices" onClick={back}>↑ Back to your choices</button>}
         {!render.ready && !render.loading && (
           <div className="bz-tb-render" data-testid="giveaways-render-box">
-            <button type="button" className="bz-next" onClick={onGenerate}>{render.stale ? "Regenerate render ✨" : "Generate render ✨"}</button>
+            <button type="button" className="bz-next" onClick={onGenerate}>{render.stale ? "Make a new photo ✨" : "Make it a real photo ✨"}</button>
             <p className="hint">{render.stale ? "You changed the giveaways since your render." : "This preview made into one photo-real picture."} Needs a free account.</p>
             {render.error && <p className="error" role="alert">{render.error}</p>}
           </div>

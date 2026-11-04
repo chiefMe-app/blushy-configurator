@@ -271,7 +271,7 @@ export async function signIn(page: Page) {
  * footer is hidden; the first of the two on phones. Gone once the render is in
  * (the card then offers "Regenerate").
  */
-export const renderButton = (page: Page) => page.getByRole("button", { name: /^Generate render/ }).first();
+export const renderButton = (page: Page) => page.getByRole("button", { name: /^Make it a real photo/ }).first();
 
 /** The request body the UI sends when Generate render is pressed. */
 export async function captureRenderBody(page: Page, guard: Guard): Promise<Record<string, unknown>> {

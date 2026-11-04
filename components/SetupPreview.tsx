@@ -1239,7 +1239,7 @@ export type FinalRenderState = { hasRender: boolean; isStale: boolean; generatin
 export default function SetupPreview({
   config, status, imageUrl, isIncremental = false, onRegenerate, showControls = true,
   onPatchDecor, onFinalRenderStateChange, onGenerateReady, onSignInNeeded, onRenderStored, emptyArt, emptyArtLabel = "Example.",
-  emptyArtNote = "Your own render, with your exact choices, appears here after you generate it.",
+  emptyArtNote = "Your own real photo, with your exact choices, appears here once it is made.",
   sketchFirst = false, sketchActiveId = null, sketchCutouts = [],
 }: {
   config: BuilderConfig; status: PreviewStatus; imageUrl: string | null;
@@ -1387,7 +1387,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             <img
               key={finalKey}
               src={finalUrl}
-              alt="Final design render"
+              alt="Final design photo"
               onLoad={(e) => {
                 const el = e.currentTarget;
                 if (el.naturalWidth > 0 && el.naturalHeight > 0) {
@@ -1441,7 +1441,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             showControls
               ? <button type="button" className="bz-stale-banner" onClick={generateFinalRender}
                   disabled={config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}>
-                  <span aria-hidden="true">✦</span> {showSketch ? "Live sketch of your changes — tap to regenerate the render" : "Your design changed — tap to regenerate the preview"}
+                  <span aria-hidden="true">✦</span> {showSketch ? "Live sketch of your changes — tap to make a new photo" : "Your design changed — tap to regenerate the preview"}
                 </button>
               : <div className="bz-stale-banner" role="status"><span aria-hidden="true">✦</span> Your design changed — regenerate to see it</div>
           )}
@@ -1450,7 +1450,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
             <div className="bz-sketch-toggle" role="group" aria-label="What the preview shows">
               <button type="button" aria-pressed={showSketch} className={showSketch ? "on" : ""} onClick={() => setViewPick("sketch")}>✏️ Live sketch</button>
               <button type="button" aria-pressed={!showSketch} className={!showSketch ? "on" : ""} onClick={() => setViewPick("picture")}>
-                {finalUrl ? "✨ Render" : "⭐ Example"}
+                {finalUrl ? "✨ Real photo" : "⭐ Example"}
               </button>
             </div>
           )}
@@ -1462,7 +1462,7 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
           {finalStatus === "error" && (
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 px-3 py-2" style={{ background: "rgba(39,22,23,.72)" }}>
               {/* 2026-10-26: a render limit says so — and Retry would only be refused again. */}
-              <span className="text-[11px] text-white" data-testid="render-error">{limitMessage ?? "Render unavailable"}</span>
+              <span className="text-[11px] text-white" data-testid="render-error">{limitMessage ?? "Photo unavailable"}</span>
               {showControls && !limitFinal && (
                 <button type="button" onClick={generateFinalRender}
                         className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-medium text-white">
@@ -1477,8 +1477,8 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
           <p>
             <strong>Your party preview</strong><br />
             {finalUrl
-              ? (isStale ? "Your design changed — regenerate to see the update." : "Your render is ready. Keep customizing or continue to Package.")
-              : "Finish your decor, then generate a render to see your design. Text and graphics update after regeneration."}
+              ? (isStale ? "Your design changed — regenerate to see the update." : "Your real photo is ready. Keep customizing or continue to Package.")
+              : "Finish your decor, then make it a real photo to see your design. Text and graphics update when a new one is made."}
           </p>
           <div className="flex items-center gap-2">
             {(finalUrl || showSketch) && (
@@ -1494,9 +1494,9 @@ const { assets: cutoutAssets } = useCutoutAssets(config.theme, previewCutoutSize
                 disabled={finalIsLoading || config.decor.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}
               >
                 {finalIsLoading ? (
-                  <><span className="bz-spinner" aria-hidden="true" /><span>Generating…</span></>
+                  <><span className="bz-spinner" aria-hidden="true" /><span>Making the photo…</span></>
                 ) : (
-                  <><span>{isStale ? "Regenerate preview" : finalUrl ? "Regenerate" : "Generate render"}</span> ✨</>
+                  <><span>{isStale ? "Regenerate preview" : finalUrl ? "Regenerate" : "Make it a real photo"}</span> ✨</>
                 )}
               </button>
             )}

@@ -175,7 +175,7 @@ export default function MyDesigns() {
                       : isWelcome ? <WelcomeBoardArt board={c.welcomeBoard!} theme={theme} balloons={c.decor?.balloonColors} placeholders={false} />
                       : render
                         // eslint-disable-next-line @next/next/no-img-element
-                        ? <img className="render" src={render} alt="Your render of this design" data-testid="saved-render" />
+                        ? <img className="render" src={render} alt="Your real photo of this design" data-testid="saved-render" />
                         : <LiveSketch config={c} />}
                   </div>
                   <div className="body">

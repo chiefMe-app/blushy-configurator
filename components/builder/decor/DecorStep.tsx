@@ -21,7 +21,7 @@ export default function DecorStep(props: DecorStepProps) {
   const blocked = continueBlocked || !!props.needsRender;
   const finish = (
     <button type="button" className="bz-decor-cta" onClick={onContinue} disabled={blocked} data-testid="finish-backdrop"
-      title={continueBlocked ? "Pick your arch's size first" : props.needsRender ? "Generate your render first" : undefined}>
+      title={continueBlocked ? "Pick your arch's size first" : props.needsRender ? "Make its real photo first" : undefined}>
       <span className="full">Finalize the backdrop → Table setup</span><span className="short" aria-hidden="true">Finalize → Table setup</span>
     </button>
   );
@@ -84,13 +84,13 @@ export default function DecorStep(props: DecorStepProps) {
         ) : (
           <span className="bz-decor-actions">
             {offerRender && <span className="bz-decor-first" data-testid="render-first-hint">{hasRender
-              ? <>You changed it since your render — <b>Regenerate</b> to finalize this design.</>
-              : <>First <b>Generate render</b> to see your final design.</>}</span>}
+              ? <>You changed it since its photo — <b>make a new photo</b> to finalize this design.</>
+              : <>First <b>Make it a real photo</b> to see your final design.</>}</span>}
             {/* The Customized Themed set is its real photo: no render is made of it. */}
             {offerRender && (
               <button type="button" className="bz-decor-hint" onClick={onGenerate} data-testid="generate-render"
                 disabled={generating || d.backdropItems.some((i) => i.type === "arch" && !i.sizeId)}>
-                {generating ? "Generating…" : hasRender ? "Regenerate render ✨" : "Generate render ✨"}
+                {generating ? "Making the photo…" : hasRender ? "Make a new photo ✨" : "Make it a real photo ✨"}
               </button>
             )}
             {finish}

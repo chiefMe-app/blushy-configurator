@@ -117,14 +117,14 @@ export default function PinataPreview({ config, render, onGenerate }: { config: 
         <span className="title">✦ Your piñata</span>
         {render.url && (
           <div className="views" role="tablist" aria-label="Piñata view">
-            <button type="button" role="tab" aria-selected={!showRender} className={!showRender ? "on" : ""} onClick={() => setLive(true)}>Live</button>
-            <button type="button" role="tab" aria-selected={showRender} className={showRender ? "on" : ""} onClick={() => setLive(false)}>Render</button>
+            <button type="button" role="tab" aria-selected={!showRender} className={!showRender ? "on" : ""} onClick={() => setLive(true)}>Design</button>
+            <button type="button" role="tab" aria-selected={showRender} className={showRender ? "on" : ""} onClick={() => setLive(false)}>Real photo ✨</button>
           </div>
         )}
       </div>
       {p?.enabled ? <>
         {showRender ? <>
-          <ZoomPhoto testId="pinata-render" src={render.url!} alt="Your piñata, rendered" />
+          <ZoomPhoto testId="pinata-render" src={render.url!} alt="Your piñata, as a real photo" />
           {/* The live picture stays in the page, out of sight, for a new render of it to be taken from (Regenerate). */}
           <div className="bz-live-hidden" aria-hidden="true"><div className="bz-wb-wait">{art}</div></div>
         </> : (
@@ -133,18 +133,18 @@ export default function PinataPreview({ config, render, onGenerate }: { config: 
             {render.loading && (
               <div className="veil" role="status" data-testid="pinata-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>
-                <b>Rendering your piñata</b>
+                <b>Making a real photo of your piñata</b>
                 <span>From this preview — about 15 seconds.</span>
               </div>
             )}
           </div>
         )}
-        <p className="note">{showRender ? "Your render — this picture, made into one photograph."
+        <p className="note">{showRender ? "Your real photo — this very design, made real."
           : <>{pinataSize(p.size).note}, hung on its stand. {inside.length ? <>Inside: {inside.map((f) => f.name).join(" · ")}</> : "Nothing inside yet — pick what goes in it."}</>}</p>
         {backTo !== null && <button type="button" className="bz-tb-back" data-testid="pinata-back-to-choices" onClick={back}>↑ Back to your choices</button>}
         {!render.ready && !render.loading && (
           <div className="bz-tb-render" data-testid="pinata-render-box">
-            <button type="button" className="bz-next" onClick={onGenerate}>{render.stale ? "Regenerate render ✨" : "Generate render ✨"}</button>
+            <button type="button" className="bz-next" onClick={onGenerate}>{render.stale ? "Make a new photo ✨" : "Make it a real photo ✨"}</button>
             <p className="hint">{render.stale ? "You changed the piñata since your render." : "This preview made into one photo-real picture."} Needs a free account.</p>
             {render.error && <p className="error" role="alert">{render.error}</p>}
           </div>
