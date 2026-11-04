@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readGiveaways } from "@/lib/studio/giveaways";
 import { readPinata } from "@/lib/studio/pinata";
 import { readHelium } from "@/lib/studio/helium";
+import { readExperiences } from "@/lib/studio/experiences";
 import { readCake } from "@/lib/studio/cake";
 import { randomUUID } from "node:crypto";
 import { getSupabase } from "@/lib/supabase";
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
     pinata: readPinata(body.pinata),
     cake: readCake(body.cake),
     helium: readHelium(body.helium),
+    experiences: readExperiences(body.experiences),
   } as unknown as BuilderConfig;
   const total = computeTotal(pricingConfig);
 
@@ -84,6 +86,7 @@ export async function POST(req: NextRequest) {
     pinata: pricingConfig.pinata,
     cake: pricingConfig.cake,
     helium: pricingConfig.helium,
+    experiences: pricingConfig.experiences,
     addOns: body.addOns,
     venue: body.venue,
   };
@@ -108,7 +111,7 @@ export async function POST(req: NextRequest) {
   // the team can still contact the customer.
   const keepForFollowUp = (reason: string) => {
     // eslint-disable-next-line no-console
-    console.error("[orders] NOT SAVED — follow up from this log:", JSON.stringify({ reason, id, createdAt, total, theme: body.theme, customer: body.customer, venue: body.venue, decor: body.decor, addOns: body.addOns, servicePackageId: body.servicePackageId }));
+    console.error("[orders] NOT SAVED — follow up from this log:", JSON.stringify({ reason, id, createdAt, total, theme: body.theme, customer: body.customer, venue: body.venue, decor: body.decor, experiences: pricingConfig.experiences, addOns: body.addOns, servicePackageId: body.servicePackageId }));
   };
 
   try {

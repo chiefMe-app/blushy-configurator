@@ -39,8 +39,8 @@ export const STEPS = [
   "Event",
   "Theme",
   "Decor",
+  "Experiences",
   "Package",
-  "Add-ons",
   "Venue",
   "Review",
 ];
@@ -51,8 +51,8 @@ export const STEP_COPY: { heading: [string, string]; description: string; eyebro
   { heading: ["What are we", "celebrating?"], description: "Start with the occasion — then we will guide the sparkle from there.", eyebrow: "LET’S CELEBRATE", progress: "Let’s get this party started!" },
   { heading: ["Pick your party", "magic!"], description: "Tap a theme to set the mood for the whole celebration.", eyebrow: "CHOOSE YOUR VIBE", progress: "Finding your party personality" },
   { heading: ["Build your", "sparkly backdrop."], description: "Shape it, style it and add the pretty bits — no overwhelm required.", eyebrow: "LET’S DECORATE", progress: "Time for balloon magic!" },
+  { heading: ["Add some", "experiences!"], description: "Treat carts, a photographer, shows, bouncy castles and workshops — all optional.", eyebrow: "THE LITTLE DETAILS", progress: "Just a little more sparkle" },
   { heading: ["How hands-on", "shall we be?"], description: "Choose the kind of support that fits your party plans.", eyebrow: "YOUR WAY, ALWAYS", progress: "Good choices, good vibes" },
-  { heading: ["Sprinkle in", "some extras!"], description: "Optional experiences to make the day even sweeter.", eyebrow: "THE LITTLE DETAILS", progress: "Just a little more sparkle" },
   { heading: ["Where’s the", "party?"], description: "A few simple details and you are almost ready.", eyebrow: "ALMOST THERE", progress: "Nearly done!" },
   { heading: ["Your party looks", "so good!"], description: "Review your picks and send your sparkly plan for a final quote.", eyebrow: "THE BIG REVEAL", progress: "Ready to celebrate!" },
 ];

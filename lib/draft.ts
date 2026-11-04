@@ -9,13 +9,14 @@ import { readWelcomeBoard } from "@/lib/studio/welcomeBoard";
 import { readGiveaways } from "@/lib/studio/giveaways";
 import { readPinata } from "@/lib/studio/pinata";
 import { readHelium } from "@/lib/studio/helium";
+import { experiencesFromAddOns, readExperiences } from "@/lib/studio/experiences";
 import { readCake } from "@/lib/studio/cake";
 
 export const DRAFT_KEY = "partymuse.builder.draft.v1";
 const LAST_STEP = 6;
 const LAST_DECOR_TAB = 3;
 
-type DesignFields = Pick<BuilderConfig, "eventType" | "theme" | "themeSelected" | "package" | "servicePackageId" | "decor" | "table" | "adultTable" | "welcomeBoard" | "giveaways" | "pinata" | "cake" | "helium" | "addOns">;
+type DesignFields = Pick<BuilderConfig, "eventType" | "theme" | "themeSelected" | "package" | "servicePackageId" | "decor" | "table" | "adultTable" | "welcomeBoard" | "giveaways" | "pinata" | "cake" | "helium" | "experiences" | "addOns">;
 
 export interface StoredDraft {
   v: 1;
@@ -37,13 +38,13 @@ export function isWorthSaving(config: BuilderConfig, step: number): boolean {
 }
 
 export function toDraft(config: BuilderConfig, step: number, decorTab: number, now = new Date()): StoredDraft {
-  const { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, table, adultTable, welcomeBoard, giveaways, pinata, cake, helium, addOns } = config;
+  const { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, table, adultTable, welcomeBoard, giveaways, pinata, cake, helium, experiences, addOns } = config;
   return {
     v: 1,
     savedAt: now.toISOString(),
     step,
     decorTab,
-    config: { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, ...(table ? { table } : {}), ...(adultTable ? { adultTable } : {}), ...(welcomeBoard ? { welcomeBoard } : {}), ...(giveaways ? { giveaways } : {}), ...(pinata ? { pinata } : {}), ...(cake ? { cake } : {}), ...(helium ? { helium } : {}), addOns },
+    config: { eventType, theme, themeSelected, package: pkg, servicePackageId, decor, ...(table ? { table } : {}), ...(adultTable ? { adultTable } : {}), ...(welcomeBoard ? { welcomeBoard } : {}), ...(giveaways ? { giveaways } : {}), ...(pinata ? { pinata } : {}), ...(cake ? { cake } : {}), ...(helium ? { helium } : {}), ...(experiences ? { experiences } : {}), addOns },
   };
 }
 
@@ -70,7 +71,7 @@ export function fromDraft(raw: string | null): RestoredDraft | null {
       ? (c.servicePackageId as BuilderConfig["servicePackageId"]) : base.servicePackageId,
     // A design kept before the backdrop became a choice was designed: "yes".
     decor: { ...base.decor, backdropChoice: "yes", ...(c.decor as Partial<BuilderConfig["decor"]>) },
-    addOns: c.addOns as BuilderConfig["addOns"],
+    addOns: [],
   };
   const table = readTableSetup(c.table, themeById(config.theme) ?? THEMES[0]);
   if (table) config.table = table;
@@ -86,6 +87,9 @@ export function fromDraft(raw: string | null): RestoredDraft | null {
   if (cake) config.cake = cake;
   const helium = readHelium(c.helium);
   if (helium) config.helium = helium;
+  // The old Add-ons came before the experiences (2026-11-04): what they had is kept as experiences.
+  const experiences = readExperiences(c.experiences) ?? experiencesFromAddOns(c.addOns as { id: string }[]);
+  if (experiences) config.experiences = experiences;
   // Past the Theme step only with a theme chosen.
   const step = config.themeSelected ? clampInt(d.step, LAST_STEP) : Math.min(clampInt(d.step, LAST_STEP), 1);
   return { config, step, decorTab: clampInt(d.decorTab, LAST_DECOR_TAB) };

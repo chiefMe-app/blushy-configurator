@@ -64,6 +64,7 @@ export default function PriceSummary({
   const pinataLines = lines.filter((l) => l.section === "pinata");
   const cakeLines = lines.filter((l) => l.section === "cake");
   const heliumLines = lines.filter((l) => l.section === "helium");
+  const experienceLines = lines.filter((l) => l.section === "experiences");
 
   return (
     <div className={`rounded-2xl bg-white p-4 ${className}`} style={{ border: "1.5px solid #F5E4E9", boxShadow: "0 8px 25px rgba(103,44,71,.035)" }}>
@@ -82,6 +83,7 @@ export default function PriceSummary({
         <SectionGroup title="Piñata"          lines={pinataLines} />
         <SectionGroup title="Cake"            lines={cakeLines} />
         <SectionGroup title="Helium balloons" lines={heliumLines} />
+        <SectionGroup title="Experiences"     lines={experienceLines} />
         <SectionGroup title="Add-ons"         lines={addonLines} />
       </div>
 

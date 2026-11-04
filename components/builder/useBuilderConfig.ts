@@ -14,7 +14,6 @@ import {
   type DecorConfig,
   type VenueDetails,
   type CustomerDetails,
-  type AddOnId,
   type EventTypeId,
   type ThemeId,
   type ServicePackageId,
@@ -86,28 +85,8 @@ export function useBuilderConfig() {
     setConfig((c) => ({ ...c, servicePackageId: id }));
   }
 
-  function toggleAddOn(id: AddOnId) {
-    setConfig((c) => {
-      const exists = c.addOns.find((a) => a.id === id);
-      return {
-        ...c,
-        addOns: exists
-          ? c.addOns.filter((a) => a.id !== id)
-          : [...c.addOns, { id, options: {} }],
-      };
-    });
-  }
-  function setAddOnOption(id: AddOnId, key: string, value: string) {
-    setConfig((c) => ({
-      ...c,
-      addOns: c.addOns.map((a) =>
-        a.id === id ? { ...a, options: { ...a.options, [key]: value } } : a
-      ),
-    }));
-  }
-
   return {
     config, setConfig, patchDecor, patchVenue, patchCustomer, setEventType, setTheme,
-    setServicePackage, toggleAddOn, setAddOnOption,
+    setServicePackage,
   };
 }

@@ -20,12 +20,12 @@ test("P1 the sample pack downloads as a ZIP", async ({ page }) => {
 
 test("P2 the Package step links the sample under the design packages", async ({ page }) => {
   await openDecor(page, "Ice Princess", "Single Round");
-  // Straight to the Package step: the design kept on this device, at step 4.
+  // Straight to the Package step: the design kept on this device, at step 5 (the fifth, after the experiences).
   await page.waitForTimeout(800); // the device copy is written a moment after a change
   await page.evaluate(() => {
     const key = "partymuse.builder.draft.v1";
     const d = JSON.parse(localStorage.getItem(key)!);
-    localStorage.setItem(key, JSON.stringify({ ...d, step: 3 }));
+    localStorage.setItem(key, JSON.stringify({ ...d, step: 4 }));
   });
   await page.reload();
   const link = page.getByTestId("sample-pack");

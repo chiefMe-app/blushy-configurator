@@ -26,7 +26,7 @@ import {
 import EventStep from "@/components/builder/steps/EventStep";
 import ThemeStep from "@/components/builder/steps/ThemeStep";
 import PackageStep from "@/components/builder/steps/PackageStep";
-import AddOnsStep from "@/components/builder/steps/AddOnsStep";
+import ExperiencesStep, { ExperiencesPreview } from "@/components/builder/experiences/ExperiencesStep";
 import VenueStep from "@/components/builder/steps/VenueStep";
 import ReviewStep from "@/components/builder/steps/ReviewStep";
 import DecorStep from "@/components/builder/decor/DecorStep";
@@ -77,7 +77,7 @@ interface SubmitResult {
 export default function ConfigurePage() {
   const {
     config, setConfig, patchDecor, patchVenue, patchCustomer, setEventType, setTheme,
-    setServicePackage, toggleAddOn, setAddOnOption,
+    setServicePackage,
   } = useBuilderConfig();
   const [step, setStep] = useState(0);
   // Which of the Decor step's four tabs is open.
@@ -374,6 +374,7 @@ export default function ConfigurePage() {
       ...(config.pinata ? { pinata: config.pinata } : {}),
       ...(config.cake ? { cake: config.cake } : {}),
       ...(config.helium ? { helium: config.helium } : {}),
+      ...(config.experiences ? { experiences: config.experiences } : {}),
       addOns: config.addOns,
       venue: {
         ...config.venue,
@@ -587,7 +588,8 @@ export default function ConfigurePage() {
     if (!config.welcomeBoard) setWelcomeBoard({ ...defaultWelcomeBoard(themeById(config.theme) ?? THEMES[0]), enabled: false });
     setDecorPart("giveaways");
   };
-  const toPackage = () => {
+  // After Decor, the experiences (2026-11-04: the old Add-ons, moved before Package), then Package.
+  const toExperiences = () => {
     if (!config.welcomeBoard) setWelcomeBoard({ ...defaultWelcomeBoard(themeById(config.theme) ?? THEMES[0]), enabled: false });
     if (!config.giveaways) setGiveaways({ ...defaultGiveaways(giveawaysSeed(config)), enabled: false });
     if (!config.pinata) setPinata({ ...defaultPinata(pinataSeed(config)), enabled: false });
@@ -595,6 +597,7 @@ export default function ConfigurePage() {
     if (!config.helium) setHelium({ ...defaultHelium(heliumSeed(config)), enabled: false });
     goToStep(3);
   };
+  const setExperiences = (experiences: NonNullable<typeof config.experiences>) => setConfig((c) => ({ ...c, experiences }));
   // After the giveaways, the piñata (2026-11-03, the owner: "şimdi piñata studio'ya geçelim").
   const toPinata = () => {
     if (!config.welcomeBoard) setWelcomeBoard({ ...defaultWelcomeBoard(themeById(config.theme) ?? THEMES[0]), enabled: false });
@@ -621,13 +624,13 @@ export default function ConfigurePage() {
   const finishGiveaways = () => { if (config.giveaways) setGiveaways({ ...config.giveaways, done: true }); toPinata(); };
   const finishPinata = () => { if (config.pinata) setPinata({ ...config.pinata, done: true }); toCake(); };
   const finishCake = () => { if (config.cake) setCake({ ...config.cake, done: true }); toHelium(); };
-  const finishHelium = () => { if (config.helium) setHelium({ ...config.helium, done: true }); toPackage(); };
+  const finishHelium = () => { if (config.helium) setHelium({ ...config.helium, done: true }); toExperiences(); };
   // Skipped from inside the part, no render needed (2026-11-03, the owner: "welcome board skip yapabilmeliyim").
   const skipWelcome = () => { if (config.welcomeBoard) setWelcomeBoard({ ...config.welcomeBoard, enabled: false, done: false }); setDecorPart("giveaways"); };
   const skipGiveaways = () => { if (config.giveaways) setGiveaways({ ...config.giveaways, enabled: false, done: false }); toPinata(); };
   const skipPinata = () => { if (config.pinata) setPinata({ ...config.pinata, enabled: false, done: false }); toCake(); };
   const skipCake = () => { if (config.cake) setCake({ ...config.cake, enabled: false, done: false }); toHelium(); };
-  const skipHelium = () => { if (config.helium) setHelium({ ...config.helium, enabled: false, done: false }); toPackage(); };
+  const skipHelium = () => { if (config.helium) setHelium({ ...config.helium, enabled: false, done: false }); toExperiences(); };
   // The backdrop is a choice too: asked first, and skippable.
   const backdropAsked = config.decor.backdropChoice === "yes";
   const onBackdropQuestion = step === 2 && decorPart === "backdrop" && !backdropAsked;
@@ -700,7 +703,10 @@ export default function ConfigurePage() {
   }
   if (onHelium) {
     if (config.helium?.enabled) hideNext = true;
-    else { nextLabel = config.helium ? label("Continue to Package →", "Package →") : label("Skip to Package →", "Skip →"); onNext = toPackage; }
+    else { nextLabel = config.helium ? label("Continue to Experiences →", "Experiences →") : label("Skip to Experiences →", "Skip →"); onNext = toExperiences; }
+  }
+  if (step === 3) {
+    nextLabel = config.experiences?.picked.length ? label("Continue to Package →", "Package →") : label("Skip to Package →", "Skip →");
   }
   // Back walks the parts and tabs of Decor before leaving it.
   const onBack = () => {
@@ -714,7 +720,7 @@ export default function ConfigurePage() {
       setDecorPart("backdrop"); setDecorTab(DECOR_TABS.length - 1);
       return;
     }
-    // Back from Package lands on the helium balloons.
+    // Back from the experiences lands on the helium balloons.
     if (step === 3) { goToStep(2); setDecorPart("helium"); return; }
     goToStep(step - 1);
   };
@@ -783,6 +789,7 @@ export default function ConfigurePage() {
           {onGiveaways && <GiveawaysPreview config={config} render={giveawaysRender} onGenerate={makeGiveawaysRender} />}
           {onPinata && <PinataPreview config={config} render={pinataRender} onGenerate={makePinataRender} />}
           {onHelium && <HeliumPreview config={config} render={heliumRender} onGenerate={makeHeliumRender} />}
+          {step === 3 && <ExperiencesPreview config={config} />}
           {onCake && <CakePreview config={config} setCake={setCake} render={cakeRender} onGenerate={makeCakeRender} view={cakeView} setView={setCakeView} />}
           <div hidden={!onKids}>
             <TablePreview config={config} render={tableRender} onGenerate={makeTableRender} placeShot={tablePlaceShot} />
@@ -799,11 +806,11 @@ export default function ConfigurePage() {
             </div>
           ) : (
             <>
-              {!onTable && !onWelcome && !onGiveaways && !onPinata && !onCake && !onHelium && config.decor.backdropChoice === "skip" && (
+              {!onTable && !onWelcome && !onGiveaways && !onPinata && !onCake && !onHelium && step !== 3 && config.decor.backdropChoice === "skip" && (
                 <div className="bz-tb-preview"><div className="empty">No backdrop in this party — add one any time.</div></div>
               )}
               {/* The backdrop's preview stays mounted (its render is kept) while the table is on show. */}
-              <div hidden={onTable || onWelcome || onGiveaways || onPinata || onCake || onHelium || config.decor.backdropChoice === "skip"}>
+              <div hidden={onTable || onWelcome || onGiveaways || onPinata || onCake || onHelium || step === 3 || config.decor.backdropChoice === "skip"}>
               <SetupPreview
                 config={config}
                 status={preview.status}
@@ -941,13 +948,13 @@ export default function ConfigurePage() {
             {onCake && <CakeStep config={config} setCake={setCake} onFinish={finishCake} onSkip={skipCake} render={cakeRender} onGenerate={makeCakeRender} setView={setCakeView} />}
 
             {/* 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
-            {(step === 3 || step === 6) && <FinishedDesigns config={config}
+            {(step === 4 || step === 6) && <FinishedDesigns config={config}
               renderUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl : null}
               tableRenderUrl={tableRender.url} welcomeRenderUrl={welcomeRender.url} giveawaysRenderUrl={giveawaysRender.url} pinataRenderUrl={pinataRender.url} cakeRenderUrl={config.cake?.enabled ? cakeRender.urlOf(cakeRenderKey(config.cake, config.theme)) : null}
               heliumRenderUrl={heliumRender.url} />}
-            {step === 3 && <PackageStep config={config} setServicePackage={setServicePackage} />}
+            {step === 3 && <ExperiencesStep config={config} setExperiences={setExperiences} />}
 
-            {step === 4 && <AddOnsStep config={config} toggleAddOn={toggleAddOn} setAddOnOption={setAddOnOption} />}
+            {step === 4 && <PackageStep config={config} setServicePackage={setServicePackage} />}
 
             {step === 5 && <VenueStep config={config} patchVenue={patchVenue} patchCustomer={patchCustomer} />}
 

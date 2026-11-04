@@ -110,8 +110,8 @@ test("D8 the saved design is cleared once the request is sent", async ({ page, g
   await next(page).click(); // skipped → the piñata (2026-11-03)
   await next(page).click(); // skipped → the cake (2026-11-03)
   await next(page).click(); // skipped → the helium balloons (2026-11-04)
-  await next(page).click(); // skipped → Package
-  await next(page).click();
+  await next(page).click(); // skipped → the experiences (2026-11-04)
+  await next(page).click(); // none → Package
   await next(page).click();
   await page.getByPlaceholder("Full name").fill("Test Customer");
   await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");

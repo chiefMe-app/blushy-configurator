@@ -12,10 +12,11 @@ import {
   cutoutSetBySize,
   backdropPrintById,
   resolveBackdropText,
-  addOnById,
+  formatAED,
   type BuilderConfig,
 } from "@/lib/config";
 import PriceSummary from "./PriceSummary";
+import { experiencePriceLines } from "@/lib/studio/experiences";
 import { presetById } from "@/lib/typography/presets";
 
 function Row({ k, v }: { k: string; v: string }) {
@@ -129,22 +130,10 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
         );
       })()}
 
-      <Section title="Add-ons">
-        {config.addOns.length === 0 ? (
+      <Section title="Experiences">
+        {!config.experiences?.picked.length ? (
           <p className="text-sm text-black/40">None selected</p>
-        ) : config.addOns.map((a) => {
-          const addon = addOnById(a.id);
-          const opts = a.options
-            ? Object.values(a.options).filter(Boolean).join(", ")
-            : "";
-          return (
-            <Row
-              key={a.id}
-              k={addon?.label ?? a.id}
-              v={opts || "Selected"}
-            />
-          );
-        })}
+        ) : experiencePriceLines(config.experiences).map((l) => <Row key={l.label} k={l.label} v={`AED ${formatAED(l.amount)}`} />)}
       </Section>
 
       <Section title="Venue &amp; contact">

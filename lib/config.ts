@@ -10,6 +10,7 @@ import { giveawayPriceLines, type Giveaways } from "./studio/giveaways";
 import { pinataPriceLines, type Pinata } from "./studio/pinata";
 import { cakePriceLines, type Cake } from "./studio/cake";
 import { heliumPriceLines, type Helium } from "./studio/helium";
+import { experiencePriceLines, type Experiences } from "./studio/experiences";
 
 // =====================  STEP - EVENT TYPE  =================================
 
@@ -1347,6 +1348,9 @@ export interface BuilderConfig {
   cake?: Cake;
   /** 2026-11-04: the helium balloons, the Decor step's seventh part; absent until visited. */
   helium?: Helium;
+  /** 2026-11-04: the experiences, their own step before Package (the old Add-ons); absent until visited. */
+  experiences?: Experiences;
+  /** The old Add-ons (before 2026-11-04): a draft kept then is read into experiences; empty since. */
   addOns: SelectedAddOn[];
   venue: VenueDetails;
   customer: CustomerDetails;
@@ -1414,7 +1418,7 @@ export interface PriceLine {
   label:   string;
   amount:  number;
   /** Groups lines for display in the pricing breakdown. */
-  section: "design" | "table" | "adults" | "welcome" | "giveaways" | "pinata" | "cake" | "helium" | "package" | "addons";
+  section: "design" | "table" | "adults" | "welcome" | "giveaways" | "pinata" | "cake" | "helium" | "experiences" | "package" | "addons";
 }
 
 /**
@@ -1556,6 +1560,7 @@ export function priceBreakdown(config: BuilderConfig): {
   if (config.pinata) for (const l of pinataPriceLines(config.pinata)) lines.push({ ...l, section: "pinata" });
   if (config.cake) for (const l of cakePriceLines(config.cake)) lines.push({ ...l, section: "cake" });
   if (config.helium) for (const l of heliumPriceLines(config.helium)) lines.push({ ...l, section: "helium" });
+  if (config.experiences) for (const l of experiencePriceLines(config.experiences)) lines.push({ ...l, section: "experiences" });
 
   // -- Add-ons -------------------------------------------------------------
   // Available for all service packages - never cleared by package selection.

@@ -54,7 +54,7 @@ export default function HeliumStep({ config, setHelium, onFinish, onSkip, render
   config: BuilderConfig;
   setHelium: (h: Helium) => void;
   onFinish: () => void;
-  /** No balloons after all: skipped, on to Package. */
+  /** No balloons after all: skipped, on to the experiences. */
   onSkip: () => void;
   render: PieceRender;
   onGenerate: () => void;
@@ -291,7 +291,7 @@ export default function HeliumStep({ config, setHelium, onFinish, onSkip, render
         <b>AED {formatAED(heliumTotal(h))}</b>
         <button type="button" className="bz-restart" onClick={() => setHelium({ ...h, enabled: false, done: false })}>Remove the balloons</button>
       </div>
-      <FinishBar done={h.done} what="balloons" next="Package" onFinish={onFinish} onSkip={onSkip} testId="finish-helium" render={{ ...render, onGenerate }} />
+      <FinishBar done={h.done} what="balloons" next="Experiences" onFinish={onFinish} onSkip={onSkip} testId="finish-helium" render={{ ...render, onGenerate }} />
     </div>
   );
 }
