@@ -38,7 +38,7 @@ const SECTION: Record<FinishedPiece["id"], PriceLine["section"]> = {
   backdrop: "design", kids: "table", adults: "adults", welcome: "welcome", giveaways: "giveaways", pinata: "pinata", cake: "cake", helium: "helium",
 };
 
-function DesignCard({ piece, drawing, imageUrl, redraw, price, approx, onEdit }: { piece: FinishedPiece; drawing?: ReactNode; imageUrl?: string | null; redraw: string; price: number; approx?: boolean; onEdit?: () => void }) {
+function DesignCard({ piece, drawing, imageUrl, redraw, price, onEdit }: { piece: FinishedPiece; drawing?: ReactNode; imageUrl?: string | null; redraw: string; price: number | null; onEdit?: () => void }) {
   const stage = useRef<HTMLDivElement>(null);
   const [jpeg, setJpeg] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -82,7 +82,7 @@ function DesignCard({ piece, drawing, imageUrl, redraw, price, approx, onEdit }:
       </div>
       <figcaption>
         <span className="title">{piece.title}</span>
-        <span className="price" title={approx ? "Your shopping, estimated: you buy it yourself" : undefined}>{approx ? "≈ " : ""}AED {formatAED(price)}</span>
+        {price === null ? <span className="price diy">You make it</span> : <span className="price">AED {formatAED(price)}</span>}
       </figcaption>
       <div className="acts">
         {onEdit && <button type="button" className="bz-finished-edit" onClick={onEdit} data-testid={`finished-${piece.id}-edit`}>Edit</button>}
@@ -99,15 +99,17 @@ function DesignCard({ piece, drawing, imageUrl, redraw, price, approx, onEdit }:
  */
 export default function FinishedDesigns({ config, renderUrl, tableRenderUrl, welcomeRenderUrl, giveawaysRenderUrl, pinataRenderUrl, cakeRenderUrl, heliumRenderUrl, onEdit, onEditExperiences }: { config: BuilderConfig; renderUrl?: string | null; tableRenderUrl?: string | null; welcomeRenderUrl?: string | null; giveawaysRenderUrl?: string | null; pinataRenderUrl?: string | null; cakeRenderUrl?: string | null; heliumRenderUrl?: string | null; onEdit?: (id: FinishedPiece["id"]) => void; onEditExperiences?: () => void }) {
   const pieces = finishedPieces(config);
-  const experiences = (config.experiences?.picked ?? []).map((id) => EXPERIENCES.find((e) => e.id === id)!).filter(Boolean);
+  // DIY (2026-11-04): the pieces she makes herself have no price here ("You make it"); what she asked us to bring
+  // (the cake, the balloons, the piñata) and the experiences she kept do.
+  const diy = config.servicePackageId === "diy";
+  const skipped = new Set(diy ? config.diy?.skipExperiences ?? [] : []);
+  const experiences = (config.experiences?.picked ?? []).filter((id) => !skipped.has(id)).map((id) => EXPERIENCES.find((e) => e.id === id)!).filter(Boolean);
   if (!pieces.length && !experiences.length) return null;
-  // DIY (2026-11-04): the pieces are her own shopping, estimated, so they are read from there.
-  const breakdown = priceBreakdown(config);
-  const diy = breakdown.shopping.length > 0;
-  // The theme's price is paid to us in DIY, so it is not part of the backdrop she buys.
-  const lines = diy ? [...breakdown.lines.filter((l) => l.section !== "design"), ...breakdown.shopping] : breakdown.lines;
+  const lines = priceBreakdown(config).lines;
   const sum = (section: PriceLine["section"]) => lines.filter((l) => l.section === section).reduce((t, l) => t + l.amount, 0);
-  const all = pieces.reduce((t, p) => t + sum(SECTION[p.id]), 0) + sum("experiences");
+  const all = lines.filter((l) => l.section !== "package").reduce((t, l) => t + l.amount, 0);
+  const brought = (id: FinishedPiece["id"]) => (id === "cake" || id === "helium" || id === "pinata") && !!config.diy?.bring.includes(id);
+  const priceOf = (p: FinishedPiece) => (!diy || brought(p.id) ? sum(SECTION[p.id]) : null);
   const theme = themeById(config.theme) ?? THEMES[0];
   const drawingOf = (p: FinishedPiece): { drawing?: ReactNode; imageUrl?: string | null; redraw: string } => {
     switch (p.id) {
@@ -137,10 +139,10 @@ export default function FinishedDesigns({ config, renderUrl, tableRenderUrl, wel
       <link rel="stylesheet" href="/fonts/typography/fonts.css" />
       <div className="head">
         <h2>Your finished designs</h2>
-        <p>{pieces.length} piece{pieces.length === 1 ? "" : "s"}{experiences.length ? ` and ${experiences.length} experience${experiences.length > 1 ? "s" : ""}` : ""}{diy ? <> · to buy <b>≈ AED {formatAED(all - sum("experiences"))}</b>{experiences.length ? <> · experiences <b>AED {formatAED(sum("experiences"))}</b></> : null}</> : <> · <b>AED {formatAED(all)}</b></>}</p>
+        <p>{pieces.length} piece{pieces.length === 1 ? "" : "s"}{experiences.length ? ` and ${experiences.length} experience${experiences.length > 1 ? "s" : ""}` : ""}{all > 0 ? <> · <b>AED {formatAED(all)}</b>{diy ? " from us" : ""}</> : null}</p>
       </div>
       <div className="grid">
-        {pieces.map((p) => <DesignCard key={p.id} piece={p} {...drawingOf(p)} price={sum(SECTION[p.id])} approx={diy} onEdit={onEdit ? () => onEdit(p.id) : undefined} />)}
+        {pieces.map((p) => <DesignCard key={p.id} piece={p} {...drawingOf(p)} price={priceOf(p)} onEdit={onEdit ? () => onEdit(p.id) : undefined} />)}
         {experiences.length > 0 && (
           <figure className="bz-finished-card exp" data-testid="finished-experiences">
             <div className="pic mosaic">

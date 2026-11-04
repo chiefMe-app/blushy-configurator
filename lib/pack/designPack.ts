@@ -128,8 +128,8 @@ export async function buildDesignPack(input: DesignPackInput): Promise<DesignPac
   }
   // 2026-11-04: the DIY package's shopping list, by the kind of shop that sells each piece.
   put("4_LISTS/shopping_and_suppliers.csv", csv([
-    ["where to buy", "what to ask for there", "piece", "item", "estimated cost (AED)"],
-    ...shoppingList(input.config).groups.flatMap((g) => g.items.map((i) => [g.supplier.name, g.supplier.note, i.piece, i.label, i.amount])),
+    ["where to buy", "what to ask for there", "piece", "item"],
+    ...shoppingList(input.config).groups.flatMap((g) => g.items.map((i) => [g.supplier.name, g.supplier.note, i.piece, i.label])),
   ]));
   put("README.txt", readme(spec, input.packId, sample));
 

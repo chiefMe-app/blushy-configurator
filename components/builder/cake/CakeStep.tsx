@@ -48,6 +48,9 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
   if (!k || !k.enabled) {
     return (
       <div className="bz-tb-intro" data-testid="cake-intro">
+        {/* 2026-11-04 (the owner: "pastayı sweets için kullanabilirsin"): the painted flower cake (scripts/packages). */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="bz-intro-art" src="/design/packages/cake.webp" alt="" />
         <h2>Add a cake?</h2>
         <p>A birthday cake for your {theme.name} theme — one to three tiers, its colours, figures on top and a topper with the name — shown on its stand, with cupcakes, cake pops, cookies, donuts or macarons beside it if you like. The price adds to your party.</p>
         <div className="actions">

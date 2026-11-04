@@ -10,6 +10,7 @@ import {
   themeById,
   packageById,
   readServicePackageId,
+  readDiy,
   computeTotal,
   type BuilderConfig,
 } from "@/lib/config";
@@ -68,6 +69,7 @@ export async function POST(req: NextRequest) {
     helium: readHelium(body.helium),
     experiences: readExperiences(body.experiences),
     servicePackageId,
+    diy: readDiy(body.diy),
   } as unknown as BuilderConfig;
   const total = computeTotal(pricingConfig);
 
@@ -89,6 +91,7 @@ export async function POST(req: NextRequest) {
     cake: pricingConfig.cake,
     helium: pricingConfig.helium,
     experiences: pricingConfig.experiences,
+    diy: pricingConfig.diy,
     addOns: body.addOns,
     venue: body.venue,
   };

@@ -75,6 +75,9 @@ interface SubmitResult {
   total: number;
 }
 
+/** The steps' painted heading pictures (scripts/packages): the Venue's bear skating to the party, the Review's zebra. */
+const STEP_ART: Record<number, string> = { 5: "/design/packages/venue-bear.webp", 6: "/design/packages/review-zebra.webp" };
+
 export default function ConfigurePage() {
   const {
     config, setConfig, patchDecor, patchVenue, patchCustomer, setEventType, setTheme,
@@ -376,6 +379,7 @@ export default function ConfigurePage() {
       ...(config.cake ? { cake: config.cake } : {}),
       ...(config.helium ? { helium: config.helium } : {}),
       ...(config.experiences ? { experiences: config.experiences } : {}),
+      ...(config.diy ? { diy: config.diy } : {}),
       addOns: config.addOns,
       venue: {
         ...config.venue,
@@ -607,6 +611,7 @@ export default function ConfigurePage() {
     setDecorPart(id);
   };
   const setExperiences = (experiences: NonNullable<typeof config.experiences>) => setConfig((c) => ({ ...c, experiences }));
+  const setDiy = (diy: NonNullable<typeof config.diy>) => setConfig((c) => ({ ...c, diy }));
   // After the giveaways, the piñata (2026-11-03, the owner: "şimdi piñata studio'ya geçelim").
   const toPinata = () => {
     if (!config.welcomeBoard) setWelcomeBoard({ ...defaultWelcomeBoard(themeById(config.theme) ?? THEMES[0]), enabled: false });
@@ -865,7 +870,10 @@ export default function ConfigurePage() {
 
         {/* Right: the step itself */}
         <section className="bz-right" aria-label="Party configuration">
-          <div className="bz-headbox">
+          <div className={`bz-headbox ${STEP_ART[step] ? "with-art" : ""}`}>
+            {/* 2026-11-04 (the owner's references, "diğer sayfalarda da kullanabilirsin"): a painted picture by the heading. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {STEP_ART[step] && <img className="bz-step-art" src={STEP_ART[step]} alt="" />}
             <div className="bz-step-tag">{copy.eyebrow}</div>
             <h1>{copy.heading[0]} <span>{copy.heading[1]}</span>
               <svg className="bz-h1-dash" viewBox="0 0 34 40" aria-hidden="true"><path d="M6 8L18 3M4 21H24M6 34L18 39" /></svg>
@@ -963,7 +971,7 @@ export default function ConfigurePage() {
 
             {step === 3 && <ExperiencesStep config={config} setExperiences={setExperiences} />}
 
-            {step === 4 && <PackageStep config={config} setServicePackage={setServicePackage} />}
+            {step === 4 && <PackageStep config={config} setServicePackage={setServicePackage} setDiy={setDiy} />}
 
             {step === 5 && <VenueStep config={config} patchVenue={patchVenue} patchCustomer={patchCustomer} />}
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SERVICE_PACKAGES, computeTotal, defaultConfig, priceBreakdown, readServicePackageId, servicePackageById, type BuilderConfig } from "@/lib/config";
+import { SERVICE_PACKAGES, defaultConfig, diyPieceOf, priceBreakdown, readDiy, readServicePackageId, servicePackageById, type BuilderConfig } from "@/lib/config";
 import { defaultExperiences } from "@/lib/studio/experiences";
 import { defaultHelium } from "@/lib/studio/helium";
 import { SUPPLIERS, shoppingList, supplierFor } from "@/lib/studio/shopping";
@@ -27,16 +27,31 @@ describe("the two packages", () => {
     expect(fromDraft(raw)!.config.servicePackageId).toBe("diy");
   });
 
-  it("DIY charges the design fee, the theme and the experiences; the pieces are her shopping", () => {
+  it("DIY charges the design fee and the experiences; the theme is free, the pieces hers to make", () => {
     const diy = priceBreakdown(party("diy"));
     const we = priceBreakdown(party("we_do_it"));
-    expect(diy.lines.map((l) => l.section)).toEqual(["package", "design", "experiences"]); // design = the theme line
+    expect(diy.lines.map((l) => l.section)).toEqual(["package", "experiences"]);
     expect(diy.lines[0]).toEqual({ label: "DIY package (design fee)", amount: 250, section: "package" });
-    expect(diy.total).toBe(250 + diy.lines[1].amount + 650);
+    expect(diy.total).toBe(250 + 650);
     expect(we.shopping).toEqual([]);
-    // The same pieces: in We do it they are charged, in DIY listed.
+    // The same pieces: in We do it they are charged, in DIY hers.
     expect(we.lines.filter((l) => l.section !== "package" && l.section !== "experiences").slice(1)).toEqual(diy.shopping);
-    expect(computeTotal(party("we_do_it")) - 450).toBe(diy.total - 250 + diy.shopping.reduce((t, l) => t + l.amount, 0));
+  });
+
+  it("DIY adds what she asks us to bring, and leaves out an experience she takes out", () => {
+    const base = party("diy");
+    const helium = priceBreakdown({ ...base, servicePackageId: "we_do_it" }).lines.filter((l) => l.section === "helium");
+    const rental = priceBreakdown({ ...base, servicePackageId: "we_do_it" }).lines.filter((l) => diyPieceOf(l) === "rental");
+    expect(helium.length).toBeGreaterThan(0);
+    expect(rental.map((l) => l.label)).toEqual(["Plinths (1)"]);
+    const b = priceBreakdown({ ...base, diy: { bring: ["helium", "rental"], skipExperiences: ["magician"] } });
+    expect(b.total).toBe(250 + [...helium, ...rental].reduce((t, l) => t + l.amount, 0));
+    expect(b.lines.some((l) => l.section === "experiences")).toBe(false);
+    expect(b.shopping.some((l) => l.section === "helium")).toBe(false);
+    // Taken out only in DIY: We do it still has the magician.
+    expect(priceBreakdown({ ...base, servicePackageId: "we_do_it", diy: { bring: [], skipExperiences: ["magician"] } }).lines.some((l) => l.label === "Magic show")).toBe(true);
+    expect(readDiy({ bring: ["cake", "x", "cake"], skipExperiences: ["dj", 3] })).toEqual({ bring: ["cake"], skipExperiences: ["dj"] });
+    expect(readDiy(null)).toBeUndefined();
   });
 
   it("sorts the shopping by the kind of shop that sells it", () => {

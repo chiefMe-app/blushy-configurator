@@ -68,6 +68,9 @@ export default function HeliumStep({ config, setHelium, onFinish, onSkip, render
   if (!h || !h.enabled) {
     return (
       <div className="bz-tb-intro" data-testid="helium-intro">
+        {/* 2026-11-04 (the owner: "helyum balonlar vibe'ı için buket balon"): the painted bouquet (scripts/packages). */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="bz-intro-art" src="/design/packages/helium-bouquet.webp" alt="" />
         <h2>Add helium balloons?</h2>
         <p>Bouquets on their weights, the age in giant foil numbers, the name in foil letters, balloons on the ceiling or a clear bubble with the name on it — in your {theme.name} colours. The price adds to your party.</p>
         <div className="actions">

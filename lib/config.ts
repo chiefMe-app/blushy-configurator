@@ -203,7 +203,6 @@ export const SERVICE_PACKAGES: ServicePackage[] = [
       "Print-ready files for the boards, banner and prints",
       "A shopping list with quantities and Sempertex balloon codes",
       "A supplier list: where to buy each piece",
-      "The experiences you picked, still booked by us",
     ],
   },
   {
@@ -220,6 +219,36 @@ export const SERVICE_PACKAGES: ServicePackage[] = [
     ],
   },
 ];
+
+/**
+ * DIY (2026-11-04, the owner: "experiences, cake vs onları ekle kaldır"): what she would still like from us. Her
+ * experiences come unless she takes one out; the cake, the helium balloons, the piñata and the rented pieces (plinths,
+ * stands, the cake table — no rental shop to send her to) only once she adds them.
+ */
+export type DiyPiece = "cake" | "helium" | "pinata" | "rental";
+export const DIY_PIECES: { id: DiyPiece; name: string; note: string }[] = [
+  { id: "cake", name: "Your cake & sweets", note: "Baked and decorated as you designed them" },
+  { id: "helium", name: "Your helium balloons", note: "Filled and brought on the day" },
+  { id: "pinata", name: "Your piñata", note: "Made in your shape and colours" },
+  { id: "rental", name: "Plinths & stands to rent", note: "From our own stock, for the day" },
+];
+export interface DiyChoices { bring: DiyPiece[]; skipExperiences: string[] }
+
+/** Which of the pieces we can still bring a DIY line belongs to; null for the ones she makes herself. */
+export function diyPieceOf(l: Pick<PriceLine, "label" | "section">): DiyPiece | null {
+  if (l.section === "cake" || l.section === "helium" || l.section === "pinata") return l.section;
+  if (l.section === "design" && /plinth|cake \/ dessert table|marquee/i.test(l.label)) return "rental";
+  return null;
+}
+
+export function readDiy(raw: unknown): DiyChoices | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const r = raw as Record<string, unknown>;
+  const ids = DIY_PIECES.map((p) => p.id) as string[];
+  const bring = Array.isArray(r.bring) ? Array.from(new Set(r.bring.filter((b): b is DiyPiece => typeof b === "string" && ids.includes(b)))) : [];
+  const skipExperiences = Array.isArray(r.skipExperiences) ? Array.from(new Set(r.skipExperiences.filter((x): x is string => typeof x === "string"))).slice(0, 30) : [];
+  return { bring, skipExperiences };
+}
 
 /** The four packages before 2026-11-04, read as the two: the design ones are DIY, the delivery ones We do it. */
 const LEGACY_SERVICE_PACKAGES: Record<string, ServicePackageId> = {
@@ -1332,6 +1361,8 @@ export interface BuilderConfig {
   helium?: Helium;
   /** 2026-11-04: the experiences, their own step before Package (the old Add-ons); absent until visited. */
   experiences?: Experiences;
+  /** 2026-11-04: in the DIY package, what she still wants from us; absent until she changes it. */
+  diy?: DiyChoices;
   /** The old Add-ons (before 2026-11-04): a draft kept then is read into experiences; empty since. */
   addOns: SelectedAddOn[];
   venue: VenueDetails;
@@ -1434,7 +1465,7 @@ export function addOnPrice(sel: SelectedAddOn, config: BuilderConfig): number {
 export function priceBreakdown(config: BuilderConfig): {
   lines: PriceLine[];
   total: number;
-  /** DIY (2026-11-04): the pieces she buys herself, estimated, not in the total; empty otherwise. */
+  /** DIY (2026-11-04): the pieces she makes or buys herself — not in the total, not shown with a price; empty otherwise. */
   shopping: PriceLine[];
 } {
   const lines: PriceLine[] = [];
@@ -1544,9 +1575,23 @@ export function priceBreakdown(config: BuilderConfig): {
   if (config.pinata) for (const l of pinataPriceLines(config.pinata)) lines.push({ ...l, section: "pinata" });
   if (config.cake) for (const l of cakePriceLines(config.cake)) lines.push({ ...l, section: "cake" });
   if (config.helium) for (const l of heliumPriceLines(config.helium)) lines.push({ ...l, section: "helium" });
-  // DIY: every piece above, from the backdrop to the helium balloons, is her own shopping.
-  const shopping = svcPkg.id === "diy" ? lines.splice(backdropStart) : [];
-  if (config.experiences) for (const l of experiencePriceLines(config.experiences)) lines.push({ ...l, section: "experiences" });
+  // DIY: every piece above, from the backdrop to the helium balloons, is her own to make, but for the ones she
+  // asks us to bring; the theme costs nothing (the owner, 2026-11-04: "tema paralı olmasın").
+  const shopping: PriceLine[] = [];
+  const diy = svcPkg.id === "diy";
+  if (diy) {
+    const bring = new Set(config.diy?.bring ?? []);
+    for (const l of lines.splice(backdropStart)) {
+      const piece = diyPieceOf(l);
+      (piece && bring.has(piece) ? lines : shopping).push(l);
+    }
+    lines.splice(1, backdropStart - 1); // the theme line, when there is one
+  }
+  if (config.experiences) {
+    const skip = new Set(diy ? config.diy?.skipExperiences ?? [] : []);
+    const x = { ...config.experiences, picked: config.experiences.picked.filter((id) => !skip.has(id)) };
+    for (const l of experiencePriceLines(x)) lines.push({ ...l, section: "experiences" });
+  }
 
   // -- Add-ons -------------------------------------------------------------
   // Available for all service packages - never cleared by package selection.

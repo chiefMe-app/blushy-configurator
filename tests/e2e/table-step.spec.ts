@@ -884,7 +884,7 @@ test("X1 the experiences, their own step before Package: priced by the guests, t
   expect(order.experiences).toMatchObject({ picked: ["popcorn", "photographer", "face_painting", "bouncy_castle"], children: 11, photoHours: 3, video: true, place: "outdoor" });
 });
 
-test("PK1 two packages: We do it until she picks, DIY takes the pieces out of the total into a shopping list by shop", async ({ page, guard }) => {
+test("PK1 two packages: We do it until she picks; DIY is the design fee, and what she adds from us or takes out", async ({ page, guard }) => {
   // 2026-11-04 (the owner: only two packages; DIY = design fee + experiences, the pieces her own shopping).
   await page.goto("/builder");
   await page.locator(".bz-choice.bz-birthday").click();
@@ -906,18 +906,24 @@ test("PK1 two packages: We do it until she picks, DIY takes the pieces out of th
   await expect(right.getByTestId("we-do-it-steps")).toContainText("We collect it after");
   const full = aed(await total(page).textContent());
   expect(aed(await page.getByTestId("package-total-we_do_it").textContent())).toBe(full);
-  // DIY: the design fee, the theme and the magician; the backdrop is her shopping, by shop.
+  // DIY: the design fee and the magician, the theme free; no estimated shopping on the page.
   await right.getByTestId("package-diy").click();
   await expect(right.getByTestId("package-diy")).toHaveAttribute("aria-checked", "true");
-  const list = right.getByTestId("shopping-list");
-  await expect(list.getByTestId("shop-balloons")).toContainText("Balloon shop");
-  await expect(list.getByTestId("shop-rental")).toContainText("Plinth");
-  await expect(list).toContainText("still booked by us");
-  const diy = aed(await total(page).textContent());
-  expect(diy).toBe(aed(await page.getByTestId("package-total-diy").textContent()));
-  expect(diy).toBeLessThan(full);
-  const shopTotal = aed(await list.locator(".bz-pk-foot").first().textContent());
-  expect(diy + shopTotal).toBe(full - 450 + 250);
+  await expect(right.getByTestId("shopping-list")).toHaveCount(0);
+  await expect(right).not.toContainText("≈");
+  const extras = right.getByTestId("diy-from-us");
+  await expect(extras.getByTestId("diy-magician")).toHaveClass(/on/);
+  expect(aed(await total(page).textContent())).toBe(250 + 650);
+  expect(aed(await page.getByTestId("package-total-diy").textContent())).toBe(250 + 650);
+  // Add the plinth to rent from us, take the magician out.
+  await expect(extras.getByTestId("diy-rental")).not.toHaveClass(/on/);
+  const plinth = aed(await extras.getByTestId("diy-rental").locator(".price").textContent());
+  await extras.getByRole("button", { name: "Add Plinths & stands to rent" }).click();
+  await extras.getByRole("button", { name: "Remove Magic show" }).click();
+  await expect(extras.getByTestId("diy-magician")).not.toHaveClass(/on/);
+  expect(aed(await total(page).textContent())).toBe(250 + plinth);
+  // We do it keeps everything she designed.
+  expect(aed(await page.getByTestId("package-total-we_do_it").textContent())).toBe(full);
   // Kept on the way to the venue and back.
   await next(page).click();
   await page.getByRole("button", { name: "← Back" }).click();
@@ -926,11 +932,11 @@ test("PK1 two packages: We do it until she picks, DIY takes the pieces out of th
   await page.getByPlaceholder("Full name").fill("Test Customer");
   await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
   await next(page).click();
-  await expect(page.getByTestId("price-shopping")).toContainText("you buy it yourself");
   await next(page).click(); // Request Final Quote → caught
   await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
   const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
   expect(order.servicePackageId).toBe("diy");
+  expect(order.diy).toEqual({ bring: ["rental"], skipExperiences: ["magician"] });
 });
 
 test("W2 on a phone, a change to the welcome board brings it into sight, and Back returns to the choices", async ({ page }, info) => {
