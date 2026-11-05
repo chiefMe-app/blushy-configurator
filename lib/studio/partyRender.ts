@@ -35,6 +35,12 @@ export const isPartyExtra = (v: unknown): v is PartyExtra => PARTY_EXTRAS.includ
  * so seven pictures. Eight came back 422 "Requested area too large" (2026-11-05, the owner: "olmuyor render").
  */
 export const MAX_PARTY_IMAGES = 7;
+/**
+ * About this many pieces (the backdrop and the kids' table among them) come out in one photo: with ten, one test kept
+ * eight and the next seven, different ones each time (2026-11-05). Beyond it she is told, and picks what goes in
+ * (the owner: "1. Seçiyorum").
+ */
+export const PARTY_PIECES_FIT = 8;
 export const PARTY_EXTRA_NAMES: Record<PartyExtra, string> = { adults: "Grown-ups' table", cake: "Cake & sweets", welcome: "Welcome board", giveaways: "Giveaways", helium: "Helium balloons", pinata: "Piñata" };
 /** Each in the checklist of what the photograph shows. */
 const EXTRA_LIST: Record<PartyExtra, string> = { adults: "the grown-ups' table", cake: "the cake", welcome: "the welcome board", giveaways: "the giveaway boxes", helium: "the helium balloons", pinata: "the piñata" };

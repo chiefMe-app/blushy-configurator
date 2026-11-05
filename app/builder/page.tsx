@@ -331,14 +331,16 @@ export default function ConfigurePage() {
     ...(config.pinata?.enabled ? { pinata: { url: pinataRender.url, key: pinataKey } } : {}),
   };
   // Each by its real photo when it has a current one, its drawing otherwise (2026-11-05, the owner: "her şey yok bunlarda?").
+  // The ones she took out of the picture (2026-11-05, the owner chose to pick: "1. Seçiyorum").
+  const partyLeaveOut = new Set(config.venue.partyLeaveOut ?? []);
   const partyExtras = partyAll ? PARTY_EXTRAS.flatMap((part) => {
     const e = partyExtraUrls[part];
-    if (!e || (part === "giveaways" && !e.url && config.giveaways?.place === "table")) return [];
+    if (!e || partyLeaveOut.has(part) || (part === "giveaways" && !e.url && config.giveaways?.place === "table")) return [];
     return [{ part, key: `${e.key}:${e.url ? "photo" : "drawing"}` }];
   }) : [];
   // Her experiences too (the owner: "deneyimler de girsin"): those she books, the ones a picture can show.
   const partyExperienceIds = config.experiences?.picked.filter((id) => !(config.servicePackageId === "diy" && config.diy?.skipExperiences.includes(id))) ?? [];
-  const partyXp = partyAll ? partyExperiences(partyExperienceIds) : { photos: [], stations: [] };
+  const partyXp = partyAll ? partyExperiences(partyExperienceIds.filter((id) => !partyLeaveOut.has(id))) : { photos: [], stations: [] };
   const partyXpIds = [...partyXp.photos, ...partyXp.stations];
   const partyKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting, partyExtras, partyXpIds) : "";
   const partyShot = useRef<(() => Promise<PartyShot>) | null>(null);

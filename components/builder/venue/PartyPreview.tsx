@@ -5,7 +5,7 @@
 // table (its render, or its drawing) are made into one picture of the party in that setting (/api/party-render).
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { THEMES, themeById, type BuilderConfig, type VenueDetails } from "@/lib/config";
-import { PARTY_EXTRA_NAMES, partyExperienceShown, partyPieces, type PartyExtra, type PartySetting } from "@/lib/studio/partyRender";
+import { PARTY_EXTRA_NAMES, PARTY_PIECES_FIT, partyExperienceShown, partyPieces, type PartyExtra, type PartySetting } from "@/lib/studio/partyRender";
 import { experienceById, type ExperienceId } from "@/lib/studio/experiences";
 import AdultTableSketch from "@/components/studio/table/AdultTableSketch";
 import { imageJpeg, nodeJpeg, svgJpeg } from "@/components/builder/nodeJpeg";
@@ -62,6 +62,13 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
   const extraParts = (Object.entries(extras) as [PartyExtra, string | null][]).filter(([p]) => !(p === "giveaways" && !extras.giveaways && config.giveaways?.place === "table"));
   const all = config.venue.partyScope === "all";
   const booked = experiences.map((id) => experienceById(id)).filter((e): e is NonNullable<ReturnType<typeof experienceById>> => !!e);
+  // She picks what goes in (2026-11-05, the owner: "1. Seçiyorum"): about eight pieces fit one photo.
+  const leaveOut = config.venue.partyLeaveOut ?? [];
+  const isIn = (id: string) => !leaveOut.includes(id);
+  const toggle = (id: string) => onVenue({ partyLeaveOut: isIn(id) ? [...leaveOut, id] : leaveOut.filter((x) => x !== id) });
+  const shownParts = extraParts.filter(([p]) => isIn(p));
+  const shownXp = booked.filter((e) => partyExperienceShown(e.id as ExperienceId) && isIn(e.id));
+  const pieceCount = (pieces.backdrop ? 1 : 0) + (pieces.table ? 1 : 0) + shownParts.length + shownXp.length;
 
   useEffect(() => {
     shot.current = async () => {
@@ -77,7 +84,7 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
       // "Everything" (2026-11-05, the owner: "her şey yok bunlarda?"): every part she designed — its real photo when it
       // has a current one, its drawing otherwise.
       const extrasShot: PartyShot["extras"] = [];
-      if (all) for (const [part, url] of extraParts) {
+      if (all) for (const [part, url] of shownParts) {
         const node = stage.current?.querySelector<HTMLElement>(`[data-extra="${part}"]`);
         const svg = node?.querySelector("svg") ?? null;
         const picture = url ? await imageJpeg(url, EXTRA_WIDTH).catch(() => null)
@@ -91,7 +98,7 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
   });
 
   const nothing = !pieces.backdrop && !pieces.table;
-  const allIn = all && (extraParts.length > 0 || booked.some((e) => partyExperienceShown(e.id as ExperienceId)));
+  const allIn = all && (shownParts.length > 0 || shownXp.length > 0);
   const what = allIn ? "Everything you designed" : "Your backdrop and table";
   const word = setting === "outdoor" ? "outdoors" : "indoors";
   return (
@@ -130,14 +137,30 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
             })}
           </div>
           {all && (
-            <ul className="bz-party-parts" data-testid="party-scope-parts">
-              {extraParts.map(([p, url]) => (
-                <li key={p} className="in">✓ {PARTY_EXTRA_NAMES[p]}<small>{url ? " · its real photo" : " · its drawing"}</small></li>
-              ))}
-              {booked.map((e) => partyExperienceShown(e.id as ExperienceId)
-                ? <li key={e.id} className="in">✓ {e.name}<small> · experience</small></li>
-                : <li key={e.id} className="out">{e.name}<small> · a person, not in the picture</small></li>)}
-            </ul>
+            <>
+              <p className="bz-party-pick">Tap a piece to take it out of the picture, or to put it back.</p>
+              <ul className="bz-party-parts" data-testid="party-scope-parts">
+                {extraParts.map(([p, url]) => (
+                  <li key={p} className={isIn(p) ? "in" : "off"}>
+                    <button type="button" aria-pressed={isIn(p)} onClick={() => toggle(p)} data-testid={`party-part-${p}`}>
+                      {isIn(p) ? "✓" : "○"} {PARTY_EXTRA_NAMES[p]}<small>{!isIn(p) ? " · not in the picture" : url ? " · its real photo" : " · its drawing"}</small>
+                    </button>
+                  </li>
+                ))}
+                {booked.map((e) => partyExperienceShown(e.id as ExperienceId)
+                  ? <li key={e.id} className={isIn(e.id) ? "in" : "off"}>
+                      <button type="button" aria-pressed={isIn(e.id)} onClick={() => toggle(e.id)} data-testid={`party-part-${e.id}`}>
+                        {isIn(e.id) ? "✓" : "○"} {e.name}<small>{isIn(e.id) ? " · experience" : " · not in the picture"}</small>
+                      </button>
+                    </li>
+                  : <li key={e.id} className="out">{e.name}<small> · a person, not in the picture</small></li>)}
+              </ul>
+              {pieceCount > PARTY_PIECES_FIT && (
+                <p className="bz-party-many" role="status" data-testid="party-too-many">
+                  {pieceCount} pieces with your backdrop and table — one photo holds about {PARTY_PIECES_FIT} well. With more, some may be left out of it: take out the ones you need least.
+                </p>
+              )}
+            </>
           )}
         </div>
       )}

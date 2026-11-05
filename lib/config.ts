@@ -1338,6 +1338,8 @@ export interface VenueDetails {
   render?: { key: string; path: string };
   /** What the party's picture shows (2026-11-05): the backdrop and the table, or everything she designed ("all"). */
   partyScope?: "main" | "all";
+  /** With "all": the parts and experiences she took out of the picture (2026-11-05: about eight pieces fit one photo). */
+  partyLeaveOut?: string[];
   // 2026-11-04, the venue step by package (lib/venue.ts): DIY's home address, We do it's venue, setup and collection.
   adultsCount?: number;
   /** When the party ends, "18:00". */

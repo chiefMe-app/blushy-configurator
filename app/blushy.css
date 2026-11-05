@@ -1714,4 +1714,10 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 /* 2026-11-05: the party picture's parts, in or still to photograph. */
 .bz-party-parts { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; }
 .bz-party-parts li.in { color: #2f7a4f; font-weight: 600; }
+.bz-party-parts li.off { color: var(--bz-muted); }
+.bz-party-parts li > button { all: unset; cursor: pointer; padding: 6px 4px; border-radius: 8px; }
+.bz-party-parts li > button:focus-visible { outline: 2px solid var(--bz-pink, #e84a8a); outline-offset: 2px; }
+.bz-party-parts li.off > button { text-decoration: line-through; text-decoration-color: rgba(0,0,0,.25); }
+.bz-party .bz-party-pick { margin: 8px 0 0; font-size: 12.5px; color: var(--bz-muted); }
+.bz-party .bz-party-many { margin: 10px 0 0; padding: 9px 12px; font-size: 13.5px; line-height: 1.45; font-weight: 600; color: #7a4a12; background: #fff6e8; border-radius: 12px; }
 .bz-party-parts li.out { color: var(--bz-muted); }
