@@ -1000,7 +1000,13 @@ test("VN2 the venue step: no photo upload; indoors or outdoors, then the backdro
   await expect(page.getByTestId("table-place")).toBeVisible();
   await page.getByTestId("finish-kids-table").click();
   await expect(page.getByTestId("adult-intro")).toBeVisible();
-  for (let i = 0; i < 6; i++) await next(page).click(); // the grown-ups' table to the balloons skipped
+  for (let i = 0; i < 4; i++) await next(page).click(); // the grown-ups' table, welcome board, giveaways, piñata skipped
+  // A cake, never rendered: "Everything I designed" sends its drawing (2026-11-05, the owner: "hersey yok bunlarda?").
+  await page.getByRole("button", { name: /Yes, add a cake/ }).click();
+  await expect(page.getByTestId("finish-cake")).toBeEnabled();
+  await page.getByTestId("finish-cake").click();
+  await expect(page.getByTestId("helium-intro")).toBeVisible();
+  await next(page).click(); // the balloons skipped
   await next(page).click(); // the experiences
   await expect(page.getByRole("heading", { name: "Who makes your party?" })).toBeVisible();
   await next(page).click();
@@ -1024,6 +1030,16 @@ test("VN2 the venue step: no photo upload; indoors or outdoors, then the backdro
   expect(sent.backdrop).toMatch(/^data:image\/jpeg;base64,/);
   expect(sent.tablePicture).toMatch(/^data:image\/jpeg;base64,/);
   expect(sent.table.enabled).toBe(true);
+  expect(sent.extras ?? []).toHaveLength(0); // backdrop & table only
+  // Everything she designed: the cake goes in as its drawing.
+  await card.getByText("Everything I designed", { exact: true }).click();
+  await expect(card.getByText("Cake & sweets · its drawing")).toBeVisible();
+  await card.getByRole("button", { name: "See my party outdoors ✨" }).click();
+  await expect.poll(() => calls().length).toBe(2);
+  const all = JSON.parse(calls()[1].postData()!);
+  expect(all.extras).toHaveLength(1);
+  expect(all.extras[0].part).toBe("cake");
+  expect(all.extras[0].picture).toMatch(/^data:image\/jpeg;base64,/);
   // Indoors is a picture of its own.
   await card.getByTestId("party-setting-indoor").click();
   await expect(card.getByTestId("party-render")).toHaveCount(0);

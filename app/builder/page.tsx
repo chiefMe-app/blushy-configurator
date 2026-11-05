@@ -66,7 +66,7 @@ import { PARTY_EXTRAS, partyPieces, partyRenderKey, type PartyExtra } from "@/li
 import PartyPreview, { settingOf, type PartyShot } from "@/components/builder/venue/PartyPreview";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import { usePieceRender } from "@/components/builder/usePieceRender";
-import { imageJpeg, nodeJpeg, svgJpeg, svgLayers } from "@/components/builder/nodeJpeg";
+import { nodeJpeg, svgJpeg, svgLayers } from "@/components/builder/nodeJpeg";
 
 import Sprinkles from "@/components/design/Sprinkles";
 import { REQUIRE_RENDER } from "@/lib/renderGate";
@@ -328,14 +328,19 @@ export default function ConfigurePage() {
     ...(config.helium?.enabled ? { helium: { url: heliumRender.url, key: heliumKey } } : {}),
     ...(config.pinata?.enabled ? { pinata: { url: pinataRender.url, key: pinataKey } } : {}),
   };
-  const partyExtras = partyAll ? PARTY_EXTRAS.flatMap((part) => (partyExtraUrls[part]?.url ? [{ part, url: partyExtraUrls[part]!.url!, key: partyExtraUrls[part]!.key }] : [])) : [];
+  // Each by its real photo when it has a current one, its drawing otherwise (2026-11-05, the owner: "her şey yok bunlarda?").
+  const partyExtras = partyAll ? PARTY_EXTRAS.flatMap((part) => {
+    const e = partyExtraUrls[part];
+    if (!e || (part === "giveaways" && !e.url && config.giveaways?.place === "table")) return [];
+    return [{ part, key: `${e.key}:${e.url ? "photo" : "drawing"}` }];
+  }) : [];
   const partyKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting, partyExtras) : "";
   const partyShot = useRef<(() => Promise<PartyShot>) | null>(null);
   const partyRender = usePieceRender({
     endpoint: "/api/party-render", partKey: partyKey, kept: config.venue.render,
     body: async () => {
       const shot = await partyShot.current?.();
-      const extras = (await Promise.all(partyExtras.map(async (e) => ({ part: e.part, picture: await imageJpeg(e.url, 768).catch(() => null) })))).filter((e) => e.picture);
+      const extras = shot?.extras ?? [];
       return { theme: config.theme, setting: partySetting, key: partyKey, table: config.table, decor: config.decor, backdrop: shot?.backdrop ?? null, tablePicture: shot?.tablePicture ?? null, ...(extras.length ? { extras } : {}) };
     },
     onKept: (render) => setConfig((c) => ({ ...c, venue: { ...c.venue, render } })),
