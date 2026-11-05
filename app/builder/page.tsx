@@ -62,7 +62,7 @@ import type { AfterSignInAction } from "@/lib/account";
 import { adultCounts, defaultAdultTable } from "@/lib/studio/adultTable";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
 import { defaultWelcomeBoard, welcomeRenderKey } from "@/lib/studio/welcomeBoard";
-import { PARTY_EXTRAS, partyPieces, partyRenderKey, type PartyExtra } from "@/lib/studio/partyRender";
+import { PARTY_EXTRAS, partyExperiences, partyPieces, partyRenderKey, type PartyExtra } from "@/lib/studio/partyRender";
 import PartyPreview, { settingOf, type PartyShot } from "@/components/builder/venue/PartyPreview";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import { usePieceRender } from "@/components/builder/usePieceRender";
@@ -322,6 +322,8 @@ export default function ConfigurePage() {
   const partyAll = config.venue.partyScope === "all";
   const cakeWholeKey = config.cake?.enabled ? cakeRenderKey(config.cake, config.theme) : "";
   const partyExtraUrls: Partial<Record<PartyExtra, { url: string | null; key: string }>> = {
+    // The grown-ups' table has no render of its own: its drawing from above (2026-11-05, the owner: "büyükler masası da girsin").
+    ...(config.adultTable?.enabled ? { adults: { url: null, key: JSON.stringify(config.adultTable) } } : {}),
     ...(config.cake?.enabled ? { cake: { url: cakeRender.urlOf(cakeWholeKey), key: cakeWholeKey } } : {}),
     ...(config.welcomeBoard?.enabled ? { welcome: { url: welcomeRender.url, key: welcomeKey } } : {}),
     ...(config.giveaways?.enabled ? { giveaways: { url: giveawaysRender.url, key: giveawaysKey } } : {}),
@@ -334,14 +336,18 @@ export default function ConfigurePage() {
     if (!e || (part === "giveaways" && !e.url && config.giveaways?.place === "table")) return [];
     return [{ part, key: `${e.key}:${e.url ? "photo" : "drawing"}` }];
   }) : [];
-  const partyKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting, partyExtras) : "";
+  // Her experiences too (the owner: "deneyimler de girsin"): those she books, the ones a picture can show.
+  const partyExperienceIds = config.experiences?.picked.filter((id) => !(config.servicePackageId === "diy" && config.diy?.skipExperiences.includes(id))) ?? [];
+  const partyXp = partyAll ? partyExperiences(partyExperienceIds) : { photos: [], stations: [] };
+  const partyXpIds = [...partyXp.photos, ...partyXp.stations];
+  const partyKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting, partyExtras, partyXpIds) : "";
   const partyShot = useRef<(() => Promise<PartyShot>) | null>(null);
   const partyRender = usePieceRender({
     endpoint: "/api/party-render", partKey: partyKey, kept: config.venue.render,
     body: async () => {
       const shot = await partyShot.current?.();
       const extras = shot?.extras ?? [];
-      return { theme: config.theme, setting: partySetting, key: partyKey, table: config.table, decor: config.decor, backdrop: shot?.backdrop ?? null, tablePicture: shot?.tablePicture ?? null, ...(extras.length ? { extras } : {}) };
+      return { theme: config.theme, setting: partySetting, key: partyKey, table: config.table, decor: config.decor, backdrop: shot?.backdrop ?? null, tablePicture: shot?.tablePicture ?? null, ...(extras.length ? { extras } : {}), ...(partyXpIds.length ? { experiences: partyXpIds } : {}) };
     },
     onKept: (render) => setConfig((c) => ({ ...c, venue: { ...c.venue, render } })),
     onSignInNeeded: () => askSignIn("party-render"),
@@ -882,7 +888,7 @@ export default function ConfigurePage() {
           {onHelium && <HeliumPreview config={config} render={heliumRender} onGenerate={makeHeliumRender} />}
           {step === 3 && <ExperiencesPreview config={config} />}
           {step === 5 && <PartyPreview config={config} render={partyRender} onGenerate={() => void partyRender.make()} onVenue={patchVenue} shot={partyShot}
-            extras={Object.fromEntries(PARTY_EXTRAS.flatMap((p) => (partyExtraUrls[p] ? [[p, partyExtraUrls[p]!.url]] : [])))}
+            extras={Object.fromEntries(PARTY_EXTRAS.flatMap((p) => (partyExtraUrls[p] ? [[p, partyExtraUrls[p]!.url]] : [])))} experiences={partyExperienceIds}
             backdropUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl ?? null : null} tableUrl={tableRender.url} />}
           {/* 2026-11-04: on the left beside the packages (tidied). 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
           {showFinished && <FinishedDesigns config={config} onEdit={editPiece} onEditExperiences={() => goToStep(3)}

@@ -5,7 +5,9 @@
 // table (its render, or its drawing) are made into one picture of the party in that setting (/api/party-render).
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { THEMES, themeById, type BuilderConfig, type VenueDetails } from "@/lib/config";
-import { PARTY_EXTRA_NAMES, partyPieces, type PartyExtra, type PartySetting } from "@/lib/studio/partyRender";
+import { PARTY_EXTRA_NAMES, partyExperienceShown, partyPieces, type PartyExtra, type PartySetting } from "@/lib/studio/partyRender";
+import { experienceById, type ExperienceId } from "@/lib/studio/experiences";
+import AdultTableSketch from "@/components/studio/table/AdultTableSketch";
 import { imageJpeg, nodeJpeg, svgJpeg } from "@/components/builder/nodeJpeg";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 import RenderAgain from "@/components/builder/RenderAgain";
@@ -35,8 +37,10 @@ const SETTINGS: { id: PartySetting; name: string; note: string }[] = [
 export const settingOf = (v: Pick<VenueDetails, "isOutdoor">): PartySetting | undefined =>
   v.isOutdoor === undefined ? undefined : v.isOutdoor ? "outdoor" : "indoor";
 
-export default function PartyPreview({ config, backdropUrl, tableUrl, render, onGenerate, onVenue, shot, extras = {} }: {
+export default function PartyPreview({ config, backdropUrl, tableUrl, render, onGenerate, onVenue, shot, extras = {}, experiences = [] }: {
   config: BuilderConfig;
+  /** The experiences she books: those a picture can show go in with Everything (a show or a host is a person: not). */
+  experiences?: readonly string[];
   /** The other parts she designed, each with its real photo's address (null: no photo of it yet). */
   extras?: Partial<Record<PartyExtra, string | null>>;
   /** The backdrop's render, when it has a current one: its sketch otherwise. */
@@ -57,6 +61,7 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
   const stage = useRef<HTMLDivElement>(null);
   const extraParts = (Object.entries(extras) as [PartyExtra, string | null][]).filter(([p]) => !(p === "giveaways" && !extras.giveaways && config.giveaways?.place === "table"));
   const all = config.venue.partyScope === "all";
+  const booked = experiences.map((id) => experienceById(id)).filter((e): e is NonNullable<ReturnType<typeof experienceById>> => !!e);
 
   useEffect(() => {
     shot.current = async () => {
@@ -86,7 +91,7 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
   });
 
   const nothing = !pieces.backdrop && !pieces.table;
-  const allIn = all && extraParts.length > 0;
+  const allIn = all && (extraParts.length > 0 || booked.some((e) => partyExperienceShown(e.id as ExperienceId)));
   const what = allIn ? "Everything you designed" : "Your backdrop and table";
   const word = setting === "outdoor" ? "outdoors" : "indoors";
   return (
@@ -110,7 +115,7 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
 
       {/* 2026-11-05 (the owner: "tasarladığım her şey tek render'da seçeneğini de yapalım"): the backdrop and the table,
           or everything she designed, each other part by its own real photo. */}
-      {!nothing && extraParts.length > 0 && (
+      {!nothing && (extraParts.length > 0 || booked.length > 0) && (
         <div className="bz-party-where" data-testid="party-scope">
           <b>What goes in the picture?</b>
           <div className="bz-tb-options compact" role="radiogroup" aria-label="What goes in the picture">
@@ -129,6 +134,9 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
               {extraParts.map(([p, url]) => (
                 <li key={p} className="in">✓ {PARTY_EXTRA_NAMES[p]}<small>{url ? " · its real photo" : " · its drawing"}</small></li>
               ))}
+              {booked.map((e) => partyExperienceShown(e.id as ExperienceId)
+                ? <li key={e.id} className="in">✓ {e.name}<small> · experience</small></li>
+                : <li key={e.id} className="out">{e.name}<small> · a person, not in the picture</small></li>)}
             </ul>
           )}
         </div>
@@ -177,6 +185,7 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
                 {p === "giveaways" && config.giveaways && <GiveawayBoardArt g={config.giveaways} theme={theme} balloons={config.decor.balloonColors} uid="pty-gv" testId="party-giveaways-art" />}
                 {p === "helium" && config.helium && <HeliumArt h={config.helium} />}
                 {p === "pinata" && config.pinata && <PinataArt p={config.pinata} theme={theme} />}
+                {p === "adults" && config.adultTable && <AdultTableSketch a={config.adultTable} theme={theme} />}
               </div>
             ))}
           </div>}

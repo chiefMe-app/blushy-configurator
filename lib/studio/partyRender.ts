@@ -8,6 +8,7 @@ import { hexToColorName } from "@/lib/generatePrompt";
 import { onFloor, type TableItemKey } from "./tableCatalog";
 import { tableCounts, type TableSetup } from "./tableSetup";
 import { itemWords, referencePictures, tableRenderKey } from "./tableRender";
+import { experienceById, type ExperienceId } from "./experiences";
 
 export type PartySetting = "indoor" | "outdoor";
 
@@ -21,29 +22,62 @@ export function partyPieces(config: Pick<BuilderConfig, "decor" | "table">): { b
 
 /**
  * "Everything in one picture" (2026-11-05, the owner: "tasarladığım her şey tek render'da seçeneğini de yapalım"): the
- * other parts she designed, each by its own real photo, stood with the backdrop and the table. In this order; the
- * engine takes eight pictures at most, so the last may be left out.
+ * other parts she designed, each by its own real photo or its drawing, stood with the backdrop and the table — the
+ * grown-ups' table too (the owner: "büyükler masası ve deneyimler de girsin"). In this order. When they don't all fit
+ * in the engine's eight pictures, they go in together as one sheet (partySheet).
  */
-export const PARTY_EXTRAS = ["cake", "welcome", "giveaways", "helium", "pinata"] as const;
+export const PARTY_EXTRAS = ["adults", "cake", "welcome", "giveaways", "helium", "pinata"] as const;
 export type PartyExtra = (typeof PARTY_EXTRAS)[number];
 export const isPartyExtra = (v: unknown): v is PartyExtra => PARTY_EXTRAS.includes(v as PartyExtra);
-/** At most this many pictures go to the engine (FLUX.2's limit). */
-export const MAX_PARTY_IMAGES = 8;
-export const PARTY_EXTRA_NAMES: Record<PartyExtra, string> = { cake: "Cake & sweets", welcome: "Welcome board", giveaways: "Giveaways", helium: "Helium balloons", pinata: "Piñata" };
-/** Where each stands in the setup, told with its picture's number. */
-const EXTRA_WORDS: Record<PartyExtra, (n: number) => string> = {
-  cake: (n) => `the cake and sweets of image ${n}, on the same stand, cart, table or plinths image ${n} shows, at one side of the kids' table — the cake, its toppers and every sweet exactly as image ${n} shows them`,
-  welcome: (n) => `the welcome board of image ${n} on its stand, at one side near the front, turned a little towards the camera — the same shape, colours and pictures, its words copied exactly, letter by letter`,
-  giveaways: (n) => `the giveaway boxes of image ${n}, on their own board or little table as image ${n} shows them, at the other side — the same boxes, prints and names`,
-  helium: (n) => `the helium balloon bouquets of image ${n}, each tied to its weight on the floor, floating at the sides of the setup — the same balloons, foils and colours`,
-  pinata: (n) => `the piñata of image ${n}, hanging on its stand at one side — the same shape, colours and age`,
+/**
+ * At most this many pictures go to the engine. FLUX.2 [pro] edit takes 9 megapixels in all, its pictures and its
+ * photograph together: each picture counts as one (at most 1 MP after the first), the 1344 x 896 photograph as two —
+ * so seven pictures. Eight came back 422 "Requested area too large" (2026-11-05, the owner: "olmuyor render").
+ */
+export const MAX_PARTY_IMAGES = 7;
+export const PARTY_EXTRA_NAMES: Record<PartyExtra, string> = { adults: "Grown-ups' table", cake: "Cake & sweets", welcome: "Welcome board", giveaways: "Giveaways", helium: "Helium balloons", pinata: "Piñata" };
+/** Where each stands in the setup, told with its picture ("image 3", "picture 2 of image 3"). */
+const EXTRA_WORDS: Record<PartyExtra, (r: string) => string> = {
+  adults: (r) => `the grown-ups' table of ${r} — drawn there from above, made into a real table set for the grown-ups with its chairs: the same tablecloth, runner, chargers, plates, glasses, napkins, cutlery and centrepiece in the same colours — further back at one side, apart from the kids' table, seen from the front, not from above`,
+  cake: (r) => `the cake and sweets of ${r}, on the same stand, cart, table or plinths ${r} shows, at one side of the kids' table — the cake, its toppers and every sweet exactly as ${r} shows them`,
+  welcome: (r) => `the welcome board of ${r} on its stand, at one side near the front, turned a little towards the camera — the same shape, colours and pictures, its words copied exactly, letter by letter`,
+  giveaways: (r) => `the giveaway boxes of ${r}, on their own board or little table as ${r} shows them, at the other side — the same boxes, prints and names`,
+  helium: (r) => `the helium balloon bouquets of ${r}, each tied to its weight on the floor, floating at the sides of the setup — the same balloons, foils and colours`,
+  pinata: (r) => `the piñata of ${r}, hanging on its stand at one side — the same shape, colours and age`,
 };
 
+/**
+ * Her experiences in the picture (2026-11-05): the carts and the inflatables by their own photos (one sheet), the
+ * stations that are things by words. A show, a host or a photographer is a person: the picture has no people, so
+ * they stay out of it.
+ */
+export const PARTY_EXPERIENCE_PHOTOS: Partial<Record<ExperienceId, { pic: string; words: string }>> = {
+  popcorn: { pic: "popcorn", words: "the white popcorn cart with its little boxes of popcorn" },
+  cotton_candy: { pic: "cotton-candy", words: "the white cotton candy cart with its pastel cotton candy" },
+  bouncy_castle: { pic: "bouncy-castle", words: "the pastel bouncy castle with its turrets, on the lawn or floor at one side" },
+  soft_play: { pic: "soft-play", words: "the soft play corner of foam blocks, steps and a little slide" },
+  ball_pit: { pic: "ball-pit", words: "the round ball pit of pastel balls" },
+};
+const STATION_WORDS: Partial<Record<ExperienceId, string>> = {
+  face_painting: "a little face-painting table with its paint palette, brushes and a mirror, a small chair beside it",
+  dj: "a white DJ booth with its decks and two speakers",
+  slime: "a low white workshop table set for slime making: bowls, glitter and little pots, one place for each child",
+  cupcake: "a low white workshop table set for cupcake decorating: plain cupcakes, frosting and sprinkles, one place for each child",
+  painting: "a low white workshop table with little canvases on easels and paints, one place for each child",
+};
+/** What of her experiences can be shown: photos (in her order), then the stations told in words. */
+export function partyExperiences(picked: readonly string[]): { photos: ExperienceId[]; stations: ExperienceId[] } {
+  const ids = Array.from(new Set(picked)).filter((id): id is ExperienceId => !!experienceById(id));
+  return { photos: ids.filter((id) => PARTY_EXPERIENCE_PHOTOS[id]), stations: ids.filter((id) => STATION_WORDS[id]) };
+}
+/** Shown in the parts list: the people (a show, a host, the photographer) stay out of the picture. */
+export const partyExperienceShown = (id: ExperienceId) => !!(PARTY_EXPERIENCE_PHOTOS[id] || STATION_WORDS[id]);
+
 /** Changes with the backdrop, the table, the theme or the setting: what the photograph shows. */
-export function partyRenderKey(config: Pick<BuilderConfig, "decor" | "table" | "theme">, setting: PartySetting, extras: { part: PartyExtra; key: string }[] = []): string {
+export function partyRenderKey(config: Pick<BuilderConfig, "decor" | "table" | "theme">, setting: PartySetting, extras: { part: PartyExtra; key: string }[] = [], experiences: readonly string[] = []): string {
   const p = partyPieces(config);
   const s = JSON.stringify([setting, config.theme, p.backdrop ? config.decor : null, p.table && config.table ? tableRenderKey(config.table, config.theme) : null,
-    ...(extras.length ? [extras.map((e) => `${e.part}:${e.key}`)] : [])]);
+    ...(extras.length ? [extras.map((e) => `${e.part}:${e.key}`)] : []), ...(experiences.length ? [["x", ...experiences]] : [])]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
   return (h >>> 0).toString(36);
@@ -133,15 +167,23 @@ function tableWords(t: TableSetup, themeId: string, image: (k: TableItemKey) => 
 const piece = (t: TableSetup, themeId: string, k: TableItemKey) => itemWords(t, themeId, k);
 
 /** The words for the photograph: the pictures she has, stood together in her setting. */
-export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "theme">, setting: PartySetting, pictures: { backdrop: boolean; table: boolean; refs?: TableItemKey[]; extras?: PartyExtra[] }): string {
+export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "theme">, setting: PartySetting, pictures: { backdrop: boolean; table: boolean; refs?: TableItemKey[]; extras?: PartyExtra[]; sheet?: boolean; experiences?: ExperienceId[]; stations?: ExperienceId[] }): string {
   const t = pictures.table ? config.table : undefined;
   const tableImage = pictures.backdrop ? 2 : 1;
   const refs = t ? pictures.refs ?? [] : [];
   const extras = pictures.extras ?? [];
   // The pictures in order: the backdrop, the table's top view, the other parts' photos, then the table's and chair's own.
   const firstExtra = (pictures.backdrop ? 1 : 0) + (t ? 1 : 0) + 1;
-  const image = (k: TableItemKey) => (refs.includes(k) ? firstExtra + extras.length + refs.indexOf(k) : 0);
-  const extraWords = extras.map((e, i) => EXTRA_WORDS[e](firstExtra + i));
+  // The other parts each a picture of their own, or (too many for the engine) all on one sheet.
+  const sheet = !!pictures.sheet && extras.length > 1;
+  const extraImages = sheet ? 1 : extras.length;
+  const xs = pictures.experiences ?? [];
+  const xImage = firstExtra + extraImages;
+  const image = (k: TableItemKey) => (refs.includes(k) ? xImage + (xs.length ? 1 : 0) + refs.indexOf(k) : 0);
+  const extraWords = extras.map((e, i) => EXTRA_WORDS[e](sheet ? `picture ${i + 1} of image ${firstExtra}` : `image ${firstExtra + i}`));
+  const nth = (n: number, of: number) => (of > 1 ? `picture ${n} of image ${xImage}` : `image ${xImage}`);
+  const xWords = [...xs.map((id, i) => `${PARTY_EXPERIENCE_PHOTOS[id]!.words} exactly as ${nth(i + 1, xs.length)} shows it`), ...(pictures.stations ?? []).map((id) => STATION_WORDS[id]!)];
+  const sheetWords = (n: number, what: string) => `Image ${n} is a sheet of ${what} laid side by side on white, numbered in reading order — left to right, the top row first; it is only a list of the pieces, never a layout to copy.`;
   // The table's photo is a shop's set table: only the table itself is hers (2026-11-04 test: its cups and toys came along).
   const named = refs.map((k) => (k === "table"
     ? `image ${image(k)} is the table she chose — copy only the table itself, its shape, top and legs; the chairs, cups, plates and everything else on or around it in that photo are not hers and stay out`
@@ -151,6 +193,8 @@ export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "the
     pictures.backdrop ? "Image 1 is the balloon backdrop designed for this children's birthday party." : "",
     // The top view is a cut of six places (2026-11-05 test: the photo copied its six chairs, not her ten).
     t ? `Image ${tableImage} shows the kids' party table designed for it, seen from above: its place setting — the placemat, the plates, the cup, the napkin, the cutlery and every other piece — and its colours. It is only a sample cut of a few places, never the count: the real table has ${t.kids} places, one at each chair.` : "",
+    sheet ? sheetWords(firstExtra, "the other pieces she designed, one picture each") : "",
+    xs.length > 1 ? sheetWords(xImage, "the party's activities, one picture each") : "",
     named.length ? `${named.join("; ").replace(/^i/, "I")}.` : "",
     "Make one real, natural photograph of the whole party setup exactly as she designed it, the way a party stylist photographs a finished setup: taken with a full-frame camera straight on from the front, a few metres back, from a little below standing height, facing the backdrop square on, everything in the picture.",
     pictures.backdrop
@@ -162,7 +206,10 @@ export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "the
     extraWords.length
       ? `Around them, in the same one setup and the same photograph, stand the other pieces she designed, each exactly as its own picture shows it — a drawing made into the real thing, a photo copied — at a believable real size beside the table and the backdrop, none hiding the backdrop or the table: ${extraWords.join("; ")}. The camera stands far enough back for every piece to be in the picture.`
       : "",
-    `The rooms, walls and floors the pictures show are only where they were drawn: leave them out, and set ${extraWords.length ? "every piece" : "the backdrop and the table"} up in this setting instead.`,
+    xWords.length
+      ? `Further out at the sides of the same setup, set up and ready with no one at them, stand the party's activities: ${xWords.join("; ")} — each its real size, none in front of the backdrop or the tables.`
+      : "",
+    `The rooms, walls and floors the pictures show are only where they were drawn: leave them out, and set ${extraWords.length || xWords.length ? "every piece" : "the backdrop and the table"} up in this setting instead.`,
     SETTING[setting],
     LIGHT,
     "Nothing added: no people, no children, no cartoon or licensed characters, no extra decorations, furniture or words beyond those in the pictures.",

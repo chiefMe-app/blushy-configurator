@@ -1007,6 +1007,9 @@ test("VN2 the venue step: no photo upload; indoors or outdoors, then the backdro
   await page.getByTestId("finish-cake").click();
   await expect(page.getByTestId("helium-intro")).toBeVisible();
   await next(page).click(); // the balloons skipped
+  // The popcorn cart is in the picture; a magician is a person, not.
+  await page.getByTestId("exp-popcorn").click();
+  await page.getByTestId("exp-magician").click();
   await next(page).click(); // the experiences
   await expect(page.getByRole("heading", { name: "Who makes your party?" })).toBeVisible();
   await next(page).click();
@@ -1034,12 +1037,15 @@ test("VN2 the venue step: no photo upload; indoors or outdoors, then the backdro
   // Everything she designed: the cake goes in as its drawing.
   await card.getByText("Everything I designed", { exact: true }).click();
   await expect(card.getByText("Cake & sweets · its drawing")).toBeVisible();
+  await expect(card.getByText("Popcorn cart · experience")).toBeVisible();
+  await expect(card.getByText("Magic show · a person, not in the picture")).toBeVisible();
   await card.getByRole("button", { name: "See my party outdoors ✨" }).click();
   await expect.poll(() => calls().length).toBe(2);
   const all = JSON.parse(calls()[1].postData()!);
   expect(all.extras).toHaveLength(1);
   expect(all.extras[0].part).toBe("cake");
   expect(all.extras[0].picture).toMatch(/^data:image\/jpeg;base64,/);
+  expect(all.experiences).toEqual(["popcorn"]);
   // Indoors is a picture of its own.
   await card.getByTestId("party-setting-indoor").click();
   await expect(card.getByTestId("party-render")).toHaveCount(0);
