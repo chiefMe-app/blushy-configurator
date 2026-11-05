@@ -929,9 +929,9 @@ test("PK1 two packages: We do it until she picks; DIY is the design fee, and wha
   await page.getByRole("button", { name: "← Back" }).click();
   await expect(right.getByTestId("package-diy")).toHaveAttribute("aria-checked", "true");
   await next(page).click();
-  // DIY: her home address, where the plinths come; no venue, no setup.
-  await expect(page.getByRole("heading", { name: "Your party at home" })).toBeVisible();
-  await expect(page.getByTestId("venue-home")).toContainText("we bring the plinths here");
+  // DIY: only where we deliver (2026-11-05), where the plinths come; no venue, no setup.
+  await expect(page.getByRole("heading", { name: "Your party & delivery" })).toBeVisible();
+  await expect(page.getByTestId("venue-home")).toContainText("Where we deliver the plinths");
   await expect(page.getByTestId("venue-setup")).toHaveCount(0);
   // Indoors or outdoors is asked in DIY too, on the party's picture (2026-11-04).
   await expect(page.getByTestId("party-setting")).toBeVisible();
@@ -1155,4 +1155,22 @@ test("K10 on a phone, a change brings the top view into sight, and Back returns 
   await words.blur();
   await expect(page.getByTestId("table-place")).toBeInViewport();
   await expect(page.getByTestId("table-place").locator("[data-place=focus] [data-part$=matwords] text")).toHaveText(["ZARA", "TURNS", "5"]);
+});
+
+test("NV1 the steps in the header open any step, ahead too, once a theme is picked", async ({ page }, info) => {
+  // 2026-11-05, the owner: "istersem ustune basip gecebileyim su steplerde". A phone has no steps in its header.
+  test.skip(info.project.name === "mobile", "the desktop header only");
+  await page.goto("/builder");
+  const nav = page.getByRole("navigation", { name: "Builder steps" });
+  await expect(nav.getByRole("button", { name: "Go to Venue" })).toBeDisabled();
+  await expect(nav.getByRole("button", { name: "Go to Theme" })).toBeEnabled();
+  await page.locator(".bz-choice.bz-birthday").click();
+  await next(page).click();
+  await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: /^Ice Princess$/ }) }).first().click();
+  await nav.getByRole("button", { name: "Go to Venue" }).click();
+  await expect(page.getByTestId("party-preview")).toBeVisible();
+  await nav.getByRole("button", { name: "Go to Experiences" }).click();
+  await expect(nav.getByRole("button", { name: "Go to Experiences" })).toHaveAttribute("aria-current", "step");
+  await nav.getByRole("button", { name: "Go to Decor" }).click();
+  await expect(nav.getByRole("button", { name: "Go to Decor" })).toHaveAttribute("aria-current", "step");
 });

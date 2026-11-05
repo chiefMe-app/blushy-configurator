@@ -28,7 +28,7 @@ export default function VenueStep({ config, patchVenue, patchCustomer }: {
   }, []);
 
   return (
-    <StepShell title={diy ? "Your party at home" : "Your venue & setup"}>
+    <StepShell title={diy ? "Your party & delivery" : "Your venue & setup"}>
       <div className="bz-tip"><span className="icon">✳</span>
         <span>{diy ? "Almost ready! When is the party, and where do you live?" : "Almost ready! Where is the party, and when shall we set up?"}</span>
         <span className="arrow">↙</span></div>

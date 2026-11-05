@@ -780,11 +780,15 @@ export default function ConfigurePage() {
             {STEPS.map((s, i) => {
               const done = i < step;
               const active = i === step;
+              // 2026-11-05, the owner: "istersem ustune basip gecebileyim su steplerde" — any step, ahead too; past
+              // the Theme only once one is picked (the Theme is all the footer's Next waits for).
+              const shut = i > 1 && !config.themeSelected;
               return (
                 <button key={s} type="button"
                   className={`bz-navstep ${active ? "active" : ""} ${done ? "done" : ""}`}
-                  onClick={() => i <= step && goToStep(i)}
-                  disabled={i > step}
+                  onClick={() => !shut && goToStep(i)}
+                  disabled={shut}
+                  title={shut ? "Pick a theme first" : undefined}
                   aria-current={active ? "step" : undefined}
                   aria-label={`Go to ${s}`}>
                   <span className="n">{done ? "✓" : i + 1}</span>

@@ -17,13 +17,13 @@ describe("the venue step", () => {
     expect(setupWhen({ time: "10:00", setupLead: "evening" })).toBe("The evening before");
   });
 
-  it("DIY reads as a home address; We do it as the venue, its setup and collection", () => {
+  it("DIY reads as a delivery address; We do it as the venue, its setup and collection", () => {
     const place = { date: "2026-12-05", time: "16:00", endTime: "19:00", area: "Jumeirah, Dubai", street: "Al Wasl Road, Villa 12", unit: "12", childrenCount: 12, adultsCount: 8, guestCount: 20 };
     const diy = venueRows(withVenue("diy", { ...place, notes: "Gate code 1234" }));
-    expect(diy.map((r) => r.k)).toEqual(["Date", "Party time", "Home address", "Setting", "Notes", "Children", "Grown-ups"]);
+    expect(diy.map((r) => r.k)).toEqual(["Date", "Party time", "Delivery address", "Setting", "Notes", "Children", "Grown-ups"]);
     // Indoors or outdoors is unset until she marks it (on the party's picture).
     expect(diy.find((r) => r.k === "Setting")?.v).toBe("—");
-    expect(diy.find((r) => r.k === "Home address")?.v).toBe("12, Al Wasl Road, Villa 12, Jumeirah, Dubai");
+    expect(diy.find((r) => r.k === "Delivery address")?.v).toBe("12, Al Wasl Road, Villa 12, Jumeirah, Dubai");
     expect(diy.find((r) => r.k === "Party time")?.v).toBe("16:00 – 19:00");
     const we = venueRows(withVenue("we_do_it", { ...place, venueType: "Restaurant", venueName: "The Garden", setupLead: "3h", collection: "next_morning" }));
     expect(we.find((r) => r.k === "Venue")?.v).toBe("Restaurant · The Garden");

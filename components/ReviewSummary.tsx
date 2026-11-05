@@ -138,7 +138,7 @@ export default function ReviewSummary({ config }: { config: BuilderConfig }) {
       </Section>
 
       {/* 2026-11-04: by package — DIY's home address, We do it's venue, setup and collection (lib/venue.ts). */}
-      <Section title={config.servicePackageId === "diy" ? "Your party at home" : "Venue & contact"}>
+      <Section title={config.servicePackageId === "diy" ? "Party & delivery" : "Venue & contact"}>
         <Row k="Name" v={customer.name || "—"} />
         <Row k="WhatsApp" v={customer.whatsapp || "—"} />
         {venueRows(config).map((r) => <Row key={r.k} k={r.k} v={r.v} />)}

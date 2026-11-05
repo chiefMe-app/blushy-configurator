@@ -88,18 +88,20 @@ export default function VenueDetailsForm({
       </section>
 
       {diy ? (
-        <section className="bz-vn-section" aria-label="Your home address" data-testid="venue-home">
-          <h3>Your home address</h3>
+        <section className="bz-vn-section" aria-label="Delivery address" data-testid="venue-home">
+          {/* 2026-11-05, the owner: "DIY de teslimat adresini yazsin sadece nerde yapacagina biz karismiyoruz" — only
+              where we deliver; where the party is, is hers. */}
+          <h3>Delivery address</h3>
           <p className="sub">{fromUs.length
-            ? `Your party is at home: we bring ${fromUs.length > 1 ? `${fromUs.slice(0, -1).join(", ")} and ${fromUs[fromUs.length - 1]}` : fromUs[0]} here.`
-            : "Your party is at home — so we know where it is, and where to send anything you add later."}</p>
+            ? `Where we deliver ${fromUs.length > 1 ? `${fromUs.slice(0, -1).join(", ")} and ${fromUs[fromUs.length - 1]}` : fromUs[0]}.`
+            : "Where we deliver anything you add from us later."}</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {text("Area / community", "area", "e.g. Jumeirah, Dubai", true)}
             {text("Street & building or villa", "street", "e.g. Al Wasl Road, Villa 12")}
             {text("Apartment or villa number", "unit", "e.g. 1204")}
             <div className="sm:col-span-2">
               <label className={labelCls}>Notes for our team (optional)</label>
-              <input className={field} value={venue.notes ?? ""} onChange={(e) => onVenue({ notes: e.target.value })} placeholder="Gate code, parking, which entrance" aria-label="Notes for our team" />
+              <input className={field} value={venue.notes ?? ""} onChange={(e) => onVenue({ notes: e.target.value })} placeholder="Gate code, parking, who receives it" aria-label="Notes for our team" />
             </div>
           </div>
           {fromUs.length > 0 && <p className="bz-vn-when">What we bring arrives an hour before the party{venue.time && clockBefore(venue.time, 1) ? ` — at ${clockBefore(venue.time, 1)}` : ""}; your experiences at the party&apos;s start.</p>}

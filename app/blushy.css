@@ -64,7 +64,8 @@
 .bz-stepnav { display: flex; gap: 5px; justify-content: center; flex: 1; min-width: 0; }
 .bz-navstep { background: none; border: 0; padding: 10px 11px; border-radius: 22px; display: flex; align-items: center; gap: 6px;
   color: #66585f; font-size: 12px; font-weight: 650; white-space: nowrap; cursor: pointer; font-family: var(--bz-sans); }
-.bz-navstep:disabled { cursor: default; }
+.bz-navstep:disabled { cursor: default; opacity: .55; }
+.bz-navstep:not(:disabled):not(.active):hover { background: #fff4f9; }
 .bz-navstep .n { width: 23px; height: 23px; border-radius: 50%; display: grid; place-items: center; background: #fbf0f5; font-size: 11px; color: #746a70; }
 .bz-navstep.active { background: #ffe8f2; color: var(--bz-ink); }
 .bz-navstep.active .n { background: var(--bz-pink); color: #fff; }

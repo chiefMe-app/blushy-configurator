@@ -44,7 +44,7 @@ export function venueRows(config: BuilderConfig): { k: string; v: string }[] {
     { k: "Grown-ups", v: grownUps ? String(grownUps) : "—" },
   ];
   const setting = { k: "Setting", v: v.isOutdoor === undefined ? "—" : v.isOutdoor ? "Outdoor" : "Indoor" };
-  if (diy) return [...when, { k: "Home address", v: or(address) }, setting, ...(v.notes?.trim() ? [{ k: "Notes", v: v.notes.trim() }] : []), ...guests];
+  if (diy) return [...when, { k: "Delivery address", v: or(address) }, setting, ...(v.notes?.trim() ? [{ k: "Notes", v: v.notes.trim() }] : []), ...guests];
   return [
     ...when,
     { k: "Venue", v: [v.venueType, v.venueName?.trim()].filter(Boolean).join(" · ") || "—" },
