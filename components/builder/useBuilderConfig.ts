@@ -2,6 +2,7 @@
 // ConfigurePage in app/builder/page.tsx (Phase 0.1g). The page calls this first,
 // so its hooks keep their order.
 import { useState } from "react";
+import { pinataForTheme } from "@/lib/studio/pinata";
 import { getThemeGraphicPresets, getThemeCutoutPresets } from "@/lib/themeCatalog";
 import {
   normalizeCutouts,
@@ -54,6 +55,7 @@ export function useBuilderConfig() {
       ...c,
       theme: id,
       themeSelected: true,
+      ...(c.pinata ? { pinata: pinataForTheme(c.pinata, c.theme, id) } : {}),
       decor: t
         ? {
             ...c.decor,

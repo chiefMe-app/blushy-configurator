@@ -35,6 +35,15 @@ export const THEME_PINATAS: Record<string, PinataShape[]> = {
   circus: ["icecream", "cupcake"], ballerina: ["heart", "crown"], pirates: ["treasure"], puppy_rescue: ["puppy"],
   dollhouse_kitties: ["kitten", "heart"], luxury_neutral: ["star", "heart"],
 };
+/**
+ * A new theme brings its own shape (2026-11-05, the owner: "pinata kar tanesi şeklinde kalmış" — a Frozen snowflake
+ * stayed on a Unicorn party): a shape of the old theme's own becomes the new theme's first; one she picked from the
+ * rest stays.
+ */
+export function pinataForTheme(p: Pinata, from: string, to: string): Pinata {
+  const old = THEME_PINATAS[from] ?? ["star"], own = THEME_PINATAS[to] ?? ["star"];
+  return from !== to && old.includes(p.shape) && !own.includes(p.shape) ? { ...p, shape: own[0] } : p;
+}
 /** The shapes in the order shown: the theme's own, then the rest. */
 export function pinataShapesFor(themeId: string) {
   const own = THEME_PINATAS[themeId] ?? ["star"];

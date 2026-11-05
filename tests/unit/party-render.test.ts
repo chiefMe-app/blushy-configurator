@@ -174,7 +174,7 @@ describe("the party's render", () => {
     expect(input.prompt).toContain("the grown-ups' table of picture 1 of image 3");
     expect(input.prompt).toContain("the piñata of picture 6 of image 3");
     expect(input.prompt).toContain("Image 4 is a sheet of the party's activities");
-    expect(input.prompt).toContain("bouncy castle with its turrets, on the lawn or floor at one side exactly as picture 2 of image 4");
+    expect(input.prompt).toContain("bouncy castle with its turrets, on the lawn or floor exactly as picture 2 of image 4");
     expect(input.prompt).toContain("face-painting table");
     expect(input.prompt).not.toMatch(/magic/i);
     expect(input.prompt).toContain("Image 5 is the table she chose");
@@ -206,5 +206,20 @@ describe("the party's render", () => {
     // A table without its picture is nothing to show.
     expect((await post({ theme: "unicorn", setting: "outdoor", table: c.table })).status).toBe(400);
     expect(subscribe).not.toHaveBeenCalled();
+  });
+});
+
+describe("the party's pieces stand apart", () => {
+  it("keeps the welcome board, the giveaways, the cake's cart and the popcorn cart apart; the grown-ups' table in view", () => {
+    const c = defaultConfig();
+    const p = partyPrompt(c, "outdoor", { backdrop: true, table: false, extras: ["adults", "cake", "welcome", "giveaways", "pinata"], experiences: ["popcorn"] });
+    expect(p).toContain("never two pieces made into one");
+    expect(p).toContain("The welcome board and the giveaways' board or table are two separate things");
+    expect(p).toContain("the popcorn cart is a cart of its own, standing apart from it");
+    expect(p).toContain("The piñata hangs alone on its own stand.");
+    expect(p).toContain("The photograph shows all 7 of them, each once and none left out: the balloon backdrop, the grown-ups' table, the cake, the welcome board, the giveaway boxes, the piñata, popcorn cart.");
+    expect(p).toContain("clearly in the picture: the whole of it, or at least its near half");
+    // One piece alone: nothing to keep apart.
+    expect(partyPrompt(c, "outdoor", { backdrop: true, table: false, extras: ["cake"] })).not.toContain("never two pieces");
   });
 });

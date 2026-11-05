@@ -7,7 +7,7 @@ import path from "node:path";
 import { THEMES, priceBreakdown, defaultConfig } from "@/lib/config";
 import {
   EXTRA_DIGIT_PRICE, NUMBER_PINATA_PRICE, PINATA_SHAPES, SHAPE_PINATA_PRICE, THEME_PINATAS, cleanAge, defaultPinata,
-  digitPicture, pinataPriceLines, pinataRenderKey, pinataShapesFor, pinataTotal, readPinata, shapePicture,
+  digitPicture, pinataForTheme, pinataPriceLines, pinataRenderKey, pinataShapesFor, pinataTotal, readPinata, shapePicture,
 } from "@/lib/studio/pinata";
 import { pinataPrompt } from "@/lib/studio/pinataRender";
 import { fromDraft, toDraft } from "@/lib/draft";
@@ -144,5 +144,17 @@ describe("the piñata kept and rendered", () => {
     vi.stubEnv("VERCEL_ENV", "production");
     expect((await post({ pinata: defaultPinata(), theme: "unicorn", preview: `data:image/jpeg;base64,${JPEG.toString("base64")}` })).status).toBe(503);
     expect(subscribe).not.toHaveBeenCalled();
+  });
+});
+
+describe("a new theme brings its own piñata shape", () => {
+  it("turns the old theme's snowflake into a unicorn; a shape she picked from the rest stays", () => {
+    const p = { ...defaultPinata({ themeId: "frozen" }), kind: "shape" as const };
+    expect(p.shape).toBe("snowflake");
+    expect(pinataForTheme(p, "frozen", "unicorn").shape).toBe("unicorn");
+    expect(pinataForTheme({ ...p, shape: "rocket" }, "frozen", "unicorn").shape).toBe("rocket");
+    // A shape the new theme has too stays (princess → barbie: crown).
+    expect(pinataForTheme({ ...p, shape: "crown" }, "princess", "barbie").shape).toBe("crown");
+    expect(pinataForTheme(p, "frozen", "frozen")).toBe(p);
   });
 });
