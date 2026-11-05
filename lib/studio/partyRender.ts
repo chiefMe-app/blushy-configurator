@@ -68,9 +68,9 @@ export function partyReferences(t: TableSetup, themeId: string): { key: TableIte
 /**
  * The tables whose photo has its chairs and things taken out (scripts/table/table-bare-fal.mjs), for the party photo:
  * with the shop's chairs in it, the render sat the children on those, not on hers (2026-11-05, the owner: "sandalye bu
- * seçili değil … userın seçtiğini yapalım"). Round and cloud still to do (fal's balance ran out).
+ * seçili değil … userın seçtiğini yapalım"). Every table with chairs; the low table has cushions, no chairs.
  */
-export const BARE_TABLES = ["standard", "half_wave", "flower"];
+export const BARE_TABLES = ["standard", "half_wave", "flower", "round", "cloud"];
 
 const SHAPE: Partial<Record<BackdropShapeId, string>> = {
   arch: "arch board", half_arch: "half-arch side board", round: "round board", rect: "rectangular board", banner: "printed banner",

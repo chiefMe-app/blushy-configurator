@@ -123,7 +123,7 @@ describe("the party's render", () => {
     expect(refs.length).toBeGreaterThan(0);
     // The table's photo without the shop's chairs, where there is one (2026-11-05).
     const tableRef = refs.find((r) => r.key === "table");
-    if (tableRef && ["standard", "half_wave", "flower"].includes(c.table!.choices.table)) expect(tableRef.photo).toMatch(/-bare\.webp$/);
+    if (tableRef && ["standard", "half_wave", "flower", "round", "cloud"].includes(c.table!.choices.table)) expect(tableRef.photo).toMatch(/-bare\.webp$/);
     expect(input.image_urls).toHaveLength(2 + refs.length);
     expect(input.image_size).toEqual({ width: 1344, height: 896 });
     expect(input).toMatchObject({ seed: 777 });
