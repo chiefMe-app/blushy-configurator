@@ -5,7 +5,7 @@ import { NextRequest } from "next/server";
 import sharp from "sharp";
 import { defaultConfig, themeById, type BuilderConfig } from "@/lib/config";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
-import { backdropWords, partyPieces, partyPrompt, partyReferences, partyRenderKey } from "@/lib/studio/partyRender";
+import { backdropWords, partyPieces, partyPrompt, partyReferences, partyRenderKey, seatsWords } from "@/lib/studio/partyRender";
 import { itemWords } from "@/lib/studio/tableRender";
 import { resetRenderGuard } from "@/lib/renderGuard";
 import { readNdjson } from "@/lib/ndjson";
@@ -46,7 +46,12 @@ describe("the party's picture", () => {
     const out = partyPrompt(c, "outdoor", { backdrop: true, table: true });
     expect(out).toMatch(/Image 1 is the balloon backdrop/);
     expect(out).toMatch(/Image 2 shows the kids' party table/);
-    expect(out).toMatch(/with 12 chairs/);
+    expect(out).toMatch(/with 12 small child-sized chairs/);
+    // Never the top view's six places as the count.
+    expect(out).toMatch(/only a sample cut of a few places, never the count: the real table has 12 places/);
+    // Photographed straight on, the table centred, its long side to the camera.
+    expect(out).toMatch(/straight on from the front/);
+    expect(out).toMatch(/its long side facing the camera/);
     expect(out).toMatch(/garden/);
     expect(out).toMatch(/never yellow/);
     expect(out).toMatch(/no cartoon or licensed characters/);
@@ -59,14 +64,26 @@ describe("the party's picture", () => {
     expect(own).toContain(itemWords(c.table!, "unicorn", "table"));
     expect(own).toContain(itemWords(c.table!, "unicorn", "chairs"));
     expect(own).toMatch(/Image 3 is the table she chose — copy only the table itself.*; image 4 is the chair she chose\./);
-    // 12 children: two tables of 10 seats, 6 and 6.
-    expect(own).toMatch(/2 identical tables.*with 12 chairs — exactly 3 along each long side of each table/);
+    // 12 children: two tables of 10 seats, 6 and 6 — one at each end, two along each side.
+    expect(own).toMatch(/2 identical low kids' tables.*with 12 small child-sized chairs.* — exactly 2 along each long side of each table and one at each end, 2 \+ 2 \+ 1 \+ 1 = 6 chairs and 6 places set at each table/);
     expect(own).toMatch(/exactly the one in image 4/);
     expect(own).toMatch(/never other chairs/);
     // Only the table: it is image 1.
     const table = partyPrompt(c, "indoor", { backdrop: false, table: true });
     expect(table).toMatch(/Image 1 shows the kids' party table/);
     expect(table).not.toMatch(/balloon backdrop/);
+  });
+});
+
+describe("the party's chairs", () => {
+  // 2026-11-05, the owner: "4 er tane bir tarafa bide yanlara 2 olabilir".
+  const seats = (kids: number, table = "standard") => seatsWords({ kids, choices: { ...defaultTableSetup(theme).choices, table } as never });
+  it("puts one at each end of a long table and shares the rest along its sides, counted out", () => {
+    expect(seats(10)).toMatch(/^ — exactly 4 along each long side and one at each end, 4 \+ 4 \+ 1 \+ 1 = 10 chairs and 10 places set, the table long and narrow \(about 1\.8 m long/);
+    expect(seats(5)).toMatch(/exactly 2 along each long side and one at one end, 2 \+ 2 \+ 1 = 5/);
+    expect(seats(4)).toMatch(/exactly 2 along each long side, 2 \+ 2 = 4/);
+    expect(seats(7)).toMatch(/exactly 3 along the far long side and 2 along the near one and one at each end, 3 \+ 2 \+ 1 \+ 1 = 7/);
+    expect(seats(10, "round")).toBe(" all round it");
   });
 });
 

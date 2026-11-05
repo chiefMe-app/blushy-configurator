@@ -60,15 +60,23 @@ export function backdropWords(decor: Pick<DecorConfig, "backdropItems" | "backdr
   return [boards.length ? `${boards.length > 1 ? "the boards" : "the board"}: ${list(boards.map((b) => `a ${b}`))}` : "", plinths].filter(Boolean).join("; ");
 }
 
-/** How the chairs stand: so many along each long side of a long table (2026-11-04 test: 10 children got 6 chairs). */
-function seatsWords(t: TableSetup): string {
+/** How the chairs stand (2026-11-05, the owner, with a photo taken straight on: "4 er tane bir tarafa bide yanlara 2
+ * olabilir"): one at each end of a long table, the rest shared along its two long sides. */
+export function seatsWords(t: Pick<TableSetup, "kids" | "choices">): string {
   const { perTable } = tableCounts(t);
   const round = t.choices.table === "round" || t.choices.table === "flower";
   if (round) return " all round it";
   const most = Math.max(...perTable);
-  // Long enough for them, and seen from a front corner so every chair shows.
-  const side = Math.ceil(most / 2);
-  return most > 1 ? ` — exactly ${side} along each long side${perTable.length > 1 ? " of each table" : ""}, the table long enough for them (about ${(side * 0.5).toFixed(1).replace(/\.0$/, "")} m), seen from one front corner so every chair shows` : "";
+  if (most <= 1) return "";
+  const ends = most >= 6 ? 2 : most === 5 ? 1 : 0;
+  const rest = most - ends, far = Math.ceil(rest / 2), near = rest - far;
+  const each = perTable.length > 1 ? " of each table" : "";
+  const sides = far === near ? `exactly ${far} along each long side${each}` : `exactly ${far} along the far long side${each} and ${near} along the near one`;
+  const atEnds = ends === 2 ? " and one at each end" : ends === 1 ? " and one at one end" : "";
+  const metres = (far * 0.45).toFixed(1).replace(/\.0$/, "");
+  // 2026-11-05 test: "exactly 4 along each long side" gave 2 — the count told as a sum, the table long and narrow.
+  const sum = `${[far, near, ...(ends ? Array(ends).fill(1) : [])].join(" + ")} = ${most} chairs and ${most} places set${each === "" ? "" : " at each table"}`;
+  return ` — ${sides}${atEnds}, ${sum}, the table long and narrow (about ${metres} m long and 60 cm wide) so they all fit`;
 }
 
 /** The table she chose, piece by piece, each told with its picture. */
@@ -78,8 +86,8 @@ function tableWords(t: TableSetup, themeId: string, image: (k: TableItemKey) => 
   const pic = (k: TableItemKey) => (image(k) ? ` — exactly the one in image ${image(k)}, the same shape, colour, material and style` : "");
   const piece = (k: TableItemKey) => itemWords(t, themeId, k);
   return [
-    `${tables > 1 ? `${tables} identical tables, each` : "the table"}: ${piece("table") || "a kids' party table"}${pic("table")}`,
-    floor ? `with soft floor cushions for ${t.kids} children` : `with ${t.kids} chairs${seatsWords(t)}, each ${piece("chairs") || "a children's chair"}${pic("chairs")}, every chair the same — never other chairs`,
+    `${tables > 1 ? `${tables} identical low kids' tables, each` : "a low kids' table"} (about 55 cm high): ${piece("table") || "a kids' party table"}${pic("table")}`,
+    floor ? `with soft floor cushions for ${t.kids} children` : `with ${t.kids} small child-sized chairs, half the size of grown-ups' chairs, their backs reaching only a little above the tabletop${seatsWords(t)}, each ${piece("chairs") || "a children's chair"}${pic("chairs")}, every chair the same — never other chairs`,
     piece("tablecloth") ? `dressed in ${piece("tablecloth")}` : "no tablecloth",
     piece("centrepiece") ? `with ${piece("centrepiece")} in the middle` : "",
   ].filter(Boolean).join("; ");
@@ -98,14 +106,15 @@ export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "the
   const words = pictures.backdrop ? backdropWords(config.decor) : "";
   return [
     pictures.backdrop ? "Image 1 is the balloon backdrop designed for this children's birthday party." : "",
-    t ? `Image ${tableImage} shows the kids' party table designed for it, seen from above: its place setting — the placemat, the plates, the cup, the napkin, the cutlery and every other piece — and its colours.` : "",
+    // The top view is a cut of six places (2026-11-05 test: the photo copied its six chairs, not her ten).
+    t ? `Image ${tableImage} shows the kids' party table designed for it, seen from above: its place setting — the placemat, the plates, the cup, the napkin, the cutlery and every other piece — and its colours. It is only a sample cut of a few places, never the count: the real table has ${t.kids} places, one at each chair.` : "",
     named.length ? `${named.join("; ").replace(/^i/, "I")}.` : "",
-    "Make one real, natural photograph of the whole party setup exactly as she designed it, taken with a full-frame camera from standing height a few metres back, at a gentle three-quarter angle, everything in the picture.",
+    "Make one real, natural photograph of the whole party setup exactly as she designed it, the way a party stylist photographs a finished setup: taken with a full-frame camera straight on from the front, a few metres back, from a little below standing height, facing the backdrop square on, everything in the picture.",
     pictures.backdrop
       ? `At the back stands the balloon backdrop of image 1, exactly as designed${words ? ` (${words})` : ""}: the same boards, stands and frames in the same shapes, sizes and colours, the same balloon garland in exactly the same balloon colours and fullness, the same printed words and pictures, nothing moved, added or left out — the printed words copied exactly, letter by letter. Every plinth in image 1 stays standing in front of the backdrop just as image 1 shows it, never hidden or left out.`
       : "",
     t
-      ? `${pictures.backdrop ? "In front of it, set a little to one side and further forward so the backdrop and its plinths stay in full view," : "In the middle,"} stands ${tableWords(t, config.theme, image)}. Every place is set exactly as image ${tableImage} shows — the same placemats, plates, cups, napkins and cutlery, the same colours and prints, each place the same — the table seen from the side at that angle, not from above.`
+      ? `${pictures.backdrop ? "Centred in front of it and a little forward, its long side facing the camera, with the backdrop rising behind and above it and its plinths in view beside the table's ends," : "In the middle, its long side facing the camera,"} stands ${tableWords(t, config.theme, image)}. ${t.choices.table === "round" || t.choices.table === "flower" || onFloor(t.choices) ? "" : "The chairs on the near side are seen from behind, those along the far side face the camera. "}Every place is set exactly as image ${tableImage} shows — the same placemats, plates, cups, napkins and cutlery, the same colours and prints, each place the same — the table seen from the front at that height, not from above.`
       : "",
     "The rooms, walls and floors the pictures show are only where they were drawn: leave them out, and set the backdrop and the table up in this setting instead.",
     SETTING[setting],
