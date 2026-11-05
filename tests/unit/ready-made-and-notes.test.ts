@@ -5,7 +5,7 @@ import { MAX_NOTES, cleanNotes, defaultConfig, themeById, type BuilderConfig } f
 import { fromDraft, toDraft } from "@/lib/draft";
 import { defaultGiveaways, giveawaysTotal } from "@/lib/studio/giveaways";
 import { appliedGiveawaySample, giveawaySamples, withGiveawaySample } from "@/lib/studio/giveawaySamples";
-import { appliedCupcakeSample, cakeSamples, cupcakeSamples, sceneOf, toScene } from "@/lib/studio/cakeSamples";
+import { appliedSweetSample, cakeSamples, cookieSamples, cupcakeSamples, sceneOf, toScene } from "@/lib/studio/cakeSamples";
 import { cakeDesigns } from "@/lib/studio/cake";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
 import { partyPrompt, placeWords } from "@/lib/studio/partyRender";
@@ -59,8 +59,14 @@ describe("ready-made cakes, cupcakes and where it is shown", () => {
   it("are three dozen-cupcake sets, each told apart once applied", () => {
     const c = cupcakeSamples(seed, ["unicorn"]);
     expect(c.map((x) => x.sweet.count)).toEqual([12, 12, 12]);
-    for (const x of c) expect(appliedCupcakeSample({ ...x.sweet, count: 24 }, c)).toBe(x.id);
-    expect(appliedCupcakeSample({ ...c[0].sweet, liner: "silver" }, c)).toBeUndefined();
+    for (const x of c) expect(appliedSweetSample({ ...x.sweet, count: 24 }, c)).toBe(x.id);
+    expect(appliedSweetSample({ ...c[0].sweet, liner: "silver" }, c)).toBeUndefined();
+  });
+  it("are three dozen-cookie sets, each another print", () => {
+    const c = cookieSamples(seed, ["unicorn"]);
+    expect(c.map((x) => x.sweet.id)).toEqual(["cookies", "cookies", "cookies"]);
+    expect(new Set(c.map((x) => x.sweet.print)).size).toBe(3);
+    for (const x of c) expect(appliedSweetSample(x.sweet, c)).toBe(x.id);
   });
   it("moves the cake to the table, a cart or plinths, a cart keeping its roof", () => {
     expect(sceneOf({})).toBe("table");

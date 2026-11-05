@@ -63,7 +63,7 @@ describe("the party's picture", () => {
     const own = partyPrompt(c, "outdoor", { backdrop: true, table: true, refs: ["table", "chairs"] });
     expect(own).toContain(itemWords(c.table!, "unicorn", "table"));
     expect(own).toContain(itemWords(c.table!, "unicorn", "chairs"));
-    expect(own).toMatch(/Image 3 is the table she chose — copy only the table itself.*; image 4 is the chair she chose\./);
+    expect(own).toMatch(/Image 3 is the table she chose — copy only the table itself.*; image 4 is the chair she chose — every child's chair is this one/);
     // 12 children: two tables of 10 seats, 6 and 6 — one at each end, two along each side.
     expect(own).toMatch(/2 identical low kids' tables.*with 12 small child-sized chairs.* — exactly 2 along each long side of each table and one at each end, 2 \+ 2 \+ 1 \+ 1 = 6 chairs and 6 places set at each table/);
     expect(own).toMatch(/exactly the one in image 4/);
@@ -121,6 +121,9 @@ describe("the party's render", () => {
     // The backdrop, the table's top view, then her table's and chair's own photos.
     const refs = partyReferences(c.table!, "unicorn");
     expect(refs.length).toBeGreaterThan(0);
+    // The table's photo without the shop's chairs, where there is one (2026-11-05).
+    const tableRef = refs.find((r) => r.key === "table");
+    if (tableRef && ["standard", "half_wave", "flower"].includes(c.table!.choices.table)) expect(tableRef.photo).toMatch(/-bare\.webp$/);
     expect(input.image_urls).toHaveLength(2 + refs.length);
     expect(input.image_size).toEqual({ width: 1344, height: 896 });
     expect(input).toMatchObject({ seed: 777 });
@@ -128,6 +131,26 @@ describe("the party's render", () => {
     expect(input.prompt).toContain(`Image 3 is the ${refs[0].key === "table" ? "table" : "chair"} she chose`);
     expect(input.prompt).toMatch(/indoors/);
   }, 30_000);
+
+  it("everything: the other parts' photos after the table's top view, at most eight pictures, the chair kept first", async () => {
+    subscribe.mockImplementation(async () => ({ data: { images: [{ url: "https://fal.example/x.jpg" }] } }));
+    const pic = async (bg: string) => `data:image/jpeg;base64,${(await sharp({ create: { width: 900, height: 900, channels: 3, background: bg } }).jpeg().toBuffer()).toString("base64")}`;
+    const c = party();
+    const extras = await Promise.all(["cake", "welcome", "giveaways", "helium", "pinata", "nope"].map(async (part) => ({ part, picture: await pic("#e0d0f0") })));
+    await lines(await post({ theme: "unicorn", setting: "outdoor", key: "abc123", table: c.table, backdrop: await pic("#f3c6cc"), tablePicture: await pic("#c6e0f3"), extras }));
+    const [, { input }] = subscribe.mock.calls[0] as [string, { input: { prompt: string; image_urls: string[] } }];
+    expect(input.image_urls).toHaveLength(8);
+    expect(input.prompt).toContain("the cake and sweets of image 3");
+    expect(input.prompt).toContain("the piñata of image 7");
+    expect(input.prompt).toContain("Image 8 is the chair she chose");
+    expect(input.prompt).not.toMatch(/is the table she chose/);
+  }, 30_000);
+
+  it("keys the picture by what goes in it", () => {
+    const c = party();
+    expect(partyRenderKey(c, "indoor")).not.toBe(partyRenderKey(c, "indoor", [{ part: "cake", key: "k1" }]));
+    expect(partyRenderKey(c, "indoor", [{ part: "cake", key: "k1" }])).not.toBe(partyRenderKey(c, "indoor", [{ part: "cake", key: "k2" }]));
+  });
 
   it("refuses no setting, or nothing to stand there, without calling fal", async () => {
     const c = party();

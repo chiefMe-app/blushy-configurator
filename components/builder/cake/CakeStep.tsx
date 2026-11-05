@@ -15,7 +15,7 @@ import {
 } from "@/lib/studio/cakeSweets";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
 import { CakeArt, CakeThumb } from "./CakePreview";
-import { appliedCupcakeSample, cakeSamples, cupcakeSamples, sceneOf, toScene, type CakeSample, type CakeScene } from "@/lib/studio/cakeSamples";
+import { appliedSweetSample, cakeSamples, cookieSamples, cupcakeSamples, sceneOf, toScene, type CakeSample, type CakeScene } from "@/lib/studio/cakeSamples";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 
@@ -390,26 +390,31 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
                 <img src={sweetPicture(kind.id).src} alt="" loading="lazy" />
                 <span><b>{kind.name}</b><small>{kind.note} · AED {formatAED(kind.each)} each</small></span>
               </div>
-              {/* Ready-made cupcakes (2026-11-05, the owner: "cupcake seçme yerinde aynı şekilde ready made olsun 3 seçenek"):
-                  a dozen at a tap — then the count, colour, topper and liners are hers to change. */}
-              {kind.id === "cupcakes" && (
-                <div className="bz-samples cupcakes" data-testid="cupcake-samples">
-                  <div className="bz-samples-head"><b>Ready-made cupcakes</b><span>Tap a set — then change anything below.</span></div>
-                  <div className="bz-samples-row">
-                    {cupcakeSamples(seed, pieces).map((cs) => {
-                      const on = appliedCupcakeSample(sw, [cs]) === cs.id;
-                      const art: Cake = { ...k, sweets: [cs.sweet], cart: undefined, plinths: undefined };
-                      return (
-                        <button key={cs.id} type="button" className={`bz-sample ${on ? "on" : ""}`} aria-pressed={on} data-testid={`cupcake-sample-${cs.id}`}
-                          onClick={() => setSweet({ ...cs.sweet, count: sw?.count ?? cs.sweet.count, ...(sw?.flavour ? { flavour: sw.flavour } : {}) })}>
-                          <span className="pic"><CakeArt k={art} view="cupcakes" themeId={theme.id} uid={`cps-${cs.id}`} testId={`cupcake-sample-art-${cs.id}`} /></span>
-                          <b>{cs.name}</b><small>{cs.note}</small>
-                        </button>
-                      );
-                    })}
+              {/* Ready-made sweets (2026-11-05, the owner: "cupcake seçme yerinde aynı şekilde ready made olsun 3 seçenek";
+                  then "iced cookies'de de ready made olsun 3 tane"): a dozen at a tap — then the count, colour, topper or
+                  print and liners are hers to change. */}
+              {(kind.id === "cupcakes" || kind.id === "cookies") && (() => {
+                const sets = kind.id === "cupcakes" ? cupcakeSamples(seed, pieces) : cookieSamples(seed, pieces);
+                const word = kind.id === "cupcakes" ? "cupcake" : "cookie";
+                return (
+                  <div className={`bz-samples ${kind.id}`} data-testid={`${word}-samples`}>
+                    <div className="bz-samples-head"><b>Ready-made {kind.id === "cupcakes" ? "cupcakes" : "cookies"}</b><span>Tap a set — then change anything below.</span></div>
+                    <div className="bz-samples-row">
+                      {sets.map((cs) => {
+                        const on = appliedSweetSample(sw, [cs]) === cs.id;
+                        const art: Cake = { ...k, sweets: [cs.sweet], cart: undefined, plinths: undefined };
+                        return (
+                          <button key={cs.id} type="button" className={`bz-sample ${on ? "on" : ""}`} aria-pressed={on} data-testid={`${word}-sample-${cs.id}`}
+                            onClick={() => setSweet({ ...cs.sweet, count: sw?.count ?? cs.sweet.count, ...(sw?.flavour ? { flavour: sw.flavour } : {}) })}>
+                            <span className="pic"><CakeArt k={art} view={kind.id} themeId={theme.id} uid={`${word}s-${cs.id}`} testId={`${word}-sample-art-${cs.id}`} /></span>
+                            <b>{cs.name}</b><small>{cs.note}</small>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
               <div className="bz-ck-counts" role="radiogroup" aria-label={`How many ${kind.name.toLowerCase()}`}>
                 {[0, ...SWEET_COUNTS].map((n) => (
                   <button key={n} type="button" role="radio" aria-checked={(sw?.count ?? 0) === n} className={(sw?.count ?? 0) === n ? "on" : ""}

@@ -62,11 +62,11 @@ import type { AfterSignInAction } from "@/lib/account";
 import { adultCounts, defaultAdultTable } from "@/lib/studio/adultTable";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
 import { defaultWelcomeBoard, welcomeRenderKey } from "@/lib/studio/welcomeBoard";
-import { partyPieces, partyRenderKey } from "@/lib/studio/partyRender";
+import { PARTY_EXTRAS, partyPieces, partyRenderKey, type PartyExtra } from "@/lib/studio/partyRender";
 import PartyPreview, { settingOf, type PartyShot } from "@/components/builder/venue/PartyPreview";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import { usePieceRender } from "@/components/builder/usePieceRender";
-import { nodeJpeg, svgJpeg, svgLayers } from "@/components/builder/nodeJpeg";
+import { imageJpeg, nodeJpeg, svgJpeg, svgLayers } from "@/components/builder/nodeJpeg";
 
 import Sprinkles from "@/components/design/Sprinkles";
 import { REQUIRE_RENDER } from "@/lib/renderGate";
@@ -318,13 +318,25 @@ export default function ConfigurePage() {
   // The whole party (2026-11-04): on the Venue step, the backdrop and the kids' table together, indoors or outdoors.
   const partySetting = settingOf(config.venue);
   const partyHas = partyPieces(config);
-  const partyKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting) : "";
+  // "Everything" (2026-11-05, the owner: "tasarladığım her şey tek render'da"): each other part by its own real photo.
+  const partyAll = config.venue.partyScope === "all";
+  const cakeWholeKey = config.cake?.enabled ? cakeRenderKey(config.cake, config.theme) : "";
+  const partyExtraUrls: Partial<Record<PartyExtra, { url: string | null; key: string }>> = {
+    ...(config.cake?.enabled ? { cake: { url: cakeRender.urlOf(cakeWholeKey), key: cakeWholeKey } } : {}),
+    ...(config.welcomeBoard?.enabled ? { welcome: { url: welcomeRender.url, key: welcomeKey } } : {}),
+    ...(config.giveaways?.enabled ? { giveaways: { url: giveawaysRender.url, key: giveawaysKey } } : {}),
+    ...(config.helium?.enabled ? { helium: { url: heliumRender.url, key: heliumKey } } : {}),
+    ...(config.pinata?.enabled ? { pinata: { url: pinataRender.url, key: pinataKey } } : {}),
+  };
+  const partyExtras = partyAll ? PARTY_EXTRAS.flatMap((part) => (partyExtraUrls[part]?.url ? [{ part, url: partyExtraUrls[part]!.url!, key: partyExtraUrls[part]!.key }] : [])) : [];
+  const partyKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting, partyExtras) : "";
   const partyShot = useRef<(() => Promise<PartyShot>) | null>(null);
   const partyRender = usePieceRender({
     endpoint: "/api/party-render", partKey: partyKey, kept: config.venue.render,
     body: async () => {
       const shot = await partyShot.current?.();
-      return { theme: config.theme, setting: partySetting, key: partyKey, table: config.table, decor: config.decor, backdrop: shot?.backdrop ?? null, tablePicture: shot?.tablePicture ?? null };
+      const extras = (await Promise.all(partyExtras.map(async (e) => ({ part: e.part, picture: await imageJpeg(e.url, 768).catch(() => null) })))).filter((e) => e.picture);
+      return { theme: config.theme, setting: partySetting, key: partyKey, table: config.table, decor: config.decor, backdrop: shot?.backdrop ?? null, tablePicture: shot?.tablePicture ?? null, ...(extras.length ? { extras } : {}) };
     },
     onKept: (render) => setConfig((c) => ({ ...c, venue: { ...c.venue, render } })),
     onSignInNeeded: () => askSignIn("party-render"),
@@ -865,6 +877,7 @@ export default function ConfigurePage() {
           {onHelium && <HeliumPreview config={config} render={heliumRender} onGenerate={makeHeliumRender} />}
           {step === 3 && <ExperiencesPreview config={config} />}
           {step === 5 && <PartyPreview config={config} render={partyRender} onGenerate={() => void partyRender.make()} onVenue={patchVenue} shot={partyShot}
+            extras={Object.fromEntries(PARTY_EXTRAS.flatMap((p) => (partyExtraUrls[p] ? [[p, partyExtraUrls[p]!.url]] : [])))}
             backdropUrl={finalRenderState.hasRender && !finalRenderState.isStale ? finalRenderState.imageUrl ?? null : null} tableUrl={tableRender.url} />}
           {/* 2026-11-04: on the left beside the packages (tidied). 2026-11-02 (owner: "finalize olmuş table setup dizaynı, backdrop vs tek tek çıkmalı. Jpeg şeklinde"). */}
           {showFinished && <FinishedDesigns config={config} onEdit={editPiece} onEditExperiences={() => goToStep(3)}

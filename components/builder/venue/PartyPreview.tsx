@@ -5,7 +5,7 @@
 // table (its render, or its drawing) are made into one picture of the party in that setting (/api/party-render).
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { THEMES, themeById, type BuilderConfig, type VenueDetails } from "@/lib/config";
-import { partyPieces, type PartySetting } from "@/lib/studio/partyRender";
+import { PARTY_EXTRA_NAMES, partyPieces, type PartyExtra, type PartySetting } from "@/lib/studio/partyRender";
 import { imageJpeg, nodeJpeg, svgJpeg } from "@/components/builder/nodeJpeg";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 import RenderAgain from "@/components/builder/RenderAgain";
@@ -27,8 +27,10 @@ const SETTINGS: { id: PartySetting; name: string; note: string }[] = [
 export const settingOf = (v: Pick<VenueDetails, "isOutdoor">): PartySetting | undefined =>
   v.isOutdoor === undefined ? undefined : v.isOutdoor ? "outdoor" : "indoor";
 
-export default function PartyPreview({ config, backdropUrl, tableUrl, render, onGenerate, onVenue, shot }: {
+export default function PartyPreview({ config, backdropUrl, tableUrl, render, onGenerate, onVenue, shot, extras = {} }: {
   config: BuilderConfig;
+  /** The other parts she designed, each with its real photo's address (null: no photo of it yet). */
+  extras?: Partial<Record<PartyExtra, string | null>>;
   /** The backdrop's render, when it has a current one: its sketch otherwise. */
   backdropUrl: string | null;
   /** The kids' table's render, when it has one: its drawing otherwise. */
@@ -62,6 +64,10 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
   });
 
   const nothing = !pieces.backdrop && !pieces.table;
+  const extraParts = Object.entries(extras) as [PartyExtra, string | null][];
+  const all = config.venue.partyScope === "all";
+  const allIn = all && extraParts.some(([, u]) => u);
+  const what = allIn ? "Everything you designed" : "Your backdrop and table";
   const word = setting === "outdoor" ? "outdoors" : "indoors";
   return (
     <div className="bz-tb-preview bz-party" data-testid="party-preview" id="party-preview-card">
@@ -81,6 +87,32 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
           ))}
         </div>
       </div>
+
+      {/* 2026-11-05 (the owner: "tasarladığım her şey tek render'da seçeneğini de yapalım"): the backdrop and the table,
+          or everything she designed, each other part by its own real photo. */}
+      {!nothing && extraParts.length > 0 && (
+        <div className="bz-party-where" data-testid="party-scope">
+          <b>What goes in the picture?</b>
+          <div className="bz-tb-options compact" role="radiogroup" aria-label="What goes in the picture">
+            {([["main", "Backdrop & table", "The two main pieces"], ["all", "Everything I designed", "Every part with its real photo"]] as const).map(([id, name, note]) => {
+              const on = (config.venue.partyScope ?? "main") === id;
+              return (
+                <button key={id} type="button" role="radio" aria-checked={on} className={`bz-tb-option ${on ? "on" : ""}`}
+                  onClick={() => onVenue({ partyScope: id })} data-testid={`party-scope-${id}`}>
+                  {on && <span className="tick">✓</span>}<b>{name}</b><small>{note}</small>
+                </button>
+              );
+            })}
+          </div>
+          {all && (
+            <ul className="bz-party-parts" data-testid="party-scope-parts">
+              {extraParts.map(([p, url]) => (
+                <li key={p} className={url ? "in" : "out"}>{url ? "✓" : "○"} {PARTY_EXTRA_NAMES[p]}{url ? "" : " — make its real photo first to add it"}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {nothing ? <div className="empty">Design a backdrop or a kids&apos; table to see your party here.</div> : <>
         {render.url ? (
@@ -107,7 +139,7 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
               <div className="veil" role="status" data-testid="party-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>
                 <b>Setting up your party {word}</b>
-                <span>Your backdrop and table together — about 30 seconds.</span>
+                <span>{what} together — about 30 seconds.</span>
               </div>
             )}
           </div>
@@ -117,13 +149,13 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
           {pieces.backdrop && !backdropUrl && <div ref={sketch}><div className="art"><LiveSketch config={config} activeId={null} /></div></div>}
           {pieces.table && !tableUrl && <div ref={table}><TablePlace table={config.table!} theme={theme} mode="six" /></div>}
         </div>
-        <p className="note">{render.url ? `Your party ${word} — your own backdrop and table, made real.` : setting ? `Your backdrop and table, stood together ${word}.` : "Mark indoors or outdoors, then see your party there."}</p>
+        <p className="note">{render.url ? `Your party ${word} — ${allIn ? "everything you designed" : "your own backdrop and table"}, made real.` : setting ? `${what}, stood together ${word}.` : "Mark indoors or outdoors, then see your party there."}</p>
         {!render.ready && !render.loading && (
           <div className="bz-tb-render" data-testid="party-render-box">
             <button type="button" className="bz-next" onClick={onGenerate} disabled={!setting} data-testid="party-render-make">
               {setting ? `See my party ${word} ✨` : "See my party ✨"}
             </button>
-            <p className="hint">{render.stale ? "You changed something since your picture." : "Your backdrop and table made into one photo of the party, for illustration."} Needs a free account.</p>
+            <p className="hint">{render.stale ? "You changed something since your picture." : `${what} made into one photo of the party, for illustration.`} Needs a free account.</p>
             {render.error && <p className="error" role="alert">{render.error}</p>}
           </div>
         )}

@@ -19,10 +19,31 @@ export function partyPieces(config: Pick<BuilderConfig, "decor" | "table">): { b
   };
 }
 
+/**
+ * "Everything in one picture" (2026-11-05, the owner: "tasarladığım her şey tek render'da seçeneğini de yapalım"): the
+ * other parts she designed, each by its own real photo, stood with the backdrop and the table. In this order; the
+ * engine takes eight pictures at most, so the last may be left out.
+ */
+export const PARTY_EXTRAS = ["cake", "welcome", "giveaways", "helium", "pinata"] as const;
+export type PartyExtra = (typeof PARTY_EXTRAS)[number];
+export const isPartyExtra = (v: unknown): v is PartyExtra => PARTY_EXTRAS.includes(v as PartyExtra);
+/** At most this many pictures go to the engine (FLUX.2's limit). */
+export const MAX_PARTY_IMAGES = 8;
+export const PARTY_EXTRA_NAMES: Record<PartyExtra, string> = { cake: "Cake & sweets", welcome: "Welcome board", giveaways: "Giveaways", helium: "Helium balloons", pinata: "Piñata" };
+/** Where each stands in the setup, told with its picture's number. */
+const EXTRA_WORDS: Record<PartyExtra, (n: number) => string> = {
+  cake: (n) => `the cake and sweets of image ${n}, on the same stand, cart, table or plinths image ${n} shows, at one side of the kids' table — the cake, its toppers and every sweet exactly as image ${n} shows them`,
+  welcome: (n) => `the welcome board of image ${n} on its stand, at one side near the front, turned a little towards the camera — the same shape, colours and pictures, its words copied exactly, letter by letter`,
+  giveaways: (n) => `the giveaway boxes of image ${n}, on their own board or little table as image ${n} shows them, at the other side — the same boxes, prints and names`,
+  helium: (n) => `the helium balloon bouquets of image ${n}, each tied to its weight on the floor, floating at the sides of the setup — the same balloons, foils and colours`,
+  pinata: (n) => `the piñata of image ${n}, hanging on its stand at one side — the same shape, colours and age`,
+};
+
 /** Changes with the backdrop, the table, the theme or the setting: what the photograph shows. */
-export function partyRenderKey(config: Pick<BuilderConfig, "decor" | "table" | "theme">, setting: PartySetting): string {
+export function partyRenderKey(config: Pick<BuilderConfig, "decor" | "table" | "theme">, setting: PartySetting, extras: { part: PartyExtra; key: string }[] = []): string {
   const p = partyPieces(config);
-  const s = JSON.stringify([setting, config.theme, p.backdrop ? config.decor : null, p.table && config.table ? tableRenderKey(config.table, config.theme) : null]);
+  const s = JSON.stringify([setting, config.theme, p.backdrop ? config.decor : null, p.table && config.table ? tableRenderKey(config.table, config.theme) : null,
+    ...(extras.length ? [extras.map((e) => `${e.part}:${e.key}`)] : [])]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
   return (h >>> 0).toString(36);
@@ -40,8 +61,16 @@ const PARTY_REFS: TableItemKey[] = ["table", "chairs"];
 
 /** The table's and the chair's option photos, in the order the prompt names them (after the backdrop and the top view). */
 export function partyReferences(t: TableSetup, themeId: string): { key: TableItemKey; photo: string }[] {
-  return referencePictures(t, themeId).filter((r) => PARTY_REFS.includes(r.key));
+  return referencePictures(t, themeId).filter((r) => PARTY_REFS.includes(r.key))
+    .map((r) => (r.key === "table" && BARE_TABLES.includes(t.choices.table) ? { ...r, photo: `/design/table/table-${t.choices.table}-bare.webp` } : r));
 }
+
+/**
+ * The tables whose photo has its chairs and things taken out (scripts/table/table-bare-fal.mjs), for the party photo:
+ * with the shop's chairs in it, the render sat the children on those, not on hers (2026-11-05, the owner: "sandalye bu
+ * seçili değil … userın seçtiğini yapalım"). Round and cloud still to do (fal's balance ran out).
+ */
+export const BARE_TABLES = ["standard", "half_wave", "flower"];
 
 const SHAPE: Partial<Record<BackdropShapeId, string>> = {
   arch: "arch board", half_arch: "half-arch side board", round: "round board", rect: "rectangular board", banner: "printed banner",
@@ -104,15 +133,19 @@ function tableWords(t: TableSetup, themeId: string, image: (k: TableItemKey) => 
 const piece = (t: TableSetup, themeId: string, k: TableItemKey) => itemWords(t, themeId, k);
 
 /** The words for the photograph: the pictures she has, stood together in her setting. */
-export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "theme">, setting: PartySetting, pictures: { backdrop: boolean; table: boolean; refs?: TableItemKey[] }): string {
+export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "theme">, setting: PartySetting, pictures: { backdrop: boolean; table: boolean; refs?: TableItemKey[]; extras?: PartyExtra[] }): string {
   const t = pictures.table ? config.table : undefined;
   const tableImage = pictures.backdrop ? 2 : 1;
   const refs = t ? pictures.refs ?? [] : [];
-  const image = (k: TableItemKey) => (refs.includes(k) ? tableImage + 1 + refs.indexOf(k) : 0);
+  const extras = pictures.extras ?? [];
+  // The pictures in order: the backdrop, the table's top view, the other parts' photos, then the table's and chair's own.
+  const firstExtra = (pictures.backdrop ? 1 : 0) + (t ? 1 : 0) + 1;
+  const image = (k: TableItemKey) => (refs.includes(k) ? firstExtra + extras.length + refs.indexOf(k) : 0);
+  const extraWords = extras.map((e, i) => EXTRA_WORDS[e](firstExtra + i));
   // The table's photo is a shop's set table: only the table itself is hers (2026-11-04 test: its cups and toys came along).
   const named = refs.map((k) => (k === "table"
     ? `image ${image(k)} is the table she chose — copy only the table itself, its shape, top and legs; the chairs, cups, plates and everything else on or around it in that photo are not hers and stay out`
-    : `image ${image(k)} is the chair she chose`));
+    : `image ${image(k)} is the chair she chose — every child's chair is this one, its shape, back and colour, never a chair from any other image`));
   const words = pictures.backdrop ? backdropWords(config.decor) : "";
   return [
     pictures.backdrop ? "Image 1 is the balloon backdrop designed for this children's birthday party." : "",
@@ -126,7 +159,10 @@ export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "the
     t
       ? `${pictures.backdrop ? "Centred in front of it and a little forward, its long side facing the camera, with the backdrop rising behind and above it and its plinths in view beside the table's ends," : "In the middle, its long side facing the camera,"} stands ${tableWords(t, config.theme, image)}. ${t.choices.table === "round" || t.choices.table === "flower" || onFloor(t.choices) ? "" : "The chairs on the near side are seen from behind, those along the far side face the camera. "}Every place is set exactly as image ${tableImage} shows — ${placeWords(t, config.theme) || "the same placemats, plates, cups, napkins and cutlery"} — the same colours and prints, each place the same, the table seen from the front at that height, not from above. Everything at the places lies flat or stands low as in image ${tableImage}: the placemats' words are printed flat on the paper; nothing stands up on the table — no cards, signs, place cards, standing letters or words — beyond ${piece(t, config.theme, "centrepiece") ? "the centrepiece in its middle" : "the pieces named"}.`
       : "",
-    "The rooms, walls and floors the pictures show are only where they were drawn: leave them out, and set the backdrop and the table up in this setting instead.",
+    extraWords.length
+      ? `Around them, in the same one setup and the same photograph, stand the other pieces she designed, each exactly as its own photo shows it, at a believable real size beside the table and the backdrop, none hiding the backdrop or the table: ${extraWords.join("; ")}. The camera stands far enough back for every piece to be in the picture.`
+      : "",
+    `The rooms, walls and floors the pictures show are only where they were drawn: leave them out, and set ${extraWords.length ? "every piece" : "the backdrop and the table"} up in this setting instead.`,
     SETTING[setting],
     LIGHT,
     "Nothing added: no people, no children, no cartoon or licensed characters, no extra decorations, furniture or words beyond those in the pictures.",

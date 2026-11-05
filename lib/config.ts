@@ -1336,6 +1336,8 @@ export interface VenueDetails {
   childrenCount: number;
   /** The party's picture (backdrop and table together, in her setting), kept in the customer's folder. */
   render?: { key: string; path: string };
+  /** What the party's picture shows (2026-11-05): the backdrop and the table, or everything she designed ("all"). */
+  partyScope?: "main" | "all";
   // 2026-11-04, the venue step by package (lib/venue.ts): DIY's home address, We do it's venue, setup and collection.
   adultsCount?: number;
   /** When the party ends, "18:00". */

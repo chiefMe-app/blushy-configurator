@@ -140,6 +140,8 @@ const HAT_POMPOM = { cx: 0.096, cy: 0.093, r: 0.093 };
 /** The views (2026-10-31): one place on its own, or six places, a part of the table; since 2026-11-05 (the owner:
  *  "4 places gözüksün 6 yerine … centrepieceleri görebiliriz böylece, overlap olmasın") four, two facing two. */
 export type PlaceMode = "one" | "four" | "six";
+/** How tall the theme cutouts on the table stand, in cm. */
+export const CUTOUT_CM = 20;
 
 /** The focus place, the places shown, and the plan in the picture's frame. */
 function frame(t: TableSetup, mode: PlaceMode) {
@@ -188,7 +190,8 @@ export function placeView(t: TableSetup, mode: PlaceMode = "one"): PlaceView {
   let w = x1 - x0 + 4, h = y1 - y0 + 2;
   // One place in a 4:3 picture; six in a picture as wide as they are, a part of the table beyond them at the sides.
   if (mode === "six") w += 24;
-  else if (mode === "four") w += 14;
+  // Four (2026-11-05, the owner: "cropladığım alan kadar"): just the four, no places beyond them at the sides.
+  else if (mode === "four") w += 4;
   else if (w / h > 4 / 3) h = (w * 3) / 4; else w = (h * 4) / 3;
   return { x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h / 2, w, h };
 }
@@ -202,7 +205,8 @@ export function placeLayout(t: TableSetup, theme: { id: string; balloonColors: s
   const view = placeView(t, mode);
   const inView = ([x, y]: Pt, margin: number) => x > view.x - margin && x < view.x + view.w + margin && y > view.y - margin && y < view.y + view.h + margin;
   // One place is on its own; six show the places beyond them in part, at the edges.
-  const seats = table.seats.map((s, i) => ({ s, i, c: at(centre(s)) })).filter(({ s, c }) => (mode === "one" ? s === focus : inView(c, 30)));
+  const seats = table.seats.map((s, i) => ({ s, i, c: at(centre(s)) }))
+    .filter(({ s, c }) => (mode === "one" ? s === focus : mode === "four" ? shown.includes(s) : inView(c, 30)));
   const nodes: PlaceNode[] = [];
   const cloth = t.choices.tablecloth !== NONE;
   nodes.push({ k: "top", pts: table.outline.map(at), fill: cloth ? t.clothColor : "#F7F5F2", cloth });
@@ -229,7 +233,8 @@ export function placeLayout(t: TableSetup, theme: { id: string; balloonColors: s
         if (!o) return;
         const x = (c[0] + o.c[0]) / 2, y = (c[1] + o.c[1]) / 2;
         const strip = Math.abs(o.c[1] - c[1]) - 29.7;
-        const h0 = tall(name, w0), k2 = Math.min(1, Math.max(8, strip * 1.05) / h0);
+        // The cutouts stand 20 cm tall (2026-11-05, the owner: "cutoutların boyu 20cm olsun" — the table's centrepieces).
+        const h0 = tall(name, w0), k2 = cp === "cutouts" ? CUTOUT_CM / h0 : Math.min(1, Math.max(8, strip * 1.05) / h0);
         nodes.push({ k: "img", src: piece(name), x, y, w: w0 * k2, h: h0 * k2, lift: 4, id: `centre-${k}` });
       });
     }

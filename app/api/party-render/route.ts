@@ -12,7 +12,7 @@ import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
 import { gradePhoto } from "@/lib/photoGrade";
 import { readTableSetup } from "@/lib/studio/tableSetup";
-import { partyPrompt, partyReferences, type PartySetting } from "@/lib/studio/partyRender";
+import { MAX_PARTY_IMAGES, PARTY_EXTRAS, partyPrompt, partyReferences, type PartySetting } from "@/lib/studio/partyRender";
 import { optionPicture } from "@/lib/studio/tableOptionPicture";
 
 export const runtime = "nodejs";
@@ -45,7 +45,7 @@ function readDecor(raw: unknown): Pick<DecorConfig, "backdropItems" | "backdropC
 const pictureOf = (v: unknown) => (typeof v === "string" ? v.match(/^data:image\/(?:jpeg|png);base64,([A-Za-z0-9+/=]+)$/)?.[1] : undefined);
 
 export async function POST(req: NextRequest) {
-  let body: { theme?: unknown; setting?: unknown; key?: unknown; table?: unknown; decor?: unknown; backdrop?: unknown; tablePicture?: unknown };
+  let body: { theme?: unknown; setting?: unknown; key?: unknown; table?: unknown; decor?: unknown; backdrop?: unknown; tablePicture?: unknown; extras?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
   const theme = typeof body?.theme === "string" ? themeById(body.theme) : undefined;
   const setting: PartySetting | undefined = body?.setting === "indoor" || body?.setting === "outdoor" ? body.setting : undefined;
@@ -55,7 +55,14 @@ export async function POST(req: NextRequest) {
   // Nothing designed to stand there: not worth a render.
   if (!backdrop && !(table?.enabled && tablePic)) return NextResponse.json({ error: "Design a backdrop or a table first." }, { status: 400 });
   const pictures = [backdrop, table?.enabled ? tablePic : undefined].filter((p): p is string => !!p).map((p) => Buffer.from(p, "base64"));
-  if (pictures.some((b) => b.length > MAX_PICTURE_BYTES)) return NextResponse.json({ error: "A picture is too big." }, { status: 413 });
+  // "Everything" (2026-11-05): the other parts' own photos, each once, in PARTY_EXTRAS' order, as many as fit.
+  const sent = Array.isArray(body.extras) ? body.extras.slice(0, PARTY_EXTRAS.length) : [];
+  const extras = PARTY_EXTRAS.flatMap((part) => {
+    const e = sent.find((x) => (x as { part?: unknown })?.part === part) as { picture?: unknown } | undefined;
+    const b64 = e ? pictureOf(e.picture) : undefined;
+    return b64 ? [{ part, bytes: Buffer.from(b64, "base64") }] : [];
+  }).slice(0, MAX_PARTY_IMAGES - pictures.length);
+  if ([...pictures, ...extras.map((e) => e.bytes)].some((b) => b.length > MAX_PICTURE_BYTES)) return NextResponse.json({ error: "A picture is too big." }, { status: 413 });
   const falKey = process.env.FAL_KEY;
   if (!falKey) return NextResponse.json({ error: "Renders are not available right now." }, { status: 503 });
 
@@ -72,9 +79,14 @@ export async function POST(req: NextRequest) {
     if (!taken.ok) return NextResponse.json({ error: taken.error, signin: taken.signin, limited: taken.limited }, { status: taken.status });
     // Each a picture, and only one: re-encoded here, at most 1024 px long (two go in: the engine's price is by size).
     const images = await Promise.all(pictures.map((b) => sharp(b).resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 88 }).toBuffer()));
+    // The other parts smaller: each is one piece of the picture.
+    const extraImages = await Promise.all(extras.map((e) => sharp(e.bytes).resize({ width: 768, height: 768, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 86 }).toBuffer()));
     // Her table's and chair's own option photos (2026-11-04, the owner: "Birebir benim seçimlerim olmalı masa sandalye
     // backdrop vs"), small: the top view already shows the rest. One that can't be read is left out.
-    const refs = table?.enabled ? partyReferences(table, theme.id) : [];
+    // Room left for them (eight pictures at most): the chair first, then the table's photo.
+    const room = MAX_PARTY_IMAGES - images.length - extraImages.length;
+    const refs = (table?.enabled ? partyReferences(table, theme.id) : []).sort((a, b) => Number(b.key === "chairs") - Number(a.key === "chairs")).slice(0, Math.max(0, room))
+      .sort((a, b) => Number(a.key === "chairs") - Number(b.key === "chairs"));
     const refPics = (await Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin, 512).then((u) => ({ key: r.key, u })).catch(() => null)))).filter((r): r is { key: (typeof refs)[number]["key"]; u: string } => !!r);
     const has = { backdrop: !!backdrop, table: !!table?.enabled };
     // The builder's key for what it sent (partyRenderKey): only ever a short word of letters and digits.
@@ -86,8 +98,8 @@ export async function POST(req: NextRequest) {
         try {
           const result = await fal.subscribe(MODEL, {
             input: {
-              prompt: partyPrompt({ table, decor: { ...defaultConfig().decor, ...readDecor(body.decor) }, theme: theme.id }, setting, { ...has, refs: refPics.map((r) => r.key) }),
-              image_urls: [...images.map((b) => `data:image/jpeg;base64,${b.toString("base64")}`), ...refPics.map((r) => r.u)], num_images: 1, output_format: "jpeg",
+              prompt: partyPrompt({ table, decor: { ...defaultConfig().decor, ...readDecor(body.decor) }, theme: theme.id }, setting, { ...has, refs: refPics.map((r) => r.key), extras: extras.map((e) => e.part) }),
+              image_urls: [...[...images, ...extraImages].map((b) => `data:image/jpeg;base64,${b.toString("base64")}`), ...refPics.map((r) => r.u)], num_images: 1, output_format: "jpeg",
               image_size: SIZE, seed: 777,
             } as never,
             abortSignal: AbortSignal.timeout(130_000),

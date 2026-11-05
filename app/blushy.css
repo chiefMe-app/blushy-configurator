@@ -884,7 +884,9 @@
   .bz-ex-grid { gap: 10px; }
 
   /* Left: the preview fills its card. */
-  .bz-preview-frame { width: 100% !important; aspect-ratio: auto !important; height: calc(var(--bz-avail) - 150px) !important; background: #f7f4f2; }
+  /* Square, as the sketch and the photos are (2026-11-05, the owner on a wide screen: "sıkıntı var görüntüde" — a
+     landscape box left grey bands either side of the square sketch). */
+  .bz-preview-frame { width: min(100%, calc(var(--bz-avail) - 150px)) !important; aspect-ratio: 1 / 1 !important; height: auto !important; margin-left: auto; margin-right: auto; background: #f7f4f2; }
   .bz-preview-bottom { padding: 10px 4px 0; justify-content: flex-end; }
   .bz-preview-bottom p, .bz-little-note, .bz-left details.group { display: none; }
 }
@@ -1706,6 +1708,10 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 .bz-ck-scenes .pic svg { display: block; width: 100%; height: 100%; }
 .bz-ck-scenes b { display: block; font-size: 14px; padding: 0 4px; }
 .bz-ck-scenes small { display: block; font-size: 12px; color: var(--bz-muted); padding: 0 4px; }
-.bz-samples.cupcakes { margin: 10px 0 12px; padding: 10px; }
-.bz-samples.cupcakes .bz-samples-head b { font-size: 18px; }
+.bz-samples.cupcakes, .bz-samples.cookies { margin: 10px 0 12px; padding: 10px; }
+.bz-samples.cupcakes .bz-samples-head b, .bz-samples.cookies .bz-samples-head b { font-size: 18px; }
 @media (max-width: 480px) { .bz-ck-scenes { gap: 6px; } .bz-ck-scenes small { display: none; } }
+/* 2026-11-05: the party picture's parts, in or still to photograph. */
+.bz-party-parts { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; }
+.bz-party-parts li.in { color: #2f7a4f; font-weight: 600; }
+.bz-party-parts li.out { color: var(--bz-muted); }

@@ -57,7 +57,7 @@ const WORDS: Partial<Record<TableItemKey, Record<string, string>>> = {
   cutleryHolder: { band: "a plain {holder} paper napkin band" },
   bottleLabel: { plain: "a small clear water bottle wrapped in a plain matte {label} paper label", watercolour: "a small clear water bottle wrapped in a paper label printed with the design of its picture", sparkle: "a small clear water bottle wrapped in a paper label printed with the design of its picture" },
   // 2026-10-28, the owner's flower references: lush, pastel, garden-style.
-  centrepiece: { balloons: "a small bunch of mini balloons in the theme colours", florals: "a small, low, compact arrangement of a few pastel flowers — lilac delphinium tips, pink and cream roses, sweet peas and tiny white blooms — set in a hidden block of floral foam covered by leaves — no visible foam, box or vase — low enough to see across the table", toppers: "glittery star toppers on sticks in a little pot", cutouts: "a little group of three small standing card cutouts of the theme's shapes ({motif}) on clear acrylic bases — shapes only, no characters" },
+  centrepiece: { balloons: "a small bunch of mini balloons in the theme colours", florals: "a small, low, compact arrangement of a few pastel flowers — lilac delphinium tips, pink and cream roses, sweet peas and tiny white blooms — set in a hidden block of floral foam covered by leaves — no visible foam, box or vase — low enough to see across the table", toppers: "glittery star toppers on sticks in a little pot", cutouts: "a little group of three standing card cutouts of the theme's shapes ({motif}) on clear acrylic bases, each about 20 cm tall — shapes only, no characters" },
   partyHats: { cone: "a plain {hat} cone party hat" },
 };
 

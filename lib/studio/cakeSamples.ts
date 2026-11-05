@@ -37,10 +37,9 @@ export function cakeSamples(seed: CakeSeed): CakeSample[] {
   ];
 }
 
-export interface CupcakeSample { id: string; name: string; note: string; sweet: CakeSweet }
-
+export interface SweetSample { id: string; name: string; note: string; sweet: CakeSweet }
 /** Three sets of a dozen cupcakes: a figure on each in gold foil, rainbow confetti with sprinkles, plain silver. */
-export function cupcakeSamples(seed: CakeSeed, pieces: CakeFigure[]): CupcakeSample[] {
+export function cupcakeSamples(seed: CakeSeed, pieces: CakeFigure[]): SweetSample[] {
   const [a, b] = [seed.colours?.[0] ?? "#F8BBD0", seed.colours?.[1] ?? seed.colours?.[0] ?? WHITE].map(up);
   const piece = pieces[0];
   return [
@@ -50,9 +49,21 @@ export function cupcakeSamples(seed: CakeSeed, pieces: CakeFigure[]): CupcakeSam
   ];
 }
 
-/** Whether her cupcakes are one of the sets (what she has changed since does not count). */
-export const appliedCupcakeSample = (sw: CakeSweet | undefined, samples: CupcakeSample[]) => sw
-  ? samples.find((s) => s.sweet.colour === sw.colour && s.sweet.topper === sw.topper && !!s.sweet.sprinkles === !!sw.sprinkles && (s.sweet.liner ?? "gold") === (sw.liner ?? "gold"))?.id
+/** Three sets of a dozen iced cookies (2026-11-05, the owner: "iced cookies'de de ready made olsun 3 tane"). */
+export function cookieSamples(seed: CakeSeed, pieces: CakeFigure[]): SweetSample[] {
+  const [a, b] = [seed.colours?.[0] ?? "#F8BBD0", seed.colours?.[1] ?? seed.colours?.[0] ?? WHITE].map(up);
+  const piece = pieces[0];
+  return [
+    { id: "theme", name: "Theme Prints", note: "The theme's picture on each", sweet: { id: "cookies", count: 12, colour: WHITE, ...(piece ? { print: piece } : {}) } },
+    { id: "age", name: "Birthday Age", note: "The age on each, in your colour", sweet: { id: "cookies", count: 12, colour: a, print: "age" } },
+    { id: "sprinkle-stars", name: "Sprinkle Stars", note: "A star on each, rainbow sprinkles", sweet: { id: "cookies", count: 12, colour: b === a ? WHITE : b, print: "star", sprinkles: true } },
+  ];
+}
+
+/** Which set her sweets are (what she has changed since does not count: the count and the flavour do not). */
+export const appliedSweetSample = (sw: CakeSweet | undefined, samples: SweetSample[]) => sw
+  ? samples.find((s) => s.sweet.colour === sw.colour && s.sweet.topper === sw.topper && s.sweet.print === sw.print
+    && !!s.sweet.sprinkles === !!sw.sprinkles && (s.sweet.liner ?? "gold") === (sw.liner ?? "gold"))?.id
   : undefined;
 
 /** Where it is shown: on the table, on a sweet cart, on plinths. */
