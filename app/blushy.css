@@ -1588,6 +1588,7 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 
 /* The whole party in one photograph, on the Venue step (2026-11-04): indoors or outdoors, then the picture. */
 .bz-party .bz-party-where { margin: 4px 0 12px; }
+.bz-party .bz-party-disclaimer { margin: 8px 0 0; font-size: 12px; line-height: 1.4; color: #7a6c73; font-style: italic; }
 .bz-party .bz-party-where > b { display: block; font: 400 20px var(--bz-hand); color: var(--bz-ink, #2b1a24); margin-bottom: 8px; }
 .bz-party .bz-tb-options.compact { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .bz-party-pieces { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; }

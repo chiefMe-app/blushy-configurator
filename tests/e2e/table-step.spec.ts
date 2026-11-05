@@ -1012,6 +1012,8 @@ test("VN2 the venue step: no photo upload; indoors or outdoors, then the backdro
   await expect(card.getByTestId("party-setting-outdoor")).toHaveAttribute("aria-checked", "true");
   await card.getByRole("button", { name: "See my party outdoors ✨" }).click();
   await expect(card.getByTestId("party-render")).toBeVisible();
+  // For illustration only (2026-11-05): the count may not match.
+  await expect(card.getByTestId("party-render-disclaimer")).toContainText("For illustration only");
   const calls = () => guard.blocked.filter((r) => r.url().includes("/api/party-render"));
   const sent = JSON.parse(calls()[0].postData()!);
   expect(sent).toMatchObject({ theme: "frozen", setting: "outdoor" });

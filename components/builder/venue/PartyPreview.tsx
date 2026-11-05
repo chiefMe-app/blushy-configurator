@@ -84,7 +84,12 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
 
       {nothing ? <div className="empty">Design a backdrop or a kids&apos; table to see your party here.</div> : <>
         {render.url ? (
-          <ZoomPhoto testId="party-render" src={render.url} alt={`Your party ${word}, as a real photo`} />
+          <>
+            <ZoomPhoto testId="party-render" src={render.url} alt={`Your party ${word}, as a real photo`} />
+            {/* 2026-11-05, the owner: "bu illustrasyon amaclidir belirtelim gercek masa sandalye sayisini vermeyebilir" —
+                the engine can't be held to the count. */}
+            <p className="bz-party-disclaimer" data-testid="party-render-disclaimer">For illustration only — the number of tables and chairs, and some details, may differ from your real party.</p>
+          </>
         ) : (
           <div className={`bz-party-pieces ${render.loading ? "on" : ""}`}>
             {/* What goes in: the backdrop and the table as they are now. */}
@@ -118,7 +123,7 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
             <button type="button" className="bz-next" onClick={onGenerate} disabled={!setting} data-testid="party-render-make">
               {setting ? `See my party ${word} ✨` : "See my party ✨"}
             </button>
-            <p className="hint">{render.stale ? "You changed something since your picture." : "Your backdrop and table made into one photo of the party."} Needs a free account.</p>
+            <p className="hint">{render.stale ? "You changed something since your picture." : "Your backdrop and table made into one photo of the party, for illustration."} Needs a free account.</p>
             {render.error && <p className="error" role="alert">{render.error}</p>}
           </div>
         )}
