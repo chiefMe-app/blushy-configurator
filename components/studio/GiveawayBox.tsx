@@ -37,7 +37,10 @@ export default function GiveawayBox({ look, x, y, h, rot = 0, uid }: { look: Box
   const k = h / H, w = W * k;
   const face = tableFont(look.font);
   const family = `${fontCss(face)}, Georgia, serif`;
-  const lines = boxLines(face.hand ? look.name : look.name.toUpperCase());
+  // No name yet: a faint "Name" where it goes, for her eyes only (2026-11-05, as the kids' table's hints).
+  const hint = !look.name.trim();
+  const shownName = hint ? "Name" : look.name;
+  const lines = boxLines(face.hand ? shownName : shownName.toUpperCase());
   const plain = !look.print;
   // As big as the panel's lower part lets it, each line across, the lines in its height — the name's line the
   // bigger, as her example. A letter's width for its size, roughly: a script's narrow, the bold face's wide.
@@ -57,6 +60,13 @@ export default function GiveawayBox({ look, x, y, h, rot = 0, uid }: { look: Box
       <defs>
         <clipPath id={`${uid}-panel`}><rect x={p.x} y={p.y} width={p.w} height={p.h} /></clipPath>
         {/* The box's own outline, for a plain box coloured all over. */}
+        <filter id={`${uid}-halo`} x="-10%" y="-30%" width="120%" height="160%">
+          <feMorphology in="SourceAlpha" operator="dilate" radius={p.h * 0.006} result="grown" />
+          <feGaussianBlur in="grown" stdDeviation={p.h * 0.008} result="soft" />
+          <feFlood floodColor={haloOf(look.accent)} floodOpacity={0.85} />
+          <feComposite in2="soft" operator="in" result="halo" />
+          <feMerge><feMergeNode in="halo" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
         <mask id={`${uid}-box`} style={{ maskType: "alpha" }}><image href={BOX_PHOTO.src} width={W} height={H} /></mask>
       </defs>
       <image href={BOX_PHOTO.src} width={W} height={H} />
@@ -65,15 +75,26 @@ export default function GiveawayBox({ look, x, y, h, rot = 0, uid }: { look: Box
           : <rect width={W} height={H} fill={look.colour ?? "#FFFFFF"} data-part="box-colour" />}
         {/* The theme's picture printed on it: its white ground takes the print's colour. */}
         {!plain && <image href={look.sticker} x={p.x + p.w / 2 - pic / 2} y={p.y + p.h * 0.06} width={pic} height={pic} preserveAspectRatio="xMidYMid meet" style={{ mixBlendMode: "multiply" }} />}
-        {lines.map((l, i) => (
-          // Bolder: the letters drawn over with their own colour (a script's thin strokes most of all).
-          <FitText key={i} x={p.x + p.w / 2} y={ys[i]} fontSize={sizes[i]} maxWidth={across} textAnchor="middle" fill={look.accent}
-            stroke={look.accent} strokeWidth={sizes[i] * (face.hand ? 0.045 : 0.018)} strokeLinejoin="round" paintOrder="stroke" style={{ fontFamily: family, fontWeight: face.weight }}>{l}</FitText>
-        ))}
+        {/* A soft halo round the name, so it reads on any print (2026-11-05, as the kids' table's words): light
+            round dark letters, dark round light ones. */}
+        <g filter={`url(#${uid}-halo)`} {...(hint ? { "data-no-capture": "", opacity: 0.45, "data-hint": "" } : {})}>
+          {lines.map((l, i) => (
+            // Bolder: the letters drawn over with their own colour (a script's thin strokes most of all).
+            <FitText key={i} x={p.x + p.w / 2} y={ys[i]} fontSize={sizes[i]} maxWidth={across} textAnchor="middle" fill={look.accent}
+              stroke={look.accent} strokeWidth={sizes[i] * (face.hand ? 0.045 : 0.018)} strokeLinejoin="round" paintOrder="stroke" style={{ fontFamily: family, fontWeight: face.weight }}>{l}</FitText>
+          ))}
+        </g>
         {/* The box's own light and shade over the print: the photo brightened so its grey panel reads white
             (scripts: sharp linear ×1.26), or the print turns muddy. */}
         <image href={BOX_PHOTO.shade} width={W} height={H} style={{ mixBlendMode: "multiply" }} />
       </g>
     </g>
   );
+}
+
+/** The halo's colour round words of a colour: dark round light words, white round the rest. */
+export function haloOf(hex: string): string {
+  const n = parseInt((/^#[0-9a-f]{6}$/i.test(hex) ? hex : "#000000").slice(1), 16);
+  const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return lum > 0.75 ? "#3C2832" : "#FFFFFF";
 }

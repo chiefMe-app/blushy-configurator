@@ -1657,3 +1657,15 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 .bz-party-stage .art { background: #fff; }
 .bz-party-stage svg { display: block; width: 100% !important; height: auto !important; max-width: none; }
 .bz-party .bz-tb-render .bz-next:disabled { opacity: .45; cursor: not-allowed; }
+/* Ready-made giveaways (2026-11-05): the board's photo is tall — shown whole, the box drawn on a soft ground. */
+.bz-samples.giveaways .bz-sample .pic { aspect-ratio: 3 / 4; background: #f7f3ef; }
+.bz-samples.giveaways .bz-sample .pic svg { object-fit: contain; }
+/* Ready-made cakes (2026-11-05): the whole cake table, shown whole. */
+.bz-samples.cakes .bz-sample .pic { aspect-ratio: 4 / 5; background: #f7f3ef; }
+.bz-samples.cakes .bz-sample .pic svg { object-fit: contain; }
+/* Her notes for the design team (2026-11-05), on the Review step. */
+.bz-notes { display: grid; gap: 6px; padding: 14px 16px; border-radius: 18px; background: #fff7fb; border: 1.5px solid #f6dbe7; font: 700 14px var(--bz-sans); color: var(--bz-ink); }
+.bz-notes small { font-weight: 400; color: var(--bz-muted); }
+.bz-notes > small { justify-self: end; font-size: 11px; }
+.bz-notes textarea { font: 400 15px/1.45 var(--bz-sans); padding: 10px 12px; border: 1.5px solid #f2dde6; border-radius: 12px; outline: none; resize: vertical; min-height: 90px; background: #fff; }
+.bz-notes textarea:focus { border-color: var(--bz-pink); }

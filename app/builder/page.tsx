@@ -1012,7 +1012,7 @@ export default function ConfigurePage() {
 
             {step === 5 && <VenueStep config={config} patchVenue={patchVenue} patchCustomer={patchCustomer} />}
 
-            {step === 6 && <ReviewStep config={config} submitError={submitError} />}
+            {step === 6 && <ReviewStep config={config} submitError={submitError} setNotes={(notes) => setConfig((c) => ({ ...c, notes }))} />}
           </div>
         </section>
       </main>

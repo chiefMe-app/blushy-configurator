@@ -407,8 +407,10 @@ function moved(k: Cake, what: CakePick, cx: number, cy: number, view: { y: numbe
  * The stand, close up, with the cake on it. With `edit`, the figures and the topper are taken hold of and moved:
  * the cake changes when she lets go (while she drags, only the picture follows her, its view held still).
  */
-export function CakeArt({ k, className, edit, view = "whole", onView, themeId = "unicorn" }: {
+export function CakeArt({ k, className, edit, view = "whole", onView, themeId = "unicorn", uid = "ck", testId = "cake-art" }: {
   k: Cake; className?: string;
+  /** Its own ids and test id, when it is drawn more than once on the page (the ready-made cakes). */
+  uid?: string; testId?: string;
   /** The party's theme: whose balloon photo a garland on the cart is repainted from. */
   themeId?: string;
   edit?: { picked: CakePick | null; onPick: (p: CakePick | null) => void; onChange: (k: Cake) => void };
@@ -455,7 +457,7 @@ export function CakeArt({ k, className, edit, view = "whole", onView, themeId = 
   const board = holderOf(k).board;
   const zoom = onView && view === "whole" ? onView : undefined;
   const places = sweetPlaces(k);
-  const sweets = (k.sweets ?? []).map((sw) => <SweetPiece key={sw.id} s={sw} k={k} uid="ck-sw" places={places} onTap={zoom && (() => zoom(sw.id))} />);
+  const sweets = (k.sweets ?? []).map((sw) => <SweetPiece key={sw.id} s={sw} k={k} uid={`${uid}-sw`} places={places} onTap={zoom && (() => zoom(sw.id))} />);
   // Her balloons on the cart (2026-11-03, the owner: "burdaki gibi balon seçeneği olsun"): the welcome board's garland
   // of the party's balloon set, repainted as the backdrop's are, mirrored — from the floor up the cart's left side and
   // arching over its roof.
@@ -466,22 +468,22 @@ export function CakeArt({ k, className, edit, view = "whole", onView, themeId = 
   const gSrc = useRecoloredBase(palette.length ? `/design/welcome/pieces/${gName}.webp` : null, `/design/welcome/pieces/${gName}-families.png`, palette, shot.asShot, 50);
   const G = CAKE_CART.garland, gH = G.foot - G.top, gW = (gH * gp.w) / gp.h, gX = G.left - G.edge * gW;
   return (
-    <svg ref={svg} className={className} viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} role="img" aria-label={cart ? "Your cake on a sweet cart" : scene === "plinths" ? "Your cake on a plinth" : "Your cake on its stand"} data-testid="cake-art"
+    <svg ref={svg} className={className} viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} role="img" aria-label={cart ? "Your cake on a sweet cart" : scene === "plinths" ? "Your cake on a plinth" : "Your cake on its stand"} data-testid={testId}
       data-scene={scene} data-view={view} data-holder={board ? "board" : "stand"} style={drag ? { touchAction: "none" } : undefined}
       onPointerDown={edit ? () => edit.onPick(null) : undefined}
       onPointerMove={drag ? (e) => { if (e.pointerId === drag.id) setDrag({ ...drag, at: point(e) }); } : undefined}
       onPointerUp={letGo} onPointerCancel={letGo}>
       {cart ? <>
         {/* The cart, its roof in her colour. */}
-        <defs><mask id="ck-awning" style={{ maskType: "alpha" }}><image href={CAKE_CART.awning} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} /></mask></defs>
+        <defs><mask id={`${uid}-awning`} style={{ maskType: "alpha" }}><image href={CAKE_CART.awning} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} /></mask></defs>
         <image href={board ? CART_BOARD.src : CAKE_CART.src} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} />
-        <rect mask="url(#ck-awning)" style={{ mixBlendMode: "multiply" }} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} fill={cart.roof} data-part="cake-awning" />
+        <rect mask={`url(#${uid}-awning)`} style={{ mixBlendMode: "multiply" }} x={0} y={0} width={CAKE_CART.w} height={CAKE_CART.h} fill={cart.roof} data-part="cake-awning" />
       </> : scene === "plinths" ? <image href={board ? CAKE_PLINTHS.board : CAKE_PLINTHS.src} x={0} y={0} width={CAKE_PLINTHS.w} height={CAKE_PLINTHS.h} />
         : <image href={board ? CAKE_BOARD.src : CAKE_STAND.src} x={0} y={0} width={W} height={H} />}
       <g ref={layer} transform={map ? `translate(${map.x} ${map.y}) scale(${map.scale})` : undefined}>
         {/* On the plinths each sweet stands on a plinth of its own, the middle one's in front of the cake. */}
         {scene !== "plinths" && sweets}
-        <CakePiece k={shown} uid="ck-stand" grab={grab} onTier={zoom && (() => zoom("cake"))} />
+        <CakePiece k={shown} uid={`${uid}-stand`} grab={grab} onTier={zoom && (() => zoom("cake"))} />
         {scene === "plinths" && sweets}
         {frame && <rect data-no-capture="" data-testid="cake-picked" x={frame.x - 6} y={frame.y - 6} width={frame.w + 12} height={frame.h + 12} rx={10}
           fill="none" stroke="#FF0D66" strokeWidth={3} strokeDasharray="10 7" vectorEffect="non-scaling-stroke" pointerEvents="none" />}
@@ -489,12 +491,12 @@ export function CakeArt({ k, className, edit, view = "whole", onView, themeId = 
       {cart && palette.length > 0 && (
         <g data-part="cart-balloons" data-set={shot.folder} pointerEvents="none">
           <defs>
-            <filter id="ck-gl-soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation={6} /></filter>
-            <filter id="ck-gl-wall" x="-20%" y="-10%" width="140%" height="120%"><feDropShadow dx={-5} dy={4} stdDeviation={6} floodColor="#3b2a22" floodOpacity={0.2} /></filter>
+            <filter id={`${uid}-gl-soft`} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation={6} /></filter>
+            <filter id={`${uid}-gl-wall`} x="-20%" y="-10%" width="140%" height="120%"><feDropShadow dx={-5} dy={4} stdDeviation={6} floodColor="#3b2a22" floodOpacity={0.2} /></filter>
           </defs>
-          <ellipse cx={gX + gW * 0.3} cy={G.foot - 4} rx={gW * 0.28} ry={9} fill="#3b2a22" opacity={0.18} filter="url(#ck-gl-soft)" />
+          <ellipse cx={gX + gW * 0.3} cy={G.foot - 4} rx={gW * 0.28} ry={9} fill="#3b2a22" opacity={0.18} filter={`url(#${uid}-gl-soft)`} />
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          {gSrc && <image href={gSrc} x={-(gX + gW)} y={G.top} width={gW} height={gH} transform="scale(-1 1)" filter="url(#ck-gl-wall)" />}
+          {gSrc && <image href={gSrc} x={-(gX + gW)} y={G.top} width={gW} height={gH} transform="scale(-1 1)" filter={`url(#${uid}-gl-wall)`} />}
         </g>
       )}
     </svg>

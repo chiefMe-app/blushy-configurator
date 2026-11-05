@@ -79,6 +79,14 @@ export function seatsWords(t: Pick<TableSetup, "kids" | "choices">): string {
   return ` — ${sides}${atEnds}, ${sum}, the table long and narrow (about ${metres} m long and 60 cm wide) so they all fit`;
 }
 
+/** One place's pieces on the table, in words with their colours (2026-11-05, the owner, of a party render: "masanın
+ * üstündekiler plinthin üstündekiler biraz saçmalamış" — red "Birthday" cards stood on the table and the cups came
+ * out blue): the top view alone left the engine to guess. */
+const PLACE_PIECES: TableItemKey[] = ["placemats", "plates", "cups", "napkins", "cutlery", "cutleryHolder", "bottleLabel", "partyHats"];
+export function placeWords(t: TableSetup, themeId: string): string {
+  return PLACE_PIECES.map((k) => itemWords(t, themeId, k)).filter(Boolean).join(", ");
+}
+
 /** The table she chose, piece by piece, each told with its picture. */
 function tableWords(t: TableSetup, themeId: string, image: (k: TableItemKey) => number): string {
   const { tables } = tableCounts(t);
@@ -92,6 +100,8 @@ function tableWords(t: TableSetup, themeId: string, image: (k: TableItemKey) => 
     piece("centrepiece") ? `with ${piece("centrepiece")} in the middle` : "",
   ].filter(Boolean).join("; ");
 }
+
+const piece = (t: TableSetup, themeId: string, k: TableItemKey) => itemWords(t, themeId, k);
 
 /** The words for the photograph: the pictures she has, stood together in her setting. */
 export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "theme">, setting: PartySetting, pictures: { backdrop: boolean; table: boolean; refs?: TableItemKey[] }): string {
@@ -111,10 +121,10 @@ export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "the
     named.length ? `${named.join("; ").replace(/^i/, "I")}.` : "",
     "Make one real, natural photograph of the whole party setup exactly as she designed it, the way a party stylist photographs a finished setup: taken with a full-frame camera straight on from the front, a few metres back, from a little below standing height, facing the backdrop square on, everything in the picture.",
     pictures.backdrop
-      ? `At the back stands the balloon backdrop of image 1, exactly as designed${words ? ` (${words})` : ""}: the same boards, stands and frames in the same shapes, sizes and colours, the same balloon garland in exactly the same balloon colours and fullness, the same printed words and pictures, nothing moved, added or left out — the printed words copied exactly, letter by letter. Every plinth in image 1 stays standing in front of the backdrop just as image 1 shows it, never hidden or left out.`
+      ? `At the back stands the balloon backdrop of image 1, exactly as designed${words ? ` (${words})` : ""}: the same boards, stands and frames in the same shapes, sizes and colours, the same balloon garland in exactly the same balloon colours and fullness, the same printed words and pictures, nothing moved, added or left out — the printed words copied exactly, letter by letter. Every plinth in image 1 stays standing in front of the backdrop just as image 1 shows it, never hidden or left out, and bare on top as image 1 shows it — no cards, signs, letters or cakes on them.`
       : "",
     t
-      ? `${pictures.backdrop ? "Centred in front of it and a little forward, its long side facing the camera, with the backdrop rising behind and above it and its plinths in view beside the table's ends," : "In the middle, its long side facing the camera,"} stands ${tableWords(t, config.theme, image)}. ${t.choices.table === "round" || t.choices.table === "flower" || onFloor(t.choices) ? "" : "The chairs on the near side are seen from behind, those along the far side face the camera. "}Every place is set exactly as image ${tableImage} shows — the same placemats, plates, cups, napkins and cutlery, the same colours and prints, each place the same — the table seen from the front at that height, not from above.`
+      ? `${pictures.backdrop ? "Centred in front of it and a little forward, its long side facing the camera, with the backdrop rising behind and above it and its plinths in view beside the table's ends," : "In the middle, its long side facing the camera,"} stands ${tableWords(t, config.theme, image)}. ${t.choices.table === "round" || t.choices.table === "flower" || onFloor(t.choices) ? "" : "The chairs on the near side are seen from behind, those along the far side face the camera. "}Every place is set exactly as image ${tableImage} shows — ${placeWords(t, config.theme) || "the same placemats, plates, cups, napkins and cutlery"} — the same colours and prints, each place the same, the table seen from the front at that height, not from above. Everything at the places lies flat or stands low as in image ${tableImage}: the placemats' words are printed flat on the paper; nothing stands up on the table — no cards, signs, place cards, standing letters or words — beyond ${piece(t, config.theme, "centrepiece") ? "the centrepiece in its middle" : "the pieces named"}.`
       : "",
     "The rooms, walls and floors the pictures show are only where they were drawn: leave them out, and set the backdrop and the table up in this setting instead.",
     SETTING[setting],

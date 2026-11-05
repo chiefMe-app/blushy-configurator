@@ -10,7 +10,9 @@ import { MAX_BOARD_TEXT, cleanBoardText } from "@/lib/studio/welcomeBoard";
 import { BOARD_SHOWS, BOX_PRICE, BOX_PRINTS, GIVEAWAY_BOARD_PRICE, GIVEAWAY_GARLAND_PRICE, GIVEAWAY_CONTENTS, GIVEAWAY_PLACES, MAX_BOXES, clampCount, defaultGiveaways, giveawaysTotal, type Giveaways } from "@/lib/studio/giveaways";
 import { clampKids } from "@/lib/studio/tableSetup";
 import GiveawayBox from "@/components/studio/GiveawayBox";
-import { boxLook } from "./GiveawaysPreview";
+import { boxLook, GiveawayBoardArt } from "./GiveawaysPreview";
+import ColourWheel from "@/components/builder/ColourWheel";
+import { giveawaySamples, withGiveawaySample } from "@/lib/studio/giveawaySamples";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 
@@ -63,6 +65,25 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
   return (
     <div className="bz-tb" data-testid="giveaways">
       <link rel="stylesheet" href="/fonts/typography/fonts.css" />
+      {/* Ready-made giveaways (2026-11-05, as the kids' table's): each its own drawing, applied at a tap. */}
+      <div className="bz-samples giveaways" data-testid="giveaways-samples">
+        <div className="bz-samples-head"><b>Ready-made giveaways</b><span>Tap one to start from it — your boxes, what&apos;s inside and the name stay.</span></div>
+        <div className="bz-samples-row">
+          {giveawaySamples(theme, tableKept).map((s) => {
+            const look = withGiveawaySample(g, s);
+            return (
+              <button key={s.id} type="button" className="bz-sample" data-testid={`giveaways-sample-${s.id}`} onClick={() => setGiveaways(look)}>
+                <span className="pic">
+                  {look.place === "board"
+                    ? <GiveawayBoardArt g={{ ...look, count: Math.min(look.count, 6) }} theme={theme} balloons={config.decor.balloonColors} className="bz-gv-sample" uid={`gvs-${s.id}`} testId={`giveaways-sample-art-${s.id}`} />
+                    : <svg viewBox="0 0 120 130" aria-hidden="true"><GiveawayBox look={boxLook(look, theme)} x={60} y={65} h={124} uid={`gv-s-${s.id}`} /></svg>}
+                </span>
+                <b>{s.name}</b><small>{s.note}</small><em>AED {formatAED(giveawaysTotal(look))}</em>
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <section className="bz-tb-section" aria-label="The box">
         <h2>The box</h2>
         <div className="bz-tb-item">
@@ -86,6 +107,7 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
                 <button key={hex} type="button" role="radio" aria-checked={hex === g.boxColour.toUpperCase()} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
                   className={hex === g.boxColour.toUpperCase() ? "on" : ""} style={{ background: hex }} onClick={() => set({ boxColour: hex })} />
               ))}
+              <ColourWheel value={g.boxColour} options={swatches} onPick={(hex) => set({ boxColour: hex })} label="Box colour" testId="giveaways-box-colour-wheel" />
             </div>
           )}
         </div>
@@ -126,7 +148,7 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
         <div className="bz-tb-item">
           <label className="bz-tb-words">
             <span>The name on the box</span>
-            <input type="text" value={g.name} maxLength={MAX_BOARD_TEXT} placeholder="e.g. Arya" data-testid="giveaways-name" onChange={(e) => set({ name: cleanBoardText(e.target.value) })} />
+            <input type="text" value={g.name} maxLength={MAX_BOARD_TEXT} placeholder="Name" data-testid="giveaways-name" onChange={(e) => set({ name: cleanBoardText(e.target.value) })} />
           </label>
           <div className="bz-tb-fonts" role="radiogroup" aria-label="Name lettering" data-testid="giveaways-font">
             {TABLE_FONTS.map((f) => (
@@ -144,6 +166,7 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
               <button key={hex} type="button" role="radio" aria-checked={hex === g.ink.toUpperCase()} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
                 className={hex === g.ink.toUpperCase() ? "on" : ""} style={{ background: hex }} onClick={() => set({ ink: hex })} />
             ))}
+            <ColourWheel value={g.ink} options={inks} onPick={(hex) => set({ ink: hex })} label="Name colour" testId="giveaways-ink-wheel" />
           </div>
         </div>
       </section>
@@ -169,6 +192,7 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
                 <button key={hex} type="button" role="radio" aria-checked={hex === g.boardColour.toUpperCase()} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
                   className={hex === g.boardColour.toUpperCase() ? "on" : ""} style={{ background: hex }} onClick={() => set({ boardColour: hex })} />
               ))}
+              <ColourWheel value={g.boardColour} options={swatches} onPick={(hex) => set({ boardColour: hex })} label="Board colour" testId="giveaways-board-colour-wheel" />
             </div>
           </div>
           <div className="bz-tb-item">
@@ -204,6 +228,7 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
                 <button key={hex} type="button" role="radio" aria-checked={hex === g.boardInk.toUpperCase()} aria-label={PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
                   className={hex === g.boardInk.toUpperCase() ? "on" : ""} style={{ background: hex }} onClick={() => set({ boardInk: hex })} />
               ))}
+              <ColourWheel value={g.boardInk} options={inks} onPick={(hex) => set({ boardInk: hex })} label="Words colour" testId="giveaways-board-ink-wheel" />
             </div>
           </div>
           <div className="bz-tb-item">

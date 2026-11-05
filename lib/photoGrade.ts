@@ -83,3 +83,39 @@ export async function gradePhoto(jpeg: Buffer): Promise<Buffer> {
   }
   return sharp(out, { raw: { width: info.width, height: info.height, channels: 3 } }).jpeg({ quality: 90, mozjpeg: true }).toBuffer();
 }
+
+/**
+ * One side as light as the other (2026-11-05, the owner, of a cake render: "sol taraf çok shaded duruyor daha aydınlık
+ * olsun ama ışık patlamasın"): when the left or right third of the photo is darker than the other, that side's darker
+ * tones are lifted towards it, fading out to nothing by the middle — the lift kept off the light tones, so nothing
+ * there burns out. Half the gap is closed, at most a fifth.
+ */
+export async function evenSides(jpeg: Buffer): Promise<Buffer> {
+  const { data, info } = await sharp(jpeg).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width: w, height: h } = info;
+  const third = Math.floor(w / 3);
+  let left = 0, right = 0;
+  for (let y = 0; y < h; y += 2) for (let x = 0; x < third; x += 2) {
+    const a = (y * w + x) * 3, b = (y * w + (w - 1 - x)) * 3;
+    left += 0.2126 * data[a] + 0.7152 * data[a + 1] + 0.0722 * data[a + 2];
+    right += 0.2126 * data[b] + 0.7152 * data[b + 1] + 0.0722 * data[b + 2];
+  }
+  const ratio = Math.min(left, right) / Math.max(1, Math.max(left, right));
+  if (ratio > 0.96) return jpeg;
+  const lift = Math.min(0.2, (1 / ratio - 1) * 0.5);
+  const darkSideLeft = left < right;
+  for (let x = 0; x < w; x++) {
+    const from = darkSideLeft ? x : w - 1 - x;
+    const t = Math.max(0, 1 - from / (w / 2)); // 1 at the dark edge, 0 from the middle on
+    if (!t) continue;
+    const g = 1 + lift * t * t * (3 - 2 * t);
+    for (let y = 0; y < h; y++) {
+      const i = (y * w + x) * 3;
+      const yl = (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255;
+      // The darker the tone, the more of the lift: none above 0.85.
+      const k = 1 + (g - 1) * Math.max(0, Math.min(1, (0.85 - yl) / 0.45));
+      for (let c = 0; c < 3; c++) data[i + c] = Math.min(255, Math.round(data[i + c] * k));
+    }
+  }
+  return sharp(data, { raw: { width: w, height: h, channels: 3 } }).jpeg({ quality: 90 }).toBuffer();
+}

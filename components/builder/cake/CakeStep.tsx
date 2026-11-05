@@ -14,7 +14,8 @@ import {
   CAKE_SWEETS, CART_BALLOONS_PRICE, CART_PRICE, CUPCAKE_FOILS, PLINTHS_PRICE, RAINBOW_LINER, SPRINKLE_PRICE, SWEET_COUNTS, SWEET_FLAVOURS, sweetFlavour, sweetPicture, sweetPrice, type CakeSweet,
 } from "@/lib/studio/cakeSweets";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
-import { CakeThumb } from "./CakePreview";
+import { CakeArt, CakeThumb } from "./CakePreview";
+import { cakeSamples } from "@/lib/studio/cakeSamples";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 
@@ -98,6 +99,22 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
   return (
     <div className="bz-tb" data-testid="cake">
       <link rel="stylesheet" href="/fonts/typography/fonts.css" />
+      {/* Ready-made cakes (2026-11-05, the owner: "pasta içinde sample örnekleri olsun hazır cakeler"): the whole
+          cake table, each its own drawing, applied at a tap — her name, age and flavour kept. */}
+      <div className="bz-samples cakes" data-testid="cake-samples">
+        <div className="bz-samples-head"><b>Ready-made cakes</b><span>Tap one to start from it — your name, age and flavour stay.</span></div>
+        <div className="bz-samples-row">
+          {cakeSamples(seed, pieces).map((sm) => {
+            const look: Cake = { ...k, ...sm.design.cake, topper: designTopper(sm.design), flavour: k.flavour, ...sm.scene };
+            return (
+              <button key={sm.id} type="button" className="bz-sample" data-testid={`cake-sample-${sm.id}`} onClick={() => set({ ...sm.design.cake, topper: designTopper(sm.design), flavour: k.flavour, ...sm.scene })}>
+                <span className="pic"><CakeArt k={look} themeId={theme.id} uid={`cks-${sm.id}`} testId={`cake-sample-art-${sm.id}`} /></span>
+                <b>{sm.name}</b><small>{sm.note}</small><em>AED {formatAED(cakeTotal(look))}</em>
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <section className="bz-tb-section" aria-label="The design">
         {/* 2026-11-04 (the owner: "bu yazılar çok sıkıcı … ilk sayfadaki ruhu yakala"): titles to smile at. */}
         <h2>Pick a <em>dream</em> design</h2>

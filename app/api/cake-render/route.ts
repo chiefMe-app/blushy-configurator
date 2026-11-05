@@ -11,7 +11,7 @@ import { renderUser, takeAccountRender } from "@/lib/renderAccount";
 import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
 import { finishSketchRender } from "@/lib/sketchRenderFinish";
-import { gradePhoto } from "@/lib/photoGrade";
+import { evenSides, gradePhoto } from "@/lib/photoGrade";
 import { cakeRenderKey, cakeViews, isCakeView, readCake } from "@/lib/studio/cake";
 import { cakePrompt } from "@/lib/studio/cakeRender";
 
@@ -86,7 +86,9 @@ export async function POST(req: NextRequest) {
           // own exposure; a failed colour step never loses the paid render.
           const finished = await finishSketchRender(made, image.data, undefined, { cast: true }).catch(() => made);
           // Then a photographer's edit — white balance, exposure, shadows, contrast, vibrance (lib/photoGrade.ts).
-          const jpeg = await gradePhoto(finished).catch(() => finished);
+          // One side as light as the other (2026-11-05: "sol taraf çok shaded"), then graded.
+          const even = await evenSides(finished).catch(() => finished);
+          const jpeg = await gradePhoto(even).catch(() => even);
           send({ url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
           const key = cakeRenderKey(p, theme.id, view);
           // Without a database (local development) nothing is kept.

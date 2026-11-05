@@ -1385,6 +1385,9 @@ export interface BuilderConfig {
   diy?: DiyChoices;
   /** The old Add-ons (before 2026-11-04): a draft kept then is read into experiences; empty since. */
   addOns: SelectedAddOn[];
+  /** 2026-11-05 (the owner: "müşteri biyere notlarını yazabilmeli designla ilgili yapmamızı istediği bişiler varsa
+   *  ekstra"): anything else she wants done in the design, in her words; absent until she writes some. */
+  notes?: string;
   venue: VenueDetails;
   customer: CustomerDetails;
   estimatedTotal: number;
@@ -1657,4 +1660,12 @@ export function resolveBackdropText(t: BackdropText): string {
   if (!t.enabled) return "";
   if (t.type === "birthday") return `Happy Birthday ${t.name}`.trim();
   return t.customText.trim();
+}
+
+/** Her notes for the design team, at most this long. */
+export const MAX_NOTES = 1000;
+/** Her notes as kept: text only, no control characters, at most MAX_NOTES. */
+export function cleanNotes(raw: unknown): string {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/[\x00-\x09\x0B-\x1F\x7F]/g, "").slice(0, MAX_NOTES);
 }

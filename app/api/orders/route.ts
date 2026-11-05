@@ -13,6 +13,7 @@ import {
   readServicePackageId,
   readDiy,
   computeTotal,
+  cleanNotes,
   type BuilderConfig,
 } from "@/lib/config";
 
@@ -101,6 +102,8 @@ export async function POST(req: NextRequest) {
     experiences: pricingConfig.experiences,
     diy: pricingConfig.diy,
     addOns: body.addOns,
+    // Her notes for the design team (2026-11-05), as she wrote them.
+    notes: cleanNotes(body.notes),
     venue: body.venue,
     payment,
   };

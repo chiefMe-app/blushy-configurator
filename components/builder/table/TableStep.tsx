@@ -3,6 +3,7 @@
 // next next diye geçmeyelim"), in four sections, each with picture options
 // (plus "None" for the optional ones) from lib/studio/tableCatalog.ts, the
 // cloth's colour and the words on the placemats. Prices add to the party total.
+import ColourWheel from "@/components/builder/ColourWheel";
 import { formatAED, themeById, THEMES, type BuilderConfig } from "@/lib/config";
 import { CHAIR_COLOURS, FOILS, NONE, THEMED_ITEMS, isThemed, PLAIN_COLOURS, PLATE_SHAPES, drawColour, foilOf, swatchBackground, TABLE_SECTIONS, onFloor, optionPhoto, tableItem, type TableItem, type TableItemKey, type TableOption } from "@/lib/studio/tableCatalog";
 import { TABLE_FONTS, fontCss, tableFont, type TableFont } from "@/lib/studio/tableFonts";
@@ -111,7 +112,6 @@ export default function TableStep({ config, setTable, onFinish, onFinishTables, 
     plate: drawColour(table.plateColor), smallPlate: drawColour(table.smallPlateColor), cup: drawColour(table.cupColor), holder: table.holderColor, placemat: table.placematColor, label: table.labelColor, plateShape: table.plateShape };
   // `wheel`: and any colour of her own (the words' colours, 2026-11-05: "textler için color wheel olsun").
   const swatchRow = (label: string, value: string, options: string[], pick: (hex: string) => void, testId?: string, wheel = false) => {
-    const own = wheel && /^#[0-9a-f]{6}$/i.test(value) && !options.some((h) => h.toUpperCase() === value.toUpperCase());
     return (
       <div className="bz-ts-swatches" role="radiogroup" aria-label={label} data-testid={testId}>
         {options.map((hex) => {
@@ -120,13 +120,7 @@ export default function TableStep({ config, setTable, onFinish, onFinishTables, 
           return <button key={hex} type="button" role="radio" aria-checked={on} aria-label={foilOf(hex)?.name ?? PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
             className={on ? "on" : ""} style={{ background: swatchBackground(hex) }} onClick={() => pick(hex)} />;
         })}
-        {wheel && (
-          <label className={`bz-ts-wheel ${own ? "on" : ""}`} title="Any colour" style={own ? { background: value } : undefined}>
-            <span aria-hidden="true">+</span>
-            <input type="color" aria-label={`${label}: any colour`} data-testid={testId ? `${testId}-wheel` : undefined}
-              value={/^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : "#ffffff"} onChange={(e) => pick(e.target.value.toUpperCase())} />
-          </label>
-        )}
+        {wheel && <ColourWheel value={value} options={options} onPick={pick} label={label} testId={testId ? `${testId}-wheel` : undefined} />}
       </div>
     );
   };

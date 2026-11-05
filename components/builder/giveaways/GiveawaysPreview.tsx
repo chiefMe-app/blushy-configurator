@@ -11,7 +11,7 @@ import COLUMNS from "@/lib/studio/giveawayGarland.json";
 import { setShot, useRecoloredBase } from "@/components/design/LiveSketch";
 import { fontCss, tableFont } from "@/lib/studio/tableFonts";
 import TablePlace from "@/components/studio/table/TablePlace";
-import GiveawayBox, { boxLines, type BoxLook } from "@/components/studio/GiveawayBox";
+import GiveawayBox, { boxLines, haloOf, type BoxLook } from "@/components/studio/GiveawayBox";
 import FitText from "@/components/studio/FitText";
 import { THEME_GROUPS } from "@/components/builder/constants";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
@@ -29,7 +29,11 @@ export function boxLook(g: Giveaways, theme: { id: string; accent: string }): Bo
 }
 
 /** The shelved board, its boxes on the shelves, the name on its arch and, if she wants one, a balloon garland. */
-export function GiveawayBoardArt({ g, theme, balloons, className }: { g: Giveaways; theme: { id: string; accent: string; balloonColors?: string[] }; balloons?: string[]; className?: string }) {
+export function GiveawayBoardArt({ g, theme, balloons, className, uid = "gvb", testId = "giveaway-board-art" }: {
+  g: Giveaways; theme: { id: string; accent: string; balloonColors?: string[] }; balloons?: string[]; className?: string;
+  /** Its own ids, when it is drawn more than once on the page (the ready-made giveaways). */
+  uid?: string; testId?: string;
+}) {
   const look = boxLook(g, theme);
   const { w: W, h: H, board, shelves, boxH, words } = BOARD_PHOTO;
   const face = tableFont(g.boardFont), lineFace = tableFont(g.boardLineFont);
@@ -57,7 +61,9 @@ export function GiveawayBoardArt({ g, theme, balloons, className }: { g: Giveawa
   const lineSize = Math.min(lineSize0 * (lineFace.hand ? lineFace.scale ?? 1 : 1), lineBox.w / (Math.max(6, line.length) * perChar(lineFace)));
   // The name as wide as the arch lets it, a long one on two lines as on the box, and clear of the line under it
   // (a script's tails hang below its line).
-  const nameLines = boxLines(face.hand ? name : name.toUpperCase());
+  // No name yet: a faint "Name" where it goes, for her eyes only (as on the box).
+  const hintName = !name;
+  const nameLines = boxLines(face.hand ? name || "Name" : (name || "Name").toUpperCase());
   const longest = Math.max(2.6, ...nameLines.map((l) => l.length * 0.52));
   const byWidth = (words.w / longest) * (face.hand ? face.scale ?? 1 : 0.8);
   const nameRoom = words.bottom - 8 - lineSize0 - 6 - words.top;
@@ -73,28 +79,41 @@ export function GiveawayBoardArt({ g, theme, balloons, className }: { g: Giveawa
     const r = (board.x1 - board.x0) / 2, dy = board.top + r - y;
     return dy <= 0 ? 2 * r : 2 * Math.sqrt(Math.max(0, r * r - dy * dy));
   };
+  const boardWords = (copy = false) => (<>
+      <g {...(hintName ? { "data-no-capture": "", opacity: 0.45, "data-hint": "" } : {})}>
+      {nameLines.map((l, i) => {
+        const y = words.top + nameSize * 0.8 + i * nameSize * nameGap;
+        return <FitText key={i} x={words.cx} y={y} fontSize={nameSize} maxWidth={archWidth(y - nameSize * 0.75) - 28} textAnchor="middle" fill={ink}
+          data-word={copy ? undefined : "name"} style={{ fontFamily: `${fontCss(face)}, Georgia, serif`, fontWeight: face.weight }}>{l}</FitText>;
+      })}
+      </g>
+      {line && <FitText x={lineBox.cx} y={words.bottom - 8} fontSize={lineSize} maxWidth={Math.min(lineBox.w, archWidth(words.bottom - 8 - lineSize * 0.75) - 28)} textAnchor="middle" fill={ink}
+        letterSpacing={lineFace.hand ? 0 : lineSize * 0.06} data-word={copy ? undefined : "line"} style={{ fontFamily: `${fontCss(lineFace)}, Georgia, serif`, fontWeight: lineFace.weight }}>{line}</FitText>}
+  </>);
   return (
-    <svg className={className} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Your giveaway board" data-testid="giveaway-board-art" data-garland={g.boardGarland ? "yes" : "no"}>
+    <svg className={className} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Your giveaway board" data-testid={testId} data-garland={g.boardGarland ? "yes" : "no"}>
       <defs>
-        <filter id="gvb-wall" x="-20%" y="-10%" width="140%" height="120%"><feDropShadow dx={8} dy={6} stdDeviation={9} floodColor="#4a3328" floodOpacity={0.22} /></filter>
+        <filter id={`${uid}-halo`} x="-10%" y="-40%" width="120%" height="180%">
+          <feMorphology in="SourceAlpha" operator="dilate" radius={1.5} result="grown" />
+          <feGaussianBlur in="grown" stdDeviation={2.2} result="soft" />
+          <feFlood floodColor={haloOf(ink)} floodOpacity={0.8} />
+          <feComposite in2="soft" operator="in" />
+        </filter>
+        <filter id={`${uid}-wall`} x="-20%" y="-10%" width="140%" height="120%"><feDropShadow dx={8} dy={6} stdDeviation={9} floodColor="#4a3328" floodOpacity={0.22} /></filter>
       </defs>
       <image href={BOARD_PHOTO.src} width={W} height={H} />
       {/* The board's colour, over its photographed light and shade. */}
       {!white && <path d={boardOutline()} fill={g.boardColour} style={{ mixBlendMode: "multiply" }} data-part="board-colour" />}
-      {/* Her words on the arch, flat cut vinyl. */}
-      {nameLines.map((l, i) => {
-        const y = words.top + nameSize * 0.8 + i * nameSize * nameGap;
-        return <FitText key={i} x={words.cx} y={y} fontSize={nameSize} maxWidth={archWidth(y - nameSize * 0.75) - 28} textAnchor="middle" fill={ink}
-          data-word="name" style={{ fontFamily: `${fontCss(face)}, Georgia, serif`, fontWeight: face.weight }}>{l}</FitText>;
-      })}
-      {line && <FitText x={lineBox.cx} y={words.bottom - 8} fontSize={lineSize} maxWidth={Math.min(lineBox.w, archWidth(words.bottom - 8 - lineSize * 0.75) - 28)} textAnchor="middle" fill={ink}
-        letterSpacing={lineFace.hand ? 0 : lineSize * 0.06} data-word="line" style={{ fontFamily: `${fontCss(lineFace)}, Georgia, serif`, fontWeight: lineFace.weight }}>{line}</FitText>}
+      {/* Her words on the arch, flat cut vinyl. On screen a soft halo round them, so they read on any board
+          (2026-11-05, as the kids' table's words) — never in the picture rendered: cut vinyl has none. */}
+      <g filter={`url(#${uid}-halo)`} data-no-capture="" aria-hidden="true">{boardWords(true)}</g>
+      {boardWords()}
       {rows.flatMap((n, shelf) => Array.from({ length: n }, (_, col) => {
         const x = board.x0 + span * ((col + 0.5) / 3) + (span / 3) * ((3 - n) / 2);
-        return <GiveawayBox key={`${shelf}-${col}`} look={look} x={x} y={shelves[shelf] - boxH / 2 + 2} h={boxH} uid={`gvb-${shelf}-${col}`} />;
+        return <GiveawayBox key={`${shelf}-${col}`} look={look} x={x} y={shelves[shelf] - boxH / 2 + 2} h={boxH} uid={`${uid}-${shelf}-${col}`} />;
       }))}
       {g.boardGarland && gSrc && (
-        <g data-part="garland" data-set={shot.folder} filter="url(#gvb-wall)">
+        <g data-part="garland" data-set={shot.folder} filter={`url(#${uid}-wall)`}>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <image href={gSrc} x={gX} y={gTop} width={gW} height={gH} />
         </g>

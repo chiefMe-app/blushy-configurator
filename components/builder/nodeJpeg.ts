@@ -222,6 +222,8 @@ export async function svgLayers(svg: SVGSVGElement, width: number, selector: str
   const parts = bare.querySelectorAll(selector);
   parts.forEach((e) => e.remove());
   const solo = svg.cloneNode(true) as SVGSVGElement;
+  // Hints (an empty name's "Name") are only for her eyes, in neither picture.
+  for (const c of [bare, solo]) c.querySelectorAll("[data-no-capture]").forEach((e) => e.remove());
   // Everything else hidden in place, so the parts keep their frames (a box sits inside a place's transform).
   solo.style.visibility = "hidden";
   solo.querySelectorAll<SVGElement>(selector).forEach((e) => { e.style.visibility = "visible"; });

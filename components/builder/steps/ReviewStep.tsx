@@ -1,12 +1,12 @@
 // Step 7 · Review, then the payment (2026-11-05): what stands before she can pay — her details and, We do it, a date
 // the setup team is free on — and when she is charged: only once every supplier has confirmed. A DEMO until release:
 // no card is asked for, and nothing is charged (lib/availability.ts, RELEASE_CHECKLIST.md).
-import { formatAED, priceBreakdown, type BuilderConfig } from "@/lib/config";
+import { MAX_NOTES, cleanNotes, formatAED, priceBreakdown, type BuilderConfig } from "@/lib/config";
 import { niceDate, partySuppliers, paymentBlockers, setupAvailability } from "@/lib/availability";
 import ReviewSummary from "@/components/ReviewSummary";
 import { StepShell } from "@/components/builder/ui";
 
-export default function ReviewStep({ config, submitError }: { config: BuilderConfig; submitError: string | null }) {
+export default function ReviewStep({ config, submitError, setNotes }: { config: BuilderConfig; submitError: string | null; setNotes?: (notes: string) => void }) {
   const diy = config.servicePackageId === "diy";
   const blockers = paymentBlockers(config);
   const details = config.customer.name.trim().length > 1 && config.customer.whatsapp.trim().length >= 7;
@@ -19,6 +19,18 @@ export default function ReviewStep({ config, submitError }: { config: BuilderCon
       <div className="space-y-4">
         {/* Includes the detailed price breakdown (PriceSummary, the existing pricing engine). */}
         <ReviewSummary config={config} />
+
+        {/* 2026-11-05 (the owner: "müşteri biyere notlarını yazabilmeli designla ilgili yapmamızı istediği bişiler varsa
+            ekstra"): anything else for the design, in her own words — it goes to the team with the order. */}
+        {setNotes && (
+          <label className="bz-notes" data-testid="design-notes">
+            <span>Notes for our design team <small>(optional)</small></span>
+            <textarea value={config.notes ?? ""} maxLength={MAX_NOTES} rows={4} data-testid="design-notes-input"
+              placeholder="Anything else you'd like us to do — a colour to match, a name to spell a special way, a surprise to add…"
+              onChange={(e) => setNotes(cleanNotes(e.target.value))} />
+            <small>{(config.notes ?? "").length} / {MAX_NOTES}</small>
+          </label>
+        )}
 
         <section className="bz-pay" aria-label="Payment" data-testid="payment">
           <p className="bz-pay-demo" role="note" data-testid="payment-demo">

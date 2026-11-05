@@ -166,7 +166,7 @@ describe("cake", () => {
     // 2026-11-04 (the owner: "şu örnekteki gibi içim açılsın … ışık ve renkler"): a party photo shoot's light, candy pastels.
     // Later (her render "gene karanlık ve kasvet çıktı"): high-key, even, from the front, never darker than the preview.
     // Then ("aşırı aydınlık ortam"): well exposed, the wall a step below the white cake.
-    expect(p).toMatch(/well-exposed kids' birthday party photo.*from the front, never overexposed.*a step darker than the white of the cake.*never yellow, cream, ivory, beige or grey.*candy-bright pastel colours.*never darker.*no dim, moody, dramatic or low-key light/);
+    expect(p).toMatch(/well-exposed kids' birthday party photo.*from the front and from both sides.*the left side of the cake.*as bright as the right.*never overexposed.*a step darker than the white of the cake.*never yellow, cream, ivory, beige or grey.*candy-bright pastel colours.*never darker.*no dim, moody, dramatic or low-key light/);
     expect(p).toContain("a pink heart stays pink, never turned gold or glitter");
     // Real, not the preview's flat pieces kept (her Seedream render: "bu sefer de gerçek gibi durmadı").
     expect(p).toMatch(/Rebuild every part as a real object photographed by a real camera — nothing flat, drawn, pasted on/);

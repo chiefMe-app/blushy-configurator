@@ -35,8 +35,12 @@ export async function finishSketchRender(render: Buffer, sketch: Buffer, words?:
   if (words) {
     // The words drawn at the sketch's own square, so at the render's (made at the sketch's size).
     const layer = await sharp(words).resize(width, height, { fit: "fill" }).ensureAlpha().png().toBuffer();
-    const under = shadow ? [{ input: await softShadow(layer, width, height), left: 0, top: 0 }] : [];
-    img = img.composite([...under, { input: layer }]);
+    if (shadow) {
+      // Things standing in the scene (2026-11-05, the owner, of the giveaway board's render: "render gerçekçi
+      // durmuyor" — the boxes looked pasted on): set into the render's own light, each with its shadows.
+      const base = await img.png().toBuffer();
+      img = sharp(await standIn(base, layer, width, height));
+    } else img = img.composite([{ input: layer }]);
   }
   return img.jpeg({ quality: 90 }).toBuffer();
 }
@@ -58,13 +62,59 @@ async function brightened(render: Buffer, gains: [number, number, number]) {
   return { data, info };
 }
 
-/** A layer's soft shadow: its shape, blurred, a little below it. */
-async function softShadow(layer: Buffer, width: number, height: number): Promise<Buffer> {
-  const k = width / 1000;
-  const alpha = await sharp(layer).extractChannel(3).blur(Math.max(1, 5 * k)).linear(0.45, 0).raw().toBuffer();
-  const drop = Math.round(5 * k);
-  const shifted = Buffer.alloc(width * height);
-  alpha.copy(shifted, drop * width, 0, (height - drop) * width);
-  return sharp({ create: { width, height, channels: 3, background: { r: 40, g: 30, b: 35 } } })
-    .joinChannel(shifted, { raw: { width, height, channels: 1 } }).png().toBuffer();
+/** A layer's shadow: its shape blurred, moved by (dx, dy), at an opacity — a warm dark grey, never black. */
+async function shadowOf(layer: Buffer, w: number, h: number, { blur, dx, dy, opacity }: { blur: number; dx: number; dy: number; opacity: number }): Promise<Buffer> {
+  const alpha = await sharp(layer).extractChannel(3).blur(Math.max(0.3, blur)).linear(opacity, 0).raw().toBuffer();
+  const out = Buffer.alloc(w * h);
+  for (let y = Math.max(0, dy); y < Math.min(h, h + dy); y++) {
+    const from = (y - dy) * w;
+    for (let x = Math.max(0, dx); x < Math.min(w, w + dx); x++) out[y * w + x] = alpha[from + x - dx];
+  }
+  return sharp({ create: { width: w, height: h, channels: 3, background: { r: 40, g: 30, b: 35 } } })
+    .joinChannel(out, { raw: { width: w, height: h, channels: 1 } }).png().toBuffer();
+}
+
+/** A dark line where each thing stands: its alpha's lowest rows, a little blurred. */
+async function contactOf(layer: Buffer, w: number, h: number, k: number): Promise<Buffer> {
+  const a = await sharp(layer).extractChannel(3).raw().toBuffer();
+  const d = Math.max(2, Math.round(6 * k)), t = Math.max(2, Math.round(4 * k)), out = Buffer.alloc(w * h);
+  for (let y = 0; y < h - d; y++) for (let x = 0; x < w; x++) {
+    const i = y * w + x;
+    if (a[i] > 200 && a[i + d * w] < 40) for (let j = 0; j < t; j++) { const at = (y + d - 2 + j) * w + x; if (at < out.length) out[at] = 255; }
+  }
+  const soft = await sharp(out, { raw: { width: w, height: h, channels: 1 } }).blur(Math.max(0.5, 2.2 * k)).linear(0.75, 0).raw().toBuffer();
+  return sharp({ create: { width: w, height: h, channels: 3, background: { r: 30, g: 22, b: 26 } } })
+    .joinChannel(soft, { raw: { width: w, height: h, channels: 1 } }).png().toBuffer();
+}
+
+/**
+ * The layer's things set into the render: a soft shadow on what stands behind them, down and to the right as under a
+ * soft light from the front-left; a soft shade close round them; a dark line where they stand; their light the
+ * render's own round them; a touch softer and with the photo's grain, like the rest of the picture.
+ */
+async function standIn(render: Buffer, layer: Buffer, w: number, h: number): Promise<Buffer> {
+  const k = w / 1000;
+  const cast = await shadowOf(layer, w, h, { blur: 6 * k, dx: Math.round(7 * k), dy: Math.round(6 * k), opacity: 0.22 });
+  const close = await shadowOf(layer, w, h, { blur: 2 * k, dx: Math.round(k), dy: Math.round(3 * k), opacity: 0.2 });
+  const contact = await contactOf(layer, w, h, k);
+  const lum = await sharp(render).removeAlpha().greyscale().blur(40 * k).raw().toBuffer();
+  const px = await sharp(layer).ensureAlpha().raw().toBuffer();
+  let sum = 0, n = 0;
+  for (let i = 3, p = 0; i < px.length; i += 4, p++) if (px[i] > 128) { sum += lum[p]; n++; }
+  const mean = n ? sum / n : 200;
+  for (let i = 0, p = 0; i < px.length; i += 4, p++) {
+    if (!px[i + 3]) continue;
+    // Brighter where the scene is brighter, darker where it is darker — within a few percent.
+    const f = Math.pow(Math.min(1.04, Math.max(0.85, lum[p] / mean)), 0.7);
+    for (let c = 0; c < 3; c++) px[i + c] = Math.max(0, Math.min(255, Math.round((4 + px[i + c] * 0.98) * f)));
+  }
+  const soft = await sharp(px, { raw: { width: w, height: h, channels: 4 } }).blur(Math.max(0.3, 0.5 * k + 0.3)).raw().toBuffer();
+  // Then a little noise, the same on all three channels (grain, not colour speckle).
+  for (let i = 0; i < soft.length; i += 4) {
+    if (!soft[i + 3]) continue;
+    const grain = (Math.random() - 0.5) * 7;
+    for (let c = 0; c < 3; c++) soft[i + c] = Math.max(0, Math.min(255, Math.round(soft[i + c] + grain)));
+  }
+  const lit = await sharp(soft, { raw: { width: w, height: h, channels: 4 } }).png().toBuffer();
+  return sharp(render).composite([{ input: cast }, { input: close }, { input: contact }, { input: lit }]).png().toBuffer();
 }
