@@ -3,7 +3,7 @@
 // saves screenshots as the visual baseline. Renders and orders never leave
 // the browser (see guard.ts); where a flow has to get past Decor, the render
 // request is answered with a local stand-in picture.
-import { test, expect, next, total, openDecor, chooseSetup, decorTab, settle, masks, signIn, renderButton, FAKE_ACCOUNT } from "./guard";
+import { test, expect, next, total, openDecor, chooseSetup, decorTab, settle, masks, signIn, renderButton, FAKE_ACCOUNT, setPartyDate } from "./guard";
 import { computeTotal, formatAED } from "@/lib/config";
 import { fixtureById } from "../fixtures/configs";
 
@@ -94,6 +94,7 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   await next(page).click();
   await shot(page, "f1-06-package");
   await next(page).click();
+  await setPartyDate(page);
   await page.getByPlaceholder("Full name").fill("Test Customer");
   await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
   await shot(page, "f1-07-venue");
@@ -102,13 +103,13 @@ test("F1 end to end: Event → Review, the total matches pricing and the order i
   // The board's lettering is listed (until 2026-10-26 this row said "None").
   await expect(page.getByText('"Happy Birthday" · Soft Signature')).toBeVisible();
   const shown = await total(page).textContent();
-  await next(page).click(); // Request Final Quote → caught
+  await next(page).click(); // Pay (demo) → caught
   await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
   const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
   expect(aed(order.estimatedTotal)).toBe(shown);
   // The customer sees the confirmation (until 2026-10-26 a hook below the
   // success screen's early return crashed the page here).
-  await expect(page.getByText("Request received!")).toBeVisible();
+  await expect(page.getByText("Order placed!")).toBeVisible();
   // The total the server would save for exactly this body. The test server has
   // no database (00-safety), so nothing is stored. Before the 2026-10-25 fix
   // this was AED 50 (the Frozen surcharge) below the Review total.

@@ -22,6 +22,8 @@ vi.mock("@/lib/supabase", () => ({
   },
 }));
 
+const AHEAD = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+
 // The body app/builder/page.tsx submit() sends.
 function orderBody(config: BuilderConfig) {
   return {
@@ -32,7 +34,8 @@ function orderBody(config: BuilderConfig) {
     servicePackageId: config.servicePackageId,
     decor: config.decor,
     addOns: config.addOns,
-    venue: config.venue,
+    // A date a month ahead: We do it is taken only on a day the setup team is free (lib/availability.ts).
+    venue: { ...config.venue, date: AHEAD },
     customer: { name: "Test Customer", whatsapp: "+971500000000" },
     estimatedTotal: computeTotal(config),
   };
@@ -132,5 +135,21 @@ describe("saved total = the total the customer saw", () => {
       const json = await (await post(orderBody(config))).json();
       expect(json.total - withoutTheme, f.id).toBe(0);
     }
+  });
+});
+
+describe("the demo payment", () => {
+  // 2026-11-05, the owner: "tarih girdikten sonra event firmasninda musaitliginin yaninda tik olduktan sonra odeme alincak".
+  it("takes We do it only on a date the setup team is free, and records the payment as held, not charged", async () => {
+    const config = { ...fixtureById("A-single_round").config, servicePackageId: "we_do_it" } as never as Parameters<typeof orderBody>[0];
+    const soon = await post({ ...orderBody(config), venue: { ...config.venue, date: "" } });
+    expect(soon.status).toBe(400);
+    expect(inserted).toHaveLength(0);
+    const res = await post(orderBody(config));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.payment).toMatchObject({ mode: "demo", status: "authorized", amount: json.total });
+    expect(json.payment.suppliers[0]).toEqual({ id: "setup", name: "PartyMuse setup team", status: "waiting" });
+    expect((inserted[0] as { extras: { payment: unknown } }).extras.payment).toEqual(json.payment);
   });
 });

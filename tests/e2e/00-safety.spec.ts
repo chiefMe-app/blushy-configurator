@@ -2,7 +2,7 @@
 // past the browser lock could not spend money or store data — and that the
 // browser lock holds. If this fails, stop: do not run the other suites.
 import { test, expect } from "@playwright/test";
-import { lockNetwork } from "./guard";
+import { lockNetwork, PARTY_DATE } from "./guard";
 import { fixtureById } from "../fixtures/configs";
 
 test.describe.configure({ mode: "serial" });
@@ -10,7 +10,8 @@ test.describe.configure({ mode: "serial" });
 test("orders are only logged: no database configured", async ({ request }) => {
   const config = fixtureById("A-single_round").config;
   const res = await request.post("/api/orders", {
-    data: { ...config, venue: config.venue, customer: { name: "Safety Check", whatsapp: "+971500000000" } },
+    // A date the setup team is free on (lib/availability.ts): We do it is taken only then.
+    data: { ...config, venue: { ...config.venue, date: PARTY_DATE }, customer: { name: "Safety Check", whatsapp: "+971500000000" } },
   });
   expect(res.status()).toBe(200);
   expect((await res.json()).persisted).toBe(false);

@@ -313,3 +313,12 @@ export async function settle(page: Page) {
 // The finished designs' pictures (2026-11-02) are made in the browser a moment after the page shows: whether
 // a shot catches them made or still making is timing, so they are masked.
 export const masks = (page: Page) => [page.locator("img[src$='.gif']"), page.locator(".bz-finished-card .pic")];
+
+/** A party date far ahead and the same every day (the snapshots show it): the setup team is free on it
+ * (lib/availability.ts), so the demo payment can go. */
+export const PARTY_DATE = "2030-06-15";
+export async function setPartyDate(page: Page) {
+  const d = PARTY_DATE;
+  await page.getByLabel("Party date").fill(d);
+  return d;
+}

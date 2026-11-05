@@ -12,6 +12,7 @@ import {
   hexToRgbTriplet,
   softTriplet,
 } from "@/lib/config";
+import { partySuppliers, paymentBlockers } from "@/lib/availability";
 import { getThemeCutoutPresets } from "@/lib/themeCatalog";
 
 import { inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
@@ -75,6 +76,8 @@ type View = "configure" | "success";
 interface SubmitResult {
   designId: string;
   total: number;
+  /** Who confirms before the payment is charged (lib/availability.ts). */
+  suppliers: string[];
 }
 
 /** The steps' painted heading pictures (scripts/packages): the Venue's bear skating to the party, the Review's zebra. */
@@ -427,7 +430,7 @@ export default function ConfigurePage() {
         // Hard failure (e.g. Supabase configured but errored)
         throw new Error(data?.error ?? "Could not submit request");
       }
-      setResult({ designId, total });
+      setResult({ designId, total, suppliers: partySuppliers(config).map((s) => s.name) });
       // The request is sent; the next visit starts a new design.
       draft.clear();
       serverDraft.forget(); // the next design is a new one
@@ -480,17 +483,24 @@ export default function ConfigurePage() {
       <main style={accentStyle} className="mx-auto min-h-screen max-w-xl px-4 pb-16">
         <div className="py-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft text-3xl">
-            
+            <span aria-hidden="true" style={{ color: "#2e9e5e", fontWeight: 800 }}>✓</span>
           </div>
-          <h1 className="text-2xl font-bold">Request received!</h1>
+          <h1 className="text-2xl font-bold">Order placed!</h1>
+          {/* 2026-11-05: the demo payment — held, charged once every supplier confirms (lib/availability.ts). */}
+          <p className="bz-pay-demo mx-auto mt-3 max-w-sm" data-testid="success-demo"><b>DEMO payment — nothing was charged.</b> No card was asked for.</p>
           <p className="mx-auto mt-2 max-w-sm text-sm text-black/60">
-            Your Blushy setup request has been received. We&apos;ll review your design and
-            confirm the final quote.
+            Your payment is held, not charged: we charge it only once {result.suppliers.length > 1 ? "every supplier has" : "we have"} confirmed your date.
           </p>
+          {result.suppliers.length > 0 && (
+            <ul className="bz-pay-suppliers mx-auto mt-3 max-w-sm text-left" data-testid="success-suppliers">
+              {result.suppliers.map((s) => <li key={s}><span>{s}</span><small>waiting to confirm</small></li>)}
+            </ul>
+          )}
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm">
-          <div className="p-4 pb-0">
+          {/* The backdrop's picture, when she designed one (a skipped backdrop showed an empty "Render pending" box). */}
+          {config.decor.backdropChoice !== "skip" && <div className="p-4 pb-0">
             <SetupPreview
               config={config}
               status={preview.status}
@@ -499,7 +509,7 @@ export default function ConfigurePage() {
               onRegenerate={preview.regenerate}
               showControls={false}
             />
-          </div>
+          </div>}
           <div className="space-y-4 p-5">
             <div className="flex items-center justify-between rounded-xl bg-accent-soft/50 px-4 py-3">
               <div className="flex flex-col">
@@ -510,7 +520,7 @@ export default function ConfigurePage() {
               </div>
               <div className="flex flex-col items-end">
                 <span className="text-[11px] uppercase tracking-wide text-black/45">
-                  Estimated total
+                  Held on your card · demo
                 </span>
                 <span className="text-lg font-bold text-accent">
                   AED {formatAED(result.total)}
@@ -518,7 +528,7 @@ export default function ConfigurePage() {
               </div>
             </div>
             <p className="rounded-xl bg-black/[0.03] p-3 text-center text-sm text-black/65">
-              [phone] We will contact you on WhatsApp to confirm venue, availability and final quote.
+              We will message you on WhatsApp as each one confirms.
             </p>
           </div>
         </div>
@@ -533,8 +543,8 @@ export default function ConfigurePage() {
   // rule and the render/price logic below is the one that was here before.
   // =========================================================================
   const isReview = step === STEPS.length - 1;
-  const canSubmit =
-    config.customer.name.trim().length > 1 && config.customer.whatsapp.trim().length >= 7;
+  // 2026-11-05: her details and — We do it — a date the setup team is free on (lib/availability.ts).
+  const canSubmit = paymentBlockers(config).length === 0;
 
   // Decor step (index 2): don't let the user Continue past their decor choices
   // without ever having generated the Final Design Render — swap the CTA for
@@ -760,7 +770,7 @@ export default function ConfigurePage() {
     goToStep(step - 1);
   };
   if (step === 5) nextLabel = "See my party →";
-  if (isReview) { nextLabel = "Request Final Quote ✦"; onNext = submit; nextDisabled = !canSubmit; }
+  if (isReview) { nextLabel = label(`Pay AED ${formatAED(total)} · demo ✦`, "Pay · demo ✦"); onNext = submit; nextDisabled = !canSubmit; }
   // A render in progress does not hold the customer on Decor any more.
   const busy = submitting;
 
@@ -1002,7 +1012,7 @@ export default function ConfigurePage() {
 
             {step === 5 && <VenueStep config={config} patchVenue={patchVenue} patchCustomer={patchCustomer} />}
 
-            {step === 6 && <ReviewStep config={config} canSubmit={canSubmit} submitError={submitError} />}
+            {step === 6 && <ReviewStep config={config} submitError={submitError} />}
           </div>
         </section>
       </main>

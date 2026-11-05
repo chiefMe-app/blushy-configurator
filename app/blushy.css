@@ -1588,7 +1588,23 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 
 /* The whole party in one photograph, on the Venue step (2026-11-04): indoors or outdoors, then the picture. */
 .bz-party .bz-party-where { margin: 4px 0 12px; }
-.bz-party .bz-party-disclaimer { margin: 8px 0 0; font-size: 12px; line-height: 1.4; color: #7a6c73; font-style: italic; }
+.bz-pay { background: #fff; border: 1px solid #f1dfe8; border-radius: 18px; padding: 16px; }
+.bz-pay h3 { font: 400 20px var(--bz-hand); color: var(--bz-ink, #2b1a24); margin: 14px 0 6px; }
+.bz-pay .sub { font-size: 13px; color: #6b5c64; line-height: 1.45; margin: 0 0 8px; }
+.bz-pay-demo { margin: 0; padding: 10px 12px; border-radius: 12px; background: #fff7d6; border: 1.5px dashed #d9a400; color: #6b5200; font-size: 13px; line-height: 1.45; }
+.bz-pay-checks, .bz-pay-suppliers { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.bz-pay-checks li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.bz-pay-checks .mark { width: 22px; height: 22px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 12px; }
+.bz-pay-checks li.ok .mark { background: #2e9e5e; color: #fff; } .bz-pay-checks li.no { color: #8a4b12; } .bz-pay-checks li.no .mark { background: #fde3cc; color: #8a4b12; }
+.bz-pay-suppliers li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 10px; background: #faf6f8; font-size: 13px; }
+.bz-pay-suppliers li small { color: #8a7a82; white-space: nowrap; }
+.bz-pay-wait { margin: 10px 0 0; font-size: 13px; color: #8a4b12; font-weight: 600; }
+.bz-vn-avail { display: flex; align-items: center; gap: 10px; margin: 2px 0 0; padding: 10px 12px; border-radius: 12px; font-size: 14px; }
+.bz-vn-avail .mark { width: 24px; height: 24px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; }
+.bz-vn-avail.ok { background: #e9f9ee; color: #1f6b43; } .bz-vn-avail.ok .mark { background: #2e9e5e; }
+.bz-vn-avail.no { background: #fff2e8; color: #8a4b12; } .bz-vn-avail.no .mark { background: #e08a2e; }
+.bz-vn-avail small { margin-left: auto; font-size: 11px; opacity: .7; white-space: nowrap; }
+.bz-party .bz-party-disclaimer { margin: 10px 0 0; padding: 10px 12px; font-size: 15px; line-height: 1.45; font-weight: 600; color: #5d4a54; background: #fff4f9; border-radius: 12px; }
 .bz-party .bz-party-where > b { display: block; font: 400 20px var(--bz-hand); color: var(--bz-ink, #2b1a24); margin-bottom: 8px; }
 .bz-party .bz-tb-options.compact { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .bz-party-pieces { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; }

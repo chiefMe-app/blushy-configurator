@@ -6,6 +6,7 @@ import { readExperiences } from "@/lib/studio/experiences";
 import { readCake } from "@/lib/studio/cake";
 import { randomUUID } from "node:crypto";
 import { getSupabase } from "@/lib/supabase";
+import { partySuppliers, setupAvailability } from "@/lib/availability";
 import {
   themeById,
   packageById,
@@ -66,6 +67,19 @@ export async function POST(req: NextRequest) {
     diy: readDiy(body.diy),
   } as unknown as BuilderConfig;
   const total = computeTotal(pricingConfig);
+  // We do it: only on a date the setup team is free (2026-11-05, lib/availability.ts) — the same check as the builder's.
+  if (servicePackageId !== "diy") {
+    const free = setupAvailability(body.venue?.date);
+    if (!free.ok) return NextResponse.json({ error: free.message }, { status: 400 });
+  }
+  // The DEMO payment until release: nothing asked for or charged; held, to be charged once every supplier confirms.
+  const payment = {
+    mode: "demo" as const,
+    status: "authorized" as const,
+    amount: total,
+    chargedWhen: "every supplier has confirmed",
+    suppliers: partySuppliers({ servicePackageId, experiences: pricingConfig.experiences, diy: pricingConfig.diy }).map((s) => ({ ...s, status: "waiting" as const })),
+  };
 
   const id = randomUUID();
   const createdAt = new Date().toISOString();
@@ -88,6 +102,7 @@ export async function POST(req: NextRequest) {
     diy: pricingConfig.diy,
     addOns: body.addOns,
     venue: body.venue,
+    payment,
   };
 
   // If Supabase isn't configured, log the payload and return a design id.
@@ -101,7 +116,7 @@ export async function POST(req: NextRequest) {
       total,
       ...body,
     });
-    return NextResponse.json({ designId: id, total, persisted: false });
+    return NextResponse.json({ designId: id, total, payment, persisted: false });
   }
 
   // 2026-10-26: the live site pointed at a Supabase project that no longer
@@ -140,6 +155,7 @@ export async function POST(req: NextRequest) {
       order: { id, created_at: createdAt, total_price: total, status: "pending" },
       designId: id,
       total,
+      payment,
       persisted: true,
     });
   } catch (err) {

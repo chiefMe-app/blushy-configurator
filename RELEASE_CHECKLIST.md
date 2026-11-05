@@ -13,5 +13,10 @@ website is released.
   renderKids, W1, W3, G1.
 - **Prices.** The placeholder prices need the owner's real ones: table options, welcome board, giveaways, piñata,
   cake & sweets, the sweet cart and the Customized Themed set.
-- **Payment.** Payment is the last stage: checkout, then payment only after every supplier confirms, then staging. The
-  mock payment must never look real.
+- **Payment.** Since 2026-11-05 the Review step ends in a DEMO payment (`lib/availability.ts`,
+  `components/builder/steps/ReviewStep.tsx`): no card is asked for, the order is saved with
+  `extras.payment = { mode: "demo", status: "authorized" }` and every supplier "waiting". Before release: a real
+  provider's hosted page (authorize on pay, capture only after every supplier confirms, void if one can't), the
+  suppliers' confirm links, and take the "DEMO" notes away. The demo must never look real until then.
+- **Availability.** We do it can be paid only on a date the setup team is free. For now that is a demo check: any day
+  at least `MIN_LEAD_DAYS` (3, a placeholder) ahead. It needs the owner's real lead time and her real calendar.

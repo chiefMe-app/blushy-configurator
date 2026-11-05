@@ -1,7 +1,7 @@
 // The kids' table, part 2 of Decor (2026-10-27, F2): after the backdrop's
 // Extras, a yes or skip; then every item on one page (2026-10-28); the price
 // adds to the party total; Back walks back; the table is kept on the device.
-import { test, expect, next, total, settle, signIn, chooseSetup } from "./guard";
+import { test, expect, next, total, settle, signIn, chooseSetup, setPartyDate } from "./guard";
 import type { Page } from "@playwright/test";
 
 const aed = (s: string | null) => Number((s ?? "").replace(/[^0-9]/g, ""));
@@ -874,11 +874,12 @@ test("X1 the experiences, their own step before Package: priced by the guests, t
   await expect(page.getByTestId("exp-bouncy_castle")).toHaveAttribute("aria-checked", "true");
   await next(page).click();
   await next(page).click();
+  await setPartyDate(page);
   await page.getByPlaceholder("Full name").fill("Test Customer");
   await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
   await next(page).click();
   await expect(page.getByText("Photographer, 3 hrs + video film").first()).toBeVisible();
-  await next(page).click(); // Request Final Quote → caught
+  await next(page).click(); // Pay (demo) → caught
   await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
   const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
   expect(order.experiences).toMatchObject({ picked: ["popcorn", "photographer", "face_painting", "bouncy_castle"], children: 11, photoHours: 3, video: true, place: "outdoor" });
@@ -936,10 +937,11 @@ test("PK1 two packages: We do it until she picks; DIY is the design fee, and wha
   // Indoors or outdoors is asked in DIY too, on the party's picture (2026-11-04).
   await expect(page.getByTestId("party-setting")).toBeVisible();
   await page.getByLabel("Area / community").fill("Jumeirah, Dubai");
+  await setPartyDate(page);
   await page.getByPlaceholder("Full name").fill("Test Customer");
   await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
   await next(page).click();
-  await next(page).click(); // Request Final Quote → caught
+  await next(page).click(); // Pay (demo) → caught
   await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
   const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
   expect(order.servicePackageId).toBe("diy");
@@ -968,13 +970,14 @@ test("VN1 We do it asks for the venue, when we set up and when we collect; the g
   await page.getByLabel("Venue type").selectOption("Restaurant");
   await page.getByLabel("Venue name (if it has one)").fill("The Garden");
   await page.getByLabel("Area / community").fill("Jumeirah, Dubai");
+  await setPartyDate(page);
   await page.getByPlaceholder("Full name").fill("Test Customer");
   await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
   await next(page).click();
   await expect(page.getByText("14:00 on the day (2 hours before)")).toBeVisible();
   await expect(page.getByText("Restaurant · The Garden")).toBeVisible();
   await expect(page.getByText("16:00 – 19:00")).toBeVisible();
-  await next(page).click(); // Request Final Quote → caught
+  await next(page).click(); // Pay (demo) → caught
   await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
   const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
   expect(order.venue).toMatchObject({ time: "16:00", endTime: "19:00", setupLead: "2h", collection: "next_morning", venueType: "Restaurant", venueName: "The Garden", childrenCount: 10, adultsCount: 10, guestCount: 20 });
@@ -1025,11 +1028,12 @@ test("VN2 the venue step: no photo upload; indoors or outdoors, then the backdro
   await card.getByTestId("party-setting-indoor").click();
   await expect(card.getByTestId("party-render")).toHaveCount(0);
   await expect(card.getByRole("button", { name: "See my party indoors ✨" })).toBeVisible();
+  await setPartyDate(page);
   await page.getByPlaceholder("Full name").fill("Test Customer");
   await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
   await next(page).click();
   await expect(page.locator(".bz-right").getByText("Indoor", { exact: true })).toBeVisible();
-  await next(page).click(); // Request Final Quote → caught
+  await next(page).click(); // Pay (demo) → caught
   await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
   const order = JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!);
   expect(order.venue.isOutdoor).toBe(false);
@@ -1175,4 +1179,40 @@ test("NV1 the steps in the header open any step, ahead too, once a theme is pick
   await expect(nav.getByRole("button", { name: "Go to Experiences" })).toHaveAttribute("aria-current", "step");
   await nav.getByRole("button", { name: "Go to Decor" }).click();
   await expect(nav.getByRole("button", { name: "Go to Decor" })).toHaveAttribute("aria-current", "step");
+});
+
+test("PAY1 We do it: the setup team's tick on her date, then the demo payment — held, charged once every supplier confirms", async ({ page, guard }) => {
+  // 2026-11-05, the owner: "ikinci paket icin tarih girdikten sonra event firmasninda musaitliginin yaninda tik olduktan
+  // sonra odeme alincak".
+  guard.fakeOrder = true;
+  await toTable(page);
+  await page.getByTestId("skip-kids-table").click();
+  for (let i = 0; i < 6; i++) await next(page).click(); // the grown-ups' table to the balloons skipped
+  await page.getByTestId("exp-magician").click();
+  await next(page).click(); // Package: We do it
+  await next(page).click(); // Venue
+  const tick = page.getByTestId("venue-availability");
+  await expect(tick).toHaveCount(0);
+  await page.getByLabel("Party date").fill(new Date(Date.now() + 86_400_000).toISOString().slice(0, 10));
+  await expect(tick).toContainText("Too soon for us");
+  await page.getByPlaceholder("Full name").fill("Test Customer");
+  await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
+  await next(page).click(); // Review
+  await expect(page.getByTestId("payment-demo")).toContainText("DEMO — no real payment");
+  await expect(page.getByTestId("payment-check-date")).toContainText("Too soon for us");
+  await expect(next(page)).toBeDisabled();
+  await page.getByRole("button", { name: "← Back" }).click();
+  const date = await setPartyDate(page);
+  await expect(tick).toContainText("PartyMuse is free on");
+  await next(page).click();
+  await expect(page.getByTestId("payment-check-date")).toContainText("PartyMuse is free on");
+  await expect(page.getByTestId("payment-suppliers")).toContainText("PartyMuse setup team");
+  await expect(page.getByTestId("payment-suppliers")).toContainText("Magic show");
+  await expect(next(page)).toBeEnabled();
+  await next(page).click(); // Pay (demo) → caught
+  await expect.poll(() => guard.blocked.some((r) => r.url().includes("/api/orders"))).toBe(true);
+  expect(JSON.parse(guard.blocked.find((r) => r.url().includes("/api/orders"))!.postData()!).venue.date).toBe(date);
+  await expect(page.getByText("Order placed!")).toBeVisible();
+  await expect(page.getByTestId("success-demo")).toContainText("nothing was charged");
+  await expect(page.getByTestId("success-suppliers")).toContainText("waiting to confirm");
 });

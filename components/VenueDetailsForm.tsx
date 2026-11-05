@@ -6,6 +6,7 @@
 // picture instead (components/builder/venue/PartyPreview.tsx).
 import { VENUE_TYPES, type VenueDetails, type CustomerDetails } from "@/lib/config";
 import { COLLECTIONS, SETUP_LEADS, clockBefore } from "@/lib/venue";
+import { niceDate, setupAvailability } from "@/lib/availability";
 
 export default function VenueDetailsForm({
   venue,
@@ -74,6 +75,18 @@ export default function VenueDetailsForm({
             <label className={labelCls}>Ends at</label>
             <input type="time" className={field} value={venue.endTime ?? ""} onChange={(e) => onVenue({ endTime: e.target.value })} aria-label="Ends at" />
           </div>
+          {/* We do it: is the setup team free that day? (2026-11-05, the owner: "tarih girdikten sonra event firmasninda
+              musaitliginin yaninda tik olduktan sonra odeme alincak"). A demo check until release. */}
+          {!diy && venue.date && (() => {
+            const a = setupAvailability(venue.date);
+            return (
+              <p className={`bz-vn-avail sm:col-span-3 ${a.ok ? "ok" : "no"}`} role="status" data-testid="venue-availability">
+                <span className="mark" aria-hidden="true">{a.ok ? "✓" : "!"}</span>
+                <span>{a.ok ? <>PartyMuse is free on <b>{niceDate(a.date)}</b> — you can book it.</> : a.message}</span>
+                <small>demo check</small>
+              </p>
+            );
+          })()}
           <div>
             <label className={labelCls}>Children</label>
             <input type="number" min={0} className={field} value={venue.childrenCount || ""} placeholder="0" aria-label="Children"

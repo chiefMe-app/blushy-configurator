@@ -2,7 +2,7 @@
 // opens where the customer left off; "Start over" clears it. Only design
 // choices are stored, never the customer's name, phone or venue. Balloon
 // colours the customer picked survive leaving the Decor step and coming back.
-import { test, expect, next, total, openDecor, decorTab, settle, masks, signIn, renderButton } from "./guard";
+import { test, expect, next, total, openDecor, decorTab, settle, masks, signIn, renderButton, setPartyDate } from "./guard";
 import { computeTotal, defaultConfig, formatAED } from "@/lib/config";
 
 const KEY = "partymuse.builder.draft.v1";
@@ -113,6 +113,7 @@ test("D8 the saved design is cleared once the request is sent", async ({ page, g
   await next(page).click(); // skipped → the experiences (2026-11-04)
   await next(page).click(); // none → Package
   await next(page).click();
+  await setPartyDate(page);
   await page.getByPlaceholder("Full name").fill("Test Customer");
   await page.getByPlaceholder("+971 5x xxx xxxx").fill("+971500000000");
   await page.waitForTimeout(800);
@@ -120,7 +121,7 @@ test("D8 the saved design is cleared once the request is sent", async ({ page, g
   expect(JSON.stringify(stored)).not.toContain("Test Customer");
   expect(JSON.stringify(stored)).not.toContain("971500000000");
   await next(page).click();
-  await next(page).click(); // Request Final Quote → caught
-  await expect(page.getByText("Request received!")).toBeVisible();
+  await next(page).click(); // Pay (demo) → caught
+  await expect(page.getByText("Order placed!")).toBeVisible();
   expect(await page.evaluate((k) => localStorage.getItem(k), KEY)).toBeNull();
 });
