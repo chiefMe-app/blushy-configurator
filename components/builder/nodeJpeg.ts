@@ -154,7 +154,7 @@ export async function svgJpeg(svg: SVGSVGElement, width: number): Promise<string
 export const isSketchWords = (n: Node) => n instanceof Element && n.hasAttribute("data-sketch-words");
 
 /**
- * Only the live sketch's words, on a clear ground, `size` px square — its viewBox square, as nodeJpeg's square
+ * Only the live sketch's words (and its standees, 2026-11-05), on a clear ground, `size` px square — its viewBox square, as nodeJpeg's square
  * picture of it (2026-11-03: laid flat on the backdrop's render afterwards, as flat cut vinyl). Without the sketch's
  * soft shadow. Null when it has none.
  */
@@ -170,6 +170,11 @@ export async function sketchWordsPng(svg: SVGSVGElement, size: number): Promise<
     c.removeAttribute("filter");
     out.appendChild(c);
   }
+  // The standees' pictures inlined: an SVG drawn as a picture loads nothing of its own.
+  await Promise.all(Array.from(out.querySelectorAll("image")).map(async (im) => {
+    const href = im.getAttribute("href") ?? im.getAttribute("xlink:href");
+    if (href && !href.startsWith("data:")) im.setAttribute("href", await asDataUrl(new URL(href, location.href).href));
+  }));
   const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(out)], { type: "image/svg+xml" }));
   try {
     const img = new Image();

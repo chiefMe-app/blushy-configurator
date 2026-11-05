@@ -200,7 +200,7 @@ describe("the trimmed options (2026-10-29)", () => {
     expect(ids("partyHats")).toEqual(["cone"]);
     // A table saved with a removed option gets today's choice.
     const old = readTableSetup({ enabled: true, choices: { napkins: "striped", placemats: "pattern", plates: "holo_square", cups: "white_straw", bottleLabel: "pattern", partyHats: "crown" } }, frozen)!;
-    expect(old.choices).toMatchObject({ napkins: "plain", placemats: "watercolour", plates: "plain", cups: "plain", bottleLabel: NONE, partyHats: "cone" });
+    expect(old.choices).toMatchObject({ napkins: "plain", placemats: "watercolour", plates: "plain", cups: "plain", bottleLabel: "watercolour", partyHats: "cone" });
   });
   it("the plain placemat and label in their colours, with the words", () => {
     const t = table({ placemats: "plain", bottleLabel: "plain" }, { placematColor: "#BBF7D0", labelColor: "#FFD1A4", words: { placemats: "Arya turns 6", bottleLabel: "Arya" } });

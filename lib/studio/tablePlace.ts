@@ -47,14 +47,17 @@ export type PlaceNode =
   /** The napkin band, a strip in its colour. */
   | { k: "band"; x: number; y: number; w: number; h: number; fill: string; id: string }
   /** Words in their face (./tableFonts), stacked one word a line in the placemat's bottom-right corner. */
-  | { k: "matWords"; lines: string[]; font: string; colour: string; id: string }
+  | { k: "matWords"; lines: string[]; font: string; colour: string; id: string; hint?: boolean }
   /** Words fitted into a box (the name on its tag), in a face. */
-  | { k: "words"; lines: string[]; face: "elegant" | "script"; colour: string; x: number; y: number; w: number; h: number; id: string }
+  | { k: "words"; lines: string[]; face: "elegant" | "script"; colour: string; x: number; y: number; w: number; h: number; id: string; hint?: boolean }
   /** The water bottle and its label: the design or a colour, with the words. */
-  | { k: "bottle"; x: number; y: number; w: number; h: number; label: [number, number, number, number]; art?: string; fill?: string; words?: string; font: string; colour: string; id: string }
+  | { k: "bottle"; x: number; y: number; w: number; h: number; label: [number, number, number, number]; art?: string; fill?: string; words?: string; font: string; colour: string; id: string; hint?: boolean }
   /** A place, turned to its seat. */
   | { k: "group"; x: number; y: number; rot: number; nodes: PlaceNode[]; id: string; focus: boolean };
 
+
+/** The faint words shown where hers go, until she writes them. */
+export const HINT = { placemats: "Your words", cutleryHolder: "Name", bottleLabel: "Your words" } as const;
 
 /** One place's pieces, in its own frame (x to the child's right, y towards the child). */
 function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; accent: string }, id: string, turn: number): PlaceNode[] {
@@ -65,7 +68,10 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
   if (mat) {
     nodes.push({ k: "sheet", x: 0, y: 0, w: 42, h: 29.7, ...(mat.themed ? { art: `/design/table/placemats/${theme.id}/${mat.id}.webp` } : { fill: colour("placemats") ?? "#FFFFFF" }), lift: 0.05, id: `${id}-mat` });
     const w = wordsOn(t, "placemats");
-    if (w) nodes.push({ k: "matWords", lines: asPrinted(w, tableFont(t.placematFont)).split(/\s+/), font: tableFont(t.placematFont).id, colour: words, id: `${id}-matwords` });
+    // 2026-11-05 (the owner: "bu şekilde name vs yazsın ki oralara bişi yazması gerektiğini anlasın user"): with no
+    // words yet, a faint hint where they go (`hint`: on the page only, never in a picture made from it).
+    nodes.push(w ? { k: "matWords", lines: asPrinted(w, tableFont(t.placematFont)).split(/\s+/), font: tableFont(t.placematFont).id, colour: words, id: `${id}-matwords` }
+      : { k: "matWords", lines: asPrinted(HINT.placemats, tableFont(t.placematFont)).split(/\s+/), font: tableFont(t.placematFont).id, colour: words, id: `${id}-matwords`, hint: true });
   }
   // The big plate with the small one in it (2026-10-29: nothing in the small one).
   // Each in a colour or a foil (2026-10-29: "iridescent, silver, gold metallic renk olarak girsin").
@@ -92,7 +98,7 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
     nodes.push({ k: "band", x: -16.6, y: 1.5, w: 8.4, h: 4.2, fill: colour("cutleryHolder") ?? "#FFFFFF", id: `${id}-band` });
     // The name printed on the band itself, no tag (2026-10-29: "bir bütün olsun, o minik beyaz kısmı olmasın").
     const name = wordsOn(t, "cutleryHolder");
-    if (name) nodes.push({ k: "words", lines: [name], face: "script", colour: nameColour(t, theme), x: -16.6, y: 1.5, w: 7.4, h: 3.4, id: `${id}-name` });
+    nodes.push({ k: "words", lines: [name ?? HINT.cutleryHolder], face: "script", colour: nameColour(t, theme), x: -16.6, y: 1.5, w: 7.4, h: 3.4, id: `${id}-name`, ...(name ? {} : { hint: true }) });
   }
   // The cup on the top-right corner, white inside, lying on its side (2026-10-29: "cup daha yatay"); the bottle beside it.
   // 2026-10-31 (owner: "iyice yatık olsun, ekrandan bakan kişi düz görsün"): flat, the same way up in every place.
@@ -110,7 +116,7 @@ function setting(t: TableSetup, theme: { id: string; balloonColors: string[]; ac
   if (label) {
     const w = wordsOn(t, "bottleLabel");
     nodes.push({ k: "bottle", x: 23.4, y: -4, w: 6.4, h: tall("bottle", 6.4), label: PIECES.bottle.label as [number, number, number, number],
-      ...(label.themed ? { art: `/design/table/placemats/${theme.id}/${label.id}.webp` } : { fill: colour("bottleLabel") ?? "#FFFFFF" }), ...(w ? { words: asPrinted(w, tableFont(t.labelFont)) } : {}), font: tableFont(t.labelFont).id, colour: words, id: `${id}-bottle` });
+      ...(label.themed ? { art: `/design/table/placemats/${theme.id}/${label.id}.webp` } : { fill: colour("bottleLabel") ?? "#FFFFFF" }), words: asPrinted(w ?? HINT.bottleLabel, tableFont(t.labelFont)), ...(w ? {} : { hint: true }), font: tableFont(t.labelFont).id, colour: words, id: `${id}-bottle` });
   }
   // The cone hat on its side, top-left, in the customer's colour (2026-10-29).
   // Above the plate, a little to the left: the centrepieces stand between the places, clear of it (2026-10-30).

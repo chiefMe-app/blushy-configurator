@@ -99,7 +99,8 @@ function letteringLayoutSentence(t: PanelText): string {
   const lines = panelLettering(t);
   if (!lines) return "";
   // 2026-11-02: the heading on two rows, "Happy" over "Birthday" (headingRows, as the guide sets it).
-  const rows = (l: typeof lines[number], i: number) => (i === 0 && t.lettering?.heading.text.trim() ? headingRows(l.text) : [l.text.trim()]);
+  // 2026-11-05: over a name the heading is one row ("isim gelirse happy birthday yanyana olsun").
+  const rows = (l: typeof lines[number], i: number) => (i === 0 && lines.length === 1 && t.lettering?.heading.text.trim() ? headingRows(l.text) : [l.text.trim()]);
   const said = (l: typeof lines[number], i: number) => {
     const r = rows(l, i);
     return r.length > 1 ? `"${r[0]}" on one row with "${r.slice(1).join(" ")}" centred on the row below it` : `"${r[0]}"`;
@@ -342,8 +343,8 @@ export function buildLayoutRefEditPrompt(
         // 2026-11-01 (the owner: "wavy de border offset olmalı örnekteki gibi"): two layers, the face on a coloured one.
         (p.borderColor
           ? ` It is made of two layers: behind the face stands a slightly larger wavy board of the same outline in ` +
-            `matte ${backdropColorLabel(p.borderColor)}, showing as an even rim about 6 cm wide all round the face, ` +
-            `like an offset border.`
+            `matte ${backdropColorLabel(p.borderColor)}, showing as an even rim about 6 cm wide along both sides and the top, ` +
+            `like an offset border; the face runs right down to the floor, no rim under its foot.`
           : "");
     } else if (p.type === "arch") {
       backdropDesc =
@@ -433,7 +434,7 @@ export function buildLayoutRefEditPrompt(
             ? `tall solid freestanding board with both long sides and the top running in even, rounded, clearly visible waves, four down each side and two across the top, with a rounded lobe on each top corner, like a wavy mirror, and a straight bottom edge standing flat on the floor` +
               `, seamless matte ${pColor} face` +
               (real?.borderColor ? ` on a slightly larger wavy board of the same outline in matte ${backdropColorLabel(real.borderColor)}, ` +
-                `showing as an even rim about 6 cm wide all round the face` : "") +
+                `showing as an even rim about 6 cm wide along both sides and the top, the face running right down to the floor with no rim under its foot` : "") +
               `, no cut-out opening, NOT a plain rounded arch, NOT a rectangle with straight sides`
           : isArch
             ? `solid filled freestanding arch backdrop panel, fully opaque surface, seamless matte ${pColor} surface, ` +

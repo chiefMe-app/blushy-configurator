@@ -214,7 +214,15 @@ export function tablePhotoPrompt(t: TableSetup): string {
   const c = t.choices;
   const said = (k: "placemats" | "cutleryHolder" | "bottleLabel") => wordsOn(t, k);
   const words = Array.from(new Set([said("placemats"), said("cutleryHolder"), said("bottleLabel")].filter(Boolean) as string[]));
-  const band = c.cutleryHolder === "band" ? `The band round the napkin and cutlery stays ${colourWords(t.holderColor)}${said("cutleryHolder") ? `, the name printed straight on it` : ""} — no tag, no label.` : "";
+  // 2026-11-05 (the owner: "table setup renderda cutlery holder ekstra yazı koymuş"): the band carried the
+  // placemat's words too; each piece is told its own words, and the band only its name.
+  const holder = said("cutleryHolder");
+  const band = c.cutleryHolder === "band" ? `The band round the napkin and cutlery stays ${colourWords(t.holderColor)}${holder ? `, with only "${holder}" printed straight on it — exactly that one word${holder.trim().includes(" ") ? "s" : ""}, nothing more, never the placemat's or the label's words` : ", with nothing written on it"} — no tag, no label.` : "";
+  const where = [
+    said("placemats") && `on the placemat "${said("placemats")}"`,
+    holder && c.cutleryHolder !== NONE && `on the band "${holder}"`,
+    said("bottleLabel") && `on the bottle label "${said("bottleLabel")}"`,
+  ].filter(Boolean);
   return [
     "Image 1 is a flat lay of one child's place at a kids' birthday party table, seen from straight above, put together from photos of the exact pieces chosen.",
     "Turn image 1 into one real photograph of the very same place: the same camera, looking straight down from directly above, and the same framing, edge to edge — not tilted, not from the side, not zoomed out.",
@@ -224,7 +232,7 @@ export function tablePhotoPrompt(t: TableSetup): string {
     "The placemat is one flat sheet of paper with clean, straight, square-cut edges, exactly the size image 1 shows; its printed design ends at those edges and never runs past them onto the table.",
     "Add nothing: no chair, no chair back, no table edge, no floor, no people, no balloons, no flowers, no confetti, no other plates, cups, cutlery, napkins, name cards, tags or labels. Leave nothing out.",
     band,
-    words.length ? `Keep the words exactly as image 1 letters them, letter for letter, in the same lettering, size and place: ${words.map((w) => `"${w}"`).join(" and ")}. No other words or letters anywhere.` : "No words or letters anywhere.",
+    words.length ? `Keep the words exactly as image 1 letters them, letter for letter, in the same lettering, size and place, each only on its own piece: ${where.join("; ")}. No other words or letters anywhere.` : "No words or letters anywhere.",
     "Make it real: paper, foil, card and wood with their own fine texture, soft even daylight from above, and gentle natural shadows under each piece where it rests on the table. Crisp and sharp all over, like a styled flat-lay product photo. No outlines, no cut-out edges, no cartoon characters, no faces, no logos.",
   ].filter(Boolean).join(" ");
 }

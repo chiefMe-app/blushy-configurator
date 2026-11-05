@@ -10,11 +10,14 @@ import { COLOUR_OF, FONT_OF, nameColour, wordsColour, MAX_KIDS, MAX_PLACEMAT_TEX
 import { GlyphDefs, glyph, scallop, type GlyphColours } from "@/components/studio/table/glyphs";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
 import type { PieceRender } from "@/components/builder/usePieceRender";
+import TablePlace from "@/components/studio/table/TablePlace";
+import { tableSamples, withSample } from "@/lib/studio/tableSamples";
 
 /** The printed words in their colour, with a shadow that keeps light words readable on the design. */
 export function wordsStyle(hex: string, font?: TableFont) {
   const n = parseInt(hex.slice(1), 16), lum = (0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255)) / 255;
-  return { color: hex, textShadow: lum > 0.75 ? "0 1px 2px rgba(60,40,50,0.55)" : undefined, ...(font ? fontStyle(font) : {}) };
+  // 2026-11-05 (the owner: "yazılarda outer shadow olsun anlaşılmıyor"): a soft halo round every word.
+  return { color: hex, textShadow: lum > 0.75 ? "0 0 3px rgba(60,40,50,0.6), 0 1px 2px rgba(60,40,50,0.55)" : "0 0 3px rgba(255,255,255,0.95), 0 0 6px rgba(255,255,255,0.8)", ...(font ? fontStyle(font) : {}) };
 }
 
 /** Words in a lettering face (2026-10-29): print faces in capitals, handwritten ones as typed and a little bigger. */
@@ -106,16 +109,27 @@ export default function TableStep({ config, setTable, onFinish, onFinishTables, 
   const textColor = wordsColour(table, theme);
   const colours: GlyphColours = { palette: theme.balloonColors, accent: theme.accent, cloth: table.clothColor, runner: table.runnerColor, napkin: table.napkinColor,
     plate: drawColour(table.plateColor), smallPlate: drawColour(table.smallPlateColor), cup: drawColour(table.cupColor), holder: table.holderColor, placemat: table.placematColor, label: table.labelColor, plateShape: table.plateShape };
-  const swatchRow = (label: string, value: string, options: string[], pick: (hex: string) => void, testId?: string) => (
-    <div className="bz-ts-swatches" role="radiogroup" aria-label={label} data-testid={testId}>
-      {options.map((hex) => {
-        // A colour, or a foil (the plates and cups, 2026-10-29) shown as its shimmer.
-        const on = hex.toUpperCase() === value.toUpperCase();
-        return <button key={hex} type="button" role="radio" aria-checked={on} aria-label={foilOf(hex)?.name ?? PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
-          className={on ? "on" : ""} style={{ background: swatchBackground(hex) }} onClick={() => pick(hex)} />;
-      })}
-    </div>
-  );
+  // `wheel`: and any colour of her own (the words' colours, 2026-11-05: "textler için color wheel olsun").
+  const swatchRow = (label: string, value: string, options: string[], pick: (hex: string) => void, testId?: string, wheel = false) => {
+    const own = wheel && /^#[0-9a-f]{6}$/i.test(value) && !options.some((h) => h.toUpperCase() === value.toUpperCase());
+    return (
+      <div className="bz-ts-swatches" role="radiogroup" aria-label={label} data-testid={testId}>
+        {options.map((hex) => {
+          // A colour, or a foil (the plates and cups, 2026-10-29) shown as its shimmer.
+          const on = hex.toUpperCase() === value.toUpperCase();
+          return <button key={hex} type="button" role="radio" aria-checked={on} aria-label={foilOf(hex)?.name ?? PLAIN_COLOURS.find((c) => c.hex === hex)?.name ?? hex}
+            className={on ? "on" : ""} style={{ background: swatchBackground(hex) }} onClick={() => pick(hex)} />;
+        })}
+        {wheel && (
+          <label className={`bz-ts-wheel ${own ? "on" : ""}`} title="Any colour" style={own ? { background: value } : undefined}>
+            <span aria-hidden="true">+</span>
+            <input type="color" aria-label={`${label}: any colour`} data-testid={testId ? `${testId}-wheel` : undefined}
+              value={/^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : "#ffffff"} onChange={(e) => pick(e.target.value.toUpperCase())} />
+          </label>
+        )}
+      </div>
+    );
+  };
 
   const item = (key: TableItemKey) => {
     const it = tableItem(key);
@@ -208,7 +222,7 @@ export default function TableStep({ config, setTable, onFinish, onFinishTables, 
           // The name's own colour (2026-10-29: "cutlery holder'daki textin rengi de seçilsin").
           <div className="bz-tb-words-colour">
             <span>Name colour</span>
-            {swatchRow("Name colour", nameColour(table, theme), Array.from(new Set([theme.accent.toUpperCase(), ...swatches])), (hex) => set({ nameColor: hex }), "cutleryHolder-name-colour")}
+            {swatchRow("Name colour", nameColour(table, theme), Array.from(new Set([theme.accent.toUpperCase(), ...swatches])), (hex) => set({ nameColor: hex }), "cutleryHolder-name-colour", true)}
           </div>
         )}
         {fontField && font && chosen && (
@@ -226,7 +240,7 @@ export default function TableStep({ config, setTable, onFinish, onFinishTables, 
           // One colour for the words on the placemats and the labels: the theme's, unless changed (2026-10-28).
           <div className="bz-tb-words-colour">
             <span>Words colour</span>
-            {swatchRow("Words colour", textColor, Array.from(new Set([theme.accent.toUpperCase(), ...swatches])), (hex) => set({ textColor: hex }), `${key}-words-colour`)}
+            {swatchRow("Words colour", textColor, Array.from(new Set([theme.accent.toUpperCase(), ...swatches])), (hex) => set({ textColor: hex }), `${key}-words-colour`, true)}
           </div>
         )}
         {(key === "bottleLabel" || key === "placemats") && chosen && (
@@ -248,6 +262,24 @@ export default function TableStep({ config, setTable, onFinish, onFinishTables, 
       <div className="bz-tb-jump">
         <span>No kids&apos; table this time?</span>
         <button type="button" className="bz-back" data-testid="skip-kids-table" onClick={onSkip}>Skip the kids&apos; table →</button>
+      </div>
+      {/* Ready-made tables (2026-11-05, the owner: "table setupta da samplelar olsun yanda gene user seçsin"): each its
+          own one-place drawing, applied at a tap — her kids, words, table and chairs kept. */}
+      <div className="bz-samples table" data-testid="table-samples">
+        <div className="bz-samples-head"><b>Ready-made tables</b><span>Tap one to start from it — you can change anything after.</span></div>
+        <div className="bz-samples-row">
+          {tableSamples(theme).map((s) => {
+            const look = withSample(table, s);
+            return (
+              <button key={s.id} type="button" className="bz-sample" data-testid={`table-sample-${s.id}`} title={s.note} onClick={() => setTable(look)}>
+                <span className="pic"><TablePlace table={look} theme={theme} testId="table-sample-place" /></span>
+                <b>{s.name}</b>
+                <small>{s.note}</small>
+                <em>AED {formatAED(tableTotal(look))}</em>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div className="bz-tb-item">
         <h3>How many kids?</h3>

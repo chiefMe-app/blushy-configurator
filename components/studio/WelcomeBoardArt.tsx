@@ -305,7 +305,7 @@ export default function WelcomeBoardArt({ board, theme, balloons, className, pla
     : board.shape === "round"
       ? `M0,${cy}A${w / 2},${w / 2} 0 1 1 ${w},${cy}A${w / 2},${w / 2} 0 1 1 0,${cy}Z`
       : wavy ? wavyBoardPath(0, top, w, h) : `M0,${top}H${w}V${top + h}H0Z`;
-  const shape = wavy ? wavyFacePath(0, top, w, h) : outline;
+  const shape = wavy ? wavyFacePath(0, top, w, h, true) : outline;
   /** How far the art is set in from the board's edge: a wavy board's rim and half its waves. */
   const artIn = wavy ? w * (WAVY_BORDER + 0.02) : 0;
   const rim = wavy ? wavyBorderColor(board.rimColor, balloons?.length ? balloons : theme.balloonColors ?? [], theme.accent) : null;

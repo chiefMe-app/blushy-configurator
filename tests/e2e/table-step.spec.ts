@@ -68,7 +68,7 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await expect(cloth.first()).toHaveAttribute("aria-checked", "true");
   for (const gone of ["Runner", "Name cards", "Chair decoration"]) await expect(page.getByRole("radiogroup", { name: gone })).toHaveCount(0);
   await expect(page.getByRole("radiogroup", { name: "Cutlery holder", exact: true }).getByRole("radio")).toHaveCount(2); // None + the band
-  await expect(page.getByRole("radiogroup", { name: "Water bottle label" }).getByRole("radio")).toHaveCount(4);
+  await expect(page.getByRole("radiogroup", { name: "Water bottle label", exact: true }).getByRole("radio")).toHaveCount(4);
   // The placemats: the theme's own, with the customer's words on them.
   const placemats = page.getByRole("radiogroup", { name: "Placemats" });
   await expect(placemats.getByRole("radio", { name: /Watercolour placemat/ }).locator("img")).toHaveAttribute("src", "/design/table/placemats/frozen/watercolour.webp");

@@ -78,10 +78,12 @@ export function wavyBoardPath(x: number, top: number, w: number, h: number): str
  */
 export const WAVY_BORDER = 0.07;
 
-/** The face of a wavy board in the box (x, top, w, h): the same waves, inset by the rim all round (her photo's rim runs under the foot too). */
-export function wavyFacePath(x: number, top: number, w: number, h: number): string {
+/** The face of a wavy board in the box (x, top, w, h): the same waves, inset by the rim. 2026-11-05 (the owner:
+ *  "altında border kalmış onu trimleyebilirsin"): a backdrop's face runs down to the floor, no rim under its foot;
+ *  `rimUnderFoot` keeps it all round (the welcome board, up on its stand). */
+export function wavyFacePath(x: number, top: number, w: number, h: number, rimUnderFoot = false): string {
   const b = w * WAVY_BORDER;
-  return wavyRect(x + b, top + b, w - 2 * b, h - 2 * b, w * AMP, w * CORNER * 0.6, waveCounts(w, h), 0);
+  return wavyRect(x + b, top + b, w - 2 * b, h - (rimUnderFoot ? 2 : 1) * b, w * AMP, w * CORNER * 0.6, waveCounts(w, h), 0);
 }
 
 /** The rim's colour: the one picked, else the party's first balloon colour that isn't white, silver or clear. */

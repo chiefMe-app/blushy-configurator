@@ -183,12 +183,34 @@
 .bz-decor-footer > span { font-size: 11px; font-weight: 700; color: #73656e; }
 .bz-decor-hint { font-weight: 800; color: var(--bz-pink); background: none; border: 0; cursor: pointer; font-size: 12px; font-family: var(--bz-sans); }
 .bz-decor-note { text-align: center; font-size: 11px; color: #947e8d; padding-top: 15px; }
-.bz-decor-cta { border: 0; border-radius: 999px; background: var(--bz-pink); color: #fff; font: 400 18px var(--bz-hand); padding: 10px 22px 7px; cursor: pointer;
-  box-shadow: 0 5px 0 rgba(255,13,102,.13), 0 11px 25px rgba(255,13,102,.15); }
+/* 2026-11-05 (the owner: "finalize the backdrop yazısı başka renk olsun, buton pembe yerine ayrışmıyor"): violet, apart
+   from the pink buttons around it. */
+.bz-decor-cta { border: 0; border-radius: 999px; background: linear-gradient(135deg, #7c4ddf, #5a2fc2); color: #fff; font: 400 18px var(--bz-hand); padding: 10px 22px 7px; cursor: pointer;
+  box-shadow: 0 5px 0 rgba(90,47,194,.18), 0 11px 25px rgba(90,47,194,.22); }
+.bz-decor-cta:not(:disabled):hover { background: linear-gradient(135deg, #6c3dd4, #4b22ad); }
 .bz-decor-cta:disabled { opacity: .55; cursor: default; }
 /* 2026-11-02: "Finalize the backdrop → Table setup" (in .bz-decor-actions); a short label on phones. */
 .bz-decor-cta .short { display: none; }
 @media (max-width: 520px) { .bz-decor-cta .full { display: none; } .bz-decor-cta .short { display: inline; } .bz-decor-cta { font-size: 16px; padding: 9px 16px 6px; } }
+
+/* Ready-made looks (2026-11-05): a row of finished backdrops per theme, applied at a tap. */
+.bz-samples { margin-bottom: 16px; padding: 12px; border-radius: 18px; background: linear-gradient(135deg, #fff4f9, #f4efff); border: 1px solid #f1dcea; }
+.bz-samples-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 2px 10px; }
+.bz-samples-head b { font: 400 21px var(--bz-hand); color: var(--bz-ink); }
+.bz-samples-head span { font-size: 12px; color: var(--bz-muted); }
+.bz-samples-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.bz-sample { display: flex; flex-direction: column; align-items: stretch; text-align: left; gap: 2px; padding: 6px 6px 9px; border-radius: 14px; border: 1.5px solid #f2dde6; background: #fff; cursor: pointer; font-family: var(--bz-sans); }
+.bz-sample:hover { border-color: var(--bz-pink); }
+.bz-sample .pic { position: relative; display: block; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #f6f2ef; margin-bottom: 5px; }
+.bz-sample .pic img, .bz-sample .pic svg { display: block; width: 100%; height: 100%; object-fit: cover; }
+.bz-sample .pic svg.bz-sketch { width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important; aspect-ratio: auto; }
+.bz-sample .pic .real { position: absolute; left: 6px; top: 6px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.9); font: 700 9.5px var(--bz-sans); font-style: normal; color: #5a2fc2; }
+.bz-sample b { font-size: 13px; color: var(--bz-ink); padding: 0 3px; }
+.bz-sample small { font-size: 10.5px; line-height: 1.3; color: var(--bz-muted); padding: 0 3px; }
+.bz-sample em { font-style: normal; font-size: 10.5px; font-weight: 800; color: var(--bz-pink); padding: 2px 3px 0; }
+.bz-samples.table .bz-sample .pic { aspect-ratio: 4 / 3; background: #f7f5f2; }
+.bz-samples.table .bz-sample .pic svg { object-fit: contain; }
+@media (max-width: 520px) { .bz-samples-row { gap: 6px; } .bz-sample small { display: none; } }
 
 /* Backdrop icon cards */
 .bz-layout-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
@@ -1224,6 +1246,20 @@ div.bz-stale-banner { cursor: default; }
 .bz-tb-intro .skipped { margin: 14px auto 0; font-size: 12.5px; }
 .bz-tb-tabs { margin-bottom: 12px; }
 .bz-tb-item { border: 1px solid var(--bz-border); border-radius: 20px; padding: 13px 14px 14px; margin-bottom: 12px; background: #fff; }
+/* 2026-11-05 (the owner: "her item cart backgroundu farklı renk olsun pastel tonlarında"): each piece's card in its own
+   pastel, in turn down the page. */
+.bz-tb-item:nth-of-type(6n + 1) { background: #fff3f8; border-color: #f8dbe7; }
+.bz-tb-item:nth-of-type(6n + 2) { background: #eef7ff; border-color: #d6e9fa; }
+.bz-tb-item:nth-of-type(6n + 3) { background: #fffbe8; border-color: #f4ebc0; }
+.bz-tb-item:nth-of-type(6n + 4) { background: #f5f0ff; border-color: #e2d8f7; }
+.bz-tb-item:nth-of-type(6n + 5) { background: #eefaf3; border-color: #d3eedd; }
+.bz-tb-item:nth-of-type(6n) { background: #fff4ec; border-color: #f6dfcd; }
+/* A colour of her own for the words (2026-11-05: "textler için color wheel olsun istediği rengi seçebilsin"). */
+.bz-ts-swatches .bz-ts-wheel { position: relative; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid #d9c9cf; display: grid; place-items: center; overflow: hidden; cursor: pointer;
+  background: conic-gradient(#ff7aa8, #ffd66b, #8be0a4, #8cc8ff, #c79af2, #ff7aa8); }
+.bz-ts-swatches .bz-ts-wheel span { width: 16px; height: 16px; border-radius: 50%; background: #fff; display: grid; place-items: center; font: 800 12px/1 var(--bz-sans); color: var(--bz-ink); }
+.bz-ts-swatches .bz-ts-wheel.on { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--bz-pink); }
+.bz-ts-swatches .bz-ts-wheel input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: 0; padding: 0; }
 .bz-tb-item h3 { margin: 0 0 10px; font: 400 21px var(--bz-hand); }
 .bz-tb-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 9px; }
 @media (max-width: 520px) { .bz-tb-options { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; } .bz-tb-option { padding: 6px 5px 8px; } .bz-tb-option small { display: none; } }

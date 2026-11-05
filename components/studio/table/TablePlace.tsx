@@ -99,12 +99,17 @@ function Pompom({ id, cx, cy, r }: { id: string; cx: number; cy: number; r: numb
   );
 }
 
+const isLight = (hex: string) => {
+  const n = parseInt(hex.replace("#", "").slice(0, 6), 16);
+  return Number.isFinite(n) && (0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255)) / 255 > 0.75;
+};
+
 /** `fill`: covers its box, cropping the sides (a card in My designs, 2026-10-30). */
 /**
  * `atPlace`: drawn at each place in sight, in its own frame (cm, the plate in the middle), over the rest — the
  * giveaway box (2026-11-03, components/builder/giveaways).
  */
-export default function TablePlace({ table, theme, className, fill, mode = "one", atPlace }: { table: TableSetup; theme: { id: string; balloonColors: string[]; accent: string }; className?: string; fill?: boolean; mode?: PlaceMode; atPlace?: (id: string) => React.ReactNode }) {
+export default function TablePlace({ table, theme, className, fill, mode = "one", atPlace, testId = "table-place" }: { table: TableSetup; theme: { id: string; balloonColors: string[]; accent: string }; className?: string; fill?: boolean; mode?: PlaceMode; atPlace?: (id: string) => React.ReactNode; testId?: string }) {
   const nodes = useMemo(() => placeLayout(table, theme, mode), [table, theme, mode]);
   const view = useMemo(() => placeView(table, mode), [table, mode]);
   const top = nodes.find((n): n is Extract<PlaceNode, { k: "top" }> => n.k === "top");
@@ -116,8 +121,15 @@ export default function TablePlace({ table, theme, className, fill, mode = "one"
     filters.set(id, { tint, lift });
     return `url(#${id})`;
   };
-  const text = (lines: string[], face: Face, size: number, colour: string, x: number, y0: number, anchor: "end" | "middle", gap: number) =>
-    lines.map((l, i) => <text key={i} x={x} y={y0 + i * gap} fontSize={size} fill={colour} textAnchor={anchor} style={{ fontFamily: family(face), fontWeight: weight(face) }}>{l}</text>);
+  // 2026-11-05 (the owner: "yazılarda outer shadow olsun anlaşılmıyor"): a soft halo round the letters, light round
+  // dark words and dark round light ones, so they read on any print.
+  const text = (lines: string[], face: Face, size: number, colour: string, x: number, y0: number, anchor: "end" | "middle", gap: number) => {
+    const halo = isLight(colour) ? "rgba(60,40,50,0.55)" : "rgba(255,255,255,0.9)";
+    return lines.map((l, i) => <text key={i} x={x} y={y0 + i * gap} fontSize={size} fill={colour} textAnchor={anchor} stroke={halo} strokeWidth={size * 0.14}
+      strokeLinejoin="round" paintOrder="stroke" style={{ fontFamily: family(face), fontWeight: weight(face) }}>{l}</text>);
+  };
+  /** A hint where her words go: faint, and left out of every picture made from the drawing (nodeJpeg). */
+  const hinted = (hint: boolean | undefined, body: React.ReactNode) => (hint ? <g data-no-capture="" opacity={0.45} data-hint="">{body}</g> : body);
   const draw = (n: PlaceNode): React.ReactNode => {
     switch (n.k) {
       case "top":
@@ -166,11 +178,11 @@ export default function TablePlace({ table, theme, className, fill, mode = "one"
         // Bottom-right of the placemat, right-aligned, one word a line, small (./placematWords).
         const face = tableFont(n.font);
         const size = fitPlacematWords(n.lines, (line, s) => width(line, n.font) * s, face), gap = placematWordsGap(size, face.scale);
-        return <g key={n.id} data-part={n.id} data-size={size.toFixed(1)} data-font={n.font}>{text(n.lines, n.font, size, n.colour, 20, placematWordsBottom(size, face) - (n.lines.length - 1) * gap, "end", gap)}</g>;
+        return <g key={n.id} data-part={n.id} data-size={size.toFixed(1)} data-font={n.font}>{hinted(n.hint, text(n.lines, n.font, size, n.colour, 20, placematWordsBottom(size, face) - (n.lines.length - 1) * gap, "end", gap))}</g>;
       }
       case "words": {
         const size = Math.min(n.h / (n.lines.length * 1.1), (n.w / Math.max(...n.lines.map((l) => width(l, n.face)))));
-        return <g key={n.id} data-part={n.id}>{text(n.lines, n.face, size, n.colour, n.x, n.y - ((n.lines.length - 1) * size * 1.1) / 2 + size * 0.3, "middle", size * 1.1)}</g>;
+        return <g key={n.id} data-part={n.id}>{hinted(n.hint, text(n.lines, n.face, size, n.colour, n.x, n.y - ((n.lines.length - 1) * size * 1.1) / 2 + size * 0.3, "middle", size * 1.1))}</g>;
       }
       case "bottle": {
         const [lx, ly, lw, lh] = n.label;
@@ -187,7 +199,7 @@ export default function TablePlace({ table, theme, className, fill, mode = "one"
           <mask id={`${n.id}-m`}><image href="/design/table/top/bottle-label.webp" {...all} /></mask>
           <g mask={`url(#${n.id}-m)`}>
             {n.art ? <image href={n.art} x={box.x} y={box.y} width={box.w} height={box.h} preserveAspectRatio="xMidYMid slice" /> : <rect x={box.x} y={box.y} width={box.w} height={box.h} fill={n.fill} />}
-            {size > 0 && text(lines, n.font, size, n.colour, n.x, box.y + box.h / 2 - ((lines.length - 1) * (size / scale) * 1.12) / 2 + (size / scale) * 0.35, "middle", (size / scale) * 1.12)}
+            {size > 0 && hinted(n.hint, text(lines, n.font, size, n.colour, n.x, box.y + box.h / 2 - ((lines.length - 1) * (size / scale) * 1.12) / 2 + (size / scale) * 0.35, "middle", (size / scale) * 1.12))}
           </g>
           <image href="/design/table/top/bottle-label.webp" {...all} style={{ mixBlendMode: "multiply" }} />
         </g>;
@@ -198,7 +210,7 @@ export default function TablePlace({ table, theme, className, fill, mode = "one"
   };
   const body = nodes.map(draw);
   return (
-    <svg className={className} viewBox={`${view.x.toFixed(2)} ${view.y.toFixed(2)} ${view.w.toFixed(2)} ${view.h.toFixed(2)}`} role="img" data-testid="table-place"
+    <svg className={className} viewBox={`${view.x.toFixed(2)} ${view.y.toFixed(2)} ${view.w.toFixed(2)} ${view.h.toFixed(2)}`} role="img" data-testid={testId}
       {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}
       aria-label={mode === "one" ? "One place at your kids' table, from above" : "Six places at your kids' table, from above"} data-mode={mode}>
       <defs>

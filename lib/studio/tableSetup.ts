@@ -84,7 +84,8 @@ const DEFAULT_CHOICES: Record<TableItemKey, string> = {
   // The owner's tables show bare unless a cloth is chosen (2026-10-28).
   tablecloth: NONE, napkins: "plain",
   placemats: "watercolour", plates: "plain", cups: "plain", cutlery: "wooden", cutleryHolder: "band",
-  centrepiece: "balloons", bottleLabel: NONE, partyHats: "cone",
+  // 2026-11-05 (the owner: "waterbottle defaultta gelmiyor tablesetupta gelsin"): the label on, in the placemats' design.
+  centrepiece: "balloons", bottleLabel: "watercolour", partyHats: "cone",
   // Not offered at the kids' table (the grown-ups' table will have them).
   runner: NONE, chargers: NONE, chairDecor: NONE, nameCards: NONE,
 };
@@ -134,7 +135,7 @@ export const wordsColour = (t: Pick<TableSetup, "textColor">, theme: { accent: s
 export const nameColour = (t: Pick<TableSetup, "textColor" | "nameColor">, theme: { accent: string }) => t.nameColor ?? wordsColour(t, theme);
 
 /** The theme's colours other than white, its accent after them. */
-const themeTones = (theme: { balloonColors: string[]; accent: string }) => {
+export const themeTones = (theme: { balloonColors: string[]; accent: string }) => {
   const tones = theme.balloonColors.filter((c) => !/^#F[0-9A-F]F[0-9A-F]F[0-9A-F]$/i.test(c));
   return [tones[0] ?? theme.accent, tones[1] ?? tones[0] ?? theme.accent];
 };

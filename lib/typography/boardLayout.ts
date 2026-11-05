@@ -12,6 +12,9 @@ import { headingRows } from "./lettering";
 
 export const LETTERING_BOX = DEMO_BOX;
 
+/** A one-row heading over a name: this much larger than the preset's ratio. */
+export const HEADING_OVER_NAME = 1.6;
+
 export interface BoardLetteringInput {
   heading?: LetteringElementInput;
   name?: LetteringElementInput;
@@ -21,14 +24,15 @@ export interface BoardLetteringInput {
 /** The layout of a board's lettering in LETTERING_BOX millimetres. */
 export function layoutBoardLettering(input: BoardLetteringInput): LetteringLayout {
   let { heading, name } = input;
-  // The heading on two rows, "Happy" over "Birthday" (headingRows).
-  if (heading?.text.trim()) heading = { ...heading, text: headingRows(heading.text).join("\n") };
-  // A single line leads: with no name, the heading is set at the name's size.
-  if (heading?.text.trim() && !name?.text.trim()) [heading, name] = [undefined, heading];
+  // A lone heading leads, set at the name's size on two rows, "Happy" over "Birthday" (headingRows).
+  // 2026-11-05 (the owner: "happy birthday çok küçüldü, isim gelirse happy birthday yanyana olsun"): over a
+  // name it stays one row, side by side, and larger than before (the width still caps it).
+  if (heading?.text.trim() && !name?.text.trim()) [heading, name] = [undefined, { ...heading, text: headingRows(heading.text).join("\n") }];
+  const ratio = (input.presetId ? presetById(input.presetId)?.headingRatio : undefined) ?? 0.42;
   return layoutLettering({
     heading,
     name,
-    headingRatio: input.presetId ? presetById(input.presetId)?.headingRatio : undefined,
+    headingRatio: ratio * HEADING_OVER_NAME,
     box: LETTERING_BOX,
     nameCapMm: DEMO_NAME_CAP_MM,
   });

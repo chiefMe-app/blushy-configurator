@@ -6,7 +6,7 @@ import { POST } from "@/app/api/typography/layout/route";
 import { layoutLettering } from "@/lib/typography/layout";
 import { previewSvg } from "@/lib/typography/svg";
 import { DEMO_BOX, DEMO_NAME_CAP_MM } from "@/lib/typography/demo";
-import { headingRows } from "@/lib/typography/lettering";
+import { HEADING_OVER_NAME } from "@/lib/typography/boardLayout";
 
 const call = (body: unknown, q = "", ip?: string) => POST(new NextRequest(`http://localhost/api/typography/layout${q}`, {
   method: "POST", body: typeof body === "string" ? body : JSON.stringify(body),
@@ -14,15 +14,16 @@ const call = (body: unknown, q = "", ip?: string) => POST(new NextRequest(`http:
 }));
 const ok = { presetId: "soft-signature", heading: { text: "Happy 1st Birthday", fontId: "bellefair", weight: 400 }, name: { text: "Layla", fontId: "italianno", weight: 400 } };
 
-// The board sets its heading on two rows (boardLayout).
-const rowed = (h: typeof ok.heading) => ({ ...h, text: headingRows(h.text).join("\n") });
+// Over a name the board sets its heading on one row, a little larger (boardLayout, 2026-11-05).
+const rowed = (h: typeof ok.heading) => h;
+const RATIO = 0.42 * HEADING_OVER_NAME;
 
 afterEach(() => { delete process.env.VERCEL_ENV; });
 
 describe("typography demo API", () => {
   it("returns exactly the engine's preview SVG", async () => {
     const json = await (await call(ok)).json();
-    expect(json.svg).toBe(previewSvg(layoutLettering({ heading: rowed(ok.heading), name: ok.name, headingRatio: 0.42, box: DEMO_BOX, nameCapMm: DEMO_NAME_CAP_MM }), 1));
+    expect(json.svg).toBe(previewSvg(layoutLettering({ heading: rowed(ok.heading), name: ok.name, headingRatio: RATIO, box: DEMO_BOX, nameCapMm: DEMO_NAME_CAP_MM }), 1));
     expect(json.elements).toEqual([{ role: "heading", missing: "" }, { role: "name", missing: "" }]);
     // only what the pages use: no production engineering in the response
     expect(Object.keys(json).sort()).toEqual(["box", "elements", "hash", "paths", "svg"]);
@@ -37,7 +38,7 @@ describe("typography demo API", () => {
     const both = await (await call(short)).json();
     expect(one.paths.map((p: { role: string }) => p.role)).toEqual(["name"]);
     expect(one.paths[0].fontId).toBe("bellefair");
-    expect(one.paths[0].fontSizeMm).toBeGreaterThan(both.paths.find((p: { role: string }) => p.role === "heading").fontSizeMm * 1.5);
+    expect(one.paths[0].fontSizeMm).toBeGreaterThan(both.paths.find((p: { role: string }) => p.role === "heading").fontSizeMm * 1.3);
   });
   it.each([
     ["an unknown font", { ...ok, name: { ...ok.name, fontId: "comic-sans" } }],
@@ -56,7 +57,7 @@ describe("typography demo API", () => {
   });
   it("offsets are clamped", async () => {
     const json = await (await call({ ...ok, name: { ...ok.name, offset: { x: 9, y: -9 } } })).json();
-    const clamped = previewSvg(layoutLettering({ heading: rowed(ok.heading), name: { ...ok.name, offset: { x: 0.45, y: -0.45 } }, headingRatio: 0.42, box: DEMO_BOX, nameCapMm: DEMO_NAME_CAP_MM }), 1);
+    const clamped = previewSvg(layoutLettering({ heading: rowed(ok.heading), name: { ...ok.name, offset: { x: 0.45, y: -0.45 } }, headingRatio: RATIO, box: DEMO_BOX, nameCapMm: DEMO_NAME_CAP_MM }), 1);
     expect(json.svg).toBe(clamped);
   });
   it("production and cut downloads are 1:1 mm SVG files", async () => {

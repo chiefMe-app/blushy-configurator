@@ -72,7 +72,11 @@ describe("cut files, 1:1 in millimetres", () => {
     expect(h).toBeGreaterThan(100);
   });
   it("strokes thinner than the provisional limit are flagged for the producer", () => {
-    const heading = board.lettering!.lines.find((x) => x.role === "heading")!;
+    // 2026-11-05: the heading over a name is larger (one row), so its strokes are thicker; each line is flagged
+    // by its own thinnest stroke, and a long one, set small to fit, still is.
+    for (const x of board.lettering!.lines) expect(x.strokeOk).toBe(x.thinStrokeMm >= 2.5);
+    const small = buildPackSpec({ ...round, decor: { ...round.decor, backdropItems: round.decor.backdropItems.map((i) => ({ ...i, text: { ...i.text, lettering: i.text.lettering && { ...i.text.lettering, heading: { ...i.text.lettering.heading, text: "Happy Birthday to our little sunshine" } } } })) } });
+    const heading = small.boards[0].lettering!.lines.find((x) => x.role === "heading")!;
     expect(heading.thinStrokeMm).toBeLessThan(2.5);
     expect(heading.strokeOk).toBe(false);
   });

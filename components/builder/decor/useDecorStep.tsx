@@ -1,6 +1,7 @@
 // The Decor step's state and helpers, shared by its four tabs. Moved
 // unchanged from DecorStep in app/builder/page.tsx (Phase 0.1d): the hooks run
 // in the same order, in the same component, as before.
+import { currentName, type DecorSample } from "@/lib/decorSamples";
 import { useEffect, useMemo, useState } from "react";
 import { getThemeGraphicPresets } from "@/lib/themeCatalog";
 import {
@@ -510,6 +511,14 @@ function clearAllStandees() {
     }
   }
 
+  // A ready-made look (lib/decorSamples.ts, 2026-11-05): the whole backdrop at once, her name kept.
+  function applySample(s: DecorSample) {
+    const patch = s.build(currentName(d.backdropItems));
+    patchDecor(patch);
+    chooseBalloonSet(s.balloonSet);
+    setOpenCustomizeIds(new Set((patch.backdropItems ?? []).map((p) => p.id)));
+  }
+
   // Apply a curated backdrop set template — replaces current backdropItems
   // with the template's exact panels (max 2, controlled render layouts).
   function applySetupTemplate(templateId: string) {
@@ -643,7 +652,7 @@ function clearAllStandees() {
     toggleSempertex, resetToThemePalette, balloonSets, activeBalloonSet, chooseBalloonSet, d, boardHasLettering, neonFreeBoards, theme, t, normalizedCut,
     cutoutPresetOptions, selectedCutoutAssets, toggleCutoutAsset, clearAllStandees, print, setPlinthCount,
     patchItem, patchItemText, patchItemGraphic, accent, card, nextCue, BackdropShapePreview, chip,
-    toggleArchSize, toggleRound, toggleOtherType, applySetupTemplate, activeSetupTemplateId, TYPE_LABEL,
+    toggleArchSize, toggleRound, toggleOtherType, applySetupTemplate, applySample, activeSetupTemplateId, TYPE_LABEL,
   };
 }
 

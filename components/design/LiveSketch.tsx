@@ -56,7 +56,9 @@ type PhotoBase = {
   /** A set photographed whole (the Customized Themed set): no balloon layer of its own, nothing repainted. */
   fixed?: boolean;
   /** Each board, left to right: where it shows (none for the ring), its box and where its words go. */
-  boards: { mask?: string; rim?: string; x0: number; y0: number; x1: number; y1: number; text: { cx: number; cy: number; w: number } }[];
+  boards: { mask?: string; rim?: string; x0: number; y0: number; x1: number; y1: number; text: { cx: number; cy: number; w: number };
+    /** Drawn, not photographed: the wavy board in front of the Arch + Shimmer photo (its arch board hidden beneath). */
+    drawnWavy?: boolean }[];
   /** The photographed plinth (the XXL, 90 cm): left, top, width, height. */
   plinth: { x: number; y: number; w: number; h: number };
   /** Florals tucked into the garland: x, y and their turn in degrees. */
@@ -66,6 +68,9 @@ type PhotoBase = {
   standeeX: [number, number];
 };
 const SK = "/design/sketch";
+/** How far in front of where they were photographed the plinths stand (of the picture's height), and how much nearer that looks. */
+const PLINTH_FORWARD = 0.045;
+const PLINTH_NEAR = 1.06;
 const fromPx = (pts: [number, number][]) => pts.map(([x, y], i) => [x / 1024, y / 1024, (i * 67) % 180 - 60] as [number, number, number]);
 const PHOTO_BASES: Record<string, PhotoBase> = {
   round: {
@@ -116,19 +121,15 @@ const PHOTO_BASES: Record<string, PhotoBase> = {
     florals: fromPx([[253, 410], [794, 410], [252, 480], [261, 550], [831, 550], [215, 620], [834, 620], [172, 690], [281, 690], [840, 690], [268, 760], [779, 760], [893, 760]]),
     numberX: 0.6, standeeX: [0.04, 0.97],
   },
-  // 2026-11-02 (the owner: "wavy + shimmer backdropu yapalım"): laid out as the Arch + Shimmer, shot fresh.
+  // 2026-11-02 (the owner: "wavy + shimmer backdropu yapalım"): laid out as the Arch + Shimmer. 2026-11-05 ("wavy
+  // bozuk"): the photo made for it (a local edit swapping the arch for a wavy board) had a torn, narrow board in
+  // every set. Now the Arch + Shimmer photos themselves, the wavy board drawn whole in front of them over the arch
+  // (its garland behind it, "backdrop önde olması lazım"), the sequin wall as photographed.
   "wavy,shimmer_wall": {
-    room: `${SK}/wavy_shimmer-room.webp`, balloons: `${SK}/wavy_shimmer-balloons.webp`, families: `${SK}/wavy_shimmer-families.png`,
-    // The wavy board stands in front of its garland, on its rim ("backdrop önde olması lazım").
+    room: `${SK}/arch_shimmer-room.webp`, balloons: `${SK}/arch_shimmer-balloons.webp`, families: `${SK}/arch_shimmer-families.png`,
     boards: [
-      // Re-shot in the owner's wavy board ("bunun aynısını yap şekil olarak"): waves on all four edges, a
-      // straight foot on the floor. 2026-11-03 (later, "bu sahnenin ışığında bi sıkıntı var ve shimmer wall
-      // bozulmuş, ikinci görseldeki gibi olsun"): the Arch + Shimmer shots she liked, their arch board swapped for
-      // the wavy one by a local edit — the same light, floor and sequin wall — so laid out as the Arch + Shimmer.
-      // The room is the Arch + Shimmer photo itself outside the board, the sequin wall its mask behind the board
-      // (scratchpad rebuild: face, rim and foot read from the edit's pink rim).
-      { mask: `${SK}/wavy_shimmer-board-0.png`, rim: `${SK}/wavy_shimmer-rim-0.png`, x0: 0.2744, y0: 0.3584, x1: 0.458, y1: 0.7656, text: { cx: 0.372, cy: 0.5, w: 0.1 } },
-      { mask: `${SK}/wavy_shimmer-board-1.png`, x0: 0.4365, y0: 0.3975, x1: 0.7061, y1: 0.7793, text: { cx: 0.571, cy: 0.51, w: 0.19 } },
+      { drawnWavy: true, x0: 0.225, y0: 0.36, x1: 0.456, y1: 0.7656, text: { cx: 0.3405, cy: 0.5, w: 0.15 } },
+      { mask: `${SK}/arch_shimmer-board-1.png`, x0: 0.4365, y0: 0.3975, x1: 0.7061, y1: 0.7793, text: { cx: 0.571, cy: 0.51, w: 0.19 } },
     ],
     plinth: { x: 0.464, y: 0.647, w: 0.0573, h: 0.167 },
     florals: fromPx([[253, 410], [794, 410], [252, 480], [261, 550], [831, 550], [215, 620], [834, 620], [172, 690], [281, 690], [840, 690], [268, 760], [779, 760], [893, 760]]),
@@ -623,13 +624,14 @@ const sameColours = (a: string[], b: string[]) =>
  * the render guide draws), scaled into the board's clear area and centred
  * where the sketch puts lettering.
  */
-function SketchLettering({ lettering, spot, fill, metal, gid }: {
+function SketchLettering({ lettering, spot, fill, metal, gid, thumb }: {
   lettering: BoardLettering;
   /** Where the lettering goes for a block this tall: its centre and the clear width. */
   spot: (blockH: number) => { cx: number; cy: number; w: number };
   fill: string;
   metal?: [number, number, number];
   gid: string;
+  thumb?: boolean;
 }) {
   const drawing = useLetteringLayout(lettering);
   if (!drawing) return null;
@@ -637,7 +639,7 @@ function SketchLettering({ lettering, spot, fill, metal, gid }: {
   const s = w / drawing.box.widthMm, h = drawing.box.heightMm * s;
   const at = spot(h * 0.62);
   return (
-    <g transform={`translate(${at.cx - w / 2} ${at.cy - h / 2}) scale(${s})`} filter="url(#skSoft)" data-testid="sketch-lettering" data-hash={drawing.hash} data-sketch-words="">
+    <g transform={`translate(${at.cx - w / 2} ${at.cy - h / 2}) scale(${s})`} filter="url(#skSoft)" data-testid={thumb ? undefined : "sketch-lettering"} data-hash={drawing.hash} data-sketch-words="">
       {metal && (
         <defs>
           <linearGradient id={gid} x1="0" y1="0" x2="0.25" y2="1">
@@ -657,8 +659,11 @@ export default function LiveSketch({
   config,
   activeId,
   cutoutPreviews = [],
+  thumb = false,
 }: {
   config: BuilderConfig;
+  /** A small picture of a look (the ready-made looks), not the customer's own sketch: no test ids of its own. */
+  thumb?: boolean;
   /** The piece being styled — outlined in pink. */
   activeId?: string | null;
   /** Standee pictures (selected characters): the first left of the backdrop, the second right. */
@@ -696,6 +701,8 @@ export default function LiveSketch({
   const floorY = base ? (base.plinth.y + base.plinth.h) * VB : FLOOR;
   const rimOf = (item: BackdropItem) => wavyBorderColor(item.borderColor, palette, accent);
   const asShot = !shot || shot.asShot;
+  // Boards drawn over a photo (the Wavy + Shimmer's wavy board): the garland behind them is hidden.
+  const drawnBoards = base ? pieces.filter((p) => base.boards[p.idx]?.drawnWavy) : [];
   const baseBalloons = useRecoloredBase(base && !base.fixed ? base.balloons : null, base?.families ?? "", palette, asShot, base?.familyStep);
   const garlandSize = 18 + scale * 8;
   // How far the garland reaches past the boards' outer edges.
@@ -710,16 +717,20 @@ export default function LiveSketch({
     const sizes = d.plinthSizes.slice(0, 3);
     const dims = sizes.map((s) => {
       const c = PLINTH_CM[s] ?? PLINTH_CM.medium;
-      const h = base ? base.plinth.h * VB * (c.h / 90) : c.h * scale;
+      // On a photo, a step nearer the camera than photographed (PLINTH_FORWARD): a little larger.
+      const h = base ? base.plinth.h * VB * (c.h / 90) * PLINTH_NEAR : c.h * scale;
       // 2026-11-02 ("plinth size bi tuhaf olmuş"): as wide as it really is (the XXL is 40 cm across, 90 tall);
       // the sprite alone drew it a quarter too narrow.
       return { h, w: h * (c.d / c.h) };
     });
     const order = dims.map((dm, i) => ({ ...dm, i })).sort((a, b) => b.h - a.h);
     const out: { x: number; y: number; w: number; h: number }[] = [];
-    if (order[0]) out.push({ x: groupMid - order[0].w / 2, y: floorY - order[0].h, w: order[0].w, h: order[0].h });
-    if (order[1]) out.push({ x: out[0].x - order[1].w * 1.02, y: floorY - order[1].h, w: order[1].w, h: order[1].h });
-    if (order[2]) out.push({ x: out[0].x + out[0].w * 1.02, y: floorY - order[2].h, w: order[2].w, h: order[2].h });
+    // 2026-11-05 (the owner: "plinth çok yapışık backdropa biraz öne almak lazım"): on a photo they stand forward
+    // of the board, their feet lower on the floor, with floor showing between (the render follows the sketch).
+    const foot = base ? floorY + PLINTH_FORWARD * VB : floorY;
+    if (order[0]) out.push({ x: groupMid - order[0].w / 2, y: foot - order[0].h, w: order[0].w, h: order[0].h });
+    if (order[1]) out.push({ x: out[0].x - order[1].w * 1.02, y: foot - order[1].h, w: order[1].w, h: order[1].h });
+    if (order[2]) out.push({ x: out[0].x + out[0].w * 1.02, y: foot - order[2].h, w: order[2].w, h: order[2].h });
     return out;
   }, [d.plinthSizes, base, scale, groupMid, floorY]);
   const plinthTop = plinths.length ? Math.min(...plinths.map((p) => p.y)) : Infinity;
@@ -842,6 +853,15 @@ export default function LiveSketch({
         {base?.boards.map((b, i) => b.mask && (
           <mask key={i} id={`skBoard${uid}${i}`} maskUnits="userSpaceOnUse" x="0" y="0" width={VB} height={VB}><image href={b.mask} width={VB} height={VB} /></mask>
         ))}
+        {drawnBoards.length > 0 && (
+          <mask id={`skBehind${uid}`} maskUnits="userSpaceOnUse" x="0" y="0" width={VB} height={VB}>
+            <rect width={VB} height={VB} fill="#fff" />
+            {drawnBoards.map((p) => <path key={p.idx} d={wavyBoardPath(p.x, p.top, p.w, p.h)} fill="#000" />)}
+          </mask>
+        )}
+        <linearGradient id="skFaceLight" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity=".22" /><stop offset=".55" stopColor="#fff" stopOpacity="0" /><stop offset="1" stopColor="#000" stopOpacity=".1" />
+        </linearGradient>
         {base?.boards.map((b, i) => b.rim && (
           <mask key={`r${i}`} id={`skRim${uid}${i}`} maskUnits="userSpaceOnUse" x="0" y="0" width={VB} height={VB}><image href={b.rim} width={VB} height={VB} /></mask>
         ))}
@@ -860,6 +880,16 @@ export default function LiveSketch({
               ? ((d.shimmerColor ?? "silver") === "silver" ? null : SHIMMER_COLOR_HEX[d.shimmerColor!])
               : isWhite(p.item.color || d.backdropColor) ? null : p.item.color || d.backdropColor;
             const rim = base.boards[p.idx].rim;
+            if (base.boards[p.idx].drawnWavy) {
+              const face = p.item.color || d.backdropColor || "#ffffff";
+              return (
+                <g key={p.item.id}>
+                  <path d={wavyBoardPath(p.x, p.top, p.w, p.h)} fill={rimOf(p.item)} stroke="rgba(39,22,23,.16)" strokeWidth={1.5} filter="url(#skShadow)" />
+                  <path d={wavyFacePath(p.x, p.top, p.w, p.h)} fill={face} />
+                  <path d={wavyFacePath(p.x, p.top, p.w, p.h)} fill="url(#skFaceLight)" />
+                </g>
+              );
+            }
             return (
               <g key={p.item.id}>
                 {tint && base.boards[p.idx].mask && (
@@ -961,7 +991,7 @@ export default function LiveSketch({
         if (p.item.text.lettering) {
           return (
             <SketchLettering key={`t${p.item.id}`} lettering={p.item.text.lettering} spot={(h) => textSpot(p, h)}
-              fill={resolveTextColorHex(p.item.text.color, accent)} metal={METAL_TINT[p.item.text.color]} gid={`skMetal${uid}${p.idx}`} />
+              fill={resolveTextColorHex(p.item.text.color, accent)} metal={METAL_TINT[p.item.text.color]} gid={`skMetal${uid}${p.idx}`} thumb={thumb} />
           );
         }
         const f = fontFor(p.item.text.fontStyle);
@@ -999,7 +1029,7 @@ export default function LiveSketch({
       })}
 
       {/* The photographed garland on the round base, in the chosen colours */}
-      {base && baseBalloons && <image href={baseBalloons} width={VB} height={VB} />}
+      {base && baseBalloons && <image href={baseBalloons} width={VB} height={VB} mask={drawnBoards.length ? `url(#skBehind${uid})` : undefined} />}
       {baseFlorals.map((f, i) => (
         <g key={`bf${i}`} transform={`rotate(${f.a} ${f.x} ${f.y})`}>
           <ellipse cx={f.x - f.r * 0.7} cy={f.y} rx={f.r} ry={f.r * 0.36} fill="#7fa77a" />
@@ -1067,8 +1097,19 @@ export default function LiveSketch({
       )}
 
       {/* Standees on the floor: the first left of the backdrop, the second right */}
+      {/* 2026-11-05 (the owner: "burda cutout gerçek gibi çıktı cutout gibi olsun"): the render made them 3D figures, so
+          like her words they are left out of the picture it is given and laid back on it flat, as printed, with a
+          soft shadow at their feet (data-sketch-words, components/builder/nodeJpeg.ts). */}
       {standeeBoxes.map((s, i) => (
-        <image key={`s${i}`} href={s.src} x={s.x} y={s.y} width={s.w} height={s.h} preserveAspectRatio="xMidYMax meet" />
+        <g key={`s${i}`} data-sketch-words="" data-sketch-standee="">
+          <defs>
+            <radialGradient id={`skStandeeShadow${uid}${i}`}>
+              <stop offset="0" stopColor="#2a2228" stopOpacity=".32" /><stop offset=".6" stopColor="#2a2228" stopOpacity=".14" /><stop offset="1" stopColor="#2a2228" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          <ellipse cx={s.x + s.w / 2} cy={s.y + s.h - s.h * 0.008} rx={s.w * 0.34} ry={s.h * 0.035} fill={`url(#skStandeeShadow${uid}${i})`} />
+          <image href={s.src} x={s.x} y={s.y} width={s.w} height={s.h} preserveAspectRatio="xMidYMax meet" />
+        </g>
       ))}
 
       {/* The piece being styled */}

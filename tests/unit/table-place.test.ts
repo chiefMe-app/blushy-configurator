@@ -90,9 +90,10 @@ describe("the top view of one place", () => {
     const hand = focus(placeLayout(table({ bottleLabel: "plain" }, { placematFont: "birthstone-bounce", labelFont: "italianno", words: { placemats: "Arya turns 6", bottleLabel: "Arya turns 6" } }), frozen));
     expect(part(hand, "matwords")).toMatchObject({ lines: ["Arya", "turns", "6"], font: "birthstone-bounce" });
     expect(part(hand, "bottle")).toMatchObject({ words: "Arya turns 6", font: "italianno" });
-    // No words: no lettering, no tag.
+    // No words: only a faint hint where they go (2026-11-05), no tag.
     const bare = focus(placeLayout(table({ cutleryHolder: "band" }), frozen));
-    expect(part(bare, "matwords")).toBeUndefined();
+    expect(part(bare, "matwords")).toMatchObject({ hint: true, lines: ["YOUR", "WORDS"] });
+    expect(part(bare, "name")).toMatchObject({ hint: true, lines: ["Name"] });
     expect(part(bare, "tag")).toBeUndefined();
     expect(part(bare, "band")).toMatchObject({ k: "band" });
   });

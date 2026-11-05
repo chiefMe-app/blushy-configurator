@@ -300,7 +300,9 @@ describe("the route", () => {
   it("the photo of the drawn place keeps its angle and pieces, adds no chair, and keeps the band's colour and words", () => {
     const t = { ...table({ cutleryHolder: "band" }), holderColor: "#F4B6C2", words: { ...defaultTableSetup(frozen).words, cutleryHolder: "Maya" } };
     const p = tablePhotoPrompt(t);
-    expect(p).toMatch(/The band round the napkin and cutlery stays [a-z ]*pink, the name printed straight on it — no tag/);
+    expect(p).toMatch(/The band round the napkin and cutlery stays [a-z ]*pink, with only "Maya" printed straight on it — exactly that one word, nothing more, never the placemat's or the label's words — no tag/);
+    // Each piece only its own words (2026-11-05: the band got the placemat's too).
+    expect(p).toContain('on the band "Maya"');
     expect(p).toContain('"Maya"');
     expect(p).toContain("looking straight down from directly above");
     expect(p).toMatch(/Add nothing: no chair/);

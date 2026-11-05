@@ -17,8 +17,8 @@ function boardWords(p: SceneModel["panels"][number]): string {
 }
 
 /**
- * `wordsAfter`: the picture comes without her words, which are laid flat on the render afterwards
- * (lib/sketchRenderFinish.ts) — the boards are to be left as plain as image 1 shows them.
+ * `wordsAfter`: the picture comes without her words and the standees, which are laid flat on the render afterwards
+ * (lib/sketchRenderFinish.ts) — the boards are to be left as plain as image 1 shows them, the floor without figures.
  */
 export function backdropPhotoPrompt(scene: SceneModel, { wordsAfter = false } = {}): string {
   const words = scene.panels.map(boardWords).filter(Boolean);
@@ -36,7 +36,10 @@ export function backdropPhotoPrompt(scene: SceneModel, { wordsAfter = false } = 
       ? `The lettering on the board${words.length > 1 ? "s" : ""} (${words.map((w) => `"${w}"`).join(" and ")}) stays exactly as image 1 has it — letter for letter, the same lettering, size, colour and place. It is FLAT cut vinyl: thin decal letters stuck flat on the board's surface, with no thickness — not raised, not puffy, not rounded, not 3D, not acrylic, not wooden, casting no shadow.`
       : "The boards carry no words.",
     printed ? "The artwork on the board is printed flat on its surface, exactly as image 1 shows it: the same picture, size and place, as a matte print — not a sticker, not raised, never left out." : "",
-    standees ? "The standing character cut-outs are flat printed foam-board standees on the floor, exactly as image 1 shows them — the same pictures, sizes and places." : "",
+    // 2026-11-05 (the owner: "burda cutout gerçek gibi çıktı"): with the words, the standees are laid on afterwards,
+    // flat as printed; the picture comes without them.
+    standees && wordsAfter ? "Add no figures of any kind: no characters, standees, cut-outs, statues, toys or animals — the floor in front of the backdrop stays exactly as image 1 shows it." : "",
+    standees && !wordsAfter ? "The standing character cut-outs are flat printed foam-board standees on the floor, exactly as image 1 shows them — the same pictures, sizes and places: thin flat sheets printed with a flat illustration, never sculpted, 3D, plush or real figures." : "",
     scene.rainbowBalloons && balloons ? "The balloon rainbows stay exactly where image 1 has them: long modelling balloons bent into rainbow arcs, each end in a cloud of small white balloons." : "",
     neon ? `The neon sign reading "${neon}" stays exactly as image 1 has it, glowing softly.` : "",
     number ? `The number "${number.value.trim()}" stays exactly as image 1 has it${number.style === "foil" ? ", a foil number balloon" : ", a light-up marquee number"}.` : "",

@@ -32,7 +32,7 @@ function guide(shape, stand) {
     <rect x="${f.x}" y="${wall - 3}" width="${f.size}" height="3" fill="#F7F3EF" />
     ${easel}
     <path d="${board}" fill="#FFFFFF" stroke="#BDB3AA" stroke-width="0.4" />
-    ${shape === "wavy" ? `<path d="${wavyFacePath(0, TOP, w, h)}" fill="#FFFFFF" stroke="#C9BFB5" stroke-width="0.35" />` : ""}
+    ${shape === "wavy" ? `<path d="${wavyFacePath(0, TOP, w, h, true)}" fill="#FFFFFF" stroke="#C9BFB5" stroke-width="0.35" />` : ""}
     ${stand === "easel" ? `<rect x="${cx - 30}" y="${TOP + h - 1}" width="60" height="4" fill="#FFFFFF" stroke="#C9BFB5" stroke-width="0.3" />` : ""}
   </svg>`;
 }
