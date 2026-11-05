@@ -62,7 +62,7 @@ async function brightened(render: Buffer, gains: [number, number, number]) {
   return { data, info };
 }
 
-/** A layer's shadow: its shape blurred, moved by (dx, dy), at an opacity — a warm dark grey, never black. */
+/** A layer's shadow: its shape blurred, moved by (dx, dy), at an opacity — a soft neutral grey, never black. */
 async function shadowOf(layer: Buffer, w: number, h: number, { blur, dx, dy, opacity }: { blur: number; dx: number; dy: number; opacity: number }): Promise<Buffer> {
   const alpha = await sharp(layer).extractChannel(3).blur(Math.max(0.3, blur)).linear(opacity, 0).raw().toBuffer();
   const out = Buffer.alloc(w * h);
@@ -70,7 +70,7 @@ async function shadowOf(layer: Buffer, w: number, h: number, { blur, dx, dy, opa
     const from = (y - dy) * w;
     for (let x = Math.max(0, dx); x < Math.min(w, w + dx); x++) out[y * w + x] = alpha[from + x - dx];
   }
-  return sharp({ create: { width: w, height: h, channels: 3, background: { r: 40, g: 30, b: 35 } } })
+  return sharp({ create: { width: w, height: h, channels: 3, background: { r: 60, g: 55, b: 58 } } })
     .joinChannel(out, { raw: { width: w, height: h, channels: 1 } }).png().toBuffer();
 }
 
@@ -82,23 +82,35 @@ async function contactOf(layer: Buffer, w: number, h: number, k: number): Promis
     const i = y * w + x;
     if (a[i] > 200 && a[i + d * w] < 40) for (let j = 0; j < t; j++) { const at = (y + d - 2 + j) * w + x; if (at < out.length) out[at] = 255; }
   }
-  const soft = await sharp(out, { raw: { width: w, height: h, channels: 1 } }).blur(Math.max(0.5, 2.2 * k)).linear(0.75, 0).raw().toBuffer();
+  const soft = await sharp(out, { raw: { width: w, height: h, channels: 1 } }).blur(Math.max(0.5, 2.2 * k)).linear(0.6, 0).raw().toBuffer();
   return sharp({ create: { width: w, height: h, channels: 3, background: { r: 30, g: 22, b: 26 } } })
     .joinChannel(soft, { raw: { width: w, height: h, channels: 1 } }).png().toBuffer();
 }
 
 /**
- * The layer's things set into the render: a soft shadow on what stands behind them, down and to the right as under a
- * soft light from the front-left; a soft shade close round them; a dark line where they stand; their light the
- * render's own round them; a touch softer and with the photo's grain, like the rest of the picture.
+ * The layer's things set into the render: a faint soft shadow round them on what stands behind (2026-11-05, the
+ * owner: "shadow dedim ama aşırı koyu olmuş … gri tonlu bir shadow"; and "paketler daha gerçekçi gözüksün"); a soft
+ * shade close round them; a dark line where they stand; their light the render's own, a little brighter at the top
+ * and shaded at the foot, their print a touch less vivid; a touch softer and with the photo's grain.
  */
 async function standIn(render: Buffer, layer: Buffer, w: number, h: number): Promise<Buffer> {
   const k = w / 1000;
-  const cast = await shadowOf(layer, w, h, { blur: 6 * k, dx: Math.round(7 * k), dy: Math.round(6 * k), opacity: 0.22 });
-  const close = await shadowOf(layer, w, h, { blur: 2 * k, dx: Math.round(k), dy: Math.round(3 * k), opacity: 0.2 });
+  const cast = await shadowOf(layer, w, h, { blur: 12 * k, dx: Math.round(2 * k), dy: Math.round(4 * k), opacity: 0.1 });
+  const close = await shadowOf(layer, w, h, { blur: 3.5 * k, dx: 0, dy: Math.round(2 * k), opacity: 0.14 });
   const contact = await contactOf(layer, w, h, k);
   const lum = await sharp(render).removeAlpha().greyscale().blur(40 * k).raw().toBuffer();
   const px = await sharp(layer).ensureAlpha().raw().toBuffer();
+  // Each thing's top and foot, column by column: where it is in its own height.
+  const top = new Int32Array(w * h), foot = new Int32Array(w * h);
+  for (let x = 0; x < w; x++) {
+    let y = 0;
+    while (y < h) {
+      if (!px[(y * w + x) * 4 + 3]) { y++; continue; }
+      const y0 = y;
+      while (y < h && px[(y * w + x) * 4 + 3]) y++;
+      for (let j = y0; j < y; j++) { top[j * w + x] = y0; foot[j * w + x] = y - 1; }
+    }
+  }
   let sum = 0, n = 0;
   for (let i = 3, p = 0; i < px.length; i += 4, p++) if (px[i] > 128) { sum += lum[p]; n++; }
   const mean = n ? sum / n : 200;
@@ -106,9 +118,15 @@ async function standIn(render: Buffer, layer: Buffer, w: number, h: number): Pro
     if (!px[i + 3]) continue;
     // Brighter where the scene is brighter, darker where it is darker — within a few percent.
     const f = Math.pow(Math.min(1.04, Math.max(0.85, lum[p] / mean)), 0.7);
-    for (let c = 0; c < 3; c++) px[i + c] = Math.max(0, Math.min(255, Math.round((4 + px[i + c] * 0.98) * f)));
+    const span = foot[p] - top[p], u = span > 0 ? ((p / w) | 0) - top[p] : 0, v = span > 0 ? u / span : 0.5;
+    const shade = 1 + 0.06 * (0.5 - v) - (v > 0.85 ? (0.07 * (v - 0.85)) / 0.15 : 0);
+    const grey = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+    for (let c = 0; c < 3; c++) {
+      const vivid = px[i + c] * 0.92 + grey * 0.08;
+      px[i + c] = Math.max(0, Math.min(255, Math.round((8 + vivid * (1 - 8 / 255)) * f * shade)));
+    }
   }
-  const soft = await sharp(px, { raw: { width: w, height: h, channels: 4 } }).blur(Math.max(0.3, 0.5 * k + 0.3)).raw().toBuffer();
+  const soft = await sharp(px, { raw: { width: w, height: h, channels: 4 } }).blur(Math.max(0.3, 0.8 * k + 0.3)).raw().toBuffer();
   // Then a little noise, the same on all three channels (grain, not colour speckle).
   for (let i = 0; i < soft.length; i += 4) {
     if (!soft[i + 3]) continue;

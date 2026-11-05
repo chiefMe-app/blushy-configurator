@@ -121,13 +121,11 @@ export default function TablePlace({ table, theme, className, fill, mode = "one"
     filters.set(id, { tint, lift });
     return `url(#${id})`;
   };
-  // 2026-11-05 (the owner: "yazılarda outer shadow olsun anlaşılmıyor"): a soft halo round the letters, light round
-  // dark words and dark round light ones, so they read on any print.
-  const text = (lines: string[], face: Face, size: number, colour: string, x: number, y0: number, anchor: "end" | "middle", gap: number) => {
-    const halo = isLight(colour) ? "rgba(60,40,50,0.55)" : "rgba(255,255,255,0.9)";
-    return lines.map((l, i) => <text key={i} x={x} y={y0 + i * gap} fontSize={size} fill={colour} textAnchor={anchor} stroke={halo} strokeWidth={size * 0.14}
-      strokeLinejoin="round" paintOrder="stroke" style={{ fontFamily: family(face), fontWeight: weight(face) }}>{l}</text>);
-  };
+  // 2026-11-05 (the owner: "yazılarda outer shadow olsun anlaşılmıyor"; later: "aşırı koyu olmuş, bunun gibi drop
+  // shadow olması yeterli, gri tonlu"): a soft grey drop shadow under the letters, no outline.
+  const text = (lines: string[], face: Face, size: number, colour: string, x: number, y0: number, anchor: "end" | "middle", gap: number) =>
+    lines.map((l, i) => <text key={i} x={x} y={y0 + i * gap} fontSize={size} fill={colour} textAnchor={anchor} filter="url(#tp-wshadow)"
+      style={{ fontFamily: family(face), fontWeight: weight(face) }}>{l}</text>);
   /** A hint where her words go: faint, and left out of every picture made from the drawing (nodeJpeg). */
   const hinted = (hint: boolean | undefined, body: React.ReactNode) => (hint ? <g data-no-capture="" opacity={0.45} data-hint="">{body}</g> : body);
   const draw = (n: PlaceNode): React.ReactNode => {
@@ -212,10 +210,11 @@ export default function TablePlace({ table, theme, className, fill, mode = "one"
   return (
     <svg className={className} viewBox={`${view.x.toFixed(2)} ${view.y.toFixed(2)} ${view.w.toFixed(2)} ${view.h.toFixed(2)}`} role="img" data-testid={testId}
       {...(fill ? { preserveAspectRatio: "xMidYMid slice" } : {})}
-      aria-label={mode === "one" ? "One place at your kids' table, from above" : "Six places at your kids' table, from above"} data-mode={mode}>
+      aria-label={mode === "one" ? "One place at your kids' table, from above" : mode === "four" ? "Four places at your kids' table, from above" : "Six places at your kids' table, from above"} data-mode={mode}>
       <defs>
         <linearGradient id="tp-band" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity={0.35} /><stop offset="0.5" stopColor="#fff" stopOpacity={0} /><stop offset="1" stopColor="#000" stopOpacity={0.12} /></linearGradient>
         {Array.from(filters, ([id, f]) => <Filter key={id} {...f} />)}
+        <filter id="tp-wshadow" x="-10%" y="-30%" width="130%" height="180%"><feDropShadow dx={0.06} dy={0.09} stdDeviation={0.06} floodColor="#5a5a5a" floodOpacity={0.5} /></filter>
         {FOILS.map((f) => (
           <linearGradient key={f.id} id={`tp-foil-${f.id}`} x1="0" y1="0" x2="1" y2="1">
             {f.stops.map((c, i) => <stop key={i} offset={i / (f.stops.length - 1)} stopColor={c} />)}

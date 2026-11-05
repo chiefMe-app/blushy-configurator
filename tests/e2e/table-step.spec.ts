@@ -33,8 +33,8 @@ test("K1 design the kids' table: picture options on one page, the total grows, t
   await toTable(page);
   // The preview opens on one place from above (2026-10-29, on its own since 2026-10-31); six places, the whole table and the perspective are a tab away.
   await expect(page.getByTestId("table-place")).toHaveAttribute("data-mode", "one");
-  await page.getByRole("tab", { name: "Six places" }).click();
-  await expect(page.getByTestId("table-place")).toHaveAttribute("data-mode", "six");
+  await page.getByRole("tab", { name: "Four places" }).click();
+  await expect(page.getByTestId("table-place")).toHaveAttribute("data-mode", "four");
   await page.getByRole("tab", { name: "Perspective" }).click();
   await expect(page.getByTestId("table-perspective-sketch")).toHaveAttribute("aria-label", "Perspective: 1 standard table for 10 children");
   await page.getByRole("tab", { name: "Whole table" }).click();

@@ -70,6 +70,7 @@ import { nodeJpeg, svgJpeg, svgLayers } from "@/components/builder/nodeJpeg";
 
 import Sprinkles from "@/components/design/Sprinkles";
 import { REQUIRE_RENDER } from "@/lib/renderGate";
+import { FooterSlot } from "@/components/builder/FooterSlot";
 
 type View = "configure" | "success";
 
@@ -176,6 +177,8 @@ export default function ConfigurePage() {
     if (then === "party-render") setPartyRenderOnArrival(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const [footSlot, setFootSlot] = useState<HTMLDivElement | null>(null);
+  const [askStartOver, setAskStartOver] = useState(false);
   const startOver = () => {
     draft.clear();
     serverDraft.forget();
@@ -229,6 +232,19 @@ export default function ConfigurePage() {
       return { table: config.table, theme: config.theme, view: "top", preview: node ? await nodeJpeg(node, 1200) : null };
     },
     onKept: (k) => setConfig((c) => (c.table ? { ...c, table: { ...c.table, render: { key: k.key, close: k.path, view: "top" } } } : c)),
+    onSignInNeeded: () => askSignIn("table-render"),
+  });
+  // 2026-11-05 (the owner: "4 places gözüksün 6 yerine ve onun renderını alabilelim"): four places from above, a
+  // photo of its own beside the one place's (which finalizing waits for).
+  const tableFourShot = useRef<(() => Promise<SVGSVGElement | null>) | null>(null);
+  const tableFourRender = usePieceRender({
+    endpoint: "/api/table-render", partKey: tableKey ? `four-${tableKey}` : "",
+    kept: config.table?.renderFour ? { key: `four-${config.table.renderFour.key}`, path: config.table.renderFour.close } : undefined,
+    body: async () => {
+      const node = await tableFourShot.current?.();
+      return { table: config.table, theme: config.theme, view: "four", preview: node ? await nodeJpeg(node, 1400) : null };
+    },
+    onKept: (k) => setConfig((c) => (c.table ? { ...c, table: { ...c.table, renderFour: { key: k.key.replace(/^four-/, ""), close: k.path, view: "four" } } } : c)),
     onSignInNeeded: () => askSignIn("table-render"),
   });
   const welcomeKey = config.welcomeBoard?.enabled ? welcomeRenderKey(config.welcomeBoard, config.theme, config.decor.balloonColors) : "";
@@ -754,7 +770,15 @@ export default function ConfigurePage() {
     nextLabel = config.experiences?.picked.length ? label("Continue to Package →", "Package →") : label("Skip to Package →", "Skip →");
   }
   // Back walks the parts and tabs of Decor before leaving it.
+  const onBackdropTabs = isDecorStep && decorPart === "backdrop" && backdropAsked;
+  // 2026-11-05 (the owner: "back tuşu çok uzakta kalıyor her next tuşunun yanına back giveaways gibi bir buton"):
+  // Back names where it goes, beside Next.
+  const backName: string | null = onHelium ? "Cake & Sweets" : onCake ? "Piñata" : onPinata ? "Giveaways" : onGiveaways ? "Welcome board"
+    : onWelcome ? (kidsDecided ? "Grown-ups' table" : "Kids' table") : onAdults ? "Kids' table" : onTable ? "Backdrop"
+    : onBackdropTabs && decorTab > 0 ? DECOR_TABS[decorTab - 1].name
+    : step === 3 ? "Helium balloons" : step > 0 ? STEPS[step - 1] : null;
   const onBack = () => {
+    if (onBackdropTabs && decorTab > 0) { setDecorTab(decorTab - 1); return; }
     if (onHelium) { setDecorPart("cake"); return; }
     if (onCake) { setDecorPart("pinata"); return; }
     if (onPinata) { setDecorPart("giveaways"); return; }
@@ -775,6 +799,7 @@ export default function ConfigurePage() {
   const busy = submitting;
 
   return (
+    <FooterSlot.Provider value={footSlot}>
     <div className="bz-body" style={{ minHeight: "calc(100vh / var(--bz-zoom, 1))", background: "#fff" }}>
       <Sprinkles count={110} seed={7} />
 
@@ -848,7 +873,8 @@ export default function ConfigurePage() {
             heliumRenderUrl={heliumRender.url} />}
           {onCake && <CakePreview config={config} setCake={setCake} render={cakeRender} onGenerate={makeCakeRender} view={cakeView} setView={setCakeView} />}
           <div hidden={!onKids}>
-            <TablePreview config={config} render={tableRender} onGenerate={makeTableRender} placeShot={tablePlaceShot} />
+            <TablePreview config={config} render={tableRender} onGenerate={makeTableRender} placeShot={tablePlaceShot}
+              renderFour={tableFourRender} onGenerateFour={() => { document.getElementById("table-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" }); void tableFourRender.make(); }} fourShot={tableFourShot} />
           </div>
           {step < 2 ? (
             <div className="bz-cake">
@@ -918,7 +944,22 @@ export default function ConfigurePage() {
             <p>{copy.description}</p>
             <svg className="bz-wiggle" viewBox="0 0 155 24" aria-hidden="true"><path d="M3 14Q15 3 27 14T51 14T75 14T99 14T123 14T147 14" /></svg>
           </div>
-          <div className="bz-step-progress"><span>STEP {step + 1} OF {STEPS.length}</span><span>{copy.progress}</span></div>
+          <div className="bz-step-progress">
+            <span>STEP {step + 1} OF {STEPS.length}
+              {/* 2026-11-05 (the owner: "start over kaybolmuş sanki onu da ekleyelim her sayfada çıksın"): on every
+                  step, asked once before the design is cleared. */}
+              {(step > 0 || config.themeSelected) && (
+                <span className="bz-startover" data-testid="start-over">
+                  {askStartOver ? <>
+                    <span>Clear your whole design?</span>
+                    <button type="button" className="yes" onClick={() => { setAskStartOver(false); startOver(); }}>Yes, start over</button>
+                    <button type="button" onClick={() => setAskStartOver(false)}>Keep it</button>
+                  </> : <button type="button" onClick={() => setAskStartOver(true)}>↺ Start over</button>}
+                </span>
+              )}
+            </span>
+            <span>{copy.progress}</span>
+          </div>
           <div className="bz-progress"><span style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} /></div>
 
           <div className="bz-content">
@@ -1017,10 +1058,10 @@ export default function ConfigurePage() {
         </section>
       </main>
 
-      {/* Footer bar: Back · note · next action */}
+      {/* Footer bar: Save · Back and Next together (2026-11-05, the owner: "next ve back tuşlarını save designın
+          ordaki sabit bölgeye taşıyalım"); a part's own Finalize / Next is drawn into the slot (FooterSlot). */}
       <footer className="bz-footer">
         <div className="bz-footer-inner">
-          <button type="button" className="bz-back" onClick={onBack} disabled={step === 0}>← Back</button>
           {/* 2026-10-26: Save — the design goes to the database only when pressed. */}
           {serverDraft.available && config.themeSelected ? (
             <button type="button" className={`bz-save ${serverDraft.saved ? "done" : ""}`} data-testid="save-design"
@@ -1039,16 +1080,23 @@ export default function ConfigurePage() {
           ) : (
             <div className="bz-footer-note">Small steps, big party energy <b>✳</b></div>
           )}
-          {hideNext ? <span className="bz-next-gap" aria-hidden="true" /> : (
-            <button type="button" className="bz-next" onClick={onNext} disabled={nextDisabled || busy}>
-              {busy && <span className="bz-spinner" aria-hidden="true" />}
-              {busy ? (submitting ? "Sending…" : "Generating…") : nextLabel}
+          <div className="bz-footer-go">
+            <button type="button" className="bz-back" onClick={onBack} disabled={step === 0}>
+              {backName ? <><span className="full">← Back: {backName}</span><span className="short" aria-hidden="true">← Back</span></> : "← Back"}
             </button>
-          )}
+            <div className="bz-footer-slot" ref={setFootSlot} />
+            {!hideNext && (
+              <button type="button" className="bz-next" onClick={onNext} disabled={nextDisabled || busy}>
+                {busy && <span className="bz-spinner" aria-hidden="true" />}
+                {busy ? (submitting ? "Sending…" : "Generating…") : nextLabel}
+              </button>
+            )}
+          </div>
         </div>
       </footer>
       <SignInDialog open={signInFor !== null} purpose={signInFor ?? undefined} onClose={() => setSignInFor(null)} />
     </div>
+    </FooterSlot.Provider>
   );
 }
 // ---------------------------------------------------------------------------

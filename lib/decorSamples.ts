@@ -9,6 +9,10 @@ import {
 } from "@/lib/config";
 import type { BalloonSetId } from "@/lib/balloonSets";
 import { letteringFromLegacy, letteringPatch } from "@/lib/typography/lettering";
+import { setupPanels } from "@/lib/setupPanels";
+import { inferSetupLayoutTemplateIdFromBackdropItems } from "@/lib/setupLayoutCatalog";
+import { getThemeCatalogEntry } from "@/lib/themeCatalog";
+import { pastelOf } from "@/lib/studio/tableCatalog";
 
 export interface DecorSample {
   id: string;
@@ -33,8 +37,9 @@ const standee = (assetId: string, label: string): CutoutSelection => ({
   size: "none", position: "floor", source: "preset", presetAssetId: undefined, mode: "standees",
   selectedAssets: [{ assetId, label, previewUrl: `/cutouts/${assetId.split("-")[0]}/${assetId}.png`, quantities: { ...emptyCutoutQuantities(), large: 1 } }],
 });
-const noStandee: CutoutSelection = { size: "none", mode: "none", position: "floor", source: "preset", presetAssetId: undefined, selectedAssets: [], items: emptyCutoutStandees() };
+export const NO_STANDEE: CutoutSelection = { size: "none", mode: "none", position: "floor", source: "preset", presetAssetId: undefined, selectedAssets: [], items: emptyCutoutStandees() };
 
+const noStandee = NO_STANDEE;
 const plinths = (...sizes: PlinthSize[]) => ({ plinths: sizes.length, plinthSizes: sizes });
 const off = { enabled: false, text: DEFAULT_TEXT_VALUE };
 /** What every look sets, so nothing of the last one is left behind. */
@@ -84,21 +89,71 @@ const FROZEN: DecorSample[] = [
   },
 ];
 
-/** Every other theme: three looks in its own colours (its first backdrop colour, its balloons). */
-const generic = (themeId: string, boardColour: string): DecorSample[] => [
-  { id: `${themeId}-classic-arch`, name: "Classic Arch", note: "A white arch with a full garland", balloonSet: "pastel",
-    build: (name) => look([lettered(arch(), name, "gold")], { ...plinths("large", "medium") }) },
-  { id: `${themeId}-round`, name: "Round & Sweet", note: "A round board in the theme's colour", balloonSet: "pastel",
-    build: (name) => look([lettered({ ...makeBackdropItem("round", undefined, boardColour), id: "round" }, name, "gold")], {}) },
-  { id: `${themeId}-wavy`, name: "Wavy Pop", note: "A wavy board in bright colours", balloonSet: "bright",
-    build: (name) => look([lettered(makeBackdropItem("wavy", undefined, boardColour), name, "gold")], {}) },
-];
-
-/** The ready-made looks for a theme. */
-export function decorSamples(themeId: string, backdropColors: string[] = []): DecorSample[] {
+/** A theme's own looks, shown before a layout is picked. */
+function featured(themeId: string, boardColour: string): DecorSample[] {
   if (themeId === "unicorn") return UNICORN;
   if (themeId === "frozen") return FROZEN;
-  return generic(themeId, backdropColors.find((c) => c.toUpperCase() !== "#FFFFFF") ?? "#FFFFFF");
+  return [
+    { id: `${themeId}-classic-arch`, name: "Classic Arch", note: "A white arch with a full garland", balloonSet: "pastel",
+      build: (name) => look([lettered(arch(), name, "gold")], { ...plinths("large", "medium") }) },
+    { id: `${themeId}-round`, name: "Round & Sweet", note: "A round board in the theme's colour", balloonSet: "pastel",
+      build: (name) => look([lettered({ ...makeBackdropItem("round", undefined, boardColour), id: "round" }, name, "gold")], {}) },
+    { id: `${themeId}-wavy`, name: "Wavy Pop", note: "A wavy board in bright colours", balloonSet: "bright",
+      build: (name) => look([lettered(makeBackdropItem("wavy", undefined, boardColour), name, "gold")], {}) },
+  ];
+}
+
+/** A layout's ready-made looks for every theme (2026-11-05, the owner: "single arch seçiliyse single arch için 3 tane
+ *  ready made gözüksün … her backdrop için 3 tane"): its basic boards (lib/setupPanels.ts), dressed three ways. */
+function layoutLooks(layoutId: string, themeId: string, boardColour: string): DecorSample[] {
+  const base = () => setupPanels(layoutId, themeId, { sized: true });
+  if (!base()) return [];
+  const t = getThemeCatalogEntry(themeId);
+  const firstStandee = t?.cutoutPresets?.[0];
+  const theStandee = firstStandee ? standee(firstStandee.assetId, firstStandee.label) : noStandee;
+  const prints = t?.graphicPresets ?? [];
+  const soft = pastelOf(boardColour === "#FFFFFF" ? "#F8BBD0" : boardColour);
+  /** The boards in a colour, the words in another; a banner shows its n-th print. */
+  const dress = (colour: string, rim: string, words: string, print: number, name: string) => {
+    const b = base()!;
+    const items = b.panels.map((p, i) => {
+      let q: BackdropItem = p;
+      if (["arch", "half_arch", "round", "wavy", "fringe", "rect"].includes(p.type) && colour) q = { ...q, color: colour };
+      if (p.type === "wavy" && rim) q = { ...q, borderColor: rim };
+      if (p.type === "banner" && prints.length) {
+        const pr = prints[print % prints.length];
+        q = { ...q, graphic: { ...q.graphic, enabled: true, theme: pr.id, source: "preset", assetId: pr.assetId } };
+      }
+      return i === b.textOn && q.text.enabled ? lettered(q, name, words) : q;
+    });
+    return { items, patch: b.patch };
+  };
+  const rainbow = themeId === "unicorn";
+  return [
+    { id: `${themeId}-${layoutId}-party`, name: rainbow ? "Rainbow Party" : "Party Pastels", note: firstStandee ? `Pastel balloons, a ${firstStandee.label.toLowerCase()} and two plinths` : "Pastel balloons and two plinths",
+      balloonSet: "pastel",
+      build: (name) => { const { items, patch } = dress("", "#F8BBD0", "gold", 0, name); return look(items, { ...patch, rainbowBalloons: rainbow, cutouts: theStandee, ...plinths("large", "medium") }); } },
+    { id: `${themeId}-${layoutId}-bright`, name: "Bright & Bold", note: "Bright balloons, the board in the theme's colour",
+      balloonSet: "bright",
+      build: (name) => { const { items, patch } = dress(boardColour === "#FFFFFF" ? "" : boardColour, "#FFFFFF", "white", 1, name); return look(items, { ...patch, shimmerColor: "gold", ...plinths("large") }); } },
+    { id: `${themeId}-${layoutId}-soft`, name: "Soft & Floral", note: "A soft-toned board, flowers in the garland",
+      balloonSet: "pastel",
+      build: (name) => { const { items, patch } = dress(soft, "#FFFFFF", "gold", 2, name); return look(items, { ...patch, garlandFlorals: true, shimmerColor: "silver", ...plinths("large", "medium", "small") }); } },
+  ];
+}
+
+/**
+ * The ready-made looks: for the picked layout, its three (the theme's own first — her render among them); with no
+ * layout picked yet, the theme's own.
+ */
+export function decorSamples(themeId: string, backdropColors: string[] = [], layoutId?: string | null): DecorSample[] {
+  const boardColour = (backdropColors.find((c) => c.toUpperCase() !== "#FFFFFF") ?? "#FFFFFF").toUpperCase();
+  const own = featured(themeId, boardColour);
+  if (!layoutId) return own;
+  const mine = own.filter((s) => inferSetupLayoutTemplateIdFromBackdropItems(s.build("").backdropItems ?? []) === layoutId);
+  // Her own look for it stands in for the pastel one (both pastel with the theme's standee).
+  const looks = layoutLooks(layoutId, themeId, boardColour).filter((l) => !mine.length || !l.id.endsWith("-party"));
+  return [...mine, ...looks].slice(0, 3);
 }
 
 /** The name already lettered on her boards, kept when a look is applied. */

@@ -228,7 +228,7 @@ export { expect };
 
 const exactly = (s: string) => new RegExp(`^${s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
 
-export const next = (page: Page) => page.locator(".bz-footer button.bz-next"); // the footer's, not a step's own pink buttons
+export const next = (page: Page) => page.locator(".bz-footer button.bz-next:not(.bz-part-next)"); // the footer's own, not a step's pink buttons nor its Finalize (2026-11-05: in the footer too)
 export const total = (page: Page) => page.locator(".bz-total strong");
 
 /** Event → Theme → Decor (Backdrop tab), with the given theme and setup. */

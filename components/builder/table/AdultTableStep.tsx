@@ -7,6 +7,7 @@ import { NONE, PLAIN_COLOURS } from "@/lib/studio/tableCatalog";
 import { ADULT_COLOUR_OF, ADULT_SECTIONS, MAX_GUESTS, MIN_GUESTS, adultCounts, adultItem, adultTotal, clampGuests, defaultAdultTable, type AdultItemKey, type AdultOption, type AdultTable } from "@/lib/studio/adultTable";
 import { adultColours, AdultGlyph } from "@/components/studio/table/AdultTableSketch";
 import { REQUIRE_RENDER } from "@/lib/renderGate";
+import { InFooter } from "@/components/builder/FooterSlot";
 
 const unitLabel = (o: AdultOption) => `AED ${formatAED(o.price)} ${o.unit === "per_guest" ? "each" : "a table"}`;
 
@@ -143,10 +144,14 @@ export function FinishBar({ done, what, next, onFinish, onSkipAhead, onSkip, tes
           </button>
         )}
         {onSkipAhead && <SkipAhead onClick={onSkipAhead} testId={`${testId}-to-welcome`} disabled={waiting} />}
-        <button type="button" className="bz-next" data-testid={testId} onClick={onFinish} disabled={waiting} title={waiting ? "Make its real photo first" : undefined}
-          aria-label={done ? undefined : `Finalize the ${what} → ${next}`}>
-          {done ? `Next: ${next} →` : <><span className="full">Finalize the {what} → {next}</span><span className="short" aria-hidden="true">Finalize → {next}</span></>}
-        </button>
+        {/* 2026-11-05 (the owner: "next ve back tuşlarını save designın ordaki sabit bölgeye taşıyalım … gene purple
+            olsun"): in the fixed footer beside Back, purple as the backdrop's Finalize. */}
+        <InFooter>
+          <button type="button" className="bz-next bz-part-next" data-testid={testId} onClick={onFinish} disabled={waiting} title={waiting ? "Make its real photo first" : undefined}
+            aria-label={done ? undefined : `Finalize the ${what} → ${next}`}>
+            {done ? <><span className="full">Next: {next} →</span><span className="short" aria-hidden="true">Next →</span></> : <><span className="full">Finalize the {what} → {next}</span><span className="short" aria-hidden="true">Finalize →</span></>}
+          </button>
+        </InFooter>
       </div>
     </div>
   );

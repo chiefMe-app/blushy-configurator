@@ -60,12 +60,9 @@ export default function GiveawayBox({ look, x, y, h, rot = 0, uid }: { look: Box
       <defs>
         <clipPath id={`${uid}-panel`}><rect x={p.x} y={p.y} width={p.w} height={p.h} /></clipPath>
         {/* The box's own outline, for a plain box coloured all over. */}
-        <filter id={`${uid}-halo`} x="-10%" y="-30%" width="120%" height="160%">
-          <feMorphology in="SourceAlpha" operator="dilate" radius={p.h * 0.006} result="grown" />
-          <feGaussianBlur in="grown" stdDeviation={p.h * 0.008} result="soft" />
-          <feFlood floodColor={haloOf(look.accent)} floodOpacity={0.85} />
-          <feComposite in2="soft" operator="in" result="halo" />
-          <feMerge><feMergeNode in="halo" /><feMergeNode in="SourceGraphic" /></feMerge>
+        {/* A soft grey drop shadow under the name (2026-11-05, the owner: "gri tonlu bir shadow"). */}
+        <filter id={`${uid}-halo`} x="-10%" y="-30%" width="125%" height="170%">
+          <feDropShadow dx={p.h * 0.005} dy={p.h * 0.008} stdDeviation={p.h * 0.006} floodColor="#5a5a5a" floodOpacity={0.5} />
         </filter>
         <mask id={`${uid}-box`} style={{ maskType: "alpha" }}><image href={BOX_PHOTO.src} width={W} height={H} /></mask>
       </defs>
@@ -75,8 +72,7 @@ export default function GiveawayBox({ look, x, y, h, rot = 0, uid }: { look: Box
           : <rect width={W} height={H} fill={look.colour ?? "#FFFFFF"} data-part="box-colour" />}
         {/* The theme's picture printed on it: its white ground takes the print's colour. */}
         {!plain && <image href={look.sticker} x={p.x + p.w / 2 - pic / 2} y={p.y + p.h * 0.06} width={pic} height={pic} preserveAspectRatio="xMidYMid meet" style={{ mixBlendMode: "multiply" }} />}
-        {/* A soft halo round the name, so it reads on any print (2026-11-05, as the kids' table's words): light
-            round dark letters, dark round light ones. */}
+        {/* A soft grey drop shadow under the name, so it reads on any print (2026-11-05, as the kids' table's words). */}
         <g filter={`url(#${uid}-halo)`} {...(hint ? { "data-no-capture": "", opacity: 0.45, "data-hint": "" } : {})}>
           {lines.map((l, i) => (
             // Bolder: the letters drawn over with their own colour (a script's thin strokes most of all).

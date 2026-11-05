@@ -1,7 +1,7 @@
-// Ready-made giveaways (2026-11-05, the owner: "tablesetup için söylediğim ayarları giveaways için de uygula" —
-// the kids' table's ready-made looks among them): a few finished looks per theme, each shown as its own box drawing
-// (no render spent), applied at a tap. Her number of boxes, what is in them and the name stay; the look changes the
-// box's print and colour, the lettering, and where they go and the board. Everything can be changed after.
+// Ready-made giveaway boxes (2026-11-05, the owner: "tablesetup için söylediğim ayarları giveaways için de uygula";
+// later the same day: "ready made giveaways'de board değil de farklı box ready made boxlar olsun, farklı font farklı
+// texture"): a few finished boxes per theme — each its own print, lettering and colour — shown as the box itself (no
+// render spent) and applied at a tap. Where the boxes go, the board, their number, what is in them and the name stay.
 import { pastelOf } from "./tableCatalog";
 import type { Giveaways } from "./giveaways";
 
@@ -9,29 +9,26 @@ export interface GiveawaySample {
   id: string;
   name: string;
   note: string;
-  patch: Partial<Omit<Giveaways, "enabled" | "count" | "contents" | "name" | "done" | "render">>;
+  patch: Pick<Giveaways, "boxPrint" | "font" | "ink"> & Partial<Pick<Giveaways, "boxColour">>;
 }
 
 type Theme = { accent: string; balloonColors: string[]; backdropColors?: string[] };
 
-export function giveawaySamples(theme: Theme, tableKept: boolean): GiveawaySample[] {
+export function giveawaySamples(theme: Theme): GiveawaySample[] {
   const tone = theme.balloonColors.find((h) => h.toUpperCase() !== "#FFFFFF") ?? theme.accent;
-  const board = pastelOf(theme.backdropColors?.find((h) => h.toUpperCase() !== "#FFFFFF") ?? tone);
   return [
-    {
-      id: "board-party", name: "Party Board", note: "Printed boxes on a board with balloons",
-      patch: { place: "board", boxPrint: "pattern", font: "nunito", ink: "", boardColour: board, boardFont: "sacramento", boardLineFont: "archivo-black", boardInk: "", boardGarland: true, boardLine: "Thank you for coming" },
-    },
-    {
-      id: "watercolour", name: "Soft Watercolour", note: tableKept ? "A watercolour box at each place" : "Watercolour boxes on a white board",
-      patch: { place: tableKept ? "table" : "board", boxPrint: "watercolour", font: "birthstone-bounce", ink: "", boardColour: "#FFFFFF", boardFont: "birthstone-bounce", boardLineFont: "birthstone-bounce", boardInk: "", boardGarland: false },
-    },
-    {
-      id: "plain", name: "Simple & Sweet", note: "Plain pastel boxes, the name in the theme's colour",
-      patch: { place: "board", boxPrint: "plain", boxColour: pastelOf(tone), font: "fraunces", ink: "", boardColour: "#FFFFFF", boardFont: "fraunces", boardLineFont: "fraunces", boardInk: "", boardGarland: false },
-    },
+    { id: "watercolour-script", name: "Soft Watercolour", note: "A watercolour wash, the name in a flowing script",
+      patch: { boxPrint: "watercolour", font: "birthstone-bounce", ink: "" } },
+    { id: "pattern-bold", name: "Pattern Party", note: "The theme's little prints all over, the name in bold capitals",
+      patch: { boxPrint: "pattern", font: "archivo-black", ink: "" } },
+    { id: "plain-classic", name: "Simple & Sweet", note: "One soft colour all over, the name in a classic serif",
+      patch: { boxPrint: "plain", boxColour: pastelOf(tone), font: "fraunces", ink: theme.accent } },
   ];
 }
 
-/** Her giveaways with a look applied: her boxes' number, what is in them and the name kept. */
+/** Her giveaways with a box applied: where they go, the board, her boxes' number, what is in them and the name kept. */
 export const withGiveawaySample = (g: Giveaways, s: GiveawaySample): Giveaways => ({ ...g, ...s.patch });
+
+/** The ready-made box she has now, if any. */
+export const appliedGiveawaySample = (g: Giveaways, samples: GiveawaySample[]) =>
+  samples.find((s) => s.patch.boxPrint === g.boxPrint && s.patch.font === g.font && s.patch.ink === g.ink && (s.patch.boxColour === undefined || s.patch.boxColour === g.boxColour))?.id;

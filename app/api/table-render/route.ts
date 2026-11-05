@@ -57,7 +57,9 @@ export async function POST(req: NextRequest) {
   const table = theme ? readTableSetup(body.table, theme) : undefined;
   if (!theme || !table?.enabled) return NextResponse.json({ error: "Missing table or theme." }, { status: 400 });
   // 2026-10-29: the close-up, or one place seen straight down.
-  const view: TableView = body.view === "top" ? "top" : "close";
+  // 2026-11-05: four places from above too ("4 places gözüksün … onun renderını alabilelim"), as the top view.
+  const four = body.view === "four";
+  const view: TableView = body.view === "top" || four ? "top" : "close";
   const preview = view === "top" && typeof body?.preview === "string" ? body.preview.match(/^data:image\/(?:jpeg|png);base64,([A-Za-z0-9+/=]+)$/)?.[1] : undefined;
   const previewBytes = preview ? Buffer.from(preview, "base64") : undefined;
   if (previewBytes && previewBytes.length > MAX_PREVIEW_BYTES) return NextResponse.json({ error: "The preview is too big." }, { status: 413 });
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
             const step = (n: number) => Math.max(512, Math.round(n / 16) * 16);
             model = TOP_MODEL;
             input = {
-              prompt: tablePhotoPrompt(table), image_urls: [`data:image/jpeg;base64,${img.data.toString("base64")}`], num_images: 1, output_format: "jpeg",
+              prompt: tablePhotoPrompt(table, four ? 4 : 1), image_urls: [`data:image/jpeg;base64,${img.data.toString("base64")}`], num_images: 1, output_format: "jpeg",
               image_size: { width: step(img.info.width), height: step(img.info.height) }, seed: SEED,
             };
             lap("prepared");
@@ -119,20 +121,22 @@ export async function POST(req: NextRequest) {
           if (!url) throw new Error("no close-up image");
           const jpeg = await renderJpeg(url);
           if (!jpeg) throw new Error("the close-up could not be read");
-          send({ view, url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
+          send({ view: four ? "four" : view, url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });
           lap("sent");
           const key = tableRenderKey(table, theme.id);
           // Without a database (local development) nothing is kept.
           let render: TableRender | undefined;
           if (user.client && user.userId) {
-            const kept = await storeRenderJpeg(user.client, user.userId, jpeg, `table:${view}:${key}`);
-            render = kept ? { key, close: kept.path, ...(view === "top" ? { view } : {}) } : undefined;
+            const kept = await storeRenderJpeg(user.client, user.userId, jpeg, `table:${four ? "four" : view}:${key}`);
+            render = kept ? { key, close: kept.path, ...(four ? { view: "four" as const } : view === "top" ? { view } : {}) } : undefined;
             if (!render) console.warn("[table-render] not kept; shown only");
           }
           lap("kept");
           // prepared: pictures ready; started: fal began (the rest was its queue); made: picture done; sent: downloaded and on its way.
           console.info("[table-render] ms", JSON.stringify({ ...times, model }));
-          send({ done: true, ...(render ? { render } : {}), left: taken.left });
+          // As every part's render is read back (usePieceRender's KeptRender): its key and its path. It went out as
+          // the stored { key, close } until 2026-11-05, so a kept table photo was never found again.
+          send({ done: true, ...(render ? { render: { key: render.key, path: render.close } } : {}), left: taken.left });
         } catch (err) {
           console.error("[table-render]", err);
           send({ error: renderError(err) });

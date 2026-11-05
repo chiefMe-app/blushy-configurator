@@ -8,6 +8,7 @@ import BackdropTab from "@/components/builder/decor/BackdropTab";
 import BalloonsTab from "@/components/builder/decor/BalloonsTab";
 import StyleTab from "@/components/builder/decor/StyleTab";
 import ExtrasTab from "@/components/builder/decor/ExtrasTab";
+import { InFooter } from "@/components/builder/FooterSlot";
 
 export default function DecorStep(props: DecorStepProps) {
   const ctx = useDecorStep(props);
@@ -93,7 +94,7 @@ export default function DecorStep(props: DecorStepProps) {
                 {generating ? "Making the photo…" : hasRender ? "Make a new photo ✨" : "Make it a real photo ✨"}
               </button>
             )}
-            {finish}
+            <InFooter>{finish}</InFooter>
           </span>
         )}
       </div>

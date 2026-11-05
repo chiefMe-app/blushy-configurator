@@ -11,7 +11,7 @@ import COLUMNS from "@/lib/studio/giveawayGarland.json";
 import { setShot, useRecoloredBase } from "@/components/design/LiveSketch";
 import { fontCss, tableFont } from "@/lib/studio/tableFonts";
 import TablePlace from "@/components/studio/table/TablePlace";
-import GiveawayBox, { boxLines, haloOf, type BoxLook } from "@/components/studio/GiveawayBox";
+import GiveawayBox, { boxLines, type BoxLook } from "@/components/studio/GiveawayBox";
 import FitText from "@/components/studio/FitText";
 import { THEME_GROUPS } from "@/components/builder/constants";
 import { usePhoneJump } from "@/components/builder/usePhoneJump";
@@ -93,18 +93,19 @@ export function GiveawayBoardArt({ g, theme, balloons, className, uid = "gvb", t
   return (
     <svg className={className} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Your giveaway board" data-testid={testId} data-garland={g.boardGarland ? "yes" : "no"}>
       <defs>
-        <filter id={`${uid}-halo`} x="-10%" y="-40%" width="120%" height="180%">
-          <feMorphology in="SourceAlpha" operator="dilate" radius={1.5} result="grown" />
-          <feGaussianBlur in="grown" stdDeviation={2.2} result="soft" />
-          <feFlood floodColor={haloOf(ink)} floodOpacity={0.8} />
-          <feComposite in2="soft" operator="in" />
+        {/* Only a soft grey shadow of the words, drawn under them (2026-11-05, the owner: "gri tonlu bir shadow"). */}
+        <filter id={`${uid}-halo`} x="-10%" y="-40%" width="125%" height="190%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation={1.6} result="soft" />
+          <feOffset in="soft" dx={1.4} dy={2.2} result="moved" />
+          <feFlood floodColor="#5a5a5a" floodOpacity={0.5} />
+          <feComposite in2="moved" operator="in" />
         </filter>
         <filter id={`${uid}-wall`} x="-20%" y="-10%" width="140%" height="120%"><feDropShadow dx={8} dy={6} stdDeviation={9} floodColor="#4a3328" floodOpacity={0.22} /></filter>
       </defs>
       <image href={BOARD_PHOTO.src} width={W} height={H} />
       {/* The board's colour, over its photographed light and shade. */}
       {!white && <path d={boardOutline()} fill={g.boardColour} style={{ mixBlendMode: "multiply" }} data-part="board-colour" />}
-      {/* Her words on the arch, flat cut vinyl. On screen a soft halo round them, so they read on any board
+      {/* Her words on the arch, flat cut vinyl. On screen a soft grey shadow under them, so they read on any board
           (2026-11-05, as the kids' table's words) — never in the picture rendered: cut vinyl has none. */}
       <g filter={`url(#${uid}-halo)`} data-no-capture="" aria-hidden="true">{boardWords(true)}</g>
       {boardWords()}

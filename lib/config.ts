@@ -894,6 +894,8 @@ export interface DecorConfig {
    * backdrop line (boards, balloons, extras) out of the price.
    */
   backdropChoice?: "yes" | "skip";
+  /** The ready-made look last applied (lib/decorSamples.ts), until a layout card is tapped again. */
+  sampleId?: string;
 }
 
 export interface NeonSign {

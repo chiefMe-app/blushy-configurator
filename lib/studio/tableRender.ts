@@ -210,7 +210,8 @@ export function tablePrompt(t: TableSetup, theme: { id: string; name: string; ba
  * render keeps its angle, its framing and its pieces, and adds nothing — the old drawing and option photos
  * brought in a chair, a slanted view and a name tag of their own.
  */
-export function tablePhotoPrompt(t: TableSetup): string {
+/** `places`: one place, or four (2026-11-05) — two facing two across the table, the centrepieces between them. */
+export function tablePhotoPrompt(t: TableSetup, places: 1 | 4 = 1): string {
   const c = t.choices;
   const said = (k: "placemats" | "cutleryHolder" | "bottleLabel") => wordsOn(t, k);
   const words = Array.from(new Set([said("placemats"), said("cutleryHolder"), said("bottleLabel")].filter(Boolean) as string[]));
@@ -223,14 +224,19 @@ export function tablePhotoPrompt(t: TableSetup): string {
     holder && c.cutleryHolder !== NONE && `on the band "${holder}"`,
     said("bottleLabel") && `on the bottle label "${said("bottleLabel")}"`,
   ].filter(Boolean);
+  const many = places > 1;
+  const cp = c.centrepiece !== NONE;
   return [
-    "Image 1 is a flat lay of one child's place at a kids' birthday party table, seen from straight above, put together from photos of the exact pieces chosen.",
-    "Turn image 1 into one real photograph of the very same place: the same camera, looking straight down from directly above, and the same framing, edge to edge — not tilted, not from the side, not zoomed out.",
+    many
+      ? `Image 1 is a flat lay of part of a kids' birthday party table, seen from straight above: four children's places, two along each side facing each other across the table${cp ? ", with the centrepieces standing on the table between them" : ""}, and the edges of the next places at the sides — put together from photos of the exact pieces chosen.`
+      : "Image 1 is a flat lay of one child's place at a kids' birthday party table, seen from straight above, put together from photos of the exact pieces chosen.",
+    `Turn image 1 into one real photograph of the very same ${many ? "places" : "place"}: the same camera, looking straight down from directly above, and the same framing, edge to edge — not tilted, not from the side, not zoomed out.`,
     "Keep every piece exactly where image 1 has it, at the same size and turned the same way, in the same colours, finishes, patterns and prints — the same pieces and the same number of each.",
-    "The table top round the placemat stays exactly as image 1 has it: plain, with nothing printed on it — the placemat's print stays on the placemat alone.",
+    many && cp ? "Each centrepiece stays exactly where image 1 has it, the same size, in the strip of table between the placemats — never over a plate, cup, bottle or hat." : "",
+    `The table top round the ${many ? "placemats" : "placemat"} stays exactly as image 1 has it: plain, with nothing printed on it — the placemat's print stays on the placemat alone.`,
     // 2026-11-03 (the owner: "placematın grafiği taşmış paperın dışına"): the print ran past the sheet's edge.
     "The placemat is one flat sheet of paper with clean, straight, square-cut edges, exactly the size image 1 shows; its printed design ends at those edges and never runs past them onto the table.",
-    "Add nothing: no chair, no chair back, no table edge, no floor, no people, no balloons, no flowers, no confetti, no other plates, cups, cutlery, napkins, name cards, tags or labels. Leave nothing out.",
+    `Add nothing: no chair, no chair back, no table edge, no floor, no people, ${many && cp ? "no balloons or flowers beyond the centrepieces" : "no balloons, no flowers"}, no confetti, no other plates, cups, cutlery, napkins, name cards, tags or labels. Leave nothing out.`,
     band,
     words.length ? `Keep the words exactly as image 1 letters them, letter for letter, in the same lettering, size and place, each only on its own piece: ${where.join("; ")}. No other words or letters anywhere.` : "No words or letters anywhere.",
     "Make it real: paper, foil, card and wood with their own fine texture, soft even daylight from above, and gentle natural shadows under each piece where it rests on the table. Crisp and sharp all over, like a styled flat-lay product photo. No outlines, no cut-out edges, no cartoon characters, no faces, no logos.",

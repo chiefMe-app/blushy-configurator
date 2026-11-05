@@ -15,7 +15,7 @@ import {
 } from "@/lib/studio/cakeSweets";
 import { TABLE_FONTS, fontCss } from "@/lib/studio/tableFonts";
 import { CakeArt, CakeThumb } from "./CakePreview";
-import { cakeSamples } from "@/lib/studio/cakeSamples";
+import { appliedCupcakeSample, cakeSamples, cupcakeSamples, sceneOf, toScene, type CakeSample, type CakeScene } from "@/lib/studio/cakeSamples";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 
@@ -89,6 +89,17 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
     return { name: k.topper.name, age: k.topper.age, font: k.topper.font, colour: k.topper.colour, on, at, x, up, y, s, card, ...(card && cardColour ? { cardColour } : {}), ...(card && cardBorder ? { cardBorder } : {}) };
   };
   const pickDesign = (d: (typeof designs)[number]) => set({ ...d.cake, topper: designTopper(d), flavour: k.flavour });
+  // A ready-made cake: its design, dressed as the sample has it (colours, sprinkles, the topper's colour or card).
+  const readyCake = (sm: CakeSample): Partial<Cake> => {
+    const t = designTopper(sm.design);
+    return { ...sm.design.cake, ...(sm.look.colours ? { colours: sm.look.colours } : {}), sprinkles: sm.look.sprinkles ?? sm.design.cake.sprinkles,
+      topper: { ...t, ...sm.look.topper }, flavour: k.flavour };
+  };
+  const sameLook = (sm: CakeSample) => {
+    const r = readyCake(sm);
+    return JSON.stringify([r.colours?.slice(0, r.tiers), r.sprinkles ?? null, r.topper?.colour, r.topper?.card ?? null])
+      === JSON.stringify([k.colours.slice(0, k.tiers), k.sprinkles ?? null, k.topper.colour, k.topper.card ?? null]);
+  };
   const swatches = Array.from(new Set(["#FFFFFF", ...theme.balloonColors, ...theme.backdropColors, ...PLAIN_COLOURS.map((c) => c.hex)].map((h) => h.toUpperCase())));
   const full = k.figures.filter((f) => figureKind(f.id) !== "deco").length >= MAX_CAKE_FIGURES;
   const setTopper = (patch: Partial<Cake["topper"]>) => set({ topper: { ...k.topper, ...patch } });
@@ -99,17 +110,20 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
   return (
     <div className="bz-tb" data-testid="cake">
       <link rel="stylesheet" href="/fonts/typography/fonts.css" />
-      {/* Ready-made cakes (2026-11-05, the owner: "pasta içinde sample örnekleri olsun hazır cakeler"): the whole
-          cake table, each its own drawing, applied at a tap — her name, age and flavour kept. */}
+      {/* Ready-made cakes (2026-11-05, the owner: "pastada aynı şekilde ready made pasta modelleri olsun"): three
+          finished cakes, the cake alone, applied at a tap — her name, age and flavour kept, the sweets and where it is
+          shown left as they are. */}
       <div className="bz-samples cakes" data-testid="cake-samples">
         <div className="bz-samples-head"><b>Ready-made cakes</b><span>Tap one to start from it — your name, age and flavour stay.</span></div>
         <div className="bz-samples-row">
-          {cakeSamples(seed, pieces).map((sm) => {
-            const look: Cake = { ...k, ...sm.design.cake, topper: designTopper(sm.design), flavour: k.flavour, ...sm.scene };
+          {cakeSamples(seed).map((sm) => {
+            const patch = readyCake(sm);
+            const look: Cake = { ...k, ...patch, sweets: [], cart: undefined, plinths: undefined };
+            const on = k.design === sm.design.id && sameLook(sm);
             return (
-              <button key={sm.id} type="button" className="bz-sample" data-testid={`cake-sample-${sm.id}`} onClick={() => set({ ...sm.design.cake, topper: designTopper(sm.design), flavour: k.flavour, ...sm.scene })}>
-                <span className="pic"><CakeArt k={look} themeId={theme.id} uid={`cks-${sm.id}`} testId={`cake-sample-art-${sm.id}`} /></span>
-                <b>{sm.name}</b><small>{sm.note}</small><em>AED {formatAED(cakeTotal(look))}</em>
+              <button key={sm.id} type="button" className={`bz-sample ${on ? "on" : ""}`} aria-pressed={on} data-testid={`cake-sample-${sm.id}`} onClick={() => set(patch)}>
+                <span className="pic"><CakeThumb k={look} uid={`cks-${sm.id}`} /></span>
+                <b>{sm.name}</b><small>{sm.note}</small><em>From AED {formatAED(cakeTotal({ ...look, flavour: "vanilla" }))}</em>
               </button>
             );
           })}
@@ -376,6 +390,26 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
                 <img src={sweetPicture(kind.id).src} alt="" loading="lazy" />
                 <span><b>{kind.name}</b><small>{kind.note} · AED {formatAED(kind.each)} each</small></span>
               </div>
+              {/* Ready-made cupcakes (2026-11-05, the owner: "cupcake seçme yerinde aynı şekilde ready made olsun 3 seçenek"):
+                  a dozen at a tap — then the count, colour, topper and liners are hers to change. */}
+              {kind.id === "cupcakes" && (
+                <div className="bz-samples cupcakes" data-testid="cupcake-samples">
+                  <div className="bz-samples-head"><b>Ready-made cupcakes</b><span>Tap a set — then change anything below.</span></div>
+                  <div className="bz-samples-row">
+                    {cupcakeSamples(seed, pieces).map((cs) => {
+                      const on = appliedCupcakeSample(sw, [cs]) === cs.id;
+                      const art: Cake = { ...k, sweets: [cs.sweet], cart: undefined, plinths: undefined };
+                      return (
+                        <button key={cs.id} type="button" className={`bz-sample ${on ? "on" : ""}`} aria-pressed={on} data-testid={`cupcake-sample-${cs.id}`}
+                          onClick={() => setSweet({ ...cs.sweet, count: sw?.count ?? cs.sweet.count, ...(sw?.flavour ? { flavour: sw.flavour } : {}) })}>
+                          <span className="pic"><CakeArt k={art} view="cupcakes" themeId={theme.id} uid={`cps-${cs.id}`} testId={`cupcake-sample-art-${cs.id}`} /></span>
+                          <b>{cs.name}</b><small>{cs.note}</small>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div className="bz-ck-counts" role="radiogroup" aria-label={`How many ${kind.name.toLowerCase()}`}>
                 {[0, ...SWEET_COUNTS].map((n) => (
                   <button key={n} type="button" role="radio" aria-checked={(sw?.count ?? 0) === n} className={(sw?.count ?? 0) === n ? "on" : ""}
@@ -438,19 +472,24 @@ export default function CakeStep({ config, setCake, onFinish, onSkip, render, on
         <h2>Where it <em>shines</em></h2>
         <p className="bz-tb-sub" style={{ fontWeight: 400 }}>A table, a sweet cart or a row of plinths</p>
         <div className="bz-tb-item">
-          <div className="bz-gv-contents" role="radiogroup" aria-label="Shown on" data-testid="cake-display">
-            {[
-              { id: "table", name: "On a table", note: "The cake on its stand, the sweets beside it", on: !k.cart && !k.plinths },
-              { id: "cart", name: "On a sweet cart", note: `A white wooden cart, its roof in your colour · +AED ${formatAED(CART_PRICE)}`, on: !!k.cart },
+          {/* 2026-11-05 (the owner: "cart plinth table resimleri sweet cart seçme yerinin orda olsun"): each a picture of
+              her own cake and sweets shown there. */}
+          <div className="bz-ck-scenes" role="radiogroup" aria-label="Shown on" data-testid="cake-display">
+            {([
+              { id: "table", name: "On a table", note: "The cake on its stand, the sweets beside it" },
+              { id: "cart", name: "On a sweet cart", note: `A white wooden cart, its roof in your colour · +AED ${formatAED(CART_PRICE)}` },
               // 2026-11-03 (the owner: "pastayı plinth üzerinde de görmek isteyebilir … diğer sweet'leri seçtiyse onlar da diğer plinth'lerde olacak").
-              { id: "plinths", name: "On plinths", note: `The cake on a tall white plinth, each sweet on one of its own · +AED ${formatAED(PLINTHS_PRICE)}`, on: !k.cart && !!k.plinths },
-            ].map((o) => (
-              <label key={o.id} className={o.on ? "on" : ""}>
-                <input type="radio" name="cake-display" checked={o.on}
-                  onChange={() => set({ cart: o.id === "cart" ? { roof: "#FFFFFF" } : undefined, plinths: o.id === "plinths" || undefined })} />
-                <span><b>{o.name}</b><small>{o.note}</small></span>
-              </label>
-            ))}
+              { id: "plinths", name: "On plinths", note: `The cake on a tall white plinth, each sweet on one of its own · +AED ${formatAED(PLINTHS_PRICE)}` },
+            ] as { id: CakeScene; name: string; note: string }[]).map((o) => {
+              const on = sceneOf(k) === o.id;
+              return (
+                <label key={o.id} className={on ? "on" : ""} data-testid={`cake-display-${o.id}`}>
+                  <input type="radio" name="cake-display" checked={on} onChange={() => set(toScene(k, o.id))} />
+                  <span className="pic"><CakeArt k={{ ...k, ...toScene(k, o.id) }} themeId={theme.id} uid={`ckd-${o.id}`} testId={`cake-display-art-${o.id}`} /></span>
+                  <span><b>{o.name}</b><small>{o.note}</small></span>
+                </label>
+              );
+            })}
           </div>
         </div>
         {k.cart && (

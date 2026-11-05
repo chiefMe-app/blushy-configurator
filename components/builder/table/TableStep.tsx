@@ -16,9 +16,8 @@ import { tableSamples, withSample } from "@/lib/studio/tableSamples";
 
 /** The printed words in their colour, with a shadow that keeps light words readable on the design. */
 export function wordsStyle(hex: string, font?: TableFont) {
-  const n = parseInt(hex.slice(1), 16), lum = (0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255)) / 255;
-  // 2026-11-05 (the owner: "yazılarda outer shadow olsun anlaşılmıyor"): a soft halo round every word.
-  return { color: hex, textShadow: lum > 0.75 ? "0 0 3px rgba(60,40,50,0.6), 0 1px 2px rgba(60,40,50,0.55)" : "0 0 3px rgba(255,255,255,0.95), 0 0 6px rgba(255,255,255,0.8)", ...(font ? fontStyle(font) : {}) };
+  // 2026-11-05 (the owner: "yazılarda outer shadow olsun"; later: "aşırı koyu olmuş … gri tonlu drop shadow yeterli").
+  return { color: hex, textShadow: "0.05em 0.08em 0.07em rgba(80,80,80,0.45)", ...(font ? fontStyle(font) : {}) };
 }
 
 /** Words in a lettering face (2026-10-29): print faces in capitals, handwritten ones as typed and a little bigger. */

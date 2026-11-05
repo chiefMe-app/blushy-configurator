@@ -10,9 +10,9 @@ import { MAX_BOARD_TEXT, cleanBoardText } from "@/lib/studio/welcomeBoard";
 import { BOARD_SHOWS, BOX_PRICE, BOX_PRINTS, GIVEAWAY_BOARD_PRICE, GIVEAWAY_GARLAND_PRICE, GIVEAWAY_CONTENTS, GIVEAWAY_PLACES, MAX_BOXES, clampCount, defaultGiveaways, giveawaysTotal, type Giveaways } from "@/lib/studio/giveaways";
 import { clampKids } from "@/lib/studio/tableSetup";
 import GiveawayBox from "@/components/studio/GiveawayBox";
-import { boxLook, GiveawayBoardArt } from "./GiveawaysPreview";
+import { boxLook } from "./GiveawaysPreview";
 import ColourWheel from "@/components/builder/ColourWheel";
-import { giveawaySamples, withGiveawaySample } from "@/lib/studio/giveawaySamples";
+import { appliedGiveawaySample, giveawaySamples, withGiveawaySample } from "@/lib/studio/giveawaySamples";
 import { FinishBar } from "@/components/builder/table/AdultTableStep";
 import type { PieceRender } from "@/components/builder/usePieceRender";
 
@@ -65,23 +65,26 @@ export default function GiveawaysStep({ config, setGiveaways, onFinish, onSkip, 
   return (
     <div className="bz-tb" data-testid="giveaways">
       <link rel="stylesheet" href="/fonts/typography/fonts.css" />
-      {/* Ready-made giveaways (2026-11-05, as the kids' table's): each its own drawing, applied at a tap. */}
+      {/* Ready-made boxes (2026-11-05, the owner: "ready made giveaways'de board değil de farklı box ready made boxlar
+          olsun, farklı font farklı texture"): each box itself, applied at a tap. */}
       <div className="bz-samples giveaways" data-testid="giveaways-samples">
-        <div className="bz-samples-head"><b>Ready-made giveaways</b><span>Tap one to start from it — your boxes, what&apos;s inside and the name stay.</span></div>
+        <div className="bz-samples-head"><b>Ready-made boxes</b><span>Tap one for its print and lettering — where they go, what&apos;s inside and the name stay.</span></div>
         <div className="bz-samples-row">
-          {giveawaySamples(theme, tableKept).map((s) => {
-            const look = withGiveawaySample(g, s);
-            return (
-              <button key={s.id} type="button" className="bz-sample" data-testid={`giveaways-sample-${s.id}`} onClick={() => setGiveaways(look)}>
-                <span className="pic">
-                  {look.place === "board"
-                    ? <GiveawayBoardArt g={{ ...look, count: Math.min(look.count, 6) }} theme={theme} balloons={config.decor.balloonColors} className="bz-gv-sample" uid={`gvs-${s.id}`} testId={`giveaways-sample-art-${s.id}`} />
-                    : <svg viewBox="0 0 120 130" aria-hidden="true"><GiveawayBox look={boxLook(look, theme)} x={60} y={65} h={124} uid={`gv-s-${s.id}`} /></svg>}
-                </span>
-                <b>{s.name}</b><small>{s.note}</small><em>AED {formatAED(giveawaysTotal(look))}</em>
-              </button>
-            );
-          })}
+          {(() => {
+            const samples = giveawaySamples(theme);
+            const on = appliedGiveawaySample(g, samples);
+            return samples.map((s) => {
+              const look = withGiveawaySample(g, s);
+              return (
+                <button key={s.id} type="button" className={`bz-sample ${on === s.id ? "on" : ""}`} aria-pressed={on === s.id} data-testid={`giveaways-sample-${s.id}`} onClick={() => setGiveaways(look)}>
+                  <span className="pic">
+                    <svg viewBox="0 0 120 130" aria-hidden="true" data-testid={`giveaways-sample-art-${s.id}`}><GiveawayBox look={boxLook(look, theme)} x={60} y={65} h={124} uid={`gv-s-${s.id}`} /></svg>
+                  </span>
+                  <b>{s.name}</b><small>{s.note}</small>
+                </button>
+              );
+            });
+          })()}
         </div>
       </div>
       <section className="bz-tb-section" aria-label="The box">

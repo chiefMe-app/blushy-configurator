@@ -376,7 +376,8 @@ describe("the route", () => {
     const { POST } = await import("@/app/api/table-render/route");
     const got = await lines(await POST(post({ table: table(), theme: "frozen" }, { authorization: "Bearer tok" })));
     expect(got[0]).toEqual({ view: "close", url: PICTURE });
-    expect(got[1]).toMatchObject({ done: true, render: { key: tableRenderKey(table(), "frozen"), close: C } });
+    // Read back as every part's render is (usePieceRender's KeptRender: key and path).
+    expect(got[1]).toMatchObject({ done: true, render: { key: tableRenderKey(table(), "frozen"), path: C } });
     expect(storeRenderJpeg.mock.calls.map((c) => [c[1], c[2], c[3]])).toEqual([[USER, JPEG, `table:close:${tableRenderKey(table(), "frozen")}`]]);
   }, 30_000);
 });

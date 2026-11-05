@@ -27,9 +27,11 @@ test("D2 a new theme still brings its own balloon colours", async ({ page }) => 
   await openDecor(page, "Ice Princess", "Single Round");
   await decorTab(page, "Balloons");
   await page.locator(".bz-bl-chip").first().click();
-  await page.locator("button.bz-back").click(); // to Theme
+  // Back walks the Decor tabs first (2026-11-05): Balloons → Style → Backdrop → Theme.
+  for (let i = 0; i < 3; i++) await page.locator("button.bz-back").click();
   await page.locator(".bz-choice.bz-theme", { has: page.locator("h3", { hasText: /^Unicorn$/ }) }).first().click();
   await next(page).click();
+  await decorTab(page, "Balloons");
   await expect(page.locator(".bz-bl-pill")).toContainText("Matched to Unicorn");
 });
 

@@ -41,6 +41,8 @@ export interface TableSetup {
   scene?: TableScene;
   /** The last close-up render of this table (F3), if one was made. */
   render?: TableRender;
+  /** 2026-11-05 (the owner: "4 places gözüksün … onun renderını alabilelim"): a real photo of four places, if made. */
+  renderFour?: TableRender;
   /** The customer pressed Finish (2026-10-31); they may still change it. The grown-ups' table is asked after. */
   done?: boolean;
 }
@@ -56,7 +58,7 @@ export interface TableRender {
   /** Where it is kept: the customer's folder of the private renders bucket (lib/renderStore.ts). */
   close: string;
   /** 2026-11-03: the top view of one place, which finalizing the kids' table waits for; a close-up when absent. */
-  view?: "top";
+  view?: "top" | "four";
 }
 
 // A stored render is only ever a file in the customer's own folder — never a
@@ -69,7 +71,7 @@ export function readTableRender(raw: unknown): TableRender | undefined {
   const r = raw as Record<string, unknown>;
   const ok = (v: unknown): v is string => typeof v === "string" && RENDER_PATH.test(v);
   // Three-view renders kept before 2026-10-28 read back by their close-up.
-  return typeof r.key === "string" && /^[a-z0-9]{1,13}$/.test(r.key) && ok(r.close) ? { key: r.key, close: r.close, ...(r.view === "top" ? { view: "top" as const } : {}) } : undefined;
+  return typeof r.key === "string" && /^[a-z0-9]{1,13}$/.test(r.key) && ok(r.close) ? { key: r.key, close: r.close, ...(r.view === "top" || r.view === "four" ? { view: r.view } : {}) } : undefined;
 }
 
 export const MIN_KIDS = 4;
@@ -256,6 +258,7 @@ export function readTableSetup(raw: unknown, theme: { balloonColors: string[]; a
     ...(readWords(r) ? { words: readWords(r) } : {}),
     ...(r.scene === "garden" || r.scene === "indoor" ? { scene: r.scene } : {}),
     ...(readTableRender(r.render) ? { render: readTableRender(r.render) } : {}),
+    ...(readTableRender(r.renderFour) ? { renderFour: readTableRender(r.renderFour) } : {}),
     ...(r.done === true ? { done: true } : {}),
   };
 }

@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { MAX_NOTES, cleanNotes, defaultConfig, themeById, type BuilderConfig } from "@/lib/config";
 import { fromDraft, toDraft } from "@/lib/draft";
 import { defaultGiveaways, giveawaysTotal } from "@/lib/studio/giveaways";
-import { giveawaySamples, withGiveawaySample } from "@/lib/studio/giveawaySamples";
-import { cakeSamples } from "@/lib/studio/cakeSamples";
+import { appliedGiveawaySample, giveawaySamples, withGiveawaySample } from "@/lib/studio/giveawaySamples";
+import { appliedCupcakeSample, cakeSamples, cupcakeSamples, sceneOf, toScene } from "@/lib/studio/cakeSamples";
 import { cakeDesigns } from "@/lib/studio/cake";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
 import { partyPrompt, placeWords } from "@/lib/studio/partyRender";
@@ -29,31 +29,44 @@ describe("her notes for the design team", () => {
   });
 });
 
-describe("ready-made giveaways", () => {
-  const g = { ...defaultGiveaways({ kids: 14, name: "Arya" }), contents: ["candy" as const] };
-  it("keep her boxes' number, what is in them and the name", () => {
-    for (const s of giveawaySamples(unicorn, true)) {
+describe("ready-made giveaway boxes", () => {
+  const g = { ...defaultGiveaways({ kids: 14, name: "Arya" }), contents: ["candy" as const], place: "table" as const };
+  it("keep where they go, her boxes' number, what is in them and the name", () => {
+    for (const s of giveawaySamples(unicorn)) {
       const l = withGiveawaySample(g, s);
-      expect([l.count, l.contents, l.name, l.enabled]).toEqual([14, ["candy"], "Arya", true]);
-      expect(giveawaysTotal(l)).toBeGreaterThan(0);
+      expect([l.count, l.contents, l.name, l.enabled, l.place]).toEqual([14, ["candy"], "Arya", true, "table"]);
+      expect(giveawaysTotal(l)).toBe(giveawaysTotal(g));
+      expect(appliedGiveawaySample(l, giveawaySamples(unicorn))).toBe(s.id);
     }
   });
-  it("go to the table only when she kept a kids' table", () => {
-    expect(giveawaySamples(unicorn, true).some((s) => s.patch.place === "table")).toBe(true);
-    expect(giveawaySamples(unicorn, false).every((s) => s.patch.place === "board")).toBe(true);
+  it("are each another print and lettering", () => {
+    const s = giveawaySamples(unicorn);
+    expect(new Set(s.map((x) => x.patch.boxPrint)).size).toBe(3);
+    expect(new Set(s.map((x) => x.patch.font)).size).toBe(3);
   });
 });
 
-describe("ready-made cakes", () => {
+describe("ready-made cakes, cupcakes and where it is shown", () => {
   const seed = { themeId: "unicorn", themeName: "Unicorn", name: "Arya", age: "5", colours: unicorn.balloonColors };
-  it("are each a theme design, a place to show it and sweets beside it", () => {
+  it("are three cakes, each a theme design of its own", () => {
     const designs = cakeDesigns(seed).map((d) => d.id);
-    const s = cakeSamples(seed, ["unicorn"]);
-    expect(s.map((x) => x.id)).toEqual(["cart", "plinths", "table"]);
-    for (const x of s) { expect(designs).toContain(x.design.id); expect(x.scene.sweets?.length).toBeGreaterThan(0); }
-    expect(s[0].scene.cart).toBeTruthy();
-    expect(s[1].scene.plinths).toBe(true);
-    expect(s[0].scene.cart && s[1].scene.cart).toBeFalsy();
+    const s = cakeSamples(seed);
+    expect(s).toHaveLength(3);
+    for (const x of s) expect(designs).toContain(x.design.id);
+    expect(new Set(s.map((x) => x.design.id)).size).toBe(3);
+    expect(s[0].design.id).toBe("face");
+  });
+  it("are three dozen-cupcake sets, each told apart once applied", () => {
+    const c = cupcakeSamples(seed, ["unicorn"]);
+    expect(c.map((x) => x.sweet.count)).toEqual([12, 12, 12]);
+    for (const x of c) expect(appliedCupcakeSample({ ...x.sweet, count: 24 }, c)).toBe(x.id);
+    expect(appliedCupcakeSample({ ...c[0].sweet, liner: "silver" }, c)).toBeUndefined();
+  });
+  it("moves the cake to the table, a cart or plinths, a cart keeping its roof", () => {
+    expect(sceneOf({})).toBe("table");
+    expect(toScene({}, "cart")).toEqual({ cart: { roof: "#FFFFFF" }, plinths: undefined });
+    expect(toScene({ cart: { roof: "#F8BBD0" } }, "cart").cart).toEqual({ roof: "#F8BBD0" });
+    expect(sceneOf(toScene({ cart: { roof: "#F8BBD0" } }, "plinths"))).toBe("plinths");
   });
 });
 

@@ -15,21 +15,28 @@ export default function BackdropTab({ ctx }: { ctx: DecorCtx }) {
     config, patchDecor, showManualPieces, setShowManualPieces, d, t, card, nextCue, BackdropShapePreview,
     toggleArchSize, toggleRound, toggleOtherType, applySetupTemplate, applySample, activeSetupTemplateId, TYPE_LABEL, theme, balloonSets,
   } = ctx;
-  const samples = decorSamples(config.theme, theme.backdropColors);
+  // 2026-11-05 (the owner: "single arch seçiliyse single arch için 3 tane ready made gözüksün yukarda"): the picked
+  // layout's three looks; with none picked yet, the theme's own.
+  const layout = activeSetupTemplateId && activeSetupTemplateId !== "custom_themed" ? activeSetupTemplateId : null;
+  const layoutName = layout ? SETUP_LAYOUT_TEMPLATES.find((tpl) => tpl.id === layout)?.name : undefined;
+  const samples = decorSamples(config.theme, theme.backdropColors, layout);
   return (
     <div>
     <div>
       {/* Ready-made looks (2026-11-05, the owner: "hazır setuplar olsun her temada … basınca o ayarlar olsun"): her
           own render where she gave one, else the look's live sketch. */}
+      {samples.length > 0 && (
       <div className="bz-samples" data-testid="decor-samples">
-        <div className="bz-samples-head"><b>Ready-made looks</b><span>Tap one to start from it — you can change anything after.</span></div>
+        <div className="bz-samples-head"><b>Ready-made looks{layoutName ? <> · {layoutName}</> : null}</b><span>{layoutName
+          ? <>Tap one to dress your {layoutName.toLowerCase()} — or keep the basic look below.</>
+          : <>Tap one to start from it — you can change anything after.</>}</span></div>
         <div className="bz-samples-row">
           {samples.map((s) => {
             const patch = s.build("");
             const look = { ...config, decor: { ...config.decor, ...patch, balloonColors: setHexes(balloonSets[s.balloonSet]) } };
             const standees = (patch.cutouts?.selectedAssets ?? []).map((a) => a.previewUrl).filter((u): u is string => !!u);
             return (
-              <button key={s.id} type="button" className="bz-sample" data-testid={`sample-${s.id}`} title={s.note}
+              <button key={s.id} type="button" className={`bz-sample ${d.sampleId === s.id ? "on" : ""}`} aria-pressed={d.sampleId === s.id} data-testid={`sample-${s.id}`} title={s.note}
                 onClick={() => {
                   applySample(s);
                   if (window.innerWidth < 1024) setTimeout(() => document.getElementById("party-preview-card")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
@@ -47,6 +54,7 @@ export default function BackdropTab({ ctx }: { ctx: DecorCtx }) {
           })}
         </div>
       </div>
+      )}
       {/* Curated setup layouts — illustrated icon cards */}
       <div style={{ marginBottom: 16 }}>
         {d.backdropItems.length === 0 && <div style={{ marginBottom: 10 }}>{nextCue("Start here — tap a layout")}</div>}

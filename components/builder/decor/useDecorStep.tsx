@@ -1,7 +1,8 @@
 // The Decor step's state and helpers, shared by its four tabs. Moved
 // unchanged from DecorStep in app/builder/page.tsx (Phase 0.1d): the hooks run
 // in the same order, in the same component, as before.
-import { currentName, type DecorSample } from "@/lib/decorSamples";
+import { currentName, NO_STANDEE, type DecorSample } from "@/lib/decorSamples";
+import { setupPanels } from "@/lib/setupPanels";
 import { useEffect, useMemo, useState } from "react";
 import { getThemeGraphicPresets } from "@/lib/themeCatalog";
 import {
@@ -514,128 +515,28 @@ function clearAllStandees() {
   // A ready-made look (lib/decorSamples.ts, 2026-11-05): the whole backdrop at once, her name kept.
   function applySample(s: DecorSample) {
     const patch = s.build(currentName(d.backdropItems));
-    patchDecor(patch);
+    patchDecor({ ...patch, sampleId: s.id });
     chooseBalloonSet(s.balloonSet);
     setOpenCustomizeIds(new Set((patch.backdropItems ?? []).map((p) => p.id)));
   }
 
-  // Apply a curated backdrop set template — replaces current backdropItems
-  // with the template's exact panels (max 2, controlled render layouts).
+  // Apply a curated backdrop set template — replaces current backdropItems with the template's exact panels
+  // (lib/setupPanels.ts).
   function applySetupTemplate(templateId: string) {
-    // Arch pieces start UNSIZED — the user must explicitly pick a size before
-    // the row is complete. Default dims stay 100x200 for render safety.
-    const makeArchUnsized = (id: string) => ({ ...makeBackdropItem("arch"), sizeId: undefined, id });
-    let panels: BackdropItem[];
-    switch (templateId) {
-      case "single_arch":        panels = [makeArchUnsized("arch-1")]; break;
-      case "single_round": {
-        // 2026-10-20, customer request: Single Round comes with "Happy Birthday"
-        // printed in silver.
-        // 2026-10-24: and no longer with a standee — "character standeeler
-        // secili default gelmesin hicbir setupta".
-        const round = makeBackdropItem("round");
-        panels = [{ ...round, text: { ...round.text, enabled: true, value: DEFAULT_TEXT_VALUE, color: themeTextColor(config.theme) } }];
-        break;
-      }
-      // 2026-09-05: the Banner card was in the setup list but clicking it did
-      // nothing — this switch had no case for it, so it fell to `default:
-      // return`. A banner has one fixed size (2x2m), so unlike an arch it needs
-      // no size step and is created ready to use.
-      case "single_banner": {
-        // 2026-10-21, customer request: the banner comes already printed with
-        // the theme (its first theme graphic), and with NO standee — the
-        // Elsa that Single Round turns on is taken back off here if it is
-        // the only one selected. Either can be changed below. (2026-10-24: no
-        // setup turns a standee on any more, so there is nothing to take off.)
-        const banner = makeBackdropItem("banner");
-        const presets = getThemeCatalogEntry(config.theme)?.graphicPresets ?? FALLBACK_GRAPHIC_PRESETS;
-        // The pattern print when the theme has one (Frozen: Snowflake Pattern),
-        // the customer's chosen look — not the Elsa & Anna characters.
-        const first = (presets as { label: string }[]).find((pr) => /snowflake|pattern/i.test(pr.label)) as typeof presets[number] | undefined ?? presets[0];
-        panels = [first
-          ? { ...banner, graphic: { ...banner.graphic, enabled: true, theme: first.id, source: "preset", assetId: first.assetId } }
-          : banner];
-        break;
-      }
-      case "arch_open_frame":    panels = [makeArchUnsized("arch-1"), makeBackdropItem("open_arch_frame")]; break;
-      case "single_shimmer":     panels = [makeBackdropItem("shimmer_wall")]; break;
-      // 2026-11-01: one fixed size each (the wavy board the lone arch's Large, the fringe 2 x 2 m).
-      case "single_wavy":        panels = [makeBackdropItem("wavy")]; break;
-      case "single_fringe":      panels = [makeBackdropItem("fringe")]; break;
-      // 2026-11-01: the theme's whole set; it stands on its own round stage, so no plinths.
-      case "custom_themed":
-        panels = [makeBackdropItem("themed_set")];
-        patchDecor({ plinthSizes: [] });
-        break;
-      case "arch_shimmer":       panels = [makeArchUnsized("arch-1"), makeBackdropItem("shimmer_wall")]; break;
-      case "wavy_shimmer":       panels = [makeBackdropItem("wavy"), makeBackdropItem("shimmer_wall")]; break;
-      case "balloon_ring":
-        panels = [makeBackdropItem("balloon_ring")];
-        // The ring is made of balloons, so a "none" tier carried over from a
-        // previous setup would leave the scene empty.
-        if (d.balloonStyle === "none") patchDecor({ balloonStyle: "full" });
-        break;
-      // 2026-10-22: created sized, Large then Medium — "large ve medium
-      // backdroplar default gelsin, user secmesin". It used to stall on "pick
-      // a size" for both boards.
-      case "double_arch":
-        panels = [{ ...makeBackdropItem("arch", "large"), id: "arch-1" }, { ...makeBackdropItem("arch", "medium"), id: "arch-2" }];
-        break;
-      // 2026-09-09: the first three-piece layout. Selection order is
-      // left-to-right, so the two half arches bracket the centre board.
-      case "triple_arch":
-        // 2026-09-09: the centre board is the 200cm Medium, not the 220cm
-        // Large, and it is created already sized — the side half arches have no
-        // size step, so leaving the centre unsized stalled the whole setup on
-        // "pick a size".
-        panels = [
-          { ...makeBackdropItem("half_arch"), id: "half-1" },
-          { ...makeBackdropItem("arch", "medium"), id: "arch-1" },
-          { ...makeBackdropItem("half_arch"), id: "half-2" },
-        ];
-        break;
-      // arch_open_frame / shimmer_open_frame / single_shimmer / arch_shimmer
-      // removed from product — no longer selectable, so no case needed;
-      // legacy ids resolve via getSetupLayoutTemplate()'s
-      // LEGACY_TEMPLATE_ID_REMAP if ever passed in.
-      default: return;
-    }
-    // 2026-10-22: every setup with a board comes with "Happy Birthday" on it,
-    // on the board its reference puts it on, in the theme's lettering colour
-    // ("default olarak gelsin backdrop olan setuplarda ... yazinin rengi theme
-    // e gore degismeli"). The customer can switch it off below. The ring has
-    // no board, so no lettering.
-    const textOn = (() => {
-      const idx = (t: string) => panels.findIndex((p) => p.type === t);
-      switch (templateId) {
-        case "single_arch": case "single_round": case "single_banner": case "single_shimmer": case "single_wavy": case "custom_themed": return 0;
-        case "double_arch": return 1;
-        case "triple_arch": return 1;
-        case "arch_shimmer": case "wavy_shimmer": return idx("shimmer_wall");
-        case "arch_open_frame": return idx("arch");
-        default: return -1;
-      }
-    })();
-    // 2026-10-22: on a shimmer wall the words are a lit LED neon sign, as in
-    // the customer's shimmer references ("shimmer wall oldugu zaman hep led
-    // yazsin happy birthday"): the Neon LED option is ticked, on the shimmer
-    // wall, and the wall carries no printed lettering. Unticking the option
-    // removes it.
-    const neonOnShimmer = textOn >= 0 && panels[textOn]?.type === "shimmer_wall";
-    if (textOn >= 0 && panels[textOn] && !neonOnShimmer) {
-      panels = panels.map((p, i) => i === textOn && !p.text.enabled
-        ? { ...p, text: { ...p.text, enabled: true, value: p.text.value.trim() || DEFAULT_TEXT_VALUE, color: themeTextColor(config.theme) } }
-        : p);
-    }
-    if (neonOnShimmer) {
-      panels = panels.map((p) => p.type === "shimmer_wall" ? { ...p, text: { ...p.text, enabled: false } } : p);
-      patchDecor({ backdropItems: panels, neonSign: { enabled: true, text: DEFAULT_TEXT_VALUE, panelIndex: textOn } });
-    } else {
-      // 2026-11-01: the shimmer's own neon sign goes with it — on a board the
-      // same words are printed, and both showed "Happy Birthday" twice.
-      const shimmerNeon = textOn >= 0 && d.neonSign?.enabled && (d.neonSign.text ?? "").trim() === DEFAULT_TEXT_VALUE;
-      patchDecor(shimmerNeon ? { backdropItems: panels, neonSign: { ...d.neonSign!, enabled: false } } : { backdropItems: panels });
-    }
+    const built = setupPanels(templateId, config.theme);
+    if (!built) return;
+    const { panels, patch, textOn } = built;
+    // 2026-11-05 (the owner: "ready make looka basmadığında eski basic görünümü görmesi lazım"): after a ready-made
+    // look, a layout card is its basic look again — no look's rainbows, standee, plinths or balloon set left behind.
+    const basic: Partial<DecorConfig> = d.sampleId
+      ? { sampleId: undefined, rainbowBalloons: false, garlandFlorals: false, balloonStyle: "full", cutouts: NO_STANDEE, plinths: 1, plinthSizes: ["large"], shimmerColor: undefined }
+      : {};
+    if (d.sampleId) resetToThemePalette();
+    const ringOn: Partial<DecorConfig> = templateId === "balloon_ring" && d.balloonStyle === "none" ? { balloonStyle: "full" } : {};
+    // 2026-11-01: the shimmer's own neon sign goes with it — on a board the same words are printed, and both
+    // showed "Happy Birthday" twice.
+    const shimmerNeon = !patch.neonSign && textOn >= 0 && d.neonSign?.enabled && (d.neonSign.text ?? "").trim() === DEFAULT_TEXT_VALUE;
+    patchDecor({ ...basic, ...ringOn, backdropItems: panels, ...patch, ...(shimmerNeon ? { neonSign: { ...d.neonSign!, enabled: false } } : {}) });
     setOpenCustomizeIds(new Set(panels.map(p => p.id)));
   }
 

@@ -137,8 +137,9 @@ const CUP_W = 7.8;
 /** The pompom in the hat's photo (hat-cone.webp, 540 × 720): centre and radius, as fractions of its width. */
 const HAT_POMPOM = { cx: 0.096, cy: 0.093, r: 0.093 };
 
-/** The views (2026-10-31): one place on its own, or six places, a part of the table. */
-export type PlaceMode = "one" | "six";
+/** The views (2026-10-31): one place on its own, or six places, a part of the table; since 2026-11-05 (the owner:
+ *  "4 places gözüksün 6 yerine … centrepieceleri görebiliriz böylece, overlap olmasın") four, two facing two. */
+export type PlaceMode = "one" | "four" | "six";
 
 /** The focus place, the places shown, and the plan in the picture's frame. */
 function frame(t: TableSetup, mode: PlaceMode) {
@@ -156,7 +157,7 @@ function frame(t: TableSetup, mode: PlaceMode) {
   const at = ([px, py]: Pt): Pt => { const dx = px - C[0], dy = py - C[1]; return [dx * R[0] + dy * R[1], -(dx * F[0] + dy * F[1])]; };
   /** How far a seat's frame is turned in the picture, degrees. */
   const turn = (s: Seat) => { const r = right(s); return (Math.atan2(-(r[0] * F[0] + r[1] * F[1]), r[0] * R[0] + r[1] * R[1]) * 180) / Math.PI; };
-  return { table, focus, shown: mode === "one" ? [focus] : sixPlaces(table.seats, focus, table.kind === "round" || table.kind === "flower"), at, turn, centre };
+  return { table, focus, shown: mode === "one" ? [focus] : sixPlaces(table.seats, focus, table.kind === "round" || table.kind === "flower", mode === "four" ? 2 : 3), at, turn, centre };
 }
 
 /**
@@ -164,14 +165,14 @@ function frame(t: TableSetup, mode: PlaceMode) {
  * its two neighbours, and the three across from them; round a round one, the
  * six nearest. Fewer at a smaller table.
  */
-function sixPlaces(seats: Seat[], focus: Seat, round: boolean): Seat[] {
+function sixPlaces(seats: Seat[], focus: Seat, round: boolean, perSide = 3): Seat[] {
   const near = (x: number) => (p: Seat, q: Seat) => Math.abs(p.ex - x) - Math.abs(q.ex - x);
   const dist = (s: Seat) => Math.hypot(s.ex - focus.ex, s.ey - focus.ey);
-  if (round) return [...seats].sort((p, q) => dist(p) - dist(q)).slice(0, 6);
+  if (round) return [...seats].sort((p, q) => dist(p) - dist(q)).slice(0, perSide * 2);
   const side = (s: Seat) => Math.sin(s.facing) > 0;
-  const mine = seats.filter((s) => side(s) === side(focus)).sort(near(focus.ex)).slice(0, 3);
+  const mine = seats.filter((s) => side(s) === side(focus)).sort(near(focus.ex)).slice(0, perSide);
   const mid = mine.reduce((a, s) => a + s.ex, 0) / mine.length;
-  const across = seats.filter((s) => side(s) !== side(focus)).sort(near(mid)).slice(0, 3);
+  const across = seats.filter((s) => side(s) !== side(focus)).sort(near(mid)).slice(0, perSide);
   return [...mine, ...across];
 }
 
@@ -187,6 +188,7 @@ export function placeView(t: TableSetup, mode: PlaceMode = "one"): PlaceView {
   let w = x1 - x0 + 4, h = y1 - y0 + 2;
   // One place in a 4:3 picture; six in a picture as wide as they are, a part of the table beyond them at the sides.
   if (mode === "six") w += 24;
+  else if (mode === "four") w += 14;
   else if (w / h > 4 / 3) h = (w * 3) / 4; else w = (h * 4) / 3;
   return { x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h / 2, w, h };
 }
@@ -196,7 +198,7 @@ export function placeView(t: TableSetup, mode: PlaceMode = "one"): PlaceView {
  * picture), every place in sight (the middle one last), the centrepieces.
  */
 export function placeLayout(t: TableSetup, theme: { id: string; balloonColors: string[]; accent: string }, mode: PlaceMode = "one"): PlaceNode[] {
-  const { table, focus, at, turn, centre } = frame(t, mode);
+  const { table, focus, at, turn, centre, shown } = frame(t, mode);
   const view = placeView(t, mode);
   const inView = ([x, y]: Pt, margin: number) => x > view.x - margin && x < view.x + view.w + margin && y > view.y - margin && y < view.y + view.h + margin;
   // One place is on its own; six show the places beyond them in part, at the edges.
@@ -210,9 +212,27 @@ export function placeLayout(t: TableSetup, theme: { id: string; balloonColors: s
   const cp = t.choices.centrepiece;
   // The theme cutouts are the theme's own piece (2026-10-29: Frozen first).
   const cpName = (cp === "cutouts" ? `centrepiece-cutouts-${theme.id}` : `centrepiece-${cp}`) as PieceName;
-  if (cp !== NONE && PIECES[cpName] && mode === "six") {
-    const name = cpName, w = cp === "toppers" ? 16 : cp === "balloons" ? 22 : cp === "cutouts" ? 24 : 20;
-    table.centres.map(at).filter((p) => inView(p, 12)).forEach(([x, y], k) => nodes.push({ k: "img", src: piece(name), x, y, w, h: tall(name, w), lift: 4, id: `centre-${k}` }));
+  if (cp !== NONE && PIECES[cpName] && mode !== "one") {
+    const name = cpName, w0 = cp === "toppers" ? 16 : cp === "balloons" ? 22 : cp === "cutouts" ? 24 : 20;
+    const round = table.kind === "round" || table.kind === "flower";
+    if (round) {
+      table.centres.map(at).filter((p) => inView(p, 12)).forEach(([x, y], k) => nodes.push({ k: "img", src: piece(name), x, y, w: w0, h: tall(name, w0), lift: 4, id: `centre-${k}` }));
+    } else {
+      // 2026-11-05 (the owner: "centrepieceler overlap olmasın"): between each place and the one across from it, in
+      // the strip of table between their placemats — clear of the hats, cups and bottles at the places' sides —
+      // and no bigger than that strip.
+      const side = (s: Seat) => Math.sin(s.facing) > 0;
+      const pts = shown.map((s) => ({ s, c: at(centre(s)) }));
+      const mine = pts.filter((p) => side(p.s) === side(focus)), across = pts.filter((p) => side(p.s) !== side(focus));
+      mine.forEach(({ c }, k) => {
+        const o = across.reduce<typeof across[number] | null>((b, p) => (!b || Math.abs(p.c[0] - c[0]) < Math.abs(b.c[0] - c[0]) ? p : b), null);
+        if (!o) return;
+        const x = (c[0] + o.c[0]) / 2, y = (c[1] + o.c[1]) / 2;
+        const strip = Math.abs(o.c[1] - c[1]) - 29.7;
+        const h0 = tall(name, w0), k2 = Math.min(1, Math.max(8, strip * 1.05) / h0);
+        nodes.push({ k: "img", src: piece(name), x, y, w: w0 * k2, h: h0 * k2, lift: 4, id: `centre-${k}` });
+      });
+    }
   }
   return nodes;
 }

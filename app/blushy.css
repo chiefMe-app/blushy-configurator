@@ -191,7 +191,7 @@
 .bz-decor-cta:disabled { opacity: .55; cursor: default; }
 /* 2026-11-02: "Finalize the backdrop → Table setup" (in .bz-decor-actions); a short label on phones. */
 .bz-decor-cta .short { display: none; }
-@media (max-width: 520px) { .bz-decor-cta .full { display: none; } .bz-decor-cta .short { display: inline; } .bz-decor-cta { font-size: 16px; padding: 9px 16px 6px; } }
+@media (max-width: 520px) { .bz-decor-cta .full { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; } .bz-decor-cta .short { display: inline; } .bz-decor-cta { font-size: 16px; padding: 9px 16px 6px; } }
 
 /* Ready-made looks (2026-11-05): a row of finished backdrops per theme, applied at a tap. */
 .bz-samples { margin-bottom: 16px; padding: 12px; border-radius: 18px; background: linear-gradient(135deg, #fff4f9, #f4efff); border: 1px solid #f1dcea; }
@@ -201,6 +201,7 @@
 .bz-samples-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .bz-sample { display: flex; flex-direction: column; align-items: stretch; text-align: left; gap: 2px; padding: 6px 6px 9px; border-radius: 14px; border: 1.5px solid #f2dde6; background: #fff; cursor: pointer; font-family: var(--bz-sans); }
 .bz-sample:hover { border-color: var(--bz-pink); }
+.bz-sample.on { border-color: var(--bz-pink); box-shadow: 0 0 0 2px #ffd3e3; }
 .bz-sample .pic { position: relative; display: block; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #f6f2ef; margin-bottom: 5px; }
 .bz-sample .pic img, .bz-sample .pic svg { display: block; width: 100%; height: 100%; object-fit: cover; }
 .bz-sample .pic svg.bz-sketch { width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important; aspect-ratio: auto; }
@@ -227,6 +228,21 @@
 .bz-back { border: 1px solid #f4cad9; background: #fff; border-radius: 99px; padding: 11px 24px 8px; font: 400 18px var(--bz-hand); color: var(--bz-ink); cursor: pointer; }
 .bz-back:disabled { opacity: .4; cursor: default; }
 .bz-footer-note { text-align: center; font-size: 12px; color: #6e5962; }
+/* 2026-11-05: Back and Next side by side on the right; a part's own Finalize / Next is drawn into the slot. */
+.bz-footer-go { display: flex; align-items: center; gap: 10px; margin-left: auto; min-width: 0; }
+.bz-footer-slot { display: contents; }
+.bz-footer .bz-back .short { display: none; }
+.bz-footer .bz-part-next .short { display: none; }
+/* The parts' Next in purple, as the backdrop's Finalize (the owner: "gene purple olsun"). */
+.bz-next.bz-part-next, .bz-footer .bz-decor-cta { background: linear-gradient(135deg, #7c4ddf, #5a2fc2); }
+.bz-next.bz-part-next:not(:disabled):hover { background: linear-gradient(135deg, #6c3dd4, #4b22ad); }
+.bz-footer .bz-decor-cta { font-size: 20px; padding: 12px 26px 7px; white-space: nowrap; }
+/* Start over, on every step beside "STEP n OF 7". */
+.bz-startover { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; font-weight: 600; }
+.bz-startover button { border: 0; background: none; padding: 0; font: 600 11px var(--bz-sans); color: var(--bz-muted); text-decoration: underline; cursor: pointer; }
+.bz-startover button:hover { color: var(--bz-pink); }
+.bz-startover button.yes { color: #b4234d; }
+.bz-startover > span { color: var(--bz-ink); }
 .bz-footer-note b { color: var(--bz-pink); }
 .bz-next { border: 0; border-radius: 999px; color: #fff; background: var(--bz-pink); font: 400 20px var(--bz-hand); padding: 12px 28px 7px; min-width: 185px; cursor: pointer;
   box-shadow: 0 5px 0 rgba(255,13,102,.13), 0 11px 25px rgba(255,13,102,.15); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
@@ -446,10 +462,12 @@
   .bz-back { padding: 10px 16px 7px; font-size: 16px; }
   .bz-next { padding: 11px 18px 6px; min-width: 0; font-size: 17px; }
   .bz-save { font-size: 16px; padding: 9px 14px 5px; }
-  .bz-save .full { display: none; }
+  .bz-save .full { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   .bz-save .short { display: inline; }
-  .bz-footer .bz-next .full { display: none; }
-  .bz-footer .bz-next .short { display: inline; }
+  .bz-footer .bz-next .full, .bz-footer .bz-back .full, .bz-footer .bz-decor-cta .full { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .bz-footer .bz-next .short, .bz-footer .bz-back .short, .bz-footer .bz-decor-cta .short { display: inline; }
+  .bz-footer .bz-decor-cta { font-size: 17px; padding: 11px 18px 6px; }
+  .bz-footer-go { gap: 7px; }
   .bz-back, .bz-next { white-space: nowrap; }
   .bz-main { padding: 0 12px; }
   .bz-placeholder { min-height: 300px; }
@@ -1382,7 +1400,7 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 .bz-tb-finish .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: flex-end; max-width: 100%; }
 /* On a phone the long "Finalize the kids' table → Grown-ups' table" ran off the screen: the short one there. */
 .bz-tb-finish .bz-next .short { display: none; }
-@media (max-width: 520px) { .bz-tb-finish .bz-next .full { display: none; } .bz-tb-finish .bz-next .short { display: inline; } }
+@media (max-width: 520px) { .bz-tb-finish .bz-next .full { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; } .bz-tb-finish .bz-next .short { display: inline; } }
 /* 2026-11-03: the part's render first ("First Generate render to see your final design"), then Finalize. */
 .bz-tb-finish .render { flex: 1 0 100%; display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 .bz-tb-finish .render .bz-decor-first { flex: 1 1 200px; }
@@ -1658,7 +1676,7 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 .bz-party-stage svg { display: block; width: 100% !important; height: auto !important; max-width: none; }
 .bz-party .bz-tb-render .bz-next:disabled { opacity: .45; cursor: not-allowed; }
 /* Ready-made giveaways (2026-11-05): the board's photo is tall — shown whole, the box drawn on a soft ground. */
-.bz-samples.giveaways .bz-sample .pic { aspect-ratio: 3 / 4; background: #f7f3ef; }
+.bz-samples.giveaways .bz-sample .pic { aspect-ratio: 1; background: #f7f3ef; padding: 8px; }
 .bz-samples.giveaways .bz-sample .pic svg { object-fit: contain; }
 /* Ready-made cakes (2026-11-05): the whole cake table, shown whole. */
 .bz-samples.cakes .bz-sample .pic { aspect-ratio: 4 / 5; background: #f7f3ef; }
@@ -1669,3 +1687,25 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 .bz-notes > small { justify-self: end; font-size: 11px; }
 .bz-notes textarea { font: 400 15px/1.45 var(--bz-sans); padding: 10px 12px; border: 1.5px solid #f2dde6; border-radius: 12px; outline: none; resize: vertical; min-height: 90px; background: #fff; }
 .bz-notes textarea:focus { border-color: var(--bz-pink); }
+/* 2026-11-05: Save, Back and Next on one footer row: Back names its part only where there is room. */
+@media (max-width: 1100px) {
+  .bz-footer .bz-back .full { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .bz-footer .bz-back .short { display: inline; }
+}
+@media (max-width: 760px) {
+  .bz-footer .bz-part-next .full, .bz-footer .bz-decor-cta .full { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .bz-footer .bz-part-next .short, .bz-footer .bz-decor-cta .short { display: inline; }
+}
+
+/* 2026-11-05: where the cake is shown, as pictures of her own cake there; ready-made cupcakes inside their card. */
+.bz-ck-scenes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.bz-ck-scenes label { display: flex; flex-direction: column; gap: 6px; padding: 6px 6px 10px; border: 1.5px solid var(--bz-line, #eadfe3); border-radius: 14px; background: #fff; cursor: pointer; }
+.bz-ck-scenes label.on { border-color: var(--bz-pink, #e84f8b); background: #fff6f9; }
+.bz-ck-scenes input { position: absolute; opacity: 0; pointer-events: none; }
+.bz-ck-scenes .pic { display: block; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #f6f2ef; }
+.bz-ck-scenes .pic svg { display: block; width: 100%; height: 100%; }
+.bz-ck-scenes b { display: block; font-size: 14px; padding: 0 4px; }
+.bz-ck-scenes small { display: block; font-size: 12px; color: var(--bz-muted); padding: 0 4px; }
+.bz-samples.cupcakes { margin: 10px 0 12px; padding: 10px; }
+.bz-samples.cupcakes .bz-samples-head b { font-size: 18px; }
+@media (max-width: 480px) { .bz-ck-scenes { gap: 6px; } .bz-ck-scenes small { display: none; } }
