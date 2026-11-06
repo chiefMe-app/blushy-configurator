@@ -52,7 +52,7 @@ function readDecor(raw: unknown): Pick<DecorConfig, "backdropItems" | "backdropC
 const pictureOf = (v: unknown) => (typeof v === "string" ? v.match(/^data:image\/(?:jpeg|png);base64,([A-Za-z0-9+/=]+)$/)?.[1] : undefined);
 
 export async function POST(req: NextRequest) {
-  let body: { theme?: unknown; setting?: unknown; key?: unknown; table?: unknown; decor?: unknown; backdrop?: unknown; tablePicture?: unknown; extras?: unknown; experiences?: unknown };
+  let body: { theme?: unknown; setting?: unknown; key?: unknown; table?: unknown; decor?: unknown; backdrop?: unknown; tablePicture?: unknown; extras?: unknown; experiences?: unknown; mainPhoto?: unknown; mainKey?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
   const theme = typeof body?.theme === "string" ? themeById(body.theme) : undefined;
   const setting: PartySetting | undefined = body?.setting === "indoor" || body?.setting === "outdoor" ? body.setting : undefined;
@@ -62,6 +62,10 @@ export async function POST(req: NextRequest) {
   // Nothing designed to stand there: not worth a render.
   if (!backdrop && !(table?.enabled && tablePic)) return NextResponse.json({ error: "Design a backdrop or a table first." }, { status: 400 });
   const pictures = [backdrop, table?.enabled ? tablePic : undefined].filter((p): p is string => !!p).map((p) => Buffer.from(p, "base64"));
+  // The backdrop-and-table photo she already has (2026-11-06, the owner: "hızlandırıp renderı"): the first of the two
+  // photographs is not made again; and its key, to send back the one made here.
+  const mainPhoto = pictureOf(body.mainPhoto);
+  const mainKey = typeof body.mainKey === "string" && /^[0-9a-z]{1,16}$/.test(body.mainKey) ? body.mainKey : undefined;
   // "Everything" (2026-11-05): the other parts' own pictures, each once, in PARTY_EXTRAS' order.
   const sent = Array.isArray(body.extras) ? body.extras.slice(0, PARTY_EXTRAS.length) : [];
   const extras = PARTY_EXTRAS.flatMap((part) => {
@@ -74,7 +78,7 @@ export async function POST(req: NextRequest) {
   const xpAll = partyExperiences(Array.isArray(body.experiences) ? body.experiences.filter((x): x is string => typeof x === "string").slice(0, 20) : []);
   const xRoom = PARTY_PICKS - extras.length;
   const xp = { photos: xpAll.photos.slice(0, Math.max(0, xRoom)), stations: xpAll.stations.slice(0, Math.max(0, xRoom - Math.min(xRoom, xpAll.photos.length))) };
-  if ([...pictures, ...extras.map((e) => e.bytes)].some((b) => b.length > MAX_PICTURE_BYTES)) return NextResponse.json({ error: "A picture is too big." }, { status: 413 });
+  if ([...pictures, ...extras.map((e) => e.bytes), ...(mainPhoto ? [Buffer.from(mainPhoto, "base64")] : [])].some((b) => b.length > MAX_PICTURE_BYTES)) return NextResponse.json({ error: "A picture is too big." }, { status: 413 });
   const falKey = process.env.FAL_KEY;
   if (!falKey) return NextResponse.json({ error: "Renders are not available right now." }, { status: 503 });
 
@@ -131,9 +135,11 @@ export async function POST(req: NextRequest) {
         };
         try {
           const until = Date.now() + 140_000;
-          const main = await photo(
+          const main = more && mainPhoto ? Buffer.from(mainPhoto, "base64") : await photo(
             partyPrompt({ table, decor: { ...defaultConfig().decor, ...readDecor(body.decor) }, theme: theme.id }, setting, { ...has, refs: refPics.map((r) => r.key) }),
             [...images.map(uri), ...refPics.map((r) => r.u)], more ? 70_000 : 130_000);
+          // The first photo made here: back to the builder for next time (her picks change; the backdrop and table don't).
+          if (more && !mainPhoto && mainKey) send({ also: { key: mainKey, url: uri(await gradePhoto(main).catch(() => main)) } });
           const made = !more ? main : await photo(
             partyAddPrompt(setting, { extras: extras.map((e) => e.part), experiences: xPhotos.map((x) => x.id), stations: xp.stations }),
             [uri(await wideCanvas(main)), ...extraImages.map(uri), ...xImages.map(uri)], Math.max(30_000, until - Date.now()), WIDE);

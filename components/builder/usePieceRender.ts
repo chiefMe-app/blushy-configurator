@@ -87,6 +87,9 @@ export function usePieceRender({ endpoint, partKey, kept, body, onKept, onSignIn
       await readNdjson(res.body, (line) => {
         const l = line as { url?: string; done?: boolean; error?: string; render?: KeptRender };
         if (typeof l.url === "string") setShown((m) => ({ ...m, [key]: l.url! }));
+        // A picture made on the way, for another key (the party's first photo, 2026-11-06): kept too, for next time.
+        const also = (line as { also?: { key?: unknown; url?: unknown } }).also;
+        if (also && typeof also.key === "string" && typeof also.url === "string") setShown((m) => ({ ...m, [also.key as string]: also.url as string }));
         else if (l.done || l.error) end = l;
       });
       const result = end as { done?: boolean; error?: string; render?: KeptRender } | null; // set inside the callback

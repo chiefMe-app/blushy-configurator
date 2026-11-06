@@ -345,13 +345,19 @@ export default function ConfigurePage() {
   const partyXp = partyAll ? partyExperiences(partyExperienceIds.filter((id) => partyPicks.has(id))) : { photos: [], stations: [] };
   const partyXpIds = [...partyXp.photos, ...partyXp.stations];
   const partyKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting, partyExtras, partyXpIds) : "";
+  // The backdrop and table alone: the first of Everything's two photos is this one's.
+  const partyMainKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting) : "";
   const partyShot = useRef<(() => Promise<PartyShot>) | null>(null);
   const partyRender = usePieceRender({
     endpoint: "/api/party-render", partKey: partyKey, kept: config.venue.render,
     body: async () => {
       const shot = await partyShot.current?.();
       const extras = shot?.extras ?? [];
-      return { theme: config.theme, setting: partySetting, key: partyKey, table: config.table, decor: config.decor, backdrop: shot?.backdrop ?? null, tablePicture: shot?.tablePicture ?? null, ...(extras.length ? { extras } : {}), ...(partyXpIds.length ? { experiences: partyXpIds } : {}) };
+      // The backdrop-and-table photo made before (2026-11-06): the first of the two not made again.
+      const more = extras.length > 0 || partyXpIds.length > 0;
+      const mainPhoto = more && partyMainKey ? partyRender.urlOf(partyMainKey) : null;
+      return { theme: config.theme, setting: partySetting, key: partyKey, table: config.table, decor: config.decor, backdrop: shot?.backdrop ?? null, tablePicture: shot?.tablePicture ?? null, ...(extras.length ? { extras } : {}), ...(partyXpIds.length ? { experiences: partyXpIds } : {}),
+        ...(more && partyMainKey ? { mainKey: partyMainKey } : {}), ...(mainPhoto?.startsWith("data:image/jpeg;base64,") ? { mainPhoto } : {}) };
     },
     onKept: (render) => setConfig((c) => ({ ...c, venue: { ...c.venue, render } })),
     onSignInNeeded: () => askSignIn("party-render"),

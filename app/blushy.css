@@ -1669,6 +1669,13 @@ section.bz-tb-section:nth-of-type(4n) > h2::before { background: #ecd9ff; transf
 .bz-party-pieces figure img, .bz-party-pieces figure .art > svg, .bz-party-pieces figure .art svg.bz-sketch { display: block; width: 100% !important; height: auto !important; max-width: none; }
 .bz-party-pieces figure .art { background: #fff; }
 .bz-party-pieces figcaption { font-size: 12px; color: var(--bz-muted); padding: 6px 10px; text-align: center; }
+/* 2026-11-06: the pieces she picked, small, under the backdrop and the table. */
+.bz-party-pieces figure.picks { grid-column: 1 / -1; }
+.bz-party-pieces .picks .row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 8px 8px 0; }
+.bz-party-pieces .picks .pick { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+.bz-party-pieces .picks .pick > img, .bz-party-pieces .picks .pick > svg, .bz-party-pieces .picks .pick > .bz-wb-art { width: 100%; aspect-ratio: 1; object-fit: contain; background: #fff; border-radius: 10px; }
+.bz-party-pieces .picks .pick > svg { height: auto; }
+.bz-party-pieces .picks .pick small { font-size: 10.5px; color: var(--bz-muted); text-align: center; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .bz-party-pieces.on > figure { opacity: .35; filter: blur(1px); transition: opacity .3s; }
 .bz-party-pieces .veil { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 16px; }
 .bz-party-pieces .veil b { font: 400 22px var(--bz-hand); color: var(--bz-ink, #2b1a24); }

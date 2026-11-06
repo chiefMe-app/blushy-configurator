@@ -194,6 +194,34 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
               {tableUrl ? <img src={tableUrl} alt="Your kids' table" /> : <div className="art"><TablePlace table={config.table!} theme={theme} mode="six" /></div>}
               <figcaption>Your kids&apos; table</figcaption>
             </figure>}
+            {/* The pieces she picked, beside them (2026-11-06, the owner: "seçtiğin görseller çıksın"). */}
+            {allIn && (
+              <figure className="picks" data-testid="party-picks">
+                <div className="row">
+                  {shownParts.map(([p, url]) => (
+                    <div key={p} className="pick" title={PARTY_EXTRA_NAMES[p]}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {url ? <img src={url} alt={PARTY_EXTRA_NAMES[p]} />
+                        : p === "cake" && config.cake ? <CakeArt k={config.cake} themeId={config.theme} uid="ptp-ck" testId="party-pick-cake-art" />
+                        : p === "welcome" && config.welcomeBoard ? <WelcomeBoardArt board={config.welcomeBoard} theme={theme} balloons={config.decor.balloonColors} className="bz-wb-art" />
+                        : p === "giveaways" && config.giveaways ? <GiveawayBoardArt g={config.giveaways} theme={theme} balloons={config.decor.balloonColors} uid="ptp-gv" testId="party-pick-giveaways-art" />
+                        : p === "helium" && config.helium ? <HeliumArt h={config.helium} />
+                        : p === "pinata" && config.pinata ? <PinataArt p={config.pinata} theme={theme} />
+                        : p === "adults" && config.adultTable ? <AdultTableSketch a={config.adultTable} theme={theme} /> : null}
+                      <small>{PARTY_EXTRA_NAMES[p]}</small>
+                    </div>
+                  ))}
+                  {shownXp.map((e) => (
+                    <div key={e.id} className="pick" title={e.name}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`/design/experiences/${e.pic}.webp`} alt={e.name} />
+                      <small>{e.name}</small>
+                    </div>
+                  ))}
+                </div>
+                <figcaption>Beside them</figcaption>
+              </figure>
+            )}
             {render.loading && (
               <div className="veil" role="status" data-testid="party-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>

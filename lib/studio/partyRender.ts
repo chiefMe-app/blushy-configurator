@@ -4,7 +4,6 @@
 // drawing) stood together, indoors or outdoors as she marks it. Shared by the route (app/api/party-render) and the
 // builder (is the picture still current?).
 import type { BackdropShapeId, BuilderConfig, DecorConfig } from "@/lib/config";
-import { hexToColorName } from "@/lib/generatePrompt";
 import { onFloor, type TableItemKey } from "./tableCatalog";
 import { tableCounts, type TableSetup } from "./tableSetup";
 import { itemWords, referencePictures, tableRenderKey } from "./tableRender";
@@ -40,7 +39,7 @@ export const MAX_PARTY_IMAGES = 7;
  * exact, then at most this many more pieces she picks, added at their sides — a second photo adds about three well;
  * ten in one photo spoiled the backdrop.
  */
-export const PARTY_PICKS = 3;
+export const PARTY_PICKS = 5;
 /** What stands with the backdrop and table: those she picked (still there), else the first ones; PARTY_PICKS at most. */
 export function partyPicked(available: readonly string[], pick?: readonly string[]): string[] {
   return (pick ? pick.filter((id) => available.includes(id)) : available).slice(0, PARTY_PICKS);
@@ -52,8 +51,8 @@ const EXTRA_LIST: Record<PartyExtra, string> = { adults: "the grown-ups' table",
 const EXTRA_WORDS: Record<PartyExtra, (r: string) => string> = {
   adults: (r) => `the grown-ups' table of ${r} — drawn there from above, made into a real table set for the grown-ups with its chairs: the same tablecloth, runner, chargers, plates, glasses, napkins, cutlery and centrepiece in the same colours — further back on the left, behind the welcome board's side, apart from the kids' table, seen from the front, not from above, and clearly in the picture: the whole of it, or at least its near half with its chairs and several places set`,
   cake: (r) => `the cake and sweets of ${r}, on the same stand, cart, table or plinths ${r} shows, on the right, beside the right end of the backdrop, on its own stand or little table, a real cake's size (a tier about 20 cm across), never on the backdrop's plinths or the kids' table — the cake, its toppers and every sweet exactly as ${r} shows them`,
-  welcome: (r) => `the welcome board of ${r} on its own easel or stand at the front left, turned a little towards the camera — the same shape, colours and pictures, its words copied exactly, letter by letter`,
-  giveaways: (r) => `the giveaway boxes of ${r}, on their own board or little table as ${r} shows them, at the front right — the same boxes, prints and names`,
+  welcome: (r) => `the welcome board of ${r}, standing alone on its own easel at the front, just left of the kids' table and nearest the camera, turned a little towards it — the same shape, colours and pictures, its words copied exactly, letter by letter`,
+  giveaways: (r) => `the giveaway boxes of ${r} at the front right, on exactly the board or little table ${r} shows — its shape, colour, shelves and print — never another stand, cart or shelf; the same boxes, prints and names`,
   helium: (r) => `the helium balloon bouquets of ${r}, each tied to its weight on the floor beside the left end of the backdrop — the same balloons, foils and colours`,
   pinata: (r) => `the piñata of ${r}, hanging on its own stand on the far right — the same shape, colours and age`,
 };
@@ -64,8 +63,8 @@ const EXTRA_WORDS: Record<PartyExtra, (r: string) => string> = {
  * they stay out of it.
  */
 export const PARTY_EXPERIENCE_PHOTOS: Partial<Record<ExperienceId, { pic: string; words: string }>> = {
-  popcorn: { pic: "popcorn", words: "on the far left, the white popcorn cart with its little boxes of popcorn" },
-  cotton_candy: { pic: "cotton-candy", words: "on the far left, the white cotton candy cart with its pastel cotton candy" },
+  popcorn: { pic: "popcorn", words: "on the far left and a little further back, the white popcorn cart with its little boxes of popcorn" },
+  cotton_candy: { pic: "cotton-candy", words: "on the far left and a little further back, the white cotton candy cart with its pastel cotton candy" },
   bouncy_castle: { pic: "bouncy-castle", words: "on the far right and further back, the pastel bouncy castle with its turrets, on the lawn or floor" },
   soft_play: { pic: "soft-play", words: "on the far right and further back, the soft play corner of foam blocks, steps and a little slide" },
   ball_pit: { pic: "ball-pit", words: "on the far right, the round ball pit of pastel balls" },
@@ -123,21 +122,15 @@ const SHAPE: Partial<Record<BackdropShapeId, string>> = {
   open_arch_frame: "open arch frame", shimmer_wall: "shimmer wall", balloon_ring: "balloon ring", wavy: "wavy board",
 };
 
-/** The lettering's colour in words: a finish by its name, a colour of her own by its nearest name. */
-const LETTERING: Record<string, string> = { white: "white", silver: "mirror silver", gold: "mirror gold", rose_gold: "mirror rose gold", black: "black" };
-function letteringColour(c: string | undefined): string {
-  if (!c) return "the same";
-  return LETTERING[c] ?? (/^#[0-9a-f]{6}$/i.test(c) ? hexToColorName(c) || "the same" : "the same");
-}
-
-/** The backdrop's pieces in words: each board with its size and colour, the plinths. */
+/** The backdrop's pieces in words: each board with its size and its words, the plinths (its colours are its picture's). */
 export function backdropWords(decor: Pick<DecorConfig, "backdropItems" | "backdropColor" | "plinths">): string {
   const boards = decor.backdropItems.map((i) => {
-    const colour = hexToColorName(i.color || decor.backdropColor);
     const size = i.widthCm && i.heightCm ? `${i.widthCm} × ${i.heightCm} cm` : "";
     // Its words and their colour (2026-11-06, the owner: "saçmaladı render backdropta özellikle" — white lettering came out pink).
-    const words = i.text?.enabled && i.text.value?.trim() ? ` with the words "${i.text.value.trim().replace(/\s+/g, " ")}" on it in ${letteringColour(i.text.color)} lettering` : "";
-    return [colour, SHAPE[i.type] ?? "board", size ? `(${size})` : ""].filter(Boolean).join(" ") + words;
+    // Its colour is the picture's (2026-11-06, the owner's pink board came out cream): a colour told in words that its
+    // picture shows otherwise pulls it away.
+    const words = i.text?.enabled && i.text.value?.trim() ? ` with the words "${i.text.value.trim().replace(/\s+/g, " ")}" on it in exactly the lettering and colour image 1 shows` : "";
+    return [SHAPE[i.type] ?? "board", size ? `(${size})` : "", "in exactly the colour image 1 shows"].filter(Boolean).join(" ") + words;
   });
   const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}` : xs[0] ?? "");
   const plinths = decor.plinths > 0 ? `${decor.plinths === 1 ? "one white cylinder plinth" : `${decor.plinths} white cylinder plinths`} in front of ${boards.length > 1 ? "the boards" : "the board"}` : "";
@@ -195,6 +188,8 @@ function apartWords(extras: readonly PartyExtra[], experiences: readonly Experie
   const carts = experiences.filter((id) => id === "popcorn" || id === "cotton_candy").map((id) => (id === "popcorn" ? "the popcorn cart" : "the cotton candy cart"));
   return [
     "Every piece stands on its own at its own place on the floor, a little apart from the others: never two pieces made into one, never one set on, in or against another, and only one of each — never a piece twice.",
+    // 2026-11-06 test: the welcome board's words went onto the popcorn cart beside it.
+    extras.includes("welcome") && carts.length ? `The welcome board stands alone on its easel; ${carts.join(" and ")} ${carts.length > 1 ? "carry" : "carries"} none of its words.` : "",
     extras.includes("welcome") && extras.includes("giveaways") ? "The welcome board and the giveaways' board or table are two separate things standing well apart: the welcome board's words only on the welcome board, the giveaway boxes only on their own board." : "",
     extras.includes("cake") && carts.length ? `The cake's stand or cart holds only the cake and its sweets; ${carts.join(" and ")} ${carts.length > 1 ? "are carts" : "is a cart"} of ${carts.length > 1 ? "their" : "its"} own, standing apart from it.` : "",
     extras.includes("pinata") ? "The piñata hangs alone on its own stand." : "",
