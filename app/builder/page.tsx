@@ -62,7 +62,7 @@ import type { AfterSignInAction } from "@/lib/account";
 import { adultCounts, defaultAdultTable } from "@/lib/studio/adultTable";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
 import { defaultWelcomeBoard, welcomeRenderKey } from "@/lib/studio/welcomeBoard";
-import { PARTY_EXTRAS, partyExperiences, partyPieces, partyRenderKey, type PartyExtra } from "@/lib/studio/partyRender";
+import { PARTY_EXTRAS, partyExperiences, partyPicked, partyPieces, partyRenderKey, type PartyExtra } from "@/lib/studio/partyRender";
 import PartyPreview, { settingOf, type PartyShot } from "@/components/builder/venue/PartyPreview";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import { usePieceRender } from "@/components/builder/usePieceRender";
@@ -331,16 +331,18 @@ export default function ConfigurePage() {
     ...(config.pinata?.enabled ? { pinata: { url: pinataRender.url, key: pinataKey } } : {}),
   };
   // Each by its real photo when it has a current one, its drawing otherwise (2026-11-05, the owner: "her şey yok bunlarda?").
-  // The ones she took out of the picture (2026-11-05, the owner chose to pick: "1. Seçiyorum").
-  const partyLeaveOut = new Set(config.venue.partyLeaveOut ?? []);
-  const partyExtras = partyAll ? PARTY_EXTRAS.flatMap((part) => {
+  const partyAvailable = PARTY_EXTRAS.filter((part) => {
     const e = partyExtraUrls[part];
-    if (!e || partyLeaveOut.has(part) || (part === "giveaways" && !e.url && config.giveaways?.place === "table")) return [];
-    return [{ part, key: `${e.key}:${e.url ? "photo" : "drawing"}` }];
-  }) : [];
+    return !!e && !(part === "giveaways" && !e.url && config.giveaways?.place === "table");
+  });
   // Her experiences too (the owner: "deneyimler de girsin"): those she books, the ones a picture can show.
   const partyExperienceIds = config.experiences?.picked.filter((id) => !(config.servicePackageId === "diy" && config.diy?.skipExperiences.includes(id))) ?? [];
-  const partyXp = partyAll ? partyExperiences(partyExperienceIds.filter((id) => !partyLeaveOut.has(id))) : { photos: [], stations: [] };
+  // The pieces she picks to stand with the backdrop and table (2026-11-06, the owner: "a olsun"): three at most.
+  const partyShowable = partyExperiences(partyExperienceIds);
+  const partyPicks = new Set(partyPicked([...partyAvailable, ...partyShowable.photos, ...partyShowable.stations], config.venue.partyPick));
+  const partyExtras = partyAll ? partyAvailable.filter((part) => partyPicks.has(part))
+    .map((part) => ({ part, key: `${partyExtraUrls[part]!.key}:${partyExtraUrls[part]!.url ? "photo" : "drawing"}` })) : [];
+  const partyXp = partyAll ? partyExperiences(partyExperienceIds.filter((id) => partyPicks.has(id))) : { photos: [], stations: [] };
   const partyXpIds = [...partyXp.photos, ...partyXp.stations];
   const partyKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting, partyExtras, partyXpIds) : "";
   const partyShot = useRef<(() => Promise<PartyShot>) | null>(null);

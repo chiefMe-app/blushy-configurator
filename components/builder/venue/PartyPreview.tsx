@@ -3,9 +3,9 @@
 // beraber görebilceğimiz bir render alsın ama bu sayfada outdoor yada indoor işaretlesin ona göre görsel üretelim"):
 // she marks indoors or outdoors here, and the backdrop she designed (its render, or its live sketch) and her kids'
 // table (its render, or its drawing) are made into one picture of the party in that setting (/api/party-render).
-import { useEffect, useRef, type MutableRefObject } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { THEMES, themeById, type BuilderConfig, type VenueDetails } from "@/lib/config";
-import { PARTY_EXTRA_NAMES, PARTY_PIECES_FIT, partyExperienceShown, partyPieces, type PartyExtra, type PartySetting } from "@/lib/studio/partyRender";
+import { PARTY_EXTRA_NAMES, PARTY_PICKS, partyExperiences, partyPicked, partyExperienceShown, partyPieces, type PartyExtra, type PartySetting } from "@/lib/studio/partyRender";
 import { experienceById, type ExperienceId } from "@/lib/studio/experiences";
 import AdultTableSketch from "@/components/studio/table/AdultTableSketch";
 import { imageJpeg, nodeJpeg, svgJpeg } from "@/components/builder/nodeJpeg";
@@ -62,13 +62,19 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
   const extraParts = (Object.entries(extras) as [PartyExtra, string | null][]).filter(([p]) => !(p === "giveaways" && !extras.giveaways && config.giveaways?.place === "table"));
   const all = config.venue.partyScope === "all";
   const booked = experiences.map((id) => experienceById(id)).filter((e): e is NonNullable<ReturnType<typeof experienceById>> => !!e);
-  // She picks what goes in (2026-11-05, the owner: "1. Seçiyorum"): about eight pieces fit one photo.
-  const leaveOut = config.venue.partyLeaveOut ?? [];
-  const isIn = (id: string) => !leaveOut.includes(id);
-  const toggle = (id: string) => onVenue({ partyLeaveOut: isIn(id) ? [...leaveOut, id] : leaveOut.filter((x) => x !== id) });
+  // She picks what stands with the backdrop and table (2026-11-06, the owner: "a olsun"): PARTY_PICKS at most, the
+  // first ones until she picks — in the builder's order (the parts, then the experiences' photos, then the stations).
+  const showable = partyExperiences(booked.map((e) => e.id));
+  const picked = partyPicked([...extraParts.map(([p]) => p), ...showable.photos, ...showable.stations], config.venue.partyPick);
+  const isIn = (id: string) => picked.includes(id);
+  const [full, setFull] = useState(false);
+  const toggle = (id: string) => {
+    if (isIn(id)) { setFull(false); onVenue({ partyPick: picked.filter((x) => x !== id) }); }
+    else if (picked.length < PARTY_PICKS) { setFull(false); onVenue({ partyPick: [...picked, id] }); }
+    else setFull(true);
+  };
   const shownParts = extraParts.filter(([p]) => isIn(p));
-  const shownXp = booked.filter((e) => partyExperienceShown(e.id as ExperienceId) && isIn(e.id));
-  const pieceCount = (pieces.backdrop ? 1 : 0) + (pieces.table ? 1 : 0) + shownParts.length + shownXp.length;
+  const shownXp = booked.filter((e) => isIn(e.id));
 
   useEffect(() => {
     shot.current = async () => {
@@ -138,7 +144,9 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
           </div>
           {all && (
             <>
-              <p className="bz-party-pick">Tap a piece to take it out of the picture, or to put it back.</p>
+              <p className="bz-party-pick" data-testid="party-pick-count">
+                Your backdrop and table, and up to {PARTY_PICKS} more pieces beside them — {picked.length} of {PARTY_PICKS} picked. Tap one to take it out or put it in.
+              </p>
               <ul className="bz-party-parts" data-testid="party-scope-parts">
                 {extraParts.map(([p, url]) => (
                   <li key={p} className={isIn(p) ? "in" : "off"}>
@@ -155,9 +163,9 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
                     </li>
                   : <li key={e.id} className="out">{e.name}<small> · a person, not in the picture</small></li>)}
               </ul>
-              {pieceCount > PARTY_PIECES_FIT && (
-                <p className="bz-party-many" role="status" data-testid="party-too-many">
-                  {pieceCount} pieces with your backdrop and table — one photo holds about {PARTY_PIECES_FIT} well. With more, some may be left out of it: take out the ones you need least.
+              {full && (
+                <p className="bz-party-many" role="status" data-testid="party-pick-full">
+                  {PARTY_PICKS} is the most one photo shows well with your backdrop and table — take one out first.
                 </p>
               )}
             </>
@@ -190,7 +198,7 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
               <div className="veil" role="status" data-testid="party-render-wait">
                 <span className="dots" aria-hidden="true"><i /><i /><i /></span>
                 <b>Setting up your party {word}</b>
-                <span>{what} together — about 30 seconds.</span>
+                <span>{what} together — {allIn ? "about a minute: the backdrop and table first, then the rest around them" : "about 30 seconds"}.</span>
               </div>
             )}
           </div>

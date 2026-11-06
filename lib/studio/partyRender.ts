@@ -36,18 +36,22 @@ export const isPartyExtra = (v: unknown): v is PartyExtra => PARTY_EXTRAS.includ
  */
 export const MAX_PARTY_IMAGES = 7;
 /**
- * About this many pieces (the backdrop and the kids' table among them) come out in one photo: with ten, one test kept
- * eight and the next seven, different ones each time (2026-11-05). Beyond it she is told, and picks what goes in
- * (the owner: "1. Seçiyorum").
+ * Everything is two photographs (2026-11-06, the owner chose "a olsun"): the backdrop and the kids' table first, kept
+ * exact, then at most this many more pieces she picks, added at their sides — a second photo adds about three well;
+ * ten in one photo spoiled the backdrop.
  */
-export const PARTY_PIECES_FIT = 8;
+export const PARTY_PICKS = 3;
+/** What stands with the backdrop and table: those she picked (still there), else the first ones; PARTY_PICKS at most. */
+export function partyPicked(available: readonly string[], pick?: readonly string[]): string[] {
+  return (pick ? pick.filter((id) => available.includes(id)) : available).slice(0, PARTY_PICKS);
+}
 export const PARTY_EXTRA_NAMES: Record<PartyExtra, string> = { adults: "Grown-ups' table", cake: "Cake & sweets", welcome: "Welcome board", giveaways: "Giveaways", helium: "Helium balloons", pinata: "Piñata" };
 /** Each in the checklist of what the photograph shows. */
 const EXTRA_LIST: Record<PartyExtra, string> = { adults: "the grown-ups' table", cake: "the cake", welcome: "the welcome board", giveaways: "the giveaway boxes", helium: "the helium balloons", pinata: "the piñata" };
 /** Where each stands in the setup, told with its picture ("image 3", "picture 2 of image 3"). */
 const EXTRA_WORDS: Record<PartyExtra, (r: string) => string> = {
   adults: (r) => `the grown-ups' table of ${r} — drawn there from above, made into a real table set for the grown-ups with its chairs: the same tablecloth, runner, chargers, plates, glasses, napkins, cutlery and centrepiece in the same colours — further back on the left, behind the welcome board's side, apart from the kids' table, seen from the front, not from above, and clearly in the picture: the whole of it, or at least its near half with its chairs and several places set`,
-  cake: (r) => `the cake and sweets of ${r}, on the same stand, cart, table or plinths ${r} shows, on the right, beside the right end of the backdrop, never on the backdrop's plinths — the cake, its toppers and every sweet exactly as ${r} shows them`,
+  cake: (r) => `the cake and sweets of ${r}, on the same stand, cart, table or plinths ${r} shows, on the right, beside the right end of the backdrop, on its own stand or little table, a real cake's size (a tier about 20 cm across), never on the backdrop's plinths or the kids' table — the cake, its toppers and every sweet exactly as ${r} shows them`,
   welcome: (r) => `the welcome board of ${r} on its own easel or stand at the front left, turned a little towards the camera — the same shape, colours and pictures, its words copied exactly, letter by letter`,
   giveaways: (r) => `the giveaway boxes of ${r}, on their own board or little table as ${r} shows them, at the front right — the same boxes, prints and names`,
   helium: (r) => `the helium balloon bouquets of ${r}, each tied to its weight on the floor beside the left end of the backdrop — the same balloons, foils and colours`,
@@ -119,12 +123,21 @@ const SHAPE: Partial<Record<BackdropShapeId, string>> = {
   open_arch_frame: "open arch frame", shimmer_wall: "shimmer wall", balloon_ring: "balloon ring", wavy: "wavy board",
 };
 
+/** The lettering's colour in words: a finish by its name, a colour of her own by its nearest name. */
+const LETTERING: Record<string, string> = { white: "white", silver: "mirror silver", gold: "mirror gold", rose_gold: "mirror rose gold", black: "black" };
+function letteringColour(c: string | undefined): string {
+  if (!c) return "the same";
+  return LETTERING[c] ?? (/^#[0-9a-f]{6}$/i.test(c) ? hexToColorName(c) || "the same" : "the same");
+}
+
 /** The backdrop's pieces in words: each board with its size and colour, the plinths. */
 export function backdropWords(decor: Pick<DecorConfig, "backdropItems" | "backdropColor" | "plinths">): string {
   const boards = decor.backdropItems.map((i) => {
     const colour = hexToColorName(i.color || decor.backdropColor);
     const size = i.widthCm && i.heightCm ? `${i.widthCm} × ${i.heightCm} cm` : "";
-    return [colour, SHAPE[i.type] ?? "board", size ? `(${size})` : ""].filter(Boolean).join(" ");
+    // Its words and their colour (2026-11-06, the owner: "saçmaladı render backdropta özellikle" — white lettering came out pink).
+    const words = i.text?.enabled && i.text.value?.trim() ? ` with the words "${i.text.value.trim().replace(/\s+/g, " ")}" on it in ${letteringColour(i.text.color)} lettering` : "";
+    return [colour, SHAPE[i.type] ?? "board", size ? `(${size})` : ""].filter(Boolean).join(" ") + words;
   });
   const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}` : xs[0] ?? "");
   const plinths = decor.plinths > 0 ? `${decor.plinths === 1 ? "one white cylinder plinth" : `${decor.plinths} white cylinder plinths`} in front of ${boards.length > 1 ? "the boards" : "the board"}` : "";
@@ -181,11 +194,11 @@ function apartWords(extras: readonly PartyExtra[], experiences: readonly Experie
   const all = [...main, ...extras.map((e) => EXTRA_LIST[e]), ...experiences.map((id) => experienceById(id)?.name.toLowerCase() ?? id)];
   const carts = experiences.filter((id) => id === "popcorn" || id === "cotton_candy").map((id) => (id === "popcorn" ? "the popcorn cart" : "the cotton candy cart"));
   return [
-    "Every piece stands on its own at its own place on the floor, a little apart from the others: never two pieces made into one, never one set on, in or against another.",
+    "Every piece stands on its own at its own place on the floor, a little apart from the others: never two pieces made into one, never one set on, in or against another, and only one of each — never a piece twice.",
     extras.includes("welcome") && extras.includes("giveaways") ? "The welcome board and the giveaways' board or table are two separate things standing well apart: the welcome board's words only on the welcome board, the giveaway boxes only on their own board." : "",
     extras.includes("cake") && carts.length ? `The cake's stand or cart holds only the cake and its sweets; ${carts.join(" and ")} ${carts.length > 1 ? "are carts" : "is a cart"} of ${carts.length > 1 ? "their" : "its"} own, standing apart from it.` : "",
     extras.includes("pinata") ? "The piñata hangs alone on its own stand." : "",
-    `The photograph shows all ${all.length} of them, each once and none left out: ${all.join(", ")}.`,
+    main.length ? `The photograph shows all ${all.length} of them, each once and none left out: ${all.join(", ")}.` : `All ${all.length} are added, each once and none left out: ${all.join(", ")}.`,
   ].filter(Boolean).join(" ");
 }
 
@@ -239,5 +252,30 @@ export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "the
     SETTING[setting],
     LIGHT,
     "Nothing added: no people, no children, no cartoon or licensed characters, no extra decorations, furniture or words beyond those in the pictures.",
+  ].filter(Boolean).join(" ");
+}
+
+/**
+ * The second of two photographs (2026-11-06, the owner: "saçmaladı render backdropta özellikle" — ten pieces in one
+ * photo spoiled the backdrop, put the welcome board in twice and left the carts out): image 1 is the photograph of the
+ * backdrop and the kids' table, kept as it is, and the other pieces she designed are added into the room left around
+ * them. Image 2 on: the parts (each a picture, or one sheet), then the experiences (one picture or a sheet).
+ */
+export function partyAddPrompt(setting: PartySetting, pictures: { extras: PartyExtra[]; experiences?: ExperienceId[]; stations?: ExperienceId[] }): string {
+  // Each piece a picture of its own (PARTY_PICKS at most): the parts from image 2, then the experiences' photos.
+  const extras = pictures.extras;
+  const xImage = 2 + extras.length;
+  const xs = pictures.experiences ?? [], stations = pictures.stations ?? [];
+  const extraWords = extras.map((e, i) => EXTRA_WORDS[e](`image ${2 + i}`));
+  const xWords = [...xs.map((id, i) => `${PARTY_EXPERIENCE_PHOTOS[id]!.words} exactly as image ${xImage + i} shows it`), ...stations.map((id) => STATION_WORDS[id]!)];
+  return [
+    "Image 1 is the finished photograph of this children's birthday party — its balloon backdrop and its kids' table — set in the middle of a wider white canvas, white at both sides.",
+    `Make it one wider photograph of the same party: fill the white at both sides by carrying the same ${setting === "outdoor" ? "garden — the same lawn, hedges, trees and sky" : "room — the same floor, walls and windows"} — on outward, in the same light and seen by the same camera, seamless, with no frame, border or edge left.`,
+    "Keep the middle exactly as image 1 shows it: the backdrop with its boards, balloons, colours and words, the kids' table with its chairs and every place on it — nothing in it moved, changed, redrawn, covered or taken away.",
+    extraWords.length ? `In the wider space at both sides of them, in the same photograph, add the other pieces she designed, each exactly as its own picture shows it — a drawing made into the real thing, a photo copied — at a believable real size, standing on the ground, none in front of the backdrop or the table: ${extraWords.join("; ")}.` : "",
+    xWords.length ? `${extraWords.length ? "Further out" : "In the wider space"} at the sides, set up and ready with no one at them, add the party's activities: ${xWords.join("; ")} — each its real size, whole in the picture, none in front of the backdrop or the tables.` : "",
+    apartWords(extras, [...xs, ...stations], []),
+    "The rooms, walls and floors the other pictures show are only where they were drawn: leave them out; every piece added stands in the setting of image 1, in its light, with soft natural shadows on the ground.",
+    "Nothing else added: no people, no children, no cartoon or licensed characters, no extra decorations, furniture or words beyond those in the pictures.",
   ].filter(Boolean).join(" ");
 }

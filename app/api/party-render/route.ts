@@ -12,8 +12,8 @@ import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
 import { gradePhoto } from "@/lib/photoGrade";
 import { readTableSetup } from "@/lib/studio/tableSetup";
-import { MAX_PARTY_IMAGES, PARTY_EXPERIENCE_PHOTOS, PARTY_EXTRAS, partyExperiences, partyPrompt, partyReferences, type PartySetting } from "@/lib/studio/partyRender";
-import { experiencePhoto, sheetJpeg } from "@/lib/studio/partySheet";
+import { MAX_PARTY_IMAGES, PARTY_EXPERIENCE_PHOTOS, PARTY_EXTRAS, PARTY_PICKS, partyAddPrompt, partyExperiences, partyPrompt, partyReferences, type PartySetting } from "@/lib/studio/partyRender";
+import { experiencePhoto, wideCanvas, WIDE } from "@/lib/studio/partySheet";
 import { optionPicture } from "@/lib/studio/tableOptionPicture";
 
 export const runtime = "nodejs";
@@ -28,6 +28,12 @@ const SIZE = { width: 1344, height: 896 };
 
 /** The backdrop's pieces as told (its boards and plinths), read over the defaults: only what the words use. */
 function readDecor(raw: unknown): Pick<DecorConfig, "backdropItems" | "backdropColor" | "plinths"> {
+  // The board's words and their colour too (2026-11-06): told in words, they come out right.
+  const text = (v: unknown) => {
+    const t = (typeof v === "object" && v ? v : {}) as Record<string, unknown>;
+    return t.enabled === true && typeof t.value === "string" && t.value.trim()
+      ? { enabled: true, value: t.value.trim().slice(0, 60), color: typeof t.color === "string" ? t.color.slice(0, 20) : "" } : undefined;
+  };
   const base = defaultConfig().decor;
   const d = (typeof raw === "object" && raw ? raw : {}) as Record<string, unknown>;
   const hex = (v: unknown) => (typeof v === "string" && /^#[0-9A-F]{6}$/i.test(v) ? v : "");
@@ -36,7 +42,7 @@ function readDecor(raw: unknown): Pick<DecorConfig, "backdropItems" | "backdropC
   return {
     backdropItems: items.map((i) => {
       const r = (typeof i === "object" && i ? i : {}) as Record<string, unknown>;
-      return { type: typeof r.type === "string" ? r.type.slice(0, 30) : "board", widthCm: cm(r.widthCm), heightCm: cm(r.heightCm), color: hex(r.color) } as unknown as BackdropItem;
+      return { type: typeof r.type === "string" ? r.type.slice(0, 30) : "board", widthCm: cm(r.widthCm), heightCm: cm(r.heightCm), color: hex(r.color), text: text(r.text) } as unknown as BackdropItem;
     }),
     backdropColor: hex(d.backdropColor) || base.backdropColor,
     plinths: Number.isInteger(d.plinths) ? Math.max(0, Math.min(6, d.plinths as number)) : 0,
@@ -62,9 +68,12 @@ export async function POST(req: NextRequest) {
     const e = sent.find((x) => (x as { part?: unknown })?.part === part) as { picture?: unknown } | undefined;
     const b64 = e ? pictureOf(e.picture) : undefined;
     return b64 ? [{ part, bytes: Buffer.from(b64, "base64") }] : [];
-  });
-  // Her experiences (2026-11-05): the carts and inflatables by their photos, the stations by words; no people.
-  const xp = partyExperiences(Array.isArray(body.experiences) ? body.experiences.filter((x): x is string => typeof x === "string").slice(0, 20) : []);
+  }).slice(0, PARTY_PICKS);
+  // Her experiences (2026-11-05): the carts and inflatables by their photos, the stations by words; no people. At most
+  // PARTY_PICKS pieces with the backdrop and table in all, the parts first (2026-11-06).
+  const xpAll = partyExperiences(Array.isArray(body.experiences) ? body.experiences.filter((x): x is string => typeof x === "string").slice(0, 20) : []);
+  const xRoom = PARTY_PICKS - extras.length;
+  const xp = { photos: xpAll.photos.slice(0, Math.max(0, xRoom)), stations: xpAll.stations.slice(0, Math.max(0, xRoom - Math.min(xRoom, xpAll.photos.length))) };
   if ([...pictures, ...extras.map((e) => e.bytes)].some((b) => b.length > MAX_PICTURE_BYTES)) return NextResponse.json({ error: "A picture is too big." }, { status: 413 });
   const falKey = process.env.FAL_KEY;
   if (!falKey) return NextResponse.json({ error: "Renders are not available right now." }, { status: 503 });
@@ -82,21 +91,22 @@ export async function POST(req: NextRequest) {
     if (!taken.ok) return NextResponse.json({ error: taken.error, signin: taken.signin, limited: taken.limited }, { status: taken.status });
     // Each a picture, and only one: re-encoded here, at most 1024 px long (two go in: the engine's price is by size).
     const images = await Promise.all(pictures.map((b) => sharp(b).resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 88 }).toBuffer()));
-    // The experiences' photos: one picture, a sheet of them when more than one.
+    // The experiences' photos and the other parts' pictures, each one of its own: three at most, so the second photo
+    // takes four pictures (well under fal's 9 MP).
     const xPhotos = (await Promise.all(xp.photos.map((id) => experiencePhoto(PARTY_EXPERIENCE_PHOTOS[id]!.pic, req.nextUrl.origin).then((b) => ({ id, b })).catch(() => null))))
       .filter((x): x is { id: (typeof xp.photos)[number]; b: Buffer } => !!x);
-    const xImages = xPhotos.length === 0 ? [] : [xPhotos.length === 1
-      ? await sharp(xPhotos[0].b).resize({ width: 768, height: 768, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 86 }).toBuffer()
-      : await sheetJpeg(xPhotos.map((x) => x.b))];
-    // The other parts smaller: each is one piece of the picture. All on one sheet when they don't fit in the eight
-    // (with the experiences' picture and the chair she chose).
-    const sheet = extras.length > 1 && images.length + extras.length + xImages.length + (table?.enabled ? 1 : 0) > MAX_PARTY_IMAGES;
-    const extraImages = sheet ? [await sheetJpeg(extras.map((e) => e.bytes))]
-      : await Promise.all(extras.map((e) => sharp(e.bytes).resize({ width: 768, height: 768, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 86 }).toBuffer()));
+    const small = (b: Buffer) => sharp(b).resize({ width: 768, height: 768, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 86 }).toBuffer();
+    const xImages = await Promise.all(xPhotos.map((x) => small(x.b)));
+    const extraImages = await Promise.all(extras.map((e) => small(e.bytes)));
+    // Everything she designed in two photographs (2026-11-06, the owner: "saçmaladı render backdropta özellikle" — ten
+    // pieces at once spoiled the backdrop; then "a olsun"): first the backdrop and the kids' table, kept exact; then that
+    // photo in the middle of a wider canvas (wideCanvas), the setting carried on at its sides and the pieces she picked
+    // added there (partyAddPrompt).
+    const more = extras.length > 0 || xImages.length > 0 || xp.stations.length > 0;
     // Her table's and chair's own option photos (2026-11-04, the owner: "Birebir benim seçimlerim olmalı masa sandalye
     // backdrop vs"), small: the top view already shows the rest. One that can't be read is left out.
-    // Room left for them (eight pictures at most): the chair first, then the table's photo.
-    const room = MAX_PARTY_IMAGES - images.length - extraImages.length - xImages.length;
+    // Room left for them (seven pictures at most): the chair first, then the table's photo.
+    const room = MAX_PARTY_IMAGES - images.length;
     const refs = (table?.enabled ? partyReferences(table, theme.id) : []).sort((a, b) => Number(b.key === "chairs") - Number(a.key === "chairs")).slice(0, Math.max(0, room))
       .sort((a, b) => Number(a.key === "chairs") - Number(b.key === "chairs"));
     const refPics = (await Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin, 512).then((u) => ({ key: r.key, u })).catch(() => null)))).filter((r): r is { key: (typeof refs)[number]["key"]; u: string } => !!r);
@@ -107,19 +117,26 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const send = (o: unknown) => controller.enqueue(ndjsonLine(o));
-        try {
+        const uri = (b: Buffer) => `data:image/jpeg;base64,${b.toString("base64")}`;
+        const photo = async (prompt: string, image_urls: string[], ms: number, image_size: { width: number; height: number } = SIZE) => {
           const result = await fal.subscribe(MODEL, {
-            input: {
-              prompt: partyPrompt({ table, decor: { ...defaultConfig().decor, ...readDecor(body.decor) }, theme: theme.id }, setting, { ...has, refs: refPics.map((r) => r.key), extras: extras.map((e) => e.part), sheet, experiences: xPhotos.map((x) => x.id), stations: xp.stations }),
-              image_urls: [...[...images, ...extraImages, ...xImages].map((b) => `data:image/jpeg;base64,${b.toString("base64")}`), ...refPics.map((r) => r.u)], num_images: 1, output_format: "jpeg",
-              image_size: SIZE, seed: 777,
-            } as never,
-            abortSignal: AbortSignal.timeout(130_000),
+            input: { prompt, image_urls, num_images: 1, output_format: "jpeg", image_size, seed: 777 } as never,
+            abortSignal: AbortSignal.timeout(ms),
           });
           const url = (result.data as { images?: { url?: string }[] })?.images?.[0]?.url;
           if (!url) throw new Error("no party image");
           const made = await renderJpeg(url);
           if (!made) throw new Error("the party render could not be read");
+          return made;
+        };
+        try {
+          const until = Date.now() + 140_000;
+          const main = await photo(
+            partyPrompt({ table, decor: { ...defaultConfig().decor, ...readDecor(body.decor) }, theme: theme.id }, setting, { ...has, refs: refPics.map((r) => r.key) }),
+            [...images.map(uri), ...refPics.map((r) => r.u)], more ? 70_000 : 130_000);
+          const made = !more ? main : await photo(
+            partyAddPrompt(setting, { extras: extras.map((e) => e.part), experiences: xPhotos.map((x) => x.id), stations: xp.stations }),
+            [uri(await wideCanvas(main)), ...extraImages.map(uri), ...xImages.map(uri)], Math.max(30_000, until - Date.now()), WIDE);
           // A photographer's edit — white balance, exposure, shadows, contrast, vibrance (lib/photoGrade.ts).
           const jpeg = await gradePhoto(made).catch(() => made);
           send({ url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });

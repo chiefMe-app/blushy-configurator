@@ -30,3 +30,20 @@ export async function experiencePhoto(pic: string, origin: string): Promise<Buff
     return Buffer.from(await res.arrayBuffer());
   });
 }
+
+/** The second photograph's size: as tall as the first, half as wide again — room at both sides. */
+export const WIDE = { width: 2016, height: 896 };
+
+/**
+ * The first photograph at its full height in the middle of a wider white canvas (2026-11-06): the second photograph
+ * carries the setting on into the white at both sides, and the pieces she picked stand there. Asked in words, or with
+ * the photo made smaller inside a frame, the engine kept the first framing and squeezed the pieces in or left them out;
+ * given a wider canvas and a wider photograph, it widens the scene.
+ */
+export async function wideCanvas(photo: Buffer): Promise<Buffer> {
+  const middle = await sharp(photo).resize({ height: WIDE.height }).toBuffer();
+  const w = (await sharp(middle).metadata()).width ?? WIDE.width;
+  return sharp({ create: { width: WIDE.width, height: WIDE.height, channels: 3, background: "#ffffff" } })
+    .composite([{ input: middle, left: Math.max(0, Math.round((WIDE.width - w) / 2)), top: 0 }])
+    .jpeg({ quality: 90 }).toBuffer();
+}

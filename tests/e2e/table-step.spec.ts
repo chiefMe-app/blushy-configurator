@@ -1054,7 +1054,7 @@ test("VN2 the venue step: no photo upload; indoors or outdoors, then the backdro
   await card.getByTestId("party-part-popcorn").click();
   await expect(card.getByTestId("party-part-popcorn")).toHaveAttribute("aria-pressed", "false");
   await expect(card.getByText("Popcorn cart · not in the picture")).toBeVisible();
-  await expect(card.getByTestId("party-too-many")).toHaveCount(0); // four pieces: they fit
+  await expect(card.getByTestId("party-pick-count")).toContainText("1 of 3 picked");
   await card.getByRole("button", { name: "See my party indoors ✨" }).click();
   await expect.poll(() => calls().length).toBe(3);
   const picked = JSON.parse(calls()[2].postData()!);
