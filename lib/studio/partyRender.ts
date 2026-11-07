@@ -47,34 +47,47 @@ export function partyPicked(available: readonly string[], pick?: readonly string
 export const PARTY_EXTRA_NAMES: Record<PartyExtra, string> = { adults: "Grown-ups' table", cake: "Cake & sweets", welcome: "Welcome board", giveaways: "Giveaways", helium: "Helium balloons", pinata: "Piñata" };
 /** Each in the checklist of what the photograph shows. */
 const EXTRA_LIST: Record<PartyExtra, string> = { adults: "the grown-ups' table", cake: "the cake", welcome: "the welcome board", giveaways: "the giveaway boxes", helium: "the helium balloons", pinata: "the piñata" };
-/** Where each stands in the setup, told with its picture ("image 3", "picture 2 of image 3"). */
-const EXTRA_WORDS: Record<PartyExtra, (r: string) => string> = {
-  adults: (r) => `the grown-ups' table of ${r} — drawn there from above, made into a real table set for the grown-ups with its chairs: the same tablecloth, runner, chargers, plates, glasses, napkins, cutlery and centrepiece in the same colours — further back on the left, behind the welcome board's side, apart from the kids' table, seen from the front, not from above, and clearly in the picture: the whole of it, or at least its near half with its chairs and several places set`,
-  cake: (r) => `the cake and sweets of ${r}, on the same stand, cart, table or plinths ${r} shows, on the right, beside the right end of the backdrop, on its own stand or little table, a real cake's size (a tier about 20 cm across), never on the backdrop's plinths or the kids' table, never in front of the backdrop or in the kids' table's place — the cake, its toppers and every sweet exactly as ${r} shows them`,
-  welcome: (r) => `the welcome board of ${r}, standing alone on its own easel at the front, just left of the kids' table and nearest the camera, turned a little towards it — the same shape, colours and pictures, its words copied exactly, letter by letter`,
-  giveaways: (r) => `the giveaway boxes of ${r} on the far left at the front, on exactly the board or little table ${r} shows — its shape, colour, shelves and print — never another stand, cart or shelf; the same boxes, prints and names`,
-  helium: (r) => `the helium balloon bouquets of ${r}, each tied by its ribbons to its own weight on the floor beside the left end of the backdrop, floating free — never tied to, resting on or rising from another piece — the same balloons, foils and colours`,
-  pinata: (r) => `the piñata of ${r}, hanging on its own stand on the far right — the same shape, colours and age`,
+/** The side of the backdrop a piece stands on. */
+export type Side = "left" | "right";
+const otherSide = (s: Side): Side => (s === "left" ? "right" : "left");
+/**
+ * Where each piece stands when the photograph is one (2026-11-05): the welcome board, the helium and the carts on the
+ * left, the cake, the giveaways, the piñata and the inflatables on the right. With four or five pieces the photograph
+ * is two (partySides), each side's pieces in one, and a piece may be sent to the other side. The giveaways' board and
+ * the welcome board — both white boards with her name on — are never on the same side: put together, the engine made
+ * them one board every time (2026-11-07, four test renders); apart, every piece came out.
+ */
+export const NATURAL_SIDE: Record<string, Side> = {
+  adults: "left", welcome: "left", helium: "left", popcorn: "left", cotton_candy: "left", slime: "left", cupcake: "left",
+  cake: "right", giveaways: "right", pinata: "right", bouncy_castle: "right", soft_play: "right", ball_pit: "right", face_painting: "right", dj: "right", painting: "right",
+};
+/** Where each stands in the setup, told with its picture ("image 3", "picture 2 of image 3") and its side. */
+const EXTRA_WORDS: Record<PartyExtra, (r: string, s: Side) => string> = {
+  adults: (r, s) => `the grown-ups' table of ${r} — drawn there from above, made into a real table set for the grown-ups with its chairs: the same tablecloth, runner, chargers, plates, glasses, napkins, cutlery and centrepiece in the same colours — further back on the ${s}, apart from the kids' table, seen from the front, not from above, and clearly in the picture: the whole of it, or at least its near half with its chairs and several places set`,
+  cake: (r, s) => `the cake and sweets of ${r}, on the same stand, cart, table or plinths ${r} shows, on the ${s}, in front of the ${s} end of the backdrop and a little nearer the camera, on its own stand or little table, a real cake's size (a tier about 20 cm across), never on the backdrop's plinths or the kids' table, never in front of the backdrop or in the kids' table's place — the cake, its toppers and every sweet exactly as ${r} shows them`,
+  welcome: (r, s) => `the welcome board of ${r}, standing alone on its own easel at the front, just ${s} of the kids' table and nearest the camera, turned a little towards it — the same shape, colours and pictures, its words copied exactly, letter by letter`,
+  giveaways: (r, s) => `the giveaway boxes of ${r} on the far ${s} at the front, on exactly the board or little table ${r} shows — its shape, colour, shelves and print — never another stand, cart or shelf; the same boxes, prints and names`,
+  helium: (r, s) => `the helium balloon bouquets of ${r}, each tied by its ribbons to its own weight on the floor beside the ${s} end of the backdrop, floating free — never tied to, resting on or rising from another piece — the same balloons, foils and colours`,
+  pinata: (r, s) => `the piñata of ${r}, hanging on its own stand on the far ${s} — the same shape, colours and age`,
 };
 
 /**
- * Her experiences in the picture (2026-11-05): the carts and the inflatables by their own photos (one sheet), the
- * stations that are things by words. A show, a host or a photographer is a person: the picture has no people, so
- * they stay out of it.
+ * Her experiences in the picture (2026-11-05): the carts and the inflatables by their own photos, the stations that
+ * are things by words. A show, a host or a photographer is a person: the picture has no people, so they stay out of it.
  */
-export const PARTY_EXPERIENCE_PHOTOS: Partial<Record<ExperienceId, { pic: string; words: string }>> = {
-  popcorn: { pic: "popcorn", words: "on the far left and a little further back, the white popcorn cart with its little boxes of popcorn" },
-  cotton_candy: { pic: "cotton-candy", words: "on the far left and a little further back, the white cotton candy cart with its pastel cotton candy" },
-  bouncy_castle: { pic: "bouncy-castle", words: "on the far right and further back, the pastel bouncy castle with its turrets, on the lawn or floor" },
-  soft_play: { pic: "soft-play", words: "on the far right and further back, the soft play corner of foam blocks, steps and a little slide" },
-  ball_pit: { pic: "ball-pit", words: "on the far right, the round ball pit of pastel balls" },
+export const PARTY_EXPERIENCE_PHOTOS: Partial<Record<ExperienceId, { pic: string; words: (s: Side) => string }>> = {
+  popcorn: { pic: "popcorn", words: (s) => `on the far ${s} and a little further back, the white popcorn cart with its little boxes of popcorn` },
+  cotton_candy: { pic: "cotton-candy", words: (s) => `on the far ${s} and a little further back, the white cotton candy cart with its pastel cotton candy` },
+  bouncy_castle: { pic: "bouncy-castle", words: (s) => `on the far ${s} and further back, the pastel bouncy castle with its turrets, on the lawn or floor` },
+  soft_play: { pic: "soft-play", words: (s) => `on the far ${s} and further back, the soft play corner of foam blocks, steps and a little slide` },
+  ball_pit: { pic: "ball-pit", words: (s) => `on the far ${s}, the round ball pit of pastel balls` },
 };
-const STATION_WORDS: Partial<Record<ExperienceId, string>> = {
-  face_painting: "a little face-painting table with its paint palette, brushes and a mirror, a small chair beside it",
-  dj: "a white DJ booth with its decks and two speakers",
-  slime: "a low white workshop table set for slime making: bowls, glitter and little pots, one place for each child",
-  cupcake: "a low white workshop table set for cupcake decorating: plain cupcakes, frosting and sprinkles, one place for each child",
-  painting: "a low white workshop table with little canvases on easels and paints, one place for each child",
+const STATION_WORDS: Partial<Record<ExperienceId, (s: Side) => string>> = {
+  face_painting: (s) => `further out on the ${s}, a little face-painting table with its paint palette, brushes and a mirror, a small chair beside it`,
+  dj: (s) => `further out on the ${s}, a white DJ booth with its decks and two speakers`,
+  slime: (s) => `further out on the ${s}, a low white workshop table set for slime making: bowls, glitter and little pots, one place for each child`,
+  cupcake: (s) => `further out on the ${s}, a low white workshop table set for cupcake decorating: plain cupcakes, frosting and sprinkles, one place for each child`,
+  painting: (s) => `further out on the ${s}, a low white workshop table with little canvases on easels and paints, one place for each child`,
 };
 /** What of her experiences can be shown: photos (in her order), then the stations told in words. */
 export function partyExperiences(picked: readonly string[]): { photos: ExperienceId[]; stations: ExperienceId[] } {
@@ -178,13 +191,18 @@ function tableWords(t: TableSetup, themeId: string, image: (k: TableItemKey) => 
   ].filter(Boolean).join("; ");
 }
 
-/** Left to right across the photograph (2026-11-07): the pieces on each side, outermost first on the left. */
-const ROW_LEFT = ["popcorn", "cotton_candy", "adults", "giveaways", "welcome", "helium"] as const;
-const ROW_RIGHT = ["cake", "pinata", "bouncy_castle", "soft_play", "ball_pit"] as const;
-function rowWords(extras: readonly PartyExtra[], experiences: readonly ExperienceId[]): string {
-  const has = (id: string) => (extras as readonly string[]).includes(id) || (experiences as readonly string[]).includes(id);
-  const name = (id: string) => (isPartyExtra(id) ? EXTRA_LIST[id] : `the ${experienceById(id as ExperienceId)?.name.toLowerCase() ?? id}`);
-  const left = ROW_LEFT.filter(has).map(name), right = ROW_RIGHT.filter(has).map(name);
+/** Left to right across the photograph: each side's pieces, the outermost first on the left, the innermost first on the right. */
+const ROW_LEFT = ["popcorn", "cotton_candy", "adults", "welcome", "helium", "slime", "cupcake"] as const;
+const ROW_RIGHT = ["cake", "giveaways", "pinata", "face_painting", "dj", "painting", "bouncy_castle", "soft_play", "ball_pit"] as const;
+/** A piece in the row, by name. */
+const inRow = (id: string) => (isPartyExtra(id) ? EXTRA_LIST[id] : `the ${experienceById(id as ExperienceId)?.name.toLowerCase() ?? id}`);
+function rowWords(ids: readonly string[], sideOf: (id: string) => Side): string {
+  // A piece sent to the other side stands outermost there.
+  const order = (side: Side, row: readonly string[], outerFirst: boolean) => {
+    const mine = ids.filter((id) => sideOf(id) === side), own = row.filter((id) => mine.includes(id)), sent = mine.filter((id) => !own.includes(id));
+    return (outerFirst ? [...sent, ...own] : [...own, ...sent]).map(inRow);
+  };
+  const left = order("left", ROW_LEFT, true), right = order("right", ROW_RIGHT, false);
   if (left.length + right.length < 2) return "";
   return `From left to right across the photograph, with open ground between each and the next: ${[...left, "the backdrop with the kids' table", ...right].join(", ")}.`;
 }
@@ -196,23 +214,23 @@ const pieceName = (id: string) => (isPartyExtra(id) ? EXTRA_LIST[id] : experienc
  * Each piece on its own (2026-11-05, a party photo of the owner's: the welcome board's words came out on the giveaways'
  * shelf, and the popcorn machine sat on the cake's cart).
  */
-function apartWords(extras: readonly PartyExtra[], experiences: readonly ExperienceId[], main: string[]): string {
+function apartWords(extras: readonly PartyExtra[], experiences: readonly ExperienceId[], main: string[], sideOf: (id: string) => Side): string {
   if (extras.length + experiences.length < 2) return "";
   const all = [...main, ...extras.map(pieceName), ...experiences.map(pieceName)];
-  const inAll = (id: PartyExtra) => extras.includes(id);
+  const has = (id: PartyExtra) => extras.includes(id);
   const carts = experiences.filter((id) => id === "popcorn" || id === "cotton_candy").map((id) => (id === "popcorn" ? "the popcorn cart" : "the cotton candy cart"));
   return [
     "Every piece stands on its own at its own place on the floor, a little apart from the others: never two pieces made into one, never one set on, in or against another, and only one of each — never a piece twice.",
     // 2026-11-06 test: the welcome board's words went onto the popcorn cart beside it.
-    extras.includes("welcome") && carts.length ? `The welcome board stands alone on its easel; ${carts.join(" and ")} ${carts.length > 1 ? "carry" : "carries"} none of its words.` : "",
-    inAll("welcome") && inAll("giveaways") ? "The welcome board and the giveaways' board or table are two separate things standing well apart: the welcome board's words only on the welcome board, the giveaway boxes only on their own board." : "",
-    extras.includes("cake") && carts.length ? `The cake's stand or cart holds only the cake and its sweets; ${carts.join(" and ")} ${carts.length > 1 ? "are carts" : "is a cart"} of ${carts.length > 1 ? "their" : "its"} own, standing apart from it.` : "",
-    extras.includes("pinata") ? "The piñata hangs alone on its own stand." : "",
+    has("welcome") && carts.length ? `The welcome board stands alone on its easel; ${carts.join(" and ")} ${carts.length > 1 ? "carry" : "carries"} none of its words.` : "",
+    has("welcome") && has("giveaways") ? "The welcome board and the giveaways' board or table are two separate things standing well apart: the welcome board's words only on the welcome board, the giveaway boxes only on their own board." : "",
+    has("cake") && carts.length ? `The cake's stand or cart holds only the cake and its sweets; ${carts.join(" and ")} ${carts.length > 1 ? "are carts" : "is a cart"} of ${carts.length > 1 ? "their" : "its"} own, standing apart from it.` : "",
+    has("pinata") ? "The piñata hangs alone on its own stand." : "",
     // 2026-11-07 tests: twice the cake went small onto the top of the giveaways' board, then the welcome board did.
-    inAll("cake") && inAll("giveaways") ? "The cake is on its own stand or little table on the right, at its real size — never on the giveaways' board, its top or its shelves, which stand on the left." : "",
-    inAll("welcome") && inAll("giveaways") ? "The welcome board is on its own wooden easel — never on the giveaways' board, its top or its shelves." : "",
-    rowWords(extras, experiences),
-    inAll("helium") && (inAll("welcome") || inAll("giveaways")) ? `The helium balloons float only from their own weights: ${inAll("welcome") && inAll("giveaways") ? "the welcome board and the giveaways carry" : inAll("welcome") ? "the welcome board carries" : "the giveaways carry"} only the balloons their own pictures show.` : "",
+    has("cake") && has("giveaways") ? "The cake is on its own stand or little table, at its real size — never on the giveaways' board, its top or its shelves." : "",
+    has("welcome") && has("giveaways") ? "The welcome board is on its own wooden easel — never on the giveaways' board, its top or its shelves." : "",
+    rowWords([...extras, ...experiences], sideOf),
+    has("helium") && (has("welcome") || has("giveaways")) ? `The helium balloons float only from their own weights: ${has("welcome") && has("giveaways") ? "the welcome board and the giveaways carry" : has("welcome") ? "the welcome board carries" : "the giveaways carry"} only the balloons their own pictures show.` : "",
     main.length ? `The photograph shows all ${all.length} of them, each once and none left out: ${all.join(", ")}.` : `All ${all.length} are added, each once and none left out: ${all.join(", ")}.`,
   ].filter(Boolean).join(" ");
 }
@@ -233,9 +251,9 @@ export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "the
   const xs = pictures.experiences ?? [];
   const xImage = firstExtra + extraImages;
   const image = (k: TableItemKey) => (refs.includes(k) ? xImage + (xs.length ? 1 : 0) + refs.indexOf(k) : 0);
-  const extraWords = extras.map((e, i) => EXTRA_WORDS[e](sheet ? `picture ${i + 1} of image ${firstExtra}` : `image ${firstExtra + i}`));
+  const extraWords = extras.map((e, i) => EXTRA_WORDS[e](sheet ? `picture ${i + 1} of image ${firstExtra}` : `image ${firstExtra + i}`, NATURAL_SIDE[e]));
   const nth = (n: number, of: number) => (of > 1 ? `picture ${n} of image ${xImage}` : `image ${xImage}`);
-  const xWords = [...xs.map((id, i) => `${PARTY_EXPERIENCE_PHOTOS[id]!.words} exactly as ${nth(i + 1, xs.length)} shows it`), ...(pictures.stations ?? []).map((id) => STATION_WORDS[id]!)];
+  const xWords = [...xs.map((id, i) => `${PARTY_EXPERIENCE_PHOTOS[id]!.words(NATURAL_SIDE[id])} exactly as ${nth(i + 1, xs.length)} shows it`), ...(pictures.stations ?? []).map((id) => STATION_WORDS[id]!(NATURAL_SIDE[id]))];
   const sheetWords = (n: number, what: string) => `Image ${n} is a sheet of ${what} laid side by side on white, numbered in reading order — left to right, the top row first; it is only a list of the pieces, never a layout to copy.`;
   // The table's photo is a shop's set table: only the table itself is hers (2026-11-04 test: its cups and toys came along).
   const named = refs.map((k) => (k === "table"
@@ -259,7 +277,7 @@ export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "the
     extraWords.length
       ? `Around them, in the same one setup and the same photograph, stand the other pieces she designed, each exactly as its own picture shows it — a drawing made into the real thing, a photo copied — at a believable real size beside the table and the backdrop, none hiding the backdrop or the table: ${extraWords.join("; ")}. The camera stands far enough back for every piece to be in the picture.`
       : "",
-    apartWords(extras, [...xs, ...(pictures.stations ?? [])], [pictures.backdrop ? "the balloon backdrop" : "", t ? "the kids' table" : ""].filter(Boolean)),
+    apartWords(extras, [...xs, ...(pictures.stations ?? [])], [pictures.backdrop ? "the balloon backdrop" : "", t ? "the kids' table" : ""].filter(Boolean), (id) => NATURAL_SIDE[id] ?? "right"),
     xWords.length
       ? `Further out at the sides of the same setup, set up and ready with no one at them, stand the party's activities: ${xWords.join("; ")} — each its real size, whole in the picture, none in front of the backdrop or the tables.`
       : "",
@@ -271,27 +289,55 @@ export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "the
 }
 
 /**
+ * How many pieces one photograph takes in (2026-11-07, nine test renders: with five pieces one was always lost or set on
+ * another — the giveaways' board and the welcome board, both white boards with her name, became one; with three, every
+ * piece came out every time).
+ */
+export const PARTY_PASS = 3;
+/** What the engine sets on the giveaways' shelves when they share a photograph (2026-11-07 tests): the cake went small onto its top, the welcome board became one with it. */
+const SHELF_FOES: readonly string[] = ["welcome", "cake"];
+/**
+ * Four or five pieces: two photographs at once from the same first one, each with one side's pieces (NATURAL_SIDE), then
+ * joined down the middle (stitchSides). The giveaways' board never shares a photograph with the cake or the welcome
+ * board: they go to its other side. A side with too many sends its last movable pieces to the other. Null: one
+ * photograph takes them.
+ */
+export function partySides(ids: readonly string[]): { left: string[]; right: string[] } | null {
+  if (ids.length <= PARTY_PASS) return null;
+  const shelves = ids.includes("giveaways");
+  const fixed = (id: string) => shelves && (id === "giveaways" || SHELF_FOES.includes(id));
+  const sideOf = (id: string): Side => (shelves && SHELF_FOES.includes(id) ? otherSide(NATURAL_SIDE.giveaways) : NATURAL_SIDE[id] ?? "right");
+  const left = ids.filter((id) => sideOf(id) === "left"), right = ids.filter((id) => sideOf(id) === "right");
+  const balance = (from: string[], to: string[]) => { for (let i = from.length - 1; from.length > PARTY_PASS && i >= 0; i--) if (!fixed(from[i])) to.push(...from.splice(i, 1)); };
+  balance(left, right); balance(right, left);
+  return { left, right };
+}
+
+/**
  * The second of two photographs (2026-11-06, the owner: "saçmaladı render backdropta özellikle" — ten pieces in one
  * photo spoiled the backdrop, put the welcome board in twice and left the carts out): image 1 is the photograph of the
- * backdrop and the kids' table, kept as it is, and the other pieces she designed are added into the room left around
- * them. Image 2 on: the parts (each a picture, or one sheet), then the experiences (one picture or a sheet).
+ * backdrop and the kids' table in the middle of a wider white canvas, kept as it is, and the pieces she picked are
+ * added into the new room at its sides. Image 2 on: the parts, then the experiences' photos. With a `side`, this is
+ * one of two photographs (partySides): every piece in it stands on that side, the other side stays open.
  */
-export function partyAddPrompt(setting: PartySetting, pictures: { extras: PartyExtra[]; experiences?: ExperienceId[]; stations?: ExperienceId[] }): string {
-  // Each piece a picture of its own (PARTY_PICKS at most): the parts from image 2, then the experiences' photos.
+export function partyAddPrompt(setting: PartySetting, pictures: { extras: PartyExtra[]; experiences?: ExperienceId[]; stations?: ExperienceId[] }, side?: Side): string {
   const extras = pictures.extras;
   const xImage = 2 + extras.length;
   const xs = pictures.experiences ?? [], stations = pictures.stations ?? [];
-  const extraWords = extras.map((e, i) => EXTRA_WORDS[e](`image ${2 + i}`));
-  const xWords = [...xs.map((id, i) => `${PARTY_EXPERIENCE_PHOTOS[id]!.words} exactly as image ${xImage + i} shows it`), ...stations.map((id) => STATION_WORDS[id]!)];
+  const sideOf = (id: string): Side => side ?? NATURAL_SIDE[id] ?? "right";
+  const extraWords = extras.map((e, i) => EXTRA_WORDS[e](`image ${2 + i}`, sideOf(e)));
+  const xWords = [...xs.map((id, i) => `${PARTY_EXPERIENCE_PHOTOS[id]!.words(sideOf(id))} exactly as image ${xImage + i} shows it`), ...stations.map((id) => STATION_WORDS[id]!(sideOf(id)))];
+  const place = setting === "outdoor" ? "garden" : "room";
   return [
     "Image 1 is the finished photograph of this children's birthday party — its balloon backdrop and its kids' table — set in the middle of a wider white canvas, white at both sides.",
     `Make it one wider photograph of the same party: fill the white at both sides by carrying the same ${setting === "outdoor" ? "garden — the same lawn, hedges, trees and sky" : "room — the same floor, walls and windows"} — on outward, in the same light and seen by the same camera, seamless, with no frame, border or edge left.`,
     "Keep the middle exactly as image 1 shows it: the backdrop with its boards, balloons, colours and words, the kids' table with its chairs and every place on it — nothing in it moved, changed, redrawn, covered or taken away.",
     // 2026-11-07, the owner: "table setup neden yok?" — the second photo had lost the kids' table.
-    "The kids' table and its chairs stay in the photograph, in front of the backdrop just where image 1 has them: no other table, stand or piece ever takes their place.",
-    extraWords.length ? `In the wider space at both sides of them, in the same photograph, add the other pieces she designed, each exactly as its own picture shows it — a drawing made into the real thing, a photo copied — at a believable real size, standing on the ground, none in front of the backdrop or the table: ${extraWords.join("; ")}.` : "",
-    xWords.length ? `${extraWords.length ? "Further out" : "In the wider space"} at the sides, set up and ready with no one at them, add the party's activities: ${xWords.join("; ")} — each its real size, whole in the picture, none in front of the backdrop or the tables.` : "",
-    apartWords(extras, [...xs, ...stations], []),
+    "The kids' table and its chairs stay in the photograph, in front of the backdrop just where image 1 has them: no other table, stand or piece ever takes their place. The backdrop and the table stay in the very middle of the photograph, not slid left or right, not made bigger or smaller: the new room is only at the sides.",
+    extraWords.length ? `In the wider space ${side ? `on the ${side} of them` : "at both sides of them"}, in the same photograph, add the other pieces she designed, each exactly as its own picture shows it — a drawing made into the real thing, a photo copied — at a believable real size, standing on the ground, none in front of the backdrop or the table: ${extraWords.join("; ")}.` : "",
+    xWords.length ? `${extraWords.length ? "Further out" : "In the wider space"} ${side ? `on the ${side}` : "at the sides"}, set up and ready with no one at them, add the party's activities: ${xWords.join("; ")} — each its real size, whole in the picture, none in front of the backdrop or the tables.` : "",
+    side ? `Everything added stands on the ${side} of the backdrop and the kids' table; the ${otherSide(side)} side of the photograph stays open ${place}, with nothing added there.` : "",
+    apartWords(extras, [...xs, ...stations], [], sideOf),
     "The rooms, walls and floors the other pictures show are only where they were drawn: leave them out; every piece added stands in the setting of image 1, in its light, with soft natural shadows on the ground.",
     "Nothing else added: no people, no children, no cartoon or licensed characters, no extra decorations, furniture or words beyond those in the pictures.",
   ].filter(Boolean).join(" ");

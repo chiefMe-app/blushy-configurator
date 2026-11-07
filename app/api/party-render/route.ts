@@ -12,8 +12,8 @@ import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
 import { gradePhoto } from "@/lib/photoGrade";
 import { readTableSetup } from "@/lib/studio/tableSetup";
-import { MAX_PARTY_IMAGES, PARTY_EXPERIENCE_PHOTOS, PARTY_EXTRAS, PARTY_PICKS, partyAddPrompt, partyExperiences, partyPrompt, partyReferences, type PartySetting } from "@/lib/studio/partyRender";
-import { experiencePhoto, wideCanvas, WIDE } from "@/lib/studio/partySheet";
+import { MAX_PARTY_IMAGES, PARTY_EXPERIENCE_PHOTOS, PARTY_EXTRAS, PARTY_PICKS, partyAddPrompt, partyExperiences, partyPrompt, partyReferences, partySides, type PartySetting, type Side } from "@/lib/studio/partyRender";
+import { experiencePhoto, stitchSides, wideCanvas, WIDE } from "@/lib/studio/partySheet";
 import { optionPicture } from "@/lib/studio/tableOptionPicture";
 
 export const runtime = "nodejs";
@@ -140,9 +140,23 @@ export async function POST(req: NextRequest) {
             [...images.map(uri), ...refPics.map((r) => r.u)], more ? 70_000 : 130_000);
           // The first photo made here: back to the builder for next time (her picks change; the backdrop and table don't).
           if (more && !mainPhoto && mainKey) send({ also: { key: mainKey, url: uri(await gradePhoto(main).catch(() => main)) } });
-          const made = !more ? main : await photo(
-            partyAddPrompt(setting, { extras: extras.map((e) => e.part), experiences: xPhotos.map((x) => x.id), stations: xp.stations }),
-            [uri(await wideCanvas(main)), ...extraImages.map(uri), ...xImages.map(uri)], Math.max(30_000, until - Date.now()), WIDE);
+          const made = !more ? main : await (async () => {
+            const canvas = uri(await wideCanvas(main));
+            // The pieces she picked — all, or one side's — added to the first photo in its wider canvas.
+            const some = (keep: readonly string[] | null, side?: Side) => {
+              const ex = extras.map((e, k) => ({ part: e.part, image: extraImages[k] })).filter((e) => !keep || keep.includes(e.part));
+              const px = xPhotos.map((x, k) => ({ id: x.id, image: xImages[k] })).filter((x) => !keep || keep.includes(x.id));
+              const st = xp.stations.filter((id) => !keep || keep.includes(id));
+              return photo(partyAddPrompt(setting, { extras: ex.map((e) => e.part), experiences: px.map((x) => x.id), stations: st }, side),
+                [canvas, ...ex.map((e) => uri(e.image)), ...px.map((x) => uri(x.image))], Math.max(30_000, until - Date.now()), WIDE);
+            };
+            const sides = partySides([...extras.map((e) => e.part), ...xPhotos.map((x) => x.id), ...xp.stations]);
+            if (!sides) return some(null);
+            // Four or five pieces (2026-11-07, the owner: "table setup neden yok? pinata bozuk" — with five in one photo a
+            // piece was always lost or set on another): one photograph a side, both at once, joined down the middle.
+            const [l, r] = await Promise.all([some(sides.left, "left"), some(sides.right, "right")]);
+            return stitchSides(l, r);
+          })();
           // A photographer's edit — white balance, exposure, shadows, contrast, vibrance (lib/photoGrade.ts).
           const jpeg = await gradePhoto(made).catch(() => made);
           send({ url: `data:image/jpeg;base64,${jpeg.toString("base64")}` });

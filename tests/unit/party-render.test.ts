@@ -5,7 +5,8 @@ import { NextRequest } from "next/server";
 import sharp from "sharp";
 import { defaultConfig, themeById, type BuilderConfig } from "@/lib/config";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
-import { backdropWords, partyExperiences, partyPicked, partyPieces, partyPrompt, partyReferences, partyRenderKey, seatsWords } from "@/lib/studio/partyRender";
+import { backdropWords, partyAddPrompt, partyExperiences, partyPicked, partyPieces, partyPrompt, partyReferences, partyRenderKey, partySides, seatsWords } from "@/lib/studio/partyRender";
+import { stitchSides } from "@/lib/studio/partySheet";
 import { itemWords } from "@/lib/studio/tableRender";
 import { resetRenderGuard } from "@/lib/renderGuard";
 import { readNdjson } from "@/lib/ndjson";
@@ -136,35 +137,46 @@ describe("the party's render", () => {
   // Everything in two photographs (2026-11-06, the owner: "saçmaladı render backdropta özellikle"): the backdrop and the
   // table first, room left around them; then that photo kept, the other pieces added.
   type Call = [string, { input: { prompt: string; image_urls: string[] } }];
-  it("everything: the backdrop and the table first, kept exact; then that photo in a wider canvas, the first five parts added", async () => {
+  it("everything: the backdrop and the table first, kept exact; then that photo in a wider canvas, five parts added in two photographs, a side each", async () => {
     subscribe.mockImplementation(async () => ({ data: { images: [{ url: "https://fal.example/x.jpg" }] } }));
     const pic = async (bg: string) => `data:image/jpeg;base64,${(await sharp({ create: { width: 900, height: 900, channels: 3, background: bg } }).jpeg().toBuffer()).toString("base64")}`;
     const c = party();
     const extras = await Promise.all(["cake", "welcome", "giveaways", "helium", "pinata", "nope"].map(async (part) => ({ part, picture: await pic("#e0d0f0") })));
     const got = await lines(await post({ theme: "unicorn", setting: "outdoor", key: "abc123", table: c.table, backdrop: await pic("#f3c6cc"), tablePicture: await pic("#c6e0f3"), extras, experiences: ["popcorn"], mainKey: "main01" }));
     expect(got.at(-1)).toMatchObject({ done: true });
-    expect(subscribe).toHaveBeenCalledTimes(2);
-    const [[, first], [, second]] = subscribe.mock.calls as Call[];
+    expect(subscribe).toHaveBeenCalledTimes(3);
+    const [[, first], [, second], [, third]] = subscribe.mock.calls as Call[];
     // The first: her backdrop, the top view, the table's and the chair's photos — no other part.
     expect(first.input.image_urls).toHaveLength(4);
     expect(first.input.prompt).toContain("Image 3 is the table she chose");
     expect(first.input.prompt).not.toContain("the cake and sweets");
     expect(first.input).toMatchObject({ image_size: { width: 1344, height: 896 } });
-    // The second: the first photo at full height in a wider white canvas, then five parts (PARTY_PICKS) — the popcorn
-    // cart stays out; a wider photograph.
-    expect(second.input).toMatchObject({ image_size: { width: 2016, height: 896 } });
-    expect(second.input.image_urls).toHaveLength(6);
-    expect(await sharp(Buffer.from(second.input.image_urls[0].split(",")[1], "base64")).metadata()).toMatchObject({ width: 2016, height: 896 });
-    expect(second.input.prompt).toContain("set in the middle of a wider white canvas, white at both sides");
-    expect(second.input.prompt).toContain("Keep the middle exactly as image 1 shows it");
-    // 2026-11-07, the owner: "table setup neden yok?"
-    expect(second.input.prompt).toContain("The kids' table and its chairs stay in the photograph");
-    expect(second.input.prompt).toContain("From left to right across the photograph");
-    expect(second.input.prompt).toContain("the cake and sweets of image 2");
-    expect(second.input.prompt).toContain("the giveaway boxes of image 4");
-    expect(second.input.prompt).toContain("the piñata of image 6");
-    expect(second.input.prompt).not.toContain("popcorn");
-    expect(second.input.prompt).toContain("All 5 are added, each once and none left out");
+    // Then two at once (partySides): the cake, the welcome board and the helium on the left, the giveaways and the piñata
+    // on the right — the giveaways' shelves never with the cake or the welcome board — each from the first photo at full
+    // height in a wider white canvas; the popcorn cart stays out.
+    for (const add of [second, third]) {
+      expect(add.input).toMatchObject({ image_size: { width: 2016, height: 896 } });
+      expect(await sharp(Buffer.from(add.input.image_urls[0].split(",")[1], "base64")).metadata()).toMatchObject({ width: 2016, height: 896 });
+      expect(add.input.prompt).toContain("set in the middle of a wider white canvas, white at both sides");
+      expect(add.input.prompt).toContain("Keep the middle exactly as image 1 shows it");
+      // 2026-11-07, the owner: "table setup neden yok?"
+      expect(add.input.prompt).toContain("The kids' table and its chairs stay in the photograph");
+      expect(add.input.prompt).not.toContain("popcorn");
+    }
+    expect(second.input.image_urls).toHaveLength(4);
+    expect(second.input.prompt).toContain("the cake and sweets of image 2, on the same stand, cart, table or plinths image 2 shows, on the left, in front of the left end of the backdrop");
+    expect(second.input.prompt).toContain("the welcome board of image 3, standing alone on its own easel at the front, just left of the kids' table");
+    expect(second.input.prompt).toContain("the helium balloon bouquets of image 4");
+    expect(second.input.prompt).not.toContain("giveaway");
+    expect(second.input.prompt).toContain("the right side of the photograph stays open garden");
+    expect(second.input.prompt).toContain("From left to right across the photograph, with open ground between each and the next: the cake, the welcome board, the helium balloons, the backdrop with the kids' table.");
+    expect(second.input.prompt).toContain("All 3 are added, each once and none left out");
+    expect(third.input.image_urls).toHaveLength(3);
+    expect(third.input.prompt).toContain("the giveaway boxes of image 2 on the far right");
+    expect(third.input.prompt).toContain("the piñata of image 3, hanging on its own stand on the far right");
+    expect(third.input.prompt).not.toContain("the cake");
+    expect(third.input.prompt).toContain("the left side of the photograph stays open garden");
+    expect(third.input.prompt).toContain("All 2 are added");
     // The first photo goes back to the builder under its own key, for next time.
     expect(got.find((l) => (l as { also?: unknown }).also)).toMatchObject({ also: { key: "main01" } });
   }, 30_000);
@@ -200,16 +212,52 @@ describe("the party's render", () => {
     const extras = [{ part: "adults", picture: await pic("#e0d0f0") }];
     await lines(await post({ theme: "unicorn", setting: "outdoor", key: "abc123", table: c.table, backdrop: await pic("#f3c6cc"), tablePicture: await pic("#c6e0f3"), extras,
       experiences: ["magician", "popcorn", "face_painting", "bouncy_castle", "nope"] }));
-    const [, { input }] = subscribe.mock.calls[1] as Call;
-    // The first photo, the grown-ups' table, the popcorn cart and the bouncy castle; the face painting by words.
-    expect(input.image_urls).toHaveLength(4);
-    expect(input.prompt).toContain("the grown-ups' table of image 2");
-    expect(input.prompt).toContain("the white popcorn cart with its little boxes of popcorn exactly as image 3 shows it");
-    expect(input.prompt).toContain("bouncy castle with its turrets, on the lawn or floor exactly as image 4 shows it");
-    expect(input.prompt).toContain("a little face-painting table");
-    expect(input.prompt).toContain("All 4 are added");
-    expect(input.prompt).not.toMatch(/magic/i);
+    // Four pieces: two photographs — the grown-ups' table and the popcorn cart on the left, the bouncy castle and the
+    // face painting (by words) on the right.
+    expect(subscribe).toHaveBeenCalledTimes(3);
+    const [, { input: left }] = subscribe.mock.calls[1] as Call;
+    const [, { input: right }] = subscribe.mock.calls[2] as Call;
+    expect(left.image_urls).toHaveLength(3);
+    expect(left.prompt).toContain("the grown-ups' table of image 2");
+    expect(left.prompt).toContain("on the far left and a little further back, the white popcorn cart with its little boxes of popcorn exactly as image 3 shows it");
+    expect(left.prompt).not.toContain("face-painting");
+    expect(right.image_urls).toHaveLength(2);
+    expect(right.prompt).toContain("on the far right and further back, the pastel bouncy castle with its turrets, on the lawn or floor exactly as image 2 shows it");
+    expect(right.prompt).toContain("further out on the right, a little face-painting table");
+    expect(right.prompt).toContain("All 2 are added");
+    expect(right.prompt).not.toMatch(/magic/i);
   }, 30_000);
+
+  it("four or five pieces go in two photographs, a side each; three in one", () => {
+    expect(partySides(["cake", "welcome", "giveaways"])).toBeNull();
+    // The giveaways' shelves never with the cake or the welcome board.
+    expect(partySides(["cake", "welcome", "giveaways", "helium", "pinata"])).toEqual({ left: ["cake", "welcome", "helium"], right: ["giveaways", "pinata"] });
+    expect(partySides(["cake", "giveaways", "helium", "pinata"])).toEqual({ left: ["cake", "helium"], right: ["giveaways", "pinata"] });
+    expect(partySides(["adults", "cake", "welcome", "giveaways", "helium"])).toEqual({ left: ["adults", "cake", "welcome"], right: ["giveaways", "helium"] });
+    // Too many on one side: the last of them cross over.
+    expect(partySides(["adults", "welcome", "giveaways", "helium", "popcorn"])).toEqual({ left: ["adults", "welcome", "helium"], right: ["giveaways", "popcorn"] });
+    expect(partySides(["cake", "pinata", "bouncy_castle", "face_painting"])).toEqual({ left: ["face_painting"], right: ["cake", "pinata", "bouncy_castle"] });
+    // Sent to the other side, a piece's words follow it.
+    expect(partyAddPrompt("outdoor", { extras: ["cake"], experiences: ["popcorn"] }, "right")).toContain("on the far right and a little further back, the white popcorn cart");
+  });
+
+  it("joins two photographs down the middle: the left of one, the right of the other", async () => {
+    const half = (bg: string, side: "left" | "right") => sharp({ create: { width: 2016, height: 896, channels: 3, background: "#ffffff" } })
+      .composite([{ input: { create: { width: 500, height: 896, channels: 3, background: bg } }, left: side === "left" ? 0 : 1516, top: 0 }]).jpeg().toBuffer();
+    const joined = sharp(await stitchSides(await half("#ff0000", "left"), await half("#0000ff", "right")));
+    expect(await joined.metadata()).toMatchObject({ width: 2016, height: 896 });
+    const px = async (x: number) => Array.from(await joined.clone().extract({ left: x, top: 448, width: 1, height: 1 }).raw().toBuffer());
+    expect(await px(100)).toEqual([255, 0, 0].map((v) => expect.closeTo(v, -1)));
+    expect(await px(1900)).toEqual([0, 0, 255].map((v) => expect.closeTo(v, -1)));
+    expect(await px(1008)).toEqual([255, 255, 255].map((v) => expect.closeTo(v, -1)));
+    // The second slid 40 px to the right: lined up on the grey of the middle, narrower by that much, its far right kept.
+    const mark = (bg: string, left: number) => sharp({ create: { width: 2016, height: 896, channels: 3, background: "#ffffff" } })
+      .composite([{ input: { create: { width: 200, height: 896, channels: 3, background: "#808080" } }, left: 908, top: 0 }, { input: { create: { width: 300, height: 896, channels: 3, background: bg } }, left, top: 0 }]).jpeg().toBuffer();
+    const slid = sharp(await stitchSides(await mark("#ff0000", 0), await sharp(await mark("#0000ff", 1716)).extract({ left: 0, top: 0, width: 1976, height: 896 }).extend({ left: 40, background: "#ffffff" }).toBuffer()));
+    expect(await slid.metadata()).toMatchObject({ width: 1976, height: 896 });
+    expect(Array.from(await slid.clone().extract({ left: 1960, top: 448, width: 1, height: 1 }).raw().toBuffer())).toEqual([0, 0, 255].map((v) => expect.closeTo(v, -1)));
+    expect(Array.from(await slid.clone().extract({ left: 1000, top: 448, width: 1, height: 1 }).raw().toBuffer())).toEqual([128, 128, 128].map((v) => expect.closeTo(v, -1)));
+  });
 
   it("picks the pieces she chose, else the first ones, five at most", () => {
     const all = ["cake", "welcome", "giveaways", "pinata", "popcorn", "helium"];
