@@ -81,12 +81,14 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
       // The sketch as an SVG picture of its own, at its square (html-to-image copied only a corner of it here).
       const backdropNode = sketch.current?.querySelector<SVGSVGElement>("svg.bz-sketch") ?? null;
       const tableNode = table.current?.querySelector("svg") ?? null;
+      // Its render, or its drawing when the render can't be read here (2026-11-07: a piece left out of the picture
+      // without a word is worse than its drawing).
       const backdrop = !pieces.backdrop ? null
-        : backdropUrl ? await imageJpeg(backdropUrl, SHOT_WIDTH).catch(() => null)
-        : backdropNode ? await svgJpeg(backdropNode, SHOT_WIDTH).catch(() => null) : null;
+        : (backdropUrl ? await imageJpeg(backdropUrl, SHOT_WIDTH).catch(() => null) : null)
+          ?? (backdropNode ? await svgJpeg(backdropNode, SHOT_WIDTH).catch(() => null) : null);
       const tablePicture = !pieces.table ? null
-        : tableUrl ? await imageJpeg(tableUrl, SHOT_WIDTH).catch(() => null)
-        : tableNode ? await nodeJpeg(tableNode, SHOT_WIDTH).catch(() => null) : null;
+        : (tableUrl ? await imageJpeg(tableUrl, SHOT_WIDTH).catch(() => null) : null)
+          ?? (tableNode ? await nodeJpeg(tableNode, SHOT_WIDTH).catch(() => null) : null);
       // "Everything" (2026-11-05, the owner: "her şey yok bunlarda?"): every part she designed — its real photo when it
       // has a current one, its drawing otherwise.
       const extrasShot: PartyShot["extras"] = [];
@@ -233,8 +235,8 @@ export default function PartyPreview({ config, backdropUrl, tableUrl, render, on
         )}
         {/* The drawings the pictures are taken from, out of sight (the backdrop's sketch, the table's six places). */}
         <div className="bz-party-stage" aria-hidden="true">
-          {pieces.backdrop && !backdropUrl && <div ref={sketch}><div className="art"><LiveSketch config={config} activeId={null} /></div></div>}
-          {pieces.table && !tableUrl && <div ref={table}><TablePlace table={config.table!} theme={theme} mode="six" /></div>}
+          {pieces.backdrop && <div ref={sketch}><div className="art"><LiveSketch config={config} activeId={null} /></div></div>}
+          {pieces.table && <div ref={table}><TablePlace table={config.table!} theme={theme} mode="six" /></div>}
           {/* The other parts' drawings, for those without a real photo (Everything). */}
           {all && <div ref={stage}>
             {extraParts.filter(([, u]) => !u).map(([p]) => (

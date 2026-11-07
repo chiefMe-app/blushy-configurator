@@ -101,7 +101,7 @@ export default function PinataStep({ config, setPinata, onFinish, onSkip, render
           <div className="bz-tb-item">
             <h3>The shape</h3>
             <div className="bz-tb-options" role="radiogroup" aria-label="Piñata shape" data-testid="pinata-shape">
-              {shapes.map((s) => card(p.shape === s.id, () => set({ shape: s.id }),
+              {shapes.map((s) => card(p.shape === s.id, () => set({ shape: s.id, shapeTheme: config.theme }),
                 // eslint-disable-next-line @next/next/no-img-element
                 <img className="photo cutout" style={{ objectFit: "contain" }} src={shapePicture(s.id).src} alt="" loading="lazy" />, s.name, s.own ? `Your ${theme.name} theme` : "", "", s.id))}
             </div>

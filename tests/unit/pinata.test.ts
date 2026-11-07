@@ -102,8 +102,19 @@ describe("piñata", () => {
 
 describe("the piñata kept and rendered", () => {
   it("is kept with the design on the device", () => {
-    const config = { ...defaultConfig(), pinata: { ...defaultPinata({ age: "7" }), kind: "shape" as const, shape: "rocket" as const } };
+    const config = { ...defaultConfig(), pinata: { ...defaultPinata({ age: "7" }), kind: "shape" as const, shape: "rocket" as const, shapeTheme: defaultConfig().theme } };
     expect(fromDraft(JSON.stringify(toDraft(config, 2, 0)))?.config.pinata).toMatchObject({ kind: "shape", shape: "rocket", number: "7" });
+  });
+
+  // 2026-11-07, the owner: "pinata bozuk" — a Unicorn party's piñata kept as a Frozen snowflake from before.
+  it("opened again, another theme's shape gives way to this theme's; one she picked here stays", () => {
+    const kept = (p: object) => fromDraft(JSON.stringify(toDraft({ ...defaultConfig(), theme: "unicorn", pinata: { ...defaultPinata({ themeId: "unicorn" }), kind: "shape" as const, ...p } } as never, 2, 0)))?.config.pinata;
+    const { shapeTheme: _, ...legacy } = { ...defaultPinata(), shape: "snowflake" as const };
+    void _;
+    expect(fromDraft(JSON.stringify(toDraft({ ...defaultConfig(), theme: "unicorn", pinata: { ...legacy, kind: "shape" } } as never, 2, 0)))?.config.pinata).toMatchObject({ shape: "unicorn", shapeTheme: "unicorn" });
+    expect(kept({ shape: "snowflake", shapeTheme: "frozen" })).toMatchObject({ shape: "unicorn" });
+    expect(kept({ shape: "snowflake", shapeTheme: "unicorn" })).toMatchObject({ shape: "snowflake" });
+    expect(kept({ shape: "heart", shapeTheme: "frozen" })).toMatchObject({ shape: "heart" });
   });
 
   const post = (body: unknown) => POST(new NextRequest("http://localhost/api/pinata-render", { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" } }));

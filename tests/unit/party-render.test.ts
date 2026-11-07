@@ -157,6 +157,9 @@ describe("the party's render", () => {
     expect(await sharp(Buffer.from(second.input.image_urls[0].split(",")[1], "base64")).metadata()).toMatchObject({ width: 2016, height: 896 });
     expect(second.input.prompt).toContain("set in the middle of a wider white canvas, white at both sides");
     expect(second.input.prompt).toContain("Keep the middle exactly as image 1 shows it");
+    // 2026-11-07, the owner: "table setup neden yok?"
+    expect(second.input.prompt).toContain("The kids' table and its chairs stay in the photograph");
+    expect(second.input.prompt).toContain("From left to right across the photograph");
     expect(second.input.prompt).toContain("the cake and sweets of image 2");
     expect(second.input.prompt).toContain("the giveaway boxes of image 4");
     expect(second.input.prompt).toContain("the piñata of image 6");

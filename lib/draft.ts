@@ -7,7 +7,7 @@ import { readTableSetup } from "@/lib/studio/tableSetup";
 import { readAdultTable } from "@/lib/studio/adultTable";
 import { readWelcomeBoard } from "@/lib/studio/welcomeBoard";
 import { readGiveaways } from "@/lib/studio/giveaways";
-import { readPinata } from "@/lib/studio/pinata";
+import { pinataOnOpen, readPinata } from "@/lib/studio/pinata";
 import { readHelium } from "@/lib/studio/helium";
 import { experiencesFromAddOns, readExperiences } from "@/lib/studio/experiences";
 import { readCake } from "@/lib/studio/cake";
@@ -82,7 +82,7 @@ export function fromDraft(raw: string | null): RestoredDraft | null {
   const giveaways = readGiveaways(c.giveaways);
   if (giveaways) config.giveaways = giveaways;
   const pinata = readPinata(c.pinata);
-  if (pinata) config.pinata = pinata;
+  if (pinata) config.pinata = pinataOnOpen(pinata, config.theme);
   const cake = readCake(c.cake);
   if (cake) config.cake = cake;
   const helium = readHelium(c.helium);

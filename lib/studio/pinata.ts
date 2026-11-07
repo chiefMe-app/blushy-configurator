@@ -42,7 +42,19 @@ export const THEME_PINATAS: Record<string, PinataShape[]> = {
  */
 export function pinataForTheme(p: Pinata, from: string, to: string): Pinata {
   const old = THEME_PINATAS[from] ?? ["star"], own = THEME_PINATAS[to] ?? ["star"];
-  return from !== to && old.includes(p.shape) && !own.includes(p.shape) ? { ...p, shape: own[0] } : p;
+  return from !== to && old.includes(p.shape) && !own.includes(p.shape) ? { ...p, shape: own[0], shapeTheme: to } : p;
+}
+/**
+ * The piñata of a design opened again (2026-11-07, the owner: "pinata bozuk" — a Unicorn party's piñata still a
+ * Frozen snowflake, made before the theme carried its shape over): the theme its shape was chosen in, when it is
+ * not this one, gives way as a theme change does. A piñata kept before that was noted (`shapeTheme`) whose shape is
+ * another theme's first — the one that theme starts with — and not this theme's own was that theme's.
+ */
+export function pinataOnOpen(p: Pinata, themeId: string): Pinata {
+  const own = THEME_PINATAS[themeId] ?? ["star"];
+  const from = p.shapeTheme ?? (own.includes(p.shape) ? themeId : Object.keys(THEME_PINATAS).find((t) => THEME_PINATAS[t][0] === p.shape) ?? themeId);
+  const q = pinataForTheme(p, from, themeId);
+  return q !== p ? q : p.shapeTheme ? p : { ...p, shapeTheme: from };
 }
 /** The shapes in the order shown: the theme's own, then the rest. */
 export function pinataShapesFor(themeId: string) {
@@ -94,6 +106,8 @@ export interface Pinata {
   colours: string[];
   /** The theme-shape piñata. */
   shape: PinataShape;
+  /** The theme the shape was chosen in (2026-11-07): another theme's own shape gives way to this theme's. */
+  shapeTheme?: string;
   size: PinataSize;
   opening: PinataOpening;
   fillings: PinataFilling[];
@@ -114,6 +128,7 @@ export function defaultPinata(seed: { themeId?: string; age?: string; colours?: 
   return {
     enabled: true, kind: "number", number: cleanAge(seed.age) || "5", colours: colours.length ? colours : ["#F8BBD0", "#DDD6FE", "#BAE6FD"],
     shape: (THEME_PINATAS[seed.themeId ?? ""] ?? ["star"])[0], size: "medium", opening: "pull", fillings: ["candy", "toys", "confetti"],
+    ...(seed.themeId ? { shapeTheme: seed.themeId } : {}),
   };
 }
 
@@ -144,6 +159,7 @@ export function readPinata(raw: unknown): Pinata | undefined {
     number: cleanAge(r.number) || base.number,
     colours: colours.length ? colours : base.colours,
     shape: PINATA_SHAPES.find((s) => s.id === r.shape)?.id ?? base.shape,
+    ...(typeof r.shapeTheme === "string" && /^[a-z_]{1,40}$/.test(r.shapeTheme) ? { shapeTheme: r.shapeTheme } : {}),
     size: PINATA_SIZES.find((s) => s.id === r.size)?.id ?? base.size,
     opening: PINATA_OPENINGS.find((o) => o.id === r.opening)?.id ?? base.opening,
     fillings: Array.isArray(r.fillings) ? PINATA_FILLINGS.filter((f) => (r.fillings as unknown[]).includes(f.id)).map((f) => f.id) : base.fillings,
