@@ -62,7 +62,7 @@ import type { AfterSignInAction } from "@/lib/account";
 import { adultCounts, defaultAdultTable } from "@/lib/studio/adultTable";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
 import { defaultWelcomeBoard, welcomeRenderKey } from "@/lib/studio/welcomeBoard";
-import { PARTY_EXTRAS, partyExperiences, partyPicked, partyPieces, partyRenderKey, type PartyExtra } from "@/lib/studio/partyRender";
+import { PARTY_EXTRAS, partyExperiences, partyMainExtras, partyPicked, partyPieces, partyRenderKey, type PartyExtra } from "@/lib/studio/partyRender";
 import PartyPreview, { settingOf, type PartyShot } from "@/components/builder/venue/PartyPreview";
 import { tableRenderKey } from "@/lib/studio/tableRender";
 import { usePieceRender } from "@/components/builder/usePieceRender";
@@ -345,8 +345,10 @@ export default function ConfigurePage() {
   const partyXp = partyAll ? partyExperiences(partyExperienceIds.filter((id) => partyPicks.has(id))) : { photos: [], stations: [] };
   const partyXpIds = [...partyXp.photos, ...partyXp.stations];
   const partyKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting, partyExtras, partyXpIds) : "";
-  // The backdrop and table alone: the first of Everything's two photos is this one's.
-  const partyMainKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting) : "";
+  // The backdrop and table alone — with the cake when the two boards are picked too (partyMainExtras, 2026-11-07): the
+  // first of Everything's photos is this one's.
+  const partyMainIds: readonly string[] = partyMainExtras([...partyExtras.map((e) => e.part), ...partyXpIds]);
+  const partyMainKey = partySetting && (partyHas.backdrop || partyHas.table) ? partyRenderKey(config, partySetting, partyExtras.filter((e) => partyMainIds.includes(e.part))) : "";
   const partyShot = useRef<(() => Promise<PartyShot>) | null>(null);
   const partyRender = usePieceRender({
     endpoint: "/api/party-render", partKey: partyKey, kept: config.venue.render,

@@ -12,8 +12,8 @@ import { renderJpeg, storeRenderJpeg } from "@/lib/renderStore";
 import { ndjsonLine } from "@/lib/ndjson";
 import { gradePhoto } from "@/lib/photoGrade";
 import { readTableSetup } from "@/lib/studio/tableSetup";
-import { MAX_PARTY_IMAGES, PARTY_EXPERIENCE_PHOTOS, PARTY_EXTRAS, PARTY_PICKS, partyAddPrompt, partyExperiences, partyPrompt, partyReferences, partySides, type PartySetting, type Side } from "@/lib/studio/partyRender";
-import { experiencePhoto, stitchSides, wideCanvas, WIDE } from "@/lib/studio/partySheet";
+import { MAX_PARTY_IMAGES, PARTY_EXPERIENCE_PHOTOS, PARTY_EXTRAS, PARTY_PICKS, partyAddPrompt, partyExperiences, partyMainExtras, partyPrompt, partyReferences, partySides, type PartySetting, type Side } from "@/lib/studio/partyRender";
+import { experiencePhoto, sideRoom, stitchSides, wideCanvas, WIDE } from "@/lib/studio/partySheet";
 import { optionPicture } from "@/lib/studio/tableOptionPicture";
 
 export const runtime = "nodejs";
@@ -102,15 +102,19 @@ export async function POST(req: NextRequest) {
     const small = (b: Buffer) => sharp(b).resize({ width: 768, height: 768, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 86 }).toBuffer();
     const xImages = await Promise.all(xPhotos.map((x) => small(x.b)));
     const extraImages = await Promise.all(extras.map((e) => small(e.bytes)));
+    // The cake into the first photograph when the two boards are picked too (partyMainExtras): the rest at the sides.
+    const ids = [...extras.map((e) => e.part), ...xPhotos.map((x) => x.id), ...xp.stations];
+    const mainIds: readonly string[] = partyMainExtras(ids);
+    const rest = ids.filter((id) => !mainIds.includes(id));
     // Everything she designed in two photographs (2026-11-06, the owner: "saçmaladı render backdropta özellikle" — ten
     // pieces at once spoiled the backdrop; then "a olsun"): first the backdrop and the kids' table, kept exact; then that
     // photo in the middle of a wider canvas (wideCanvas), the setting carried on at its sides and the pieces she picked
     // added there (partyAddPrompt).
-    const more = extras.length > 0 || xImages.length > 0 || xp.stations.length > 0;
+    const more = rest.length > 0;
     // Her table's and chair's own option photos (2026-11-04, the owner: "Birebir benim seçimlerim olmalı masa sandalye
     // backdrop vs"), small: the top view already shows the rest. One that can't be read is left out.
     // Room left for them (seven pictures at most): the chair first, then the table's photo.
-    const room = MAX_PARTY_IMAGES - images.length;
+    const room = MAX_PARTY_IMAGES - images.length - mainIds.length;
     const refs = (table?.enabled ? partyReferences(table, theme.id) : []).sort((a, b) => Number(b.key === "chairs") - Number(a.key === "chairs")).slice(0, Math.max(0, room))
       .sort((a, b) => Number(a.key === "chairs") - Number(b.key === "chairs"));
     const refPics = (await Promise.all(refs.map((r) => optionPicture(r.photo, req.nextUrl.origin, 512).then((u) => ({ key: r.key, u })).catch(() => null)))).filter((r): r is { key: (typeof refs)[number]["key"]; u: string } => !!r);
@@ -135,27 +139,30 @@ export async function POST(req: NextRequest) {
         };
         try {
           const until = Date.now() + 140_000;
+          const mainExtras = extras.map((e, k) => ({ part: e.part, image: extraImages[k] })).filter((e) => mainIds.includes(e.part));
           const main = more && mainPhoto ? Buffer.from(mainPhoto, "base64") : await photo(
-            partyPrompt({ table, decor: { ...defaultConfig().decor, ...readDecor(body.decor) }, theme: theme.id }, setting, { ...has, refs: refPics.map((r) => r.key) }),
-            [...images.map(uri), ...refPics.map((r) => r.u)], more ? 70_000 : 130_000);
+            partyPrompt({ table, decor: { ...defaultConfig().decor, ...readDecor(body.decor) }, theme: theme.id }, setting, { ...has, refs: refPics.map((r) => r.key), extras: mainExtras.map((e) => e.part) }),
+            [...images.map(uri), ...mainExtras.map((e) => uri(e.image)), ...refPics.map((r) => r.u)], more ? 70_000 : 130_000);
           // The first photo made here: back to the builder for next time (her picks change; the backdrop and table don't).
           if (more && !mainPhoto && mainKey) send({ also: { key: mainKey, url: uri(await gradePhoto(main).catch(() => main)) } });
           const made = !more ? main : await (async () => {
-            const canvas = uri(await wideCanvas(main));
-            // The pieces she picked — all, or one side's — added to the first photo in its wider canvas.
-            const some = (keep: readonly string[] | null, side?: Side) => {
-              const ex = extras.map((e, k) => ({ part: e.part, image: extraImages[k] })).filter((e) => !keep || keep.includes(e.part));
-              const px = xPhotos.map((x, k) => ({ id: x.id, image: xImages[k] })).filter((x) => !keep || keep.includes(x.id));
-              const st = xp.stations.filter((id) => !keep || keep.includes(id));
-              return photo(partyAddPrompt(setting, { extras: ex.map((e) => e.part), experiences: px.map((x) => x.id), stations: st }, side),
+            // The pieces she picked — all, or one side's — added to the first photo in its wider canvas: in the middle, or
+            // at the far end with all the white on that side.
+            const some = (keep: readonly string[], canvas: string, side?: Side) => {
+              const ex = extras.map((e, k) => ({ part: e.part, image: extraImages[k] })).filter((e) => keep.includes(e.part));
+              const px = xPhotos.map((x, k) => ({ id: x.id, image: xImages[k] })).filter((x) => keep.includes(x.id));
+              const st = xp.stations.filter((id) => keep.includes(id));
+              return photo(partyAddPrompt(setting, { extras: ex.map((e) => e.part), experiences: px.map((x) => x.id), stations: st, there: mainExtras.map((e) => e.part) }, side),
                 [canvas, ...ex.map((e) => uri(e.image)), ...px.map((x) => uri(x.image))], Math.max(30_000, until - Date.now()), WIDE);
             };
-            const sides = partySides([...extras.map((e) => e.part), ...xPhotos.map((x) => x.id), ...xp.stations]);
-            if (!sides) return some(null);
+            const sides = partySides(rest, mainIds);
+            if (!sides) return some(rest, uri(await wideCanvas(main)));
             // Four or five pieces (2026-11-07, the owner: "table setup neden yok? pinata bozuk" — with five in one photo a
             // piece was always lost or set on another): one photograph a side, both at once, joined down the middle.
-            const [l, r] = await Promise.all([some(sides.left, "left"), some(sides.right, "right")]);
-            return stitchSides(l, r);
+            // Both canvases first, so the two go to the engine in order (the left's first).
+            const [cl, cr] = await Promise.all([wideCanvas(main, "left"), wideCanvas(main, "right")]);
+            const [l, r] = await Promise.all([some(sides.left, uri(cl), "left"), some(sides.right, uri(cr), "right")]);
+            return stitchSides(l, r, await sideRoom(main));
           })();
           // A photographer's edit — white balance, exposure, shadows, contrast, vibrance (lib/photoGrade.ts).
           const jpeg = await gradePhoto(made).catch(() => made);

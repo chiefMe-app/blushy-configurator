@@ -66,9 +66,9 @@ const EXTRA_WORDS: Record<PartyExtra, (r: string, s: Side) => string> = {
   adults: (r, s) => `the grown-ups' table of ${r} — drawn there from above, made into a real table set for the grown-ups with its chairs: the same tablecloth, runner, chargers, plates, glasses, napkins, cutlery and centrepiece in the same colours — further back on the ${s}, apart from the kids' table, seen from the front, not from above, and clearly in the picture: the whole of it, or at least its near half with its chairs and several places set`,
   cake: (r, s) => `the cake and sweets of ${r}, on the same stand, cart, table or plinths ${r} shows, on the ${s}, in front of the ${s} end of the backdrop and a little nearer the camera, on its own stand or little table, a real cake's size (a tier about 20 cm across), never on the backdrop's plinths or the kids' table, never in front of the backdrop or in the kids' table's place — the cake, its toppers and every sweet exactly as ${r} shows them`,
   welcome: (r, s) => `the welcome board of ${r}, standing alone on its own easel at the front, just ${s} of the kids' table and nearest the camera, turned a little towards it — the same shape, colours and pictures, its words copied exactly, letter by letter`,
-  giveaways: (r, s) => `the giveaway boxes of ${r} on the far ${s} at the front, on exactly the board or little table ${r} shows — its shape, colour, shelves and print — never another stand, cart or shelf; the same boxes, prints and names`,
+  giveaways: (r, s) => `the giveaway boxes of ${r} at the front on the ${s}, near the ${s} end of the kids' table, on exactly the board or little table ${r} shows — its shape, colour, shelves and print, its words once, just as ${r} has them — never another stand, cart or shelf; the same boxes, prints and names`,
   helium: (r, s) => `the helium balloon bouquets of ${r}, each tied by its ribbons to its own weight on the floor beside the ${s} end of the backdrop, floating free — never tied to, resting on or rising from another piece — the same balloons, foils and colours`,
-  pinata: (r, s) => `the piñata of ${r}, hanging on its own stand on the far ${s} — the same shape, colours and age`,
+  pinata: (r, s) => `the piñata of ${r} on the far ${s}, the outermost thing on that side, hanging from the top of its own tall pole on its own base on the ground — the same shape, colours and age`,
 };
 
 /**
@@ -225,7 +225,9 @@ function apartWords(extras: readonly PartyExtra[], experiences: readonly Experie
     has("welcome") && carts.length ? `The welcome board stands alone on its easel; ${carts.join(" and ")} ${carts.length > 1 ? "carry" : "carries"} none of its words.` : "",
     has("welcome") && has("giveaways") ? "The welcome board and the giveaways' board or table are two separate things standing well apart: the welcome board's words only on the welcome board, the giveaway boxes only on their own board." : "",
     has("cake") && carts.length ? `The cake's stand or cart holds only the cake and its sweets; ${carts.join(" and ")} ${carts.length > 1 ? "are carts" : "is a cart"} of ${carts.length > 1 ? "their" : "its"} own, standing apart from it.` : "",
-    has("pinata") ? "The piñata hangs alone on its own stand." : "",
+    has("pinata") ? "The piñata hangs alone from its own pole." : "",
+    // 2026-11-07 test: with the cake kept in the middle, the giveaways' board slid out to the piñata's spot and the piñata sat on top of it.
+    has("pinata") && has("giveaways") ? "The piñata's pole stands on the grass or floor well beyond the giveaways' board, open ground between them: the piñata hangs from its pole, never from, on or above the board." : "",
     // 2026-11-07 tests: twice the cake went small onto the top of the giveaways' board, then the welcome board did.
     has("cake") && has("giveaways") ? "The cake is on its own stand or little table, at its real size — never on the giveaways' board, its top or its shelves." : "",
     has("welcome") && has("giveaways") ? "The welcome board is on its own wooden easel — never on the giveaways' board, its top or its shelves." : "",
@@ -296,20 +298,41 @@ export function partyPrompt(config: Pick<BuilderConfig, "table" | "decor" | "the
 export const PARTY_PASS = 3;
 /** What the engine sets on the giveaways' shelves when they share a photograph (2026-11-07 tests): the cake went small onto its top, the welcome board became one with it. */
 const SHELF_FOES: readonly string[] = ["welcome", "cake"];
+/** Pairs the engine makes into one thing when they share a photograph: the two boards; the helium's theme foil and the theme-shaped piñata (2026-11-07: one unicorn head). */
+const ALIKE: readonly (readonly [string, string])[] = [["welcome", "giveaways"], ["cake", "giveaways"], ["cake", "welcome"], ["helium", "pinata"]];
+const alike = (a: string, b: string) => ALIKE.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+/**
+ * The three that each spoil the other two in one photograph — the cake, the welcome board and the giveaways' board (the
+ * owner's live render, 2026-11-07: the cake drawn onto the welcome board, its cupcakes on the easel's ledge) — can't
+ * all be kept apart in two: with all three picked, the cake goes into the first photograph, with the backdrop and the
+ * table, and the sides take the two boards.
+ */
+export function partyMainExtras(ids: readonly string[]): PartyExtra[] {
+  return ["cake", "welcome", "giveaways"].every((id) => ids.includes(id)) ? ["cake"] : [];
+}
 /**
  * Four or five pieces: two photographs at once from the same first one, each with one side's pieces (NATURAL_SIDE), then
  * joined down the middle (stitchSides). The giveaways' board never shares a photograph with the cake or the welcome
- * board: they go to its other side. A side with too many sends its last movable pieces to the other. Null: one
- * photograph takes them.
+ * board: they go to its other side. A side with too many sends its last movable pieces to the other. A piece already
+ * in the first photograph (`inMiddle`, partyMainExtras) stands on its side's inner room and takes two of its places
+ * (2026-11-07 test: with the cake there, the giveaways' board slid out to the piñata's spot and the piñata sat on it).
+ * Null: one photograph takes them.
  */
-export function partySides(ids: readonly string[]): { left: string[]; right: string[] } | null {
-  if (ids.length <= PARTY_PASS) return null;
+export function partySides(ids: readonly string[], inMiddle: readonly string[] = []): { left: string[]; right: string[] } | null {
+  if (ids.length <= PARTY_PASS && !inMiddle.length) return null;
   const shelves = ids.includes("giveaways");
   const fixed = (id: string) => shelves && (id === "giveaways" || SHELF_FOES.includes(id));
   const sideOf = (id: string): Side => (shelves && SHELF_FOES.includes(id) ? otherSide(NATURAL_SIDE.giveaways) : NATURAL_SIDE[id] ?? "right");
+  // A piece in the first photograph stands in its side's inner room: one place of that side's (its white is all on
+  // that side now, twice the room).
+  const room = (side: Side) => PARTY_PASS - inMiddle.filter((id) => (NATURAL_SIDE[id] ?? "right") === side).length;
   const left = ids.filter((id) => sideOf(id) === "left"), right = ids.filter((id) => sideOf(id) === "right");
-  const balance = (from: string[], to: string[]) => { for (let i = from.length - 1; from.length > PARTY_PASS && i >= 0; i--) if (!fixed(from[i])) to.push(...from.splice(i, 1)); };
-  balance(left, right); balance(right, left);
+  if (ids.length <= PARTY_PASS && left.length <= room("left") && right.length <= room("right")) return null;
+  // Never sent to a side where it would be made one with another piece.
+  const balance = (from: string[], to: string[], fromSide: Side, toSide: Side) => {
+    for (let i = from.length - 1; from.length > room(fromSide) && to.length < room(toSide) && i >= 0; i--) if (!fixed(from[i]) && !to.some((id) => alike(id, from[i]))) to.push(...from.splice(i, 1));
+  };
+  balance(left, right, "left", "right"); balance(right, left, "right", "left");
   return { left, right };
 }
 
@@ -320,23 +343,35 @@ export function partySides(ids: readonly string[]): { left: string[]; right: str
  * added into the new room at its sides. Image 2 on: the parts, then the experiences' photos. With a `side`, this is
  * one of two photographs (partySides): every piece in it stands on that side, the other side stays open.
  */
-export function partyAddPrompt(setting: PartySetting, pictures: { extras: PartyExtra[]; experiences?: ExperienceId[]; stations?: ExperienceId[] }, side?: Side): string {
-  const extras = pictures.extras;
+export function partyAddPrompt(setting: PartySetting, pictures: { extras: PartyExtra[]; experiences?: ExperienceId[]; stations?: ExperienceId[]; /** Already in image 1 (partyMainExtras). */ there?: PartyExtra[] }, side?: Side): string {
+  const extras = pictures.extras, there = pictures.there ?? [];
+  const middle = ["its balloon backdrop", "its kids' table", ...there.map(pieceName)];
+  const middleList = middle.length > 2 ? `${middle.slice(0, -1).join(", ")} and ${middle.at(-1)}` : middle.join(" and ");
   const xImage = 2 + extras.length;
   const xs = pictures.experiences ?? [], stations = pictures.stations ?? [];
   const sideOf = (id: string): Side => side ?? NATURAL_SIDE[id] ?? "right";
-  const extraWords = extras.map((e, i) => EXTRA_WORDS[e](`image ${2 + i}`, sideOf(e)));
+  // A piece already in image 1 holds its side's inner room (2026-11-07 test: the giveaways' board, told "near the right
+  // end of the kids' table", took the cake's place and the cake was gone): what is added on that side stands beyond it.
+  const beyond = there.filter((id) => !side || (NATURAL_SIDE[id] ?? "right") === side);
+  const outward = (id: string, words: string) => {
+    const past = beyond.filter((b) => (NATURAL_SIDE[b] ?? "right") === sideOf(id) && b !== id);
+    return past.length ? words.replace(/ near the (left|right) end of the kids' table/, ` beyond ${past.map(pieceName).join(" and ")}, further out`) : words;
+  };
+  const extraWords = extras.map((e, i) => outward(e, EXTRA_WORDS[e](`image ${2 + i}`, sideOf(e))));
   const xWords = [...xs.map((id, i) => `${PARTY_EXPERIENCE_PHOTOS[id]!.words(sideOf(id))} exactly as image ${xImage + i} shows it`), ...stations.map((id) => STATION_WORDS[id]!(sideOf(id)))];
   const place = setting === "outdoor" ? "garden" : "room";
+  const white = side ? `on the ${side}` : "at both sides";
   return [
-    "Image 1 is the finished photograph of this children's birthday party — its balloon backdrop and its kids' table — set in the middle of a wider white canvas, white at both sides.",
-    `Make it one wider photograph of the same party: fill the white at both sides by carrying the same ${setting === "outdoor" ? "garden — the same lawn, hedges, trees and sky" : "room — the same floor, walls and windows"} — on outward, in the same light and seen by the same camera, seamless, with no frame, border or edge left.`,
-    "Keep the middle exactly as image 1 shows it: the backdrop with its boards, balloons, colours and words, the kids' table with its chairs and every place on it — nothing in it moved, changed, redrawn, covered or taken away.",
+    `Image 1 is the finished photograph of this children's birthday party — ${middleList} — set ${side ? `at the ${otherSide(side)} end` : "in the middle"} of a wider white canvas, white ${white}.`,
+    `Make it one wider photograph of the same party: fill the white ${white} by carrying the same ${setting === "outdoor" ? "garden — the same lawn, hedges, trees and sky" : "room — the same floor, walls and windows"} — on outward, in the same light and seen by the same camera, seamless, with no frame, border or edge left.`,
+    `Keep ${side ? "the photograph" : "the middle"} exactly as image 1 shows it: the backdrop with its boards, balloons, colours and words, the kids' table with its chairs and every place on it${there.length ? `, ${there.map(pieceName).join(" and ")} just as ${there.length > 1 ? "they stand" : "it stands"} there, on ${there.length > 1 ? "their" : "its"} own` : ""} — nothing in it moved, changed, redrawn, covered or taken away.`,
     // 2026-11-07, the owner: "table setup neden yok?" — the second photo had lost the kids' table.
-    "The kids' table and its chairs stay in the photograph, in front of the backdrop just where image 1 has them: no other table, stand or piece ever takes their place. The backdrop and the table stay in the very middle of the photograph, not slid left or right, not made bigger or smaller: the new room is only at the sides.",
+    `The kids' table and its chairs stay in the photograph, in front of the backdrop just where image 1 has them: no other table, stand or piece ever takes their place. The backdrop and the table stay ${side ? "exactly where image 1 has them" : "in the very middle of the photograph"}, not slid left or right, not made bigger or smaller: the new room is only ${side ? `on the ${side}` : "at the sides"}.`,
     extraWords.length ? `In the wider space ${side ? `on the ${side} of them` : "at both sides of them"}, in the same photograph, add the other pieces she designed, each exactly as its own picture shows it — a drawing made into the real thing, a photo copied — at a believable real size, standing on the ground, none in front of the backdrop or the table: ${extraWords.join("; ")}.` : "",
     xWords.length ? `${extraWords.length ? "Further out" : "In the wider space"} ${side ? `on the ${side}` : "at the sides"}, set up and ready with no one at them, add the party's activities: ${xWords.join("; ")} — each its real size, whole in the picture, none in front of the backdrop or the tables.` : "",
     side ? `Everything added stands on the ${side} of the backdrop and the kids' table; the ${otherSide(side)} side of the photograph stays open ${place}, with nothing added there.` : "",
+    there.includes("cake") ? `The cake of image 1 stays where it is, on its own stand, the only cake in the photograph: no second cake anywhere, none on the kids' table${extras.includes("giveaways") ? ", nothing of it on the giveaways' board or its shelves" : ""}.` : "",
+    beyond.length ? `${beyond.map(pieceName).join(" and ").replace(/^./, (c) => c.toUpperCase())} of image 1 ${beyond.length > 1 ? "are" : "is"} part of the photograph to keep, exactly where image 1 has ${beyond.length > 1 ? "them" : "it"}, never replaced, moved or covered: every piece added on the ${side ?? "same side"} stands further out than ${beyond.length > 1 ? "them" : "it"}, beyond, with open ground between.` : "",
     apartWords(extras, [...xs, ...stations], [], sideOf),
     "The rooms, walls and floors the other pictures show are only where they were drawn: leave them out; every piece added stands in the setting of image 1, in its light, with soft natural shadows on the ground.",
     "Nothing else added: no people, no children, no cartoon or licensed characters, no extra decorations, furniture or words beyond those in the pictures.",

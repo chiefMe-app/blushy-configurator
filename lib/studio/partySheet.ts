@@ -35,48 +35,59 @@ export async function experiencePhoto(pic: string, origin: string): Promise<Buff
 export const WIDE = { width: 2016, height: 896 };
 
 /**
- * The first photograph at its full height in the middle of a wider white canvas (2026-11-06): the second photograph
- * carries the setting on into the white at both sides, and the pieces she picked stand there. Asked in words, or with
- * the photo made smaller inside a frame, the engine kept the first framing and squeezed the pieces in or left them out;
- * given a wider canvas and a wider photograph, it widens the scene.
+ * The first photograph at its full height in a wider white canvas (2026-11-06): the second photograph carries the
+ * setting on into the white, and the pieces she picked stand there. Asked in words, or with the photo made smaller
+ * inside a frame, the engine kept the first framing and squeezed the pieces in or left them out; given a wider canvas
+ * and a wider photograph, it widens the scene. In the middle, white at both sides; or, for one of two photographs
+ * joined after (2026-11-07), at the far end with all the white on `side` — twice the room for that side's pieces.
  */
-export async function wideCanvas(photo: Buffer): Promise<Buffer> {
+export async function wideCanvas(photo: Buffer, side?: "left" | "right"): Promise<Buffer> {
   const middle = await sharp(photo).resize({ height: WIDE.height }).toBuffer();
   const w = (await sharp(middle).metadata()).width ?? WIDE.width;
+  const left = side === "left" ? WIDE.width - w : side === "right" ? 0 : Math.round((WIDE.width - w) / 2);
   return sharp({ create: { width: WIDE.width, height: WIDE.height, channels: 3, background: "#ffffff" } })
-    .composite([{ input: middle, left: Math.max(0, Math.round((WIDE.width - w) / 2)), top: 0 }])
+    .composite([{ input: middle, left: Math.max(0, left), top: 0 }])
     .jpeg({ quality: 90 }).toBuffer();
 }
 
+/** The white a one-sided canvas adds beside the photograph: how far the two photographs' middles are apart. */
+export async function sideRoom(photo: Buffer): Promise<number> {
+  const m = await sharp(photo).metadata();
+  return Math.max(0, WIDE.width - Math.round(((m.width ?? WIDE.width) * WIDE.height) / (m.height ?? WIDE.height)));
+}
+
 /**
- * Two photographs of the party made from the same first one — one side's pieces in each (partySides) — joined into
- * one (2026-11-07): the left of the first, the right of the second. The engine keeps the middle (the backdrop and the
- * table) but may slide it a little to one side to make room, so the second is first lined up with the first by the
- * shift that matches their middles best; then the seam goes where the two differ least across the middle, feathered.
- * As wide as the two allow once lined up: no piece at either edge is cut off.
+ * Two photographs of the party made from the same first one — one side's pieces in each (partySides), the white of
+ * the canvas on that side — joined into one (2026-11-07): the left of the first, the right of the second. Their
+ * middles (the backdrop and the table) are `apart` columns apart by the canvases, and the engine may slide one a
+ * little further, so the second is lined up with the first by the shift that matches their middles best; then the
+ * seam goes where the two differ least across the middle, feathered. As wide as the two allow once lined up: no
+ * piece at either edge is cut off.
  */
-export async function stitchSides(left: Buffer, right: Buffer): Promise<Buffer> {
+export async function stitchSides(left: Buffer, right: Buffer, apart = 0): Promise<Buffer> {
   const { width: W, height: H } = WIDE;
   const raw = (b: Buffer) => sharp(b).resize(W, H, { fit: "fill" }).removeAlpha().raw().toBuffer();
   const [a, b] = await Promise.all([raw(left), raw(right)]);
   const at = (p: Buffer, x: number, y: number, c: number) => p[(y * W + x) * 3 + c];
-  // The shift: b's column x + dx is a's column x, judged on the middle (every other column, every fourth row).
-  let dx = 0, least = Infinity;
-  // The smallest shift first: with nothing to choose between them (a plain middle), none.
-  for (let k = 0; k <= 160; k += 2) for (const d of k ? [-k, k] : [0]) {
+  // Where the first's middle is: in the middle, or pushed right by the white on its left.
+  const centre = Math.round(W / 2 + apart / 2);
+  // The shift: b's column x + dx is a's column x, judged on the middle (every other column, every fourth row); the
+  // smallest departure from the canvases' own first, so with nothing to choose between them (a plain middle) none.
+  let dx = -apart, least = Infinity;
+  for (let k = 0; k <= 200; k += 2) for (const d of k ? [-apart - k, -apart + k] : [-apart]) {
     let sum = 0, n = 0;
-    for (let y = 0; y < H; y += 4) for (let x = W / 2 - 400; x < W / 2 + 400; x += 2) {
+    for (let y = 0; y < H; y += 4) for (let x = centre - 400; x < centre + 400; x += 2) {
       const xb = x + d;
-      if (xb < 0 || xb >= W) continue;
+      if (x < 0 || x >= W || xb < 0 || xb >= W) continue;
       sum += Math.abs(at(a, x, y, 0) - at(b, xb, y, 0)) + Math.abs(at(a, x, y, 1) - at(b, xb, y, 1)) + Math.abs(at(a, x, y, 2) - at(b, xb, y, 2)); n++;
     }
     if (n && sum / n < least) { least = sum / n; dx = d; }
   }
   // The seam: the column, across the middle, where the lined-up two differ least.
-  let seam = W / 2; least = Infinity;
-  for (let x = W / 2 - 252; x <= W / 2 + 252; x++) {
+  let seam = centre; least = Infinity;
+  for (let x = centre - 252; x <= centre + 252; x++) {
     const xb = x + dx;
-    if (xb < 0 || xb >= W) continue;
+    if (x < 0 || x >= W || xb < 0 || xb >= W) continue;
     let d = 0;
     for (let y = 0; y < H; y++) d += Math.abs(at(a, x, y, 0) - at(b, xb, y, 0)) + Math.abs(at(a, x, y, 1) - at(b, xb, y, 1)) + Math.abs(at(a, x, y, 2) - at(b, xb, y, 2));
     if (d < least) { least = d; seam = x; }

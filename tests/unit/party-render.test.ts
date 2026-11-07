@@ -5,8 +5,8 @@ import { NextRequest } from "next/server";
 import sharp from "sharp";
 import { defaultConfig, themeById, type BuilderConfig } from "@/lib/config";
 import { defaultTableSetup } from "@/lib/studio/tableSetup";
-import { backdropWords, partyAddPrompt, partyExperiences, partyPicked, partyPieces, partyPrompt, partyReferences, partyRenderKey, partySides, seatsWords } from "@/lib/studio/partyRender";
-import { stitchSides } from "@/lib/studio/partySheet";
+import { backdropWords, partyAddPrompt, partyExperiences, partyMainExtras, partyPicked, partyPieces, partyPrompt, partyReferences, partyRenderKey, partySides, seatsWords } from "@/lib/studio/partyRender";
+import { stitchSides, wideCanvas } from "@/lib/studio/partySheet";
 import { itemWords } from "@/lib/studio/tableRender";
 import { resetRenderGuard } from "@/lib/renderGuard";
 import { readNdjson } from "@/lib/ndjson";
@@ -146,37 +146,49 @@ describe("the party's render", () => {
     expect(got.at(-1)).toMatchObject({ done: true });
     expect(subscribe).toHaveBeenCalledTimes(3);
     const [[, first], [, second], [, third]] = subscribe.mock.calls as Call[];
-    // The first: her backdrop, the top view, the table's and the chair's photos — no other part.
-    expect(first.input.image_urls).toHaveLength(4);
-    expect(first.input.prompt).toContain("Image 3 is the table she chose");
-    expect(first.input.prompt).not.toContain("the cake and sweets");
+    // The first: her backdrop, the top view, the cake (partyMainExtras: the two boards are picked too), the table's and
+    // the chair's photos.
+    expect(first.input.image_urls).toHaveLength(5);
+    expect(first.input.prompt).toContain("the cake and sweets of image 3");
+    expect(first.input.prompt).toContain("Image 4 is the table she chose");
     expect(first.input).toMatchObject({ image_size: { width: 1344, height: 896 } });
-    // Then two at once (partySides): the cake, the welcome board and the helium on the left, the giveaways and the piñata
-    // on the right — the giveaways' shelves never with the cake or the welcome board — each from the first photo at full
-    // height in a wider white canvas; the popcorn cart stays out.
-    for (const add of [second, third]) {
+    // Then two at once (partySides): the welcome board and the helium on the left, the giveaways and the piñata on the
+    // right (the giveaways' shelves never with the cake or the welcome board, the helium's foil never with the piñata) —
+    // each from the first photo at full height at one end of a wider white canvas, all the white on its side, the cake
+    // kept in it; the popcorn cart stays out.
+    for (const [add, side] of [[second, "left"], [third, "right"]] as const) {
       expect(add.input).toMatchObject({ image_size: { width: 2016, height: 896 } });
-      expect(await sharp(Buffer.from(add.input.image_urls[0].split(",")[1], "base64")).metadata()).toMatchObject({ width: 2016, height: 896 });
-      expect(add.input.prompt).toContain("set in the middle of a wider white canvas, white at both sides");
-      expect(add.input.prompt).toContain("Keep the middle exactly as image 1 shows it");
+      const canvas = sharp(Buffer.from(add.input.image_urls[0].split(",")[1], "base64"));
+      expect(await canvas.metadata()).toMatchObject({ width: 2016, height: 896 });
+      // The white at that side: the far column there is white, the far column of the other side is the photo's.
+      const col = async (x: number) => { const b = await canvas.clone().extract({ left: x, top: 0, width: 1, height: 896 }).raw().toBuffer(); return b.reduce((s, v) => s + v, 0) / b.length; };
+      expect(await col(side === "left" ? 0 : 2015)).toBeGreaterThan(250);
+      expect(add.input.prompt).toContain(`its balloon backdrop, its kids' table and the cake — set at the ${side === "left" ? "right" : "left"} end of a wider white canvas, white on the ${side}`);
+      expect(add.input.prompt).toContain(`fill the white on the ${side} by carrying`);
+      expect(add.input.prompt).toContain("Keep the photograph exactly as image 1 shows it");
+      expect(add.input.prompt).toContain("the only cake in the photograph: no second cake anywhere");
+      expect(add.input.prompt).toContain("the cake just as it stands there, on its own");
       // 2026-11-07, the owner: "table setup neden yok?"
       expect(add.input.prompt).toContain("The kids' table and its chairs stay in the photograph");
       expect(add.input.prompt).not.toContain("popcorn");
     }
-    expect(second.input.image_urls).toHaveLength(4);
-    expect(second.input.prompt).toContain("the cake and sweets of image 2, on the same stand, cart, table or plinths image 2 shows, on the left, in front of the left end of the backdrop");
-    expect(second.input.prompt).toContain("the welcome board of image 3, standing alone on its own easel at the front, just left of the kids' table");
-    expect(second.input.prompt).toContain("the helium balloon bouquets of image 4");
+    expect(second.input.image_urls).toHaveLength(3);
+    expect(second.input.prompt).toContain("the welcome board of image 2, standing alone on its own easel at the front, just left of the kids' table");
+    expect(second.input.prompt).toContain("the helium balloon bouquets of image 3");
     expect(second.input.prompt).not.toContain("giveaway");
+    expect(second.input.prompt).not.toContain("piñata");
+    expect(second.input.prompt).not.toContain("the cake and sweets of image");
     expect(second.input.prompt).toContain("the right side of the photograph stays open garden");
-    expect(second.input.prompt).toContain("From left to right across the photograph, with open ground between each and the next: the cake, the welcome board, the helium balloons, the backdrop with the kids' table.");
-    expect(second.input.prompt).toContain("All 3 are added, each once and none left out");
+    expect(second.input.prompt).toContain("From left to right across the photograph, with open ground between each and the next: the welcome board, the helium balloons, the backdrop with the kids' table.");
+    expect(second.input.prompt).toContain("All 2 are added, each once and none left out");
     expect(third.input.image_urls).toHaveLength(3);
-    expect(third.input.prompt).toContain("the giveaway boxes of image 2 on the far right");
-    expect(third.input.prompt).toContain("the piñata of image 3, hanging on its own stand on the far right");
-    expect(third.input.prompt).not.toContain("the cake");
+    expect(third.input.prompt).toContain("the giveaway boxes of image 2 at the front on the right, beyond the cake, further out, on exactly the board");
+    expect(third.input.prompt).toContain("The cake of image 1 is part of the photograph to keep, exactly where image 1 has it, never replaced, moved or covered: every piece added on the right stands further out than it");
+    expect(second.input.prompt).not.toContain("part of the photograph to keep");
+    expect(third.input.prompt).toContain("the piñata of image 3 on the far right, the outermost thing on that side");
+    expect(third.input.prompt).toContain("The piñata's pole stands on the grass or floor well beyond the giveaways' board");
+    expect(third.input.prompt).toContain("nothing of it on the giveaways' board or its shelves");
     expect(third.input.prompt).toContain("the left side of the photograph stays open garden");
-    expect(third.input.prompt).toContain("All 2 are added");
     // The first photo goes back to the builder under its own key, for next time.
     expect(got.find((l) => (l as { also?: unknown }).also)).toMatchObject({ also: { key: "main01" } });
   }, 30_000);
@@ -230,7 +242,15 @@ describe("the party's render", () => {
 
   it("four or five pieces go in two photographs, a side each; three in one", () => {
     expect(partySides(["cake", "welcome", "giveaways"])).toBeNull();
-    // The giveaways' shelves never with the cake or the welcome board.
+    // The giveaways' shelves never with the cake or the welcome board; all three picked, the cake goes into the first photo.
+    expect(partyMainExtras(["cake", "welcome", "giveaways", "helium", "pinata"])).toEqual(["cake"]);
+    expect(partyMainExtras(["cake", "welcome", "helium", "pinata"])).toEqual([]);
+    expect(partySides(["welcome", "helium", "pinata", "giveaways"])).toEqual({ left: ["welcome", "helium"], right: ["pinata", "giveaways"] });
+    // The cake in the middle takes one of the right's places; the helium's foil and the piñata never together.
+    expect(partySides(["welcome", "giveaways", "helium", "pinata"], ["cake"])).toEqual({ left: ["welcome", "helium"], right: ["giveaways", "pinata"] });
+    expect(partySides(["giveaways", "pinata", "bouncy_castle"], ["cake"])).toEqual({ left: ["bouncy_castle"], right: ["giveaways", "pinata"] });
+    expect(partySides(["helium", "giveaways", "pinata", "bouncy_castle"], ["cake"])).toEqual({ left: ["helium", "bouncy_castle"], right: ["giveaways", "pinata"] });
+    expect(partySides(["welcome", "giveaways"], ["cake"])).toBeNull();
     expect(partySides(["cake", "welcome", "giveaways", "helium", "pinata"])).toEqual({ left: ["cake", "welcome", "helium"], right: ["giveaways", "pinata"] });
     expect(partySides(["cake", "giveaways", "helium", "pinata"])).toEqual({ left: ["cake", "helium"], right: ["giveaways", "pinata"] });
     expect(partySides(["adults", "cake", "welcome", "giveaways", "helium"])).toEqual({ left: ["adults", "cake", "welcome"], right: ["giveaways", "helium"] });
@@ -239,6 +259,27 @@ describe("the party's render", () => {
     expect(partySides(["cake", "pinata", "bouncy_castle", "face_painting"])).toEqual({ left: ["face_painting"], right: ["cake", "pinata", "bouncy_castle"] });
     // Sent to the other side, a piece's words follow it.
     expect(partyAddPrompt("outdoor", { extras: ["cake"], experiences: ["popcorn"] }, "right")).toContain("on the far right and a little further back, the white popcorn cart");
+  });
+
+  it("puts the first photo at one end of the canvas, all the white on the side the pieces go", async () => {
+    const photo = await sharp({ create: { width: 1344, height: 896, channels: 3, background: "#808080" } }).jpeg().toBuffer();
+    const col = async (b: Buffer, x: number) => { const c = await sharp(b).extract({ left: x, top: 0, width: 1, height: 896 }).raw().toBuffer(); return c.reduce((s, v) => s + v, 0) / c.length; };
+    const l = await wideCanvas(photo, "left"), r = await wideCanvas(photo, "right"), m = await wideCanvas(photo);
+    expect([await col(l, 10), await col(l, 2000)].map(Math.round)).toEqual([255, 128]);
+    expect([await col(r, 10), await col(r, 2000)].map(Math.round)).toEqual([128, 255]);
+    expect([await col(m, 10), await col(m, 1008), await col(m, 2000)].map(Math.round)).toEqual([255, 128, 255]);
+  });
+
+  it("joins two one-sided photographs: their middles 672 apart by the canvases, lined up, 2688 wide", async () => {
+    const one = (bg: string, blockLeft: number, greyLeft: number) => sharp({ create: { width: 2016, height: 896, channels: 3, background: "#ffffff" } })
+      .composite([{ input: { create: { width: 200, height: 896, channels: 3, background: "#808080" } }, left: greyLeft, top: 0 }, { input: { create: { width: 300, height: 896, channels: 3, background: bg } }, left: blockLeft, top: 0 }]).jpeg().toBuffer();
+    // The first: white on the left, its middle's mark at 1244..1444; the second: white on the right, the mark at 572..772.
+    const joined = sharp(await stitchSides(await one("#ff0000", 0, 1244), await one("#0000ff", 1716, 572), 672));
+    expect(await joined.metadata()).toMatchObject({ width: 2688, height: 896 });
+    const px = async (x: number) => Array.from(await joined.clone().extract({ left: x, top: 448, width: 1, height: 1 }).raw().toBuffer());
+    expect(await px(100)).toEqual([255, 0, 0].map((v) => expect.closeTo(v, -1)));
+    expect(await px(1344)).toEqual([128, 128, 128].map((v) => expect.closeTo(v, -1)));
+    expect(await px(2600)).toEqual([0, 0, 255].map((v) => expect.closeTo(v, -1)));
   });
 
   it("joins two photographs down the middle: the left of one, the right of the other", async () => {
@@ -302,7 +343,7 @@ describe("the party's pieces stand apart", () => {
     expect(p).toContain("never two pieces made into one");
     expect(p).toContain("The welcome board and the giveaways' board or table are two separate things");
     expect(p).toContain("the popcorn cart is a cart of its own, standing apart from it");
-    expect(p).toContain("The piñata hangs alone on its own stand.");
+    expect(p).toContain("The piñata hangs alone from its own pole.");
     expect(p).toContain("The photograph shows all 7 of them, each once and none left out: the balloon backdrop, the grown-ups' table, the cake, the welcome board, the giveaway boxes, the piñata, popcorn cart.");
     expect(p).toContain("clearly in the picture: the whole of it, or at least its near half");
     // One piece alone: nothing to keep apart.
